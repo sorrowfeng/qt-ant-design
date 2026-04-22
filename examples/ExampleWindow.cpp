@@ -14,6 +14,7 @@
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntRadio.h"
+#include "widgets/AntSlider.h"
 #include "widgets/AntSwitch.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
@@ -76,14 +77,16 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createCheckboxPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
+    m_stack->addWidget(wrapPage(createSliderPage()));
     m_stack->addWidget(wrapPage(createSwitchPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Checkbox"), 1);
     addNavButton(QStringLiteral("Input"), 2);
     addNavButton(QStringLiteral("Radio"), 3);
-    addNavButton(QStringLiteral("Switch"), 4);
-    addNavButton(QStringLiteral("Card"), 5);
+    addNavButton(QStringLiteral("Slider"), 4);
+    addNavButton(QStringLiteral("Switch"), 5);
+    addNavButton(QStringLiteral("Card"), 6);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -354,6 +357,74 @@ QWidget* ExampleWindow::createRadioPage()
     groupLayout->addWidget(pear);
     groupLayout->addWidget(orange);
     layout->addWidget(group);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createSliderPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(16);
+    auto* basic = new AntSlider();
+    basic->setValue(30);
+    auto* basicValue = new QLabel(QString::number(basic->value()));
+    basicValue->setMinimumWidth(36);
+    connect(basic, &AntSlider::valueChanged, this, [basicValue](int value) {
+        basicValue->setText(QString::number(value));
+    });
+    basicRow->addWidget(basic, 1);
+    basicRow->addWidget(basicValue);
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Dots and Step")));
+    auto* dotsRow = new QHBoxLayout();
+    dotsRow->setSpacing(16);
+    auto* dots = new AntSlider();
+    dots->setRange(0, 50);
+    dots->setSingleStep(10);
+    dots->setDots(true);
+    dots->setValue(20);
+    auto* reverse = new AntSlider();
+    reverse->setReverse(true);
+    reverse->setValue(60);
+    dotsRow->addWidget(dots, 1);
+    dotsRow->addWidget(reverse, 1);
+    layout->addLayout(dotsRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
+    auto* verticalRow = new QHBoxLayout();
+    verticalRow->setSpacing(28);
+    auto* vertical = new AntSlider(Qt::Vertical);
+    vertical->setFixedHeight(180);
+    vertical->setValue(45);
+    auto* verticalReverse = new AntSlider(Qt::Vertical);
+    verticalReverse->setFixedHeight(180);
+    verticalReverse->setReverse(true);
+    verticalReverse->setValue(25);
+    verticalRow->addWidget(vertical);
+    verticalRow->addWidget(verticalReverse);
+    verticalRow->addStretch();
+    layout->addLayout(verticalRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("States")));
+    auto* stateRow = new QHBoxLayout();
+    stateRow->setSpacing(16);
+    auto* disabled = new AntSlider();
+    disabled->setValue(40);
+    disabled->setEnabled(false);
+    auto* noTrack = new AntSlider();
+    noTrack->setValue(70);
+    noTrack->setIncluded(false);
+    stateRow->addWidget(disabled, 1);
+    stateRow->addWidget(noTrack, 1);
+    layout->addLayout(stateRow);
 
     layout->addStretch();
     return page;
