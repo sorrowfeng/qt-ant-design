@@ -145,6 +145,23 @@ enum class SpinSize
 };
 Q_ENUM_NS(SpinSize)
 
+enum class ProgressType
+{
+    Line,
+    Circle,
+    Dashboard,
+};
+Q_ENUM_NS(ProgressType)
+
+enum class ProgressStatus
+{
+    Normal,
+    Success,
+    Exception,
+    Active,
+};
+Q_ENUM_NS(ProgressStatus)
+
 enum class CardSize
 {
     Default,

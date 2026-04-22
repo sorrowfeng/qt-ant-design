@@ -4,6 +4,7 @@
 #include <QDate>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QList>
 #include <QMouseEvent>
 #include <QScrollArea>
 #include <QStackedWidget>
@@ -16,6 +17,7 @@
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntInput.h"
+#include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntSlider.h"
@@ -83,6 +85,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createCheckboxPage()));
     m_stack->addWidget(wrapPage(createDatePickerPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
+    m_stack->addWidget(wrapPage(createProgressPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
     m_stack->addWidget(wrapPage(createSelectPage()));
     m_stack->addWidget(wrapPage(createSliderPage()));
@@ -94,13 +97,14 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Checkbox"), 1);
     addNavButton(QStringLiteral("DatePicker"), 2);
     addNavButton(QStringLiteral("Input"), 3);
-    addNavButton(QStringLiteral("Radio"), 4);
-    addNavButton(QStringLiteral("Select"), 5);
-    addNavButton(QStringLiteral("Slider"), 6);
-    addNavButton(QStringLiteral("Spin"), 7);
-    addNavButton(QStringLiteral("Switch"), 8);
-    addNavButton(QStringLiteral("TimePicker"), 9);
-    addNavButton(QStringLiteral("Card"), 10);
+    addNavButton(QStringLiteral("Progress"), 4);
+    addNavButton(QStringLiteral("Radio"), 5);
+    addNavButton(QStringLiteral("Select"), 6);
+    addNavButton(QStringLiteral("Slider"), 7);
+    addNavButton(QStringLiteral("Spin"), 8);
+    addNavButton(QStringLiteral("Switch"), 9);
+    addNavButton(QStringLiteral("TimePicker"), 10);
+    addNavButton(QStringLiteral("Card"), 11);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -401,6 +405,61 @@ QWidget* ExampleWindow::createInputPage()
     layout->addWidget(password);
     layout->addWidget(error);
     layout->addWidget(disabled);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createProgressPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Line")));
+    const QList<int> values = {30, 50, 70, 100};
+    for (int value : values)
+    {
+        auto* progress = new AntProgress();
+        progress->setPercent(value);
+        if (value == 100)
+        {
+            progress->setStatus(Ant::ProgressStatus::Success);
+        }
+        layout->addWidget(progress);
+    }
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Status")));
+    auto* statusRow = new QHBoxLayout();
+    statusRow->setSpacing(18);
+    auto* active = new AntProgress();
+    active->setPercent(55);
+    active->setStatus(Ant::ProgressStatus::Active);
+    auto* exception = new AntProgress();
+    exception->setPercent(45);
+    exception->setStatus(Ant::ProgressStatus::Exception);
+    statusRow->addWidget(active);
+    statusRow->addWidget(exception);
+    layout->addLayout(statusRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Circle")));
+    auto* circleRow = new QHBoxLayout();
+    circleRow->setSpacing(24);
+    auto* circle = new AntProgress();
+    circle->setProgressType(Ant::ProgressType::Circle);
+    circle->setPercent(75);
+    auto* circleSuccess = new AntProgress();
+    circleSuccess->setProgressType(Ant::ProgressType::Circle);
+    circleSuccess->setPercent(100);
+    auto* dashboard = new AntProgress();
+    dashboard->setProgressType(Ant::ProgressType::Dashboard);
+    dashboard->setPercent(68);
+    circleRow->addWidget(circle);
+    circleRow->addWidget(circleSuccess);
+    circleRow->addWidget(dashboard);
+    circleRow->addStretch();
+    layout->addLayout(circleRow);
+
     layout->addStretch();
     return page;
 }
