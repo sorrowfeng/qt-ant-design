@@ -1,6 +1,7 @@
 #include "ExampleWindow.h"
 
 #include <QFrame>
+#include <QDate>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMouseEvent>
@@ -12,6 +13,7 @@
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckbox.h"
+#include "widgets/AntDatePicker.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntRadio.h"
 #include "widgets/AntSelect.h"
@@ -76,6 +78,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
 
     m_stack->addWidget(wrapPage(createButtonPage()));
     m_stack->addWidget(wrapPage(createCheckboxPage()));
+    m_stack->addWidget(wrapPage(createDatePickerPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
     m_stack->addWidget(wrapPage(createSelectPage()));
@@ -84,12 +87,13 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createCardPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Checkbox"), 1);
-    addNavButton(QStringLiteral("Input"), 2);
-    addNavButton(QStringLiteral("Radio"), 3);
-    addNavButton(QStringLiteral("Select"), 4);
-    addNavButton(QStringLiteral("Slider"), 5);
-    addNavButton(QStringLiteral("Switch"), 6);
-    addNavButton(QStringLiteral("Card"), 7);
+    addNavButton(QStringLiteral("DatePicker"), 2);
+    addNavButton(QStringLiteral("Input"), 3);
+    addNavButton(QStringLiteral("Radio"), 4);
+    addNavButton(QStringLiteral("Select"), 5);
+    addNavButton(QStringLiteral("Slider"), 6);
+    addNavButton(QStringLiteral("Switch"), 7);
+    addNavButton(QStringLiteral("Card"), 8);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -266,6 +270,86 @@ QWidget* ExampleWindow::createCheckboxPage()
     controlledRow->addWidget(optionB);
     controlledRow->addStretch();
     layout->addLayout(controlledRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createDatePickerPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(16);
+    auto* basic = new AntDatePicker();
+    basic->setPlaceholderText(QStringLiteral("Select date"));
+    auto* selected = new AntDatePicker();
+    selected->setSelectedDate(QDate::currentDate());
+    selected->setAllowClear(true);
+    auto* customFormat = new AntDatePicker();
+    customFormat->setSelectedDate(QDate::currentDate().addDays(7));
+    customFormat->setDisplayFormat(QStringLiteral("MMM d, yyyy"));
+    basicRow->addWidget(basic);
+    basicRow->addWidget(selected);
+    basicRow->addWidget(customFormat);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
+    auto* sizeRow = new QHBoxLayout();
+    sizeRow->setSpacing(16);
+    auto* large = new AntDatePicker();
+    large->setPickerSize(Ant::DatePickerSize::Large);
+    large->setSelectedDate(QDate::currentDate());
+    auto* middle = new AntDatePicker();
+    middle->setSelectedDate(QDate::currentDate());
+    auto* small = new AntDatePicker();
+    small->setPickerSize(Ant::DatePickerSize::Small);
+    small->setSelectedDate(QDate::currentDate());
+    sizeRow->addWidget(large);
+    sizeRow->addWidget(middle);
+    sizeRow->addWidget(small);
+    sizeRow->addStretch();
+    layout->addLayout(sizeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Status and Variant")));
+    auto* variantRow = new QHBoxLayout();
+    variantRow->setSpacing(16);
+    auto* error = new AntDatePicker();
+    error->setStatus(Ant::DatePickerStatus::Error);
+    error->setPlaceholderText(QStringLiteral("Error"));
+    auto* warning = new AntDatePicker();
+    warning->setStatus(Ant::DatePickerStatus::Warning);
+    warning->setPlaceholderText(QStringLiteral("Warning"));
+    auto* filled = new AntDatePicker();
+    filled->setVariant(Ant::DatePickerVariant::Filled);
+    filled->setSelectedDate(QDate::currentDate());
+    auto* underlined = new AntDatePicker();
+    underlined->setVariant(Ant::DatePickerVariant::Underlined);
+    underlined->setSelectedDate(QDate::currentDate());
+    variantRow->addWidget(error);
+    variantRow->addWidget(warning);
+    variantRow->addWidget(filled);
+    variantRow->addWidget(underlined);
+    variantRow->addStretch();
+    layout->addLayout(variantRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Disabled")));
+    auto* stateRow = new QHBoxLayout();
+    stateRow->setSpacing(16);
+    auto* disabledEmpty = new AntDatePicker();
+    disabledEmpty->setEnabled(false);
+    auto* disabledValue = new AntDatePicker();
+    disabledValue->setSelectedDate(QDate::currentDate());
+    disabledValue->setEnabled(false);
+    stateRow->addWidget(disabledEmpty);
+    stateRow->addWidget(disabledValue);
+    stateRow->addStretch();
+    layout->addLayout(stateRow);
 
     layout->addStretch();
     return page;

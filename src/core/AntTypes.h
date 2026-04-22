@@ -87,6 +87,31 @@ enum class SelectVariant
 };
 Q_ENUM_NS(SelectVariant)
 
+enum class DatePickerSize
+{
+    Large,
+    Middle,
+    Small,
+};
+Q_ENUM_NS(DatePickerSize)
+
+enum class DatePickerStatus
+{
+    Normal,
+    Error,
+    Warning,
+};
+Q_ENUM_NS(DatePickerStatus)
+
+enum class DatePickerVariant
+{
+    Outlined,
+    Borderless,
+    Filled,
+    Underlined,
+};
+Q_ENUM_NS(DatePickerVariant)
+
 enum class CardSize
 {
     Default,

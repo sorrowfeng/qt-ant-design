@@ -18,10 +18,11 @@
 - 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
 - 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
 - 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntButton`、`AntCheckbox`、`AntInput`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSwitch`、`AntCard` 八个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSwitch`、`AntCard` 九个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
 - 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
 - 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
 - 本次新增 `AntCheckbox` 组件，支持 checked、indeterminate、disabled、文本标签、键盘切换和焦点描边。
+- 本次新增 `AntDatePicker` 组件，支持 selectedDate、displayFormat、placeholder、allowClear、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和自绘日历 popup。
 - 本次新增 `AntRadio` 组件，支持 checked、disabled、value、文本标签、同父级自动互斥、键盘切换和焦点描边。
 - 本次新增 `AntSelect` 组件，支持 options、placeholder、allowClear、loading、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和键盘选择。
 - 本次新增 `AntSlider` 组件，支持 min/max/value/step、水平/垂直方向、reverse、dots、included、disabled、键盘调节和 handle hover/focus 动画。
@@ -48,6 +49,12 @@
   - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制圆角选择框、选中勾、半选横线、文本和焦点描边。
   - 交互方式：鼠标点击切换，支持 Space/Enter 键盘切换。
 
+- [x] `AntDatePicker`
+  - 对应 Ant Design DatePicker。
+  - 支持属性：`selectedDate`、`displayFormat`、`placeholderText`、`pickerSize`、`status`、`variant`、`allowClear`、`open`。
+  - 支持信号：`selectedDateChanged`、`dateStringChanged`、`openChanged`、`cleared`。
+  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制输入框、状态边框、清除按钮和日历图标；popup 中绘制月份标题、星期栏和日期网格。
+  - 交互方式：支持鼠标展开、翻月、选日、清除，以及 Space/Enter/Escape/Left/Right 键盘操作。
 - [x] `AntInput`
   - 对应 Ant Design Input。
   - 内部使用 `QLineEdit` 处理文本输入，外层 `AntInput` 负责绘制背景、边框和焦点外发光。
@@ -126,7 +133,6 @@
 - [ ] `AntTable`：表格。
 - [ ] `AntTree`：树形控件。
 - [ ] `AntTreeSelect`：树选择。
-- [ ] `AntDatePicker`：日期选择。
 - [ ] `AntTimePicker`：时间选择。
 - [ ] `AntCalendar`：日历。
 - [ ] `AntUpload`：上传。
@@ -165,6 +171,7 @@
 
 - `AntButton`：类型、尺寸、形状、danger、ghost、loading、disabled、block。
 - `AntCheckbox`：未选、选中、半选、禁用和“全选”受控示例。
+- `AntDatePicker`：基础选择、自定义格式、尺寸、状态、变体、禁用和清除。
 - `AntInput`：大/中/小尺寸、allowClear、addonBefore/addonAfter、password、error、disabled。
 - `AntRadio`：基础横向组、禁用、禁用选中和纵向组。
 - `AntSelect`：基础选择、allowClear、尺寸、状态、变体、loading、disabled 和禁用选项。

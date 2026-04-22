@@ -1,0 +1,742 @@
+#include "AntDatePicker.h"
+
+#include <QFocusEvent>
+#include <QFrame>
+#include <QHideEvent>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QStringList>
+
+#include "core/AntTheme.h"
+#include "styles/AntPalette.h"
+
+class AntDatePickerPopup : public QFrame
+{
+public:
+    explicit AntDatePickerPopup(AntDatePicker* owner)
+        : QFrame(nullptr, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+          m_owner(owner)
+    {
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setMouseTracking(true);
+        resize(304, 344);
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event)
+        if (!m_owner)
+        {
+            return;
+        }
+
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+
+        antTheme->drawEffectShadow(&painter, rect().adjusted(2, 2, -2, -2), 12, token.borderRadiusLG, 0.55);
+        const QRectF panel = panelRect();
+        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        painter.setBrush(token.colorBgElevated);
+        painter.drawRoundedRect(panel, token.borderRadiusLG, token.borderRadiusLG);
+
+        drawHeader(painter, panel);
+        drawWeekdays(painter, panel);
+        drawDays(painter, panel);
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override
+    {
+        m_hoveredDate = dateAt(event->position());
+        const bool overButton = previousRect().contains(event->position()) || nextRect().contains(event->position());
+        setCursor((m_hoveredDate.isValid() || overButton) ? Qt::PointingHandCursor : Qt::ArrowCursor);
+        update();
+        QFrame::mouseMoveEvent(event);
+    }
+
+    void leaveEvent(QEvent* event) override
+    {
+        m_hoveredDate = QDate();
+        update();
+        QFrame::leaveEvent(event);
+    }
+
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        if (!m_owner || event->button() != Qt::LeftButton)
+        {
+            QFrame::mousePressEvent(event);
+            return;
+        }
+
+        if (previousRect().contains(event->position()))
+        {
+            m_owner->setPanelDate(m_owner->m_panelDate.addMonths(-1));
+            event->accept();
+            return;
+        }
+        if (nextRect().contains(event->position()))
+        {
+            m_owner->setPanelDate(m_owner->m_panelDate.addMonths(1));
+            event->accept();
+            return;
+        }
+
+        const QDate date = dateAt(event->position());
+        if (date.isValid())
+        {
+            m_owner->selectDateFromPopup(date);
+            event->accept();
+            return;
+        }
+
+        QFrame::mousePressEvent(event);
+    }
+
+    void hideEvent(QHideEvent* event) override
+    {
+        if (m_owner && m_owner->isOpen())
+        {
+            m_owner->setOpen(false);
+        }
+        QFrame::hideEvent(event);
+    }
+
+private:
+    QRectF panelRect() const
+    {
+        return rect().adjusted(8, 4, -8, -8);
+    }
+
+    QRectF previousRect() const
+    {
+        const QRectF panel = panelRect();
+        return QRectF(panel.left() + 12, panel.top() + 12, 28, 28);
+    }
+
+    QRectF nextRect() const
+    {
+        const QRectF panel = panelRect();
+        return QRectF(panel.right() - 40, panel.top() + 12, 28, 28);
+    }
+
+    QRectF gridRect() const
+    {
+        const QRectF panel = panelRect();
+        return QRectF(panel.left() + 14, panel.top() + 88, panel.width() - 28, 6 * 34);
+    }
+
+    QDate firstGridDate() const
+    {
+        const QDate first(m_owner->m_panelDate.year(), m_owner->m_panelDate.month(), 1);
+        const int sundayBasedOffset = first.dayOfWeek() % 7;
+        return first.addDays(-sundayBasedOffset);
+    }
+
+    QDate dateAt(const QPointF& pos) const
+    {
+        const QRectF grid = gridRect();
+        if (!grid.contains(pos))
+        {
+            return QDate();
+        }
+        const qreal cellW = grid.width() / 7.0;
+        const qreal cellH = grid.height() / 6.0;
+        const int col = static_cast<int>((pos.x() - grid.left()) / cellW);
+        const int row = static_cast<int>((pos.y() - grid.top()) / cellH);
+        if (col < 0 || col > 6 || row < 0 || row > 5)
+        {
+            return QDate();
+        }
+        return firstGridDate().addDays(row * 7 + col);
+    }
+
+    void drawHeader(QPainter& painter, const QRectF& panel) const
+    {
+        const auto& token = antTheme->tokens();
+        QFont font = painter.font();
+        font.setPixelSize(token.fontSize);
+        font.setWeight(QFont::DemiBold);
+        painter.setFont(font);
+        painter.setPen(token.colorText);
+        painter.drawText(QRectF(panel.left() + 48, panel.top() + 10, panel.width() - 96, 32),
+                         Qt::AlignCenter,
+                         m_owner->m_panelDate.toString(QStringLiteral("MMMM yyyy")));
+
+        painter.setPen(QPen(token.colorTextSecondary, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        drawChevron(painter, previousRect(), true);
+        drawChevron(painter, nextRect(), false);
+
+        painter.setPen(QPen(token.colorSplit, token.lineWidth));
+        painter.drawLine(QPointF(panel.left(), panel.top() + 54), QPointF(panel.right(), panel.top() + 54));
+    }
+
+    void drawWeekdays(QPainter& painter, const QRectF& panel) const
+    {
+        const auto& token = antTheme->tokens();
+        static const QStringList weekdays = {
+            QStringLiteral("Su"),
+            QStringLiteral("Mo"),
+            QStringLiteral("Tu"),
+            QStringLiteral("We"),
+            QStringLiteral("Th"),
+            QStringLiteral("Fr"),
+            QStringLiteral("Sa"),
+        };
+
+        QFont font = painter.font();
+        font.setPixelSize(token.fontSizeSM);
+        font.setWeight(QFont::DemiBold);
+        painter.setFont(font);
+        painter.setPen(token.colorTextSecondary);
+
+        const QRectF grid = gridRect();
+        const qreal cellW = grid.width() / 7.0;
+        for (int i = 0; i < weekdays.size(); ++i)
+        {
+            painter.drawText(QRectF(grid.left() + i * cellW, panel.top() + 60, cellW, 24), Qt::AlignCenter, weekdays.at(i));
+        }
+    }
+
+    void drawDays(QPainter& painter, const QRectF& panel) const
+    {
+        Q_UNUSED(panel)
+        const auto& token = antTheme->tokens();
+        const QRectF grid = gridRect();
+        const qreal cellW = grid.width() / 7.0;
+        const qreal cellH = grid.height() / 6.0;
+        const QDate today = QDate::currentDate();
+        const QDate first = firstGridDate();
+
+        QFont font = painter.font();
+        font.setPixelSize(token.fontSize);
+        font.setWeight(QFont::Normal);
+        painter.setFont(font);
+
+        for (int i = 0; i < 42; ++i)
+        {
+            const QDate date = first.addDays(i);
+            const int row = i / 7;
+            const int col = i % 7;
+            const QRectF cell(grid.left() + col * cellW, grid.top() + row * cellH, cellW, cellH);
+            const QRectF inner(cell.center().x() - 14, cell.center().y() - 14, 28, 28);
+            const bool inMonth = date.month() == m_owner->m_panelDate.month();
+            const bool selected = m_owner->m_selectedDate.isValid() && date == m_owner->m_selectedDate;
+            const bool isToday = date == today;
+            const bool hovered = date == m_hoveredDate;
+
+            if (hovered && !selected)
+            {
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(token.colorFillQuaternary);
+                painter.drawRoundedRect(inner, token.borderRadiusSM, token.borderRadiusSM);
+            }
+            if (selected)
+            {
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(token.colorPrimary);
+                painter.drawRoundedRect(inner, token.borderRadiusSM, token.borderRadiusSM);
+            }
+            else if (isToday)
+            {
+                painter.setPen(QPen(token.colorPrimary, token.lineWidth));
+                painter.setBrush(Qt::NoBrush);
+                painter.drawRoundedRect(inner.adjusted(0.5, 0.5, -0.5, -0.5), token.borderRadiusSM, token.borderRadiusSM);
+            }
+
+            painter.setPen(selected ? token.colorTextLightSolid : (inMonth ? token.colorText : token.colorTextDisabled));
+            painter.drawText(cell, Qt::AlignCenter, QString::number(date.day()));
+        }
+    }
+
+    void drawChevron(QPainter& painter, const QRectF& rect, bool left) const
+    {
+        const QPointF center = rect.center();
+        QPainterPath path;
+        if (left)
+        {
+            path.moveTo(center.x() + 4, center.y() - 6);
+            path.lineTo(center.x() - 3, center.y());
+            path.lineTo(center.x() + 4, center.y() + 6);
+        }
+        else
+        {
+            path.moveTo(center.x() - 4, center.y() - 6);
+            path.lineTo(center.x() + 3, center.y());
+            path.lineTo(center.x() - 4, center.y() + 6);
+        }
+        painter.drawPath(path);
+    }
+
+    AntDatePicker* m_owner = nullptr;
+    QDate m_hoveredDate;
+};
+
+AntDatePicker::AntDatePicker(QWidget* parent)
+    : QWidget(parent)
+{
+    setAttribute(Qt::WA_Hover, true);
+    setMouseTracking(true);
+    setFocusPolicy(Qt::StrongFocus);
+
+    m_panelDate = QDate::currentDate();
+    m_popup = new AntDatePickerPopup(this);
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updatePopupGeometry();
+        updateGeometry();
+        update();
+        if (m_popup)
+        {
+            m_popup->update();
+        }
+    });
+
+    updateCursor();
+}
+
+AntDatePicker::~AntDatePicker()
+{
+    if (m_popup)
+    {
+        m_popup->deleteLater();
+    }
+}
+
+QDate AntDatePicker::selectedDate() const { return m_selectedDate; }
+
+void AntDatePicker::setSelectedDate(const QDate& date)
+{
+    if (m_selectedDate == date)
+    {
+        return;
+    }
+    m_selectedDate = date;
+    if (m_selectedDate.isValid())
+    {
+        m_panelDate = m_selectedDate;
+    }
+    update();
+    if (m_popup)
+    {
+        m_popup->update();
+    }
+    Q_EMIT selectedDateChanged(m_selectedDate);
+    Q_EMIT dateStringChanged(dateString());
+}
+
+bool AntDatePicker::hasSelectedDate() const { return m_selectedDate.isValid(); }
+
+void AntDatePicker::clear()
+{
+    if (!m_selectedDate.isValid())
+    {
+        return;
+    }
+    setSelectedDate(QDate());
+    Q_EMIT cleared();
+}
+
+QString AntDatePicker::displayFormat() const { return m_displayFormat; }
+
+void AntDatePicker::setDisplayFormat(const QString& format)
+{
+    if (format.isEmpty() || m_displayFormat == format)
+    {
+        return;
+    }
+    m_displayFormat = format;
+    update();
+    Q_EMIT displayFormatChanged(m_displayFormat);
+    Q_EMIT dateStringChanged(dateString());
+}
+
+QString AntDatePicker::placeholderText() const { return m_placeholderText; }
+
+void AntDatePicker::setPlaceholderText(const QString& text)
+{
+    if (m_placeholderText == text)
+    {
+        return;
+    }
+    m_placeholderText = text;
+    update();
+    Q_EMIT placeholderTextChanged(m_placeholderText);
+}
+
+Ant::DatePickerSize AntDatePicker::pickerSize() const { return m_pickerSize; }
+
+void AntDatePicker::setPickerSize(Ant::DatePickerSize size)
+{
+    if (m_pickerSize == size)
+    {
+        return;
+    }
+    m_pickerSize = size;
+    updateGeometry();
+    update();
+    Q_EMIT pickerSizeChanged(m_pickerSize);
+}
+
+Ant::DatePickerStatus AntDatePicker::status() const { return m_status; }
+
+void AntDatePicker::setStatus(Ant::DatePickerStatus status)
+{
+    if (m_status == status)
+    {
+        return;
+    }
+    m_status = status;
+    update();
+    Q_EMIT statusChanged(m_status);
+}
+
+Ant::DatePickerVariant AntDatePicker::variant() const { return m_variant; }
+
+void AntDatePicker::setVariant(Ant::DatePickerVariant variant)
+{
+    if (m_variant == variant)
+    {
+        return;
+    }
+    m_variant = variant;
+    update();
+    Q_EMIT variantChanged(m_variant);
+}
+
+bool AntDatePicker::allowClear() const { return m_allowClear; }
+
+void AntDatePicker::setAllowClear(bool allowClear)
+{
+    if (m_allowClear == allowClear)
+    {
+        return;
+    }
+    m_allowClear = allowClear;
+    update();
+    Q_EMIT allowClearChanged(m_allowClear);
+}
+
+bool AntDatePicker::isOpen() const { return m_open; }
+
+void AntDatePicker::setOpen(bool open)
+{
+    if (m_open == open)
+    {
+        return;
+    }
+    m_open = open;
+    if (m_open)
+    {
+        if (m_selectedDate.isValid())
+        {
+            m_panelDate = m_selectedDate;
+        }
+        updatePopupGeometry();
+        m_popup->show();
+        m_popup->raise();
+    }
+    else if (m_popup->isVisible())
+    {
+        m_popup->hide();
+    }
+    update();
+    Q_EMIT openChanged(m_open);
+}
+
+QString AntDatePicker::dateString() const
+{
+    return m_selectedDate.isValid() ? m_selectedDate.toString(m_displayFormat) : QString();
+}
+
+QSize AntDatePicker::sizeHint() const
+{
+    return QSize(180, metrics().height);
+}
+
+QSize AntDatePicker::minimumSizeHint() const
+{
+    return QSize(120, metrics().height);
+}
+
+void AntDatePicker::paintEvent(QPaintEvent* event)
+{
+    Q_UNUSED(event)
+    const auto& token = antTheme->tokens();
+    const Metrics m = metrics();
+    const QRectF control = controlRect();
+    const bool focused = hasFocus() || m_open;
+
+    QPainter painter(this);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+
+    if (focused && isEnabled() && m_variant != Ant::DatePickerVariant::Borderless && m_variant != Ant::DatePickerVariant::Underlined)
+    {
+        painter.setPen(QPen(AntPalette::alpha(borderColor(), 0.16), token.controlOutlineWidth));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(control.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
+    }
+
+    if (m_variant != Ant::DatePickerVariant::Borderless && m_variant != Ant::DatePickerVariant::Underlined)
+    {
+        painter.setPen(QPen(borderColor(), token.lineWidth));
+        painter.setBrush(backgroundColor());
+        painter.drawRoundedRect(control.adjusted(0.5, 0.5, -0.5, -0.5), m.radius, m.radius);
+    }
+    else
+    {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(backgroundColor());
+        painter.drawRoundedRect(control, m.radius, m.radius);
+        if (m_variant == Ant::DatePickerVariant::Underlined)
+        {
+            painter.setPen(QPen(borderColor(), focused ? 2 : token.lineWidth));
+            painter.drawLine(QPointF(control.left(), control.bottom() - 0.5), QPointF(control.right(), control.bottom() - 0.5));
+        }
+    }
+
+    QFont f = painter.font();
+    f.setPixelSize(m.fontSize);
+    painter.setFont(f);
+
+    const QString text = hasSelectedDate() ? dateString() : m_placeholderText;
+    QColor textColor = hasSelectedDate() ? token.colorText : token.colorTextPlaceholder;
+    if (!isEnabled())
+    {
+        textColor = token.colorTextDisabled;
+    }
+    painter.setPen(textColor);
+    painter.drawText(control.adjusted(m.paddingX, 0, -(m.iconWidth + m.paddingX), 0), Qt::AlignVCenter | Qt::AlignLeft, text);
+
+    const QRectF icon = iconRect(m);
+    if (canClear())
+    {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(token.colorBgBase);
+        painter.drawEllipse(icon.adjusted(5, 5, -5, -5));
+        painter.setPen(QPen(token.colorTextTertiary, 1.5, Qt::SolidLine, Qt::RoundCap));
+        painter.drawLine(icon.center() + QPointF(-4, -4), icon.center() + QPointF(4, 4));
+        painter.drawLine(icon.center() + QPointF(4, -4), icon.center() + QPointF(-4, 4));
+    }
+    else
+    {
+        painter.setPen(QPen(isEnabled() ? token.colorTextTertiary : token.colorTextDisabled, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(Qt::NoBrush);
+        QRectF cal = icon.adjusted(7, 6, -7, -6);
+        painter.drawRoundedRect(cal, 2, 2);
+        painter.drawLine(QPointF(cal.left(), cal.top() + 5), QPointF(cal.right(), cal.top() + 5));
+        painter.drawLine(QPointF(cal.left() + 4, cal.top() - 2), QPointF(cal.left() + 4, cal.top() + 3));
+        painter.drawLine(QPointF(cal.right() - 4, cal.top() - 2), QPointF(cal.right() - 4, cal.top() + 3));
+    }
+}
+
+void AntDatePicker::enterEvent(QEnterEvent* event)
+{
+    m_hovered = true;
+    update();
+    QWidget::enterEvent(event);
+}
+
+void AntDatePicker::leaveEvent(QEvent* event)
+{
+    m_hovered = false;
+    m_pressed = false;
+    update();
+    QWidget::leaveEvent(event);
+}
+
+void AntDatePicker::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton && isEnabled())
+    {
+        if (canClear() && iconRect(metrics()).contains(event->position()))
+        {
+            clear();
+            event->accept();
+            return;
+        }
+        setFocus(Qt::MouseFocusReason);
+        setOpen(!m_open);
+        event->accept();
+        return;
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void AntDatePicker::keyPressEvent(QKeyEvent* event)
+{
+    if (!isEnabled())
+    {
+        QWidget::keyPressEvent(event);
+        return;
+    }
+
+    if (event->key() == Qt::Key_Space || event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+    {
+        setOpen(!m_open);
+        event->accept();
+        return;
+    }
+    if (event->key() == Qt::Key_Escape)
+    {
+        setOpen(false);
+        event->accept();
+        return;
+    }
+    if (event->key() == Qt::Key_Left || event->key() == Qt::Key_Right)
+    {
+        setPanelDate(m_panelDate.addMonths(event->key() == Qt::Key_Left ? -1 : 1));
+        setOpen(true);
+        event->accept();
+        return;
+    }
+    QWidget::keyPressEvent(event);
+}
+
+void AntDatePicker::focusInEvent(QFocusEvent* event)
+{
+    update();
+    QWidget::focusInEvent(event);
+}
+
+void AntDatePicker::focusOutEvent(QFocusEvent* event)
+{
+    if (!m_popup->isVisible())
+    {
+        setOpen(false);
+    }
+    update();
+    QWidget::focusOutEvent(event);
+}
+
+void AntDatePicker::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::EnabledChange)
+    {
+        updateCursor();
+        if (!isEnabled())
+        {
+            setOpen(false);
+        }
+        update();
+    }
+    QWidget::changeEvent(event);
+}
+
+AntDatePicker::Metrics AntDatePicker::metrics() const
+{
+    const auto& token = antTheme->tokens();
+    Metrics m;
+    m.height = token.controlHeight;
+    m.fontSize = token.fontSize;
+    m.radius = token.borderRadius;
+    m.paddingX = token.paddingSM - token.lineWidth;
+    m.iconWidth = token.fontSize + token.paddingXS * 2;
+    if (m_pickerSize == Ant::DatePickerSize::Large)
+    {
+        m.height = token.controlHeightLG;
+        m.fontSize = token.fontSizeLG;
+    }
+    else if (m_pickerSize == Ant::DatePickerSize::Small)
+    {
+        m.height = token.controlHeightSM;
+        m.fontSize = token.fontSizeSM;
+        m.radius = token.borderRadiusSM;
+        m.paddingX = token.paddingXS;
+    }
+    return m;
+}
+
+QRectF AntDatePicker::controlRect() const
+{
+    const Metrics m = metrics();
+    return QRectF(1, (height() - m.height) / 2.0, width() - 2, m.height);
+}
+
+QRectF AntDatePicker::iconRect(const Metrics& metrics) const
+{
+    const QRectF control = controlRect();
+    return QRectF(control.right() - metrics.iconWidth, control.top(), metrics.iconWidth, control.height());
+}
+
+QColor AntDatePicker::borderColor() const
+{
+    const auto& token = antTheme->tokens();
+    if (!isEnabled())
+    {
+        return token.colorBorderDisabled;
+    }
+    if (m_status == Ant::DatePickerStatus::Error)
+    {
+        return (m_hovered || hasFocus() || m_open) ? token.colorErrorHover : token.colorError;
+    }
+    if (m_status == Ant::DatePickerStatus::Warning)
+    {
+        return (m_hovered || hasFocus() || m_open) ? token.colorWarningHover : token.colorWarning;
+    }
+    if (m_hovered || hasFocus() || m_open)
+    {
+        return token.colorPrimaryHover;
+    }
+    return token.colorBorder;
+}
+
+QColor AntDatePicker::backgroundColor() const
+{
+    const auto& token = antTheme->tokens();
+    if (!isEnabled())
+    {
+        return token.colorBgContainerDisabled;
+    }
+    if (m_variant == Ant::DatePickerVariant::Filled)
+    {
+        return m_hovered ? token.colorFillTertiary : token.colorFillQuaternary;
+    }
+    if (m_variant == Ant::DatePickerVariant::Borderless || m_variant == Ant::DatePickerVariant::Underlined)
+    {
+        return QColor(0, 0, 0, 0);
+    }
+    return token.colorBgContainer;
+}
+
+bool AntDatePicker::canClear() const
+{
+    return isEnabled() && m_allowClear && m_hovered && m_selectedDate.isValid();
+}
+
+void AntDatePicker::updatePopupGeometry()
+{
+    if (!m_popup)
+    {
+        return;
+    }
+    const QPoint globalPos = mapToGlobal(QPoint(0, height() + 4));
+    m_popup->move(globalPos);
+}
+
+void AntDatePicker::setPanelDate(const QDate& date)
+{
+    if (!date.isValid())
+    {
+        return;
+    }
+    m_panelDate = QDate(date.year(), date.month(), 1);
+    if (m_popup)
+    {
+        m_popup->update();
+    }
+}
+
+void AntDatePicker::selectDateFromPopup(const QDate& date)
+{
+    setSelectedDate(date);
+    setOpen(false);
+}
+
+void AntDatePicker::updateCursor()
+{
+    setCursor(isEnabled() ? Qt::PointingHandCursor : Qt::ArrowCursor);
+}

@@ -24,6 +24,7 @@ protected:
 private:
     QWidget* createButtonPage();
     QWidget* createCheckboxPage();
+    QWidget* createDatePickerPage();
     QWidget* createInputPage();
     QWidget* createRadioPage();
     QWidget* createSelectPage();
