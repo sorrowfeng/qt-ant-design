@@ -11,6 +11,7 @@
 #include "core/AntTheme.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
+#include "widgets/AntCheckbox.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntSwitch.h"
 
@@ -71,13 +72,15 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     contentLayout->addWidget(m_stack, 1);
 
     m_stack->addWidget(wrapPage(createButtonPage()));
+    m_stack->addWidget(wrapPage(createCheckboxPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
     m_stack->addWidget(wrapPage(createSwitchPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
     addNavButton(QStringLiteral("Button"), 0);
-    addNavButton(QStringLiteral("Input"), 1);
-    addNavButton(QStringLiteral("Switch"), 2);
-    addNavButton(QStringLiteral("Card"), 3);
+    addNavButton(QStringLiteral("Checkbox"), 1);
+    addNavButton(QStringLiteral("Input"), 2);
+    addNavButton(QStringLiteral("Switch"), 3);
+    addNavButton(QStringLiteral("Card"), 4);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -189,6 +192,72 @@ QWidget* ExampleWindow::createButtonPage()
     block->setButtonType(Ant::ButtonType::Primary);
     block->setBlock(true);
     layout->addWidget(block);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createCheckboxPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(24);
+    auto* unchecked = new AntCheckbox(QStringLiteral("Checkbox"));
+    auto* checked = new AntCheckbox(QStringLiteral("Checked"));
+    checked->setChecked(true);
+    auto* indeterminate = new AntCheckbox(QStringLiteral("Indeterminate"));
+    indeterminate->setIndeterminate(true);
+    basicRow->addWidget(unchecked);
+    basicRow->addWidget(checked);
+    basicRow->addWidget(indeterminate);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Disabled")));
+    auto* disabledRow = new QHBoxLayout();
+    disabledRow->setSpacing(24);
+    auto* disabled = new AntCheckbox(QStringLiteral("Disabled"));
+    disabled->setEnabled(false);
+    auto* disabledChecked = new AntCheckbox(QStringLiteral("Disabled checked"));
+    disabledChecked->setChecked(true);
+    disabledChecked->setEnabled(false);
+    auto* disabledIndeterminate = new AntCheckbox(QStringLiteral("Disabled indeterminate"));
+    disabledIndeterminate->setIndeterminate(true);
+    disabledIndeterminate->setEnabled(false);
+    disabledRow->addWidget(disabled);
+    disabledRow->addWidget(disabledChecked);
+    disabledRow->addWidget(disabledIndeterminate);
+    disabledRow->addStretch();
+    layout->addLayout(disabledRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Controlled")));
+    auto* controlledRow = new QHBoxLayout();
+    controlledRow->setSpacing(18);
+    auto* controller = new AntCheckbox(QStringLiteral("Check all"));
+    auto* optionA = new AntCheckbox(QStringLiteral("Apple"));
+    auto* optionB = new AntCheckbox(QStringLiteral("Pear"));
+    auto updateController = [controller, optionA, optionB]() {
+        const int checkedCount = (optionA->isChecked() ? 1 : 0) + (optionB->isChecked() ? 1 : 0);
+        controller->setIndeterminate(checkedCount == 1);
+        controller->setChecked(checkedCount == 2);
+    };
+    connect(controller, &AntCheckbox::clicked, this, [controller, optionA, optionB]() {
+        optionA->setChecked(controller->isChecked());
+        optionB->setChecked(controller->isChecked());
+    });
+    connect(optionA, &AntCheckbox::checkedChanged, this, updateController);
+    connect(optionB, &AntCheckbox::checkedChanged, this, updateController);
+    controlledRow->addWidget(controller);
+    controlledRow->addSpacing(12);
+    controlledRow->addWidget(optionA);
+    controlledRow->addWidget(optionB);
+    controlledRow->addStretch();
+    layout->addLayout(controlledRow);
+
     layout->addStretch();
     return page;
 }

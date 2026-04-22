@@ -23,6 +23,7 @@ protected:
 
 private:
     QWidget* createButtonPage();
+    QWidget* createCheckboxPage();
     QWidget* createInputPage();
     QWidget* createSwitchPage();
     QWidget* createCardPage();
