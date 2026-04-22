@@ -19,6 +19,7 @@
 #include "widgets/AntRadio.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntSlider.h"
+#include "widgets/AntSpin.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTimePicker.h"
 
@@ -85,6 +86,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createRadioPage()));
     m_stack->addWidget(wrapPage(createSelectPage()));
     m_stack->addWidget(wrapPage(createSliderPage()));
+    m_stack->addWidget(wrapPage(createSpinPage()));
     m_stack->addWidget(wrapPage(createSwitchPage()));
     m_stack->addWidget(wrapPage(createTimePickerPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
@@ -95,9 +97,10 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Radio"), 4);
     addNavButton(QStringLiteral("Select"), 5);
     addNavButton(QStringLiteral("Slider"), 6);
-    addNavButton(QStringLiteral("Switch"), 7);
-    addNavButton(QStringLiteral("TimePicker"), 8);
-    addNavButton(QStringLiteral("Card"), 9);
+    addNavButton(QStringLiteral("Spin"), 7);
+    addNavButton(QStringLiteral("Switch"), 8);
+    addNavButton(QStringLiteral("TimePicker"), 9);
+    addNavButton(QStringLiteral("Card"), 10);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -610,6 +613,62 @@ QWidget* ExampleWindow::createSliderPage()
     stateRow->addWidget(disabled, 1);
     stateRow->addWidget(noTrack, 1);
     layout->addLayout(stateRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createSpinPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
+    auto* sizeRow = new QHBoxLayout();
+    sizeRow->setSpacing(28);
+    auto* small = new AntSpin();
+    small->setSpinSize(Ant::SpinSize::Small);
+    auto* middle = new AntSpin();
+    auto* large = new AntSpin();
+    large->setSpinSize(Ant::SpinSize::Large);
+    sizeRow->addWidget(small);
+    sizeRow->addWidget(middle);
+    sizeRow->addWidget(large);
+    sizeRow->addStretch();
+    layout->addLayout(sizeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Description")));
+    auto* descRow = new QHBoxLayout();
+    descRow->setSpacing(28);
+    auto* loading = new AntSpin();
+    loading->setSpinSize(Ant::SpinSize::Large);
+    loading->setDescription(QStringLiteral("Loading"));
+    auto* percent = new AntSpin();
+    percent->setSpinSize(Ant::SpinSize::Large);
+    percent->setPercent(68);
+    percent->setDescription(QStringLiteral("68%"));
+    auto* hidden = new AntSpin();
+    hidden->setSpinning(false);
+    hidden->setDescription(QStringLiteral("Hidden"));
+    descRow->addWidget(loading);
+    descRow->addWidget(percent);
+    descRow->addWidget(hidden);
+    descRow->addStretch();
+    layout->addLayout(descRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Embedded")));
+    auto* card = new AntCard(QStringLiteral("Loading block"));
+    card->setMinimumHeight(160);
+    auto* cardContent = new QVBoxLayout();
+    auto* embedded = new AntSpin();
+    embedded->setDescription(QStringLiteral("Fetching data"));
+    cardContent->addStretch();
+    cardContent->addWidget(embedded, 0, Qt::AlignCenter);
+    cardContent->addStretch();
+    card->bodyLayout()->addLayout(cardContent);
+    layout->addWidget(card);
 
     layout->addStretch();
     return page;

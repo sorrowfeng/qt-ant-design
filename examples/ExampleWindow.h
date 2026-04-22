@@ -29,6 +29,7 @@ private:
     QWidget* createRadioPage();
     QWidget* createSelectPage();
     QWidget* createSliderPage();
+    QWidget* createSpinPage();
     QWidget* createSwitchPage();
     QWidget* createTimePickerPage();
     QWidget* createCardPage();

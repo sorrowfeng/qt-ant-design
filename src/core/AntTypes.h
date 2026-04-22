@@ -137,6 +137,14 @@ enum class TimePickerVariant
 };
 Q_ENUM_NS(TimePickerVariant)
 
+enum class SpinSize
+{
+    Small,
+    Middle,
+    Large,
+};
+Q_ENUM_NS(SpinSize)
+
 enum class CardSize
 {
     Default,
