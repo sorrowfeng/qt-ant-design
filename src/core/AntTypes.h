@@ -112,6 +112,31 @@ enum class DatePickerVariant
 };
 Q_ENUM_NS(DatePickerVariant)
 
+enum class TimePickerSize
+{
+    Large,
+    Middle,
+    Small,
+};
+Q_ENUM_NS(TimePickerSize)
+
+enum class TimePickerStatus
+{
+    Normal,
+    Error,
+    Warning,
+};
+Q_ENUM_NS(TimePickerStatus)
+
+enum class TimePickerVariant
+{
+    Outlined,
+    Borderless,
+    Filled,
+    Underlined,
+};
+Q_ENUM_NS(TimePickerVariant)
+
 enum class CardSize
 {
     Default,

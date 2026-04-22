@@ -30,6 +30,7 @@ private:
     QWidget* createSelectPage();
     QWidget* createSliderPage();
     QWidget* createSwitchPage();
+    QWidget* createTimePickerPage();
     QWidget* createCardPage();
     QWidget* wrapPage(QWidget* page);
     QLabel* createSectionTitle(const QString& title);

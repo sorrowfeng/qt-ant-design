@@ -7,6 +7,7 @@
 #include <QMouseEvent>
 #include <QScrollArea>
 #include <QStackedWidget>
+#include <QTime>
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
@@ -19,6 +20,7 @@
 #include "widgets/AntSelect.h"
 #include "widgets/AntSlider.h"
 #include "widgets/AntSwitch.h"
+#include "widgets/AntTimePicker.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -84,6 +86,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createSelectPage()));
     m_stack->addWidget(wrapPage(createSliderPage()));
     m_stack->addWidget(wrapPage(createSwitchPage()));
+    m_stack->addWidget(wrapPage(createTimePickerPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Checkbox"), 1);
@@ -93,7 +96,8 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Select"), 5);
     addNavButton(QStringLiteral("Slider"), 6);
     addNavButton(QStringLiteral("Switch"), 7);
-    addNavButton(QStringLiteral("Card"), 8);
+    addNavButton(QStringLiteral("TimePicker"), 8);
+    addNavButton(QStringLiteral("Card"), 9);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -662,6 +666,93 @@ QWidget* ExampleWindow::createSwitchPage()
     stateRow->addWidget(loading);
     stateRow->addWidget(disabledOff);
     stateRow->addWidget(disabledOn);
+    stateRow->addStretch();
+    layout->addLayout(stateRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createTimePickerPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(16);
+    auto* basic = new AntTimePicker();
+    basic->setPlaceholderText(QStringLiteral("Select time"));
+    auto* selected = new AntTimePicker();
+    selected->setSelectedTime(QTime(13, 30, 56));
+    selected->setAllowClear(true);
+    auto* customFormat = new AntTimePicker();
+    customFormat->setSelectedTime(QTime(9, 15, 0));
+    customFormat->setDisplayFormat(QStringLiteral("HH:mm"));
+    customFormat->setSecondStep(10);
+    basicRow->addWidget(basic);
+    basicRow->addWidget(selected);
+    basicRow->addWidget(customFormat);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
+    auto* sizeRow = new QHBoxLayout();
+    sizeRow->setSpacing(16);
+    auto* large = new AntTimePicker();
+    large->setPickerSize(Ant::TimePickerSize::Large);
+    large->setSelectedTime(QTime::currentTime());
+    auto* middle = new AntTimePicker();
+    middle->setSelectedTime(QTime::currentTime());
+    auto* small = new AntTimePicker();
+    small->setPickerSize(Ant::TimePickerSize::Small);
+    small->setSelectedTime(QTime::currentTime());
+    sizeRow->addWidget(large);
+    sizeRow->addWidget(middle);
+    sizeRow->addWidget(small);
+    sizeRow->addStretch();
+    layout->addLayout(sizeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Status and Variant")));
+    auto* variantRow = new QHBoxLayout();
+    variantRow->setSpacing(16);
+    auto* error = new AntTimePicker();
+    error->setStatus(Ant::TimePickerStatus::Error);
+    error->setPlaceholderText(QStringLiteral("Error"));
+    auto* warning = new AntTimePicker();
+    warning->setStatus(Ant::TimePickerStatus::Warning);
+    warning->setPlaceholderText(QStringLiteral("Warning"));
+    auto* filled = new AntTimePicker();
+    filled->setVariant(Ant::TimePickerVariant::Filled);
+    filled->setSelectedTime(QTime(8, 0, 0));
+    auto* underlined = new AntTimePicker();
+    underlined->setVariant(Ant::TimePickerVariant::Underlined);
+    underlined->setSelectedTime(QTime(18, 45, 0));
+    variantRow->addWidget(error);
+    variantRow->addWidget(warning);
+    variantRow->addWidget(filled);
+    variantRow->addWidget(underlined);
+    variantRow->addStretch();
+    layout->addLayout(variantRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("States and Step")));
+    auto* stateRow = new QHBoxLayout();
+    stateRow->setSpacing(16);
+    auto* disabled = new AntTimePicker();
+    disabled->setSelectedTime(QTime(12, 0, 0));
+    disabled->setEnabled(false);
+    auto* stepped = new AntTimePicker();
+    stepped->setMinuteStep(15);
+    stepped->setSecondStep(15);
+    stepped->setSelectedTime(QTime(10, 30, 30));
+    auto* noNow = new AntTimePicker();
+    noNow->setShowNow(false);
+    noNow->setSelectedTime(QTime(22, 10, 5));
+    stateRow->addWidget(disabled);
+    stateRow->addWidget(stepped);
+    stateRow->addWidget(noNow);
     stateRow->addStretch();
     layout->addLayout(stateRow);
 

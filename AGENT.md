@@ -18,7 +18,7 @@
 - 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
 - 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
 - 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSwitch`、`AntCard` 九个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSwitch`、`AntTimePicker`、`AntCard` 十个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
 - 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
 - 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
 - 本次新增 `AntCheckbox` 组件，支持 checked、indeterminate、disabled、文本标签、键盘切换和焦点描边。
@@ -26,6 +26,7 @@
 - 本次新增 `AntRadio` 组件，支持 checked、disabled、value、文本标签、同父级自动互斥、键盘切换和焦点描边。
 - 本次新增 `AntSelect` 组件，支持 options、placeholder、allowClear、loading、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和键盘选择。
 - 本次新增 `AntSlider` 组件，支持 min/max/value/step、水平/垂直方向、reverse、dots、included、disabled、键盘调节和 handle hover/focus 动画。
+- 本次新增 `AntTimePicker` 组件，支持 selectedTime、displayFormat、placeholder、allowClear、hour/minute/second step、showNow、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和自绘三列时间 popup。
 - CMake 增加安装规则，安装到仓库根目录 `install/` 时会输出示例程序、静态库、头文件和 CMake targets；Windows 下会尝试调用 `windeployqt` 部署 Qt 运行依赖。
 
 ## 已移植组件
@@ -89,6 +90,12 @@
   - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制胶囊轨道、白色滑块、文本、焦点描边和 loading spinner。
   - 交互方式：鼠标点击切换，支持 Space/Enter 键盘切换，使用 `QPropertyAnimation` 绘制滑块位置和按压拉伸动画。
 
+- [x] `AntTimePicker`
+  - 对应 Ant Design TimePicker。
+  - 支持属性：`selectedTime`、`displayFormat`、`placeholderText`、`pickerSize`、`status`、`variant`、`allowClear`、`open`、`hourStep`、`minuteStep`、`secondStep`、`showNow`。
+  - 支持信号：`selectedTimeChanged`、`timeStringChanged`、`openChanged`、`cleared`、`accepted`。
+  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制输入框、状态边框、清除按钮和时钟图标；popup 中绘制 hour/minute/second 三列、Now 和 OK。
+  - 交互方式：支持鼠标展开、滚轮调节列、选择时间、Now/OK 和 Space/Enter/Escape 键盘操作。
 ### 数据展示
 
 - [x] `AntCard`
@@ -133,7 +140,6 @@
 - [ ] `AntTable`：表格。
 - [ ] `AntTree`：树形控件。
 - [ ] `AntTreeSelect`：树选择。
-- [ ] `AntTimePicker`：时间选择。
 - [ ] `AntCalendar`：日历。
 - [ ] `AntUpload`：上传。
 - [ ] `AntDrawer`：抽屉。
@@ -177,6 +183,7 @@
 - `AntSelect`：基础选择、allowClear、尺寸、状态、变体、loading、disabled 和禁用选项。
 - `AntSlider`：基础滑动输入、step/dots、reverse、垂直方向、disabled 和 included=false。
 - `AntSwitch`：checked/unchecked、小尺寸、文本、loading、disabled。
+- `AntTimePicker`：基础选择、自定义格式、尺寸、状态、变体、step、showNow 和 disabled。
 - `AntCard`：默认卡片、hoverable 卡片、loading 卡片、操作区卡片。
 
 运行方式：
