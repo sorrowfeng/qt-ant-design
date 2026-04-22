@@ -13,6 +13,7 @@
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntInput.h"
+#include "widgets/AntRadio.h"
 #include "widgets/AntSwitch.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
@@ -74,13 +75,15 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createButtonPage()));
     m_stack->addWidget(wrapPage(createCheckboxPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
+    m_stack->addWidget(wrapPage(createRadioPage()));
     m_stack->addWidget(wrapPage(createSwitchPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Checkbox"), 1);
     addNavButton(QStringLiteral("Input"), 2);
-    addNavButton(QStringLiteral("Switch"), 3);
-    addNavButton(QStringLiteral("Card"), 4);
+    addNavButton(QStringLiteral("Radio"), 3);
+    addNavButton(QStringLiteral("Switch"), 4);
+    addNavButton(QStringLiteral("Card"), 5);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -301,6 +304,57 @@ QWidget* ExampleWindow::createInputPage()
     layout->addWidget(password);
     layout->addWidget(error);
     layout->addWidget(disabled);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createRadioPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(24);
+    auto* radioA = new AntRadio(QStringLiteral("Option A"));
+    auto* radioB = new AntRadio(QStringLiteral("Option B"));
+    auto* radioC = new AntRadio(QStringLiteral("Option C"));
+    radioA->setChecked(true);
+    basicRow->addWidget(radioA);
+    basicRow->addWidget(radioB);
+    basicRow->addWidget(radioC);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Disabled")));
+    auto* disabledRow = new QHBoxLayout();
+    disabledRow->setSpacing(24);
+    auto* disabled = new AntRadio(QStringLiteral("Disabled"));
+    disabled->setEnabled(false);
+    auto* disabledChecked = new AntRadio(QStringLiteral("Disabled checked"));
+    disabledChecked->setChecked(true);
+    disabledChecked->setEnabled(false);
+    disabledRow->addWidget(disabled);
+    disabledRow->addWidget(disabledChecked);
+    disabledRow->addStretch();
+    layout->addLayout(disabledRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Vertical Group")));
+    auto* group = new QWidget();
+    auto* groupLayout = new QVBoxLayout(group);
+    groupLayout->setContentsMargins(0, 0, 0, 0);
+    groupLayout->setSpacing(12);
+    auto* apple = new AntRadio(QStringLiteral("Apple"));
+    auto* pear = new AntRadio(QStringLiteral("Pear"));
+    auto* orange = new AntRadio(QStringLiteral("Orange"));
+    pear->setChecked(true);
+    groupLayout->addWidget(apple);
+    groupLayout->addWidget(pear);
+    groupLayout->addWidget(orange);
+    layout->addWidget(group);
+
     layout->addStretch();
     return page;
 }

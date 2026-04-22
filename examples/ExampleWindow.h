@@ -25,6 +25,7 @@ private:
     QWidget* createButtonPage();
     QWidget* createCheckboxPage();
     QWidget* createInputPage();
+    QWidget* createRadioPage();
     QWidget* createSwitchPage();
     QWidget* createCardPage();
     QWidget* wrapPage(QWidget* page);
