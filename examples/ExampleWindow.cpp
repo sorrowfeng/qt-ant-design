@@ -1,0 +1,322 @@
+#include "ExampleWindow.h"
+
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QMouseEvent>
+#include <QScrollArea>
+#include <QStackedWidget>
+#include <QVBoxLayout>
+
+#include "core/AntTheme.h"
+#include "widgets/AntButton.h"
+#include "widgets/AntCard.h"
+#include "widgets/AntInput.h"
+
+ExampleWindow::ExampleWindow(QWidget* parent)
+    : QMainWindow(parent)
+{
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
+    setAttribute(Qt::WA_TranslucentBackground, false);
+
+    m_central = new QWidget(this);
+    auto* root = new QHBoxLayout(m_central);
+    root->setContentsMargins(0, 0, 0, 0);
+    root->setSpacing(0);
+
+    m_sidebar = new QWidget(m_central);
+    m_sidebar->setFixedWidth(220);
+    auto* sideLayout = new QVBoxLayout(m_sidebar);
+    sideLayout->setContentsMargins(20, 20, 20, 20);
+    sideLayout->setSpacing(12);
+
+    auto* brand = new QLabel(QStringLiteral("qt-ant-design"), m_sidebar);
+    QFont brandFont = brand->font();
+    brandFont.setPixelSize(20);
+    brandFont.setWeight(QFont::DemiBold);
+    brand->setFont(brandFont);
+    sideLayout->addWidget(brand);
+
+    m_navLayout = new QVBoxLayout();
+    m_navLayout->setSpacing(8);
+    sideLayout->addLayout(m_navLayout);
+    sideLayout->addStretch();
+
+    m_content = new QWidget(m_central);
+    auto* contentLayout = new QVBoxLayout(m_content);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
+    contentLayout->setSpacing(0);
+
+    m_titleBar = new QWidget(m_content);
+    m_titleBar->setFixedHeight(64);
+    auto* titleLayout = new QHBoxLayout(m_titleBar);
+    titleLayout->setContentsMargins(28, 0, 28, 0);
+    auto* title = new QLabel(QStringLiteral("Ant Design Qt Widgets"), m_titleBar);
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(18);
+    titleFont.setWeight(QFont::DemiBold);
+    title->setFont(titleFont);
+    titleLayout->addWidget(title);
+    titleLayout->addStretch();
+
+    m_themeButton = new AntButton(QStringLiteral("Dark"), m_titleBar);
+    m_themeButton->setButtonType(Ant::ButtonType::Default);
+    m_themeButton->setButtonShape(Ant::ButtonShape::Round);
+    connect(m_themeButton, &AntButton::clicked, antTheme, &AntTheme::toggleThemeMode);
+    titleLayout->addWidget(m_themeButton);
+
+    m_stack = new QStackedWidget(m_content);
+    contentLayout->addWidget(m_titleBar);
+    contentLayout->addWidget(m_stack, 1);
+
+    m_stack->addWidget(wrapPage(createButtonPage()));
+    m_stack->addWidget(wrapPage(createInputPage()));
+    m_stack->addWidget(wrapPage(createCardPage()));
+    addNavButton(QStringLiteral("Button"), 0);
+    addNavButton(QStringLiteral("Input"), 1);
+    addNavButton(QStringLiteral("Card"), 2);
+
+    root->addWidget(m_sidebar);
+    root->addWidget(m_content, 1);
+    setCentralWidget(m_central);
+
+    connect(antTheme, &AntTheme::themeChanged, this, &ExampleWindow::applyTheme);
+    applyTheme();
+}
+
+void ExampleWindow::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton && m_titleBar->geometry().contains(m_content->mapFrom(this, event->pos())))
+    {
+        m_dragging = true;
+        m_dragOffset = event->globalPosition().toPoint() - frameGeometry().topLeft();
+        event->accept();
+        return;
+    }
+    QMainWindow::mousePressEvent(event);
+}
+
+void ExampleWindow::mouseMoveEvent(QMouseEvent* event)
+{
+    if (m_dragging)
+    {
+        move(event->globalPosition().toPoint() - m_dragOffset);
+        event->accept();
+        return;
+    }
+    QMainWindow::mouseMoveEvent(event);
+}
+
+void ExampleWindow::mouseReleaseEvent(QMouseEvent* event)
+{
+    m_dragging = false;
+    QMainWindow::mouseReleaseEvent(event);
+}
+
+QWidget* ExampleWindow::createButtonPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Types")));
+    auto* typeRow = new QHBoxLayout();
+    typeRow->setSpacing(12);
+    const QList<QPair<QString, Ant::ButtonType>> types = {
+        {QStringLiteral("Primary"), Ant::ButtonType::Primary},
+        {QStringLiteral("Default"), Ant::ButtonType::Default},
+        {QStringLiteral("Dashed"), Ant::ButtonType::Dashed},
+        {QStringLiteral("Text"), Ant::ButtonType::Text},
+        {QStringLiteral("Link"), Ant::ButtonType::Link},
+    };
+    for (const auto& item : types)
+    {
+        auto* button = new AntButton(item.first);
+        button->setButtonType(item.second);
+        typeRow->addWidget(button);
+    }
+    typeRow->addStretch();
+    layout->addLayout(typeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Size and Shape")));
+    auto* shapeRow = new QHBoxLayout();
+    shapeRow->setSpacing(12);
+    auto* large = new AntButton(QStringLiteral("Large"));
+    large->setButtonType(Ant::ButtonType::Primary);
+    large->setButtonSize(Ant::ButtonSize::Large);
+    auto* middle = new AntButton(QStringLiteral("Middle"));
+    middle->setButtonType(Ant::ButtonType::Primary);
+    auto* small = new AntButton(QStringLiteral("Small"));
+    small->setButtonType(Ant::ButtonType::Primary);
+    small->setButtonSize(Ant::ButtonSize::Small);
+    auto* round = new AntButton(QStringLiteral("Round"));
+    round->setButtonShape(Ant::ButtonShape::Round);
+    auto* circle = new AntButton(QStringLiteral("A"));
+    circle->setButtonShape(Ant::ButtonShape::Circle);
+    shapeRow->addWidget(large);
+    shapeRow->addWidget(middle);
+    shapeRow->addWidget(small);
+    shapeRow->addWidget(round);
+    shapeRow->addWidget(circle);
+    shapeRow->addStretch();
+    layout->addLayout(shapeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("States")));
+    auto* stateRow = new QHBoxLayout();
+    stateRow->setSpacing(12);
+    auto* danger = new AntButton(QStringLiteral("Danger"));
+    danger->setDanger(true);
+    auto* ghost = new AntButton(QStringLiteral("Ghost"));
+    ghost->setButtonType(Ant::ButtonType::Primary);
+    ghost->setGhost(true);
+    auto* loading = new AntButton(QStringLiteral("Loading"));
+    loading->setButtonType(Ant::ButtonType::Primary);
+    loading->setLoading(true);
+    auto* disabled = new AntButton(QStringLiteral("Disabled"));
+    disabled->setEnabled(false);
+    stateRow->addWidget(danger);
+    stateRow->addWidget(ghost);
+    stateRow->addWidget(loading);
+    stateRow->addWidget(disabled);
+    stateRow->addStretch();
+    layout->addLayout(stateRow);
+
+    auto* block = new AntButton(QStringLiteral("Block Button"));
+    block->setButtonType(Ant::ButtonType::Primary);
+    block->setBlock(true);
+    layout->addWidget(block);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createInputPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(18);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* large = new AntInput();
+    large->setPlaceholderText(QStringLiteral("Large input"));
+    large->setInputSize(Ant::InputSize::Large);
+    auto* middle = new AntInput();
+    middle->setPlaceholderText(QStringLiteral("Middle input with clear"));
+    middle->setAllowClear(true);
+    auto* small = new AntInput();
+    small->setPlaceholderText(QStringLiteral("Small input"));
+    small->setInputSize(Ant::InputSize::Small);
+    layout->addWidget(large);
+    layout->addWidget(middle);
+    layout->addWidget(small);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Addon and Status")));
+    auto* addon = new AntInput();
+    addon->setAddonBefore(QStringLiteral("https://"));
+    addon->setAddonAfter(QStringLiteral(".com"));
+    addon->setText(QStringLiteral("ant.design"));
+    auto* password = new AntInput();
+    password->setPlaceholderText(QStringLiteral("Password"));
+    password->setPasswordMode(true);
+    auto* error = new AntInput();
+    error->setText(QStringLiteral("Invalid value"));
+    error->setStatus(Ant::InputStatus::Error);
+    auto* disabled = new AntInput();
+    disabled->setText(QStringLiteral("Disabled"));
+    disabled->setEnabled(false);
+    layout->addWidget(addon);
+    layout->addWidget(password);
+    layout->addWidget(error);
+    layout->addWidget(disabled);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createCardPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(18);
+
+    auto* row = new QHBoxLayout();
+    row->setSpacing(18);
+    auto* basic = new AntCard(QStringLiteral("Default card"));
+    basic->setExtra(QStringLiteral("More"));
+    basic->setMinimumSize(280, 180);
+    basic->bodyLayout()->addWidget(new QLabel(QStringLiteral("Card content\nCard content\nCard content")));
+
+    auto* hoverable = new AntCard(QStringLiteral("Hoverable"));
+    hoverable->setHoverable(true);
+    hoverable->setMinimumSize(280, 180);
+    hoverable->bodyLayout()->addWidget(new QLabel(QStringLiteral("Move the mouse over this card.")));
+
+    auto* loading = new AntCard(QStringLiteral("Loading"));
+    loading->setLoading(true);
+    loading->setMinimumSize(280, 180);
+    loading->bodyLayout()->addWidget(new QLabel(QStringLiteral("Loading mask and spinner")));
+    row->addWidget(basic);
+    row->addWidget(hoverable);
+    row->addWidget(loading);
+    layout->addLayout(row);
+
+    auto* actionCard = new AntCard(QStringLiteral("Actions"));
+    actionCard->setMinimumHeight(180);
+    actionCard->bodyLayout()->addWidget(new QLabel(QStringLiteral("Card with action slots.")));
+    actionCard->addActionWidget(new QLabel(QStringLiteral("Edit")));
+    actionCard->addActionWidget(new QLabel(QStringLiteral("Share")));
+    actionCard->addActionWidget(new QLabel(QStringLiteral("Delete")));
+    layout->addWidget(actionCard);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::wrapPage(QWidget* page)
+{
+    auto* scroll = new QScrollArea();
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setWidget(page);
+    return scroll;
+}
+
+QLabel* ExampleWindow::createSectionTitle(const QString& title)
+{
+    auto* label = new QLabel(title);
+    QFont font = label->font();
+    font.setPixelSize(16);
+    font.setWeight(QFont::DemiBold);
+    label->setFont(font);
+    return label;
+}
+
+void ExampleWindow::addNavButton(const QString& text, int pageIndex)
+{
+    auto* button = new AntButton(text, m_sidebar);
+    button->setButtonType(Ant::ButtonType::Text);
+    button->setBlock(true);
+    connect(button, &AntButton::clicked, this, [this, pageIndex]() {
+        m_stack->setCurrentIndex(pageIndex);
+    });
+    m_navLayout->addWidget(button);
+}
+
+void ExampleWindow::applyTheme()
+{
+    const auto& token = antTheme->tokens();
+    m_themeButton->setText(antTheme->themeMode() == Ant::ThemeMode::Dark ? QStringLiteral("Light") : QStringLiteral("Dark"));
+    setStyleSheet(QStringLiteral(
+        "QMainWindow, QWidget { background: %1; color: %2; }"
+        "QScrollArea { border: none; background: %1; }"
+        "QScrollBar:vertical { width: 10px; background: transparent; }"
+        "QScrollBar::handle:vertical { background: %3; border-radius: 5px; min-height: 32px; }"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }")
+                      .arg(token.colorBgLayout.name(QColor::HexArgb),
+                           token.colorText.name(QColor::HexArgb),
+                           token.colorBorder.name(QColor::HexArgb)));
+    m_sidebar->setStyleSheet(QStringLiteral("QWidget { background: %1; } QLabel { color: %2; background: transparent; }")
+                                 .arg(token.colorBgContainer.name(QColor::HexArgb), token.colorText.name(QColor::HexArgb)));
+    m_titleBar->setStyleSheet(QStringLiteral("QWidget { background: %1; } QLabel { color: %2; background: transparent; }")
+                                  .arg(token.colorBgContainer.name(QColor::HexArgb), token.colorText.name(QColor::HexArgb)));
+}
