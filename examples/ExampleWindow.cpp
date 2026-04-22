@@ -14,6 +14,7 @@
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntRadio.h"
+#include "widgets/AntSelect.h"
 #include "widgets/AntSlider.h"
 #include "widgets/AntSwitch.h"
 
@@ -77,6 +78,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createCheckboxPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
+    m_stack->addWidget(wrapPage(createSelectPage()));
     m_stack->addWidget(wrapPage(createSliderPage()));
     m_stack->addWidget(wrapPage(createSwitchPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
@@ -84,9 +86,10 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Checkbox"), 1);
     addNavButton(QStringLiteral("Input"), 2);
     addNavButton(QStringLiteral("Radio"), 3);
-    addNavButton(QStringLiteral("Slider"), 4);
-    addNavButton(QStringLiteral("Switch"), 5);
-    addNavButton(QStringLiteral("Card"), 6);
+    addNavButton(QStringLiteral("Select"), 4);
+    addNavButton(QStringLiteral("Slider"), 5);
+    addNavButton(QStringLiteral("Switch"), 6);
+    addNavButton(QStringLiteral("Card"), 7);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -357,6 +360,100 @@ QWidget* ExampleWindow::createRadioPage()
     groupLayout->addWidget(pear);
     groupLayout->addWidget(orange);
     layout->addWidget(group);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createSelectPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(16);
+    auto* basic = new AntSelect();
+    basic->setPlaceholderText(QStringLiteral("Select a fruit"));
+    basic->addOptions({QStringLiteral("Apple"), QStringLiteral("Pear"), QStringLiteral("Orange")});
+    auto* withValue = new AntSelect();
+    withValue->addOptions({QStringLiteral("China"), QStringLiteral("United States"), QStringLiteral("Japan")});
+    withValue->setCurrentIndex(0);
+    withValue->setAllowClear(true);
+    basicRow->addWidget(basic);
+    basicRow->addWidget(withValue);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
+    auto* sizeRow = new QHBoxLayout();
+    sizeRow->setSpacing(16);
+    auto* large = new AntSelect();
+    large->setSelectSize(Ant::SelectSize::Large);
+    large->addOptions({QStringLiteral("Large"), QStringLiteral("Option")});
+    large->setCurrentIndex(0);
+    auto* middle = new AntSelect();
+    middle->addOptions({QStringLiteral("Middle"), QStringLiteral("Option")});
+    middle->setCurrentIndex(0);
+    auto* small = new AntSelect();
+    small->setSelectSize(Ant::SelectSize::Small);
+    small->addOptions({QStringLiteral("Small"), QStringLiteral("Option")});
+    small->setCurrentIndex(0);
+    sizeRow->addWidget(large);
+    sizeRow->addWidget(middle);
+    sizeRow->addWidget(small);
+    sizeRow->addStretch();
+    layout->addLayout(sizeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Status and Variant")));
+    auto* variantRow = new QHBoxLayout();
+    variantRow->setSpacing(16);
+    auto* error = new AntSelect();
+    error->setStatus(Ant::SelectStatus::Error);
+    error->setPlaceholderText(QStringLiteral("Error"));
+    error->addOptions({QStringLiteral("Invalid option"), QStringLiteral("Valid option")});
+    auto* warning = new AntSelect();
+    warning->setStatus(Ant::SelectStatus::Warning);
+    warning->setPlaceholderText(QStringLiteral("Warning"));
+    warning->addOptions({QStringLiteral("Risky option"), QStringLiteral("Safe option")});
+    auto* filled = new AntSelect();
+    filled->setVariant(Ant::SelectVariant::Filled);
+    filled->addOptions({QStringLiteral("Filled"), QStringLiteral("Outlined")});
+    filled->setCurrentIndex(0);
+    auto* underlined = new AntSelect();
+    underlined->setVariant(Ant::SelectVariant::Underlined);
+    underlined->addOptions({QStringLiteral("Underlined"), QStringLiteral("Borderless")});
+    underlined->setCurrentIndex(0);
+    variantRow->addWidget(error);
+    variantRow->addWidget(warning);
+    variantRow->addWidget(filled);
+    variantRow->addWidget(underlined);
+    variantRow->addStretch();
+    layout->addLayout(variantRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("States")));
+    auto* stateRow = new QHBoxLayout();
+    stateRow->setSpacing(16);
+    auto* disabled = new AntSelect();
+    disabled->addOptions({QStringLiteral("Disabled")});
+    disabled->setCurrentIndex(0);
+    disabled->setEnabled(false);
+    auto* loading = new AntSelect();
+    loading->addOptions({QStringLiteral("Loading"), QStringLiteral("Loaded")});
+    loading->setCurrentIndex(0);
+    loading->setLoading(true);
+    auto* disabledOption = new AntSelect();
+    disabledOption->setPlaceholderText(QStringLiteral("Option disabled"));
+    disabledOption->addOption(QStringLiteral("Enabled"));
+    disabledOption->addOption(QStringLiteral("Disabled option"), QStringLiteral("disabled"), true);
+    disabledOption->addOption(QStringLiteral("Another enabled"));
+    stateRow->addWidget(disabled);
+    stateRow->addWidget(loading);
+    stateRow->addWidget(disabledOption);
+    stateRow->addStretch();
+    layout->addLayout(stateRow);
 
     layout->addStretch();
     return page;

@@ -62,6 +62,31 @@ enum class SwitchSize
 };
 Q_ENUM_NS(SwitchSize)
 
+enum class SelectSize
+{
+    Large,
+    Middle,
+    Small,
+};
+Q_ENUM_NS(SelectSize)
+
+enum class SelectStatus
+{
+    Normal,
+    Error,
+    Warning,
+};
+Q_ENUM_NS(SelectStatus)
+
+enum class SelectVariant
+{
+    Outlined,
+    Borderless,
+    Filled,
+    Underlined,
+};
+Q_ENUM_NS(SelectVariant)
+
 enum class CardSize
 {
     Default,
