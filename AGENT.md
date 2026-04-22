@@ -10,7 +10,7 @@
   - 重点参考 `ElaTheme` 的单例主题管理、`themeModeChanged` 信号通知、控件 `paintEvent` 自绘方式，以及 `QTimer` 驱动的逐帧动画。
 - 设计规范参考：`D:\Project\GitProject\qt-ant-design\submodules\ant-design`
   - 设计 token 主要参考 `components/theme/themes/seed.ts`、`components/theme/themes/default`、`components/theme/themes/dark`。
-  - 组件样式主要参考 `components/button/`、`components/input/`、`components/card/`。
+  - 组件样式主要参考 `components/button/`、`components/input/`、`components/switch/`、`components/card/`。
 
 ## 本次主要变更说明
 
@@ -18,8 +18,9 @@
 - 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
 - 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
 - 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntButton`、`AntInput`、`AntCard` 三个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `AntButton`、`AntInput`、`AntSwitch`、`AntCard` 四个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
 - 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
+- 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
 - CMake 增加安装规则，安装到仓库根目录 `install/` 时会输出示例程序、静态库、头文件和 CMake targets；Windows 下会尝试调用 `windeployqt` 部署 Qt 运行依赖。
 
 ## 已移植组件
@@ -43,6 +44,14 @@
   - 支持状态：普通、错误、警告、禁用。
   - 支持功能：`addonBefore`、`addonAfter`、前缀图标、后缀图标、自定义前后缀 widget、清除按钮、密码模式。
 
+- [x] `AntSwitch`
+  - 对应 Ant Design Switch。
+  - 支持尺寸：`middle`、`small`。
+  - 支持状态和属性：`checked`、`loading`、`disabled`、`checkedText`、`uncheckedText`。
+  - 支持信号：`checkedChanged`、`toggled`、`clicked`。
+  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制胶囊轨道、白色滑块、文本、焦点描边和 loading spinner。
+  - 交互方式：鼠标点击切换，支持 Space/Enter 键盘切换，使用 `QPropertyAnimation` 绘制滑块位置和按压拉伸动画。
+
 ### 数据展示
 
 - [x] `AntCard`
@@ -61,7 +70,6 @@
 - [ ] `AntIcon`：统一图标接口，供按钮、输入框、菜单、提示类组件复用。
 - [ ] `AntCheckbox`：复选框。
 - [ ] `AntRadio`：单选框。
-- [ ] `AntSwitch`：开关。
 - [ ] `AntSelect`：选择器。
 - [ ] `AntInputNumber`：数字输入框。
 - [ ] `AntForm`：表单布局、校验状态和 label/control 对齐。
@@ -130,6 +138,7 @@
 
 - `AntButton`：类型、尺寸、形状、danger、ghost、loading、disabled、block。
 - `AntInput`：大/中/小尺寸、allowClear、addonBefore/addonAfter、password、error、disabled。
+- `AntSwitch`：checked/unchecked、小尺寸、文本、loading、disabled。
 - `AntCard`：默认卡片、hoverable 卡片、loading 卡片、操作区卡片。
 
 运行方式：

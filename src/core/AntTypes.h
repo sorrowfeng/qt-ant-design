@@ -55,6 +55,13 @@ enum class InputStatus
 };
 Q_ENUM_NS(InputStatus)
 
+enum class SwitchSize
+{
+    Middle,
+    Small,
+};
+Q_ENUM_NS(SwitchSize)
+
 enum class CardSize
 {
     Default,

@@ -24,6 +24,7 @@ protected:
 private:
     QWidget* createButtonPage();
     QWidget* createInputPage();
+    QWidget* createSwitchPage();
     QWidget* createCardPage();
     QWidget* wrapPage(QWidget* page);
     QLabel* createSectionTitle(const QString& title);

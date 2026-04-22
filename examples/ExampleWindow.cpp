@@ -12,6 +12,7 @@
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntInput.h"
+#include "widgets/AntSwitch.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -71,10 +72,12 @@ ExampleWindow::ExampleWindow(QWidget* parent)
 
     m_stack->addWidget(wrapPage(createButtonPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
+    m_stack->addWidget(wrapPage(createSwitchPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Input"), 1);
-    addNavButton(QStringLiteral("Card"), 2);
+    addNavButton(QStringLiteral("Switch"), 2);
+    addNavButton(QStringLiteral("Card"), 3);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -229,6 +232,64 @@ QWidget* ExampleWindow::createInputPage()
     layout->addWidget(password);
     layout->addWidget(error);
     layout->addWidget(disabled);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createSwitchPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(18);
+    auto* offSwitch = new AntSwitch();
+    auto* onSwitch = new AntSwitch();
+    onSwitch->setChecked(true);
+    auto* smallSwitch = new AntSwitch();
+    smallSwitch->setSwitchSize(Ant::SwitchSize::Small);
+    smallSwitch->setChecked(true);
+    basicRow->addWidget(offSwitch);
+    basicRow->addWidget(onSwitch);
+    basicRow->addWidget(smallSwitch);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Text")));
+    auto* textRow = new QHBoxLayout();
+    textRow->setSpacing(18);
+    auto* textSwitch = new AntSwitch();
+    textSwitch->setCheckedText(QStringLiteral("ON"));
+    textSwitch->setUncheckedText(QStringLiteral("OFF"));
+    textSwitch->setChecked(true);
+    auto* zhSwitch = new AntSwitch();
+    zhSwitch->setCheckedText(QStringLiteral("开"));
+    zhSwitch->setUncheckedText(QStringLiteral("关"));
+    textRow->addWidget(textSwitch);
+    textRow->addWidget(zhSwitch);
+    textRow->addStretch();
+    layout->addLayout(textRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("States")));
+    auto* stateRow = new QHBoxLayout();
+    stateRow->setSpacing(18);
+    auto* loading = new AntSwitch();
+    loading->setChecked(true);
+    loading->setLoading(true);
+    auto* disabledOff = new AntSwitch();
+    disabledOff->setEnabled(false);
+    auto* disabledOn = new AntSwitch();
+    disabledOn->setChecked(true);
+    disabledOn->setEnabled(false);
+    stateRow->addWidget(loading);
+    stateRow->addWidget(disabledOff);
+    stateRow->addWidget(disabledOn);
+    stateRow->addStretch();
+    layout->addLayout(stateRow);
+
     layout->addStretch();
     return page;
 }

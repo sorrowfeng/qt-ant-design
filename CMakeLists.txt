@@ -23,6 +23,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntPalette.h
     src/widgets/AntButton.h
     src/widgets/AntInput.h
+    src/widgets/AntSwitch.h
     src/widgets/AntCard.h
 )
 
@@ -31,6 +32,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntPalette.cpp
     src/widgets/AntButton.cpp
     src/widgets/AntInput.cpp
+    src/widgets/AntSwitch.cpp
     src/widgets/AntCard.cpp
     resources/qt-ant-design.qrc
 )
@@ -84,6 +86,7 @@ install(FILES
 install(FILES
     src/widgets/AntButton.h
     src/widgets/AntInput.h
+    src/widgets/AntSwitch.h
     src/widgets/AntCard.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/widgets
 )
