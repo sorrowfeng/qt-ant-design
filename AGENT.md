@@ -1,0 +1,159 @@
+# qt-ant-design Agent Notes
+
+## 项目定位
+
+`qt-ant-design` 是一个 Qt6 Widgets 组件库项目，目标是使用 `QPainter` 手绘方式实现 Ant Design 设计规范中的常用桌面端组件。当前项目以静态库 `qt-ant-design` 输出，并提供 `qt-ant-design-example` 示例程序用于验证主题、交互状态和组件变体。
+
+## 参考来源
+
+- 绘制实现参考：`D:\Project\GitProject\ElaWidgetTools`
+  - 重点参考 `ElaTheme` 的单例主题管理、`themeModeChanged` 信号通知、控件 `paintEvent` 自绘方式，以及 `QTimer` 驱动的逐帧动画。
+- 设计规范参考：`D:\Project\GitProject\qt-ant-design\submodules\ant-design`
+  - 设计 token 主要参考 `components/theme/themes/seed.ts`、`components/theme/themes/default`、`components/theme/themes/dark`。
+  - 组件样式主要参考 `components/button/`、`components/input/`、`components/card/`。
+
+## 本次主要变更说明
+
+- 搭建了 Qt6 Widgets 静态库项目骨架，包含 `src/core`、`src/styles`、`src/widgets`、`examples`、`resources` 目录。
+- 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
+- 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
+- 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
+- 新增 `AntButton`、`AntInput`、`AntCard` 三个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
+- CMake 增加安装规则，安装到仓库根目录 `install/` 时会输出示例程序、静态库、头文件和 CMake targets；Windows 下会尝试调用 `windeployqt` 部署 Qt 运行依赖。
+
+## 已移植组件
+
+### 通用
+
+- [x] `AntButton`
+  - 对应 Ant Design Button。
+  - 支持类型：`primary`、`default`、`dashed`、`text`、`link`。
+  - 支持尺寸：`large`、`middle`、`small`。
+  - 支持形状：`default`、`circle`、`round`。
+  - 支持状态和属性：`loading`、`disabled`、`danger`、`ghost`、`block`。
+  - 绘制方式：继承 `QPushButton`，在 `paintEvent` 中绘制背景、边框、文本、焦点描边和 loading spinner。
+
+### 数据录入
+
+- [x] `AntInput`
+  - 对应 Ant Design Input。
+  - 内部使用 `QLineEdit` 处理文本输入，外层 `AntInput` 负责绘制背景、边框和焦点外发光。
+  - 支持尺寸：`large`、`middle`、`small`。
+  - 支持状态：普通、错误、警告、禁用。
+  - 支持功能：`addonBefore`、`addonAfter`、前缀图标、后缀图标、自定义前后缀 widget、清除按钮、密码模式。
+
+### 数据展示
+
+- [x] `AntCard`
+  - 对应 Ant Design Card。
+  - 支持标题、额外内容、封面 widget、内容区 widget/layout、操作区 widget。
+  - 支持属性：`bordered`、`hoverable`、`loading`、`cardSize`。
+  - 绘制方式：继承 `QFrame`，在 `paintEvent` 中绘制容器背景、边框、分割线、hover 阴影、loading 遮罩和 spinner。
+
+## 待移植组件
+
+以下列表参考 `submodules/ant-design/components/` 中的常用组件，并按当前 Qt Widgets 桌面组件库的优先级排序。
+
+### 高优先级
+
+- [ ] `AntMenu`：导航菜单，后续可替换 example 左侧导航。
+- [ ] `AntIcon`：统一图标接口，供按钮、输入框、菜单、提示类组件复用。
+- [ ] `AntCheckbox`：复选框。
+- [ ] `AntRadio`：单选框。
+- [ ] `AntSwitch`：开关。
+- [ ] `AntSelect`：选择器。
+- [ ] `AntInputNumber`：数字输入框。
+- [ ] `AntForm`：表单布局、校验状态和 label/control 对齐。
+- [ ] `AntModal`：模态对话框。
+- [ ] `AntMessage`：全局轻提示。
+- [ ] `AntNotification`：通知提醒框。
+- [ ] `AntTooltip`：文字提示。
+
+### 中优先级
+
+- [ ] `AntTabs`：标签页。
+- [ ] `AntDropdown`：下拉菜单。
+- [ ] `AntPopover`：气泡卡片。
+- [ ] `AntPopconfirm`：气泡确认框。
+- [ ] `AntAlert`：警告提示。
+- [ ] `AntTag`：标签。
+- [ ] `AntBadge`：徽标数。
+- [ ] `AntAvatar`：头像。
+- [ ] `AntProgress`：进度条。
+- [ ] `AntSpin`：加载中。
+- [ ] `AntSkeleton`：骨架屏。
+- [ ] `AntEmpty`：空状态。
+- [ ] `AntPagination`：分页。
+
+### 后续扩展
+
+- [ ] `AntTable`：表格。
+- [ ] `AntTree`：树形控件。
+- [ ] `AntTreeSelect`：树选择。
+- [ ] `AntDatePicker`：日期选择。
+- [ ] `AntTimePicker`：时间选择。
+- [ ] `AntCalendar`：日历。
+- [ ] `AntUpload`：上传。
+- [ ] `AntDrawer`：抽屉。
+- [ ] `AntBreadcrumb`：面包屑。
+- [ ] `AntSteps`：步骤条。
+- [ ] `AntTimeline`：时间轴。
+- [ ] `AntCollapse`：折叠面板。
+- [ ] `AntDescriptions`：描述列表。
+- [ ] `AntList`：列表。
+- [ ] `AntStatistic`：统计数值。
+- [ ] `AntResult`：结果页。
+- [ ] `AntDivider`：分割线。
+- [ ] `AntSpace`：间距布局。
+- [ ] `AntFlex`：弹性布局。
+- [ ] `AntLayout`：布局容器。
+- [ ] `AntTypography`：排版。
+
+## 开发规范
+
+- 仅支持 Qt6，CMake 使用 `find_package(Qt6 REQUIRED COMPONENTS Core Widgets)`。
+- C++ 标准为 C++17。
+- 组件主体视觉绘制优先使用 `QPainter`，不要依赖 QSS 实现核心外观。
+- 主题、颜色、字体、圆角、间距等视觉值应从 `AntTheme` 和 `AntPalette` 获取，避免在组件中散落硬编码。
+- 组件应连接 `AntTheme::themeChanged` 或 `AntTheme::themeModeChanged`，主题切换时自动刷新布局和绘制。
+- 自绘组件应保留 Qt 原生语义能力：
+  - 按钮类优先继承 `QPushButton`。
+  - 输入类可组合 `QLineEdit` 来保留文本编辑、选择、输入法和快捷键能力。
+  - 容器类可组合 `QWidget`/`QLayout` 暴露插槽区域。
+- loading、hover、pressed、focused 等交互状态应由控件自身状态驱动，并在 `paintEvent` 中统一绘制。
+- 新增组件时同步更新 `AGENT.md` 的“已移植组件”和“待移植组件”章节。
+
+## 示例程序
+
+当前 example 展示了以下组件：
+
+- `AntButton`：类型、尺寸、形状、danger、ghost、loading、disabled、block。
+- `AntInput`：大/中/小尺寸、allowClear、addonBefore/addonAfter、password、error、disabled。
+- `AntCard`：默认卡片、hoverable 卡片、loading 卡片、操作区卡片。
+
+运行方式：
+
+```powershell
+cmake -S . -B build -DCMAKE_INSTALL_PREFIX=D:/Project/GitProject/qt-ant-design/install
+cmake --build build --config Debug
+cmake --install build --config Debug
+.\install\bin\qt-ant-design-example.exe
+```
+
+如果已经执行过安装，也可以直接运行：
+
+```powershell
+.\install\bin\qt-ant-design-example.exe
+```
+
+## 当前安装产物
+
+安装目录为 `D:\Project\GitProject\qt-ant-design\install`。
+
+- `install/bin/qt-ant-design-example.exe`：示例程序。
+- `install/lib/qt-ant-design.lib`：静态库。
+- `install/include/qt-ant-design/`：对外头文件。
+- `install/lib/cmake/qt-ant-design/`：CMake targets。
+
+Windows Debug 构建安装时会尝试通过 `windeployqt` 复制 Qt Debug DLL 和插件到 `install/bin`，便于直接运行示例程序。
