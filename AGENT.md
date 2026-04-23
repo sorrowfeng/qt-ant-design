@@ -18,7 +18,7 @@
 - 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
 - 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
 - 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntAvatar`、`AntBadge`、`AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntPagination`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTag`、`AntTimePicker`、`AntCard` 二十一个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `AntAvatar`、`AntBadge`、`AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntDivider`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntPagination`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTag`、`AntTimePicker`、`AntCard` 二十二个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
 - 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
 - 本次新增 `AntBreadcrumb` 组件，支持 items、separator、href、iconText、disabled、当前项样式和 itemClicked 信号。
 - 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
@@ -38,6 +38,7 @@
 - 本次新增 `AntTag` 组件，支持 text、color、iconText、closable、checkable/checked 和 filled/solid/outlined variant。
 - 本次新增 `AntBadge` 组件，支持 count、dot、showZero、overflowCount、offset、small/middle size、status 状态点和 processing 动画。
 - 本次新增 `AntAvatar` 组件，支持 text、iconText、imagePath、gap、customSize、circle/square shape 和 large/middle/small size。
+- 本次新增 `AntDivider` 组件，支持 horizontal/vertical、start/center/end 标题位置、solid/dashed/dotted variant、plain 和 small/middle/large size。
 - CMake 增加安装规则，安装到仓库根目录 `install/` 时会输出示例程序、静态库、头文件和 CMake targets；Windows 下会尝试调用 `windeployqt` 部署 Qt 运行依赖。
 
 ## 已移植组件
@@ -188,6 +189,15 @@
   - 支持交互：关闭按钮、checkable 点击切换和 clicked/closeRequested 信号。
   - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘标签背景、边框、文本、图标文本和关闭按钮。
 
+### 布局与其他
+
+- [x] `AntDivider`
+  - 对应 Ant Design Divider。
+  - 支持属性：`text`、`plain`、`orientation`、`titlePlacement`、`variant`、`dividerSize`。
+  - 支持方向：`horizontal`、`vertical`。
+  - 支持线型：`solid`、`dashed`、`dotted`。
+  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘水平/垂直分割线、标题文本、两侧 rail 和不同间距尺寸。
+
 ## 待移植组件
 
 以下列表参考 `submodules/ant-design/components/` 中的常用组件，并按当前 Qt Widgets 桌面组件库的优先级排序。
@@ -223,7 +233,6 @@
 - [ ] `AntList`：列表。
 - [ ] `AntStatistic`：统计数值。
 - [ ] `AntResult`：结果页。
-- [ ] `AntDivider`：分割线。
 - [ ] `AntSpace`：间距布局。
 - [ ] `AntFlex`：弹性布局。
 - [ ] `AntLayout`：布局容器。
@@ -253,6 +262,7 @@
 - `AntBreadcrumb`：基础路径、iconText、自定义 separator、disabled 和点击反馈。
 - `AntCheckbox`：未选、选中、半选、禁用和“全选”受控示例。
 - `AntDatePicker`：基础选择、自定义格式、尺寸、状态、变体、禁用和清除。
+- `AntDivider`：水平/垂直、带文字、start/center/end、solid/dashed/dotted 和 small/middle/large 间距。
 - `AntInput`：大/中/小尺寸、allowClear、addonBefore/addonAfter、password、error、disabled。
 - `AntMenu`：inline、inlineCollapsed、horizontal、dark、disabled 和 danger 菜单项。
 - `AntMessage`：info/success/warning/error/loading、不同 duration 和手动关闭。

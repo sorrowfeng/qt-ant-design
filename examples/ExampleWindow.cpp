@@ -21,6 +21,7 @@
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntDatePicker.h"
+#include "widgets/AntDivider.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntMenu.h"
@@ -113,6 +114,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createSwitchPage()));
     m_stack->addWidget(wrapPage(createTimePickerPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
+    m_stack->addWidget(wrapPage(createDividerPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -134,6 +136,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Switch"), 18);
     addNavButton(QStringLiteral("TimePicker"), 19);
     addNavButton(QStringLiteral("Card"), 20);
+    addNavButton(QStringLiteral("Divider"), 21);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -1533,6 +1536,58 @@ QWidget* ExampleWindow::createCardPage()
     actionCard->addActionWidget(new QLabel(QStringLiteral("Share")));
     actionCard->addActionWidget(new QLabel(QStringLiteral("Delete")));
     layout->addWidget(actionCard);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createDividerPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(20);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Horizontal")));
+    layout->addWidget(new QLabel(QStringLiteral("Ant Design")));
+    layout->addWidget(new AntDivider());
+    layout->addWidget(new QLabel(QStringLiteral("Qt Widgets")));
+
+    layout->addWidget(createSectionTitle(QStringLiteral("With Text")));
+    layout->addWidget(new AntDivider(QStringLiteral("Center Text")));
+    auto* start = new AntDivider(QStringLiteral("Start Text"));
+    start->setTitlePlacement(Ant::DividerTitlePlacement::Start);
+    layout->addWidget(start);
+    auto* end = new AntDivider(QStringLiteral("End Text"));
+    end->setTitlePlacement(Ant::DividerTitlePlacement::End);
+    end->setPlain(false);
+    layout->addWidget(end);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Variant and Size")));
+    auto* dashed = new AntDivider(QStringLiteral("Dashed"));
+    dashed->setVariant(Ant::DividerVariant::Dashed);
+    dashed->setDividerSize(Ant::DividerSize::Small);
+    layout->addWidget(dashed);
+    auto* dotted = new AntDivider(QStringLiteral("Dotted"));
+    dotted->setVariant(Ant::DividerVariant::Dotted);
+    dotted->setDividerSize(Ant::DividerSize::Middle);
+    layout->addWidget(dotted);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
+    auto* verticalRow = new QHBoxLayout();
+    verticalRow->setSpacing(0);
+    verticalRow->addWidget(new QLabel(QStringLiteral("Text")));
+    auto* v1 = new AntDivider();
+    v1->setOrientation(Ant::DividerOrientation::Vertical);
+    verticalRow->addWidget(v1);
+    verticalRow->addWidget(new QLabel(QStringLiteral("Link")));
+    auto* v2 = new AntDivider();
+    v2->setOrientation(Ant::DividerOrientation::Vertical);
+    v2->setVariant(Ant::DividerVariant::Dashed);
+    verticalRow->addWidget(v2);
+    verticalRow->addWidget(new QLabel(QStringLiteral("Action")));
+    verticalRow->addStretch();
+    layout->addLayout(verticalRow);
+
     layout->addStretch();
     return page;
 }

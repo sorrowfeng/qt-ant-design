@@ -272,6 +272,37 @@ enum class AvatarSize
 };
 Q_ENUM_NS(AvatarSize)
 
+enum class DividerOrientation
+{
+    Horizontal,
+    Vertical,
+};
+Q_ENUM_NS(DividerOrientation)
+
+enum class DividerTitlePlacement
+{
+    Start,
+    Center,
+    End,
+};
+Q_ENUM_NS(DividerTitlePlacement)
+
+enum class DividerVariant
+{
+    Solid,
+    Dashed,
+    Dotted,
+};
+Q_ENUM_NS(DividerVariant)
+
+enum class DividerSize
+{
+    Large,
+    Middle,
+    Small,
+};
+Q_ENUM_NS(DividerSize)
+
 enum class CardSize
 {
     Default,
