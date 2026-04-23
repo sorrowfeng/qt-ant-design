@@ -23,6 +23,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntButtonStyle.h
     src/styles/AntCheckboxStyle.h
     src/styles/AntInputStyle.h
+    src/styles/AntInputNumberStyle.h
     src/styles/AntPalette.h
     src/styles/AntRadioStyle.h
     src/styles/AntSelectStyle.h
@@ -38,6 +39,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntDivider.h
     src/widgets/AntIcon.h
     src/widgets/AntInput.h
+    src/widgets/AntInputNumber.h
     src/widgets/AntMessage.h
     src/widgets/AntMenu.h
     src/widgets/AntNotification.h
@@ -59,6 +61,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntButtonStyle.cpp
     src/styles/AntCheckboxStyle.cpp
     src/styles/AntInputStyle.cpp
+    src/styles/AntInputNumberStyle.cpp
     src/styles/AntPalette.cpp
     src/styles/AntRadioStyle.cpp
     src/styles/AntSelectStyle.cpp
@@ -74,6 +77,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntDivider.cpp
     src/widgets/AntIcon.cpp
     src/widgets/AntInput.cpp
+    src/widgets/AntInputNumber.cpp
     src/widgets/AntMessage.cpp
     src/widgets/AntMenu.cpp
     src/widgets/AntNotification.cpp
@@ -136,6 +140,7 @@ install(FILES
     src/styles/AntButtonStyle.h
     src/styles/AntCheckboxStyle.h
     src/styles/AntInputStyle.h
+    src/styles/AntInputNumberStyle.h
     src/styles/AntPalette.h
     src/styles/AntRadioStyle.h
     src/styles/AntSelectStyle.h
@@ -155,6 +160,7 @@ install(FILES
     src/widgets/AntDivider.h
     src/widgets/AntIcon.h
     src/widgets/AntInput.h
+    src/widgets/AntInputNumber.h
     src/widgets/AntMessage.h
     src/widgets/AntMenu.h
     src/widgets/AntNotification.h

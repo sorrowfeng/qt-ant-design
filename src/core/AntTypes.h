@@ -55,6 +55,15 @@ enum class InputStatus
 };
 Q_ENUM_NS(InputStatus)
 
+enum class InputNumberVariant
+{
+    Outlined,
+    Borderless,
+    Filled,
+    Underlined,
+};
+Q_ENUM_NS(InputNumberVariant)
+
 enum class SwitchSize
 {
     Middle,

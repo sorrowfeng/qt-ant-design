@@ -25,6 +25,7 @@
 #include "widgets/AntDivider.h"
 #include "widgets/AntIcon.h"
 #include "widgets/AntInput.h"
+#include "widgets/AntInputNumber.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntMenu.h"
 #include "widgets/AntNotification.h"
@@ -118,6 +119,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createCardPage()));
     m_stack->addWidget(wrapPage(createDividerPage()));
     m_stack->addWidget(wrapPage(createIconPage()));
+    m_stack->addWidget(wrapPage(createInputNumberPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -141,6 +143,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Card"), 20);
     addNavButton(QStringLiteral("Divider"), 21);
     addNavButton(QStringLiteral("Icon"), 22);
+    addNavButton(QStringLiteral("InputNumber"), 23);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -1265,6 +1268,118 @@ QWidget* ExampleWindow::createRadioPage()
     groupLayout->addWidget(pear);
     groupLayout->addWidget(orange);
     layout->addWidget(group);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createInputNumberPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(16);
+    auto* basic = new AntInputNumber();
+    basic->setValue(3);
+    auto* placeholder = new AntInputNumber();
+    placeholder->setPlaceholderText(QStringLiteral("Enter number"));
+    auto* noControls = new AntInputNumber();
+    noControls->setControlsVisible(false);
+    noControls->setValue(42);
+    basicRow->addWidget(basic);
+    basicRow->addWidget(placeholder);
+    basicRow->addWidget(noControls);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Sizes")));
+    auto* sizeRow = new QHBoxLayout();
+    sizeRow->setSpacing(16);
+    auto* large = new AntInputNumber();
+    large->setInputSize(Ant::InputSize::Large);
+    large->setValue(100);
+    auto* middle = new AntInputNumber();
+    middle->setValue(100);
+    auto* small = new AntInputNumber();
+    small->setInputSize(Ant::InputSize::Small);
+    small->setValue(100);
+    sizeRow->addWidget(large);
+    sizeRow->addWidget(middle);
+    sizeRow->addWidget(small);
+    sizeRow->addStretch();
+    layout->addLayout(sizeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Status and Variant")));
+    auto* statusRow = new QHBoxLayout();
+    statusRow->setSpacing(16);
+    auto* error = new AntInputNumber();
+    error->setStatus(Ant::InputStatus::Error);
+    error->setValue(12);
+    auto* warning = new AntInputNumber();
+    warning->setStatus(Ant::InputStatus::Warning);
+    warning->setValue(64);
+    auto* filled = new AntInputNumber();
+    filled->setVariant(Ant::InputNumberVariant::Filled);
+    filled->setValue(128);
+    auto* underlined = new AntInputNumber();
+    underlined->setVariant(Ant::InputNumberVariant::Underlined);
+    underlined->setValue(256);
+    statusRow->addWidget(error);
+    statusRow->addWidget(warning);
+    statusRow->addWidget(filled);
+    statusRow->addWidget(underlined);
+    statusRow->addStretch();
+    layout->addLayout(statusRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Precision and Prefix")));
+    auto* formatRow = new QHBoxLayout();
+    formatRow->setSpacing(16);
+    auto* percent = new AntInputNumber();
+    percent->setRange(0, 100);
+    percent->setSuffixText(QStringLiteral("%"));
+    percent->setValue(85);
+    auto* currency = new AntInputNumber();
+    currency->setPrefixText(QStringLiteral("$ "));
+    currency->setRange(0, 100000);
+    currency->setValue(2999);
+    auto* decimal = new AntInputNumber();
+    decimal->setPrecision(2);
+    decimal->setSingleStep(0.25);
+    decimal->setValue(1.50);
+    formatRow->addWidget(percent);
+    formatRow->addWidget(currency);
+    formatRow->addWidget(decimal);
+    formatRow->addStretch();
+    layout->addLayout(formatRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Controlled and Disabled")));
+    auto* controlledRow = new QHBoxLayout();
+    controlledRow->setSpacing(16);
+    auto* quantity = new AntInputNumber();
+    quantity->setRange(1, 20);
+    quantity->setValue(2);
+    auto* summary = new QLabel(QStringLiteral("Quantity: 2"), page);
+    summary->setMinimumWidth(120);
+    connect(quantity, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [summary](double value) {
+        summary->setText(QStringLiteral("Quantity: %1").arg(value, 0, 'f', 0));
+    });
+    auto* disabled = new AntInputNumber();
+    disabled->setValue(10);
+    disabled->setEnabled(false);
+    auto* borderless = new AntInputNumber();
+    borderless->setVariant(Ant::InputNumberVariant::Borderless);
+    borderless->setValue(77);
+    controlledRow->addWidget(quantity);
+    controlledRow->addWidget(summary);
+    controlledRow->addSpacing(12);
+    controlledRow->addWidget(disabled);
+    controlledRow->addWidget(borderless);
+    controlledRow->addStretch();
+    layout->addLayout(controlledRow);
 
     layout->addStretch();
     return page;

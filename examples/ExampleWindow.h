@@ -31,6 +31,7 @@ private:
     QWidget* createDividerPage();
     QWidget* createIconPage();
     QWidget* createInputPage();
+    QWidget* createInputNumberPage();
     QWidget* createMessagePage();
     QWidget* createMenuPage();
     QWidget* createNotificationPage();
