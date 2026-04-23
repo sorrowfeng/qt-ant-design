@@ -36,6 +36,7 @@ private:
     QWidget* createInputNumberPage();
     QWidget* createMessagePage();
     QWidget* createMenuPage();
+    QWidget* createModalPage();
     QWidget* createNotificationPage();
     QWidget* createPopoverPage();
     QWidget* createPopconfirmPage();

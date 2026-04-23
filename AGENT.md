@@ -24,11 +24,11 @@
 
 ## 本次同步
 
-- 同步日期：`2026-04-23`
-- 已实现组件总数：`29`
+- 同步日期：`2026-04-24`
+- 已实现组件总数：`30`
 - 已迁移至 `QProxyStyle` 的组件数：`9`
-- 仍使用 `paintEvent` 的组件数：`20`
-- 示例程序覆盖：`29 / 29`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 仍使用 `paintEvent` 的组件数：`21`
+- 示例程序覆盖：`30 / 30`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
 ## 近期更新摘要
 
@@ -39,6 +39,7 @@
   - `AntDropdown`
   - `AntIcon`
   - `AntInputNumber`
+  - `AntModal`
   - `AntPopover`
   - `AntPopconfirm`
   - `AntTooltip`
@@ -102,6 +103,7 @@
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
 | `AntMessage` | `message` | `paintEvent` | 是 | `Qt::ToolTip` 浮层消息 |
+| `AntModal` | `modal` | `paintEvent` | 是 | 遮罩层、标题/正文、自定义内容、自定义 footer、确认/取消 |
 | `AntNotification` | `notification` | `paintEvent` | 是 | 多 placement 通知 |
 | `AntProgress` | `progress` | `paintEvent` | 是 | `line / circle / dashboard` |
 | `AntSpin` | `spin` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSpinStyle` |
@@ -132,7 +134,6 @@
 ### 高优先级
 
 - [ ] `AntForm`
-- [ ] `AntModal`
 - [ ] `AntSkeleton`
 
 ### 中优先级
@@ -203,7 +204,7 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 29 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 30 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
 
 当前示例页包括：
 
@@ -222,6 +223,7 @@
 - `Notification`
 - `Popover`
 - `Popconfirm`
+- `Modal`
 - `Pagination`
 - `Progress`
 - `Radio`

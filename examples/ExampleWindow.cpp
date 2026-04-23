@@ -30,6 +30,7 @@
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntMenu.h"
+#include "widgets/AntModal.h"
 #include "widgets/AntNotification.h"
 #include "widgets/AntPopover.h"
 #include "widgets/AntPopconfirm.h"
@@ -116,6 +117,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createNotificationPage()));
     m_stack->addWidget(wrapPage(createPopoverPage()));
     m_stack->addWidget(wrapPage(createPopconfirmPage()));
+    m_stack->addWidget(wrapPage(createModalPage()));
     m_stack->addWidget(wrapPage(createPaginationPage()));
     m_stack->addWidget(wrapPage(createProgressPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
@@ -145,20 +147,21 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Notification"), 12);
     addNavButton(QStringLiteral("Popover"), 13);
     addNavButton(QStringLiteral("Popconfirm"), 14);
-    addNavButton(QStringLiteral("Pagination"), 15);
-    addNavButton(QStringLiteral("Progress"), 16);
-    addNavButton(QStringLiteral("Radio"), 17);
-    addNavButton(QStringLiteral("Select"), 18);
-    addNavButton(QStringLiteral("Slider"), 19);
-    addNavButton(QStringLiteral("Spin"), 20);
-    addNavButton(QStringLiteral("Switch"), 21);
-    addNavButton(QStringLiteral("TimePicker"), 22);
-    addNavButton(QStringLiteral("Card"), 23);
-    addNavButton(QStringLiteral("Divider"), 24);
-    addNavButton(QStringLiteral("Icon"), 25);
-    addNavButton(QStringLiteral("InputNumber"), 26);
-    addNavButton(QStringLiteral("Alert"), 27);
-    addNavButton(QStringLiteral("Tooltip"), 28);
+    addNavButton(QStringLiteral("Modal"), 15);
+    addNavButton(QStringLiteral("Pagination"), 16);
+    addNavButton(QStringLiteral("Progress"), 17);
+    addNavButton(QStringLiteral("Radio"), 18);
+    addNavButton(QStringLiteral("Select"), 19);
+    addNavButton(QStringLiteral("Slider"), 20);
+    addNavButton(QStringLiteral("Spin"), 21);
+    addNavButton(QStringLiteral("Switch"), 22);
+    addNavButton(QStringLiteral("TimePicker"), 23);
+    addNavButton(QStringLiteral("Card"), 24);
+    addNavButton(QStringLiteral("Divider"), 25);
+    addNavButton(QStringLiteral("Icon"), 26);
+    addNavButton(QStringLiteral("InputNumber"), 27);
+    addNavButton(QStringLiteral("Alert"), 28);
+    addNavButton(QStringLiteral("Tooltip"), 29);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -1186,6 +1189,146 @@ QWidget* ExampleWindow::createPopconfirmPage()
     variantRow->addWidget(disabledButton);
     variantRow->addStretch();
     layout->addLayout(variantRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createModalPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(16);
+
+    auto* openBasic = new AntButton(QStringLiteral("Open Basic Modal"));
+    openBasic->setButtonType(Ant::ButtonType::Primary);
+    auto* basicModal = new AntModal(this);
+    basicModal->setTitle(QStringLiteral("Delete current draft?"));
+    basicModal->setContent(QStringLiteral("This action will remove the local draft and clear the pending review notes."));
+    basicModal->setOkText(QStringLiteral("Delete"));
+    connect(openBasic, &AntButton::clicked, this, [basicModal]() { basicModal->setOpen(true); });
+    connect(basicModal, &AntModal::confirmed, this, [this]() {
+        AntMessage::success(QStringLiteral("Draft deleted"), this, 1500);
+    });
+    connect(basicModal, &AntModal::canceled, this, [this]() {
+        AntMessage::info(QStringLiteral("Deletion canceled"), this, 1500);
+    });
+
+    auto* openNotice = new AntButton(QStringLiteral("Top Offset"));
+    auto* noticeModal = new AntModal(this);
+    noticeModal->setTitle(QStringLiteral("Publish release notes"));
+    noticeModal->setContent(QStringLiteral("This modal uses a non-centered layout, which is handy for workflows that need more context below."));
+    noticeModal->setCentered(false);
+    noticeModal->setOkText(QStringLiteral("Publish"));
+    connect(openNotice, &AntButton::clicked, this, [noticeModal]() { noticeModal->setOpen(true); });
+
+    basicRow->addWidget(openBasic);
+    basicRow->addWidget(openNotice);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Custom Content")));
+    auto* customRow = new QHBoxLayout();
+    customRow->setSpacing(16);
+
+    auto* inviteButton = new AntButton(QStringLiteral("Invite Teammate"));
+    auto* inviteModal = new AntModal(this);
+    inviteModal->setTitle(QStringLiteral("Invite a teammate"));
+    inviteModal->setOkText(QStringLiteral("Send Invite"));
+    inviteModal->setDialogWidth(560);
+
+    auto* inviteContent = new QWidget(inviteModal);
+    auto* inviteLayout = new QVBoxLayout(inviteContent);
+    inviteLayout->setContentsMargins(0, 0, 0, 0);
+    inviteLayout->setSpacing(12);
+    auto* inviteHint = new QLabel(QStringLiteral("Share access with someone who can help review and ship this change."), inviteContent);
+    inviteHint->setWordWrap(true);
+    auto* nameInput = new AntInput(inviteContent);
+    nameInput->setPlaceholderText(QStringLiteral("Name"));
+    auto* mailInput = new AntInput(inviteContent);
+    mailInput->setPlaceholderText(QStringLiteral("Email"));
+    inviteLayout->addWidget(inviteHint);
+    inviteLayout->addWidget(nameInput);
+    inviteLayout->addWidget(mailInput);
+    inviteModal->setContentWidget(inviteContent);
+    connect(inviteButton, &AntButton::clicked, this, [inviteModal]() { inviteModal->setOpen(true); });
+    connect(inviteModal, &AntModal::confirmed, this, [this, nameInput]() {
+        const QString name = nameInput->text().trimmed().isEmpty() ? QStringLiteral("teammate") : nameInput->text().trimmed();
+        AntNotification::success(QStringLiteral("Invitation queued"),
+                                 QStringLiteral("Invite has been prepared for %1.").arg(name),
+                                 this,
+                                 2200);
+    });
+
+    auto* customFooterButton = new AntButton(QStringLiteral("Custom Footer"));
+    auto* customFooterModal = new AntModal(this);
+    customFooterModal->setTitle(QStringLiteral("Upgrade storage plan"));
+    customFooterModal->setContent(QStringLiteral("Your current workspace is close to its attachment limit. Choose how you'd like to continue."));
+    customFooterModal->setDialogWidth(560);
+    auto* footer = new QWidget(customFooterModal);
+    auto* footerLayout = new QHBoxLayout(footer);
+    footerLayout->setContentsMargins(0, 0, 0, 0);
+    footerLayout->setSpacing(12);
+    auto* remindLater = new AntButton(QStringLiteral("Remind Me Later"), footer);
+    auto* upgradeNow = new AntButton(QStringLiteral("Upgrade Now"), footer);
+    upgradeNow->setButtonType(Ant::ButtonType::Primary);
+    footerLayout->addStretch();
+    footerLayout->addWidget(remindLater);
+    footerLayout->addWidget(upgradeNow);
+    customFooterModal->setFooterWidget(footer);
+    connect(remindLater, &AntButton::clicked, this, [this, customFooterModal]() {
+        customFooterModal->setOpen(false);
+        AntMessage::info(QStringLiteral("We will remind you next week"), this, 1600);
+    });
+    connect(upgradeNow, &AntButton::clicked, this, [this, customFooterModal]() {
+        customFooterModal->setOpen(false);
+        AntMessage::success(QStringLiteral("Upgrade flow started"), this, 1600);
+    });
+    connect(customFooterButton, &AntButton::clicked, this, [customFooterModal]() { customFooterModal->setOpen(true); });
+
+    customRow->addWidget(inviteButton);
+    customRow->addWidget(customFooterButton);
+    customRow->addStretch();
+    layout->addLayout(customRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Behavior")));
+    auto* behaviorRow = new QHBoxLayout();
+    behaviorRow->setSpacing(16);
+
+    auto* protectedButton = new AntButton(QStringLiteral("Protected Action"));
+    protectedButton->setDanger(true);
+    auto* protectedModal = new AntModal(this);
+    protectedModal->setTitle(QStringLiteral("Stop background deployment?"));
+    protectedModal->setContent(QStringLiteral("Mask click and close icon are disabled here, so users must make an explicit decision."));
+    protectedModal->setMaskClosable(false);
+    protectedModal->setClosable(false);
+    protectedModal->setOkText(QStringLiteral("Stop Now"));
+    protectedModal->setCancelText(QStringLiteral("Keep Running"));
+    connect(protectedButton, &AntButton::clicked, this, [protectedModal]() { protectedModal->setOpen(true); });
+    connect(protectedModal, &AntModal::confirmed, this, [this]() {
+        AntNotification::warning(QStringLiteral("Deployment stopped"),
+                                 QStringLiteral("The running deployment has been interrupted."),
+                                 this,
+                                 2200);
+    });
+
+    auto* soloButton = new AntButton(QStringLiteral("Single Action"));
+    auto* soloModal = new AntModal(this);
+    soloModal->setTitle(QStringLiteral("Session will expire soon"));
+    soloModal->setContent(QStringLiteral("There has been no activity for a while. Continue now to keep the workspace active."));
+    soloModal->setShowCancel(false);
+    soloModal->setOkText(QStringLiteral("Continue Session"));
+    connect(soloButton, &AntButton::clicked, this, [soloModal]() { soloModal->setOpen(true); });
+
+    behaviorRow->addWidget(protectedButton);
+    behaviorRow->addWidget(soloButton);
+    behaviorRow->addStretch();
+    layout->addLayout(behaviorRow);
 
     layout->addStretch();
     return page;
