@@ -222,6 +222,13 @@ enum class DropdownTrigger
 };
 Q_ENUM_NS(DropdownTrigger)
 
+enum class PopoverTrigger
+{
+    Hover,
+    Click,
+};
+Q_ENUM_NS(PopoverTrigger)
+
 enum class NotificationPlacement
 {
     Top,
