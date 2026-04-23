@@ -38,6 +38,7 @@ private:
     QWidget* createMenuPage();
     QWidget* createNotificationPage();
     QWidget* createPopoverPage();
+    QWidget* createPopconfirmPage();
     QWidget* createPaginationPage();
     QWidget* createProgressPage();
     QWidget* createRadioPage();

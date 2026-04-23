@@ -32,6 +32,7 @@
 #include "widgets/AntMenu.h"
 #include "widgets/AntNotification.h"
 #include "widgets/AntPopover.h"
+#include "widgets/AntPopconfirm.h"
 #include "widgets/AntPagination.h"
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
@@ -114,6 +115,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createTagPage()));
     m_stack->addWidget(wrapPage(createNotificationPage()));
     m_stack->addWidget(wrapPage(createPopoverPage()));
+    m_stack->addWidget(wrapPage(createPopconfirmPage()));
     m_stack->addWidget(wrapPage(createPaginationPage()));
     m_stack->addWidget(wrapPage(createProgressPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
@@ -142,20 +144,21 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Tag"), 11);
     addNavButton(QStringLiteral("Notification"), 12);
     addNavButton(QStringLiteral("Popover"), 13);
-    addNavButton(QStringLiteral("Pagination"), 14);
-    addNavButton(QStringLiteral("Progress"), 15);
-    addNavButton(QStringLiteral("Radio"), 16);
-    addNavButton(QStringLiteral("Select"), 17);
-    addNavButton(QStringLiteral("Slider"), 18);
-    addNavButton(QStringLiteral("Spin"), 19);
-    addNavButton(QStringLiteral("Switch"), 20);
-    addNavButton(QStringLiteral("TimePicker"), 21);
-    addNavButton(QStringLiteral("Card"), 22);
-    addNavButton(QStringLiteral("Divider"), 23);
-    addNavButton(QStringLiteral("Icon"), 24);
-    addNavButton(QStringLiteral("InputNumber"), 25);
-    addNavButton(QStringLiteral("Alert"), 26);
-    addNavButton(QStringLiteral("Tooltip"), 27);
+    addNavButton(QStringLiteral("Popconfirm"), 14);
+    addNavButton(QStringLiteral("Pagination"), 15);
+    addNavButton(QStringLiteral("Progress"), 16);
+    addNavButton(QStringLiteral("Radio"), 17);
+    addNavButton(QStringLiteral("Select"), 18);
+    addNavButton(QStringLiteral("Slider"), 19);
+    addNavButton(QStringLiteral("Spin"), 20);
+    addNavButton(QStringLiteral("Switch"), 21);
+    addNavButton(QStringLiteral("TimePicker"), 22);
+    addNavButton(QStringLiteral("Card"), 23);
+    addNavButton(QStringLiteral("Divider"), 24);
+    addNavButton(QStringLiteral("Icon"), 25);
+    addNavButton(QStringLiteral("InputNumber"), 26);
+    addNavButton(QStringLiteral("Alert"), 27);
+    addNavButton(QStringLiteral("Tooltip"), 28);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -1092,6 +1095,97 @@ QWidget* ExampleWindow::createPopoverPage()
     customRow->addWidget(longTextButton);
     customRow->addStretch();
     layout->addLayout(customRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createPopconfirmPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(16);
+
+    auto* deleteButton = new AntButton(QStringLiteral("Delete"));
+    deleteButton->setDanger(true);
+    auto* deleteConfirm = new AntPopconfirm(page);
+    deleteConfirm->setTarget(deleteButton);
+    deleteConfirm->setTitle(QStringLiteral("Delete this record?"));
+    deleteConfirm->setDescription(QStringLiteral("This operation cannot be undone."));
+    connect(deleteConfirm, &AntPopconfirm::confirmRequested, this, [this]() {
+        AntMessage::success(QStringLiteral("Deleted"), this, 1400);
+    });
+    connect(deleteConfirm, &AntPopconfirm::cancelRequested, this, [this]() {
+        AntMessage::info(QStringLiteral("Canceled"), this, 1400);
+    });
+
+    auto* archiveButton = new AntButton(QStringLiteral("Archive"));
+    auto* archiveConfirm = new AntPopconfirm(page);
+    archiveConfirm->setTarget(archiveButton);
+    archiveConfirm->setTitle(QStringLiteral("Archive item?"));
+    archiveConfirm->setDescription(QStringLiteral("You can restore it later from the archive list."));
+    archiveConfirm->setOkText(QStringLiteral("Archive"));
+    archiveConfirm->setCancelText(QStringLiteral("Keep"));
+
+    basicRow->addWidget(deleteButton);
+    basicRow->addWidget(archiveButton);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Placement")));
+    auto* placementRow = new QHBoxLayout();
+    placementRow->setSpacing(16);
+
+    auto* topButton = new AntButton(QStringLiteral("Top"));
+    auto* topConfirm = new AntPopconfirm(page);
+    topConfirm->setTarget(topButton);
+    topConfirm->setPlacement(Ant::TooltipPlacement::Top);
+    topConfirm->setTitle(QStringLiteral("Publish changes now?"));
+
+    auto* rightButton = new AntButton(QStringLiteral("Right"));
+    auto* rightConfirm = new AntPopconfirm(page);
+    rightConfirm->setTarget(rightButton);
+    rightConfirm->setPlacement(Ant::TooltipPlacement::Right);
+    rightConfirm->setTitle(QStringLiteral("Move to next step?"));
+
+    auto* bottomLeftButton = new AntButton(QStringLiteral("BottomLeft"));
+    auto* bottomLeftConfirm = new AntPopconfirm(page);
+    bottomLeftConfirm->setTarget(bottomLeftButton);
+    bottomLeftConfirm->setPlacement(Ant::TooltipPlacement::BottomLeft);
+    bottomLeftConfirm->setTitle(QStringLiteral("Sign out this device?"));
+
+    placementRow->addWidget(topButton);
+    placementRow->addWidget(rightButton);
+    placementRow->addWidget(bottomLeftButton);
+    placementRow->addStretch();
+    layout->addLayout(placementRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Variants")));
+    auto* variantRow = new QHBoxLayout();
+    variantRow->setSpacing(16);
+
+    auto* minimalButton = new AntButton(QStringLiteral("No Cancel"));
+    auto* minimalConfirm = new AntPopconfirm(page);
+    minimalConfirm->setTarget(minimalButton);
+    minimalConfirm->setTitle(QStringLiteral("Proceed with sync?"));
+    minimalConfirm->setShowCancel(false);
+    minimalConfirm->setOkText(QStringLiteral("Continue"));
+
+    auto* disabledButton = new AntButton(QStringLiteral("Disabled"));
+    auto* disabledConfirm = new AntPopconfirm(page);
+    disabledConfirm->setTarget(disabledButton);
+    disabledConfirm->setTitle(QStringLiteral("This should not open"));
+    disabledConfirm->setDisabled(true);
+
+    variantRow->addWidget(minimalButton);
+    variantRow->addWidget(disabledButton);
+    variantRow->addStretch();
+    layout->addLayout(variantRow);
 
     layout->addStretch();
     return page;
