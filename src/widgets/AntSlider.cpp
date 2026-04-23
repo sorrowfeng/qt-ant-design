@@ -3,13 +3,12 @@
 #include <QFocusEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
-#include <QPainter>
 
 #include <algorithm>
 #include <cmath>
 
+#include "../styles/AntSliderStyle.h"
 #include "core/AntTheme.h"
-#include "styles/AntPalette.h"
 
 AntSlider::AntSlider(QWidget* parent)
     : QWidget(parent)
@@ -26,10 +25,14 @@ AntSlider::AntSlider(QWidget* parent)
     m_focusAnimation->setDuration(140);
     m_focusAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
         updateGeometry();
         update();
     });
+
+    auto* sliderStyle = new AntSliderStyle(style());
+    sliderStyle->setParent(this);
+    setStyle(sliderStyle);
 
     updateCursor();
 }
@@ -190,6 +193,10 @@ void AntSlider::setFocusProgress(qreal progress)
     update();
 }
 
+bool AntSlider::isHoveredState() const { return m_hovered; }
+
+bool AntSlider::isPressedState() const { return m_pressed; }
+
 QSize AntSlider::sizeHint() const
 {
     const Metrics m = metrics();
@@ -208,72 +215,6 @@ QSize AntSlider::minimumSizeHint() const
         return QSize(m.controlSize * 3, 96);
     }
     return QSize(96, m.controlSize * 3);
-}
-
-void AntSlider::paintEvent(QPaintEvent* event)
-{
-    Q_UNUSED(event)
-
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const QRectF groove = grooveRect(m);
-    const QRectF track = trackRect(m);
-    const QRectF handle = handleRect(m);
-    const bool interactive = isEnabled();
-    const bool active = interactive && (m_hovered || m_pressed || hasFocus());
-
-    QColor railColor = active ? token.colorFillTertiary : token.colorFillQuaternary;
-    QColor trackColor = active ? token.colorPrimaryHover : token.colorPrimaryBorder;
-    QColor handleBorder = active ? token.colorPrimary : token.colorPrimaryBorder;
-    QColor dotBorder = token.colorBorderSecondary;
-    QColor activeDotBorder = token.colorPrimaryBorder;
-
-    if (!interactive)
-    {
-        railColor = token.colorFillQuaternary;
-        trackColor = token.colorBgContainerDisabled;
-        handleBorder = token.colorTextDisabled;
-        dotBorder = token.colorBorderDisabled;
-        activeDotBorder = token.colorTextDisabled;
-    }
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(railColor);
-    painter.drawRoundedRect(groove, m.railSize / 2.0, m.railSize / 2.0);
-
-    if (m_included)
-    {
-        painter.setBrush(trackColor);
-        painter.drawRoundedRect(track, m.railSize / 2.0, m.railSize / 2.0);
-    }
-
-    if (m_dots)
-    {
-        drawDots(painter, m, groove);
-    }
-
-    if (m_focusProgress > 0.0 && interactive)
-    {
-        QColor outline = AntPalette::alpha(token.colorPrimary, 0.20 * m_focusProgress);
-        painter.setPen(QPen(outline, 6 * m_focusProgress, Qt::SolidLine, Qt::RoundCap));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawEllipse(handle);
-    }
-
-    QColor handleFill = token.colorBgElevated;
-    painter.setPen(QPen(handleBorder, active ? 2.5 : 2.0));
-    painter.setBrush(handleFill);
-    painter.drawEllipse(handle);
-
-    if (m_pressed)
-    {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(AntPalette::alpha(token.colorPrimary, 0.14));
-        painter.drawEllipse(handle.adjusted(-5, -5, 5, 5));
-    }
 }
 
 void AntSlider::enterEvent(QEnterEvent* event)
@@ -580,40 +521,4 @@ void AntSlider::animateFocus(qreal progress)
 void AntSlider::updateCursor()
 {
     setCursor(isEnabled() ? Qt::PointingHandCursor : Qt::ArrowCursor);
-}
-
-void AntSlider::drawDots(QPainter& painter, const Metrics& metrics, const QRectF& groove) const
-{
-    const auto& token = antTheme->tokens();
-    const int count = std::max(1, (m_maximum - m_minimum) / std::max(1, m_singleStep));
-    if (count > 80)
-    {
-        return;
-    }
-
-    QColor dotBorder = isEnabled() ? token.colorBorderSecondary : token.colorBorderDisabled;
-    QColor activeBorder = isEnabled() ? token.colorPrimaryBorder : token.colorTextDisabled;
-    const qreal ratio = m_maximum == m_minimum ? 0.0 : (m_value - m_minimum) / static_cast<qreal>(m_maximum - m_minimum);
-
-    painter.save();
-    painter.setBrush(token.colorBgElevated);
-    for (int i = 0; i <= count; ++i)
-    {
-        const qreal stepRatio = i / static_cast<qreal>(count);
-        const bool active = m_reverse ? stepRatio >= ratio : stepRatio <= ratio;
-        painter.setPen(QPen(active ? activeBorder : dotBorder, 1.5));
-
-        QPointF center;
-        if (m_orientation == Qt::Vertical)
-        {
-            center = QPointF(groove.center().x(), groove.bottom() - groove.height() * stepRatio);
-        }
-        else
-        {
-            center = QPointF(groove.left() + groove.width() * stepRatio, groove.center().y());
-        }
-
-        painter.drawEllipse(center, metrics.dotSize / 2.0, metrics.dotSize / 2.0);
-    }
-    painter.restore();
 }

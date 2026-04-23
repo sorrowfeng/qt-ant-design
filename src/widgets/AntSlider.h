@@ -64,6 +64,8 @@ public:
 
     qreal focusProgress() const;
     void setFocusProgress(qreal progress);
+    bool isHoveredState() const;
+    bool isPressedState() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -83,7 +85,6 @@ Q_SIGNALS:
     void keyboardChanged(bool enabled);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
@@ -117,7 +118,6 @@ private:
     void animateHandle(qreal scale);
     void animateFocus(qreal progress);
     void updateCursor();
-    void drawDots(QPainter& painter, const Metrics& metrics, const QRectF& groove) const;
 
     int m_minimum = 0;
     int m_maximum = 100;

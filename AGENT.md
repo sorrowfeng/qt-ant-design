@@ -141,7 +141,7 @@
   - 对应 Ant Design Slider。
   - 支持属性：`minimum`、`maximum`、`value`、`singleStep`、`orientation`、`reverse`、`dots`、`included`、`keyboard`。
   - 支持信号：`valueChanged`、`sliderMoved`、`sliderPressed`、`sliderReleased`、`changeComplete`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制 rail、track、handle、ticks 和 focus outline。
+  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntSliderStyle`），通过独立 Style 绘制 rail、track、handle、ticks 和 focus outline。
   - 交互方式：支持鼠标点击/拖拽、方向键/Page/Home/End 键盘调节，并通过 `QPropertyAnimation` 绘制 handle 和焦点动画。
 - [x] `AntSpin`
   - 对应 Ant Design Spin。
