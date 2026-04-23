@@ -2,21 +2,10 @@
 
 #include <QEvent>
 #include <QMouseEvent>
-#include <QPainter>
+#include <QStyleOptionButton>
 
+#include "AntButtonStyle.h"
 #include "core/AntTheme.h"
-#include "styles/AntPalette.h"
-
-namespace
-{
-struct ButtonColors
-{
-    QColor background;
-    QColor border;
-    QColor text;
-    Qt::PenStyle borderStyle = Qt::SolidLine;
-};
-}
 
 AntButton::AntButton(QWidget* parent)
     : QPushButton(parent)
@@ -26,6 +15,10 @@ AntButton::AntButton(QWidget* parent)
     setFocusPolicy(Qt::StrongFocus);
     setAttribute(Qt::WA_Hover, true);
     setFlat(true);
+
+    auto* buttonStyle = new AntButtonStyle(style());
+    buttonStyle->setParent(this);
+    setStyle(buttonStyle);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         updateGeometryFromState();
@@ -130,119 +123,15 @@ void AntButton::setBlock(bool block)
 
 QSize AntButton::sizeHint() const
 {
-    const Metrics m = metrics();
-    QFont f = font();
-    f.setPixelSize(m.fontSize);
-    QFontMetrics fm(f);
-    int width = fm.horizontalAdvance(text()) + m.paddingX * 2;
-    if (m_loading)
-        width += m.iconSize + 8;
-    if (m_buttonShape == Ant::ButtonShape::Circle)
-        width = m.height;
-    return QSize(std::max(width, m.height), m.height);
+    QStyleOptionButton option;
+    option.initFrom(this);
+    option.text = text();
+    return style()->sizeFromContents(QStyle::CT_PushButton, &option, QSize(), this);
 }
 
 QSize AntButton::minimumSizeHint() const
 {
     return sizeHint();
-}
-
-void AntButton::paintEvent(QPaintEvent* event)
-{
-    Q_UNUSED(event)
-
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const QRectF outer = rect().adjusted(0, 0, -1, -1);
-    const int radius = cornerRadius(m);
-    const bool active = m_pressed || isDown();
-    const bool plainType = m_buttonType == Ant::ButtonType::Text || m_buttonType == Ant::ButtonType::Link;
-    const QColor accent = semanticColor();
-
-    ButtonColors colors;
-    colors.background = plainType || m_ghost ? QColor(Qt::transparent) : token.colorBgContainer;
-    colors.border = plainType ? QColor(Qt::transparent) : token.colorBorder;
-    colors.text = token.colorText;
-
-    if (m_buttonType == Ant::ButtonType::Primary)
-    {
-        colors.background = accent;
-        colors.border = accent;
-        colors.text = token.colorTextLightSolid;
-        if (m_hovered)
-            colors.background = colors.border = antTheme->hoverColor(accent);
-        if (active)
-            colors.background = colors.border = antTheme->activeColor(accent);
-    }
-    else if (m_buttonType == Ant::ButtonType::Default || m_buttonType == Ant::ButtonType::Dashed)
-    {
-        colors.borderStyle = m_buttonType == Ant::ButtonType::Dashed ? Qt::DashLine : Qt::SolidLine;
-        if (m_danger)
-            colors.text = colors.border = token.colorError;
-        if (m_hovered)
-            colors.text = colors.border = m_danger ? token.colorErrorHover : token.colorPrimaryHover;
-        if (active)
-            colors.text = colors.border = m_danger ? token.colorErrorActive : token.colorPrimaryActive;
-    }
-    else if (m_buttonType == Ant::ButtonType::Text)
-    {
-        colors.text = m_danger ? token.colorError : token.colorText;
-        if (m_hovered)
-            colors.background = token.colorFillTertiary;
-        if (active)
-            colors.background = token.colorFillQuaternary;
-    }
-    else if (m_buttonType == Ant::ButtonType::Link)
-    {
-        colors.text = m_danger ? token.colorError : token.colorLink;
-        if (m_hovered)
-            colors.text = m_danger ? token.colorErrorHover : token.colorLinkHover;
-        if (active)
-            colors.text = m_danger ? token.colorErrorActive : token.colorLinkActive;
-    }
-
-    if (m_ghost && !plainType)
-    {
-        colors.background = QColor(Qt::transparent);
-        if (m_buttonType == Ant::ButtonType::Primary)
-            colors.text = colors.border = accent;
-    }
-
-    if (!isEnabled())
-    {
-        colors.background = plainType || m_ghost ? QColor(Qt::transparent) : token.colorBgContainerDisabled;
-        colors.border = plainType ? QColor(Qt::transparent) : token.colorBorderDisabled;
-        colors.text = token.colorTextDisabled;
-    }
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
-    if (!plainType && isEnabled() && !m_ghost && !active)
-        antTheme->drawEffectShadow(&painter, rect(), 4, radius, m_buttonType == Ant::ButtonType::Primary ? 0.45 : 0.25);
-
-    painter.setBrush(colors.background);
-    painter.setPen(colors.border.alpha() == 0 ? Qt::NoPen : QPen(colors.border, token.lineWidth, colors.borderStyle));
-    painter.drawRoundedRect(outer, radius, radius);
-
-    if (hasFocus() && isEnabled())
-    {
-        QColor focus = AntPalette::alpha(m_danger ? token.colorError : token.colorPrimary, 0.18);
-        painter.setPen(QPen(focus, token.controlOutlineWidth));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(outer.adjusted(2, 2, -2, -2), radius, radius);
-    }
-
-    QRectF textRect = contentRect(m);
-    painter.setFont(font());
-    painter.setPen(colors.text);
-    if (m_loading)
-    {
-        QRectF spinnerRect(textRect.left(), textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
-        drawSpinner(painter, spinnerRect, colors.text);
-        textRect.adjust(m.iconSize + 8, 0, 0, 0);
-    }
-    painter.drawText(textRect, Qt::AlignCenter, text());
 }
 
 void AntButton::enterEvent(QEnterEvent* event)
@@ -329,11 +218,6 @@ QRectF AntButton::contentRect(const Metrics& metrics) const
     return rect().adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
 }
 
-QColor AntButton::semanticColor() const
-{
-    return m_danger ? antTheme->tokens().colorError : antTheme->tokens().colorPrimary;
-}
-
 void AntButton::updateGeometryFromState()
 {
     const Metrics m = metrics();
@@ -346,12 +230,7 @@ void AntButton::updateGeometryFromState()
     updateGeometry();
 }
 
-void AntButton::drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color) const
+int AntButton::spinnerAngle() const
 {
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(QPen(color, 2, Qt::SolidLine, Qt::RoundCap));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect, m_spinnerAngle * 16, 270 * 16);
-    painter.restore();
+    return m_spinnerAngle;
 }

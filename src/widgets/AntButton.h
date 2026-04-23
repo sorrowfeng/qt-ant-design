@@ -38,6 +38,7 @@ public:
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
+    int spinnerAngle() const;
 
 Q_SIGNALS:
     void buttonTypeChanged(Ant::ButtonType type);
@@ -49,7 +50,6 @@ Q_SIGNALS:
     void blockChanged(bool block);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
@@ -69,9 +69,7 @@ private:
     Metrics metrics() const;
     int cornerRadius(const Metrics& metrics) const;
     QRectF contentRect(const Metrics& metrics) const;
-    QColor semanticColor() const;
     void updateGeometryFromState();
-    void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color) const;
 
     Ant::ButtonType m_buttonType = Ant::ButtonType::Default;
     Ant::ButtonSize m_buttonSize = Ant::ButtonSize::Middle;

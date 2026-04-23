@@ -51,7 +51,7 @@
   - 支持尺寸：`large`、`middle`、`small`。
   - 支持形状：`default`、`circle`、`round`。
   - 支持状态和属性：`loading`、`disabled`、`danger`、`ghost`、`block`。
-  - 绘制方式：继承 `QPushButton`，在 `paintEvent` 中绘制背景、边框、文本、焦点描边和 loading spinner。
+  - 绘制方式：继承 `QPushButton`，已迁移至 `AntButtonStyle` / `QProxyStyle`，通过 `drawControl(CE_PushButton)` 绘制背景、边框、文本、焦点描边和 loading spinner。
 
 ### 导航
 
@@ -243,6 +243,8 @@
 - 仅支持 Qt6，CMake 使用 `find_package(Qt6 REQUIRED COMPONENTS Core Widgets)`。
 - C++ 标准为 C++17。
 - 组件主体视觉绘制优先使用 `QPainter`，不要依赖 QSS 实现核心外观。
+- 新增或重构组件优先采用 `QProxyStyle` 架构：组件类负责公开 API、状态维护和信号，`Ant[Component]Style` 负责 `drawControl` / `drawPrimitive` / `drawComplexControl` / `sizeFromContents` 等绘制和尺寸逻辑。
+- 已迁移至 `QProxyStyle` 的组件应在构造函数中安装独立 Style，并在主题变化时触发 `polish` / `updateGeometry` / `update`，确保亮暗主题实时生效。
 - 主题、颜色、字体、圆角、间距等视觉值应从 `AntTheme` 和 `AntPalette` 获取，避免在组件中散落硬编码。
 - 组件应连接 `AntTheme::themeChanged` 或 `AntTheme::themeModeChanged`，主题切换时自动刷新布局和绘制。
 - 自绘组件应保留 Qt 原生语义能力：
