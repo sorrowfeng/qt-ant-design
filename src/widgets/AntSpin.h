@@ -37,6 +37,8 @@ public:
 
     int percent() const;
     void setPercent(int percent);
+    bool isEffectiveSpinning() const;
+    int angle() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -49,7 +51,6 @@ Q_SIGNALS:
     void percentChanged(int percent);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     void changeEvent(QEvent* event) override;
@@ -65,8 +66,6 @@ private:
 
     Metrics metrics() const;
     void updateAnimationState();
-    void drawIndeterminate(QPainter& painter, const QRectF& rect) const;
-    void drawPercent(QPainter& painter, const QRectF& rect) const;
 
     bool m_spinning = true;
     bool m_effectiveSpinning = true;

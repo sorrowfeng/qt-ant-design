@@ -147,7 +147,7 @@
   - 对应 Ant Design Spin。
   - 支持属性：`spinning`、`spinSize`、`description`、`delay`、`percent`。
   - 支持信号：`spinningChanged`、`spinSizeChanged`、`descriptionChanged`、`delayChanged`、`percentChanged`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制旋转点阵、进度环和描述文本。
+  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntSpinStyle`），通过独立 Style 绘制旋转点阵、进度环和描述文本。
   - 交互方式：使用 `QTimer` 逐帧驱动 loading 动画，支持延迟显示和隐藏状态。
 - [x] `AntSwitch`
   - 对应 Ant Design Switch。

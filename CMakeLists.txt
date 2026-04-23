@@ -27,6 +27,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntRadioStyle.h
     src/styles/AntSelectStyle.h
     src/styles/AntSliderStyle.h
+    src/styles/AntSpinStyle.h
     src/styles/AntSwitchStyle.h
     src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
@@ -61,6 +62,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntRadioStyle.cpp
     src/styles/AntSelectStyle.cpp
     src/styles/AntSliderStyle.cpp
+    src/styles/AntSpinStyle.cpp
     src/styles/AntSwitchStyle.cpp
     src/widgets/AntAvatar.cpp
     src/widgets/AntBadge.cpp
@@ -136,6 +138,7 @@ install(FILES
     src/styles/AntRadioStyle.h
     src/styles/AntSelectStyle.h
     src/styles/AntSliderStyle.h
+    src/styles/AntSpinStyle.h
     src/styles/AntSwitchStyle.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/styles
 )

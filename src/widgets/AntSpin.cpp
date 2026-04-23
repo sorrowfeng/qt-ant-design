@@ -1,15 +1,13 @@
 #include "AntSpin.h"
 
 #include <QHideEvent>
-#include <QPainter>
 #include <QShowEvent>
 #include <QTimer>
 
 #include <algorithm>
-#include <cmath>
 
+#include "../styles/AntSpinStyle.h"
 #include "core/AntTheme.h"
-#include "styles/AntPalette.h"
 
 AntSpin::AntSpin(QWidget* parent)
     : QWidget(parent)
@@ -30,10 +28,14 @@ AntSpin::AntSpin(QWidget* parent)
         update();
     });
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
         updateGeometry();
         update();
     });
+
+    auto* spinStyle = new AntSpinStyle(style());
+    spinStyle->setParent(this);
+    setStyle(spinStyle);
 
     updateAnimationState();
 }
@@ -123,6 +125,10 @@ void AntSpin::setPercent(int percent)
     Q_EMIT percentChanged(m_percent);
 }
 
+bool AntSpin::isEffectiveSpinning() const { return m_effectiveSpinning; }
+
+int AntSpin::angle() const { return m_angle; }
+
 QSize AntSpin::sizeHint() const
 {
     const Metrics m = metrics();
@@ -134,45 +140,6 @@ QSize AntSpin::minimumSizeHint() const
 {
     const Metrics m = metrics();
     return QSize(m.indicatorSize + 12, m.indicatorSize + 12);
-}
-
-void AntSpin::paintEvent(QPaintEvent* event)
-{
-    Q_UNUSED(event)
-    if (!m_effectiveSpinning)
-    {
-        return;
-    }
-
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const int totalHeight = m.indicatorSize + (m_description.isEmpty() ? 0 : m.spacing + m.fontSize);
-    QRectF indicator((width() - m.indicatorSize) / 2.0,
-                     (height() - totalHeight) / 2.0,
-                     m.indicatorSize,
-                     m.indicatorSize);
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
-    if (m_percent >= 0)
-    {
-        drawPercent(painter, indicator);
-    }
-    else
-    {
-        drawIndeterminate(painter, indicator);
-    }
-
-    if (!m_description.isEmpty())
-    {
-        QFont f = painter.font();
-        f.setPixelSize(m.fontSize);
-        painter.setFont(f);
-        painter.setPen(token.colorTextSecondary);
-        QRectF textRect(0, indicator.bottom() + m.spacing, width(), m.fontSize + 4);
-        painter.drawText(textRect, Qt::AlignHCenter | Qt::AlignTop, m_description);
-    }
 }
 
 void AntSpin::showEvent(QShowEvent* event)
@@ -228,50 +195,5 @@ void AntSpin::updateAnimationState()
     else if (!shouldAnimate)
     {
         m_animationTimer->stop();
-    }
-}
-
-void AntSpin::drawIndeterminate(QPainter& painter, const QRectF& rect) const
-{
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const QPointF center = rect.center();
-    const qreal radius = rect.width() / 2.0 - m.dotSize / 2.0;
-    constexpr qreal pi = 3.14159265358979323846;
-
-    for (int i = 0; i < 4; ++i)
-    {
-        const qreal deg = (m_angle + i * 90) * pi / 180.0;
-        QColor color = token.colorPrimary;
-        color.setAlphaF(0.35 + 0.16 * i);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(color);
-        const QPointF dot(center.x() + std::cos(deg) * radius, center.y() + std::sin(deg) * radius);
-        painter.drawEllipse(dot, m.dotSize / 2.0, m.dotSize / 2.0);
-    }
-}
-
-void AntSpin::drawPercent(QPainter& painter, const QRectF& rect) const
-{
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const QRectF arcRect = rect.adjusted(2, 2, -2, -2);
-    const int lineWidth = std::max(2, m.indicatorSize / 10);
-
-    painter.setPen(QPen(token.colorFillTertiary, lineWidth, Qt::SolidLine, Qt::RoundCap));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawArc(arcRect, 0, 360 * 16);
-
-    painter.setPen(QPen(token.colorPrimary, lineWidth, Qt::SolidLine, Qt::RoundCap));
-    painter.drawArc(arcRect, 90 * 16, -m_percent * 360 * 16 / 100);
-
-    if (m_spinSize != Ant::SpinSize::Small)
-    {
-        QFont f = painter.font();
-        f.setPixelSize(m_spinSize == Ant::SpinSize::Large ? 10 : 8);
-        f.setWeight(QFont::DemiBold);
-        painter.setFont(f);
-        painter.setPen(token.colorTextSecondary);
-        painter.drawText(rect, Qt::AlignCenter, QStringLiteral("%1").arg(m_percent));
     }
 }
