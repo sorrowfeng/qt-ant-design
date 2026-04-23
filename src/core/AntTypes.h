@@ -239,6 +239,24 @@ enum class TagVariant
 };
 Q_ENUM_NS(TagVariant)
 
+enum class BadgeSize
+{
+    Middle,
+    Small,
+};
+Q_ENUM_NS(BadgeSize)
+
+enum class BadgeStatus
+{
+    None,
+    Success,
+    Processing,
+    Default,
+    Error,
+    Warning,
+};
+Q_ENUM_NS(BadgeStatus)
+
 enum class CardSize
 {
     Default,

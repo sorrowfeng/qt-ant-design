@@ -7,12 +7,14 @@
 #include <QLabel>
 #include <QList>
 #include <QMouseEvent>
+#include <QPoint>
 #include <QScrollArea>
 #include <QStackedWidget>
 #include <QTime>
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
+#include "widgets/AntBadge.h"
 #include "widgets/AntBreadcrumb.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
@@ -97,6 +99,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createMessagePage()));
     m_stack->addWidget(wrapPage(createMenuPage()));
     m_stack->addWidget(wrapPage(createTabsPage()));
+    m_stack->addWidget(wrapPage(createBadgePage()));
     m_stack->addWidget(wrapPage(createTagPage()));
     m_stack->addWidget(wrapPage(createNotificationPage()));
     m_stack->addWidget(wrapPage(createPaginationPage()));
@@ -116,17 +119,18 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Message"), 5);
     addNavButton(QStringLiteral("Menu"), 6);
     addNavButton(QStringLiteral("Tabs"), 7);
-    addNavButton(QStringLiteral("Tag"), 8);
-    addNavButton(QStringLiteral("Notification"), 9);
-    addNavButton(QStringLiteral("Pagination"), 10);
-    addNavButton(QStringLiteral("Progress"), 11);
-    addNavButton(QStringLiteral("Radio"), 12);
-    addNavButton(QStringLiteral("Select"), 13);
-    addNavButton(QStringLiteral("Slider"), 14);
-    addNavButton(QStringLiteral("Spin"), 15);
-    addNavButton(QStringLiteral("Switch"), 16);
-    addNavButton(QStringLiteral("TimePicker"), 17);
-    addNavButton(QStringLiteral("Card"), 18);
+    addNavButton(QStringLiteral("Badge"), 8);
+    addNavButton(QStringLiteral("Tag"), 9);
+    addNavButton(QStringLiteral("Notification"), 10);
+    addNavButton(QStringLiteral("Pagination"), 11);
+    addNavButton(QStringLiteral("Progress"), 12);
+    addNavButton(QStringLiteral("Radio"), 13);
+    addNavButton(QStringLiteral("Select"), 14);
+    addNavButton(QStringLiteral("Slider"), 15);
+    addNavButton(QStringLiteral("Spin"), 16);
+    addNavButton(QStringLiteral("Switch"), 17);
+    addNavButton(QStringLiteral("TimePicker"), 18);
+    addNavButton(QStringLiteral("Card"), 19);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -803,6 +807,85 @@ QWidget* ExampleWindow::createPaginationPage()
     optionRow->addWidget(options);
     optionRow->addWidget(disabled);
     layout->addLayout(optionRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createBadgePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    auto makeAnchor = [](const QString& text) {
+        auto* button = new AntButton(text);
+        button->setButtonType(Ant::ButtonType::Default);
+        button->setFixedSize(86, 40);
+        return button;
+    };
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Count")));
+    auto* countRow = new QHBoxLayout();
+    countRow->setSpacing(28);
+
+    auto* basic = new AntBadge(5);
+    basic->setContentWidget(makeAnchor(QStringLiteral("Inbox")));
+    countRow->addWidget(basic);
+
+    auto* zero = new AntBadge(0);
+    zero->setShowZero(true);
+    zero->setContentWidget(makeAnchor(QStringLiteral("Zero")));
+    countRow->addWidget(zero);
+
+    auto* overflow = new AntBadge(120);
+    overflow->setOverflowCount(99);
+    overflow->setContentWidget(makeAnchor(QStringLiteral("Tasks")));
+    countRow->addWidget(overflow);
+    countRow->addStretch();
+    layout->addLayout(countRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Dot and Size")));
+    auto* dotRow = new QHBoxLayout();
+    dotRow->setSpacing(28);
+
+    auto* dot = new AntBadge();
+    dot->setDot(true);
+    dot->setContentWidget(makeAnchor(QStringLiteral("Notice")));
+    dotRow->addWidget(dot);
+
+    auto* small = new AntBadge(8);
+    small->setBadgeSize(Ant::BadgeSize::Small);
+    small->setContentWidget(makeAnchor(QStringLiteral("Small")));
+    dotRow->addWidget(small);
+
+    auto* color = new AntBadge(3);
+    color->setColor(QStringLiteral("success"));
+    color->setOffset(QPoint(-8, 6));
+    color->setContentWidget(makeAnchor(QStringLiteral("Offset")));
+    dotRow->addWidget(color);
+    dotRow->addStretch();
+    layout->addLayout(dotRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Status")));
+    auto* statusCol = new QVBoxLayout();
+    statusCol->setSpacing(10);
+    const QList<QPair<QString, Ant::BadgeStatus>> statuses = {
+        {QStringLiteral("Success"), Ant::BadgeStatus::Success},
+        {QStringLiteral("Processing"), Ant::BadgeStatus::Processing},
+        {QStringLiteral("Default"), Ant::BadgeStatus::Default},
+        {QStringLiteral("Error"), Ant::BadgeStatus::Error},
+        {QStringLiteral("Warning"), Ant::BadgeStatus::Warning},
+    };
+    for (const auto& item : statuses)
+    {
+        auto* badge = new AntBadge();
+        badge->setStatus(item.second);
+        badge->setText(item.first);
+        statusCol->addWidget(badge);
+    }
+    layout->addLayout(statusCol);
 
     layout->addStretch();
     return page;

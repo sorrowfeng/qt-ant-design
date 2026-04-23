@@ -18,7 +18,7 @@
 - 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
 - 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
 - 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntPagination`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTag`、`AntTimePicker`、`AntCard` 十九个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `AntBadge`、`AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntPagination`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTag`、`AntTimePicker`、`AntCard` 二十个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
 - 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
 - 本次新增 `AntBreadcrumb` 组件，支持 items、separator、href、iconText、disabled、当前项样式和 itemClicked 信号。
 - 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
@@ -36,6 +36,7 @@
 - 本次新增 `AntTimePicker` 组件，支持 selectedTime、displayFormat、placeholder、allowClear、hour/minute/second step、showNow、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和自绘三列时间 popup。
 - 本次新增 `AntTabs` 组件，支持 line/card/editable-card 类型、top/bottom/left/right placement、large/middle/small size、activeKey、centered、closable 和 add 入口。
 - 本次新增 `AntTag` 组件，支持 text、color、iconText、closable、checkable/checked 和 filled/solid/outlined variant。
+- 本次新增 `AntBadge` 组件，支持 count、dot、showZero、overflowCount、offset、small/middle size、status 状态点和 processing 动画。
 - CMake 增加安装规则，安装到仓库根目录 `install/` 时会输出示例程序、静态库、头文件和 CMake targets；Windows 下会尝试调用 `windeployqt` 部署 Qt 运行依赖。
 
 ## 已移植组件
@@ -162,6 +163,12 @@
   - 交互方式：支持鼠标展开、滚轮调节列、选择时间、Now/OK 和 Space/Enter/Escape 键盘操作。
 ### 数据展示
 
+- [x] `AntBadge`
+  - 对应 Ant Design Badge。
+  - 支持属性：`count`、`text`、`color`、`dot`、`showZero`、`overflowCount`、`offset`、`badgeSize`、`status`。
+  - 支持状态：`success`、`processing`、`default`、`error`、`warning`。
+  - 支持内容包裹：可通过 `setContentWidget()` 将徽标叠加到按钮、头像等子控件右上角。
+  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘圆点、数字徽标、状态点、白色描边和 processing 扩散动画。
 - [x] `AntCard`
   - 对应 Ant Design Card。
   - 支持标题、额外内容、封面 widget、内容区 widget/layout、操作区 widget。
@@ -192,7 +199,6 @@
 - [ ] `AntPopover`：气泡卡片。
 - [ ] `AntPopconfirm`：气泡确认框。
 - [ ] `AntAlert`：警告提示。
-- [ ] `AntBadge`：徽标数。
 - [ ] `AntAvatar`：头像。
 - [ ] `AntSkeleton`：骨架屏。
 - [ ] `AntEmpty`：空状态。
@@ -236,6 +242,7 @@
 当前 example 展示了以下组件：
 
 - `AntButton`：类型、尺寸、形状、danger、ghost、loading、disabled、block。
+- `AntBadge`：count、showZero、overflowCount、dot、small、自定义颜色、offset 和 status 状态点。
 - `AntBreadcrumb`：基础路径、iconText、自定义 separator、disabled 和点击反馈。
 - `AntCheckbox`：未选、选中、半选、禁用和“全选”受控示例。
 - `AntDatePicker`：基础选择、自定义格式、尺寸、状态、变体、禁用和清除。
