@@ -203,6 +203,25 @@ enum class TooltipPlacement
 };
 Q_ENUM_NS(TooltipPlacement)
 
+enum class DropdownPlacement
+{
+    Bottom,
+    BottomLeft,
+    BottomRight,
+    Top,
+    TopLeft,
+    TopRight,
+};
+Q_ENUM_NS(DropdownPlacement)
+
+enum class DropdownTrigger
+{
+    Hover,
+    Click,
+    ContextMenu,
+};
+Q_ENUM_NS(DropdownTrigger)
+
 enum class NotificationPlacement
 {
     Top,

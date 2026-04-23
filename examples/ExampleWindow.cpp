@@ -23,6 +23,7 @@
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntDatePicker.h"
+#include "widgets/AntDropdown.h"
 #include "widgets/AntDivider.h"
 #include "widgets/AntIcon.h"
 #include "widgets/AntInput.h"
@@ -102,6 +103,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createBreadcrumbPage()));
     m_stack->addWidget(wrapPage(createCheckboxPage()));
     m_stack->addWidget(wrapPage(createDatePickerPage()));
+    m_stack->addWidget(wrapPage(createDropdownPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
     m_stack->addWidget(wrapPage(createMessagePage()));
     m_stack->addWidget(wrapPage(createMenuPage()));
@@ -128,28 +130,29 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
     addNavButton(QStringLiteral("DatePicker"), 3);
-    addNavButton(QStringLiteral("Input"), 4);
-    addNavButton(QStringLiteral("Message"), 5);
-    addNavButton(QStringLiteral("Menu"), 6);
-    addNavButton(QStringLiteral("Tabs"), 7);
-    addNavButton(QStringLiteral("Badge"), 8);
-    addNavButton(QStringLiteral("Avatar"), 9);
-    addNavButton(QStringLiteral("Tag"), 10);
-    addNavButton(QStringLiteral("Notification"), 11);
-    addNavButton(QStringLiteral("Pagination"), 12);
-    addNavButton(QStringLiteral("Progress"), 13);
-    addNavButton(QStringLiteral("Radio"), 14);
-    addNavButton(QStringLiteral("Select"), 15);
-    addNavButton(QStringLiteral("Slider"), 16);
-    addNavButton(QStringLiteral("Spin"), 17);
-    addNavButton(QStringLiteral("Switch"), 18);
-    addNavButton(QStringLiteral("TimePicker"), 19);
-    addNavButton(QStringLiteral("Card"), 20);
-    addNavButton(QStringLiteral("Divider"), 21);
-    addNavButton(QStringLiteral("Icon"), 22);
-    addNavButton(QStringLiteral("InputNumber"), 23);
-    addNavButton(QStringLiteral("Alert"), 24);
-    addNavButton(QStringLiteral("Tooltip"), 25);
+    addNavButton(QStringLiteral("Dropdown"), 4);
+    addNavButton(QStringLiteral("Input"), 5);
+    addNavButton(QStringLiteral("Message"), 6);
+    addNavButton(QStringLiteral("Menu"), 7);
+    addNavButton(QStringLiteral("Tabs"), 8);
+    addNavButton(QStringLiteral("Badge"), 9);
+    addNavButton(QStringLiteral("Avatar"), 10);
+    addNavButton(QStringLiteral("Tag"), 11);
+    addNavButton(QStringLiteral("Notification"), 12);
+    addNavButton(QStringLiteral("Pagination"), 13);
+    addNavButton(QStringLiteral("Progress"), 14);
+    addNavButton(QStringLiteral("Radio"), 15);
+    addNavButton(QStringLiteral("Select"), 16);
+    addNavButton(QStringLiteral("Slider"), 17);
+    addNavButton(QStringLiteral("Spin"), 18);
+    addNavButton(QStringLiteral("Switch"), 19);
+    addNavButton(QStringLiteral("TimePicker"), 20);
+    addNavButton(QStringLiteral("Card"), 21);
+    addNavButton(QStringLiteral("Divider"), 22);
+    addNavButton(QStringLiteral("Icon"), 23);
+    addNavButton(QStringLiteral("InputNumber"), 24);
+    addNavButton(QStringLiteral("Alert"), 25);
+    addNavButton(QStringLiteral("Tooltip"), 26);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -443,6 +446,99 @@ QWidget* ExampleWindow::createDatePickerPage()
     stateRow->addWidget(disabledValue);
     stateRow->addStretch();
     layout->addLayout(stateRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createDropdownPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(16);
+
+    auto* hoverButton = new AntButton(QStringLiteral("Hover Dropdown"));
+    auto* hoverDropdown = new AntDropdown(page);
+    hoverDropdown->setTarget(hoverButton);
+    hoverDropdown->addItem(QStringLiteral("new"), QStringLiteral("New File"));
+    hoverDropdown->addItem(QStringLiteral("open"), QStringLiteral("Open Recent"));
+    hoverDropdown->addDivider();
+    hoverDropdown->addItem(QStringLiteral("exit"), QStringLiteral("Exit"));
+    connect(hoverDropdown, &AntDropdown::itemTriggered, this, [this](const QString& key) {
+        AntMessage::info(QStringLiteral("Triggered %1").arg(key), this, 1400);
+    });
+
+    auto* clickButton = new AntButton(QStringLiteral("Click Dropdown"));
+    clickButton->setButtonType(Ant::ButtonType::Primary);
+    auto* clickDropdown = new AntDropdown(page);
+    clickDropdown->setTrigger(Ant::DropdownTrigger::Click);
+    clickDropdown->setArrowVisible(true);
+    clickDropdown->setTarget(clickButton);
+    clickDropdown->addItem(QStringLiteral("edit"), QStringLiteral("Edit"));
+    clickDropdown->addItem(QStringLiteral("duplicate"), QStringLiteral("Duplicate"));
+    clickDropdown->addItem(QStringLiteral("archive"), QStringLiteral("Archive"));
+
+    basicRow->addWidget(hoverButton);
+    basicRow->addWidget(clickButton);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Placement")));
+    auto* placementRow = new QHBoxLayout();
+    placementRow->setSpacing(16);
+
+    auto* bottomLeftButton = new AntButton(QStringLiteral("BottomLeft"));
+    auto* bottomLeftDropdown = new AntDropdown(page);
+    bottomLeftDropdown->setTarget(bottomLeftButton);
+    bottomLeftDropdown->setPlacement(Ant::DropdownPlacement::BottomLeft);
+    bottomLeftDropdown->addItem(QStringLiteral("profile"), QStringLiteral("Profile"));
+    bottomLeftDropdown->addItem(QStringLiteral("settings"), QStringLiteral("Settings"));
+
+    auto* bottomRightButton = new AntButton(QStringLiteral("BottomRight"));
+    auto* bottomRightDropdown = new AntDropdown(page);
+    bottomRightDropdown->setTarget(bottomRightButton);
+    bottomRightDropdown->setPlacement(Ant::DropdownPlacement::BottomRight);
+    bottomRightDropdown->setArrowVisible(true);
+    bottomRightDropdown->addItem(QStringLiteral("share"), QStringLiteral("Share"));
+    bottomRightDropdown->addItem(QStringLiteral("export"), QStringLiteral("Export"));
+
+    auto* topButton = new AntButton(QStringLiteral("Top"));
+    auto* topDropdown = new AntDropdown(page);
+    topDropdown->setTrigger(Ant::DropdownTrigger::Click);
+    topDropdown->setTarget(topButton);
+    topDropdown->setPlacement(Ant::DropdownPlacement::Top);
+    topDropdown->addItem(QStringLiteral("refresh"), QStringLiteral("Refresh"));
+    topDropdown->addItem(QStringLiteral("reload"), QStringLiteral("Reload All"));
+
+    placementRow->addWidget(bottomLeftButton);
+    placementRow->addWidget(bottomRightButton);
+    placementRow->addWidget(topButton);
+    placementRow->addStretch();
+    layout->addLayout(placementRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Context Menu")));
+    auto* contextHint = new QLabel(QStringLiteral("Right click the area below to open a context dropdown."), page);
+    layout->addWidget(contextHint);
+
+    auto* contextArea = new QLabel(QStringLiteral("Context trigger area"), page);
+    contextArea->setMinimumSize(260, 120);
+    contextArea->setAlignment(Qt::AlignCenter);
+    contextArea->setStyleSheet(QStringLiteral("QLabel { border: 1px dashed rgba(0,0,0,0.18); border-radius: 8px; }"));
+    auto* contextDropdown = new AntDropdown(page);
+    contextDropdown->setTrigger(Ant::DropdownTrigger::ContextMenu);
+    contextDropdown->setTarget(contextArea);
+    contextDropdown->addItem(QStringLiteral("copy"), QStringLiteral("Copy"));
+    contextDropdown->addItem(QStringLiteral("paste"), QStringLiteral("Paste"));
+    contextDropdown->addItem(QStringLiteral("rename"), QStringLiteral("Rename"));
+    connect(contextDropdown, &AntDropdown::itemTriggered, this, [this](const QString& key) {
+        AntMessage::success(QStringLiteral("Context action: %1").arg(key), this, 1400);
+    });
+    layout->addWidget(contextArea, 0, Qt::AlignLeft);
 
     layout->addStretch();
     return page;

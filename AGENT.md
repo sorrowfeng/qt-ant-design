@@ -25,10 +25,10 @@
 ## 本次同步
 
 - 同步日期：`2026-04-23`
-- 已实现组件总数：`26`
+- 已实现组件总数：`27`
 - 已迁移至 `QProxyStyle` 的组件数：`9`
-- 仍使用 `paintEvent` 的组件数：`17`
-- 示例程序覆盖：`26 / 26`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 仍使用 `paintEvent` 的组件数：`18`
+- 示例程序覆盖：`27 / 27`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
 ## 近期更新摘要
 
@@ -36,6 +36,7 @@
 
 - 新增组件：
   - `AntAlert`
+  - `AntDropdown`
   - `AntIcon`
   - `AntInputNumber`
   - `AntTooltip`
@@ -75,6 +76,7 @@
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
 | `AntBreadcrumb` | `breadcrumb` | `paintEvent` | 是 | 路径项、分隔符、禁用项 |
+| `AntDropdown` | `dropdown` | `paintEvent` | 是 | `hover / click / contextMenu`、placement、arrow、auto flip |
 | `AntMenu` | `menu` | `paintEvent` | 是 | `vertical / horizontal / inline`、明暗主题 |
 | `AntPagination` | `pagination` | `paintEvent` | 是 | `simple / showQuickJumper / showSizeChanger` |
 | `AntTabs` | `tabs` | `paintEvent` | 是 | `line / card / editable-card` |
@@ -127,7 +129,6 @@
 
 - [ ] `AntForm`
 - [ ] `AntModal`
-- [ ] `AntDropdown`
 - [ ] `AntPopover`
 - [ ] `AntPopconfirm`
 - [ ] `AntSkeleton`
@@ -200,7 +201,7 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 26 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 27 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
 
 当前示例页包括：
 
@@ -208,6 +209,7 @@
 - `Breadcrumb`
 - `Checkbox`
 - `DatePicker`
+- `Dropdown`
 - `Input`
 - `Message`
 - `Menu`
