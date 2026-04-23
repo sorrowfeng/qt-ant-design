@@ -26,6 +26,7 @@ private:
     QWidget* createCheckboxPage();
     QWidget* createDatePickerPage();
     QWidget* createInputPage();
+    QWidget* createMessagePage();
     QWidget* createProgressPage();
     QWidget* createRadioPage();
     QWidget* createSelectPage();

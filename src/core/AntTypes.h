@@ -162,6 +162,16 @@ enum class ProgressStatus
 };
 Q_ENUM_NS(ProgressStatus)
 
+enum class MessageType
+{
+    Info,
+    Success,
+    Warning,
+    Error,
+    Loading,
+};
+Q_ENUM_NS(MessageType)
+
 enum class CardSize
 {
     Default,

@@ -18,11 +18,12 @@
 - 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
 - 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
 - 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTimePicker`、`AntCard` 十二个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMessage`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTimePicker`、`AntCard` 十三个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
 - 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
 - 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
 - 本次新增 `AntCheckbox` 组件，支持 checked、indeterminate、disabled、文本标签、键盘切换和焦点描边。
 - 本次新增 `AntDatePicker` 组件，支持 selectedDate、displayFormat、placeholder、allowClear、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和自绘日历 popup。
+- 本次新增 `AntMessage` 组件，支持 info/success/warning/error/loading 全局轻提示、duration、pauseOnHover 和点击关闭。
 - 本次新增 `AntProgress` 组件，支持 percent、line/circle/dashboard type、normal/success/exception/active status、showInfo、strokeWidth 和 circleSize。
 - 本次新增 `AntRadio` 组件，支持 checked、disabled、value、文本标签、同父级自动互斥、键盘切换和焦点描边。
 - 本次新增 `AntSelect` 组件，支持 options、placeholder、allowClear、loading、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和键盘选择。
@@ -65,6 +66,12 @@
   - 支持状态：普通、错误、警告、禁用。
   - 支持功能：`addonBefore`、`addonAfter`、前缀图标、后缀图标、自定义前后缀 widget、清除按钮、密码模式。
 
+- [x] `AntMessage`
+  - 对应 Ant Design Message。
+  - 支持类型：`info`、`success`、`warning`、`error`、`loading`。
+  - 支持静态方法：`open`、`info`、`success`、`warning`、`error`、`loading`。
+  - 支持属性：`text`、`messageType`、`duration`、`pauseOnHover`。
+  - 绘制方式：继承 `QWidget`，以 `Qt::ToolTip` 浮层形式在顶部居中显示，自绘气泡、阴影、状态图标和 loading spinner。
 - [x] `AntProgress`
   - 对应 Ant Design Progress。
   - 支持属性：`percent`、`progressType`、`status`、`showInfo`、`strokeWidth`、`circleSize`。
@@ -129,7 +136,6 @@
 - [ ] `AntInputNumber`：数字输入框。
 - [ ] `AntForm`：表单布局、校验状态和 label/control 对齐。
 - [ ] `AntModal`：模态对话框。
-- [ ] `AntMessage`：全局轻提示。
 - [ ] `AntNotification`：通知提醒框。
 - [ ] `AntTooltip`：文字提示。
 
@@ -191,6 +197,7 @@
 - `AntCheckbox`：未选、选中、半选、禁用和“全选”受控示例。
 - `AntDatePicker`：基础选择、自定义格式、尺寸、状态、变体、禁用和清除。
 - `AntInput`：大/中/小尺寸、allowClear、addonBefore/addonAfter、password、error、disabled。
+- `AntMessage`：info/success/warning/error/loading、不同 duration 和手动关闭。
 - `AntProgress`：线性进度、active/exception/success 状态、circle 和 dashboard。
 - `AntRadio`：基础横向组、禁用、禁用选中和纵向组。
 - `AntSelect`：基础选择、allowClear、尺寸、状态、变体、loading、disabled 和禁用选项。

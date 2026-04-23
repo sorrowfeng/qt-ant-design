@@ -17,6 +17,7 @@
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntInput.h"
+#include "widgets/AntMessage.h"
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
 #include "widgets/AntSelect.h"
@@ -85,6 +86,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createCheckboxPage()));
     m_stack->addWidget(wrapPage(createDatePickerPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
+    m_stack->addWidget(wrapPage(createMessagePage()));
     m_stack->addWidget(wrapPage(createProgressPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
     m_stack->addWidget(wrapPage(createSelectPage()));
@@ -97,14 +99,15 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Checkbox"), 1);
     addNavButton(QStringLiteral("DatePicker"), 2);
     addNavButton(QStringLiteral("Input"), 3);
-    addNavButton(QStringLiteral("Progress"), 4);
-    addNavButton(QStringLiteral("Radio"), 5);
-    addNavButton(QStringLiteral("Select"), 6);
-    addNavButton(QStringLiteral("Slider"), 7);
-    addNavButton(QStringLiteral("Spin"), 8);
-    addNavButton(QStringLiteral("Switch"), 9);
-    addNavButton(QStringLiteral("TimePicker"), 10);
-    addNavButton(QStringLiteral("Card"), 11);
+    addNavButton(QStringLiteral("Message"), 4);
+    addNavButton(QStringLiteral("Progress"), 5);
+    addNavButton(QStringLiteral("Radio"), 6);
+    addNavButton(QStringLiteral("Select"), 7);
+    addNavButton(QStringLiteral("Slider"), 8);
+    addNavButton(QStringLiteral("Spin"), 9);
+    addNavButton(QStringLiteral("Switch"), 10);
+    addNavButton(QStringLiteral("TimePicker"), 11);
+    addNavButton(QStringLiteral("Card"), 12);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -405,6 +408,50 @@ QWidget* ExampleWindow::createInputPage()
     layout->addWidget(password);
     layout->addWidget(error);
     layout->addWidget(disabled);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createMessagePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Types")));
+    auto* typeRow = new QHBoxLayout();
+    typeRow->setSpacing(12);
+    auto* info = new AntButton(QStringLiteral("Info"));
+    auto* success = new AntButton(QStringLiteral("Success"));
+    auto* warning = new AntButton(QStringLiteral("Warning"));
+    auto* error = new AntButton(QStringLiteral("Error"));
+    auto* loading = new AntButton(QStringLiteral("Loading"));
+    connect(info, &AntButton::clicked, this, [this]() { AntMessage::info(QStringLiteral("This is an info message"), this); });
+    connect(success, &AntButton::clicked, this, [this]() { AntMessage::success(QStringLiteral("Saved successfully"), this); });
+    connect(warning, &AntButton::clicked, this, [this]() { AntMessage::warning(QStringLiteral("Please check the warning"), this); });
+    connect(error, &AntButton::clicked, this, [this]() { AntMessage::error(QStringLiteral("Something went wrong"), this); });
+    connect(loading, &AntButton::clicked, this, [this]() { AntMessage::loading(QStringLiteral("Loading data..."), this, 2500); });
+    typeRow->addWidget(info);
+    typeRow->addWidget(success);
+    typeRow->addWidget(warning);
+    typeRow->addWidget(error);
+    typeRow->addWidget(loading);
+    typeRow->addStretch();
+    layout->addLayout(typeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Duration")));
+    auto* durationRow = new QHBoxLayout();
+    durationRow->setSpacing(12);
+    auto* shortMsg = new AntButton(QStringLiteral("1 second"));
+    auto* stickyMsg = new AntButton(QStringLiteral("Manual close"));
+    connect(shortMsg, &AntButton::clicked, this, [this]() { AntMessage::success(QStringLiteral("This closes quickly"), this, 1000); });
+    connect(stickyMsg, &AntButton::clicked, this, [this]() { AntMessage::info(QStringLiteral("Click this message to close it"), this, 0); });
+    durationRow->addWidget(shortMsg);
+    durationRow->addWidget(stickyMsg);
+    durationRow->addStretch();
+    layout->addLayout(durationRow);
+
     layout->addStretch();
     return page;
 }
