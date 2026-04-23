@@ -29,6 +29,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntMessage.h
     src/widgets/AntMenu.h
     src/widgets/AntNotification.h
+    src/widgets/AntPagination.h
     src/widgets/AntProgress.h
     src/widgets/AntRadio.h
     src/widgets/AntSelect.h
@@ -51,6 +52,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntMessage.cpp
     src/widgets/AntMenu.cpp
     src/widgets/AntNotification.cpp
+    src/widgets/AntPagination.cpp
     src/widgets/AntProgress.cpp
     src/widgets/AntRadio.cpp
     src/widgets/AntSelect.cpp
@@ -118,6 +120,7 @@ install(FILES
     src/widgets/AntMessage.h
     src/widgets/AntMenu.h
     src/widgets/AntNotification.h
+    src/widgets/AntPagination.h
     src/widgets/AntProgress.h
     src/widgets/AntRadio.h
     src/widgets/AntSelect.h

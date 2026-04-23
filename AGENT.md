@@ -18,7 +18,7 @@
 - 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
 - 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
 - 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTimePicker`、`AntCard` 十七个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntPagination`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTimePicker`、`AntCard` 十八个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
 - 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
 - 本次新增 `AntBreadcrumb` 组件，支持 items、separator、href、iconText、disabled、当前项样式和 itemClicked 信号。
 - 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
@@ -27,6 +27,7 @@
 - 本次新增 `AntMenu` 组件，支持 vertical/horizontal/inline 模式、light/dark 主题、selectedKey/openKeys、inlineCollapsed、disabled/danger、divider 和内联子菜单。
 - 本次新增 `AntMessage` 组件，支持 info/success/warning/error/loading 全局轻提示、duration、pauseOnHover 和点击关闭。
 - 本次新增 `AntNotification` 组件，支持 info/success/warning/error 全局通知、top/topLeft/topRight/bottom/bottomLeft/bottomRight placement、duration、pauseOnHover、showProgress 和关闭按钮。
+- 本次新增 `AntPagination` 组件，支持 current、pageSize、total、large/middle/small size、disabled、simple、showLessItems、showTotal、showQuickJumper 和 showSizeChanger。
 - 本次新增 `AntProgress` 组件，支持 percent、line/circle/dashboard type、normal/success/exception/active status、showInfo、strokeWidth 和 circleSize。
 - 本次新增 `AntRadio` 组件，支持 checked、disabled、value、文本标签、同父级自动互斥、键盘切换和焦点描边。
 - 本次新增 `AntSelect` 组件，支持 options、placeholder、allowClear、loading、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和键盘选择。
@@ -63,6 +64,12 @@
   - 支持属性：`selectedKey`、`openKeys`、`inlineCollapsed`、`selectable`、`inlineIndent`。
   - 支持条目：普通项、子菜单、子菜单项、分割线、禁用项和 danger 项。
   - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘菜单背景、hover/selected 状态、图标文本、额外信息、展开箭头和选中指示条。
+- [x] `AntPagination`
+  - 对应 Ant Design Pagination。
+  - 支持属性：`current`、`pageSize`、`total`、`disabled`、`simple`、`showLessItems`、`showTotal`、`showQuickJumper`、`showSizeChanger`。
+  - 支持尺寸：`large`、`middle`、`small`。
+  - 支持交互：prev/next、页码跳转、省略号跳转和 pageSize 循环切换。
+  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘页码按钮、激活态、禁用态、省略号、总数文本和选项入口。
 - [x] `AntTabs`
   - 对应 Ant Design Tabs。
   - 支持类型：`line`、`card`、`editable-card`。
@@ -183,8 +190,6 @@
 - [ ] `AntAvatar`：头像。
 - [ ] `AntSkeleton`：骨架屏。
 - [ ] `AntEmpty`：空状态。
-- [ ] `AntPagination`：分页。
-
 ### 后续扩展
 
 - [ ] `AntTable`：表格。
@@ -232,6 +237,7 @@
 - `AntMenu`：inline、inlineCollapsed、horizontal、dark、disabled 和 danger 菜单项。
 - `AntMessage`：info/success/warning/error/loading、不同 duration 和手动关闭。
 - `AntNotification`：info/success/warning/error、六种 placement、showProgress 和手动关闭。
+- `AntPagination`：基础分页、small/large、simple、showLessItems、showTotal、showQuickJumper、showSizeChanger 和 disabled。
 - `AntProgress`：线性进度、active/exception/success 状态、circle 和 dashboard。
 - `AntRadio`：基础横向组、禁用、禁用选中和纵向组。
 - `AntSelect`：基础选择、allowClear、尺寸、状态、变体、loading、disabled 和禁用选项。

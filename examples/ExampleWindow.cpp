@@ -22,6 +22,7 @@
 #include "widgets/AntMessage.h"
 #include "widgets/AntMenu.h"
 #include "widgets/AntNotification.h"
+#include "widgets/AntPagination.h"
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
 #include "widgets/AntSelect.h"
@@ -96,6 +97,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createMenuPage()));
     m_stack->addWidget(wrapPage(createTabsPage()));
     m_stack->addWidget(wrapPage(createNotificationPage()));
+    m_stack->addWidget(wrapPage(createPaginationPage()));
     m_stack->addWidget(wrapPage(createProgressPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
     m_stack->addWidget(wrapPage(createSelectPage()));
@@ -113,14 +115,15 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Menu"), 6);
     addNavButton(QStringLiteral("Tabs"), 7);
     addNavButton(QStringLiteral("Notification"), 8);
-    addNavButton(QStringLiteral("Progress"), 9);
-    addNavButton(QStringLiteral("Radio"), 10);
-    addNavButton(QStringLiteral("Select"), 11);
-    addNavButton(QStringLiteral("Slider"), 12);
-    addNavButton(QStringLiteral("Spin"), 13);
-    addNavButton(QStringLiteral("Switch"), 14);
-    addNavButton(QStringLiteral("TimePicker"), 15);
-    addNavButton(QStringLiteral("Card"), 16);
+    addNavButton(QStringLiteral("Pagination"), 9);
+    addNavButton(QStringLiteral("Progress"), 10);
+    addNavButton(QStringLiteral("Radio"), 11);
+    addNavButton(QStringLiteral("Select"), 12);
+    addNavButton(QStringLiteral("Slider"), 13);
+    addNavButton(QStringLiteral("Spin"), 14);
+    addNavButton(QStringLiteral("Switch"), 15);
+    addNavButton(QStringLiteral("TimePicker"), 16);
+    addNavButton(QStringLiteral("Card"), 17);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -742,6 +745,61 @@ QWidget* ExampleWindow::createTabsPage()
     });
     cardRow->addWidget(editableTabs, 1);
     layout->addLayout(cardRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createPaginationPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basic = new AntPagination();
+    basic->setTotal(120);
+    basic->setCurrent(3);
+    basic->setShowTotal(true);
+    layout->addWidget(basic);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Size and Less Items")));
+    auto* sizeRow = new QVBoxLayout();
+    sizeRow->setSpacing(12);
+    auto* large = new AntPagination();
+    large->setPaginationSize(Ant::PaginationSize::Large);
+    large->setTotal(260);
+    large->setCurrent(8);
+    auto* small = new AntPagination();
+    small->setPaginationSize(Ant::PaginationSize::Small);
+    small->setTotal(260);
+    small->setCurrent(8);
+    small->setShowLessItems(true);
+    sizeRow->addWidget(large);
+    sizeRow->addWidget(small);
+    layout->addLayout(sizeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Simple and Options")));
+    auto* optionRow = new QVBoxLayout();
+    optionRow->setSpacing(12);
+    auto* simple = new AntPagination();
+    simple->setSimple(true);
+    simple->setTotal(90);
+    simple->setCurrent(4);
+    auto* options = new AntPagination();
+    options->setTotal(320);
+    options->setCurrent(6);
+    options->setShowSizeChanger(true);
+    options->setShowQuickJumper(true);
+    auto* disabled = new AntPagination();
+    disabled->setTotal(80);
+    disabled->setCurrent(2);
+    disabled->setDisabled(true);
+    optionRow->addWidget(simple);
+    optionRow->addWidget(options);
+    optionRow->addWidget(disabled);
+    layout->addLayout(optionRow);
 
     layout->addStretch();
     return page;

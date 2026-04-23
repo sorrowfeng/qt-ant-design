@@ -223,6 +223,14 @@ enum class TabsPlacement
 };
 Q_ENUM_NS(TabsPlacement)
 
+enum class PaginationSize
+{
+    Large,
+    Middle,
+    Small,
+};
+Q_ENUM_NS(PaginationSize)
+
 enum class CardSize
 {
     Default,

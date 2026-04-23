@@ -30,6 +30,7 @@ private:
     QWidget* createMessagePage();
     QWidget* createMenuPage();
     QWidget* createNotificationPage();
+    QWidget* createPaginationPage();
     QWidget* createProgressPage();
     QWidget* createRadioPage();
     QWidget* createSelectPage();
