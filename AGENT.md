@@ -89,7 +89,7 @@
   - 对应 Ant Design Checkbox。
   - 支持状态和属性：`checked`、`indeterminate`、`disabled`、`text`。
   - 支持信号：`checkedChanged`、`indeterminateChanged`、`stateChanged`、`toggled`、`clicked`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制圆角选择框、选中勾、半选横线、文本和焦点描边。
+  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntCheckboxStyle`），通过 `drawControl(CE_CheckBox)` 绘制圆角选择框、选中勾、半选横线、文本和焦点描边。
   - 交互方式：鼠标点击切换，支持 Space/Enter 键盘切换。
 
 - [x] `AntDatePicker`

@@ -3,16 +3,13 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
-#include <QPainter>
-#include <QPainterPath>
 
+#include "../styles/AntCheckboxStyle.h"
 #include "core/AntTheme.h"
-#include "styles/AntPalette.h"
 
 namespace
 {
 constexpr int IndicatorSize = 16;
-constexpr int TextSpacing = 8;
 }
 
 AntCheckbox::AntCheckbox(QWidget* parent)
@@ -22,6 +19,10 @@ AntCheckbox::AntCheckbox(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);
+
+    auto* checkboxStyle = new AntCheckboxStyle(style());
+    checkboxStyle->setParent(this);
+    setStyle(checkboxStyle);
 
     connect(antTheme, &AntTheme::themeModeChanged, this, [this]() {
         update();
@@ -92,66 +93,18 @@ void AntCheckbox::setText(const QString& text)
 
 QSize AntCheckbox::sizeHint() const
 {
+    constexpr int indicatorSize = 16;
+    constexpr int textSpacing = 8;
     QFont f = font();
     f.setPixelSize(antTheme->tokens().fontSize);
     QFontMetrics fm(f);
-    const int textWidth = m_text.isEmpty() ? 0 : TextSpacing + fm.horizontalAdvance(m_text);
-    return QSize(IndicatorSize + textWidth, std::max(IndicatorSize, fm.height()));
+    const int textWidth = m_text.isEmpty() ? 0 : textSpacing + fm.horizontalAdvance(m_text);
+    return QSize(indicatorSize + textWidth, std::max(indicatorSize, fm.height()));
 }
 
 QSize AntCheckbox::minimumSizeHint() const
 {
-    return QSize(IndicatorSize, IndicatorSize);
-}
-
-void AntCheckbox::paintEvent(QPaintEvent* event)
-{
-    Q_UNUSED(event)
-
-    const auto& token = antTheme->tokens();
-    const QRectF box = indicatorRect();
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-    painter.setPen(QPen(indicatorBorderColor(), token.lineWidth));
-    painter.setBrush(indicatorBackgroundColor());
-    painter.drawRoundedRect(box, token.borderRadiusSM, token.borderRadiusSM);
-
-    if (m_checked && !m_indeterminate)
-    {
-        QPainterPath check;
-        check.moveTo(box.left() + box.width() * 0.28, box.top() + box.height() * 0.52);
-        check.lineTo(box.left() + box.width() * 0.43, box.top() + box.height() * 0.68);
-        check.lineTo(box.left() + box.width() * 0.74, box.top() + box.height() * 0.32);
-        painter.setPen(QPen(token.colorTextLightSolid, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawPath(check);
-    }
-    else if (m_indeterminate)
-    {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(isEnabled() ? token.colorPrimary : token.colorTextDisabled);
-        const QRectF mark(box.left() + 4, box.center().y() - 1.5, box.width() - 8, 3);
-        painter.drawRoundedRect(mark, 1.5, 1.5);
-    }
-
-    if (hasFocus() && isEnabled())
-    {
-        QColor focus = AntPalette::alpha(token.colorPrimary, 0.22);
-        painter.setPen(QPen(focus, token.controlOutlineWidth));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(box.adjusted(-2, -2, 2, 2), token.borderRadiusSM + 2, token.borderRadiusSM + 2);
-    }
-
-    if (!m_text.isEmpty())
-    {
-        QFont f = painter.font();
-        f.setPixelSize(token.fontSize);
-        painter.setFont(f);
-        painter.setPen(isEnabled() ? token.colorText : token.colorTextDisabled);
-        QRectF textRect(box.right() + TextSpacing, 0, width() - box.right() - TextSpacing, height());
-        painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, m_text);
-    }
+    return QSize(16, 16);
 }
 
 void AntCheckbox::enterEvent(QEnterEvent* event)
@@ -256,4 +209,14 @@ QColor AntCheckbox::indicatorBackgroundColor() const
         return m_hovered || m_pressed ? token.colorPrimaryHover : token.colorPrimary;
     }
     return token.colorBgContainer;
+}
+
+bool AntCheckbox::isHoveredState() const
+{
+    return m_hovered;
+}
+
+bool AntCheckbox::isPressedState() const
+{
+    return m_pressed;
 }
