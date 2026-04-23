@@ -317,6 +317,39 @@ enum class CardVariant
 };
 Q_ENUM_NS(CardVariant)
 
+enum class IconType
+{
+    None,
+    Search,
+    Close,
+    Plus,
+    Minus,
+    Check,
+    InfoCircle,
+    ExclamationCircle,
+    CloseCircle,
+    CheckCircle,
+    Loading,
+    Down,
+    Up,
+    Left,
+    Right,
+    Calendar,
+    ClockCircle,
+    User,
+    Home,
+    Star,
+};
+Q_ENUM_NS(IconType)
+
+enum class IconTheme
+{
+    Outlined,
+    Filled,
+    TwoTone,
+};
+Q_ENUM_NS(IconTheme)
+
 constexpr int LineWidth = 1;
 constexpr int SizeUnit = 4;
 constexpr int SizeStep = 4;

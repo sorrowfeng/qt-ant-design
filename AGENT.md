@@ -25,16 +25,17 @@
 ## 本次同步
 
 - 同步日期：`2026-04-23`
-- 已实现组件总数：`22`
+- 已实现组件总数：`23`
 - 已迁移至 `QProxyStyle` 的组件数：`8`
-- 仍使用 `paintEvent` 的组件数：`14`
-- 示例程序覆盖：`22 / 22`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 仍使用 `paintEvent` 的组件数：`15`
+- 示例程序覆盖：`23 / 23`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
 ## 近期更新摘要
 
 根据最近 20 条提交记录，近期主要改动如下：
 
 - 新增组件：
+  - `AntIcon`
   - `AntMenu`
   - `AntTabs`
   - `AntBreadcrumb`
@@ -64,6 +65,7 @@
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
 | `AntButton` | `button` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntButtonStyle` |
+| `AntIcon` | `icon` | `paintEvent` | 是 | 支持 `Outlined / Filled / TwoTone`、旋转、spin、自定义路径 |
 
 ### 导航
 
@@ -117,7 +119,6 @@
 
 ### 高优先级
 
-- [ ] `AntIcon`
 - [ ] `AntInputNumber`
 - [ ] `AntForm`
 - [ ] `AntModal`
@@ -196,7 +197,7 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 22 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 23 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
 
 当前示例页包括：
 
@@ -222,6 +223,7 @@
 - `TimePicker`
 - `Card`
 - `Divider`
+- `Icon`
 
 ## 构建与安装
 

@@ -29,6 +29,7 @@ private:
     QWidget* createCheckboxPage();
     QWidget* createDatePickerPage();
     QWidget* createDividerPage();
+    QWidget* createIconPage();
     QWidget* createInputPage();
     QWidget* createMessagePage();
     QWidget* createMenuPage();

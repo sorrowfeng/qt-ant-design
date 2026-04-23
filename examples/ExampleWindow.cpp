@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QList>
 #include <QMouseEvent>
+#include <QPainterPath>
 #include <QPoint>
 #include <QScrollArea>
 #include <QStackedWidget>
@@ -22,6 +23,7 @@
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDivider.h"
+#include "widgets/AntIcon.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntMenu.h"
@@ -115,6 +117,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createTimePickerPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
     m_stack->addWidget(wrapPage(createDividerPage()));
+    m_stack->addWidget(wrapPage(createIconPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -137,6 +140,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("TimePicker"), 19);
     addNavButton(QStringLiteral("Card"), 20);
     addNavButton(QStringLiteral("Divider"), 21);
+    addNavButton(QStringLiteral("Icon"), 22);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -474,6 +478,134 @@ QWidget* ExampleWindow::createInputPage()
     layout->addWidget(password);
     layout->addWidget(error);
     layout->addWidget(disabled);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createIconPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    auto createIconBlock = [this](const QString& title, AntIcon* icon) {
+        auto* block = new QWidget();
+        auto* blockLayout = new QVBoxLayout(block);
+        blockLayout->setContentsMargins(0, 0, 0, 0);
+        blockLayout->setSpacing(8);
+        blockLayout->addWidget(icon, 0, Qt::AlignHCenter);
+
+        auto* label = new QLabel(title, block);
+        label->setAlignment(Qt::AlignCenter);
+        blockLayout->addWidget(label);
+        return block;
+    };
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(24);
+    const QList<QPair<QString, Ant::IconType>> basics = {
+        {QStringLiteral("Search"), Ant::IconType::Search},
+        {QStringLiteral("Home"), Ant::IconType::Home},
+        {QStringLiteral("User"), Ant::IconType::User},
+        {QStringLiteral("Calendar"), Ant::IconType::Calendar},
+        {QStringLiteral("Clock"), Ant::IconType::ClockCircle},
+        {QStringLiteral("Star"), Ant::IconType::Star},
+    };
+    for (const auto& item : basics)
+    {
+        auto* icon = new AntIcon(item.second);
+        icon->setIconSize(24);
+        basicRow->addWidget(createIconBlock(item.first, icon));
+    }
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Themes and Colors")));
+    auto* themeRow = new QHBoxLayout();
+    themeRow->setSpacing(24);
+    auto* outlined = new AntIcon(Ant::IconType::Star);
+    outlined->setIconSize(28);
+    outlined->setIconTheme(Ant::IconTheme::Outlined);
+    themeRow->addWidget(createIconBlock(QStringLiteral("Outlined"), outlined));
+
+    auto* filled = new AntIcon(Ant::IconType::Star);
+    filled->setIconSize(28);
+    filled->setIconTheme(Ant::IconTheme::Filled);
+    filled->setColor(antTheme->tokens().colorWarning);
+    themeRow->addWidget(createIconBlock(QStringLiteral("Filled"), filled));
+
+    auto* twoTone = new AntIcon(Ant::IconType::InfoCircle);
+    twoTone->setIconSize(28);
+    twoTone->setIconTheme(Ant::IconTheme::TwoTone);
+    twoTone->setTwoToneColor(antTheme->tokens().colorPrimary);
+    themeRow->addWidget(createIconBlock(QStringLiteral("TwoTone"), twoTone));
+
+    auto* error = new AntIcon(Ant::IconType::CloseCircle);
+    error->setIconSize(28);
+    error->setIconTheme(Ant::IconTheme::Filled);
+    error->setColor(antTheme->tokens().colorError);
+    themeRow->addWidget(createIconBlock(QStringLiteral("Status"), error));
+    themeRow->addStretch();
+    layout->addLayout(themeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Rotate and Spin")));
+    auto* motionRow = new QHBoxLayout();
+    motionRow->setSpacing(24);
+    auto* loading = new AntIcon(Ant::IconType::Loading);
+    loading->setIconSize(28);
+    loading->setColor(antTheme->tokens().colorPrimary);
+    loading->setSpin(true);
+    motionRow->addWidget(createIconBlock(QStringLiteral("Loading"), loading));
+
+    auto* rotate90 = new AntIcon(Ant::IconType::Right);
+    rotate90->setIconSize(28);
+    rotate90->setRotate(90);
+    motionRow->addWidget(createIconBlock(QStringLiteral("Rotate 90"), rotate90));
+
+    auto* rotate180 = new AntIcon(Ant::IconType::Down);
+    rotate180->setIconSize(28);
+    rotate180->setRotate(180);
+    motionRow->addWidget(createIconBlock(QStringLiteral("Rotate 180"), rotate180));
+    motionRow->addStretch();
+    layout->addLayout(motionRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Custom Path")));
+    auto* customRow = new QHBoxLayout();
+    customRow->setSpacing(24);
+    auto* customIcon = new AntIcon();
+    customIcon->setIconSize(30);
+    customIcon->setIconTheme(Ant::IconTheme::TwoTone);
+    customIcon->setTwoToneColor(QColor(QStringLiteral("#eb2f96")));
+    QPainterPath heart;
+    heart.moveTo(16, 28);
+    heart.cubicTo(7, 22, 3, 16, 3, 10.5);
+    heart.cubicTo(3, 6.5, 6.2, 4, 10, 4);
+    heart.cubicTo(12.8, 4, 15, 5.4, 16, 7.6);
+    heart.cubicTo(17, 5.4, 19.2, 4, 22, 4);
+    heart.cubicTo(25.8, 4, 29, 6.5, 29, 10.5);
+    heart.cubicTo(29, 16, 25, 22, 16, 28);
+    QPainterPath shine;
+    shine.addEllipse(QRectF(10, 8, 4, 4));
+    customIcon->setCustomPath(heart, shine);
+    customRow->addWidget(createIconBlock(QStringLiteral("Custom"), customIcon));
+
+    auto* inlineText = new QLabel(QStringLiteral("Use icons inside rows for status, action and navigation."), page);
+    auto* inlineWrap = new QWidget(page);
+    auto* inlineLayout = new QHBoxLayout(inlineWrap);
+    inlineLayout->setContentsMargins(0, 0, 0, 0);
+    inlineLayout->setSpacing(8);
+    auto* checkIcon = new AntIcon(Ant::IconType::CheckCircle);
+    checkIcon->setIconTheme(Ant::IconTheme::Filled);
+    checkIcon->setColor(antTheme->tokens().colorSuccess);
+    checkIcon->setIconSize(18);
+    inlineLayout->addWidget(checkIcon);
+    inlineLayout->addWidget(inlineText);
+    inlineLayout->addStretch();
+    customRow->addWidget(inlineWrap, 1);
+    layout->addLayout(customRow);
+
     layout->addStretch();
     return page;
 }

@@ -14,9 +14,9 @@
 
 - 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
-- 当前已移植 `22` 个核心组件
+- 当前已移植 `23` 个核心组件
 - 其中 `8` 个组件已经迁移到 `QProxyStyle` 架构，剩余组件仍采用 `paintEvent`，将继续逐步迁移
-- 示例程序已覆盖全部 `22` 个已实现组件
+- 示例程序已覆盖全部 `23` 个已实现组件
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
 
 ## 安装与集成
@@ -125,11 +125,11 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现组件总数：`22`
+当前已实现组件总数：`23`
 
 | 分类 | 组件 | 当前绘制方式 |
 | --- | --- | --- |
-| 通用 | `AntButton` | `QProxyStyle` |
+| 通用 | `AntButton` `AntIcon` | 混合（`QProxyStyle` + `paintEvent`） |
 | 导航 | `AntBreadcrumb` `AntMenu` `AntPagination` `AntTabs` | `paintEvent` |
 | 数据录入 | `AntCheckbox` `AntDatePicker` `AntInput` `AntRadio` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` | 混合（`QProxyStyle` + `paintEvent`） |
 | 反馈 | `AntMessage` `AntNotification` `AntProgress` `AntSpin` | 混合（`QProxyStyle` + `paintEvent`） |
@@ -139,6 +139,7 @@ int main(int argc, char* argv[])
 ### 组件概览
 
 - `AntButton`：五种类型、三种尺寸、三种形状、`loading / danger / ghost / block`
+- `AntIcon`：`Outlined / Filled / TwoTone`、旋转、spin、自定义路径
 - `AntInput`：尺寸、状态、`addonBefore / addonAfter / allowClear / password`
 - `AntSelect`：尺寸、状态、变体、`allowClear / loading / popup`
 - `AntSlider`：横竖向、`reverse / dots / included`
@@ -223,16 +224,15 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 
 当前高优先级待开发组件：
 
-1. `AntIcon`
-2. `AntInputNumber`
-3. `AntForm`
-4. `AntModal`
-5. `AntTooltip`
-6. `AntDropdown`
-7. `AntPopover`
-8. `AntPopconfirm`
-9. `AntAlert`
-10. `AntSkeleton`
+1. `AntInputNumber`
+2. `AntForm`
+3. `AntModal`
+4. `AntTooltip`
+5. `AntDropdown`
+6. `AntPopover`
+7. `AntPopconfirm`
+8. `AntAlert`
+9. `AntSkeleton`
 
 后续还会继续推进：
 
