@@ -198,6 +198,31 @@ enum class MenuTheme
 };
 Q_ENUM_NS(MenuTheme)
 
+enum class TabsType
+{
+    Line,
+    Card,
+    EditableCard,
+};
+Q_ENUM_NS(TabsType)
+
+enum class TabsSize
+{
+    Large,
+    Middle,
+    Small,
+};
+Q_ENUM_NS(TabsSize)
+
+enum class TabsPlacement
+{
+    Top,
+    Bottom,
+    Left,
+    Right,
+};
+Q_ENUM_NS(TabsPlacement)
+
 enum class CardSize
 {
     Default,

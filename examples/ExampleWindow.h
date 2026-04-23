@@ -35,6 +35,7 @@ private:
     QWidget* createSliderPage();
     QWidget* createSpinPage();
     QWidget* createSwitchPage();
+    QWidget* createTabsPage();
     QWidget* createTimePickerPage();
     QWidget* createCardPage();
     QWidget* wrapPage(QWidget* page);

@@ -2,6 +2,7 @@
 
 #include <QFrame>
 #include <QDate>
+#include <QDateTime>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QList>
@@ -26,6 +27,7 @@
 #include "widgets/AntSlider.h"
 #include "widgets/AntSpin.h"
 #include "widgets/AntSwitch.h"
+#include "widgets/AntTabs.h"
 #include "widgets/AntTimePicker.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
@@ -90,6 +92,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createInputPage()));
     m_stack->addWidget(wrapPage(createMessagePage()));
     m_stack->addWidget(wrapPage(createMenuPage()));
+    m_stack->addWidget(wrapPage(createTabsPage()));
     m_stack->addWidget(wrapPage(createNotificationPage()));
     m_stack->addWidget(wrapPage(createProgressPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
@@ -105,15 +108,16 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Input"), 3);
     addNavButton(QStringLiteral("Message"), 4);
     addNavButton(QStringLiteral("Menu"), 5);
-    addNavButton(QStringLiteral("Notification"), 6);
-    addNavButton(QStringLiteral("Progress"), 7);
-    addNavButton(QStringLiteral("Radio"), 8);
-    addNavButton(QStringLiteral("Select"), 9);
-    addNavButton(QStringLiteral("Slider"), 10);
-    addNavButton(QStringLiteral("Spin"), 11);
-    addNavButton(QStringLiteral("Switch"), 12);
-    addNavButton(QStringLiteral("TimePicker"), 13);
-    addNavButton(QStringLiteral("Card"), 14);
+    addNavButton(QStringLiteral("Tabs"), 6);
+    addNavButton(QStringLiteral("Notification"), 7);
+    addNavButton(QStringLiteral("Progress"), 8);
+    addNavButton(QStringLiteral("Radio"), 9);
+    addNavButton(QStringLiteral("Select"), 10);
+    addNavButton(QStringLiteral("Slider"), 11);
+    addNavButton(QStringLiteral("Spin"), 12);
+    addNavButton(QStringLiteral("Switch"), 13);
+    addNavButton(QStringLiteral("TimePicker"), 14);
+    addNavButton(QStringLiteral("Card"), 15);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -620,6 +624,84 @@ QWidget* ExampleWindow::createNotificationPage()
     durationRow->addWidget(closeAll);
     durationRow->addStretch();
     layout->addLayout(durationRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createTabsPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    auto makePane = [](const QString& text) {
+        auto* pane = new QWidget();
+        auto* paneLayout = new QVBoxLayout(pane);
+        paneLayout->setContentsMargins(16, 16, 16, 16);
+        auto* label = new QLabel(text);
+        label->setWordWrap(true);
+        paneLayout->addWidget(label);
+        paneLayout->addStretch();
+        return pane;
+    };
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Line")));
+    auto* lineTabs = new AntTabs();
+    lineTabs->setMinimumHeight(180);
+    lineTabs->addTab(makePane(QStringLiteral("Content of Tab 1")), QStringLiteral("tab1"), QStringLiteral("Tab 1"));
+    lineTabs->addTab(makePane(QStringLiteral("Content of Tab 2")), QStringLiteral("tab2"), QStringLiteral("Tab 2"));
+    lineTabs->addTab(makePane(QStringLiteral("Disabled tab content")), QStringLiteral("disabled"), QStringLiteral("Disabled"), QString(), true);
+    lineTabs->setActiveKey(QStringLiteral("tab1"));
+    layout->addWidget(lineTabs);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Centered and Placement")));
+    auto* placementRow = new QHBoxLayout();
+    placementRow->setSpacing(18);
+    auto* centered = new AntTabs();
+    centered->setCentered(true);
+    centered->setTabsSize(Ant::TabsSize::Large);
+    centered->setMinimumSize(360, 160);
+    centered->addTab(makePane(QStringLiteral("Centered large tabs")), QStringLiteral("overview"), QStringLiteral("Overview"), QStringLiteral("O"));
+    centered->addTab(makePane(QStringLiteral("Reports content")), QStringLiteral("reports"), QStringLiteral("Reports"), QStringLiteral("R"));
+    centered->setActiveKey(QStringLiteral("overview"));
+    placementRow->addWidget(centered, 1);
+
+    auto* leftTabs = new AntTabs();
+    leftTabs->setTabPlacement(Ant::TabsPlacement::Left);
+    leftTabs->setMinimumSize(360, 180);
+    leftTabs->addTab(makePane(QStringLiteral("Left placement keeps tabs on the start side.")), QStringLiteral("left-a"), QStringLiteral("Alpha"));
+    leftTabs->addTab(makePane(QStringLiteral("Second left tab.")), QStringLiteral("left-b"), QStringLiteral("Beta"));
+    leftTabs->setActiveKey(QStringLiteral("left-a"));
+    placementRow->addWidget(leftTabs, 1);
+    layout->addLayout(placementRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Card and Editable")));
+    auto* cardRow = new QHBoxLayout();
+    cardRow->setSpacing(18);
+    auto* cardTabs = new AntTabs();
+    cardTabs->setTabsType(Ant::TabsType::Card);
+    cardTabs->setTabsSize(Ant::TabsSize::Small);
+    cardTabs->setMinimumSize(360, 160);
+    cardTabs->addTab(makePane(QStringLiteral("Small card tab")), QStringLiteral("card-a"), QStringLiteral("Card A"));
+    cardTabs->addTab(makePane(QStringLiteral("Another card tab")), QStringLiteral("card-b"), QStringLiteral("Card B"));
+    cardTabs->setActiveKey(QStringLiteral("card-a"));
+    cardRow->addWidget(cardTabs, 1);
+
+    auto* editableTabs = new AntTabs();
+    editableTabs->setTabsType(Ant::TabsType::EditableCard);
+    editableTabs->setMinimumSize(360, 160);
+    editableTabs->addTab(makePane(QStringLiteral("Closable editable tab")), QStringLiteral("edit-a"), QStringLiteral("Editable A"));
+    editableTabs->addTab(makePane(QStringLiteral("This tab cannot be closed")), QStringLiteral("edit-b"), QStringLiteral("Fixed"), QString(), false, false);
+    editableTabs->setActiveKey(QStringLiteral("edit-a"));
+    connect(editableTabs, &AntTabs::tabAddRequested, this, [editableTabs, makePane]() {
+        const QString key = QStringLiteral("new-%1").arg(QDateTime::currentMSecsSinceEpoch());
+        editableTabs->addTab(makePane(QStringLiteral("New editable tab")), key, QStringLiteral("New Tab"));
+        editableTabs->setActiveKey(key);
+    });
+    cardRow->addWidget(editableTabs, 1);
+    layout->addLayout(cardRow);
 
     layout->addStretch();
     return page;

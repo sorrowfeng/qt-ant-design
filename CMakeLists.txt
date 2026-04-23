@@ -34,6 +34,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntSlider.h
     src/widgets/AntSpin.h
     src/widgets/AntSwitch.h
+    src/widgets/AntTabs.h
     src/widgets/AntTimePicker.h
     src/widgets/AntCard.h
 )
@@ -54,6 +55,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntSlider.cpp
     src/widgets/AntSpin.cpp
     src/widgets/AntSwitch.cpp
+    src/widgets/AntTabs.cpp
     src/widgets/AntTimePicker.cpp
     src/widgets/AntCard.cpp
     resources/qt-ant-design.qrc
@@ -119,6 +121,7 @@ install(FILES
     src/widgets/AntSlider.h
     src/widgets/AntSpin.h
     src/widgets/AntSwitch.h
+    src/widgets/AntTabs.h
     src/widgets/AntTimePicker.h
     src/widgets/AntCard.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/widgets
