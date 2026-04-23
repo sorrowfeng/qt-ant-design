@@ -22,6 +22,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
 
 private:
+    QWidget* createAlertPage();
     QWidget* createButtonPage();
     QWidget* createAvatarPage();
     QWidget* createBadgePage();

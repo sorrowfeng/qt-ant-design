@@ -30,6 +30,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntSliderStyle.h
     src/styles/AntSpinStyle.h
     src/styles/AntSwitchStyle.h
+    src/widgets/AntAlert.h
     src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
     src/widgets/AntBreadcrumb.h
@@ -68,6 +69,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntSliderStyle.cpp
     src/styles/AntSpinStyle.cpp
     src/styles/AntSwitchStyle.cpp
+    src/widgets/AntAlert.cpp
     src/widgets/AntAvatar.cpp
     src/widgets/AntBadge.cpp
     src/widgets/AntBreadcrumb.cpp
@@ -151,6 +153,7 @@ install(FILES
 )
 
 install(FILES
+    src/widgets/AntAlert.h
     src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
     src/widgets/AntBreadcrumb.h

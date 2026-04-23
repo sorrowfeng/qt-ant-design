@@ -181,6 +181,15 @@ enum class MessageType
 };
 Q_ENUM_NS(MessageType)
 
+enum class AlertType
+{
+    Success,
+    Info,
+    Warning,
+    Error,
+};
+Q_ENUM_NS(AlertType)
+
 enum class NotificationPlacement
 {
     Top,

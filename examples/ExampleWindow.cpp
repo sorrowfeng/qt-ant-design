@@ -15,6 +15,7 @@
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
+#include "widgets/AntAlert.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntBadge.h"
 #include "widgets/AntBreadcrumb.h"
@@ -120,6 +121,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createDividerPage()));
     m_stack->addWidget(wrapPage(createIconPage()));
     m_stack->addWidget(wrapPage(createInputNumberPage()));
+    m_stack->addWidget(wrapPage(createAlertPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -144,6 +146,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Divider"), 21);
     addNavButton(QStringLiteral("Icon"), 22);
     addNavButton(QStringLiteral("InputNumber"), 23);
+    addNavButton(QStringLiteral("Alert"), 24);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -1268,6 +1271,77 @@ QWidget* ExampleWindow::createRadioPage()
     groupLayout->addWidget(pear);
     groupLayout->addWidget(orange);
     layout->addWidget(group);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createAlertPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(18);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* info = new AntAlert(QStringLiteral("Informational Notes"));
+    info->setAlertType(Ant::AlertType::Info);
+
+    auto* success = new AntAlert(QStringLiteral("Success Tips"));
+    success->setAlertType(Ant::AlertType::Success);
+
+    auto* warning = new AntAlert(QStringLiteral("Warning"));
+    warning->setAlertType(Ant::AlertType::Warning);
+
+    auto* error = new AntAlert(QStringLiteral("Error"));
+    error->setAlertType(Ant::AlertType::Error);
+
+    layout->addWidget(info);
+    layout->addWidget(success);
+    layout->addWidget(warning);
+    layout->addWidget(error);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Description and Icon")));
+    auto* described = new AntAlert(QStringLiteral("Data sync in progress"));
+    described->setDescription(QStringLiteral("Background synchronization is running. You can keep working while we update the latest records from the server."));
+    described->setAlertType(Ant::AlertType::Info);
+    described->setShowIcon(true);
+    layout->addWidget(described);
+
+    auto* withDescription = new AntAlert(QStringLiteral("Deployment failed"));
+    withDescription->setDescription(QStringLiteral("The production deployment stopped because environment variables are incomplete. Please review the release configuration and try again."));
+    withDescription->setAlertType(Ant::AlertType::Error);
+    withDescription->setShowIcon(true);
+    layout->addWidget(withDescription);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Closable and Action")));
+    auto* closable = new AntAlert(QStringLiteral("Update available"));
+    closable->setDescription(QStringLiteral("A new desktop package is ready. You can update now or postpone until after your current task."));
+    closable->setAlertType(Ant::AlertType::Warning);
+    closable->setShowIcon(true);
+    closable->setClosable(true);
+    connect(closable, &AntAlert::closeRequested, this, [this]() {
+        AntMessage::info(QStringLiteral("Alert closed"), this, 1500);
+    });
+    layout->addWidget(closable);
+
+    auto* actionAlert = new AntAlert(QStringLiteral("Backup completed"));
+    actionAlert->setDescription(QStringLiteral("Cloud backup finished successfully. Open the latest snapshot or continue editing."));
+    actionAlert->setAlertType(Ant::AlertType::Success);
+    actionAlert->setShowIcon(true);
+    auto* actionButton = new AntButton(QStringLiteral("Open"));
+    actionButton->setButtonType(Ant::ButtonType::Link);
+    connect(actionButton, &AntButton::clicked, this, [this]() {
+        AntMessage::success(QStringLiteral("Opening backup snapshot"), this, 1500);
+    });
+    actionAlert->setActionWidget(actionButton);
+    layout->addWidget(actionAlert);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Banner")));
+    auto* banner = new AntAlert(QStringLiteral("Scheduled maintenance tonight from 01:00 to 03:00."));
+    banner->setBanner(true);
+    banner->setClosable(true);
+    layout->addWidget(banner);
 
     layout->addStretch();
     return page;
