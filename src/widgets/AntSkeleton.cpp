@@ -1,0 +1,389 @@
+#include "AntSkeleton.h"
+
+#include <QLinearGradient>
+#include <QPainter>
+#include <QResizeEvent>
+#include <QTimer>
+#include <QVBoxLayout>
+
+#include "core/AntTheme.h"
+#include "styles/AntPalette.h"
+
+AntSkeleton::AntSkeleton(QWidget* parent)
+    : QWidget(parent)
+{
+    setAttribute(Qt::WA_Hover, false);
+
+    m_timer = new QTimer(this);
+    connect(m_timer, &QTimer::timeout, this, [this]() {
+        m_shimmerOffset = (m_shimmerOffset + 18) % qMax(160, width() + 160);
+        update();
+    });
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updateGeometry();
+        update();
+    });
+
+    updateTimerState();
+}
+
+bool AntSkeleton::isActive() const { return m_active; }
+
+void AntSkeleton::setActive(bool active)
+{
+    if (m_active == active)
+    {
+        return;
+    }
+    m_active = active;
+    updateTimerState();
+    update();
+    Q_EMIT activeChanged(m_active);
+}
+
+bool AntSkeleton::isLoading() const { return m_loading; }
+
+void AntSkeleton::setLoading(bool loading)
+{
+    if (m_loading == loading)
+    {
+        return;
+    }
+    m_loading = loading;
+    if (m_contentWidget)
+    {
+        m_contentWidget->setVisible(!m_loading);
+    }
+    updateTimerState();
+    updateGeometry();
+    update();
+    Q_EMIT loadingChanged(m_loading);
+}
+
+bool AntSkeleton::isRound() const { return m_round; }
+
+void AntSkeleton::setRound(bool round)
+{
+    if (m_round == round)
+    {
+        return;
+    }
+    m_round = round;
+    update();
+    Q_EMIT roundChanged(m_round);
+}
+
+bool AntSkeleton::avatarVisible() const { return m_avatarVisible; }
+
+void AntSkeleton::setAvatarVisible(bool visible)
+{
+    if (m_avatarVisible == visible)
+    {
+        return;
+    }
+    m_avatarVisible = visible;
+    updateGeometry();
+    update();
+    Q_EMIT avatarVisibleChanged(m_avatarVisible);
+}
+
+Ant::AvatarShape AntSkeleton::avatarShape() const { return m_avatarShape; }
+
+void AntSkeleton::setAvatarShape(Ant::AvatarShape shape)
+{
+    if (m_avatarShape == shape)
+    {
+        return;
+    }
+    m_avatarShape = shape;
+    update();
+    Q_EMIT avatarShapeChanged(m_avatarShape);
+}
+
+bool AntSkeleton::titleVisible() const { return m_titleVisible; }
+
+void AntSkeleton::setTitleVisible(bool visible)
+{
+    if (m_titleVisible == visible)
+    {
+        return;
+    }
+    m_titleVisible = visible;
+    updateGeometry();
+    update();
+    Q_EMIT titleVisibleChanged(m_titleVisible);
+}
+
+bool AntSkeleton::paragraphVisible() const { return m_paragraphVisible; }
+
+void AntSkeleton::setParagraphVisible(bool visible)
+{
+    if (m_paragraphVisible == visible)
+    {
+        return;
+    }
+    m_paragraphVisible = visible;
+    updateGeometry();
+    update();
+    Q_EMIT paragraphVisibleChanged(m_paragraphVisible);
+}
+
+int AntSkeleton::paragraphRows() const { return m_paragraphRows; }
+
+void AntSkeleton::setParagraphRows(int rows)
+{
+    rows = qMax(0, rows);
+    if (m_paragraphRows == rows)
+    {
+        return;
+    }
+    m_paragraphRows = rows;
+    updateGeometry();
+    update();
+    Q_EMIT paragraphRowsChanged(m_paragraphRows);
+}
+
+QWidget* AntSkeleton::contentWidget() const
+{
+    return m_contentWidget.data();
+}
+
+void AntSkeleton::setContentWidget(QWidget* widget)
+{
+    if (m_contentWidget == widget)
+    {
+        return;
+    }
+    if (m_contentWidget)
+    {
+        m_contentWidget->hide();
+        m_contentWidget->setParent(nullptr);
+    }
+    m_contentWidget = widget;
+    if (m_contentWidget)
+    {
+        m_contentWidget->setParent(this);
+        m_contentWidget->setVisible(!m_loading);
+    }
+    syncContentGeometry();
+    updateGeometry();
+    update();
+}
+
+void AntSkeleton::setTitleWidthRatio(qreal ratio)
+{
+    ratio = qBound(0.15, ratio, 1.0);
+    if (qFuzzyCompare(m_titleWidthRatio, ratio))
+    {
+        return;
+    }
+    m_titleWidthRatio = ratio;
+    update();
+}
+
+qreal AntSkeleton::titleWidthRatio() const
+{
+    return m_titleWidthRatio;
+}
+
+void AntSkeleton::setParagraphWidthRatios(const QList<qreal>& ratios)
+{
+    m_paragraphWidthRatios = ratios;
+    update();
+}
+
+QList<qreal> AntSkeleton::paragraphWidthRatios() const
+{
+    return m_paragraphWidthRatios;
+}
+
+QSize AntSkeleton::sizeHint() const
+{
+    if (!m_loading && m_contentWidget)
+    {
+        return m_contentWidget->sizeHint();
+    }
+
+    const Metrics m = metrics();
+    const auto& token = antTheme->tokens();
+    int height = 0;
+
+    if (m_avatarVisible)
+    {
+        height = qMax(height, m.avatarSize);
+    }
+
+    int textHeight = 0;
+    if (m_titleVisible)
+    {
+        textHeight += m.titleHeight;
+    }
+    if (m_paragraphVisible && m_paragraphRows > 0)
+    {
+        if (textHeight > 0)
+        {
+            textHeight += token.marginSM;
+        }
+        textHeight += m_paragraphRows * m.paragraphHeight;
+        textHeight += qMax(0, m_paragraphRows - 1) * m.rowSpacing;
+    }
+
+    if (m_avatarVisible)
+    {
+        height = qMax(height, textHeight);
+    }
+    else
+    {
+        height = textHeight;
+    }
+
+    return QSize(320, qMax(24, height));
+}
+
+QSize AntSkeleton::minimumSizeHint() const
+{
+    return QSize(180, 24);
+}
+
+void AntSkeleton::paintEvent(QPaintEvent* event)
+{
+    Q_UNUSED(event)
+    if (!m_loading)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    const QList<QRectF> rects = placeholderRects();
+    if (rects.isEmpty())
+    {
+        return;
+    }
+
+    const QColor baseColor = token.colorFillTertiary;
+    const QColor highlight = AntPalette::mix(token.colorBgContainer, token.colorFillQuaternary, 0.45);
+
+    QPainter painter(this);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    painter.setPen(Qt::NoPen);
+
+    for (const QRectF& rect : rects)
+    {
+        QBrush brush(baseColor);
+        if (m_active)
+        {
+            QLinearGradient gradient(rect.topLeft(), rect.topRight());
+            const qreal widthValue = qMax<qreal>(rect.width(), 1.0);
+            const qreal offset = static_cast<qreal>(m_shimmerOffset % static_cast<int>(widthValue + 120)) / widthValue;
+            gradient.setColorAt(qMax(0.0, offset - 0.6), baseColor);
+            gradient.setColorAt(qBound(0.0, offset - 0.2, 1.0), baseColor);
+            gradient.setColorAt(qBound(0.0, offset, 1.0), highlight);
+            gradient.setColorAt(qBound(0.0, offset + 0.2, 1.0), baseColor);
+            gradient.setColorAt(1.0, baseColor);
+            brush = QBrush(gradient);
+        }
+
+        painter.setBrush(brush);
+        qreal radius = m_round ? rect.height() / 2.0 : metrics().radius;
+        if (m_avatarVisible && rect.height() == metrics().avatarSize && rect.width() == metrics().avatarSize &&
+            m_avatarShape == Ant::AvatarShape::Circle)
+        {
+            radius = rect.width() / 2.0;
+        }
+        painter.drawRoundedRect(rect, radius, radius);
+    }
+}
+
+void AntSkeleton::resizeEvent(QResizeEvent* event)
+{
+    syncContentGeometry();
+    QWidget::resizeEvent(event);
+}
+
+AntSkeleton::Metrics AntSkeleton::metrics() const
+{
+    Metrics m;
+    const auto& token = antTheme->tokens();
+    m.avatarSize = token.controlHeightLG;
+    m.titleHeight = token.fontSizeLG;
+    m.paragraphHeight = token.fontSizeSM + 2;
+    m.rowSpacing = token.marginSM;
+    m.columnGap = token.margin;
+    m.radius = token.borderRadiusSM;
+    return m;
+}
+
+QList<QRectF> AntSkeleton::placeholderRects() const
+{
+    QList<QRectF> rects;
+    const Metrics m = metrics();
+    int textLeft = 0;
+    int textWidth = width();
+    const int totalHeight = sizeHint().height();
+    int top = 0;
+
+    if (m_avatarVisible)
+    {
+        const int avatarY = qMax(0, (totalHeight - m.avatarSize) / 2);
+        rects.append(QRectF(0, avatarY, m.avatarSize, m.avatarSize));
+        textLeft = m.avatarSize + m.columnGap;
+        textWidth = qMax(40, width() - textLeft);
+    }
+
+    if (m_titleVisible)
+    {
+        const int titleWidth = qMax(48, static_cast<int>(textWidth * m_titleWidthRatio));
+        rects.append(QRectF(textLeft, top + m.titleTop, titleWidth, m.titleHeight));
+        top += m.titleHeight;
+    }
+
+    if (m_paragraphVisible && m_paragraphRows > 0)
+    {
+        if (m_titleVisible)
+        {
+            top += antTheme->tokens().marginSM;
+        }
+        for (int i = 0; i < m_paragraphRows; ++i)
+        {
+            const int rowWidth = qMax(56, static_cast<int>(textWidth * rowWidthRatio(i)));
+            rects.append(QRectF(textLeft, top, rowWidth, m.paragraphHeight));
+            top += m.paragraphHeight + m.rowSpacing;
+        }
+    }
+
+    return rects;
+}
+
+qreal AntSkeleton::rowWidthRatio(int rowIndex) const
+{
+    if (rowIndex >= 0 && rowIndex < m_paragraphWidthRatios.size())
+    {
+        return qBound(0.15, m_paragraphWidthRatios.at(rowIndex), 1.0);
+    }
+    if (rowIndex == m_paragraphRows - 1)
+    {
+        return 0.62;
+    }
+    return 1.0;
+}
+
+void AntSkeleton::syncContentGeometry()
+{
+    if (m_contentWidget)
+    {
+        m_contentWidget->setGeometry(rect());
+    }
+}
+
+void AntSkeleton::updateTimerState()
+{
+    if (m_active && m_loading)
+    {
+        m_timer->start(60);
+    }
+    else
+    {
+        m_timer->stop();
+    }
+}

@@ -38,6 +38,7 @@
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
 #include "widgets/AntSelect.h"
+#include "widgets/AntSkeleton.h"
 #include "widgets/AntSlider.h"
 #include "widgets/AntSpin.h"
 #include "widgets/AntSwitch.h"
@@ -127,6 +128,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createSwitchPage()));
     m_stack->addWidget(wrapPage(createTimePickerPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
+    m_stack->addWidget(wrapPage(createSkeletonPage()));
     m_stack->addWidget(wrapPage(createDividerPage()));
     m_stack->addWidget(wrapPage(createIconPage()));
     m_stack->addWidget(wrapPage(createInputNumberPage()));
@@ -157,11 +159,12 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Switch"), 22);
     addNavButton(QStringLiteral("TimePicker"), 23);
     addNavButton(QStringLiteral("Card"), 24);
-    addNavButton(QStringLiteral("Divider"), 25);
-    addNavButton(QStringLiteral("Icon"), 26);
-    addNavButton(QStringLiteral("InputNumber"), 27);
-    addNavButton(QStringLiteral("Alert"), 28);
-    addNavButton(QStringLiteral("Tooltip"), 29);
+    addNavButton(QStringLiteral("Skeleton"), 25);
+    addNavButton(QStringLiteral("Divider"), 26);
+    addNavButton(QStringLiteral("Icon"), 27);
+    addNavButton(QStringLiteral("InputNumber"), 28);
+    addNavButton(QStringLiteral("Alert"), 29);
+    addNavButton(QStringLiteral("Tooltip"), 30);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -2424,6 +2427,97 @@ QWidget* ExampleWindow::createCardPage()
     actionCard->addActionWidget(new QLabel(QStringLiteral("Share")));
     actionCard->addActionWidget(new QLabel(QStringLiteral("Delete")));
     layout->addWidget(actionCard);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createSkeletonPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(20);
+
+    auto* simple = new AntSkeleton(page);
+    simple->setFixedWidth(280);
+    simple->setParagraphRows(3);
+
+    auto* active = new AntSkeleton(page);
+    active->setFixedWidth(280);
+    active->setActive(true);
+    active->setTitleWidthRatio(0.56);
+    active->setParagraphWidthRatios({1.0, 0.92, 0.48});
+
+    auto* staticOne = new AntSkeleton(page);
+    staticOne->setFixedWidth(280);
+    staticOne->setActive(false);
+    staticOne->setParagraphRows(2);
+    staticOne->setParagraphWidthRatios({0.88, 0.54});
+
+    basicRow->addWidget(simple);
+    basicRow->addWidget(active);
+    basicRow->addWidget(staticOne);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Avatar and Round")));
+    auto* avatarRow = new QHBoxLayout();
+    avatarRow->setSpacing(20);
+
+    auto* article = new AntSkeleton(page);
+    article->setFixedWidth(420);
+    article->setAvatarVisible(true);
+    article->setAvatarShape(Ant::AvatarShape::Circle);
+    article->setParagraphRows(3);
+    article->setParagraphWidthRatios({0.98, 0.86, 0.58});
+
+    auto* profile = new AntSkeleton(page);
+    profile->setFixedWidth(420);
+    profile->setAvatarVisible(true);
+    profile->setAvatarShape(Ant::AvatarShape::Square);
+    profile->setRound(true);
+    profile->setTitleWidthRatio(0.38);
+    profile->setParagraphRows(4);
+    profile->setParagraphWidthRatios({1.0, 0.94, 0.84, 0.52});
+
+    avatarRow->addWidget(article);
+    avatarRow->addWidget(profile);
+    avatarRow->addStretch();
+    layout->addLayout(avatarRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Loading Switch")));
+    auto* switchRow = new QHBoxLayout();
+    switchRow->setSpacing(20);
+
+    auto* previewCard = new AntCard(QStringLiteral("Workspace Summary"), page);
+    previewCard->setFixedWidth(520);
+    previewCard->setExtra(QStringLiteral("Ready"));
+    previewCard->bodyLayout()->addWidget(new QLabel(QStringLiteral("3 reviewers assigned"), previewCard));
+    previewCard->bodyLayout()->addWidget(new QLabel(QStringLiteral("12 checklist items completed"), previewCard));
+    previewCard->bodyLayout()->addWidget(new QLabel(QStringLiteral("Next milestone: beta publish"), previewCard));
+
+    auto* wrapped = new AntSkeleton(page);
+    wrapped->setFixedWidth(520);
+    wrapped->setAvatarVisible(true);
+    wrapped->setParagraphRows(4);
+    wrapped->setParagraphWidthRatios({0.95, 0.82, 0.76, 0.44});
+    wrapped->setContentWidget(previewCard);
+
+    auto* toggle = new AntButton(QStringLiteral("Toggle Loading"));
+    toggle->setButtonType(Ant::ButtonType::Primary);
+    connect(toggle, &AntButton::clicked, this, [wrapped]() {
+        wrapped->setLoading(!wrapped->isLoading());
+    });
+
+    switchRow->addWidget(wrapped);
+    switchRow->addWidget(toggle, 0, Qt::AlignTop);
+    switchRow->addStretch();
+    layout->addLayout(switchRow);
+
     layout->addStretch();
     return page;
 }

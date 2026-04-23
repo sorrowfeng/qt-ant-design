@@ -44,6 +44,7 @@ private:
     QWidget* createProgressPage();
     QWidget* createRadioPage();
     QWidget* createSelectPage();
+    QWidget* createSkeletonPage();
     QWidget* createSliderPage();
     QWidget* createSpinPage();
     QWidget* createSwitchPage();
