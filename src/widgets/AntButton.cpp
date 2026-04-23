@@ -4,7 +4,7 @@
 #include <QMouseEvent>
 #include <QStyleOptionButton>
 
-#include "AntButtonStyle.h"
+#include "../styles/AntButtonStyle.h"
 #include "core/AntTheme.h"
 
 AntButton::AntButton(QWidget* parent)

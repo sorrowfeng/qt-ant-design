@@ -20,12 +20,12 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 set(QT_ANT_DESIGN_HEADERS
     src/core/AntTypes.h
     src/core/AntTheme.h
+    src/styles/AntButtonStyle.h
     src/styles/AntPalette.h
     src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
     src/widgets/AntBreadcrumb.h
     src/widgets/AntButton.h
-    src/widgets/AntButtonStyle.h
     src/widgets/AntCheckbox.h
     src/widgets/AntDatePicker.h
     src/widgets/AntDivider.h
@@ -48,12 +48,12 @@ set(QT_ANT_DESIGN_HEADERS
 
 set(QT_ANT_DESIGN_SOURCES
     src/core/AntTheme.cpp
+    src/styles/AntButtonStyle.cpp
     src/styles/AntPalette.cpp
     src/widgets/AntAvatar.cpp
     src/widgets/AntBadge.cpp
     src/widgets/AntBreadcrumb.cpp
     src/widgets/AntButton.cpp
-    src/widgets/AntButtonStyle.cpp
     src/widgets/AntCheckbox.cpp
     src/widgets/AntDatePicker.cpp
     src/widgets/AntDivider.cpp
@@ -117,6 +117,7 @@ install(FILES
 )
 
 install(FILES
+    src/styles/AntButtonStyle.h
     src/styles/AntPalette.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/styles
 )
@@ -126,7 +127,6 @@ install(FILES
     src/widgets/AntBadge.h
     src/widgets/AntBreadcrumb.h
     src/widgets/AntButton.h
-    src/widgets/AntButtonStyle.h
     src/widgets/AntCheckbox.h
     src/widgets/AntDatePicker.h
     src/widgets/AntDivider.h

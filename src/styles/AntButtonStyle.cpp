@@ -4,7 +4,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
-#include "AntButton.h"
+#include "widgets/AntButton.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -95,7 +95,7 @@ void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int
 AntButtonStyle::AntButtonStyle(QStyle* style)
     : QProxyStyle(style)
 {
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
         const auto widgets = QApplication::allWidgets();
         for (QWidget* widget : widgets)
         {
