@@ -18,7 +18,7 @@
 - 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
 - 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
 - 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntBadge`、`AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntPagination`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTag`、`AntTimePicker`、`AntCard` 二十个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `AntAvatar`、`AntBadge`、`AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntPagination`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTag`、`AntTimePicker`、`AntCard` 二十一个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
 - 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
 - 本次新增 `AntBreadcrumb` 组件，支持 items、separator、href、iconText、disabled、当前项样式和 itemClicked 信号。
 - 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
@@ -37,6 +37,7 @@
 - 本次新增 `AntTabs` 组件，支持 line/card/editable-card 类型、top/bottom/left/right placement、large/middle/small size、activeKey、centered、closable 和 add 入口。
 - 本次新增 `AntTag` 组件，支持 text、color、iconText、closable、checkable/checked 和 filled/solid/outlined variant。
 - 本次新增 `AntBadge` 组件，支持 count、dot、showZero、overflowCount、offset、small/middle size、status 状态点和 processing 动画。
+- 本次新增 `AntAvatar` 组件，支持 text、iconText、imagePath、gap、customSize、circle/square shape 和 large/middle/small size。
 - CMake 增加安装规则，安装到仓库根目录 `install/` 时会输出示例程序、静态库、头文件和 CMake targets；Windows 下会尝试调用 `windeployqt` 部署 Qt 运行依赖。
 
 ## 已移植组件
@@ -163,6 +164,12 @@
   - 交互方式：支持鼠标展开、滚轮调节列、选择时间、Now/OK 和 Space/Enter/Escape 键盘操作。
 ### 数据展示
 
+- [x] `AntAvatar`
+  - 对应 Ant Design Avatar。
+  - 支持属性：`text`、`iconText`、`imagePath`、`gap`、`customSize`、`shape`、`avatarSize`。
+  - 支持形状：`circle`、`square`。
+  - 支持尺寸：`large`、`middle`、`small` 和自定义像素尺寸。
+  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘圆形/方形裁剪、图片填充、图标文本、字符头像和自适应字号。
 - [x] `AntBadge`
   - 对应 Ant Design Badge。
   - 支持属性：`count`、`text`、`color`、`dot`、`showZero`、`overflowCount`、`offset`、`badgeSize`、`status`。
@@ -199,7 +206,6 @@
 - [ ] `AntPopover`：气泡卡片。
 - [ ] `AntPopconfirm`：气泡确认框。
 - [ ] `AntAlert`：警告提示。
-- [ ] `AntAvatar`：头像。
 - [ ] `AntSkeleton`：骨架屏。
 - [ ] `AntEmpty`：空状态。
 ### 后续扩展
@@ -242,6 +248,7 @@
 当前 example 展示了以下组件：
 
 - `AntButton`：类型、尺寸、形状、danger、ghost、loading、disabled、block。
+- `AntAvatar`：字符头像、图标头像、circle/square、large/middle/small、自定义尺寸、自适应字号和 Badge 组合。
 - `AntBadge`：count、showZero、overflowCount、dot、small、自定义颜色、offset 和 status 状态点。
 - `AntBreadcrumb`：基础路径、iconText、自定义 separator、disabled 和点击反馈。
 - `AntCheckbox`：未选、选中、半选、禁用和“全选”受控示例。

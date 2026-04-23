@@ -21,6 +21,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/core/AntTypes.h
     src/core/AntTheme.h
     src/styles/AntPalette.h
+    src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
     src/widgets/AntBreadcrumb.h
     src/widgets/AntButton.h
@@ -46,6 +47,7 @@ set(QT_ANT_DESIGN_HEADERS
 set(QT_ANT_DESIGN_SOURCES
     src/core/AntTheme.cpp
     src/styles/AntPalette.cpp
+    src/widgets/AntAvatar.cpp
     src/widgets/AntBadge.cpp
     src/widgets/AntBreadcrumb.cpp
     src/widgets/AntButton.cpp
@@ -116,6 +118,7 @@ install(FILES
 )
 
 install(FILES
+    src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
     src/widgets/AntBreadcrumb.h
     src/widgets/AntButton.h

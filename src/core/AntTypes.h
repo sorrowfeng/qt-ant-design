@@ -257,6 +257,21 @@ enum class BadgeStatus
 };
 Q_ENUM_NS(BadgeStatus)
 
+enum class AvatarShape
+{
+    Circle,
+    Square,
+};
+Q_ENUM_NS(AvatarShape)
+
+enum class AvatarSize
+{
+    Large,
+    Middle,
+    Small,
+};
+Q_ENUM_NS(AvatarSize)
+
 enum class CardSize
 {
     Default,

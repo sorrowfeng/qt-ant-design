@@ -14,6 +14,7 @@
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
+#include "widgets/AntAvatar.h"
 #include "widgets/AntBadge.h"
 #include "widgets/AntBreadcrumb.h"
 #include "widgets/AntButton.h"
@@ -100,6 +101,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createMenuPage()));
     m_stack->addWidget(wrapPage(createTabsPage()));
     m_stack->addWidget(wrapPage(createBadgePage()));
+    m_stack->addWidget(wrapPage(createAvatarPage()));
     m_stack->addWidget(wrapPage(createTagPage()));
     m_stack->addWidget(wrapPage(createNotificationPage()));
     m_stack->addWidget(wrapPage(createPaginationPage()));
@@ -120,17 +122,18 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Menu"), 6);
     addNavButton(QStringLiteral("Tabs"), 7);
     addNavButton(QStringLiteral("Badge"), 8);
-    addNavButton(QStringLiteral("Tag"), 9);
-    addNavButton(QStringLiteral("Notification"), 10);
-    addNavButton(QStringLiteral("Pagination"), 11);
-    addNavButton(QStringLiteral("Progress"), 12);
-    addNavButton(QStringLiteral("Radio"), 13);
-    addNavButton(QStringLiteral("Select"), 14);
-    addNavButton(QStringLiteral("Slider"), 15);
-    addNavButton(QStringLiteral("Spin"), 16);
-    addNavButton(QStringLiteral("Switch"), 17);
-    addNavButton(QStringLiteral("TimePicker"), 18);
-    addNavButton(QStringLiteral("Card"), 19);
+    addNavButton(QStringLiteral("Avatar"), 9);
+    addNavButton(QStringLiteral("Tag"), 10);
+    addNavButton(QStringLiteral("Notification"), 11);
+    addNavButton(QStringLiteral("Pagination"), 12);
+    addNavButton(QStringLiteral("Progress"), 13);
+    addNavButton(QStringLiteral("Radio"), 14);
+    addNavButton(QStringLiteral("Select"), 15);
+    addNavButton(QStringLiteral("Slider"), 16);
+    addNavButton(QStringLiteral("Spin"), 17);
+    addNavButton(QStringLiteral("Switch"), 18);
+    addNavButton(QStringLiteral("TimePicker"), 19);
+    addNavButton(QStringLiteral("Card"), 20);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -886,6 +889,77 @@ QWidget* ExampleWindow::createBadgePage()
         statusCol->addWidget(badge);
     }
     layout->addLayout(statusCol);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createAvatarPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(12);
+    basicRow->addWidget(new AntAvatar(QStringLiteral("U")));
+    auto* icon = new AntAvatar();
+    icon->setIconText(QStringLiteral("@"));
+    basicRow->addWidget(icon);
+    auto* square = new AntAvatar(QStringLiteral("AD"));
+    square->setShape(Ant::AvatarShape::Square);
+    basicRow->addWidget(square);
+    auto* custom = new AntAvatar(QStringLiteral("Qt"));
+    custom->setCustomSize(48);
+    basicRow->addWidget(custom);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
+    auto* sizeRow = new QHBoxLayout();
+    sizeRow->setSpacing(12);
+    auto* large = new AntAvatar(QStringLiteral("L"));
+    large->setAvatarSize(Ant::AvatarSize::Large);
+    auto* middle = new AntAvatar(QStringLiteral("M"));
+    middle->setAvatarSize(Ant::AvatarSize::Middle);
+    auto* small = new AntAvatar(QStringLiteral("S"));
+    small->setAvatarSize(Ant::AvatarSize::Small);
+    sizeRow->addWidget(large);
+    sizeRow->addWidget(middle);
+    sizeRow->addWidget(small);
+    sizeRow->addStretch();
+    layout->addLayout(sizeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Autoset Font Size")));
+    auto* textRow = new QHBoxLayout();
+    textRow->setSpacing(12);
+    textRow->addWidget(new AntAvatar(QStringLiteral("USER")));
+    auto* longName = new AntAvatar(QStringLiteral("DESIGN"));
+    longName->setCustomSize(56);
+    longName->setGap(6);
+    textRow->addWidget(longName);
+    auto* tinyGap = new AntAvatar(QStringLiteral("ANTD"));
+    tinyGap->setGap(2);
+    textRow->addWidget(tinyGap);
+    textRow->addStretch();
+    layout->addLayout(textRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("With Badge")));
+    auto* badgeRow = new QHBoxLayout();
+    badgeRow->setSpacing(28);
+    auto* countBadge = new AntBadge(3);
+    countBadge->setContentWidget(new AntAvatar(QStringLiteral("A")));
+    badgeRow->addWidget(countBadge);
+    auto* dotBadge = new AntBadge();
+    dotBadge->setDot(true);
+    auto* dotAvatar = new AntAvatar(QStringLiteral("B"));
+    dotAvatar->setShape(Ant::AvatarShape::Square);
+    dotBadge->setContentWidget(dotAvatar);
+    badgeRow->addWidget(dotBadge);
+    badgeRow->addStretch();
+    layout->addLayout(badgeRow);
 
     layout->addStretch();
     return page;
