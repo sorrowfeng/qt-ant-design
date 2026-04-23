@@ -81,6 +81,9 @@ public:
 
     qreal arrowRotation() const;
     void setArrowRotation(qreal rotation);
+    bool isHoveredState() const;
+    bool isPressedState() const;
+    int loadingAngle() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -101,7 +104,6 @@ Q_SIGNALS:
     void maxVisibleItemsChanged(int count);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;

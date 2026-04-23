@@ -13,6 +13,7 @@
 
 #include <algorithm>
 
+#include "../styles/AntSelectStyle.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -188,11 +189,15 @@ AntSelect::AntSelect(QWidget* parent)
         update();
     });
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
         rebuildPopup();
         updateGeometry();
         update();
     });
+
+    auto* selectStyle = new AntSelectStyle(style());
+    selectStyle->setParent(this);
+    setStyle(selectStyle);
 
     updateCursor();
 }
@@ -426,6 +431,12 @@ void AntSelect::setArrowRotation(qreal rotation)
     update();
 }
 
+bool AntSelect::isHoveredState() const { return m_hovered; }
+
+bool AntSelect::isPressedState() const { return m_pressed; }
+
+int AntSelect::loadingAngle() const { return m_loadingAngle; }
+
 QSize AntSelect::sizeHint() const
 {
     const Metrics m = metrics();
@@ -436,92 +447,6 @@ QSize AntSelect::minimumSizeHint() const
 {
     const Metrics m = metrics();
     return QSize(96, m.height);
-}
-
-void AntSelect::paintEvent(QPaintEvent* event)
-{
-    Q_UNUSED(event)
-
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const QRectF control = controlRect();
-    const bool disabled = !isEnabled();
-    const bool focused = hasFocus() || m_open;
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
-    if (focused && isEnabled() && m_variant != Ant::SelectVariant::Borderless && m_variant != Ant::SelectVariant::Underlined)
-    {
-        QColor outline = AntPalette::alpha(borderColor(), 0.16);
-        painter.setPen(QPen(outline, token.controlOutlineWidth));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(control.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
-    }
-
-    if (m_variant != Ant::SelectVariant::Borderless && m_variant != Ant::SelectVariant::Underlined)
-    {
-        painter.setPen(QPen(borderColor(), token.lineWidth));
-        painter.setBrush(backgroundColor());
-        painter.drawRoundedRect(control.adjusted(0.5, 0.5, -0.5, -0.5), m.radius, m.radius);
-    }
-    else
-    {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(backgroundColor());
-        painter.drawRoundedRect(control, m.radius, m.radius);
-        if (m_variant == Ant::SelectVariant::Underlined)
-        {
-            painter.setPen(QPen(borderColor(), focused ? 2 : token.lineWidth));
-            painter.drawLine(QPointF(control.left(), control.bottom() - 0.5), QPointF(control.right(), control.bottom() - 0.5));
-        }
-    }
-
-    const bool hasValue = m_currentIndex >= 0;
-    const QString displayText = hasValue ? currentText() : m_placeholderText;
-    QColor textColor = hasValue ? token.colorText : token.colorTextPlaceholder;
-    if (disabled)
-    {
-        textColor = token.colorTextDisabled;
-    }
-
-    QFont f = painter.font();
-    f.setPixelSize(m.fontSize);
-    painter.setFont(f);
-    painter.setPen(textColor);
-    QRectF textRect = control.adjusted(m.paddingX, 0, -(m.arrowWidth + m.paddingX), 0);
-    painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, displayText);
-
-    const QRectF clearRect = clearButtonRect(m);
-    if (m_loading)
-    {
-        painter.setPen(QPen(disabled ? token.colorTextDisabled : token.colorTextTertiary, 1.6, Qt::SolidLine, Qt::RoundCap));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawArc(clearRect.adjusted(2, 2, -2, -2), m_loadingAngle * 16, 270 * 16);
-    }
-    else if (canClear())
-    {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(token.colorBgBase);
-        painter.drawEllipse(clearRect.adjusted(1, 1, -1, -1));
-        painter.setPen(QPen(token.colorTextTertiary, 1.5, Qt::SolidLine, Qt::RoundCap));
-        painter.drawLine(clearRect.center() + QPointF(-4, -4), clearRect.center() + QPointF(4, 4));
-        painter.drawLine(clearRect.center() + QPointF(4, -4), clearRect.center() + QPointF(-4, 4));
-    }
-    else
-    {
-        painter.save();
-        painter.translate(clearRect.center());
-        painter.rotate(m_arrowRotation);
-        painter.translate(-clearRect.center());
-        painter.setPen(QPen(disabled ? token.colorTextDisabled : token.colorTextTertiary, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        QPainterPath arrow;
-        arrow.moveTo(clearRect.center().x() - 5, clearRect.center().y() - 2);
-        arrow.lineTo(clearRect.center().x(), clearRect.center().y() + 3);
-        arrow.lineTo(clearRect.center().x() + 5, clearRect.center().y() - 2);
-        painter.drawPath(arrow);
-        painter.restore();
-    }
 }
 
 void AntSelect::enterEvent(QEnterEvent* event)

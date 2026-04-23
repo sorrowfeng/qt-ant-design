@@ -1,0 +1,311 @@
+#include "AntSelectStyle.h"
+
+#include <QApplication>
+#include <QEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QStyleOption>
+
+#include <algorithm>
+
+#include "core/AntTheme.h"
+#include "styles/AntPalette.h"
+#include "widgets/AntSelect.h"
+
+namespace
+{
+struct SelectMetrics
+{
+    int height = 32;
+    int fontSize = 14;
+    int radius = 6;
+    int paddingX = 11;
+    int arrowWidth = 28;
+};
+
+SelectMetrics metricsFor(const AntSelect* select)
+{
+    const auto& token = antTheme->tokens();
+    SelectMetrics metrics;
+    metrics.height = token.controlHeight;
+    metrics.fontSize = token.fontSize;
+    metrics.radius = token.borderRadius;
+    metrics.paddingX = token.paddingSM - token.lineWidth;
+    metrics.arrowWidth = token.fontSize + token.paddingXS * 2;
+
+    if (!select)
+    {
+        return metrics;
+    }
+
+    if (select->selectSize() == Ant::SelectSize::Large)
+    {
+        metrics.height = token.controlHeightLG;
+        metrics.fontSize = token.fontSizeLG;
+    }
+    else if (select->selectSize() == Ant::SelectSize::Small)
+    {
+        metrics.height = token.controlHeightSM;
+        metrics.fontSize = token.fontSizeSM;
+        metrics.radius = token.borderRadiusSM;
+        metrics.paddingX = token.paddingXS;
+    }
+
+    return metrics;
+}
+
+QRectF controlRectFor(const AntSelect* select, const QRect& rect)
+{
+    const SelectMetrics metrics = metricsFor(select);
+    return QRectF(1, (rect.height() - metrics.height) / 2.0, rect.width() - 2, metrics.height);
+}
+
+QRectF clearButtonRectFor(const AntSelect* select, const QRect& rect)
+{
+    const SelectMetrics metrics = metricsFor(select);
+    const QRectF control = controlRectFor(select, rect);
+    const qreal size = std::min<qreal>(18, control.height() - 8);
+    return QRectF(control.right() - metrics.paddingX - size,
+                  control.center().y() - size / 2.0,
+                  size,
+                  size);
+}
+
+QColor borderColorFor(const AntSelect* select)
+{
+    const auto& token = antTheme->tokens();
+    if (!select || !select->isEnabled())
+    {
+        return token.colorBorderDisabled;
+    }
+    if (select->status() == Ant::SelectStatus::Error)
+    {
+        return (select->isHoveredState() || select->hasFocus() || select->isOpen())
+            ? token.colorErrorHover
+            : token.colorError;
+    }
+    if (select->status() == Ant::SelectStatus::Warning)
+    {
+        return (select->isHoveredState() || select->hasFocus() || select->isOpen())
+            ? token.colorWarningHover
+            : token.colorWarning;
+    }
+    if (select->isHoveredState() || select->hasFocus() || select->isOpen())
+    {
+        return token.colorPrimaryHover;
+    }
+    return token.colorBorder;
+}
+
+QColor backgroundColorFor(const AntSelect* select)
+{
+    const auto& token = antTheme->tokens();
+    if (!select || !select->isEnabled())
+    {
+        return token.colorBgContainerDisabled;
+    }
+    if (select->variant() == Ant::SelectVariant::Filled)
+    {
+        return select->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary;
+    }
+    if (select->variant() == Ant::SelectVariant::Borderless
+        || select->variant() == Ant::SelectVariant::Underlined)
+    {
+        return QColor(0, 0, 0, 0);
+    }
+    return token.colorBgContainer;
+}
+
+bool canClear(const AntSelect* select)
+{
+    return select
+        && select->isEnabled()
+        && select->allowClear()
+        && select->isHoveredState()
+        && !select->isLoading()
+        && select->currentIndex() >= 0;
+}
+}
+
+AntSelectStyle::AntSelectStyle(QStyle* style)
+    : QProxyStyle(style)
+{
+    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
+        const auto widgets = QApplication::allWidgets();
+        for (QWidget* widget : widgets)
+        {
+            if (qobject_cast<AntSelect*>(widget) && widget->style() == this)
+            {
+                unpolish(widget);
+                polish(widget);
+                widget->updateGeometry();
+                widget->update();
+            }
+        }
+    });
+}
+
+void AntSelectStyle::polish(QWidget* widget)
+{
+    QProxyStyle::polish(widget);
+    if (qobject_cast<AntSelect*>(widget))
+    {
+        widget->installEventFilter(this);
+        widget->setAttribute(Qt::WA_Hover, true);
+    }
+}
+
+void AntSelectStyle::unpolish(QWidget* widget)
+{
+    if (qobject_cast<AntSelect*>(widget))
+    {
+        widget->removeEventFilter(this);
+    }
+    QProxyStyle::unpolish(widget);
+}
+
+void AntSelectStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
+{
+    if (element == QStyle::PE_Widget && qobject_cast<const AntSelect*>(widget))
+    {
+        drawSelect(option, painter, widget);
+        return;
+    }
+
+    QProxyStyle::drawPrimitive(element, option, painter, widget);
+}
+
+bool AntSelectStyle::eventFilter(QObject* watched, QEvent* event)
+{
+    auto* select = qobject_cast<AntSelect*>(watched);
+    if (select && event->type() == QEvent::Paint)
+    {
+        QStyleOption option;
+        option.initFrom(select);
+        option.rect = select->rect();
+        if (select->isHoveredState())
+        {
+            option.state |= QStyle::State_MouseOver;
+        }
+        if (select->isPressedState())
+        {
+            option.state |= QStyle::State_Sunken;
+        }
+        if (select->isOpen())
+        {
+            option.state |= QStyle::State_On;
+        }
+
+        QPainter painter(select);
+        drawPrimitive(QStyle::PE_Widget, &option, &painter, select);
+        return false;
+    }
+
+    return QProxyStyle::eventFilter(watched, event);
+}
+
+void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
+{
+    const auto* select = qobject_cast<const AntSelect*>(widget);
+    if (!select || !painter || !option)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    const SelectMetrics metrics = metricsFor(select);
+    const QRectF control = controlRectFor(select, option->rect);
+    const QRectF clearRect = clearButtonRectFor(select, option->rect);
+    const bool disabled = !option->state.testFlag(QStyle::State_Enabled);
+    const bool focused = option->state.testFlag(QStyle::State_HasFocus) || select->isOpen();
+    const QColor borderColor = borderColorFor(select);
+    const QColor backgroundColor = backgroundColorFor(select);
+
+    painter->save();
+    painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+
+    if (focused
+        && !disabled
+        && select->variant() != Ant::SelectVariant::Borderless
+        && select->variant() != Ant::SelectVariant::Underlined)
+    {
+        const QColor outline = AntPalette::alpha(borderColor, 0.16);
+        painter->setPen(QPen(outline, token.controlOutlineWidth));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), metrics.radius + 1, metrics.radius + 1);
+    }
+
+    if (select->variant() != Ant::SelectVariant::Borderless
+        && select->variant() != Ant::SelectVariant::Underlined)
+    {
+        painter->setPen(QPen(borderColor, token.lineWidth));
+        painter->setBrush(backgroundColor);
+        painter->drawRoundedRect(control.adjusted(0.5, 0.5, -0.5, -0.5), metrics.radius, metrics.radius);
+    }
+    else
+    {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(backgroundColor);
+        painter->drawRoundedRect(control, metrics.radius, metrics.radius);
+        if (select->variant() == Ant::SelectVariant::Underlined)
+        {
+            painter->setPen(QPen(borderColor, focused ? 2 : token.lineWidth));
+            painter->drawLine(QPointF(control.left(), control.bottom() - 0.5),
+                              QPointF(control.right(), control.bottom() - 0.5));
+        }
+    }
+
+    const bool hasValue = select->currentIndex() >= 0;
+    const QString displayText = hasValue ? select->currentText() : select->placeholderText();
+    QColor textColor = hasValue ? token.colorText : token.colorTextPlaceholder;
+    if (disabled)
+    {
+        textColor = token.colorTextDisabled;
+    }
+
+    QFont font = painter->font();
+    font.setPixelSize(metrics.fontSize);
+    painter->setFont(font);
+    painter->setPen(textColor);
+    const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);
+    painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, displayText);
+
+    if (select->isLoading())
+    {
+        painter->setPen(QPen(disabled ? token.colorTextDisabled : token.colorTextTertiary,
+                             1.6,
+                             Qt::SolidLine,
+                             Qt::RoundCap));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawArc(clearRect.adjusted(2, 2, -2, -2), select->loadingAngle() * 16, 270 * 16);
+    }
+    else if (canClear(select))
+    {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(token.colorBgBase);
+        painter->drawEllipse(clearRect.adjusted(1, 1, -1, -1));
+        painter->setPen(QPen(token.colorTextTertiary, 1.5, Qt::SolidLine, Qt::RoundCap));
+        painter->drawLine(clearRect.center() + QPointF(-4, -4), clearRect.center() + QPointF(4, 4));
+        painter->drawLine(clearRect.center() + QPointF(4, -4), clearRect.center() + QPointF(-4, 4));
+    }
+    else
+    {
+        painter->save();
+        painter->translate(clearRect.center());
+        painter->rotate(select->arrowRotation());
+        painter->translate(-clearRect.center());
+        painter->setPen(QPen(disabled ? token.colorTextDisabled : token.colorTextTertiary,
+                             1.7,
+                             Qt::SolidLine,
+                             Qt::RoundCap,
+                             Qt::RoundJoin));
+        QPainterPath arrow;
+        arrow.moveTo(clearRect.center().x() - 5, clearRect.center().y() - 2);
+        arrow.lineTo(clearRect.center().x(), clearRect.center().y() + 3);
+        arrow.lineTo(clearRect.center().x() + 5, clearRect.center().y() - 2);
+        painter->drawPath(arrow);
+        painter->restore();
+    }
+
+    painter->restore();
+}

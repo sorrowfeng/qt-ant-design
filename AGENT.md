@@ -135,7 +135,7 @@
   - 对应 Ant Design Select。
   - 支持属性：`selectSize`、`status`、`variant`、`placeholderText`、`allowClear`、`loading`、`open`、`currentIndex`、`maxVisibleItems`。
   - 支持信号：`currentIndexChanged`、`currentTextChanged`、`currentValueChanged`、`optionSelected`、`openChanged`、`cleared`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制选择框、状态边框、清除按钮、loading spinner 和展开箭头；下拉项使用自绘 popup row。
+  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntSelectStyle`），通过独立 Style 绘制选择框、状态边框、清除按钮、loading spinner 和展开箭头；下拉项继续使用自绘 popup row。
   - 交互方式：支持鼠标展开/选择/清除，支持 Space/Enter/Escape/Up/Down 键盘操作。
 - [x] `AntSlider`
   - 对应 Ant Design Slider。
