@@ -183,6 +183,21 @@ enum class NotificationPlacement
 };
 Q_ENUM_NS(NotificationPlacement)
 
+enum class MenuMode
+{
+    Vertical,
+    Horizontal,
+    Inline,
+};
+Q_ENUM_NS(MenuMode)
+
+enum class MenuTheme
+{
+    Light,
+    Dark,
+};
+Q_ENUM_NS(MenuTheme)
+
 enum class CardSize
 {
     Default,

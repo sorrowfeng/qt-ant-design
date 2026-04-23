@@ -18,6 +18,7 @@
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntMessage.h"
+#include "widgets/AntMenu.h"
 #include "widgets/AntNotification.h"
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
@@ -88,6 +89,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createDatePickerPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
     m_stack->addWidget(wrapPage(createMessagePage()));
+    m_stack->addWidget(wrapPage(createMenuPage()));
     m_stack->addWidget(wrapPage(createNotificationPage()));
     m_stack->addWidget(wrapPage(createProgressPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
@@ -102,15 +104,16 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("DatePicker"), 2);
     addNavButton(QStringLiteral("Input"), 3);
     addNavButton(QStringLiteral("Message"), 4);
-    addNavButton(QStringLiteral("Notification"), 5);
-    addNavButton(QStringLiteral("Progress"), 6);
-    addNavButton(QStringLiteral("Radio"), 7);
-    addNavButton(QStringLiteral("Select"), 8);
-    addNavButton(QStringLiteral("Slider"), 9);
-    addNavButton(QStringLiteral("Spin"), 10);
-    addNavButton(QStringLiteral("Switch"), 11);
-    addNavButton(QStringLiteral("TimePicker"), 12);
-    addNavButton(QStringLiteral("Card"), 13);
+    addNavButton(QStringLiteral("Menu"), 5);
+    addNavButton(QStringLiteral("Notification"), 6);
+    addNavButton(QStringLiteral("Progress"), 7);
+    addNavButton(QStringLiteral("Radio"), 8);
+    addNavButton(QStringLiteral("Select"), 9);
+    addNavButton(QStringLiteral("Slider"), 10);
+    addNavButton(QStringLiteral("Spin"), 11);
+    addNavButton(QStringLiteral("Switch"), 12);
+    addNavButton(QStringLiteral("TimePicker"), 13);
+    addNavButton(QStringLiteral("Card"), 14);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -454,6 +457,72 @@ QWidget* ExampleWindow::createMessagePage()
     durationRow->addWidget(stickyMsg);
     durationRow->addStretch();
     layout->addLayout(durationRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createMenuPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Inline")));
+    auto* inlineRow = new QHBoxLayout();
+    inlineRow->setSpacing(18);
+    auto* inlineMenu = new AntMenu();
+    inlineMenu->setMode(Ant::MenuMode::Inline);
+    inlineMenu->setSelectedKey(QStringLiteral("dashboard"));
+    inlineMenu->addItem(QStringLiteral("dashboard"), QStringLiteral("Dashboard"), QStringLiteral("D"));
+    inlineMenu->addSubMenu(QStringLiteral("workspace"), QStringLiteral("Workspace"), QStringLiteral("W"));
+    inlineMenu->addSubItem(QStringLiteral("workspace"), QStringLiteral("projects"), QStringLiteral("Projects"), QStringLiteral("P"));
+    inlineMenu->addSubItem(QStringLiteral("workspace"), QStringLiteral("tasks"), QStringLiteral("Tasks"), QStringLiteral("T"), QStringLiteral("12"));
+    inlineMenu->addDivider();
+    inlineMenu->addItem(QStringLiteral("settings"), QStringLiteral("Settings"), QStringLiteral("S"));
+    inlineMenu->setMinimumHeight(250);
+    inlineRow->addWidget(inlineMenu);
+
+    auto* collapsedMenu = new AntMenu();
+    collapsedMenu->setMode(Ant::MenuMode::Inline);
+    collapsedMenu->setInlineCollapsed(true);
+    collapsedMenu->setSelectedKey(QStringLiteral("projects"));
+    collapsedMenu->addItem(QStringLiteral("dashboard"), QStringLiteral("Dashboard"), QStringLiteral("D"));
+    collapsedMenu->addItem(QStringLiteral("projects"), QStringLiteral("Projects"), QStringLiteral("P"));
+    collapsedMenu->addItem(QStringLiteral("settings"), QStringLiteral("Settings"), QStringLiteral("S"));
+    collapsedMenu->setFixedWidth(80);
+    collapsedMenu->setMinimumHeight(250);
+    inlineRow->addWidget(collapsedMenu);
+    inlineRow->addStretch();
+    layout->addLayout(inlineRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Horizontal")));
+    auto* horizontal = new AntMenu();
+    horizontal->setMode(Ant::MenuMode::Horizontal);
+    horizontal->setSelectedKey(QStringLiteral("mail"));
+    horizontal->addItem(QStringLiteral("mail"), QStringLiteral("Mail"), QStringLiteral("M"));
+    horizontal->addItem(QStringLiteral("calendar"), QStringLiteral("Calendar"), QStringLiteral("C"));
+    horizontal->addSubMenu(QStringLiteral("reports"), QStringLiteral("Reports"), QStringLiteral("R"));
+    horizontal->addItem(QStringLiteral("disabled"), QStringLiteral("Disabled"), QStringLiteral("X"), QString(), true);
+    horizontal->setMinimumHeight(48);
+    layout->addWidget(horizontal);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Dark and Danger")));
+    auto* darkRow = new QHBoxLayout();
+    darkRow->setSpacing(18);
+    auto* darkMenu = new AntMenu();
+    darkMenu->setMenuTheme(Ant::MenuTheme::Dark);
+    darkMenu->setMode(Ant::MenuMode::Vertical);
+    darkMenu->setSelectedKey(QStringLiteral("profile"));
+    darkMenu->addItem(QStringLiteral("profile"), QStringLiteral("Profile"), QStringLiteral("P"));
+    darkMenu->addItem(QStringLiteral("billing"), QStringLiteral("Billing"), QStringLiteral("B"));
+    darkMenu->addItem(QStringLiteral("danger"), QStringLiteral("Danger zone"), QStringLiteral("!"), QString(), false, true);
+    darkMenu->addItem(QStringLiteral("disabled-dark"), QStringLiteral("Disabled"), QStringLiteral("X"), QString(), true);
+    darkMenu->setMinimumHeight(200);
+    darkRow->addWidget(darkMenu);
+    darkRow->addStretch();
+    layout->addLayout(darkRow);
 
     layout->addStretch();
     return page;
