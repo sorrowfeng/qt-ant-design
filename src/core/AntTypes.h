@@ -172,6 +172,17 @@ enum class MessageType
 };
 Q_ENUM_NS(MessageType)
 
+enum class NotificationPlacement
+{
+    Top,
+    TopLeft,
+    TopRight,
+    Bottom,
+    BottomLeft,
+    BottomRight,
+};
+Q_ENUM_NS(NotificationPlacement)
+
 enum class CardSize
 {
     Default,

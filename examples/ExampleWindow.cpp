@@ -18,6 +18,7 @@
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntMessage.h"
+#include "widgets/AntNotification.h"
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
 #include "widgets/AntSelect.h"
@@ -87,6 +88,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createDatePickerPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
     m_stack->addWidget(wrapPage(createMessagePage()));
+    m_stack->addWidget(wrapPage(createNotificationPage()));
     m_stack->addWidget(wrapPage(createProgressPage()));
     m_stack->addWidget(wrapPage(createRadioPage()));
     m_stack->addWidget(wrapPage(createSelectPage()));
@@ -100,14 +102,15 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("DatePicker"), 2);
     addNavButton(QStringLiteral("Input"), 3);
     addNavButton(QStringLiteral("Message"), 4);
-    addNavButton(QStringLiteral("Progress"), 5);
-    addNavButton(QStringLiteral("Radio"), 6);
-    addNavButton(QStringLiteral("Select"), 7);
-    addNavButton(QStringLiteral("Slider"), 8);
-    addNavButton(QStringLiteral("Spin"), 9);
-    addNavButton(QStringLiteral("Switch"), 10);
-    addNavButton(QStringLiteral("TimePicker"), 11);
-    addNavButton(QStringLiteral("Card"), 12);
+    addNavButton(QStringLiteral("Notification"), 5);
+    addNavButton(QStringLiteral("Progress"), 6);
+    addNavButton(QStringLiteral("Radio"), 7);
+    addNavButton(QStringLiteral("Select"), 8);
+    addNavButton(QStringLiteral("Slider"), 9);
+    addNavButton(QStringLiteral("Spin"), 10);
+    addNavButton(QStringLiteral("Switch"), 11);
+    addNavButton(QStringLiteral("TimePicker"), 12);
+    addNavButton(QStringLiteral("Card"), 13);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -449,6 +452,103 @@ QWidget* ExampleWindow::createMessagePage()
     connect(stickyMsg, &AntButton::clicked, this, [this]() { AntMessage::info(QStringLiteral("Click this message to close it"), this, 0); });
     durationRow->addWidget(shortMsg);
     durationRow->addWidget(stickyMsg);
+    durationRow->addStretch();
+    layout->addLayout(durationRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createNotificationPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Types")));
+    auto* typeRow = new QHBoxLayout();
+    typeRow->setSpacing(12);
+    auto* info = new AntButton(QStringLiteral("Info"));
+    auto* success = new AntButton(QStringLiteral("Success"));
+    auto* warning = new AntButton(QStringLiteral("Warning"));
+    auto* error = new AntButton(QStringLiteral("Error"));
+    connect(info, &AntButton::clicked, this, [this]() {
+        AntNotification::info(QStringLiteral("Notification"),
+                              QStringLiteral("This is an information notification with a longer description."),
+                              this);
+    });
+    connect(success, &AntButton::clicked, this, [this]() {
+        AntNotification::success(QStringLiteral("Success"),
+                                 QStringLiteral("The operation completed and the result is ready."),
+                                 this);
+    });
+    connect(warning, &AntButton::clicked, this, [this]() {
+        AntNotification::warning(QStringLiteral("Warning"),
+                                 QStringLiteral("Please review the pending configuration before continuing."),
+                                 this);
+    });
+    connect(error, &AntButton::clicked, this, [this]() {
+        AntNotification::error(QStringLiteral("Error"),
+                               QStringLiteral("The request failed. Check the connection and try again."),
+                               this);
+    });
+    typeRow->addWidget(info);
+    typeRow->addWidget(success);
+    typeRow->addWidget(warning);
+    typeRow->addWidget(error);
+    typeRow->addStretch();
+    layout->addLayout(typeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Placement")));
+    auto* placementRow = new QHBoxLayout();
+    placementRow->setSpacing(12);
+    const QList<QPair<QString, Ant::NotificationPlacement>> placements = {
+        {QStringLiteral("Top left"), Ant::NotificationPlacement::TopLeft},
+        {QStringLiteral("Top"), Ant::NotificationPlacement::Top},
+        {QStringLiteral("Top right"), Ant::NotificationPlacement::TopRight},
+        {QStringLiteral("Bottom left"), Ant::NotificationPlacement::BottomLeft},
+        {QStringLiteral("Bottom"), Ant::NotificationPlacement::Bottom},
+        {QStringLiteral("Bottom right"), Ant::NotificationPlacement::BottomRight},
+    };
+    for (const auto& item : placements)
+    {
+        auto* button = new AntButton(item.first);
+        connect(button, &AntButton::clicked, this, [this, item]() {
+            AntNotification::info(item.first,
+                                  QStringLiteral("Placement follows the Ant Design notification API."),
+                                  this,
+                                  3000,
+                                  item.second);
+        });
+        placementRow->addWidget(button);
+    }
+    placementRow->addStretch();
+    layout->addLayout(placementRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Duration and Progress")));
+    auto* durationRow = new QHBoxLayout();
+    durationRow->setSpacing(12);
+    auto* progress = new AntButton(QStringLiteral("Progress"));
+    auto* sticky = new AntButton(QStringLiteral("Manual close"));
+    auto* closeAll = new AntButton(QStringLiteral("Close all"));
+    connect(progress, &AntButton::clicked, this, [this]() {
+        auto* notification = AntNotification::success(QStringLiteral("Uploading"),
+                                                      QStringLiteral("Progress bar shows the remaining display time."),
+                                                      this,
+                                                      5000);
+        notification->setShowProgress(true);
+    });
+    connect(sticky, &AntButton::clicked, this, [this]() {
+        AntNotification::warning(QStringLiteral("Manual close"),
+                                 QStringLiteral("This notification will stay until the close button is clicked."),
+                                 this,
+                                 0);
+    });
+    connect(closeAll, &AntButton::clicked, this, []() { AntNotification::closeAll(); });
+    durationRow->addWidget(progress);
+    durationRow->addWidget(sticky);
+    durationRow->addWidget(closeAll);
     durationRow->addStretch();
     layout->addLayout(durationRow);
 

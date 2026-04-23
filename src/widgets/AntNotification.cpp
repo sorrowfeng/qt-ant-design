@@ -1,0 +1,641 @@
+#include "AntNotification.h"
+
+#include <QApplication>
+#include <QEnterEvent>
+#include <QGuiApplication>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QScreen>
+#include <QShowEvent>
+#include <QTextOption>
+#include <QTimer>
+
+#include <algorithm>
+
+#include "core/AntTheme.h"
+#include "styles/AntPalette.h"
+
+namespace
+{
+constexpr int NoticeWidth = 384;
+constexpr int ShadowInset = 10;
+
+bool isTopPlacement(Ant::NotificationPlacement placement)
+{
+    return placement == Ant::NotificationPlacement::Top || placement == Ant::NotificationPlacement::TopLeft ||
+           placement == Ant::NotificationPlacement::TopRight;
+}
+
+bool isLeftPlacement(Ant::NotificationPlacement placement)
+{
+    return placement == Ant::NotificationPlacement::TopLeft || placement == Ant::NotificationPlacement::BottomLeft;
+}
+
+bool isRightPlacement(Ant::NotificationPlacement placement)
+{
+    return placement == Ant::NotificationPlacement::TopRight || placement == Ant::NotificationPlacement::BottomRight;
+}
+} // namespace
+
+AntNotification::AntNotification(QWidget* parent)
+    : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+{
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAttribute(Qt::WA_ShowWithoutActivating, true);
+    setAttribute(Qt::WA_DeleteOnClose, true);
+    setMouseTracking(true);
+
+    m_closeTimer = new QTimer(this);
+    m_closeTimer->setSingleShot(true);
+    connect(m_closeTimer, &QTimer::timeout, this, &QWidget::close);
+
+    m_progressTimer = new QTimer(this);
+    connect(m_progressTimer, &QTimer::timeout, this, [this]() { update(); });
+
+    m_spinnerTimer = new QTimer(this);
+    connect(m_spinnerTimer, &QTimer::timeout, this, [this]() {
+        m_spinnerAngle = (m_spinnerAngle + 30) % 360;
+        update();
+    });
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        adjustSize();
+        relayoutNotifications(m_anchor);
+        update();
+    });
+}
+
+AntNotification* AntNotification::open(const QString& title,
+                                       const QString& description,
+                                       Ant::MessageType type,
+                                       QWidget* anchor,
+                                       int durationMs,
+                                       Ant::NotificationPlacement placement)
+{
+    auto* notification = new AntNotification();
+    notification->m_anchor = anchor;
+    notification->setTitle(title);
+    notification->setDescription(description);
+    notification->setNotificationType(type);
+    notification->setPlacement(placement);
+    notification->setDuration(durationMs);
+    notification->adjustSize();
+    activeNotifications().append(notification);
+
+    QObject::connect(notification, &QObject::destroyed, [notification, anchor]() {
+        activeNotifications().removeAll(notification);
+        relayoutNotifications(anchor);
+    });
+
+    notification->show();
+    relayoutNotifications(anchor);
+    return notification;
+}
+
+AntNotification* AntNotification::info(const QString& title,
+                                       const QString& description,
+                                       QWidget* anchor,
+                                       int durationMs,
+                                       Ant::NotificationPlacement placement)
+{
+    return open(title, description, Ant::MessageType::Info, anchor, durationMs, placement);
+}
+
+AntNotification* AntNotification::success(const QString& title,
+                                          const QString& description,
+                                          QWidget* anchor,
+                                          int durationMs,
+                                          Ant::NotificationPlacement placement)
+{
+    return open(title, description, Ant::MessageType::Success, anchor, durationMs, placement);
+}
+
+AntNotification* AntNotification::warning(const QString& title,
+                                          const QString& description,
+                                          QWidget* anchor,
+                                          int durationMs,
+                                          Ant::NotificationPlacement placement)
+{
+    return open(title, description, Ant::MessageType::Warning, anchor, durationMs, placement);
+}
+
+AntNotification* AntNotification::error(const QString& title,
+                                        const QString& description,
+                                        QWidget* anchor,
+                                        int durationMs,
+                                        Ant::NotificationPlacement placement)
+{
+    return open(title, description, Ant::MessageType::Error, anchor, durationMs, placement);
+}
+
+void AntNotification::closeAll()
+{
+    const auto notifications = activeNotifications();
+    for (AntNotification* notification : notifications)
+    {
+        if (notification)
+        {
+            notification->close();
+        }
+    }
+}
+
+QString AntNotification::title() const { return m_title; }
+
+void AntNotification::setTitle(const QString& title)
+{
+    if (m_title == title)
+    {
+        return;
+    }
+    m_title = title;
+    adjustSize();
+    update();
+    Q_EMIT titleChanged(m_title);
+}
+
+QString AntNotification::description() const { return m_description; }
+
+void AntNotification::setDescription(const QString& description)
+{
+    if (m_description == description)
+    {
+        return;
+    }
+    m_description = description;
+    adjustSize();
+    update();
+    Q_EMIT descriptionChanged(m_description);
+}
+
+Ant::MessageType AntNotification::notificationType() const { return m_notificationType; }
+
+void AntNotification::setNotificationType(Ant::MessageType type)
+{
+    if (m_notificationType == type)
+    {
+        return;
+    }
+    m_notificationType = type;
+    updateSpinnerState();
+    update();
+    Q_EMIT notificationTypeChanged(m_notificationType);
+}
+
+Ant::NotificationPlacement AntNotification::placement() const { return m_placement; }
+
+void AntNotification::setPlacement(Ant::NotificationPlacement placement)
+{
+    if (m_placement == placement)
+    {
+        return;
+    }
+    m_placement = placement;
+    relayoutNotifications(m_anchor);
+    Q_EMIT placementChanged(m_placement);
+}
+
+int AntNotification::duration() const { return m_duration; }
+
+void AntNotification::setDuration(int durationMs)
+{
+    durationMs = std::max(0, durationMs);
+    if (m_duration == durationMs)
+    {
+        return;
+    }
+    m_duration = durationMs;
+    m_remainingMs = durationMs;
+    startCloseTimer();
+    Q_EMIT durationChanged(m_duration);
+}
+
+bool AntNotification::pauseOnHover() const { return m_pauseOnHover; }
+
+void AntNotification::setPauseOnHover(bool pause)
+{
+    if (m_pauseOnHover == pause)
+    {
+        return;
+    }
+    m_pauseOnHover = pause;
+    Q_EMIT pauseOnHoverChanged(m_pauseOnHover);
+}
+
+bool AntNotification::showProgress() const { return m_showProgress; }
+
+void AntNotification::setShowProgress(bool show)
+{
+    if (m_showProgress == show)
+    {
+        return;
+    }
+    m_showProgress = show;
+    if (m_showProgress && m_duration > 0 && isVisible())
+    {
+        m_progressTimer->start(50);
+    }
+    else
+    {
+        m_progressTimer->stop();
+    }
+    update();
+    Q_EMIT showProgressChanged(m_showProgress);
+}
+
+bool AntNotification::isClosable() const { return m_closable; }
+
+void AntNotification::setClosable(bool closable)
+{
+    if (m_closable == closable)
+    {
+        return;
+    }
+    m_closable = closable;
+    update();
+    Q_EMIT closableChanged(m_closable);
+}
+
+QSize AntNotification::sizeHint() const
+{
+    const auto& token = antTheme->tokens();
+    const int contentWidth = NoticeWidth - token.paddingLG * 2 - 30 - token.marginSM - (m_closable ? 28 : 0);
+
+    QFont titleFont = font();
+    titleFont.setPixelSize(token.fontSizeLG);
+    titleFont.setWeight(QFont::DemiBold);
+    QFont descFont = font();
+    descFont.setPixelSize(token.fontSize);
+
+    const int titleHeight = m_title.isEmpty() ? 0 : QFontMetrics(titleFont).height();
+    const QRect descBounds = QFontMetrics(descFont).boundingRect(QRect(0, 0, contentWidth, 400),
+                                                                 Qt::TextWordWrap,
+                                                                 m_description);
+    const int descHeight = m_description.isEmpty() ? 0 : descBounds.height();
+    const int gap = (!m_title.isEmpty() && !m_description.isEmpty()) ? token.marginXS : 0;
+    const int cardHeight = std::max(86, token.padding * 2 + titleHeight + gap + descHeight + (m_showProgress ? 2 : 0));
+    return QSize(NoticeWidth + ShadowInset * 2, cardHeight + ShadowInset * 2);
+}
+
+QSize AntNotification::minimumSizeHint() const
+{
+    return QSize(NoticeWidth + ShadowInset * 2, 96);
+}
+
+void AntNotification::paintEvent(QPaintEvent* event)
+{
+    Q_UNUSED(event)
+    const auto& token = antTheme->tokens();
+    const QRectF card = noticeRect();
+
+    QPainter painter(this);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+    antTheme->drawEffectShadow(&painter, card.toRect(), 14, token.borderRadiusLG, 0.7);
+
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(token.colorBgElevated);
+    painter.drawRoundedRect(card, token.borderRadiusLG, token.borderRadiusLG);
+
+    const QRectF iconRect(card.left() + token.paddingLG, card.top() + token.padding + 2, 22, 22);
+    drawTypeIcon(painter, iconRect);
+
+    if (m_closable)
+    {
+        const QRectF closeRect = closeButtonRect();
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(m_closeHovered ? token.colorFillTertiary : Qt::transparent);
+        painter.drawRoundedRect(closeRect, token.borderRadiusSM, token.borderRadiusSM);
+        painter.setPen(QPen(m_closeHovered ? token.colorTextSecondary : token.colorTextTertiary, 1.6, Qt::SolidLine, Qt::RoundCap));
+        const QPointF c = closeRect.center();
+        painter.drawLine(QPointF(c.x() - 4, c.y() - 4), QPointF(c.x() + 4, c.y() + 4));
+        painter.drawLine(QPointF(c.x() + 4, c.y() - 4), QPointF(c.x() - 4, c.y() + 4));
+    }
+
+    const qreal textLeft = iconRect.right() + token.marginSM;
+    const qreal textRight = card.right() - token.paddingLG - (m_closable ? 28 : 0);
+    QRectF titleRect(textLeft, card.top() + token.padding - 1, textRight - textLeft, token.controlHeightSM);
+
+    QFont titleFont = painter.font();
+    titleFont.setPixelSize(token.fontSizeLG);
+    titleFont.setWeight(QFont::DemiBold);
+    painter.setFont(titleFont);
+    painter.setPen(token.colorText);
+    if (!m_title.isEmpty())
+    {
+        painter.drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, m_title);
+        titleRect.moveTop(titleRect.bottom() + token.marginXS - 2);
+    }
+
+    QFont descFont = painter.font();
+    descFont.setPixelSize(token.fontSize);
+    descFont.setWeight(QFont::Normal);
+    painter.setFont(descFont);
+    painter.setPen(token.colorTextSecondary);
+    QTextOption option;
+    option.setWrapMode(QTextOption::WordWrap);
+    option.setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    const QRectF descRect(textLeft, titleRect.top(), textRight - textLeft, card.bottom() - titleRect.top() - token.padding);
+    painter.drawText(descRect, m_description, option);
+
+    if (m_showProgress && m_duration > 0)
+    {
+        const QRectF track(card.left(), card.bottom() - 2, card.width(), 2);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(token.colorFillQuaternary);
+        painter.drawRect(track);
+        painter.setBrush(accentColor());
+        painter.drawRect(QRectF(track.left(), track.top(), track.width() * progressRatio(), track.height()));
+    }
+}
+
+void AntNotification::showEvent(QShowEvent* event)
+{
+    m_remainingMs = m_duration;
+    startCloseTimer();
+    updateSpinnerState();
+    QWidget::showEvent(event);
+}
+
+void AntNotification::hideEvent(QHideEvent* event)
+{
+    m_closeTimer->stop();
+    m_progressTimer->stop();
+    m_spinnerTimer->stop();
+    Q_EMIT closed();
+    QWidget::hideEvent(event);
+}
+
+void AntNotification::enterEvent(QEnterEvent* event)
+{
+    m_hovered = true;
+    if (m_pauseOnHover)
+    {
+        pauseCloseTimer();
+    }
+    QWidget::enterEvent(event);
+}
+
+void AntNotification::leaveEvent(QEvent* event)
+{
+    m_hovered = false;
+    m_closeHovered = false;
+    if (m_pauseOnHover)
+    {
+        resumeCloseTimer();
+    }
+    update();
+    QWidget::leaveEvent(event);
+}
+
+void AntNotification::mouseMoveEvent(QMouseEvent* event)
+{
+    const bool hoveringClose = m_closable && closeButtonRect().contains(event->position());
+    if (m_closeHovered != hoveringClose)
+    {
+        m_closeHovered = hoveringClose;
+        update();
+    }
+    QWidget::mouseMoveEvent(event);
+}
+
+void AntNotification::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        if (m_closable && closeButtonRect().contains(event->position()))
+        {
+            close();
+            event->accept();
+            return;
+        }
+        Q_EMIT clicked();
+    }
+    QWidget::mousePressEvent(event);
+}
+
+QList<AntNotification*>& AntNotification::activeNotifications()
+{
+    static QList<AntNotification*> notifications;
+    return notifications;
+}
+
+void AntNotification::relayoutNotifications(QWidget* anchor)
+{
+    QRect targetRect;
+    if (anchor)
+    {
+        targetRect = QRect(anchor->mapToGlobal(QPoint(0, 0)), anchor->size());
+    }
+    else if (QScreen* screen = QGuiApplication::primaryScreen())
+    {
+        targetRect = screen->availableGeometry();
+    }
+    else
+    {
+        targetRect = QRect(0, 0, 1024, 768);
+    }
+
+    const auto& token = antTheme->tokens();
+    for (Ant::NotificationPlacement placement :
+         {Ant::NotificationPlacement::Top,
+          Ant::NotificationPlacement::TopLeft,
+          Ant::NotificationPlacement::TopRight,
+          Ant::NotificationPlacement::Bottom,
+          Ant::NotificationPlacement::BottomLeft,
+          Ant::NotificationPlacement::BottomRight})
+    {
+        int edge = token.marginLG;
+        int cursor = isTopPlacement(placement) ? targetRect.top() + edge : targetRect.bottom() - edge;
+        for (AntNotification* notification : activeNotifications())
+        {
+            if (!notification || notification->m_placement != placement)
+            {
+                continue;
+            }
+            notification->adjustSize();
+            int x = targetRect.center().x() - notification->width() / 2;
+            if (isLeftPlacement(placement))
+            {
+                x = targetRect.left() + edge;
+            }
+            else if (isRightPlacement(placement))
+            {
+                x = targetRect.right() - edge - notification->width();
+            }
+
+            int y = cursor;
+            if (isTopPlacement(placement))
+            {
+                cursor += notification->height() + token.margin;
+            }
+            else
+            {
+                y -= notification->height();
+                cursor = y - token.margin;
+            }
+            notification->move(x, y);
+        }
+    }
+}
+
+QRectF AntNotification::noticeRect() const
+{
+    return rect().adjusted(ShadowInset, ShadowInset, -ShadowInset, -ShadowInset);
+}
+
+QRectF AntNotification::closeButtonRect() const
+{
+    const auto& token = antTheme->tokens();
+    const QRectF card = noticeRect();
+    const qreal size = token.controlHeightLG * 0.55;
+    return QRectF(card.right() - token.paddingLG - size, card.top() + token.paddingMD - 4, size, size);
+}
+
+QColor AntNotification::accentColor() const
+{
+    const auto& token = antTheme->tokens();
+    switch (m_notificationType)
+    {
+    case Ant::MessageType::Success:
+        return token.colorSuccess;
+    case Ant::MessageType::Warning:
+        return token.colorWarning;
+    case Ant::MessageType::Error:
+        return token.colorError;
+    case Ant::MessageType::Loading:
+    case Ant::MessageType::Info:
+    default:
+        return token.colorPrimary;
+    }
+}
+
+qreal AntNotification::progressRatio() const
+{
+    if (m_duration <= 0)
+    {
+        return 0.0;
+    }
+    int remaining = m_remainingMs;
+    if (m_closeTimer->isActive() && m_countdown.isValid())
+    {
+        remaining = std::max(0, m_remainingMs - static_cast<int>(m_countdown.elapsed()));
+    }
+    return std::clamp(static_cast<qreal>(remaining) / static_cast<qreal>(m_duration), 0.0, 1.0);
+}
+
+void AntNotification::startCloseTimer()
+{
+    if (m_duration > 0 && isVisible() && !m_hovered)
+    {
+        m_remainingMs = m_duration;
+        m_countdown.restart();
+        m_closeTimer->start(m_remainingMs);
+        if (m_showProgress)
+        {
+            m_progressTimer->start(50);
+        }
+    }
+    else
+    {
+        m_closeTimer->stop();
+        m_progressTimer->stop();
+    }
+}
+
+void AntNotification::pauseCloseTimer()
+{
+    if (m_closeTimer->isActive() && m_countdown.isValid())
+    {
+        m_remainingMs = std::max(0, m_remainingMs - static_cast<int>(m_countdown.elapsed()));
+        m_closeTimer->stop();
+        m_progressTimer->stop();
+        update();
+    }
+}
+
+void AntNotification::resumeCloseTimer()
+{
+    if (m_duration > 0 && isVisible() && m_remainingMs > 0)
+    {
+        m_countdown.restart();
+        m_closeTimer->start(m_remainingMs);
+        if (m_showProgress)
+        {
+            m_progressTimer->start(50);
+        }
+    }
+}
+
+void AntNotification::updateSpinnerState()
+{
+    if (m_notificationType == Ant::MessageType::Loading && isVisible())
+    {
+        m_spinnerTimer->start(80);
+    }
+    else
+    {
+        m_spinnerTimer->stop();
+    }
+}
+
+void AntNotification::drawTypeIcon(QPainter& painter, const QRectF& rect) const
+{
+    if (m_notificationType == Ant::MessageType::Loading)
+    {
+        drawSpinner(painter, rect);
+        return;
+    }
+
+    const QColor color = accentColor();
+    painter.save();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+
+    if (m_notificationType == Ant::MessageType::Warning)
+    {
+        QPainterPath triangle;
+        triangle.moveTo(rect.center().x(), rect.top() + 1);
+        triangle.lineTo(rect.right() - 1, rect.bottom() - 1);
+        triangle.lineTo(rect.left() + 1, rect.bottom() - 1);
+        triangle.closeSubpath();
+        painter.drawPath(triangle);
+        painter.setPen(QPen(antTheme->tokens().colorTextLightSolid, 1.6, Qt::SolidLine, Qt::RoundCap));
+        painter.drawLine(QPointF(rect.center().x(), rect.top() + 7), QPointF(rect.center().x(), rect.bottom() - 7));
+        painter.drawPoint(QPointF(rect.center().x(), rect.bottom() - 4));
+    }
+    else
+    {
+        painter.drawEllipse(rect);
+        painter.setPen(QPen(antTheme->tokens().colorTextLightSolid, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        const QPointF c = rect.center();
+        if (m_notificationType == Ant::MessageType::Success)
+        {
+            painter.drawLine(QPointF(c.x() - 5, c.y()), QPointF(c.x() - 1, c.y() + 4));
+            painter.drawLine(QPointF(c.x() - 1, c.y() + 4), QPointF(c.x() + 6, c.y() - 5));
+        }
+        else if (m_notificationType == Ant::MessageType::Error)
+        {
+            painter.drawLine(QPointF(c.x() - 5, c.y() - 5), QPointF(c.x() + 5, c.y() + 5));
+            painter.drawLine(QPointF(c.x() + 5, c.y() - 5), QPointF(c.x() - 5, c.y() + 5));
+        }
+        else
+        {
+            QFont infoFont = painter.font();
+            infoFont.setPixelSize(14);
+            infoFont.setWeight(QFont::DemiBold);
+            painter.setFont(infoFont);
+            painter.drawText(rect, Qt::AlignCenter, QStringLiteral("i"));
+        }
+    }
+    painter.restore();
+}
+
+void AntNotification::drawSpinner(QPainter& painter, const QRectF& rect) const
+{
+    painter.save();
+    painter.setPen(QPen(accentColor(), 2.0, Qt::SolidLine, Qt::RoundCap));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawArc(rect.adjusted(2, 2, -2, -2), m_spinnerAngle * 16, 270 * 16);
+    painter.restore();
+}
