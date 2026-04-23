@@ -154,7 +154,7 @@
   - 支持尺寸：`middle`、`small`。
   - 支持状态和属性：`checked`、`loading`、`disabled`、`checkedText`、`uncheckedText`。
   - 支持信号：`checkedChanged`、`toggled`、`clicked`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制胶囊轨道、白色滑块、文本、焦点描边和 loading spinner。
+  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntSwitchStyle`），通过独立 Style 绘制胶囊轨道、白色滑块、文本、焦点描边和 loading spinner。
   - 交互方式：鼠标点击切换，支持 Space/Enter 键盘切换，使用 `QPropertyAnimation` 绘制滑块位置和按压拉伸动画。
 
 - [x] `AntTimePicker`

@@ -2,13 +2,13 @@
 
 #include <QKeyEvent>
 #include <QMouseEvent>
-#include <QPainter>
 #include <QTimer>
 
 #include <algorithm>
+#include <cmath>
 
+#include "../styles/AntSwitchStyle.h"
 #include "core/AntTheme.h"
-#include "styles/AntPalette.h"
 
 AntSwitch::AntSwitch(QWidget* parent)
     : QWidget(parent)
@@ -32,10 +32,14 @@ AntSwitch::AntSwitch(QWidget* parent)
         update();
     });
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
         updateGeometryFromState();
         update();
     });
+
+    auto* switchStyle = new AntSwitchStyle(style());
+    switchStyle->setParent(this);
+    setStyle(switchStyle);
 
     updateGeometryFromState();
 }
@@ -131,6 +135,12 @@ void AntSwitch::setHandleStretch(qreal stretch)
     update();
 }
 
+bool AntSwitch::isHoveredState() const { return m_hovered; }
+
+bool AntSwitch::isPressedState() const { return m_pressed; }
+
+int AntSwitch::loadingAngle() const { return m_loadingAngle; }
+
 QSize AntSwitch::sizeHint() const
 {
     const Metrics m = metrics();
@@ -140,70 +150,6 @@ QSize AntSwitch::sizeHint() const
 QSize AntSwitch::minimumSizeHint() const
 {
     return sizeHint();
-}
-
-void AntSwitch::paintEvent(QPaintEvent* event)
-{
-    Q_UNUSED(event)
-
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const QRectF track = trackRect();
-    const QRectF handle = handleRect(m);
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(trackColor());
-    painter.drawRoundedRect(track, track.height() / 2.0, track.height() / 2.0);
-
-    const QString label = m_checked ? m_checkedText : m_uncheckedText;
-    if (!label.isEmpty() && m_switchSize == Ant::SwitchSize::Middle)
-    {
-        QRectF textRect = track.adjusted(m.trackPadding + m.innerMinMargin, 0, -(m.trackPadding + m.innerMinMargin), 0);
-        if (m_checked)
-        {
-            textRect.setRight(handle.left() - 2);
-        }
-        else
-        {
-            textRect.setLeft(handle.right() + 2);
-        }
-
-        QFont f = painter.font();
-        f.setPixelSize(m.fontSize);
-        painter.setFont(f);
-        QColor textColor = token.colorTextLightSolid;
-        if (!isEnabled() || m_loading)
-        {
-            textColor.setAlphaF(0.9);
-        }
-        painter.setPen(textColor);
-        painter.drawText(textRect, Qt::AlignCenter, label);
-    }
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(token.colorTextLightSolid);
-    painter.drawRoundedRect(handle, handle.height() / 2.0, handle.height() / 2.0);
-
-    QColor shadow(0, 35, 11, 50);
-    painter.setPen(QPen(shadow, 1));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(handle.adjusted(0.5, 0.5, -0.5, -0.5), handle.height() / 2.0, handle.height() / 2.0);
-
-    if (m_loading)
-    {
-        drawLoading(painter, handle.adjusted(4, 4, -4, -4));
-    }
-
-    if (hasFocus() && isEnabled() && !m_loading)
-    {
-        QColor focus = AntPalette::alpha(token.colorPrimary, 0.22);
-        painter.setPen(QPen(focus, token.controlOutlineWidth));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(track.adjusted(1, 1, -1, -1), track.height() / 2.0, track.height() / 2.0);
-    }
 }
 
 void AntSwitch::enterEvent(QEnterEvent* event)
@@ -311,49 +257,6 @@ AntSwitch::Metrics AntSwitch::metrics() const
     return m;
 }
 
-QRectF AntSwitch::trackRect() const
-{
-    const Metrics m = metrics();
-    return QRectF((width() - m.trackMinWidth) / 2.0, (height() - m.trackHeight) / 2.0, m.trackMinWidth, m.trackHeight);
-}
-
-QRectF AntSwitch::handleRect(const Metrics& m) const
-{
-    const QRectF track = trackRect();
-    const qreal left = track.left() + m.trackPadding;
-    const qreal right = track.right() - m.trackPadding - m.handleSize;
-    qreal x = left + (right - left) * m_handleProgress;
-    qreal width = m.handleSize + m.trackPadding * 2 * m_handleStretch;
-
-    if (m_checked)
-    {
-        x -= m.trackPadding * 2 * m_handleStretch;
-    }
-
-    return QRectF(x, track.top() + m.trackPadding, width, m.handleSize);
-}
-
-QColor AntSwitch::trackColor() const
-{
-    const auto& token = antTheme->tokens();
-    QColor color = m_checked ? token.colorPrimary : token.colorTextDisabled;
-    if (m_checked && m_hovered && isEnabled() && !m_loading)
-    {
-        color = token.colorPrimaryHover;
-    }
-    else if (!m_checked && m_hovered && isEnabled() && !m_loading)
-    {
-        color = token.colorTextTertiary;
-    }
-
-    if (!isEnabled() || m_loading)
-    {
-        color.setAlphaF(0.65);
-    }
-
-    return color;
-}
-
 void AntSwitch::animateToChecked(bool checked)
 {
     m_progressAnimation->stop();
@@ -375,14 +278,4 @@ void AntSwitch::updateGeometryFromState()
     const Metrics m = metrics();
     setMinimumSize(m.trackMinWidth, m.trackHeight);
     updateGeometry();
-}
-
-void AntSwitch::drawLoading(QPainter& painter, const QRectF& rect) const
-{
-    painter.save();
-    QColor color = m_checked ? antTheme->tokens().colorPrimary : antTheme->tokens().colorTextTertiary;
-    painter.setPen(QPen(color, 1.6, Qt::SolidLine, Qt::RoundCap));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect, m_loadingAngle * 16, 270 * 16);
-    painter.restore();
 }

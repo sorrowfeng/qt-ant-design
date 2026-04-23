@@ -46,6 +46,9 @@ public:
 
     qreal handleStretch() const;
     void setHandleStretch(qreal stretch);
+    bool isHoveredState() const;
+    bool isPressedState() const;
+    int loadingAngle() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -60,7 +63,6 @@ Q_SIGNALS:
     void uncheckedTextChanged(const QString& text);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
@@ -81,13 +83,9 @@ private:
     };
 
     Metrics metrics() const;
-    QRectF trackRect() const;
-    QRectF handleRect(const Metrics& metrics) const;
-    QColor trackColor() const;
     void animateToChecked(bool checked);
     void animateStretch(qreal endValue);
     void updateGeometryFromState();
-    void drawLoading(QPainter& painter, const QRectF& rect) const;
 
     bool m_checked = false;
     bool m_loading = false;
