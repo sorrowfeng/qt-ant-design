@@ -2,287 +2,226 @@
 
 ## 项目定位
 
-`qt-ant-design` 是一个 Qt6 Widgets 组件库项目，目标是使用 `QPainter` 手绘方式实现 Ant Design 设计规范中的常用桌面端组件。当前项目以静态库 `qt-ant-design` 输出，并提供 `qt-ant-design-example` 示例程序用于验证主题、交互状态和组件变体。
+`qt-ant-design` 是一个基于 Qt6 Widgets 的 C++ 组件库，目标是以 `QPainter` 手绘方式复刻 Ant Design 设计系统，并逐步将复杂控件的主绘制链路迁移到 `QProxyStyle` 架构。
 
-## 参考来源
+当前仓库输出：
+
+- 静态库 `qt-ant-design`
+- 示例程序 `qt-ant-design-example`
+- 可安装头文件、CMake targets 和 Windows 下的运行依赖
+
+## 参考仓库
 
 - 绘制实现参考：`D:\Project\GitProject\ElaWidgetTools`
-  - 重点参考 `ElaTheme` 的单例主题管理、`themeModeChanged` 信号通知、控件 `paintEvent` 自绘方式，以及 `QTimer` 驱动的逐帧动画。
 - 设计规范参考：`D:\Project\GitProject\qt-ant-design\submodules\ant-design`
-  - 设计 token 主要参考 `components/theme/themes/seed.ts`、`components/theme/themes/default`、`components/theme/themes/dark`。
-  - 组件样式主要参考 `components/button/`、`components/checkbox/`、`components/input/`、`components/radio/`、`components/switch/`、`components/card/`。
 
-## 本次主要变更说明
+重点参考内容：
 
-- 搭建了 Qt6 Widgets 静态库项目骨架，包含 `src/core`、`src/styles`、`src/widgets`、`examples`、`resources` 目录。
-- 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
-- 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
-- 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntAvatar`、`AntBadge`、`AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntDivider`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntPagination`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTag`、`AntTimePicker`、`AntCard` 二十二个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
-- 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
-- 本次新增 `AntBreadcrumb` 组件，支持 items、separator、href、iconText、disabled、当前项样式和 itemClicked 信号。
-- 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
-- 本次新增 `AntCheckbox` 组件，支持 checked、indeterminate、disabled、文本标签、键盘切换和焦点描边。
-- 本次新增 `AntDatePicker` 组件，支持 selectedDate、displayFormat、placeholder、allowClear、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和自绘日历 popup。
-- 本次新增 `AntMenu` 组件，支持 vertical/horizontal/inline 模式、light/dark 主题、selectedKey/openKeys、inlineCollapsed、disabled/danger、divider 和内联子菜单。
-- 本次新增 `AntMessage` 组件，支持 info/success/warning/error/loading 全局轻提示、duration、pauseOnHover 和点击关闭。
-- 本次新增 `AntNotification` 组件，支持 info/success/warning/error 全局通知、top/topLeft/topRight/bottom/bottomLeft/bottomRight placement、duration、pauseOnHover、showProgress 和关闭按钮。
-- 本次新增 `AntPagination` 组件，支持 current、pageSize、total、large/middle/small size、disabled、simple、showLessItems、showTotal、showQuickJumper 和 showSizeChanger。
-- 本次新增 `AntProgress` 组件，支持 percent、line/circle/dashboard type、normal/success/exception/active status、showInfo、strokeWidth 和 circleSize。
-- 本次新增 `AntRadio` 组件，支持 checked、disabled、value、文本标签、同父级自动互斥、键盘切换和焦点描边。
-- 本次新增 `AntSelect` 组件，支持 options、placeholder、allowClear、loading、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和键盘选择。
-- 本次新增 `AntSlider` 组件，支持 min/max/value/step、水平/垂直方向、reverse、dots、included、disabled、键盘调节和 handle hover/focus 动画。
-- 本次新增 `AntSpin` 组件，支持 spinning、delay、description、percent 和 small/middle/large size，自绘旋转点阵和进度环。
-- 本次新增 `AntTimePicker` 组件，支持 selectedTime、displayFormat、placeholder、allowClear、hour/minute/second step、showNow、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和自绘三列时间 popup。
-- 本次新增 `AntTabs` 组件，支持 line/card/editable-card 类型、top/bottom/left/right placement、large/middle/small size、activeKey、centered、closable 和 add 入口。
-- 本次新增 `AntTag` 组件，支持 text、color、iconText、closable、checkable/checked 和 filled/solid/outlined variant。
-- 本次新增 `AntBadge` 组件，支持 count、dot、showZero、overflowCount、offset、small/middle size、status 状态点和 processing 动画。
-- 本次新增 `AntAvatar` 组件，支持 text、iconText、imagePath、gap、customSize、circle/square shape 和 large/middle/small size。
-- 本次新增 `AntDivider` 组件，支持 horizontal/vertical、start/center/end 标题位置、solid/dashed/dotted variant、plain 和 small/middle/large size。
-- CMake 增加安装规则，安装到仓库根目录 `install/` 时会输出示例程序、静态库、头文件和 CMake targets；Windows 下会尝试调用 `windeployqt` 部署 Qt 运行依赖。
+- `ElaTheme` / 自绘控件的状态管理、动画、主题切换
+- Ant Design 的 token、组件状态、尺寸、交互和视觉层级
 
-## 已移植组件
+## 本次同步
+
+- 同步日期：`2026-04-23`
+- 已实现组件总数：`22`
+- 已迁移至 `QProxyStyle` 的组件数：`8`
+- 仍使用 `paintEvent` 的组件数：`14`
+- 示例程序覆盖：`22 / 22`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+
+## 近期更新摘要
+
+根据最近 20 条提交记录，近期主要改动如下：
+
+- 新增组件：
+  - `AntMenu`
+  - `AntTabs`
+  - `AntBreadcrumb`
+  - `AntPagination`
+  - `AntTag`
+  - `AntBadge`
+  - `AntAvatar`
+  - `AntDivider`
+- 文档与工程整理：
+  - 新增并完善 `README.md`
+  - 补充开发说明文档
+  - 将 `AntButtonStyle` 统一归档到 `src/styles/`
+- 架构迁移到 `QProxyStyle`：
+  - `AntButton`
+  - `AntInput`
+  - `AntCheckbox`
+  - `AntRadio`
+  - `AntSwitch`
+  - `AntSlider`
+  - `AntSelect`
+  - `AntSpin`
+
+## 当前组件状态
 
 ### 通用
 
-- [x] `AntButton`
-  - 对应 Ant Design Button。
-  - 支持类型：`primary`、`default`、`dashed`、`text`、`link`。
-  - 支持尺寸：`large`、`middle`、`small`。
-  - 支持形状：`default`、`circle`、`round`。
-  - 支持状态和属性：`loading`、`disabled`、`danger`、`ghost`、`block`。
-  - 绘制方式：继承 `QPushButton`，已迁移至 QProxyStyle（`src/styles/AntButtonStyle`），通过 `drawControl(CE_PushButton)` 绘制背景、边框、文本、焦点描边和 loading spinner；Style 文件已归入 `src/styles/` 并验证通过。
+| 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
+| --- | --- | --- | --- | --- |
+| `AntButton` | `button` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntButtonStyle` |
 
 ### 导航
 
-- [x] `AntBreadcrumb`
-  - 对应 Ant Design Breadcrumb。
-  - 支持属性：`separator`。
-  - 支持条目：`title`、`href`、`iconText`、`disabled` 和自定义分隔符。
-  - 支持信号：`itemClicked`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘路径项、分隔符、hover 背景、链接色和最后一项当前状态。
-- [x] `AntMenu`
-  - 对应 Ant Design Menu。
-  - 支持模式：`vertical`、`horizontal`、`inline`。
-  - 支持主题：`light`、`dark`。
-  - 支持属性：`selectedKey`、`openKeys`、`inlineCollapsed`、`selectable`、`inlineIndent`。
-  - 支持条目：普通项、子菜单、子菜单项、分割线、禁用项和 danger 项。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘菜单背景、hover/selected 状态、图标文本、额外信息、展开箭头和选中指示条。
-- [x] `AntPagination`
-  - 对应 Ant Design Pagination。
-  - 支持属性：`current`、`pageSize`、`total`、`disabled`、`simple`、`showLessItems`、`showTotal`、`showQuickJumper`、`showSizeChanger`。
-  - 支持尺寸：`large`、`middle`、`small`。
-  - 支持交互：prev/next、页码跳转、省略号跳转和 pageSize 循环切换。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘页码按钮、激活态、禁用态、省略号、总数文本和选项入口。
-- [x] `AntTabs`
-  - 对应 Ant Design Tabs。
-  - 支持类型：`line`、`card`、`editable-card`。
-  - 支持尺寸：`large`、`middle`、`small`。
-  - 支持位置：`top`、`bottom`、`left`、`right`。
-  - 支持属性：`activeKey`、`centered`、`animated`、`hideAdd`、`tabBarGutter`。
-  - 支持功能：禁用标签、可关闭标签、add 入口和内部内容页切换。
-  - 绘制方式：继承 `QWidget`，自绘 tab bar、hover/active 状态、ink bar、card 背景、关闭按钮和 add 按钮，内容区使用 `QStackedWidget` 承载页面。
+| 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
+| --- | --- | --- | --- | --- |
+| `AntBreadcrumb` | `breadcrumb` | `paintEvent` | 是 | 路径项、分隔符、禁用项 |
+| `AntMenu` | `menu` | `paintEvent` | 是 | `vertical / horizontal / inline`、明暗主题 |
+| `AntPagination` | `pagination` | `paintEvent` | 是 | `simple / showQuickJumper / showSizeChanger` |
+| `AntTabs` | `tabs` | `paintEvent` | 是 | `line / card / editable-card` |
 
 ### 数据录入
 
-- [x] `AntCheckbox`
-  - 对应 Ant Design Checkbox。
-  - 支持状态和属性：`checked`、`indeterminate`、`disabled`、`text`。
-  - 支持信号：`checkedChanged`、`indeterminateChanged`、`stateChanged`、`toggled`、`clicked`。
-  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntCheckboxStyle`），通过 `drawControl(CE_CheckBox)` 绘制圆角选择框、选中勾、半选横线、文本和焦点描边。
-  - 交互方式：鼠标点击切换，支持 Space/Enter 键盘切换。
+| 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
+| --- | --- | --- | --- | --- |
+| `AntCheckbox` | `checkbox` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntCheckboxStyle` |
+| `AntDatePicker` | `date-picker` | `paintEvent` | 是 | 自绘日期弹层 |
+| `AntInput` | `input` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputStyle` |
+| `AntRadio` | `radio` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntRadioStyle` |
+| `AntSelect` | `select` | `QProxyStyle` | 是 | 主控件迁移到 `src/styles/AntSelectStyle`，popup row 保持自绘 |
+| `AntSlider` | `slider` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSliderStyle` |
+| `AntSwitch` | `switch` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSwitchStyle` |
+| `AntTimePicker` | `time-picker` | `paintEvent` | 是 | 自绘时间弹层 |
 
-- [x] `AntDatePicker`
-  - 对应 Ant Design DatePicker。
-  - 支持属性：`selectedDate`、`displayFormat`、`placeholderText`、`pickerSize`、`status`、`variant`、`allowClear`、`open`。
-  - 支持信号：`selectedDateChanged`、`dateStringChanged`、`openChanged`、`cleared`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制输入框、状态边框、清除按钮和日历图标；popup 中绘制月份标题、星期栏和日期网格。
-  - 交互方式：支持鼠标展开、翻月、选日、清除，以及 Space/Enter/Escape/Left/Right 键盘操作。
-- [x] `AntInput`
-  - 对应 Ant Design Input。
-  - 内部使用 `QLineEdit` 处理文本输入，已迁移至 QProxyStyle（`src/styles/AntInputStyle`），外层 `AntInput` 通过 Style 绘制背景、边框、addon 区域和焦点外发光。
-  - 支持尺寸：`large`、`middle`、`small`。
-  - 支持状态：普通、错误、警告、禁用。
-  - 支持功能：`addonBefore`、`addonAfter`、前缀图标、后缀图标、自定义前后缀 widget、清除按钮、密码模式。
+### 反馈
 
-- [x] `AntMessage`
-  - 对应 Ant Design Message。
-  - 支持类型：`info`、`success`、`warning`、`error`、`loading`。
-  - 支持静态方法：`open`、`info`、`success`、`warning`、`error`、`loading`。
-  - 支持属性：`text`、`messageType`、`duration`、`pauseOnHover`。
-  - 绘制方式：继承 `QWidget`，以 `Qt::ToolTip` 浮层形式在顶部居中显示，自绘气泡、阴影、状态图标和 loading spinner。
-- [x] `AntNotification`
-  - 对应 Ant Design Notification。
-  - 支持类型：`info`、`success`、`warning`、`error`。
-  - 支持位置：`top`、`topLeft`、`topRight`、`bottom`、`bottomLeft`、`bottomRight`。
-  - 支持静态方法：`open`、`info`、`success`、`warning`、`error`、`closeAll`。
-  - 支持属性：`title`、`description`、`notificationType`、`placement`、`duration`、`pauseOnHover`、`showProgress`、`closable`。
-  - 绘制方式：继承 `QWidget`，以 `Qt::ToolTip` 浮层形式显示自绘通知卡片、阴影、类型图标、关闭按钮和剩余时间进度条。
-- [x] `AntProgress`
-  - 对应 Ant Design Progress。
-  - 支持属性：`percent`、`progressType`、`status`、`showInfo`、`strokeWidth`、`circleSize`。
-  - 支持类型：`line`、`circle`、`dashboard`。
-  - 支持状态：`normal`、`success`、`exception`、`active`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制线性进度、圆形进度、仪表盘进度和状态文本。
-- [x] `AntRadio`
-  - 对应 Ant Design Radio。
-  - 支持状态和属性：`checked`、`disabled`、`text`、`value`、`autoExclusive`。
-  - 支持信号：`checkedChanged`、`valueChanged`、`toggled`、`clicked`。
-  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntRadioStyle`），通过 `drawControl(CE_RadioButton)` 绘制圆形指示器、选中圆点、文本和焦点描边。
-  - 交互方式：鼠标点击切换，支持 Space/Enter 键盘切换；默认同父级 `AntRadio` 自动互斥。
+| 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
+| --- | --- | --- | --- | --- |
+| `AntMessage` | `message` | `paintEvent` | 是 | `Qt::ToolTip` 浮层消息 |
+| `AntNotification` | `notification` | `paintEvent` | 是 | 多 placement 通知 |
+| `AntProgress` | `progress` | `paintEvent` | 是 | `line / circle / dashboard` |
+| `AntSpin` | `spin` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSpinStyle` |
 
-- [x] `AntSelect`
-  - 对应 Ant Design Select。
-  - 支持属性：`selectSize`、`status`、`variant`、`placeholderText`、`allowClear`、`loading`、`open`、`currentIndex`、`maxVisibleItems`。
-  - 支持信号：`currentIndexChanged`、`currentTextChanged`、`currentValueChanged`、`optionSelected`、`openChanged`、`cleared`。
-  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntSelectStyle`），通过独立 Style 绘制选择框、状态边框、清除按钮、loading spinner 和展开箭头；下拉项继续使用自绘 popup row。
-  - 交互方式：支持鼠标展开/选择/清除，支持 Space/Enter/Escape/Up/Down 键盘操作。
-- [x] `AntSlider`
-  - 对应 Ant Design Slider。
-  - 支持属性：`minimum`、`maximum`、`value`、`singleStep`、`orientation`、`reverse`、`dots`、`included`、`keyboard`。
-  - 支持信号：`valueChanged`、`sliderMoved`、`sliderPressed`、`sliderReleased`、`changeComplete`。
-  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntSliderStyle`），通过独立 Style 绘制 rail、track、handle、ticks 和 focus outline。
-  - 交互方式：支持鼠标点击/拖拽、方向键/Page/Home/End 键盘调节，并通过 `QPropertyAnimation` 绘制 handle 和焦点动画。
-- [x] `AntSpin`
-  - 对应 Ant Design Spin。
-  - 支持属性：`spinning`、`spinSize`、`description`、`delay`、`percent`。
-  - 支持信号：`spinningChanged`、`spinSizeChanged`、`descriptionChanged`、`delayChanged`、`percentChanged`。
-  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntSpinStyle`），通过独立 Style 绘制旋转点阵、进度环和描述文本。
-  - 交互方式：使用 `QTimer` 逐帧驱动 loading 动画，支持延迟显示和隐藏状态。
-- [x] `AntSwitch`
-  - 对应 Ant Design Switch。
-  - 支持尺寸：`middle`、`small`。
-  - 支持状态和属性：`checked`、`loading`、`disabled`、`checkedText`、`uncheckedText`。
-  - 支持信号：`checkedChanged`、`toggled`、`clicked`。
-  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntSwitchStyle`），通过独立 Style 绘制胶囊轨道、白色滑块、文本、焦点描边和 loading spinner。
-  - 交互方式：鼠标点击切换，支持 Space/Enter 键盘切换，使用 `QPropertyAnimation` 绘制滑块位置和按压拉伸动画。
-
-- [x] `AntTimePicker`
-  - 对应 Ant Design TimePicker。
-  - 支持属性：`selectedTime`、`displayFormat`、`placeholderText`、`pickerSize`、`status`、`variant`、`allowClear`、`open`、`hourStep`、`minuteStep`、`secondStep`、`showNow`。
-  - 支持信号：`selectedTimeChanged`、`timeStringChanged`、`openChanged`、`cleared`、`accepted`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制输入框、状态边框、清除按钮和时钟图标；popup 中绘制 hour/minute/second 三列、Now 和 OK。
-  - 交互方式：支持鼠标展开、滚轮调节列、选择时间、Now/OK 和 Space/Enter/Escape 键盘操作。
 ### 数据展示
 
-- [x] `AntAvatar`
-  - 对应 Ant Design Avatar。
-  - 支持属性：`text`、`iconText`、`imagePath`、`gap`、`customSize`、`shape`、`avatarSize`。
-  - 支持形状：`circle`、`square`。
-  - 支持尺寸：`large`、`middle`、`small` 和自定义像素尺寸。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘圆形/方形裁剪、图片填充、图标文本、字符头像和自适应字号。
-- [x] `AntBadge`
-  - 对应 Ant Design Badge。
-  - 支持属性：`count`、`text`、`color`、`dot`、`showZero`、`overflowCount`、`offset`、`badgeSize`、`status`。
-  - 支持状态：`success`、`processing`、`default`、`error`、`warning`。
-  - 支持内容包裹：可通过 `setContentWidget()` 将徽标叠加到按钮、头像等子控件右上角。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘圆点、数字徽标、状态点、白色描边和 processing 扩散动画。
-- [x] `AntCard`
-  - 对应 Ant Design Card。
-  - 支持标题、额外内容、封面 widget、内容区 widget/layout、操作区 widget。
-  - 支持属性：`bordered`、`hoverable`、`loading`、`cardSize`。
-  - 绘制方式：继承 `QFrame`，在 `paintEvent` 中绘制容器背景、边框、分割线、hover 阴影、loading 遮罩和 spinner。
-- [x] `AntTag`
-  - 对应 Ant Design Tag。
-  - 支持属性：`text`、`color`、`iconText`、`closable`、`checkable`、`checked`、`variant`。
-  - 支持变体：`filled`、`solid`、`outlined`。
-  - 支持交互：关闭按钮、checkable 点击切换和 clicked/closeRequested 信号。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘标签背景、边框、文本、图标文本和关闭按钮。
+| 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
+| --- | --- | --- | --- | --- |
+| `AntAvatar` | `avatar` | `paintEvent` | 是 | 文本、图标、图片头像 |
+| `AntBadge` | `badge` | `paintEvent` | 是 | `count / dot / status / processing` |
+| `AntCard` | `card` | `paintEvent` | 是 | 封面、额外区、操作区、loading |
+| `AntTag` | `tag` | `paintEvent` | 是 | `closable / checkable / variant` |
 
 ### 布局与其他
 
-- [x] `AntDivider`
-  - 对应 Ant Design Divider。
-  - 支持属性：`text`、`plain`、`orientation`、`titlePlacement`、`variant`、`dividerSize`。
-  - 支持方向：`horizontal`、`vertical`。
-  - 支持线型：`solid`、`dashed`、`dotted`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘水平/垂直分割线、标题文本、两侧 rail 和不同间距尺寸。
+| 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
+| --- | --- | --- | --- | --- |
+| `AntDivider` | `divider` | `paintEvent` | 是 | 水平/垂直、带标题、虚线/点线 |
 
 ## 待移植组件
 
-以下列表参考 `submodules/ant-design/components/` 中的常用组件，并按当前 Qt Widgets 桌面组件库的优先级排序。
+以下清单基于 `submodules/ant-design/components/` 扫描，并扣除当前已实现组件后整理。仅保留与 Qt Widgets 组件库相关度较高的部分，按优先级排序。
 
 ### 高优先级
 
-- [ ] `AntIcon`：统一图标接口，供按钮、输入框、菜单、提示类组件复用。
-- [ ] `AntInputNumber`：数字输入框。
-- [ ] `AntForm`：表单布局、校验状态和 label/control 对齐。
-- [ ] `AntModal`：模态对话框。
-- [ ] `AntTooltip`：文字提示。
+- [ ] `AntIcon`
+- [ ] `AntInputNumber`
+- [ ] `AntForm`
+- [ ] `AntModal`
+- [ ] `AntTooltip`
+- [ ] `AntDropdown`
+- [ ] `AntPopover`
+- [ ] `AntPopconfirm`
+- [ ] `AntAlert`
+- [ ] `AntSkeleton`
 
 ### 中优先级
 
-- [ ] `AntDropdown`：下拉菜单。
-- [ ] `AntPopover`：气泡卡片。
-- [ ] `AntPopconfirm`：气泡确认框。
-- [ ] `AntAlert`：警告提示。
-- [ ] `AntSkeleton`：骨架屏。
-- [ ] `AntEmpty`：空状态。
+- [ ] `AntEmpty`
+- [ ] `AntSteps`
+- [ ] `AntTimeline`
+- [ ] `AntDescriptions`
+- [ ] `AntList`
+- [ ] `AntStatistic`
+- [ ] `AntResult`
+- [ ] `AntSpace`
+- [ ] `AntLayout`
+- [ ] `AntTypography`
+
 ### 后续扩展
 
-- [ ] `AntTable`：（复杂，稍后处理）表格。
-- [ ] `AntTree`：（复杂，稍后处理）树形控件。
-- [ ] `AntTreeSelect`：树选择。
-- [ ] `AntCalendar`：日历。
-- [ ] `AntUpload`：上传。
-- [ ] `AntDrawer`：抽屉。
-- [ ] `AntSteps`：步骤条。
-- [ ] `AntTimeline`：时间轴。
-- [ ] `AntCollapse`：折叠面板。
-- [ ] `AntDescriptions`：描述列表。
-- [ ] `AntList`：列表。
-- [ ] `AntStatistic`：统计数值。
-- [ ] `AntResult`：结果页。
-- [ ] `AntSpace`：间距布局。
-- [ ] `AntFlex`：弹性布局。
-- [ ] `AntLayout`：布局容器。
-- [ ] `AntTypography`：排版。
+- [ ] `AntTable`（复杂，稍后处理）
+- [ ] `AntTree`（复杂，稍后处理）
+- [ ] `AntTreeSelect`
+- [ ] `AntCalendar`
+- [ ] `AntUpload`
+- [ ] `AntDrawer`
+- [ ] `AntImage`
+- [ ] `AntCascader`
+- [ ] `AntAutoComplete`
+- [ ] `AntMentions`
+- [ ] `AntTransfer`
+- [ ] `AntRate`
+- [ ] `AntSegmented`
+- [ ] `AntSplitter`
+- [ ] `AntColorPicker`
+- [ ] `AntQRCode`
+- [ ] `AntCarousel`
+- [ ] `AntTour`
+- [ ] `AntWatermark`
+- [ ] `AntAffix`
+- [ ] `AntAnchor`
+- [ ] `AntFloatButton`
 
 ## 开发规范
 
-- 仅支持 Qt6，CMake 使用 `find_package(Qt6 REQUIRED COMPONENTS Core Widgets)`。
-- C++ 标准为 C++17。
-- 组件主体视觉绘制优先使用 `QPainter`，不要依赖 QSS 实现核心外观。
-- 新增或重构组件优先采用 `QProxyStyle` 架构：组件类负责公开 API、状态维护和信号，`Ant[Component]Style` 负责 `drawControl` / `drawPrimitive` / `drawComplexControl` / `sizeFromContents` 等绘制和尺寸逻辑。
-- 所有 `Ant[Component]Style` 文件统一放置在 `src/styles/`，组件源文件通过 `../styles/Ant[Component]Style.h` 引用，CMake install 也应将公开 Style 头文件安装到 `include/qt-ant-design/styles/`。
-- 已迁移至 `QProxyStyle` 的组件应在构造函数中安装独立 Style，并在主题变化时触发 `polish` / `updateGeometry` / `update`，确保亮暗主题实时生效。
-- 主题、颜色、字体、圆角、间距等视觉值应从 `AntTheme` 和 `AntPalette` 获取，避免在组件中散落硬编码。
-- 组件应连接 `AntTheme::themeChanged` 或 `AntTheme::themeModeChanged`，主题切换时自动刷新布局和绘制。
-- 自绘组件应保留 Qt 原生语义能力：
-  - 按钮类优先继承 `QPushButton`。
-  - 输入类可组合 `QLineEdit` 来保留文本编辑、选择、输入法和快捷键能力。
-  - 容器类可组合 `QWidget`/`QLayout` 暴露插槽区域。
-- loading、hover、pressed、focused 等交互状态应由控件自身状态驱动，并在 `paintEvent` 中统一绘制。
-- 新增组件时同步更新 `AGENT.md` 的“已移植组件”和“待移植组件”章节。
+- 仅支持 Qt6，CMake 使用：
+  - `find_package(Qt6 REQUIRED COMPONENTS Core Widgets)`
+- C++ 标准为 `C++17`
+- 所有核心视觉值优先从 `AntTheme` / `AntPalette` 获取，不直接散落硬编码
+- 组件公共枚举与通用类型统一放在 `src/core/AntTypes.h`
+- 新增或重构组件时，优先采用 `QProxyStyle` 架构：
+  - 组件类负责公开 API、状态维护、信号、子控件管理
+  - `Ant[Component]Style` 负责 `drawPrimitive` / `drawControl` / `drawComplexControl` / `sizeFromContents`
+- 所有 `Ant[Component]Style` 文件统一放在 `src/styles/`
+- 组件源文件引用 Style 时使用：
+  - `#include "../styles/Ant[Component]Style.h"`
+- CMake 安装时，公开 Style 头文件需安装到：
+  - `install/include/qt-ant-design/styles/`
+- 已迁移到 `QProxyStyle` 的组件，应在构造函数中安装独立 Style，并在主题切换时触发：
+  - `polish`
+  - `updateGeometry`
+  - `update`
+- 尚未迁移的组件可继续使用 `paintEvent`，但新开发优先按 `QProxyStyle` 设计
+- 主题切换统一监听：
+  - `AntTheme::themeChanged`
+  - 或 `AntTheme::themeModeChanged`
+- 每次新增组件或架构迁移后，必须同步更新：
+  - `AGENT.md`
+  - `README.md`
+  - `examples/ExampleWindow.cpp`
 
 ## 示例程序
 
-当前 example 展示了以下组件：
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 22 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
 
-- `AntButton`：类型、尺寸、形状、danger、ghost、loading、disabled、block。
-- `AntAvatar`：字符头像、图标头像、circle/square、large/middle/small、自定义尺寸、自适应字号和 Badge 组合。
-- `AntBadge`：count、showZero、overflowCount、dot、small、自定义颜色、offset 和 status 状态点。
-- `AntBreadcrumb`：基础路径、iconText、自定义 separator、disabled 和点击反馈。
-- `AntCheckbox`：未选、选中、半选、禁用和“全选”受控示例。
-- `AntDatePicker`：基础选择、自定义格式、尺寸、状态、变体、禁用和清除。
-- `AntDivider`：水平/垂直、带文字、start/center/end、solid/dashed/dotted 和 small/middle/large 间距。
-- `AntInput`：大/中/小尺寸、allowClear、addonBefore/addonAfter、password、error、disabled。
-- `AntMenu`：inline、inlineCollapsed、horizontal、dark、disabled 和 danger 菜单项。
-- `AntMessage`：info/success/warning/error/loading、不同 duration 和手动关闭。
-- `AntNotification`：info/success/warning/error、六种 placement、showProgress 和手动关闭。
-- `AntPagination`：基础分页、small/large、simple、showLessItems、showTotal、showQuickJumper、showSizeChanger 和 disabled。
-- `AntProgress`：线性进度、active/exception/success 状态、circle 和 dashboard。
-- `AntRadio`：基础横向组、禁用、禁用选中和纵向组。
-- `AntSelect`：基础选择、allowClear、尺寸、状态、变体、loading、disabled 和禁用选项。
-- `AntSlider`：基础滑动输入、step/dots、reverse、垂直方向、disabled 和 included=false。
-- `AntSpin`：small/middle/large、描述文本、percent 进度和嵌入式加载块。
-- `AntSwitch`：checked/unchecked、小尺寸、文本、loading、disabled。
-- `AntTabs`：line、centered、left placement、card、editable-card、disabled 和 closable。
-- `AntTag`：基础、closable、iconText、预设色、自定义色、solid/outlined 和 checkable。
-- `AntTimePicker`：基础选择、自定义格式、尺寸、状态、变体、step、showNow 和 disabled。
-- `AntCard`：默认卡片、hoverable 卡片、loading 卡片、操作区卡片。
+当前示例页包括：
 
-运行方式：
+- `Button`
+- `Breadcrumb`
+- `Checkbox`
+- `DatePicker`
+- `Input`
+- `Message`
+- `Menu`
+- `Tabs`
+- `Badge`
+- `Avatar`
+- `Tag`
+- `Notification`
+- `Pagination`
+- `Progress`
+- `Radio`
+- `Select`
+- `Slider`
+- `Spin`
+- `Switch`
+- `TimePicker`
+- `Card`
+- `Divider`
+
+## 构建与安装
 
 ```powershell
 cmake -S . -B build -DCMAKE_INSTALL_PREFIX=D:/Project/GitProject/qt-ant-design/install
@@ -291,19 +230,9 @@ cmake --install build --config Debug
 .\install\bin\qt-ant-design-example.exe
 ```
 
-如果已经执行过安装，也可以直接运行：
+当前安装产物位于：
 
-```powershell
-.\install\bin\qt-ant-design-example.exe
-```
-
-## 当前安装产物
-
-安装目录为 `D:\Project\GitProject\qt-ant-design\install`。
-
-- `install/bin/qt-ant-design-example.exe`：示例程序。
-- `install/lib/qt-ant-design.lib`：静态库。
-- `install/include/qt-ant-design/`：对外头文件。
-- `install/lib/cmake/qt-ant-design/`：CMake targets。
-
-Windows Debug 构建安装时会尝试通过 `windeployqt` 复制 Qt Debug DLL 和插件到 `install/bin`，便于直接运行示例程序。
+- `install/bin/qt-ant-design-example.exe`
+- `install/lib/qt-ant-design.lib`
+- `install/include/qt-ant-design/`
+- `install/lib/cmake/qt-ant-design/`
