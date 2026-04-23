@@ -39,6 +39,7 @@
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTabs.h"
 #include "widgets/AntTag.h"
+#include "widgets/AntTooltip.h"
 #include "widgets/AntTimePicker.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
@@ -122,6 +123,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createIconPage()));
     m_stack->addWidget(wrapPage(createInputNumberPage()));
     m_stack->addWidget(wrapPage(createAlertPage()));
+    m_stack->addWidget(wrapPage(createTooltipPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -147,6 +149,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Icon"), 22);
     addNavButton(QStringLiteral("InputNumber"), 23);
     addNavButton(QStringLiteral("Alert"), 24);
+    addNavButton(QStringLiteral("Tooltip"), 25);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -1454,6 +1457,140 @@ QWidget* ExampleWindow::createInputNumberPage()
     controlledRow->addWidget(borderless);
     controlledRow->addStretch();
     layout->addLayout(controlledRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createTooltipPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(16);
+    auto* save = new AntButton(QStringLiteral("Save"));
+    save->setButtonType(Ant::ButtonType::Primary);
+    auto* saveTip = new AntTooltip(page);
+    saveTip->setTitle(QStringLiteral("Persist your latest changes"));
+    saveTip->setTarget(save);
+
+    auto* deleteButton = new AntButton(QStringLiteral("Delete"));
+    deleteButton->setDanger(true);
+    auto* deleteTip = new AntTooltip(page);
+    deleteTip->setTitle(QStringLiteral("This action cannot be undone"));
+    deleteTip->setPlacement(Ant::TooltipPlacement::Bottom);
+    deleteTip->setTarget(deleteButton);
+
+    basicRow->addWidget(save);
+    basicRow->addWidget(deleteButton);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Placement")));
+    auto* placementWrap = new QWidget(page);
+    auto* placementLayout = new QVBoxLayout(placementWrap);
+    placementLayout->setContentsMargins(0, 0, 0, 0);
+    placementLayout->setSpacing(14);
+
+    auto* topRow = new QHBoxLayout();
+    topRow->setSpacing(14);
+    topRow->addStretch();
+    auto* top = new AntButton(QStringLiteral("Top"));
+    auto* topTip = new AntTooltip(page);
+    topTip->setTitle(QStringLiteral("Shown above the trigger"));
+    topTip->setPlacement(Ant::TooltipPlacement::Top);
+    topTip->setTarget(top);
+    auto* topLeft = new AntButton(QStringLiteral("TopLeft"));
+    auto* topLeftTip = new AntTooltip(page);
+    topLeftTip->setTitle(QStringLiteral("Aligned with the left edge"));
+    topLeftTip->setPlacement(Ant::TooltipPlacement::TopLeft);
+    topLeftTip->setTarget(topLeft);
+    auto* topRight = new AntButton(QStringLiteral("TopRight"));
+    auto* topRightTip = new AntTooltip(page);
+    topRightTip->setTitle(QStringLiteral("Aligned with the right edge"));
+    topRightTip->setPlacement(Ant::TooltipPlacement::TopRight);
+    topRightTip->setTarget(topRight);
+    topRow->addWidget(topLeft);
+    topRow->addWidget(top);
+    topRow->addWidget(topRight);
+    topRow->addStretch();
+    placementLayout->addLayout(topRow);
+
+    auto* middleRow = new QHBoxLayout();
+    middleRow->setSpacing(20);
+    auto* left = new AntButton(QStringLiteral("Left"));
+    auto* leftTip = new AntTooltip(page);
+    leftTip->setTitle(QStringLiteral("Appears on the left side"));
+    leftTip->setPlacement(Ant::TooltipPlacement::Left);
+    leftTip->setTarget(left);
+    auto* center = new QLabel(QStringLiteral("Hover the buttons around this area"), page);
+    center->setMinimumSize(220, 64);
+    center->setAlignment(Qt::AlignCenter);
+    auto* right = new AntButton(QStringLiteral("Right"));
+    auto* rightTip = new AntTooltip(page);
+    rightTip->setTitle(QStringLiteral("Appears on the right side"));
+    rightTip->setPlacement(Ant::TooltipPlacement::Right);
+    rightTip->setTarget(right);
+    middleRow->addStretch();
+    middleRow->addWidget(left);
+    middleRow->addWidget(center);
+    middleRow->addWidget(right);
+    middleRow->addStretch();
+    placementLayout->addLayout(middleRow);
+
+    auto* bottomRow = new QHBoxLayout();
+    bottomRow->setSpacing(14);
+    bottomRow->addStretch();
+    auto* bottomLeft = new AntButton(QStringLiteral("BottomLeft"));
+    auto* bottomLeftTip = new AntTooltip(page);
+    bottomLeftTip->setTitle(QStringLiteral("Bottom placement with left alignment"));
+    bottomLeftTip->setPlacement(Ant::TooltipPlacement::BottomLeft);
+    bottomLeftTip->setTarget(bottomLeft);
+    auto* bottom = new AntButton(QStringLiteral("Bottom"));
+    auto* bottomTip = new AntTooltip(page);
+    bottomTip->setTitle(QStringLiteral("Shown below the trigger"));
+    bottomTip->setPlacement(Ant::TooltipPlacement::Bottom);
+    bottomTip->setTarget(bottom);
+    auto* bottomRight = new AntButton(QStringLiteral("BottomRight"));
+    auto* bottomRightTip = new AntTooltip(page);
+    bottomRightTip->setTitle(QStringLiteral("Bottom placement with right alignment"));
+    bottomRightTip->setPlacement(Ant::TooltipPlacement::BottomRight);
+    bottomRightTip->setTarget(bottomRight);
+    bottomRow->addWidget(bottomLeft);
+    bottomRow->addWidget(bottom);
+    bottomRow->addWidget(bottomRight);
+    bottomRow->addStretch();
+    placementLayout->addLayout(bottomRow);
+
+    layout->addWidget(placementWrap);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Arrow and Color")));
+    auto* customRow = new QHBoxLayout();
+    customRow->setSpacing(16);
+    auto* colorful = new AntButton(QStringLiteral("Colorful"));
+    auto* colorfulTip = new AntTooltip(page);
+    colorfulTip->setTitle(QStringLiteral("Custom background colors adapt text contrast"));
+    colorfulTip->setColor(QColor(QStringLiteral("#1677ff")));
+    colorfulTip->setTarget(colorful);
+    auto* noArrow = new AntButton(QStringLiteral("No Arrow"));
+    auto* noArrowTip = new AntTooltip(page);
+    noArrowTip->setTitle(QStringLiteral("Tooltip without arrow"));
+    noArrowTip->setArrowVisible(false);
+    noArrowTip->setTarget(noArrow);
+    auto* delayed = new AntButton(QStringLiteral("Delay"));
+    auto* delayedTip = new AntTooltip(page);
+    delayedTip->setTitle(QStringLiteral("Appears after a longer delay"));
+    delayedTip->setOpenDelay(500);
+    delayedTip->setTarget(delayed);
+    customRow->addWidget(colorful);
+    customRow->addWidget(noArrow);
+    customRow->addWidget(delayed);
+    customRow->addStretch();
+    layout->addLayout(customRow);
 
     layout->addStretch();
     return page;

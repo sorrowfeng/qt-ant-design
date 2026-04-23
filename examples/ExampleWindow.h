@@ -45,6 +45,7 @@ private:
     QWidget* createSwitchPage();
     QWidget* createTabsPage();
     QWidget* createTagPage();
+    QWidget* createTooltipPage();
     QWidget* createTimePickerPage();
     QWidget* createCardPage();
     QWidget* wrapPage(QWidget* page);

@@ -190,6 +190,19 @@ enum class AlertType
 };
 Q_ENUM_NS(AlertType)
 
+enum class TooltipPlacement
+{
+    Top,
+    TopLeft,
+    TopRight,
+    Bottom,
+    BottomLeft,
+    BottomRight,
+    Left,
+    Right,
+};
+Q_ENUM_NS(TooltipPlacement)
+
 enum class NotificationPlacement
 {
     Top,
