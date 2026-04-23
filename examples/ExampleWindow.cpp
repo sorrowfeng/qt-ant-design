@@ -30,6 +30,7 @@
 #include "widgets/AntSpin.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTabs.h"
+#include "widgets/AntTag.h"
 #include "widgets/AntTimePicker.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
@@ -96,6 +97,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createMessagePage()));
     m_stack->addWidget(wrapPage(createMenuPage()));
     m_stack->addWidget(wrapPage(createTabsPage()));
+    m_stack->addWidget(wrapPage(createTagPage()));
     m_stack->addWidget(wrapPage(createNotificationPage()));
     m_stack->addWidget(wrapPage(createPaginationPage()));
     m_stack->addWidget(wrapPage(createProgressPage()));
@@ -114,16 +116,17 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Message"), 5);
     addNavButton(QStringLiteral("Menu"), 6);
     addNavButton(QStringLiteral("Tabs"), 7);
-    addNavButton(QStringLiteral("Notification"), 8);
-    addNavButton(QStringLiteral("Pagination"), 9);
-    addNavButton(QStringLiteral("Progress"), 10);
-    addNavButton(QStringLiteral("Radio"), 11);
-    addNavButton(QStringLiteral("Select"), 12);
-    addNavButton(QStringLiteral("Slider"), 13);
-    addNavButton(QStringLiteral("Spin"), 14);
-    addNavButton(QStringLiteral("Switch"), 15);
-    addNavButton(QStringLiteral("TimePicker"), 16);
-    addNavButton(QStringLiteral("Card"), 17);
+    addNavButton(QStringLiteral("Tag"), 8);
+    addNavButton(QStringLiteral("Notification"), 9);
+    addNavButton(QStringLiteral("Pagination"), 10);
+    addNavButton(QStringLiteral("Progress"), 11);
+    addNavButton(QStringLiteral("Radio"), 12);
+    addNavButton(QStringLiteral("Select"), 13);
+    addNavButton(QStringLiteral("Slider"), 14);
+    addNavButton(QStringLiteral("Spin"), 15);
+    addNavButton(QStringLiteral("Switch"), 16);
+    addNavButton(QStringLiteral("TimePicker"), 17);
+    addNavButton(QStringLiteral("Card"), 18);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -800,6 +803,70 @@ QWidget* ExampleWindow::createPaginationPage()
     optionRow->addWidget(options);
     optionRow->addWidget(disabled);
     layout->addLayout(optionRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createTagPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(10);
+    basicRow->addWidget(new AntTag(QStringLiteral("Tag")));
+    auto* closable = new AntTag(QStringLiteral("Closable"));
+    closable->setClosable(true);
+    auto* icon = new AntTag(QStringLiteral("Icon"));
+    icon->setIconText(QStringLiteral("I"));
+    basicRow->addWidget(closable);
+    basicRow->addWidget(icon);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Color and Variant")));
+    auto* colorRow = new QHBoxLayout();
+    colorRow->setSpacing(10);
+    const QList<QPair<QString, QString>> colors = {
+        {QStringLiteral("Success"), QStringLiteral("success")},
+        {QStringLiteral("Processing"), QStringLiteral("processing")},
+        {QStringLiteral("Warning"), QStringLiteral("warning")},
+        {QStringLiteral("Error"), QStringLiteral("error")},
+        {QStringLiteral("Magenta"), QStringLiteral("#eb2f96")},
+    };
+    for (const auto& item : colors)
+    {
+        auto* tag = new AntTag(item.first);
+        tag->setColor(item.second);
+        colorRow->addWidget(tag);
+    }
+    auto* solid = new AntTag(QStringLiteral("Solid"));
+    solid->setColor(QStringLiteral("processing"));
+    solid->setVariant(Ant::TagVariant::Solid);
+    auto* outlined = new AntTag(QStringLiteral("Outlined"));
+    outlined->setColor(QStringLiteral("success"));
+    outlined->setVariant(Ant::TagVariant::Outlined);
+    colorRow->addWidget(solid);
+    colorRow->addWidget(outlined);
+    colorRow->addStretch();
+    layout->addLayout(colorRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Checkable")));
+    auto* checkRow = new QHBoxLayout();
+    checkRow->setSpacing(10);
+    for (const QString& text : {QStringLiteral("Design"), QStringLiteral("Code"), QStringLiteral("Review")})
+    {
+        auto* tag = new AntTag(text);
+        tag->setCheckable(true);
+        tag->setChecked(text == QStringLiteral("Code"));
+        checkRow->addWidget(tag);
+    }
+    checkRow->addStretch();
+    layout->addLayout(checkRow);
 
     layout->addStretch();
     return page;

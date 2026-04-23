@@ -231,6 +231,14 @@ enum class PaginationSize
 };
 Q_ENUM_NS(PaginationSize)
 
+enum class TagVariant
+{
+    Filled,
+    Solid,
+    Outlined,
+};
+Q_ENUM_NS(TagVariant)
+
 enum class CardSize
 {
     Default,
