@@ -18,8 +18,9 @@
 - 新增 `AntTypes`，定义主题模式、按钮类型/尺寸/形状、输入框尺寸/状态、卡片尺寸等公共枚举。
 - 新增 `AntTheme` 主题系统，支持默认亮色和暗黑模式、主题切换信号、核心颜色/字体/圆角/间距 token 获取。
 - 新增 `AntPalette` 颜色工具，提供基础色派生、hover/active/background/border/disabled 等颜色计算。
-- 新增 `AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTimePicker`、`AntCard` 十六个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
+- 新增 `AntBreadcrumb`、`AntButton`、`AntCheckbox`、`AntDatePicker`、`AntInput`、`AntMenu`、`AntMessage`、`AntNotification`、`AntProgress`、`AntRadio`、`AntSelect`、`AntSlider`、`AntSpin`、`AntSwitch`、`AntTabs`、`AntTimePicker`、`AntCard` 十七个组件，均使用 Qt Widgets 与 `QPainter` 自绘实现，不依赖 QSS 绘制主体外观。
 - 新增 `qt-ant-design-example` 示例程序，包含无边框窗口、左侧导航、右侧组件展示页和亮色/暗色主题切换。
+- 本次新增 `AntBreadcrumb` 组件，支持 items、separator、href、iconText、disabled、当前项样式和 itemClicked 信号。
 - 本次新增 `AntSwitch` 组件，支持 checked、loading、disabled、small/middle size、checkedChildren/unCheckedChildren 文本展示、键盘切换和滑块动画。
 - 本次新增 `AntCheckbox` 组件，支持 checked、indeterminate、disabled、文本标签、键盘切换和焦点描边。
 - 本次新增 `AntDatePicker` 组件，支持 selectedDate、displayFormat、placeholder、allowClear、disabled、large/middle/small size、error/warning status、outlined/filled/underlined/borderless variant 和自绘日历 popup。
@@ -49,6 +50,12 @@
 
 ### 导航
 
+- [x] `AntBreadcrumb`
+  - 对应 Ant Design Breadcrumb。
+  - 支持属性：`separator`。
+  - 支持条目：`title`、`href`、`iconText`、`disabled` 和自定义分隔符。
+  - 支持信号：`itemClicked`。
+  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中自绘路径项、分隔符、hover 背景、链接色和最后一项当前状态。
 - [x] `AntMenu`
   - 对应 Ant Design Menu。
   - 支持模式：`vertical`、`horizontal`、`inline`。
@@ -186,7 +193,6 @@
 - [ ] `AntCalendar`：日历。
 - [ ] `AntUpload`：上传。
 - [ ] `AntDrawer`：抽屉。
-- [ ] `AntBreadcrumb`：面包屑。
 - [ ] `AntSteps`：步骤条。
 - [ ] `AntTimeline`：时间轴。
 - [ ] `AntCollapse`：折叠面板。
@@ -219,6 +225,7 @@
 当前 example 展示了以下组件：
 
 - `AntButton`：类型、尺寸、形状、danger、ghost、loading、disabled、block。
+- `AntBreadcrumb`：基础路径、iconText、自定义 separator、disabled 和点击反馈。
 - `AntCheckbox`：未选、选中、半选、禁用和“全选”受控示例。
 - `AntDatePicker`：基础选择、自定义格式、尺寸、状态、变体、禁用和清除。
 - `AntInput`：大/中/小尺寸、allowClear、addonBefore/addonAfter、password、error、disabled。

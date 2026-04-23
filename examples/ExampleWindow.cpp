@@ -13,6 +13,7 @@
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
+#include "widgets/AntBreadcrumb.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckbox.h"
@@ -87,6 +88,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     contentLayout->addWidget(m_stack, 1);
 
     m_stack->addWidget(wrapPage(createButtonPage()));
+    m_stack->addWidget(wrapPage(createBreadcrumbPage()));
     m_stack->addWidget(wrapPage(createCheckboxPage()));
     m_stack->addWidget(wrapPage(createDatePickerPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
@@ -103,21 +105,22 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createTimePickerPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
     addNavButton(QStringLiteral("Button"), 0);
-    addNavButton(QStringLiteral("Checkbox"), 1);
-    addNavButton(QStringLiteral("DatePicker"), 2);
-    addNavButton(QStringLiteral("Input"), 3);
-    addNavButton(QStringLiteral("Message"), 4);
-    addNavButton(QStringLiteral("Menu"), 5);
-    addNavButton(QStringLiteral("Tabs"), 6);
-    addNavButton(QStringLiteral("Notification"), 7);
-    addNavButton(QStringLiteral("Progress"), 8);
-    addNavButton(QStringLiteral("Radio"), 9);
-    addNavButton(QStringLiteral("Select"), 10);
-    addNavButton(QStringLiteral("Slider"), 11);
-    addNavButton(QStringLiteral("Spin"), 12);
-    addNavButton(QStringLiteral("Switch"), 13);
-    addNavButton(QStringLiteral("TimePicker"), 14);
-    addNavButton(QStringLiteral("Card"), 15);
+    addNavButton(QStringLiteral("Breadcrumb"), 1);
+    addNavButton(QStringLiteral("Checkbox"), 2);
+    addNavButton(QStringLiteral("DatePicker"), 3);
+    addNavButton(QStringLiteral("Input"), 4);
+    addNavButton(QStringLiteral("Message"), 5);
+    addNavButton(QStringLiteral("Menu"), 6);
+    addNavButton(QStringLiteral("Tabs"), 7);
+    addNavButton(QStringLiteral("Notification"), 8);
+    addNavButton(QStringLiteral("Progress"), 9);
+    addNavButton(QStringLiteral("Radio"), 10);
+    addNavButton(QStringLiteral("Select"), 11);
+    addNavButton(QStringLiteral("Slider"), 12);
+    addNavButton(QStringLiteral("Spin"), 13);
+    addNavButton(QStringLiteral("Switch"), 14);
+    addNavButton(QStringLiteral("TimePicker"), 15);
+    addNavButton(QStringLiteral("Card"), 16);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -229,6 +232,43 @@ QWidget* ExampleWindow::createButtonPage()
     block->setButtonType(Ant::ButtonType::Primary);
     block->setBlock(true);
     layout->addWidget(block);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createBreadcrumbPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basic = new AntBreadcrumb();
+    basic->addItem(QStringLiteral("Home"), QStringLiteral("/"));
+    basic->addItem(QStringLiteral("Application Center"), QStringLiteral("/apps"));
+    basic->addItem(QStringLiteral("Application List"), QStringLiteral("/apps/list"));
+    basic->addItem(QStringLiteral("An Application"));
+    connect(basic, &AntBreadcrumb::itemClicked, this, [this](int, const QString& title, const QString&) {
+        AntMessage::info(QStringLiteral("Clicked %1").arg(title), this, 1600);
+    });
+    layout->addWidget(basic);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Icon and Custom Separator")));
+    auto* custom = new AntBreadcrumb();
+    custom->setSeparator(QStringLiteral(">"));
+    custom->addItem(QStringLiteral("Home"), QStringLiteral("/"), QStringLiteral("H"));
+    custom->addItem(QStringLiteral("Library"), QStringLiteral("/library"), QStringLiteral("L"));
+    custom->addItem(QStringLiteral("Data"));
+    layout->addWidget(custom);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Disabled")));
+    auto* disabled = new AntBreadcrumb();
+    disabled->addItem(QStringLiteral("Workspace"), QStringLiteral("/workspace"));
+    disabled->addItem(QStringLiteral("Disabled link"), QStringLiteral("/disabled"), QString(), true);
+    disabled->addItem(QStringLiteral("Current"));
+    layout->addWidget(disabled);
+
     layout->addStretch();
     return page;
 }
