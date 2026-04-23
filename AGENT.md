@@ -100,7 +100,7 @@
   - 交互方式：支持鼠标展开、翻月、选日、清除，以及 Space/Enter/Escape/Left/Right 键盘操作。
 - [x] `AntInput`
   - 对应 Ant Design Input。
-  - 内部使用 `QLineEdit` 处理文本输入，外层 `AntInput` 负责绘制背景、边框和焦点外发光。
+  - 内部使用 `QLineEdit` 处理文本输入，已迁移至 QProxyStyle（`src/styles/AntInputStyle`），外层 `AntInput` 通过 Style 绘制背景、边框、addon 区域和焦点外发光。
   - 支持尺寸：`large`、`middle`、`small`。
   - 支持状态：普通、错误、警告、禁用。
   - 支持功能：`addonBefore`、`addonAfter`、前缀图标、后缀图标、自定义前后缀 widget、清除按钮、密码模式。

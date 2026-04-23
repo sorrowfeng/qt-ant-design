@@ -21,6 +21,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/core/AntTypes.h
     src/core/AntTheme.h
     src/styles/AntButtonStyle.h
+    src/styles/AntInputStyle.h
     src/styles/AntPalette.h
     src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
@@ -49,6 +50,7 @@ set(QT_ANT_DESIGN_HEADERS
 set(QT_ANT_DESIGN_SOURCES
     src/core/AntTheme.cpp
     src/styles/AntButtonStyle.cpp
+    src/styles/AntInputStyle.cpp
     src/styles/AntPalette.cpp
     src/widgets/AntAvatar.cpp
     src/widgets/AntBadge.cpp
@@ -118,6 +120,7 @@ install(FILES
 
 install(FILES
     src/styles/AntButtonStyle.h
+    src/styles/AntInputStyle.h
     src/styles/AntPalette.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/styles
 )

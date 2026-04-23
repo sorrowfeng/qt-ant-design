@@ -3,9 +3,8 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QPainter>
-#include <QPainterPath>
 
+#include "../styles/AntInputStyle.h"
 #include "core/AntTheme.h"
 
 AntInput::AntInput(QWidget* parent)
@@ -14,6 +13,10 @@ AntInput::AntInput(QWidget* parent)
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+
+    auto* inputStyle = new AntInputStyle(style());
+    inputStyle->setParent(this);
+    setStyle(inputStyle);
 
     m_layout = new QHBoxLayout(this);
     m_layout->setContentsMargins(0, 0, 0, 0);
@@ -187,40 +190,6 @@ QSize AntInput::minimumSizeHint() const
     return QSize(80, metrics().height);
 }
 
-void AntInput::paintEvent(QPaintEvent* event)
-{
-    Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const QRectF frame = rect().adjusted(0.5, 0.5, -0.5, -0.5);
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-    if (m_focused && isEnabled())
-    {
-        QColor focus = m_status == Ant::InputStatus::Error ? token.colorErrorBg : token.colorPrimaryBg;
-        focus.setAlphaF(0.65);
-        painter.setPen(QPen(focus, token.controlOutlineWidth));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(frame.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
-    }
-
-    painter.setPen(QPen(borderColor(), token.lineWidth));
-    painter.setBrush(isEnabled() ? token.colorBgContainer : token.colorBgContainerDisabled);
-    painter.drawRoundedRect(frame, m.radius, m.radius);
-
-    auto drawAddon = [&](QLabel* label) {
-        if (!label || !label->isVisible())
-            return;
-        painter.setPen(QPen(borderColor(), token.lineWidth));
-        painter.setBrush(token.colorFillQuaternary);
-        painter.drawRect(label->geometry().adjusted(0, 0, -1, -1));
-    };
-    drawAddon(m_addonBefore);
-    drawAddon(m_addonAfter);
-}
-
 void AntInput::enterEvent(QEnterEvent* event)
 {
     m_hovered = true;
@@ -392,4 +361,24 @@ QColor AntInput::borderColor() const
     if (m_hovered)
         return token.colorPrimaryHover;
     return token.colorBorder;
+}
+
+bool AntInput::isInputFocused() const
+{
+    return m_focused;
+}
+
+bool AntInput::isInputHovered() const
+{
+    return m_hovered;
+}
+
+QRect AntInput::addonBeforeRect() const
+{
+    return m_addonBefore && m_addonBefore->isVisible() ? m_addonBefore->geometry() : QRect();
+}
+
+QRect AntInput::addonAfterRect() const
+{
+    return m_addonAfter && m_addonAfter->isVisible() ? m_addonAfter->geometry() : QRect();
 }

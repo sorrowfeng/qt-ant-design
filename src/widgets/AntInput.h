@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QIcon>
+#include <QRect>
 #include <QLineEdit>
 #include <QToolButton>
 #include <QWidget>
@@ -47,6 +48,10 @@ public:
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
+    bool isInputFocused() const;
+    bool isInputHovered() const;
+    QRect addonBeforeRect() const;
+    QRect addonAfterRect() const;
 
 Q_SIGNALS:
     void textChanged(const QString& text);
@@ -58,7 +63,6 @@ Q_SIGNALS:
     void focusOut();
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
