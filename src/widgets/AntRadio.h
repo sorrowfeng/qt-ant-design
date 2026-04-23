@@ -31,6 +31,8 @@ public:
 
     bool autoExclusive() const;
     void setAutoExclusive(bool autoExclusive);
+    bool isHoveredState() const;
+    bool isPressedState() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -44,7 +46,6 @@ Q_SIGNALS:
     void clicked(bool checked);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;

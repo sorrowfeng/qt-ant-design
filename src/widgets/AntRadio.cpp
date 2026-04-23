@@ -3,16 +3,13 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
-#include <QPainter>
 
+#include "../styles/AntRadioStyle.h"
 #include "core/AntTheme.h"
-#include "styles/AntPalette.h"
 
 namespace
 {
 constexpr int RadioSize = 16;
-constexpr int TextSpacing = 8;
-constexpr qreal DotRatio = 0.5;
 }
 
 AntRadio::AntRadio(QWidget* parent)
@@ -22,6 +19,10 @@ AntRadio::AntRadio(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);
+
+    auto* radioStyle = new AntRadioStyle(style());
+    radioStyle->setParent(this);
+    setStyle(radioStyle);
 
     connect(antTheme, &AntTheme::themeModeChanged, this, [this]() {
         update();
@@ -101,57 +102,18 @@ void AntRadio::setAutoExclusive(bool autoExclusive)
 
 QSize AntRadio::sizeHint() const
 {
+    constexpr int radioSize = 16;
+    constexpr int textSpacing = 8;
     QFont f = font();
     f.setPixelSize(antTheme->tokens().fontSize);
     QFontMetrics fm(f);
-    const int textWidth = m_text.isEmpty() ? 0 : TextSpacing + fm.horizontalAdvance(m_text);
-    return QSize(RadioSize + textWidth, std::max(RadioSize, fm.height()));
+    const int textWidth = m_text.isEmpty() ? 0 : textSpacing + fm.horizontalAdvance(m_text);
+    return QSize(radioSize + textWidth, std::max(radioSize, fm.height()));
 }
 
 QSize AntRadio::minimumSizeHint() const
 {
-    return QSize(RadioSize, RadioSize);
-}
-
-void AntRadio::paintEvent(QPaintEvent* event)
-{
-    Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    const QRectF circle = indicatorRect();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-    painter.setPen(QPen(indicatorBorderColor(), token.lineWidth));
-    painter.setBrush(indicatorBackgroundColor());
-    painter.drawEllipse(circle);
-
-    if (m_checked)
-    {
-        const qreal dotSize = RadioSize * DotRatio;
-        QRectF dot(circle.center().x() - dotSize / 2.0, circle.center().y() - dotSize / 2.0, dotSize, dotSize);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(isEnabled() ? token.colorTextLightSolid : token.colorTextDisabled);
-        painter.drawEllipse(dot);
-    }
-
-    if (hasFocus() && isEnabled())
-    {
-        QColor focus = AntPalette::alpha(token.colorPrimary, 0.22);
-        painter.setPen(QPen(focus, token.controlOutlineWidth));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawEllipse(circle.adjusted(-2, -2, 2, 2));
-    }
-
-    if (!m_text.isEmpty())
-    {
-        QFont f = painter.font();
-        f.setPixelSize(token.fontSize);
-        painter.setFont(f);
-        painter.setPen(isEnabled() ? token.colorText : token.colorTextDisabled);
-        QRectF textRect(circle.right() + TextSpacing, 0, width() - circle.right() - TextSpacing, height());
-        painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, m_text);
-    }
+    return QSize(16, 16);
 }
 
 void AntRadio::enterEvent(QEnterEvent* event)
@@ -277,4 +239,14 @@ QColor AntRadio::indicatorBackgroundColor() const
         return m_hovered || m_pressed ? token.colorPrimaryHover : token.colorPrimary;
     }
     return token.colorBgContainer;
+}
+
+bool AntRadio::isHoveredState() const
+{
+    return m_hovered;
+}
+
+bool AntRadio::isPressedState() const
+{
+    return m_pressed;
 }

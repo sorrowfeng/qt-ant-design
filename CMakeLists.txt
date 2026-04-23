@@ -24,6 +24,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntCheckboxStyle.h
     src/styles/AntInputStyle.h
     src/styles/AntPalette.h
+    src/styles/AntRadioStyle.h
     src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
     src/widgets/AntBreadcrumb.h
@@ -54,6 +55,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntCheckboxStyle.cpp
     src/styles/AntInputStyle.cpp
     src/styles/AntPalette.cpp
+    src/styles/AntRadioStyle.cpp
     src/widgets/AntAvatar.cpp
     src/widgets/AntBadge.cpp
     src/widgets/AntBreadcrumb.cpp
@@ -125,6 +127,7 @@ install(FILES
     src/styles/AntCheckboxStyle.h
     src/styles/AntInputStyle.h
     src/styles/AntPalette.h
+    src/styles/AntRadioStyle.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/styles
 )
 

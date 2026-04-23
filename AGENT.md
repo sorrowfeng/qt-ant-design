@@ -128,7 +128,7 @@
   - 对应 Ant Design Radio。
   - 支持状态和属性：`checked`、`disabled`、`text`、`value`、`autoExclusive`。
   - 支持信号：`checkedChanged`、`valueChanged`、`toggled`、`clicked`。
-  - 绘制方式：继承 `QWidget`，在 `paintEvent` 中绘制圆形指示器、选中圆点、文本和焦点描边。
+  - 绘制方式：继承 `QWidget`，已迁移至 QProxyStyle（`src/styles/AntRadioStyle`），通过 `drawControl(CE_RadioButton)` 绘制圆形指示器、选中圆点、文本和焦点描边。
   - 交互方式：鼠标点击切换，支持 Space/Enter 键盘切换；默认同父级 `AntRadio` 自动互斥。
 
 - [x] `AntSelect`
