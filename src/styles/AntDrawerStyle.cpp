@@ -85,7 +85,8 @@ void AntDrawerStyle::drawDrawer(const QStyleOption* option, QPainter* painter, c
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
-    const qreal opacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.58 : 0.45;
+    const qreal baseOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.58 : 0.45;
+    const qreal opacity = baseOpacity * drawer->maskProgress();
     painter->fillRect(option->rect, AntPalette::alpha(Qt::black, opacity));
     painter->restore();
 }

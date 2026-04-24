@@ -85,7 +85,9 @@ void AntModalStyle::drawModal(const QStyleOption* option, QPainter* painter, con
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
-    const qreal opacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.58 : 0.45;
+    const qreal baseOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.58 : 0.45;
+    // Fade mask alongside the open/close animation
+    const qreal opacity = baseOpacity * modal->animationProgress();
     painter->fillRect(option->rect, AntPalette::alpha(Qt::black, opacity));
     painter->restore();
 }

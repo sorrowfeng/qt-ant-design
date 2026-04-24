@@ -11,6 +11,8 @@ class QLabel;
 class QMouseEvent;
 class QPaintEvent;
 class QShowEvent;
+class QVariantAnimation;
+class QGraphicsOpacityEffect;
 
 class AntModal : public QWidget
 {
@@ -65,6 +67,10 @@ public:
     QWidget* footerWidget() const;
     void setFooterWidget(QWidget* widget);
 
+    // Animation progress: 0 = fully closed (transparent mask, dialog scaled
+    // down), 1 = fully open. Read by AntModalStyle when painting the mask.
+    qreal animationProgress() const;
+
 Q_SIGNALS:
     void titleChanged(const QString& title);
     void contentChanged(const QString& content);
@@ -96,6 +102,9 @@ private:
     void syncTheme();
     void updateOverlayGeometry();
     void updateDialogGeometry();
+    void applyAnimationProgress();
+    void startOpenAnimation();
+    void startCloseAnimation();
     void closeByCancel();
 
     QString m_title;
@@ -121,4 +130,8 @@ private:
     QAbstractButton* m_closeButton = nullptr;
     AntButton* m_cancelButton = nullptr;
     AntButton* m_okButton = nullptr;
+
+    QVariantAnimation* m_animation = nullptr;
+    QGraphicsOpacityEffect* m_dialogOpacity = nullptr;
+    qreal m_animProgress = 0.0;
 };

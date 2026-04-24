@@ -227,6 +227,7 @@ AntDrawer::AntDrawer(QWidget* parent)
     m_animation->setDuration(200);
     m_animation->setEasingCurve(QEasingCurve::OutCubic);
     connect(m_animation, &QPropertyAnimation::finished, this, &AntDrawer::onAnimationFinished);
+    connect(m_animation, &QPropertyAnimation::valueChanged, this, [this]() { update(); });
 
     syncTheme();
 }
@@ -631,4 +632,36 @@ void AntDrawer::onAnimationFinished()
         hide();
         Q_EMIT closed();
     }
+}
+
+qreal AntDrawer::maskProgress() const
+{
+    if (!m_panel)
+    {
+        return 0.0;
+    }
+    const QRect end = panelEndGeometry();
+    const QRect start = panelStartGeometry();
+    const QRect cur = m_panel->geometry();
+    // Progress = distance traveled from start → end along the slide axis.
+    qreal denom = 0.0;
+    qreal travelled = 0.0;
+    switch (m_placement)
+    {
+    case Ant::DrawerPlacement::Right:
+    case Ant::DrawerPlacement::Left:
+        denom = qAbs(static_cast<qreal>(end.x() - start.x()));
+        travelled = qAbs(static_cast<qreal>(cur.x() - start.x()));
+        break;
+    case Ant::DrawerPlacement::Top:
+    case Ant::DrawerPlacement::Bottom:
+        denom = qAbs(static_cast<qreal>(end.y() - start.y()));
+        travelled = qAbs(static_cast<qreal>(cur.y() - start.y()));
+        break;
+    }
+    if (denom <= 0.0)
+    {
+        return m_open ? 1.0 : 0.0;
+    }
+    return qBound(0.0, travelled / denom, 1.0);
 }

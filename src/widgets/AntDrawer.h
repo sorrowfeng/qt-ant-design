@@ -56,6 +56,10 @@ public:
     void close();
     void toggle();
 
+    // 0 when panel is fully offscreen, 1 when fully onscreen. Read by style
+    // to fade the mask alongside the slide animation.
+    qreal maskProgress() const;
+
 Q_SIGNALS:
     void titleChanged(const QString& title);
     void placementChanged(Ant::DrawerPlacement placement);
