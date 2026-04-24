@@ -73,7 +73,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
 
     m_central = new AntWidget(this);
     auto* root = new QHBoxLayout(m_central);
-    root->setContentsMargins(0, AntWindow::TitleBarHeight, 0, 0);
+    root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
 
     m_sidebar = new AntWidget(m_central);

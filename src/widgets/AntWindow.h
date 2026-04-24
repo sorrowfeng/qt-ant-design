@@ -19,6 +19,8 @@ public:
     explicit AntWindow(QWidget* parent = nullptr);
     ~AntWindow() override = default;
 
+    void setCentralWidget(QWidget* widget);
+
     static constexpr int TitleBarHeight = 40;
     static constexpr int TitleBarButtonWidth = 46;
 
@@ -66,4 +68,5 @@ private:
     QPoint m_dragStartWindowPos;
     bool m_windowMaximized = false;
     TitleBarButton m_hoveredButton = TitleBarButton::None;
+    QWidget* m_contentWidget = nullptr;
 };

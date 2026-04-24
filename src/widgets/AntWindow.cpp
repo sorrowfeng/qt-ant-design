@@ -8,6 +8,7 @@
 #include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
+#include <QVBoxLayout>
 
 #include "../styles/AntWindowStyle.h"
 #include "core/AntTheme.h"
@@ -27,10 +28,39 @@ AntWindow::AntWindow(QWidget* parent)
     setMinimumSize(400, 300);
     syncTheme();
 
+    m_contentWidget = new QWidget(this);
+    auto* contentLayout = new QVBoxLayout(m_contentWidget);
+    contentLayout->setContentsMargins(0, TitleBarHeight, 0, 0);
+    contentLayout->setSpacing(0);
+    QMainWindow::setCentralWidget(m_contentWidget);
+
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         syncTheme();
         update();
     });
+}
+
+void AntWindow::setCentralWidget(QWidget* widget)
+{
+    if (!m_contentWidget)
+    {
+        return;
+    }
+
+    QLayout* layout = m_contentWidget->layout();
+    while (QLayoutItem* item = layout->takeAt(0))
+    {
+        if (QWidget* w = item->widget())
+        {
+            w->setParent(nullptr);
+        }
+        delete item;
+    }
+
+    if (widget)
+    {
+        layout->addWidget(widget);
+    }
 }
 
 bool AntWindow::isMaximized() const
