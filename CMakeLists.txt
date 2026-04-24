@@ -37,6 +37,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntButton.h
     src/widgets/AntCheckbox.h
     src/widgets/AntDatePicker.h
+    src/widgets/AntDescriptions.h
     src/widgets/AntDropdown.h
     src/widgets/AntDivider.h
     src/widgets/AntForm.h
@@ -84,6 +85,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntButton.cpp
     src/widgets/AntCheckbox.cpp
     src/widgets/AntDatePicker.cpp
+    src/widgets/AntDescriptions.cpp
     src/widgets/AntDropdown.cpp
     src/widgets/AntDivider.cpp
     src/widgets/AntForm.cpp
@@ -176,6 +178,7 @@ install(FILES
     src/widgets/AntButton.h
     src/widgets/AntCheckbox.h
     src/widgets/AntDatePicker.h
+    src/widgets/AntDescriptions.h
     src/widgets/AntDropdown.h
     src/widgets/AntDivider.h
     src/widgets/AntForm.h

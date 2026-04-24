@@ -23,6 +23,7 @@
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntDatePicker.h"
+#include "widgets/AntDescriptions.h"
 #include "widgets/AntDropdown.h"
 #include "widgets/AntDivider.h"
 #include "widgets/AntEmpty.h"
@@ -109,6 +110,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createBreadcrumbPage()));
     m_stack->addWidget(wrapPage(createCheckboxPage()));
     m_stack->addWidget(wrapPage(createDatePickerPage()));
+    m_stack->addWidget(wrapPage(createDescriptionsPage()));
     m_stack->addWidget(wrapPage(createDropdownPage()));
     m_stack->addWidget(wrapPage(createInputPage()));
     m_stack->addWidget(wrapPage(createMessagePage()));
@@ -142,35 +144,36 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
     addNavButton(QStringLiteral("DatePicker"), 3);
-    addNavButton(QStringLiteral("Dropdown"), 4);
-    addNavButton(QStringLiteral("Input"), 5);
-    addNavButton(QStringLiteral("Message"), 6);
-    addNavButton(QStringLiteral("Menu"), 7);
-    addNavButton(QStringLiteral("Tabs"), 8);
-    addNavButton(QStringLiteral("Badge"), 9);
-    addNavButton(QStringLiteral("Avatar"), 10);
-    addNavButton(QStringLiteral("Tag"), 11);
-    addNavButton(QStringLiteral("Notification"), 12);
-    addNavButton(QStringLiteral("Popover"), 13);
-    addNavButton(QStringLiteral("Popconfirm"), 14);
-    addNavButton(QStringLiteral("Modal"), 15);
-    addNavButton(QStringLiteral("Pagination"), 16);
-    addNavButton(QStringLiteral("Progress"), 17);
-    addNavButton(QStringLiteral("Radio"), 18);
-    addNavButton(QStringLiteral("Select"), 19);
-    addNavButton(QStringLiteral("Slider"), 20);
-    addNavButton(QStringLiteral("Spin"), 21);
-    addNavButton(QStringLiteral("Switch"), 22);
-    addNavButton(QStringLiteral("TimePicker"), 23);
-    addNavButton(QStringLiteral("Card"), 24);
-    addNavButton(QStringLiteral("Skeleton"), 25);
-    addNavButton(QStringLiteral("Divider"), 26);
-    addNavButton(QStringLiteral("Icon"), 27);
-    addNavButton(QStringLiteral("InputNumber"), 28);
-    addNavButton(QStringLiteral("Alert"), 29);
-    addNavButton(QStringLiteral("Tooltip"), 30);
-    addNavButton(QStringLiteral("Form"), 31);
-    addNavButton(QStringLiteral("Empty"), 32);
+    addNavButton(QStringLiteral("Descriptions"), 4);
+    addNavButton(QStringLiteral("Dropdown"), 5);
+    addNavButton(QStringLiteral("Input"), 6);
+    addNavButton(QStringLiteral("Message"), 7);
+    addNavButton(QStringLiteral("Menu"), 8);
+    addNavButton(QStringLiteral("Tabs"), 9);
+    addNavButton(QStringLiteral("Badge"), 10);
+    addNavButton(QStringLiteral("Avatar"), 11);
+    addNavButton(QStringLiteral("Tag"), 12);
+    addNavButton(QStringLiteral("Notification"), 13);
+    addNavButton(QStringLiteral("Popover"), 14);
+    addNavButton(QStringLiteral("Popconfirm"), 15);
+    addNavButton(QStringLiteral("Modal"), 16);
+    addNavButton(QStringLiteral("Pagination"), 17);
+    addNavButton(QStringLiteral("Progress"), 18);
+    addNavButton(QStringLiteral("Radio"), 19);
+    addNavButton(QStringLiteral("Select"), 20);
+    addNavButton(QStringLiteral("Slider"), 21);
+    addNavButton(QStringLiteral("Spin"), 22);
+    addNavButton(QStringLiteral("Switch"), 23);
+    addNavButton(QStringLiteral("TimePicker"), 24);
+    addNavButton(QStringLiteral("Card"), 25);
+    addNavButton(QStringLiteral("Skeleton"), 26);
+    addNavButton(QStringLiteral("Divider"), 27);
+    addNavButton(QStringLiteral("Icon"), 28);
+    addNavButton(QStringLiteral("InputNumber"), 29);
+    addNavButton(QStringLiteral("Alert"), 30);
+    addNavButton(QStringLiteral("Tooltip"), 31);
+    addNavButton(QStringLiteral("Form"), 32);
+    addNavButton(QStringLiteral("Empty"), 33);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -464,6 +467,59 @@ QWidget* ExampleWindow::createDatePickerPage()
     stateRow->addWidget(disabledValue);
     stateRow->addStretch();
     layout->addLayout(stateRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createDescriptionsPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(28);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basic = new AntDescriptions(page);
+    basic->setTitle(QStringLiteral("User Info"));
+    basic->setColumnCount(3);
+    basic->addItem(QStringLiteral("Name"), QStringLiteral("Liam Parker"));
+    basic->addItem(QStringLiteral("Status"), QStringLiteral("Active"));
+    basic->addItem(QStringLiteral("Region"), QStringLiteral("Singapore"));
+    basic->addItem(QStringLiteral("Address"), QStringLiteral("88 Market Street, Floor 12"), 2);
+    basic->addItem(QStringLiteral("Remarks"), QStringLiteral("Owns release workflow and deployment sign-off."));
+    layout->addWidget(basic);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Bordered")));
+    auto* bordered = new AntDescriptions(page);
+    bordered->setTitle(QStringLiteral("Order Summary"));
+    bordered->setExtra(QStringLiteral("Processing"));
+    bordered->setBordered(true);
+    bordered->setColumnCount(2);
+    bordered->addItem(QStringLiteral("Order No."), QStringLiteral("#SO-2048"));
+    bordered->addItem(QStringLiteral("Placed At"), QStringLiteral("2026-04-24 14:30"));
+    bordered->addItem(QStringLiteral("Amount"), QStringLiteral("$ 2,499.00"));
+    auto* tagItem = new AntDescriptionsItem(QStringLiteral("Priority"), QString(), bordered);
+    auto* priority = new AntTag(QStringLiteral("High"), bordered);
+    priority->setColor(QStringLiteral("#fa541c"));
+    priority->setVariant(Ant::TagVariant::Solid);
+    tagItem->setContentWidget(priority);
+    bordered->addItem(tagItem);
+    bordered->addItem(QStringLiteral("Notes"), QStringLiteral("Customer requested expedited shipping and proactive status updates."), 2);
+    layout->addWidget(bordered);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
+    auto* vertical = new AntDescriptions(page);
+    vertical->setTitle(QStringLiteral("Deployment Details"));
+    vertical->setVertical(true);
+    vertical->setBordered(true);
+    vertical->setColumnCount(3);
+    vertical->addItem(QStringLiteral("Environment"), QStringLiteral("Production"));
+    vertical->addItem(QStringLiteral("Version"), QStringLiteral("v2.8.1"));
+    vertical->addItem(QStringLiteral("Triggered By"), QStringLiteral("CI Pipeline"));
+    vertical->addItem(QStringLiteral("Rollback Plan"), QStringLiteral("Automatic rollback after 5 minutes of elevated error rate."), 2);
+    vertical->addItem(QStringLiteral("Approval"), QStringLiteral("Ready"));
+    layout->addWidget(vertical);
 
     layout->addStretch();
     return page;

@@ -25,10 +25,10 @@
 ## 本次同步
 
 - 同步日期：`2026-04-24`
-- 已实现组件总数：`33`
+- 已实现组件总数：`34`
 - 已迁移至 `QProxyStyle` 的组件数：`9`
-- 仍使用 `paintEvent` 的组件数：`24`
-- 示例程序覆盖：`33 / 33`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 仍使用 `paintEvent` 的组件数：`25`
+- 示例程序覆盖：`34 / 34`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
 ## 近期更新摘要
 
@@ -37,6 +37,7 @@
 - 新增组件：
   - `AntAlert`
   - `AntDropdown`
+  - `AntDescriptions`
   - `AntEmpty`
   - `AntForm`
   - `AntIcon`
@@ -93,6 +94,7 @@
 | --- | --- | --- | --- | --- |
 | `AntCheckbox` | `checkbox` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntCheckboxStyle` |
 | `AntDatePicker` | `date-picker` | `paintEvent` | 是 | 自绘日期弹层 |
+| `AntDescriptions` | `descriptions` | `paintEvent` | 是 | 标题、extra、bordered、vertical、自定义值控件 |
 | `AntForm` | `form` | `paintEvent` | 是 | `AntForm / AntFormItem`、横向/纵向/行内布局、说明和校验提示 |
 | `AntInput` | `input` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputStyle` |
 | `AntInputNumber` | `input-number` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputNumberStyle` |
@@ -139,14 +141,13 @@
 
 ### 高优先级
 
-- [ ] `AntDescriptions`
 - [ ] `AntSteps`
 - [ ] `AntResult`
+- [ ] `AntList`
 
 ### 中优先级
 
 - [ ] `AntTimeline`
-- [ ] `AntList`
 - [ ] `AntStatistic`
 - [ ] `AntSpace`
 - [ ] `AntLayout`
@@ -207,7 +208,7 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 33 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 34 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
 
 当前示例页包括：
 
@@ -215,6 +216,7 @@
 - `Breadcrumb`
 - `Checkbox`
 - `DatePicker`
+- `Descriptions`
 - `Dropdown`
 - `Input`
 - `Message`
