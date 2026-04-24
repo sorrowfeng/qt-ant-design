@@ -20,6 +20,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 set(QT_ANT_DESIGN_HEADERS
     src/core/AntTypes.h
     src/core/AntTheme.h
+    src/core/AntWave.h
     src/styles/AntButtonStyle.h
     src/styles/AntCardStyle.h
     src/styles/AntCheckboxStyle.h
@@ -126,10 +127,21 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntTreeSelectStyle.h
     src/styles/AntStatusBarStyle.h
     src/widgets/AntStatusBar.h
+    src/core/AntQRGenerator.h
+    src/styles/AntFloatButtonStyle.h
+    src/styles/AntQRCodeStyle.h
+    src/styles/AntSegmentedStyle.h
+    src/styles/AntWatermarkStyle.h
+    src/widgets/AntAffix.h
+    src/widgets/AntFloatButton.h
+    src/widgets/AntQRCode.h
+    src/widgets/AntSegmented.h
+    src/widgets/AntWatermark.h
 )
 
 set(QT_ANT_DESIGN_SOURCES
     src/core/AntTheme.cpp
+    src/core/AntWave.cpp
     src/styles/AntButtonStyle.cpp
     src/styles/AntCardStyle.cpp
     src/styles/AntCheckboxStyle.cpp
@@ -236,6 +248,16 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntTreeSelectStyle.cpp
     src/styles/AntStatusBarStyle.cpp
     src/widgets/AntStatusBar.cpp
+    src/core/AntQRGenerator.cpp
+    src/styles/AntFloatButtonStyle.cpp
+    src/styles/AntQRCodeStyle.cpp
+    src/styles/AntSegmentedStyle.cpp
+    src/styles/AntWatermarkStyle.cpp
+    src/widgets/AntAffix.cpp
+    src/widgets/AntFloatButton.cpp
+    src/widgets/AntQRCode.cpp
+    src/widgets/AntSegmented.cpp
+    src/widgets/AntWatermark.cpp
     resources/qt-ant-design.qrc
 )
 
@@ -277,6 +299,8 @@ install(TARGETS qt-ant-design qt-ant-design-example
 install(FILES
     src/core/AntTypes.h
     src/core/AntTheme.h
+    src/core/AntQRGenerator.h
+    src/core/AntWave.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/core
 )
 
@@ -302,6 +326,10 @@ install(FILES
     src/styles/AntTreeSelectStyle.h
     src/styles/AntWindowStyle.h
     src/styles/AntStatusBarStyle.h
+    src/styles/AntFloatButtonStyle.h
+    src/styles/AntQRCodeStyle.h
+    src/styles/AntSegmentedStyle.h
+    src/styles/AntWatermarkStyle.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/styles
 )
 
@@ -358,6 +386,11 @@ install(FILES
     src/widgets/AntTreeSelect.h
     src/widgets/AntStatusBar.h
     src/widgets/AntWindow.h
+    src/widgets/AntAffix.h
+    src/widgets/AntFloatButton.h
+    src/widgets/AntQRCode.h
+    src/widgets/AntSegmented.h
+    src/widgets/AntWatermark.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/widgets
 )
 

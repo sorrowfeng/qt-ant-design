@@ -24,18 +24,43 @@
 
 ## 本次同步
 
-- 同步日期：`2026-04-24`
-- 已实现组件总数：`53`
-- 已迁移至 `QProxyStyle` 的组件数：`52`
-- 仍使用 `paintEvent` 的组件数：`1`（AntWidget 为基础类，无需 Style）
-- 示例程序覆盖：`52 / 52`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 同步日期：`2026-04-25`
+- 已实现组件总数：`58`
+- 已迁移至 `QProxyStyle` 的组件数：`56`
+- 仍使用 `paintEvent` 的组件数：`2`（AntWidget 为基础类 + AntAffix 为 QObject 工具类）
+- 示例程序覆盖：`56 / 56`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntTypography` 替代 `QLabel` 实现主题感知文本
+- 新增通用工具类：`AntWave`（`core/`，Ant Design 点击涟漪动画 overlay）
+
+## 本轮视觉增强
+
+- **Tag 13 色预设**：`AntPalette::presetColor()` 加入 `blue/purple/cyan/green/magenta/pink/red/orange/yellow/volcano/geekblue/gold/lime` 13 色映射；AntTag / AntTagStyle 接入
+- **Table 空态**：`AntTableStyle::drawTable` 在 `rowCount == 0 && !loading` 时居中绘制 Empty 插画 + "No Data" 文案
+- **Input 3 变体**：新增 `Ant::InputVariant { Outlined, Borderless, Filled, Underlined }`；`AntInput::setVariant` 控制；`AntInputStyle` 按变体分支绘制
+- **Wave 涟漪动画**：`core/AntWave` 新增，点击时在目标 widget 外绘制扩散阴影环（420ms OutCubic，opacity 0.2→0）；Button / Checkbox / Radio 已接入
+- **Modal/Drawer 进场动画**：Modal 使用 `QVariantAnimation` 驱动 `m_animProgress` + `QGraphicsOpacityEffect` 做 fade，`AntModalStyle` mask 透明度跟随动画；Drawer 新增 `maskProgress()`，mask 透明度跟随滑动进度
+
+## 本轮 Bug 修复
+
+- **AntQRGenerator 启动闪退**：`reedSolomonGenerator` 越界 `result[-1]`（循环下界改 `j >= 1`）；`gfMul` GF(256) 周期折叠（`sum >= 255 ? sum - 255 : sum`），修复 QR 码 ECC 错误
+- **AntCascaderStyle eventFilter**：Paint 分支 `return false` 改 `return true`，与其他 53 个 Style 保持一致，避免叠加绘制
+- **AntMenu 空白**：`AntMenu::paintEvent` 原为空壳，`AntMenuStyle::eventFilter` 又 `return true` 吞了 Paint；现由 AntMenu 自行绘制背景 + 分隔线 + items（沿用已有 `drawItem`），Style 不再拦截 Paint。修复 Menu 页和 Dropdown popup 里菜单项全部不显示的问题
+- **AntDropdown hover 闪烁**：原来依赖 target Enter/Leave 事件判定 open/close，Qt::Popup 抢 mouse grab 和 Qt::ToolTip 弹出时触发"假 Leave"导致循环开合。改用 **鼠标位置轮询**（`QTimer` 60ms tick，连续 3 tick 不在 target ∪ popup 范围才关闭），popup 改 `Qt::ToolTip + WA_ShowWithoutActivating`，手动 `qApp` event filter 拦截外部点击关闭
+- **AntBadge indicator 位置/裁切**：
+  - 绘制顺序错误：AntBadge `paintEvent` 在子 widget 之前，indicator 被 content（AntButton）的不透明背景覆盖。新增透明 overlay 子 widget `m_indicatorOverlay`（z 序最顶），在 overlay `paintEvent` 里调 `AntBadgeStyle` 的 `drawPrimitive` 画 indicator；AntBadgeStyle eventFilter 不再拦截 AntBadge Paint
+  - 尺寸策略：`QSizePolicy::Minimum/Minimum` + `adjustSize()` 确保 badge 严格按 hint 大小
+  - Content 四周预留 `kShadowMargin = 8` 给 AntButton 阴影呼吸空间，防止右/下边框和阴影被 parent 裁切
 
 ## 近期更新摘要
 
 根据最近 20 条提交记录，近期主要改动如下：
 
 - 新增组件：
+  - `AntSegmented`（分段控制器，滑动指示器动画，选项图标/禁用/提示）
+  - `AntFloatButton`（浮动按钮，圆形/方形，Group/BackTop 模式，Badge）
+  - `AntWatermark`（水印叠加层，旋转文本平铺，自定义字体/间距/偏移）
+  - `AntQRCode`（二维码展示，嵌入式 QR 生成器，状态叠加层，图标支持）
+  - `AntAffix`（固钉工具，QObject 辅助类，滚动吸附/解除）
   - `AntWidget`（基础类，自动处理主题切换）
   - `AntTable`（数据表格，支持排序、选择、分页）
   - `AntTree`（树形控件，支持展开/收起、选择、复选框）
@@ -90,6 +115,7 @@
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
 | `AntButton` | `button` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntButtonStyle` |
+| `AntFloatButton` | `float-button` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntFloatButtonStyle`；圆形/方形、Group/BackTop、Badge |
 | `AntIcon` | `icon` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntIconStyle`；支持 `Outlined / Filled / TwoTone`、旋转、spin、自定义路径 |
 
 ### 导航
@@ -115,6 +141,7 @@
 | `AntInputNumber` | `input-number` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputNumberStyle` |
 | `AntRadio` | `radio` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntRadioStyle` |
 | `AntRate` | `rate` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntRateStyle`；`count / value / allowHalf / allowClear / disabled / size`，hover 放大效果 |
+| `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSegmentedStyle`；选项块、滑动指示器动画、图标、禁用项 |
 | `AntSelect` | `select` | `QProxyStyle` | 是 | 主控件迁移到 `src/styles/AntSelectStyle`，popup row 保持自绘 |
 | `AntSlider` | `slider` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSliderStyle` |
 | `AntSwitch` | `switch` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSwitchStyle` |
@@ -137,6 +164,7 @@
 | `AntPopover` | `popover` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntPopoverStyle`；`title / content / action / hover / click / placement` |
 | `AntPopconfirm` | `popconfirm` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntPopconfirmStyle`；`title / description / ok / cancel / disabled / placement` |
 | `AntResult` | `result` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntResultStyle`；`status / title / subTitle / extra / iconVisible` |
+| `AntWatermark` | `watermark` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntWatermarkStyle`；旋转文本平铺、多行、自定义字体/间距/偏移 |
 
 ### 数据展示
 
@@ -150,6 +178,7 @@
 | `AntEmpty` | `empty` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntEmptyStyle`；默认插画、simple 模式、描述、自定义尺寸、extra action |
 | `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSkeletonStyle`；`active / avatar / title / paragraph / round / loading` |
 | `AntTag` | `tag` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTagStyle`；`closable / checkable / variant` |
+| `AntQRCode` | `qr-code` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntQRCodeStyle`；嵌入式 QR 生成、状态叠加、图标、无边框 |
 | `AntTable` | `table` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTableStyle`；列排序、行选择、分页、加载状态 |
 | `AntTree` | `tree` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTreeStyle`；展开/收起、节点选择、复选框、连接线 |
 
@@ -167,6 +196,7 @@
 | `AntDrawer` | `drawer` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDrawerStyle`；滑动面板，Left/Right/Top/Bottom、动画、遮罩层 |
 | `AntStatusBar` | — | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntStatusBarStyle`；左右项、分隔符、消息区、size grip |
 | `AntScrollBar` | — | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntScrollBarStyle`；8px 细滚动条、自动隐藏、无箭头按钮 |
+| `AntAffix` | `affix` | QObject 工具 | 是 | QObject 辅助类，监听滚动容器，吸附时创建占位并重新布局 |
 
 ## 待移植组件
 
@@ -183,17 +213,11 @@
 - [ ] `AntAutoComplete`
 - [ ] `AntMentions`
 - [ ] `AntTransfer`
-- [ ] `AntRate`
-- [ ] `AntSegmented`
 - [ ] `AntSplitter`
 - [ ] `AntColorPicker`
-- [ ] `AntQRCode`
 - [ ] `AntCarousel`
 - [ ] `AntTour`
-- [ ] `AntWatermark`
-- [ ] `AntAffix`
 - [ ] `AntAnchor`
-- [ ] `AntFloatButton`
 
 ## 开发规范
 
@@ -288,6 +312,11 @@
 - `Drawer`
 - `StatusBar`
 - `ScrollBar`
+- `Segmented`
+- `FloatButton`
+- `Watermark`
+- `QRCode`
+- `Affix`
 
 ## 构建与安装
 

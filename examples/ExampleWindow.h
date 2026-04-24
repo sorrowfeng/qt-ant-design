@@ -72,6 +72,11 @@ private:
     QWidget* createDrawerPage();
     QWidget* createStatusBarPage();
     QWidget* createScrollBarPage();
+    QWidget* createSegmentedPage();
+    QWidget* createFloatButtonPage();
+    QWidget* createWatermarkPage();
+    QWidget* createQRCodePage();
+    QWidget* createAffixPage();
     QWidget* wrapPage(QWidget* page);
     AntTypography* createSectionTitle(const QString& title);
     void addNavButton(const QString& text, int pageIndex);

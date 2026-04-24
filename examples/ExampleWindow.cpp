@@ -65,6 +65,11 @@
 #include "widgets/AntDrawer.h"
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntScrollBar.h"
+#include "widgets/AntSegmented.h"
+#include "widgets/AntFloatButton.h"
+#include "widgets/AntWatermark.h"
+#include "widgets/AntQRCode.h"
+#include "widgets/AntAffix.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
     : AntWindow(parent)
@@ -170,6 +175,11 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createStatusBarPage()));
     m_stack->addWidget(wrapPage(createScrollBarPage()));
     m_stack->addWidget(wrapPage(createRatePage()));
+    m_stack->addWidget(wrapPage(createSegmentedPage()));
+    m_stack->addWidget(wrapPage(createFloatButtonPage()));
+    m_stack->addWidget(wrapPage(createWatermarkPage()));
+    m_stack->addWidget(wrapPage(createQRCodePage()));
+    m_stack->addWidget(wrapPage(createAffixPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -222,6 +232,11 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("StatusBar"), 49);
     addNavButton(QStringLiteral("ScrollBar"), 50);
     addNavButton(QStringLiteral("Rate"), 51);
+    addNavButton(QStringLiteral("Segmented"), 52);
+    addNavButton(QStringLiteral("FloatButton"), 53);
+    addNavButton(QStringLiteral("Watermark"), 54);
+    addNavButton(QStringLiteral("QRCode"), 55);
+    addNavButton(QStringLiteral("Affix"), 56);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -679,6 +694,25 @@ QWidget* ExampleWindow::createInputPage()
     layout->addWidget(password);
     layout->addWidget(error);
     layout->addWidget(disabled);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Variants")));
+    auto* outlined = new AntInput();
+    outlined->setPlaceholderText(QStringLiteral("Outlined (default)"));
+    outlined->setVariant(Ant::InputVariant::Outlined);
+    auto* filled = new AntInput();
+    filled->setPlaceholderText(QStringLiteral("Filled"));
+    filled->setVariant(Ant::InputVariant::Filled);
+    auto* borderless = new AntInput();
+    borderless->setPlaceholderText(QStringLiteral("Borderless"));
+    borderless->setVariant(Ant::InputVariant::Borderless);
+    auto* underlined = new AntInput();
+    underlined->setPlaceholderText(QStringLiteral("Underlined"));
+    underlined->setVariant(Ant::InputVariant::Underlined);
+    layout->addWidget(outlined);
+    layout->addWidget(filled);
+    layout->addWidget(borderless);
+    layout->addWidget(underlined);
+
     layout->addStretch();
     return page;
 }
@@ -1645,32 +1679,69 @@ QWidget* ExampleWindow::createTagPage()
     basicRow->addStretch();
     layout->addLayout(basicRow);
 
-    layout->addWidget(createSectionTitle(QStringLiteral("Color and Variant")));
-    auto* colorRow = new QHBoxLayout();
-    colorRow->setSpacing(10);
-    const QList<QPair<QString, QString>> colors = {
+    layout->addWidget(createSectionTitle(QStringLiteral("Status Colors")));
+    auto* statusRow = new QHBoxLayout();
+    statusRow->setSpacing(10);
+    const QList<QPair<QString, QString>> statusColors = {
         {QStringLiteral("Success"), QStringLiteral("success")},
         {QStringLiteral("Processing"), QStringLiteral("processing")},
         {QStringLiteral("Warning"), QStringLiteral("warning")},
         {QStringLiteral("Error"), QStringLiteral("error")},
-        {QStringLiteral("Magenta"), QStringLiteral("#eb2f96")},
     };
-    for (const auto& item : colors)
+    for (const auto& item : statusColors)
     {
         auto* tag = new AntTag(item.first);
         tag->setColor(item.second);
-        colorRow->addWidget(tag);
+        statusRow->addWidget(tag);
     }
-    auto* solid = new AntTag(QStringLiteral("Solid"));
-    solid->setColor(QStringLiteral("processing"));
-    solid->setVariant(Ant::TagVariant::Solid);
-    auto* outlined = new AntTag(QStringLiteral("Outlined"));
-    outlined->setColor(QStringLiteral("success"));
-    outlined->setVariant(Ant::TagVariant::Outlined);
-    colorRow->addWidget(solid);
-    colorRow->addWidget(outlined);
-    colorRow->addStretch();
-    layout->addLayout(colorRow);
+    statusRow->addStretch();
+    layout->addLayout(statusRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Preset Colors")));
+    auto* presetRow1 = new QHBoxLayout();
+    presetRow1->setSpacing(10);
+    for (const QString& name : {QStringLiteral("magenta"), QStringLiteral("red"), QStringLiteral("volcano"),
+                                 QStringLiteral("orange"), QStringLiteral("gold"), QStringLiteral("lime"),
+                                 QStringLiteral("green")})
+    {
+        auto* tag = new AntTag(name);
+        tag->setColor(name);
+        presetRow1->addWidget(tag);
+    }
+    presetRow1->addStretch();
+    layout->addLayout(presetRow1);
+
+    auto* presetRow2 = new QHBoxLayout();
+    presetRow2->setSpacing(10);
+    for (const QString& name : {QStringLiteral("cyan"), QStringLiteral("blue"), QStringLiteral("geekblue"),
+                                 QStringLiteral("purple"), QStringLiteral("pink"), QStringLiteral("yellow")})
+    {
+        auto* tag = new AntTag(name);
+        tag->setColor(name);
+        presetRow2->addWidget(tag);
+    }
+    presetRow2->addStretch();
+    layout->addLayout(presetRow2);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Variant")));
+    auto* variantRow = new QHBoxLayout();
+    variantRow->setSpacing(10);
+    for (const auto& item : statusColors)
+    {
+        auto* tag = new AntTag(QStringLiteral("Solid ") + item.first);
+        tag->setColor(item.second);
+        tag->setVariant(Ant::TagVariant::Solid);
+        variantRow->addWidget(tag);
+    }
+    for (const auto& item : statusColors)
+    {
+        auto* tag = new AntTag(QStringLiteral("Outlined ") + item.first);
+        tag->setColor(item.second);
+        tag->setVariant(Ant::TagVariant::Outlined);
+        variantRow->addWidget(tag);
+    }
+    variantRow->addStretch();
+    layout->addLayout(variantRow);
 
     layout->addWidget(createSectionTitle(QStringLiteral("Checkable")));
     auto* checkRow = new QHBoxLayout();
@@ -3497,6 +3568,16 @@ QWidget* ExampleWindow::createTablePage()
     selTable->setRows(rows);
     layout->addWidget(selTable);
 
+    layout->addWidget(createSectionTitle(QStringLiteral("Empty Table")));
+
+    auto* emptyTable = new AntTable(page);
+    emptyTable->setBordered(true);
+    emptyTable->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 150});
+    emptyTable->addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 80});
+    emptyTable->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 250});
+    emptyTable->setFixedHeight(220);
+    layout->addWidget(emptyTable);
+
     layout->addStretch();
     return page;
 }
@@ -3844,6 +3925,281 @@ QWidget* ExampleWindow::createRatePage()
     clearRow->addWidget(clearDisabled);
     clearRow->addStretch();
     layout->addLayout(clearRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createSegmentedPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* seg1 = new AntSegmented();
+    QVector<AntSegmentedOption> opts1 = {
+        {QStringLiteral("daily"), QStringLiteral("Daily")},
+        {QStringLiteral("weekly"), QStringLiteral("Weekly")},
+        {QStringLiteral("monthly"), QStringLiteral("Monthly")},
+        {QStringLiteral("yearly"), QStringLiteral("Yearly")},
+    };
+    seg1->setOptions(opts1);
+    seg1->setValue(QStringLiteral("daily"));
+    layout->addWidget(seg1);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Block")));
+    auto* seg2 = new AntSegmented();
+    seg2->setOptions(opts1);
+    seg2->setValue(QStringLiteral("weekly"));
+    seg2->setBlock(true);
+    layout->addWidget(seg2);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
+    auto* sizeRow = new QHBoxLayout();
+    sizeRow->setSpacing(12);
+    auto* segSm = new AntSegmented();
+    segSm->setOptions({{QStringLiteral("s"), QStringLiteral("S")}, {QStringLiteral("m"), QStringLiteral("M")}});
+    segSm->setSegmentedSize(Ant::SegmentedSize::Small);
+    auto* segMd = new AntSegmented();
+    segMd->setOptions({{QStringLiteral("a"), QStringLiteral("A")}, {QStringLiteral("b"), QStringLiteral("B")}});
+    auto* segLg = new AntSegmented();
+    segLg->setOptions({{QStringLiteral("x"), QStringLiteral("X")}, {QStringLiteral("y"), QStringLiteral("Y")}});
+    segLg->setSegmentedSize(Ant::SegmentedSize::Large);
+    sizeRow->addWidget(segSm);
+    sizeRow->addWidget(segMd);
+    sizeRow->addWidget(segLg);
+    sizeRow->addStretch();
+    layout->addLayout(sizeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
+    auto* segVert = new AntSegmented();
+    segVert->setOptions({{QStringLiteral("map"), QStringLiteral("Map")}, {QStringLiteral("list"), QStringLiteral("List")}, {QStringLiteral("grid"), QStringLiteral("Grid")}});
+    segVert->setVertical(true);
+    layout->addWidget(segVert);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Round Shape")));
+    auto* segRound = new AntSegmented();
+    segRound->setOptions({{QStringLiteral("a"), QStringLiteral("A")}, {QStringLiteral("b"), QStringLiteral("B")}, {QStringLiteral("c"), QStringLiteral("C")}});
+    segRound->setShape(Ant::SegmentedShape::Round);
+    layout->addWidget(segRound);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Disabled Option")));
+    auto* segDisabled = new AntSegmented();
+    segDisabled->setOptions({
+        {QStringLiteral("a"), QStringLiteral("Enabled")},
+        {QStringLiteral("b"), QStringLiteral("Disabled"), QString(), true},
+        {QStringLiteral("c"), QStringLiteral("Active")},
+    });
+    segDisabled->setValue(QStringLiteral("c"));
+    layout->addWidget(segDisabled);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createFloatButtonPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+
+    auto* desc = new AntTypography(QStringLiteral("Floating buttons appear in the bottom-right corner. Use them in a real app."));
+    desc->setType(Ant::TypographyType::Secondary);
+    layout->addWidget(desc);
+
+    auto* scene = new AntWidget();
+    scene->setFixedHeight(200);
+
+    // Primary circle FAB
+    auto* fab1 = new AntFloatButton(scene);
+    fab1->setIcon(QStringLiteral("✦"));
+    fab1->setFloatButtonType(Ant::FloatButtonType::Primary);
+    fab1->setPlacement(Ant::FloatButtonPlacement::BottomRight);
+    fab1->show();
+
+    layout->addWidget(scene);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Square Shape with Text")));
+    auto* scene2 = new AntWidget();
+    scene2->setFixedHeight(80);
+    auto* fab2 = new AntFloatButton(scene2);
+    fab2->setIcon(QStringLiteral("✦"));
+    fab2->setContent(QStringLiteral("Ask"));
+    fab2->setFloatButtonShape(Ant::FloatButtonShape::Square);
+    fab2->setPlacement(Ant::FloatButtonPlacement::BottomRight);
+    fab2->show();
+    layout->addWidget(scene2);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Badge")));
+    auto* scene3 = new AntWidget();
+    scene3->setFixedHeight(80);
+    auto* fab3 = new AntFloatButton(scene3);
+    fab3->setIcon(QStringLiteral("✉"));
+    fab3->setBadgeDot(true);
+    fab3->setPlacement(Ant::FloatButtonPlacement::BottomRight);
+    fab3->show();
+    layout->addWidget(scene3);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createWatermarkPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic Text Watermark")));
+    auto* wm1 = new AntWatermark();
+    wm1->setContent(QStringLiteral("Ant Design Confidential"));
+    wm1->setFixedHeight(160);
+    auto* wm1Layout = new QVBoxLayout(wm1);
+    wm1Layout->setContentsMargins(16, 16, 16, 16);
+    auto* info = new AntTypography(QStringLiteral("This area is watermarked with repeated text."));
+    info->setType(Ant::TypographyType::Secondary);
+    wm1Layout->addWidget(info);
+    layout->addWidget(wm1);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Multi-line Watermark")));
+    auto* wm2 = new AntWatermark();
+    wm2->setContent(QStringList{QStringLiteral("Ant Design"), QStringLiteral("Internal Use Only")});
+    wm2->setFixedHeight(160);
+    auto* wm2Layout = new QVBoxLayout(wm2);
+    wm2Layout->setContentsMargins(16, 16, 16, 16);
+    auto* info2 = new AntTypography(QStringLiteral("Multi-line watermark with custom text."));
+    info2->setType(Ant::TypographyType::Secondary);
+    wm2Layout->addWidget(info2);
+    layout->addWidget(wm2);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Custom Rotation")));
+    auto* wm3 = new AntWatermark();
+    wm3->setContent(QStringLiteral("ROTATED"));
+    wm3->setRotate(-45);
+    wm3->setFixedHeight(160);
+    auto* wm3Layout = new QVBoxLayout(wm3);
+    wm3Layout->setContentsMargins(16, 16, 16, 16);
+    wm3Layout->addWidget(new AntTypography(QStringLiteral("This watermark is rotated -45 degrees.")));
+    layout->addWidget(wm3);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createQRCodePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* qr1 = new AntQRCode();
+    qr1->setValue(QStringLiteral("https://ant.design"));
+    qr1->setFixedSize(160, 160);
+    layout->addWidget(qr1);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Color")));
+    auto* colorRow = new QHBoxLayout();
+    colorRow->setSpacing(24);
+    auto* qrDefault = new AntQRCode();
+    qrDefault->setValue(QStringLiteral("https://ant.design"));
+    qrDefault->setFixedSize(120, 120);
+    auto* qrRed = new AntQRCode();
+    qrRed->setValue(QStringLiteral("https://ant.design"));
+    qrRed->setColor(QColor(QStringLiteral("#ff4d4f")));
+    qrRed->setFixedSize(120, 120);
+    auto* qrBlue = new AntQRCode();
+    qrBlue->setValue(QStringLiteral("https://ant.design"));
+    qrBlue->setColor(QColor(QStringLiteral("#1677ff")));
+    qrBlue->setFixedSize(120, 120);
+    colorRow->addWidget(qrDefault);
+    colorRow->addWidget(qrRed);
+    colorRow->addWidget(qrBlue);
+    colorRow->addStretch();
+    layout->addLayout(colorRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("No Border")));
+    auto* qrNoBorder = new AntQRCode();
+    qrNoBorder->setValue(QStringLiteral("https://ant.design"));
+    qrNoBorder->setBordered(false);
+    qrNoBorder->setFixedSize(120, 120);
+    layout->addWidget(qrNoBorder);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Status Overlay")));
+    auto* statusRow = new QHBoxLayout();
+    statusRow->setSpacing(12);
+    auto* qrExpired = new AntQRCode();
+    qrExpired->setValue(QStringLiteral("https://ant.design"));
+    qrExpired->setStatus(Ant::QRCodeStatus::Expired);
+    qrExpired->setFixedSize(120, 120);
+    auto* qrLoading = new AntQRCode();
+    qrLoading->setValue(QStringLiteral("https://ant.design"));
+    qrLoading->setStatus(Ant::QRCodeStatus::Loading);
+    qrLoading->setFixedSize(120, 120);
+    auto* qrScanned = new AntQRCode();
+    qrScanned->setValue(QStringLiteral("https://ant.design"));
+    qrScanned->setStatus(Ant::QRCodeStatus::Scanned);
+    qrScanned->setFixedSize(120, 120);
+    statusRow->addWidget(qrExpired);
+    statusRow->addWidget(qrLoading);
+    statusRow->addWidget(qrScanned);
+    statusRow->addStretch();
+    layout->addLayout(statusRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createAffixPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Affix to Top (Scroll the area below)")));
+
+    auto* scrollArea = new QScrollArea();
+    scrollArea->setFrameShape(QFrame::StyledPanel);
+    scrollArea->setFixedHeight(300);
+    scrollArea->setVerticalScrollBar(new AntScrollBar(Qt::Vertical));
+
+    auto* scrollContent = new QWidget();
+    auto* scrollLayout = new QVBoxLayout(scrollContent);
+    scrollLayout->setContentsMargins(16, 16, 16, 16);
+    scrollLayout->setSpacing(12);
+
+    // Top padding
+    for (int i = 0; i < 6; ++i)
+    {
+        scrollLayout->addWidget(new AntTypography(QStringLiteral("Scroll down to see the affix effect... Line %1").arg(i + 1)));
+    }
+
+    // Affixed button
+    auto* affixedBtn = new AntButton(QStringLiteral("Affixed Button (offsetTop=0)"));
+    affixedBtn->setButtonType(Ant::ButtonType::Primary);
+    scrollLayout->addWidget(affixedBtn);
+
+    // Bottom padding
+    for (int i = 0; i < 10; ++i)
+    {
+        scrollLayout->addWidget(new AntTypography(QStringLiteral("More content line %1").arg(i + 1)));
+    }
+
+    scrollLayout->addStretch();
+    scrollArea->setWidget(scrollContent);
+    layout->addWidget(scrollArea);
+
+    // Set up affix AFTER scroll area is fully configured
+    auto* affix = new AntAffix(page);
+    affix->setAffixedWidget(affixedBtn);
 
     layout->addStretch();
     return page;
