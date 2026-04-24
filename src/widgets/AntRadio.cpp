@@ -6,6 +6,7 @@
 
 #include "../styles/AntRadioStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntWave.h"
 
 namespace
 {
@@ -148,10 +149,17 @@ void AntRadio::mouseReleaseEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && m_pressed)
     {
         m_pressed = false;
+        const bool wasChecked = m_checked;
         if (rect().contains(event->pos()))
         {
             toggleFromUser();
             Q_EMIT clicked(m_checked);
+            if (!wasChecked && m_checked)
+            {
+                const QRect box = indicatorRect().toRect();
+                // Radio is circular — use radius = size/2 for a perfect ring.
+                AntWave::triggerRect(this, box, antTheme->tokens().colorPrimary, box.width() / 2);
+            }
         }
         update();
         event->accept();

@@ -6,6 +6,7 @@
 
 #include "../styles/AntCheckboxStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntWave.h"
 
 namespace
 {
@@ -143,6 +144,12 @@ void AntCheckbox::mouseReleaseEvent(QMouseEvent* event)
         {
             toggle();
             Q_EMIT clicked(m_checked);
+            if (m_checked)
+            {
+                // Wave only around the 16x16 indicator (not the whole label row)
+                const QRect box = indicatorRect().toRect();
+                AntWave::triggerRect(this, box, antTheme->tokens().colorPrimary, 2);
+            }
         }
         update();
         event->accept();

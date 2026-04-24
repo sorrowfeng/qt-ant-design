@@ -6,6 +6,7 @@
 
 #include "../styles/AntButtonStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntWave.h"
 
 AntButton::AntButton(QWidget* parent)
     : QPushButton(parent)
@@ -158,8 +159,33 @@ void AntButton::mousePressEvent(QMouseEvent* event)
 
 void AntButton::mouseReleaseEvent(QMouseEvent* event)
 {
+    const bool wasPressed = m_pressed;
     m_pressed = false;
     update();
+    if (wasPressed && isEnabled() && !m_loading && rect().contains(event->pos()))
+    {
+        // Pick wave tint matching the button's primary visual color.
+        const auto& token = antTheme->tokens();
+        QColor tint;
+        if (m_danger)
+        {
+            tint = token.colorError;
+        }
+        else if (m_buttonType == Ant::ButtonType::Primary)
+        {
+            tint = token.colorPrimary;
+        }
+        else if (m_buttonType == Ant::ButtonType::Link || m_buttonType == Ant::ButtonType::Text)
+        {
+            tint = token.colorPrimary;
+        }
+        else
+        {
+            tint = token.colorPrimary;
+        }
+        const Metrics m = metrics();
+        AntWave::trigger(this, tint, cornerRadius(m));
+    }
     QPushButton::mouseReleaseEvent(event);
 }
 
