@@ -64,16 +64,11 @@ QSize AntMenuStyle::sizeFromContents(ContentsType type, const QStyleOption* opti
 
 bool AntMenuStyle::eventFilter(QObject* watched, QEvent* event)
 {
-    auto* menu = qobject_cast<AntMenu*>(watched);
-    if (menu && event->type() == QEvent::Paint)
-    {
-        QStyleOption option;
-        option.initFrom(menu);
-        option.rect = menu->rect();
-        QPainter painter(menu);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, menu);
-        return true;
-    }
+    Q_UNUSED(watched)
+    Q_UNUSED(event)
+    // AntMenu paints itself (background + items); we don't intercept paint
+    // here, otherwise the menu items would vanish. Style still participates
+    // via polish()/unpolish() for theme wiring.
     return QProxyStyle::eventFilter(watched, event);
 }
 

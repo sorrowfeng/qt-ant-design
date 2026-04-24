@@ -234,6 +234,43 @@ QSize AntMenu::minimumSizeHint() const
 void AntMenu::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
+
+    const auto& token = antTheme->tokens();
+    QPainter painter(this);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+    // Background
+    painter.fillRect(rect(), menuBackgroundColor());
+
+    // Right/bottom separator line (for vertical/inline or horizontal bar)
+    if (m_menuTheme != Ant::MenuTheme::Dark)
+    {
+        painter.setPen(QPen(token.colorSplit, token.lineWidth));
+        if (m_mode == Ant::MenuMode::Horizontal)
+        {
+            painter.drawLine(rect().bottomLeft(), rect().bottomRight());
+        }
+    }
+
+    // Items
+    const auto visible = visibleItems();
+    const int selectedIdx = selectedVisibleIndex();
+    for (int i = 0; i < visible.count(); ++i)
+    {
+        const int itemIdx = visible.at(i).index;
+        const AntMenuItem& item = m_items.at(itemIdx);
+        const QRect r = visible.at(i).rect;
+        if (item.divider)
+        {
+            painter.setPen(QPen(token.colorSplit, token.lineWidth));
+            const int y = r.center().y();
+            painter.drawLine(r.left() + token.paddingSM, y, r.right() - token.paddingSM, y);
+            continue;
+        }
+        const bool selected = (i == selectedIdx);
+        const bool hovered = (itemIdx == m_hoveredIndex);
+        drawItem(painter, item, r, selected, hovered);
+    }
 }
 
 void AntMenu::mouseMoveEvent(QMouseEvent* event)
