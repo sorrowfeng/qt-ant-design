@@ -1,15 +1,15 @@
 #pragma once
 
-#include <QMainWindow>
+#include "widgets/AntWindow.h"
 
 class AntButton;
+class AntTypography;
 class QHBoxLayout;
 class QLabel;
-class QMouseEvent;
 class QStackedWidget;
 class QVBoxLayout;
 
-class ExampleWindow : public QMainWindow
+class ExampleWindow : public AntWindow
 {
     Q_OBJECT
 
@@ -17,9 +17,6 @@ public:
     explicit ExampleWindow(QWidget* parent = nullptr);
 
 protected:
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
     QSize sizeHint() const override;
 
 private:
@@ -65,18 +62,24 @@ private:
     QWidget* createSpacePage();
     QWidget* createLayoutPage();
     QWidget* createTypographyPage();
+    QWidget* createTablePage();
+    QWidget* createTreePage();
+    QWidget* createUploadPage();
+    QWidget* createCascaderPage();
+    QWidget* createTreeSelectPage();
+    QWidget* createWindowPage();
+    QWidget* createDrawerPage();
+    QWidget* createStatusBarPage();
+    QWidget* createScrollBarPage();
     QWidget* wrapPage(QWidget* page);
-    QLabel* createSectionTitle(const QString& title);
+    AntTypography* createSectionTitle(const QString& title);
     void addNavButton(const QString& text, int pageIndex);
     void applyTheme();
 
     QWidget* m_central = nullptr;
     QWidget* m_sidebar = nullptr;
-    QWidget* m_titleBar = nullptr;
     QWidget* m_content = nullptr;
     QVBoxLayout* m_navLayout = nullptr;
     QStackedWidget* m_stack = nullptr;
     AntButton* m_themeButton = nullptr;
-    bool m_dragging = false;
-    QPoint m_dragOffset;
 };

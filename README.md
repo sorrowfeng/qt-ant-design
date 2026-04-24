@@ -14,9 +14,9 @@
 
 - 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
-- 当前已移植 `38` 个核心组件
-- 全部 `42` 个组件均已迁移到 `QProxyStyle` 架构
-- 示例程序已覆盖全部 `38` 个已实现组件
+- 当前已移植 `52` 个核心组件
+- 全部 `51` 个组件均已迁移到 `QProxyStyle` 架构
+- 示例程序已覆盖全部 `50` 个已实现组件
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
 
 ## 安装与集成
@@ -125,16 +125,16 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现组件总数：`42`
+当前已实现组件总数：`52`
 
 | 分类 | 组件 | 当前绘制方式 |
 | --- | --- | --- |
 | 通用 | `AntButton` `AntIcon` | `QProxyStyle` |
 | 导航 | `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | `QProxyStyle` |
-| 数据录入 | `AntCheckbox` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntRadio` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` | `QProxyStyle` |
-| 反馈 | `AntAlert` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntPopconfirm` `AntProgress` `AntSpin` `AntTooltip` `AntResult` | `QProxyStyle` |
-| 数据展示 | `AntAvatar` `AntBadge` `AntCard` `AntEmpty` `AntList` `AntSkeleton` `AntStatistic` `AntTag` | `QProxyStyle` |
-| 布局与其他 | `AntDivider` `AntSpace` `AntLayout` `AntTimeline` `AntTypography` | `QProxyStyle` |
+| 数据录入 | `AntCheckbox` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntRadio` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` `AntUpload` `AntCascader` `AntTreeSelect` | `QProxyStyle` |
+| 反馈 | `AntAlert` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntSpin` `AntTooltip` `AntResult` | `QProxyStyle` |
+| 数据展示 | `AntAvatar` `AntBadge` `AntCard` `AntEmpty` `AntList` `AntSkeleton` `AntStatistic` `AntTag` `AntTable` `AntTree` | `QProxyStyle` |
+| 布局与其他 | `AntDivider` `AntSpace` `AntLayout` `AntTimeline` `AntTypography` `AntWidget` `AntWindow` `AntDrawer` `AntStatusBar` `AntScrollBar` | `QProxyStyle` |
 
 ### 组件概览
 
@@ -164,6 +164,17 @@ int main(int argc, char* argv[])
 - `AntMessage` / `AntNotification`：全局反馈组件
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`：常用展示组件
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`：导航组件
+- `AntTable`：数据表格，支持列排序、行选择（复选框/单选框）、分页、加载状态
+- `AntTree`：树形控件，支持展开/收起、节点选择、复选框、连接线
+- `AntUpload`：文件上传，支持文本列表/图片列表/图片卡片三种模式
+- `AntCascader`：级联选择器，多列弹出面板，支持点击/悬停展开
+- `AntTreeSelect`：树形选择器，下拉框内展示树形结构
+- `AntWidget`：基础 QWidget 子类，自动处理主题切换
+- `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略
+- `AntWindow`：无边框窗口，自定义标题栏、拖拽、最小化/最大化/关闭按钮
+- `AntDrawer`：滑动面板，支持 Left/Right/Top/Bottom 四个方向、动画、遮罩层
+- `AntStatusBar`：状态栏，左右项、分隔符、消息区、size grip
+- `AntScrollBar`：自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮
 
 ## 使用示例
 
@@ -243,11 +254,12 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 
 后续还会继续推进：
 
-- `AntEmpty`
-- `AntSpace`
-- `AntLayout`
-- `AntTable`
-- `AntTree`
+- `AntCarousel`（轮播图）
+- `AntTour`（漫游式引导）
+- `AntWatermark`（水印）
+- `AntAffix`（固钉）
+- `AntAnchor`（锚点）
+- `AntFloatButton`（浮动按钮）
 
 ## 致谢
 

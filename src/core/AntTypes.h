@@ -502,6 +502,71 @@ enum class TypographyTitleLevel
 };
 Q_ENUM_NS(TypographyTitleLevel)
 
+enum class TableSize
+{
+    Large,
+    Middle,
+    Small,
+};
+Q_ENUM_NS(TableSize)
+
+enum class TableSortOrder
+{
+    None,
+    Ascending,
+    Descending,
+};
+Q_ENUM_NS(TableSortOrder)
+
+enum class TableSelectionMode
+{
+    None,
+    Checkbox,
+    Radio,
+};
+Q_ENUM_NS(TableSelectionMode)
+
+enum class TableColumnAlign
+{
+    Left,
+    Center,
+    Right,
+};
+Q_ENUM_NS(TableColumnAlign)
+
+enum class UploadListType
+{
+    Text,
+    Picture,
+    PictureCard,
+};
+Q_ENUM_NS(UploadListType)
+
+enum class UploadFileStatus
+{
+    Uploading,
+    Done,
+    Error,
+    Removed,
+};
+Q_ENUM_NS(UploadFileStatus)
+
+enum class CascaderExpandTrigger
+{
+    Click,
+    Hover,
+};
+Q_ENUM_NS(CascaderExpandTrigger)
+
+enum class DrawerPlacement
+{
+    Left,
+    Right,
+    Top,
+    Bottom,
+};
+Q_ENUM_NS(DrawerPlacement)
+
 constexpr int LineWidth = 1;
 constexpr int SizeUnit = 4;
 constexpr int SizeStep = 4;

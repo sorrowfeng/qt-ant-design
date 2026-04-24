@@ -25,6 +25,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntCheckboxStyle.h
     src/styles/AntDatePickerStyle.h
     src/styles/AntDescriptionsStyle.h
+    src/styles/AntDrawerStyle.h
     src/styles/AntDividerStyle.h
     src/styles/AntDropdownStyle.h
     src/styles/AntBreadcrumbStyle.h
@@ -37,6 +38,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntPalette.h
     src/styles/AntRadioStyle.h
     src/styles/AntSelectStyle.h
+    src/styles/AntScrollBarStyle.h
     src/styles/AntSliderStyle.h
     src/styles/AntSpinStyle.h
     src/styles/AntStepsStyle.h
@@ -63,6 +65,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntTooltipStyle.h
     src/styles/AntTypographyStyle.h
     src/styles/AntLayoutStyle.h
+    src/styles/AntWindowStyle.h
     src/widgets/AntAlert.h
     src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
@@ -71,6 +74,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntCheckbox.h
     src/widgets/AntDatePicker.h
     src/widgets/AntDescriptions.h
+    src/widgets/AntDrawer.h
     src/widgets/AntDropdown.h
     src/widgets/AntDivider.h
     src/widgets/AntForm.h
@@ -89,6 +93,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntProgress.h
     src/widgets/AntRadio.h
     src/widgets/AntResult.h
+    src/widgets/AntScrollBar.h
     src/widgets/AntSelect.h
     src/widgets/AntSkeleton.h
     src/widgets/AntSlider.h
@@ -105,6 +110,20 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntLayout.h
     src/widgets/AntCard.h
     src/widgets/AntSpace.h
+    src/widgets/AntWidget.h
+    src/widgets/AntWindow.h
+    src/widgets/AntTable.h
+    src/widgets/AntTree.h
+    src/widgets/AntUpload.h
+    src/widgets/AntCascader.h
+    src/widgets/AntTreeSelect.h
+    src/styles/AntTableStyle.h
+    src/styles/AntTreeStyle.h
+    src/styles/AntUploadStyle.h
+    src/styles/AntCascaderStyle.h
+    src/styles/AntTreeSelectStyle.h
+    src/styles/AntStatusBarStyle.h
+    src/widgets/AntStatusBar.h
 )
 
 set(QT_ANT_DESIGN_SOURCES
@@ -114,6 +133,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntCheckboxStyle.cpp
     src/styles/AntDatePickerStyle.cpp
     src/styles/AntDescriptionsStyle.cpp
+    src/styles/AntDrawerStyle.cpp
     src/styles/AntDividerStyle.cpp
     src/styles/AntDropdownStyle.cpp
     src/styles/AntBreadcrumbStyle.cpp
@@ -126,6 +146,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntPalette.cpp
     src/styles/AntRadioStyle.cpp
     src/styles/AntSelectStyle.cpp
+    src/styles/AntScrollBarStyle.cpp
     src/styles/AntSliderStyle.cpp
     src/styles/AntSpinStyle.cpp
     src/styles/AntStepsStyle.cpp
@@ -142,6 +163,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntTagStyle.cpp
     src/styles/AntTimelineStyle.cpp
     src/styles/AntLayoutStyle.cpp
+    src/styles/AntWindowStyle.cpp
     src/styles/AntAlertStyle.cpp
     src/styles/AntIconStyle.cpp
     src/styles/AntMessageStyle.cpp
@@ -160,6 +182,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntCheckbox.cpp
     src/widgets/AntDatePicker.cpp
     src/widgets/AntDescriptions.cpp
+    src/widgets/AntDrawer.cpp
     src/widgets/AntDropdown.cpp
     src/widgets/AntDivider.cpp
     src/widgets/AntForm.cpp
@@ -178,6 +201,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntProgress.cpp
     src/widgets/AntRadio.cpp
     src/widgets/AntResult.cpp
+    src/widgets/AntScrollBar.cpp
     src/widgets/AntSelect.cpp
     src/widgets/AntSkeleton.cpp
     src/widgets/AntSlider.cpp
@@ -194,6 +218,20 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntLayout.cpp
     src/widgets/AntCard.cpp
     src/widgets/AntSpace.cpp
+    src/widgets/AntWidget.cpp
+    src/widgets/AntWindow.cpp
+    src/widgets/AntTable.cpp
+    src/widgets/AntTree.cpp
+    src/widgets/AntUpload.cpp
+    src/widgets/AntCascader.cpp
+    src/widgets/AntTreeSelect.cpp
+    src/styles/AntTableStyle.cpp
+    src/styles/AntTreeStyle.cpp
+    src/styles/AntUploadStyle.cpp
+    src/styles/AntCascaderStyle.cpp
+    src/styles/AntTreeSelectStyle.cpp
+    src/styles/AntStatusBarStyle.cpp
+    src/widgets/AntStatusBar.cpp
     resources/qt-ant-design.qrc
 )
 
@@ -246,11 +284,20 @@ install(FILES
     src/styles/AntPalette.h
     src/styles/AntRadioStyle.h
     src/styles/AntSelectStyle.h
+    src/styles/AntScrollBarStyle.h
     src/styles/AntSliderStyle.h
     src/styles/AntSpaceStyle.h
     src/styles/AntSpinStyle.h
     src/styles/AntSwitchStyle.h
     src/styles/AntTypographyStyle.h
+    src/styles/AntDrawerStyle.h
+    src/styles/AntTableStyle.h
+    src/styles/AntTreeStyle.h
+    src/styles/AntUploadStyle.h
+    src/styles/AntCascaderStyle.h
+    src/styles/AntTreeSelectStyle.h
+    src/styles/AntWindowStyle.h
+    src/styles/AntStatusBarStyle.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/styles
 )
 
@@ -263,6 +310,7 @@ install(FILES
     src/widgets/AntCheckbox.h
     src/widgets/AntDatePicker.h
     src/widgets/AntDescriptions.h
+    src/widgets/AntDrawer.h
     src/widgets/AntDropdown.h
     src/widgets/AntDivider.h
     src/widgets/AntForm.h
@@ -281,6 +329,7 @@ install(FILES
     src/widgets/AntProgress.h
     src/widgets/AntRadio.h
     src/widgets/AntResult.h
+    src/widgets/AntScrollBar.h
     src/widgets/AntSelect.h
     src/widgets/AntSkeleton.h
     src/widgets/AntSlider.h
@@ -293,8 +342,17 @@ install(FILES
     src/widgets/AntTooltip.h
     src/widgets/AntTimePicker.h
     src/widgets/AntTypography.h
+    src/widgets/AntTimeline.h
     src/widgets/AntCard.h
     src/widgets/AntSpace.h
+    src/widgets/AntWidget.h
+    src/widgets/AntTable.h
+    src/widgets/AntTree.h
+    src/widgets/AntUpload.h
+    src/widgets/AntCascader.h
+    src/widgets/AntTreeSelect.h
+    src/widgets/AntStatusBar.h
+    src/widgets/AntWindow.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/widgets
 )
 

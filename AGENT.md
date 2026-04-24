@@ -25,16 +25,27 @@
 ## 本次同步
 
 - 同步日期：`2026-04-24`
-- 已实现组件总数：`42`
-- 已迁移至 `QProxyStyle` 的组件数：`42`
-- 仍使用 `paintEvent` 的组件数：`0`
-- 示例程序覆盖：`38 / 38`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 已实现组件总数：`52`
+- 已迁移至 `QProxyStyle` 的组件数：`51`
+- 仍使用 `paintEvent` 的组件数：`1`（AntWidget 为基础类，无需 Style）
+- 示例程序覆盖：`50 / 50`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntTypography` 替代 `QLabel` 实现主题感知文本
 
 ## 近期更新摘要
 
 根据最近 20 条提交记录，近期主要改动如下：
 
 - 新增组件：
+  - `AntWidget`（基础类，自动处理主题切换）
+  - `AntTable`（数据表格，支持排序、选择、分页）
+  - `AntTree`（树形控件，支持展开/收起、选择、复选框）
+  - `AntUpload`（文件上传，支持文本/图片/卡片模式）
+  - `AntCascader`（级联选择器，多列弹出）
+  - `AntTreeSelect`（树形选择器，下拉树形结构）
+  - `AntWindow`（无边框窗口，自定义标题栏、拖拽、最小化/最大化/关闭按钮）
+  - `AntDrawer`（滑动面板，支持四个方向、动画、遮罩层）
+  - `AntStatusBar`（状态栏，左右项、分隔符、消息区、size grip）
+  - `AntScrollBar`（自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮）
   - `AntList`
   - `AntStatistic`
   - `AntResult`
@@ -65,6 +76,12 @@
   - 将 `AntButtonStyle` 统一归档到 `src/styles/`
 - 架构迁移到 `QProxyStyle`：
   - 全部 42 个组件已完成迁移
+- 示例程序重构：
+  - `ExampleWindow` 改为继承 `AntWindow`，移除手动标题栏和鼠标拖拽逻辑
+  - 使用 `AntWidget` 作为布局容器替代裸 `QWidget`
+  - 使用 `AntTypography` 替代 `QLabel`，实现主题切换下的文字颜色自适应
+  - 使用 `AntScrollBar` 替代原生 `QScrollBar`
+  - 移除所有 `setStyleSheet` 调用（仅保留 Layout 演示页的区域背景色）
 
 ## 当前组件状态
 
@@ -101,6 +118,9 @@
 | `AntSlider` | `slider` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSliderStyle` |
 | `AntSwitch` | `switch` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSwitchStyle` |
 | `AntTimePicker` | `time-picker` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTimePickerStyle`；自绘时间弹层 |
+| `AntUpload` | `upload` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntUploadStyle`；文本/图片/卡片三种模式，文件列表管理 |
+| `AntCascader` | `cascader` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntCascaderStyle`；多列弹出面板，点击/悬停展开 |
+| `AntTreeSelect` | `tree-select` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTreeSelectStyle`；下拉树形结构，支持多选和搜索 |
 
 ### 反馈
 
@@ -129,6 +149,8 @@
 | `AntEmpty` | `empty` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntEmptyStyle`；默认插画、simple 模式、描述、自定义尺寸、extra action |
 | `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSkeletonStyle`；`active / avatar / title / paragraph / round / loading` |
 | `AntTag` | `tag` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTagStyle`；`closable / checkable / variant` |
+| `AntTable` | `table` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTableStyle`；列排序、行选择、分页、加载状态 |
+| `AntTree` | `tree` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTreeStyle`；展开/收起、节点选择、复选框、连接线 |
 
 ### 布局与其他
 
@@ -139,6 +161,11 @@
 | `AntLayout` | `layout` | `QProxyStyle` | 是 | `src/styles/AntLayoutStyle`；Header/Footer/Content/Sider 布局，Sider 可折叠 |
 | `AntTimeline` | `timeline` | `QProxyStyle` | 是 | `src/styles/AntTimelineStyle`；垂直/水平时间轴，outlined/filled，颜色预设 |
 | `AntTypography` | `typography` | `QProxyStyle` | 是 | `src/styles/AntTypographyStyle`；Title(H1-H5)/Text/Paragraph，类型/装饰/复制 |
+| `AntWidget` | — | — | 是 | 基础 QWidget 子类，自动处理主题切换，提供 tokens() 和 onThemeChanged() |
+| `AntWindow` | — | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntWindowStyle`；无边框窗口，自定义标题栏、拖拽、最小化/最大化/关闭按钮 |
+| `AntDrawer` | `drawer` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDrawerStyle`；滑动面板，Left/Right/Top/Bottom、动画、遮罩层 |
+| `AntStatusBar` | — | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntStatusBarStyle`；左右项、分隔符、消息区、size grip |
+| `AntScrollBar` | — | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntScrollBarStyle`；8px 细滚动条、自动隐藏、无箭头按钮 |
 
 ## 待移植组件
 
@@ -150,14 +177,8 @@
 
 ### 后续扩展
 
-- [ ] `AntTable`（复杂，稍后处理）
-- [ ] `AntTree`（复杂，稍后处理）
-- [ ] `AntTreeSelect`
 - [ ] `AntCalendar`
-- [ ] `AntUpload`
-- [ ] `AntDrawer`
 - [ ] `AntImage`
-- [ ] `AntCascader`
 - [ ] `AntAutoComplete`
 - [ ] `AntMentions`
 - [ ] `AntTransfer`
@@ -203,7 +224,14 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 42 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 50 个已实现组件，左侧导航与右侧页面一一对应，当前没有”已实现但未展示”的组件。
+
+示例程序架构：
+- `ExampleWindow` 继承 `AntWindow`（无边框窗口，自定义标题栏）
+- 使用 `AntWidget` 作为侧边栏和内容区容器
+- 使用 `AntTypography` 替代 `QLabel`，通过 `setTitle()` / `setParagraph()` / `setType()` 实现主题感知
+- 使用 `AntScrollBar` 替代原生滚动条
+- 仅保留 3 处 `QLabel`（需要 `setAlignment(Qt::AlignCenter)` 的场景）
 
 当前示例页包括：
 
@@ -245,6 +273,19 @@
 - `Result`
 - `List`
 - `Statistic`
+- `Timeline`
+- `Space`
+- `Layout`
+- `Typography`
+- `Table`
+- `Tree`
+- `Upload`
+- `Cascader`
+- `TreeSelect`
+- `Window`
+- `Drawer`
+- `StatusBar`
+- `ScrollBar`
 
 ## 构建与安装
 

@@ -6,16 +6,13 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QList>
-#include <QMouseEvent>
-#include <QPainterPath>
-#include <QPoint>
 #include <QScrollArea>
 #include <QStackedWidget>
-#include <QScrollBar>
 #include <QTime>
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
+#include "widgets/AntWidget.h"
 #include "widgets/AntAlert.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntBadge.h"
@@ -58,38 +55,52 @@
 #include "widgets/AntSpace.h"
 #include "widgets/AntLayout.h"
 #include "widgets/AntTypography.h"
+#include "widgets/AntTable.h"
+#include "widgets/AntTree.h"
+#include "widgets/AntUpload.h"
+#include "widgets/AntCascader.h"
+#include "widgets/AntTreeSelect.h"
+#include "widgets/AntWindow.h"
+#include "widgets/AntDrawer.h"
+#include "widgets/AntStatusBar.h"
+#include "widgets/AntScrollBar.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
-    : QMainWindow(parent)
+    : AntWindow(parent)
 {
-    setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
-    setAttribute(Qt::WA_TranslucentBackground, false);
+    setWindowTitle(QStringLiteral("Ant Design Qt Widgets"));
 
-    m_central = new QWidget(this);
+    m_central = new AntWidget(this);
     auto* root = new QHBoxLayout(m_central);
-    root->setContentsMargins(0, 0, 0, 0);
+    root->setContentsMargins(0, AntWindow::TitleBarHeight, 0, 0);
     root->setSpacing(0);
 
-    m_sidebar = new QWidget(m_central);
+    m_sidebar = new AntWidget(m_central);
     m_sidebar->setFixedWidth(220);
     auto* sideLayout = new QVBoxLayout(m_sidebar);
     sideLayout->setContentsMargins(20, 12, 20, 12);
     sideLayout->setSpacing(8);
 
-    auto* brand = new QLabel(QStringLiteral("qt-ant-design"), m_sidebar);
-    QFont brandFont = brand->font();
-    brandFont.setPixelSize(20);
-    brandFont.setWeight(QFont::DemiBold);
-    brand->setFont(brandFont);
+    auto* brand = new AntTypography(QStringLiteral("qt-ant-design"), m_sidebar);
+    brand->setTitle(true);
+    brand->setTitleLevel(Ant::TypographyTitleLevel::H4);
     sideLayout->addWidget(brand);
+
+    m_themeButton = new AntButton(QStringLiteral("Dark"), m_sidebar);
+    m_themeButton->setButtonType(Ant::ButtonType::Default);
+    m_themeButton->setButtonShape(Ant::ButtonShape::Round);
+    m_themeButton->setButtonSize(Ant::ButtonSize::Small);
+    connect(m_themeButton, &AntButton::clicked, antTheme, &AntTheme::toggleThemeMode);
+    sideLayout->addWidget(m_themeButton);
 
     auto* navScroll = new QScrollArea(m_sidebar);
     navScroll->setWidgetResizable(true);
     navScroll->setFrameShape(QFrame::NoFrame);
     navScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     navScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    navScroll->setVerticalScrollBar(new AntScrollBar(Qt::Vertical));
 
-    auto* navContainer = new QWidget();
+    auto* navContainer = new AntWidget();
     m_navLayout = new QVBoxLayout(navContainer);
     m_navLayout->setContentsMargins(0, 0, 4, 0);
     m_navLayout->setSpacing(4);
@@ -98,31 +109,12 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     navScroll->setWidget(navContainer);
     sideLayout->addWidget(navScroll, 1);
 
-    m_content = new QWidget(m_central);
+    m_content = new AntWidget(m_central);
     auto* contentLayout = new QVBoxLayout(m_content);
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
 
-    m_titleBar = new QWidget(m_content);
-    m_titleBar->setFixedHeight(64);
-    auto* titleLayout = new QHBoxLayout(m_titleBar);
-    titleLayout->setContentsMargins(28, 0, 28, 0);
-    auto* title = new QLabel(QStringLiteral("Ant Design Qt Widgets"), m_titleBar);
-    QFont titleFont = title->font();
-    titleFont.setPixelSize(18);
-    titleFont.setWeight(QFont::DemiBold);
-    title->setFont(titleFont);
-    titleLayout->addWidget(title);
-    titleLayout->addStretch();
-
-    m_themeButton = new AntButton(QStringLiteral("Dark"), m_titleBar);
-    m_themeButton->setButtonType(Ant::ButtonType::Default);
-    m_themeButton->setButtonShape(Ant::ButtonShape::Round);
-    connect(m_themeButton, &AntButton::clicked, antTheme, &AntTheme::toggleThemeMode);
-    titleLayout->addWidget(m_themeButton);
-
     m_stack = new QStackedWidget(m_content);
-    contentLayout->addWidget(m_titleBar);
     contentLayout->addWidget(m_stack, 1);
 
     m_stack->addWidget(wrapPage(createButtonPage()));
@@ -167,6 +159,15 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createSpacePage()));
     m_stack->addWidget(wrapPage(createLayoutPage()));
     m_stack->addWidget(wrapPage(createTypographyPage()));
+    m_stack->addWidget(wrapPage(createTablePage()));
+    m_stack->addWidget(wrapPage(createTreePage()));
+    m_stack->addWidget(wrapPage(createUploadPage()));
+    m_stack->addWidget(wrapPage(createCascaderPage()));
+    m_stack->addWidget(wrapPage(createTreeSelectPage()));
+    m_stack->addWidget(wrapPage(createWindowPage()));
+    m_stack->addWidget(wrapPage(createDrawerPage()));
+    m_stack->addWidget(wrapPage(createStatusBarPage()));
+    m_stack->addWidget(wrapPage(createScrollBarPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -209,6 +210,15 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Space"), 39);
     addNavButton(QStringLiteral("Layout"), 40);
     addNavButton(QStringLiteral("Typography"), 41);
+    addNavButton(QStringLiteral("Table"), 42);
+    addNavButton(QStringLiteral("Tree"), 43);
+    addNavButton(QStringLiteral("Upload"), 44);
+    addNavButton(QStringLiteral("Cascader"), 45);
+    addNavButton(QStringLiteral("TreeSelect"), 46);
+    addNavButton(QStringLiteral("Window"), 47);
+    addNavButton(QStringLiteral("Drawer"), 48);
+    addNavButton(QStringLiteral("StatusBar"), 49);
+    addNavButton(QStringLiteral("ScrollBar"), 50);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -216,35 +226,6 @@ ExampleWindow::ExampleWindow(QWidget* parent)
 
     connect(antTheme, &AntTheme::themeChanged, this, &ExampleWindow::applyTheme);
     applyTheme();
-}
-
-void ExampleWindow::mousePressEvent(QMouseEvent* event)
-{
-    if (event->button() == Qt::LeftButton && m_titleBar->geometry().contains(m_content->mapFrom(this, event->pos())))
-    {
-        m_dragging = true;
-        m_dragOffset = event->globalPosition().toPoint() - frameGeometry().topLeft();
-        event->accept();
-        return;
-    }
-    QMainWindow::mousePressEvent(event);
-}
-
-void ExampleWindow::mouseMoveEvent(QMouseEvent* event)
-{
-    if (m_dragging)
-    {
-        move(event->globalPosition().toPoint() - m_dragOffset);
-        event->accept();
-        return;
-    }
-    QMainWindow::mouseMoveEvent(event);
-}
-
-void ExampleWindow::mouseReleaseEvent(QMouseEvent* event)
-{
-    m_dragging = false;
-    QMainWindow::mouseReleaseEvent(event);
 }
 
 QWidget* ExampleWindow::createButtonPage()
@@ -631,7 +612,7 @@ QWidget* ExampleWindow::createDropdownPage()
     layout->addLayout(placementRow);
 
     layout->addWidget(createSectionTitle(QStringLiteral("Context Menu")));
-    auto* contextHint = new QLabel(QStringLiteral("Right click the area below to open a context dropdown."), page);
+    auto* contextHint = new AntTypography(QStringLiteral("Right click the area below to open a context dropdown."), page);
     layout->addWidget(contextHint);
 
     auto* contextArea = new QLabel(QStringLiteral("Context trigger area"), page);
@@ -805,7 +786,7 @@ QWidget* ExampleWindow::createIconPage()
     customIcon->setCustomPath(heart, shine);
     customRow->addWidget(createIconBlock(QStringLiteral("Custom"), customIcon));
 
-    auto* inlineText = new QLabel(QStringLiteral("Use icons inside rows for status, action and navigation."), page);
+    auto* inlineText = new AntTypography(QStringLiteral("Use icons inside rows for status, action and navigation."), page);
     auto* inlineWrap = new QWidget(page);
     auto* inlineLayout = new QHBoxLayout(inlineWrap);
     inlineLayout->setContentsMargins(0, 0, 0, 0);
@@ -1042,8 +1023,8 @@ QWidget* ExampleWindow::createTabsPage()
         auto* pane = new QWidget();
         auto* paneLayout = new QVBoxLayout(pane);
         paneLayout->setContentsMargins(16, 16, 16, 16);
-        auto* label = new QLabel(text);
-        label->setWordWrap(true);
+        auto* label = new AntTypography(text);
+        label->setParagraph(true);
         paneLayout->addWidget(label);
         paneLayout->addStretch();
         return pane;
@@ -1346,8 +1327,8 @@ QWidget* ExampleWindow::createModalPage()
     auto* inviteLayout = new QVBoxLayout(inviteContent);
     inviteLayout->setContentsMargins(0, 0, 0, 0);
     inviteLayout->setSpacing(12);
-    auto* inviteHint = new QLabel(QStringLiteral("Share access with someone who can help review and ship this change."), inviteContent);
-    inviteHint->setWordWrap(true);
+    auto* inviteHint = new AntTypography(QStringLiteral("Share access with someone who can help review and ship this change."), inviteContent);
+    inviteHint->setParagraph(true);
     auto* nameInput = new AntInput(inviteContent);
     nameInput->setPlaceholderText(QStringLiteral("Name"));
     auto* mailInput = new AntInput(inviteContent);
@@ -1969,7 +1950,7 @@ QWidget* ExampleWindow::createInputNumberPage()
     auto* quantity = new AntInputNumber();
     quantity->setRange(1, 20);
     quantity->setValue(2);
-    auto* summary = new QLabel(QStringLiteral("Quantity: 2"), page);
+    auto* summary = new AntTypography(QStringLiteral("Quantity: 2"), page);
     summary->setMinimumWidth(120);
     connect(quantity, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [summary](double value) {
         summary->setText(QStringLiteral("Quantity: %1").arg(value, 0, 'f', 0));
@@ -2232,7 +2213,7 @@ QWidget* ExampleWindow::createSliderPage()
     basicRow->setSpacing(16);
     auto* basic = new AntSlider();
     basic->setValue(30);
-    auto* basicValue = new QLabel(QString::number(basic->value()));
+    auto* basicValue = new AntTypography(QString::number(basic->value()));
     basicValue->setMinimumWidth(36);
     connect(basic, &AntSlider::valueChanged, this, [basicValue](int value) {
         basicValue->setText(QString::number(value));
@@ -2366,7 +2347,7 @@ QWidget* ExampleWindow::createStepsPage()
     interactive->addStep(QStringLiteral("Approval"), QStringLiteral("A reviewer rejected the request."), QStringLiteral("Needs attention"), Ant::StepStatus::Error);
     interactive->addStep(QStringLiteral("Release"), QStringLiteral("Will proceed after approval."));
     interactive->setCurrentIndex(2);
-    auto* summary = new QLabel(QStringLiteral("Current step: Approval"), page);
+    auto* summary = new AntTypography(QStringLiteral("Current step: Approval"), page);
     connect(interactive, &AntSteps::stepClicked, this, [summary, interactive](int index) {
         summary->setText(QStringLiteral("Current step: %1").arg(interactive->stepAt(index).title));
     });
@@ -2545,17 +2526,17 @@ QWidget* ExampleWindow::createCardPage()
     auto* basic = new AntCard(QStringLiteral("Default card"));
     basic->setExtra(QStringLiteral("More"));
     basic->setMinimumSize(280, 180);
-    basic->bodyLayout()->addWidget(new QLabel(QStringLiteral("Card content\nCard content\nCard content")));
+    basic->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card content\nCard content\nCard content")));
 
     auto* hoverable = new AntCard(QStringLiteral("Hoverable"));
     hoverable->setHoverable(true);
     hoverable->setMinimumSize(280, 180);
-    hoverable->bodyLayout()->addWidget(new QLabel(QStringLiteral("Move the mouse over this card.")));
+    hoverable->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Move the mouse over this card.")));
 
     auto* loading = new AntCard(QStringLiteral("Loading"));
     loading->setLoading(true);
     loading->setMinimumSize(280, 180);
-    loading->bodyLayout()->addWidget(new QLabel(QStringLiteral("Loading mask and spinner")));
+    loading->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Loading mask and spinner")));
     row->addWidget(basic);
     row->addWidget(hoverable);
     row->addWidget(loading);
@@ -2563,10 +2544,10 @@ QWidget* ExampleWindow::createCardPage()
 
     auto* actionCard = new AntCard(QStringLiteral("Actions"));
     actionCard->setMinimumHeight(180);
-    actionCard->bodyLayout()->addWidget(new QLabel(QStringLiteral("Card with action slots.")));
-    actionCard->addActionWidget(new QLabel(QStringLiteral("Edit")));
-    actionCard->addActionWidget(new QLabel(QStringLiteral("Share")));
-    actionCard->addActionWidget(new QLabel(QStringLiteral("Delete")));
+    actionCard->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card with action slots.")));
+    actionCard->addActionWidget(new AntTypography(QStringLiteral("Edit")));
+    actionCard->addActionWidget(new AntTypography(QStringLiteral("Share")));
+    actionCard->addActionWidget(new AntTypography(QStringLiteral("Delete")));
     layout->addWidget(actionCard);
     layout->addStretch();
     return page;
@@ -2637,9 +2618,9 @@ QWidget* ExampleWindow::createSkeletonPage()
     auto* previewCard = new AntCard(QStringLiteral("Workspace Summary"), page);
     previewCard->setFixedWidth(520);
     previewCard->setExtra(QStringLiteral("Ready"));
-    previewCard->bodyLayout()->addWidget(new QLabel(QStringLiteral("3 reviewers assigned"), previewCard));
-    previewCard->bodyLayout()->addWidget(new QLabel(QStringLiteral("12 checklist items completed"), previewCard));
-    previewCard->bodyLayout()->addWidget(new QLabel(QStringLiteral("Next milestone: beta publish"), previewCard));
+    previewCard->bodyLayout()->addWidget(new AntTypography(QStringLiteral("3 reviewers assigned"), previewCard));
+    previewCard->bodyLayout()->addWidget(new AntTypography(QStringLiteral("12 checklist items completed"), previewCard));
+    previewCard->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Next milestone: beta publish"), previewCard));
 
     auto* wrapped = new AntSkeleton(page);
     wrapped->setFixedWidth(520);
@@ -2748,8 +2729,8 @@ QWidget* ExampleWindow::createFormPage()
     inlineWrapLayout->setContentsMargins(0, 0, 0, 0);
     inlineWrapLayout->setSpacing(12);
 
-    auto* inlineHint = new QLabel(QStringLiteral("Inline layout is handy for compact filters and toolbar forms."), inlineWrap);
-    inlineHint->setWordWrap(true);
+    auto* inlineHint = new AntTypography(QStringLiteral("Inline layout is handy for compact filters and toolbar forms."), inlineWrap);
+    inlineHint->setParagraph(true);
     inlineWrapLayout->addWidget(inlineHint);
 
     auto* inlineForm = new AntForm(inlineWrap);
@@ -2983,19 +2964,15 @@ QWidget* ExampleWindow::createListPage()
     headerList->setBordered(true);
     headerList->setFixedWidth(480);
 
-    auto* header = new QLabel(QStringLiteral("  Header"), headerList);
+    auto* header = new AntTypography(QStringLiteral("Header"), headerList);
+    header->setTitle(true);
+    header->setTitleLevel(Ant::TypographyTitleLevel::H5);
     header->setFixedHeight(40);
-    QFont hf = header->font();
-    hf.setPixelSize(14);
-    hf.setWeight(QFont::DemiBold);
-    header->setFont(hf);
     headerList->setHeaderWidget(header);
 
-    auto* footer = new QLabel(QStringLiteral("  Footer"), headerList);
+    auto* footer = new AntTypography(QStringLiteral("Footer"), headerList);
+    footer->setType(Ant::TypographyType::Secondary);
     footer->setFixedHeight(40);
-    QFont ff = footer->font();
-    ff.setPixelSize(12);
-    footer->setFont(ff);
     headerList->setFooterWidget(footer);
 
     for (int i = 1; i <= 3; ++i)
@@ -3174,9 +3151,9 @@ QWidget* ExampleWindow::createDividerPage()
     layout->setSpacing(20);
 
     layout->addWidget(createSectionTitle(QStringLiteral("Horizontal")));
-    layout->addWidget(new QLabel(QStringLiteral("Ant Design")));
+    layout->addWidget(new AntTypography(QStringLiteral("Ant Design")));
     layout->addWidget(new AntDivider());
-    layout->addWidget(new QLabel(QStringLiteral("Qt Widgets")));
+    layout->addWidget(new AntTypography(QStringLiteral("Qt Widgets")));
 
     layout->addWidget(createSectionTitle(QStringLiteral("With Text")));
     layout->addWidget(new AntDivider(QStringLiteral("Center Text")));
@@ -3201,16 +3178,16 @@ QWidget* ExampleWindow::createDividerPage()
     layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
     auto* verticalRow = new QHBoxLayout();
     verticalRow->setSpacing(0);
-    verticalRow->addWidget(new QLabel(QStringLiteral("Text")));
+    verticalRow->addWidget(new AntTypography(QStringLiteral("Text")));
     auto* v1 = new AntDivider();
     v1->setOrientation(Ant::DividerOrientation::Vertical);
     verticalRow->addWidget(v1);
-    verticalRow->addWidget(new QLabel(QStringLiteral("Link")));
+    verticalRow->addWidget(new AntTypography(QStringLiteral("Link")));
     auto* v2 = new AntDivider();
     v2->setOrientation(Ant::DividerOrientation::Vertical);
     v2->setVariant(Ant::DividerVariant::Dashed);
     verticalRow->addWidget(v2);
-    verticalRow->addWidget(new QLabel(QStringLiteral("Action")));
+    verticalRow->addWidget(new AntTypography(QStringLiteral("Action")));
     verticalRow->addStretch();
     layout->addLayout(verticalRow);
 
@@ -3223,18 +3200,18 @@ QWidget* ExampleWindow::wrapPage(QWidget* page)
     auto* scroll = new QScrollArea();
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setVerticalScrollBar(new AntScrollBar(Qt::Vertical));
+    scroll->setHorizontalScrollBar(new AntScrollBar(Qt::Horizontal));
     scroll->setWidget(page);
     return scroll;
 }
 
-QLabel* ExampleWindow::createSectionTitle(const QString& title)
+AntTypography* ExampleWindow::createSectionTitle(const QString& title)
 {
-    auto* label = new QLabel(title);
-    QFont font = label->font();
-    font.setPixelSize(16);
-    font.setWeight(QFont::DemiBold);
-    label->setFont(font);
-    return label;
+    auto* typo = new AntTypography(title);
+    typo->setTitle(true);
+    typo->setTitleLevel(Ant::TypographyTitleLevel::H5);
+    return typo;
 }
 
 void ExampleWindow::addNavButton(const QString& text, int pageIndex)
@@ -3482,6 +3459,340 @@ QWidget* ExampleWindow::createTypographyPage()
     return page;
 }
 
+QWidget* ExampleWindow::createTablePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setSpacing(16);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic Table")));
+
+    auto* table = new AntTable(page);
+    table->setBordered(true);
+    table->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 150});
+    table->addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 80});
+    table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 250});
+
+    QVector<AntTableRow> rows;
+    rows.push_back({{{QStringLiteral("name"), QStringLiteral("John Brown")},
+                     {QStringLiteral("age"), 32},
+                     {QStringLiteral("address"), QStringLiteral("New York No. 1 Lake Park")}}});
+    rows.push_back({{{QStringLiteral("name"), QStringLiteral("Jim Green")},
+                     {QStringLiteral("age"), 42},
+                     {QStringLiteral("address"), QStringLiteral("London No. 1 Bridge Street")}}});
+    rows.push_back({{{QStringLiteral("name"), QStringLiteral("Joe Black")},
+                     {QStringLiteral("age"), 28},
+                     {QStringLiteral("address"), QStringLiteral("Sidney No. 1 Oxford Road")}}});
+    rows.push_back({{{QStringLiteral("name"), QStringLiteral("Jane White")},
+                     {QStringLiteral("age"), 35},
+                     {QStringLiteral("address"), QStringLiteral("Tokyo No. 2 Cherry Lane")}}});
+    table->setRows(rows);
+    layout->addWidget(table);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Selection Table")));
+
+    auto* selTable = new AntTable(page);
+    selTable->setRowSelection(Ant::TableSelectionMode::Checkbox);
+    selTable->setBordered(true);
+    selTable->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 150});
+    selTable->addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 80});
+    selTable->setRows(rows);
+    layout->addWidget(selTable);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createTreePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setSpacing(16);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic Tree")));
+
+    auto* tree = new AntTree(page);
+    tree->setShowLine(true);
+    tree->setCheckable(true);
+
+    QVector<AntTreeNode> treeData;
+    AntTreeNode parent1;
+    parent1.key = QStringLiteral("parent1");
+    parent1.title = QStringLiteral("Parent 1");
+    parent1.expanded = true;
+    parent1.children.push_back({QStringLiteral("child1-1"), QStringLiteral("Child 1-1")});
+    parent1.children.push_back({QStringLiteral("child1-2"), QStringLiteral("Child 1-2")});
+    treeData.push_back(parent1);
+
+    AntTreeNode parent2;
+    parent2.key = QStringLiteral("parent2");
+    parent2.title = QStringLiteral("Parent 2");
+    parent2.children.push_back({QStringLiteral("child2-1"), QStringLiteral("Child 2-1")});
+    treeData.push_back(parent2);
+
+    tree->setTreeData(treeData);
+    layout->addWidget(tree);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createUploadPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setSpacing(16);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic Upload")));
+
+    auto* upload = new AntUpload(page);
+    upload->addFile({QStringLiteral("file1"), QStringLiteral("document.pdf"), Ant::UploadFileStatus::Done, 100});
+    upload->addFile({QStringLiteral("file2"), QStringLiteral("image.png"), Ant::UploadFileStatus::Uploading, 45});
+    layout->addWidget(upload);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Picture Card")));
+
+    auto* picUpload = new AntUpload(page);
+    picUpload->setListType(Ant::UploadListType::PictureCard);
+    layout->addWidget(picUpload);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createCascaderPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setSpacing(16);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic Cascader")));
+
+    auto* cascader = new AntCascader(page);
+    cascader->setPlaceholder(QStringLiteral("Please select"));
+
+    QVector<AntCascaderOption> options;
+    AntCascaderOption zhejiang;
+    zhejiang.value = QStringLiteral("zhejiang");
+    zhejiang.label = QStringLiteral("Zhejiang");
+    zhejiang.isLeaf = false;
+    AntCascaderOption hangzhou;
+    hangzhou.value = QStringLiteral("hangzhou");
+    hangzhou.label = QStringLiteral("Hangzhou");
+    hangzhou.isLeaf = false;
+    hangzhou.children.push_back({QStringLiteral("xihu"), QStringLiteral("West Lake")});
+    hangzhou.children.push_back({QStringLiteral("xiasha"), QStringLiteral("Xia Sha")});
+    zhejiang.children.push_back(hangzhou);
+    options.push_back(zhejiang);
+
+    AntCascaderOption jiangsu;
+    jiangsu.value = QStringLiteral("jiangsu");
+    jiangsu.label = QStringLiteral("Jiangsu");
+    jiangsu.isLeaf = false;
+    jiangsu.children.push_back({QStringLiteral("nanjing"), QStringLiteral("Nanjing")});
+    options.push_back(jiangsu);
+
+    cascader->setOptions(options);
+    layout->addWidget(cascader);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createTreeSelectPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setSpacing(16);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic TreeSelect")));
+
+    auto* treeSelect = new AntTreeSelect(page);
+    treeSelect->setPlaceholder(QStringLiteral("Please select"));
+
+    QVector<AntTreeNode> treeData;
+    AntTreeNode parent1;
+    parent1.key = QStringLiteral("node1");
+    parent1.title = QStringLiteral("Node 1");
+    parent1.children.push_back({QStringLiteral("node1-1"), QStringLiteral("Node 1-1")});
+    parent1.children.push_back({QStringLiteral("node1-2"), QStringLiteral("Node 1-2")});
+    treeData.push_back(parent1);
+
+    AntTreeNode parent2;
+    parent2.key = QStringLiteral("node2");
+    parent2.title = QStringLiteral("Node 2");
+    parent2.children.push_back({QStringLiteral("node2-1"), QStringLiteral("Node 2-1")});
+    treeData.push_back(parent2);
+
+    treeSelect->setTreeData(treeData);
+    layout->addWidget(treeSelect);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createWindowPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setSpacing(16);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("AntWindow - Frameless Window")));
+
+    auto* desc = new AntTypography(QStringLiteral("AntWindow is a frameless window with custom title bar, "
+                                                  "draggable, minimize/maximize/close buttons with Ant Design styling. "
+                                                  "Click the button below to open a demo window."));
+    desc->setParagraph(true);
+    layout->addWidget(desc);
+
+    auto* openBtn = new AntButton(QStringLiteral("Open AntWindow"));
+    openBtn->setButtonType(Ant::ButtonType::Primary);
+    connect(openBtn, &AntButton::clicked, this, [this]() {
+        auto* window = new AntWindow();
+        window->setWindowTitle(QStringLiteral("AntWindow Demo"));
+        window->resize(600, 400);
+
+        auto* central = new QWidget();
+        auto* centralLayout = new QVBoxLayout(central);
+        centralLayout->setContentsMargins(16, 16, 16, 16);
+        auto* label = new AntTypography(QStringLiteral("This is an AntWindow with frameless design.\n"
+                                                       "You can drag the title bar to move the window.\n"
+                                                       "Double-click the title bar to maximize/restore."));
+        label->setParagraph(true);
+        centralLayout->addWidget(label);
+        centralLayout->addStretch();
+        window->setCentralWidget(central);
+
+        window->setAttribute(Qt::WA_DeleteOnClose);
+        window->show();
+    });
+    layout->addWidget(openBtn);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createDrawerPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setSpacing(16);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("AntDrawer - Sliding Panel")));
+
+    auto* desc = new AntTypography(QStringLiteral("AntDrawer is a sliding panel that overlays from the edge of the screen. "
+                                                  "Supports Left/Right/Top/Bottom placement with animation."));
+    desc->setParagraph(true);
+    layout->addWidget(desc);
+
+    auto* btnLayout = new QHBoxLayout();
+    btnLayout->setSpacing(8);
+
+    auto* rightBtn = new AntButton(QStringLiteral("Open Right Drawer"));
+    rightBtn->setButtonType(Ant::ButtonType::Primary);
+    auto* drawer = new AntDrawer(page);
+    drawer->setTitle(QStringLiteral("Drawer Title"));
+    drawer->setPlacement(Ant::DrawerPlacement::Right);
+    connect(rightBtn, &AntButton::clicked, drawer, &AntDrawer::open);
+    btnLayout->addWidget(rightBtn);
+
+    auto* leftBtn = new AntButton(QStringLiteral("Open Left Drawer"));
+    leftBtn->setButtonType(Ant::ButtonType::Default);
+    auto* leftDrawer = new AntDrawer(page);
+    leftDrawer->setTitle(QStringLiteral("Left Drawer"));
+    leftDrawer->setPlacement(Ant::DrawerPlacement::Left);
+    connect(leftBtn, &AntButton::clicked, leftDrawer, &AntDrawer::open);
+    btnLayout->addWidget(leftBtn);
+
+    auto* bottomBtn = new AntButton(QStringLiteral("Open Bottom Drawer"));
+    bottomBtn->setButtonType(Ant::ButtonType::Default);
+    auto* bottomDrawer = new AntDrawer(page);
+    bottomDrawer->setTitle(QStringLiteral("Bottom Drawer"));
+    bottomDrawer->setPlacement(Ant::DrawerPlacement::Bottom);
+    bottomDrawer->setDrawerHeight(250);
+    connect(bottomBtn, &AntButton::clicked, bottomDrawer, &AntDrawer::open);
+    btnLayout->addWidget(bottomBtn);
+
+    layout->addLayout(btnLayout);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createStatusBarPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setSpacing(16);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("AntStatusBar")));
+
+    auto* desc = new AntTypography(QStringLiteral("AntStatusBar displays status information at the bottom of a window. "
+                                                  "Supports regular items, permanent items, message text, and size grip."));
+    desc->setParagraph(true);
+    layout->addWidget(desc);
+
+    auto* statusBar = new AntStatusBar(page);
+    statusBar->addItem(QStringLiteral("Ready"));
+    statusBar->addItem(QStringLiteral("Line 1, Col 1"));
+    statusBar->addPermanentItem(QStringLiteral("UTF-8"));
+    statusBar->addPermanentItem(QStringLiteral("LF"));
+    statusBar->setMessage(QStringLiteral("File saved successfully"));
+    layout->addWidget(statusBar);
+
+    auto* statusBar2 = new AntStatusBar(page);
+    statusBar2->addItem(QStringLiteral("Connected"));
+    statusBar2->addItem(QStringLiteral("3 warnings"));
+    statusBar2->addPermanentItem(QStringLiteral("v1.0.0"));
+    statusBar2->setSizeGrip(false);
+    layout->addWidget(statusBar2);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createScrollBarPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setSpacing(16);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("AntScrollBar")));
+
+    auto* desc = new AntTypography(QStringLiteral("AntScrollBar is a custom scrollbar with thin (8px) rounded handle, "
+                                                  "auto-hide behavior, and transparent groove. No arrow buttons."));
+    desc->setParagraph(true);
+    layout->addWidget(desc);
+
+    auto* scrollArea = new QScrollArea(page);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setVerticalScrollBar(new AntScrollBar(Qt::Vertical));
+    scrollArea->setHorizontalScrollBar(new AntScrollBar(Qt::Horizontal));
+
+    auto* scrollContent = new QWidget();
+    auto* scrollLayout = new QVBoxLayout(scrollContent);
+    scrollLayout->setContentsMargins(8, 8, 8, 8);
+    scrollLayout->setSpacing(8);
+    for (int i = 0; i < 30; ++i)
+    {
+        auto* item = new AntTypography(QStringLiteral("Scroll item %1").arg(i + 1));
+        item->setFixedHeight(32);
+        scrollLayout->addWidget(item);
+    }
+    scrollArea->setWidget(scrollContent);
+    layout->addWidget(scrollArea, 1);
+
+    return page;
+}
+
 QSize ExampleWindow::sizeHint() const
 {
     return QSize(1200, 800);
@@ -3489,19 +3800,6 @@ QSize ExampleWindow::sizeHint() const
 
 void ExampleWindow::applyTheme()
 {
-    const auto& token = antTheme->tokens();
-    m_themeButton->setText(antTheme->themeMode() == Ant::ThemeMode::Dark ? QStringLiteral("Light") : QStringLiteral("Dark"));
-    setStyleSheet(QStringLiteral(
-        "QMainWindow, QWidget { background: %1; color: %2; }"
-        "QScrollArea { border: none; background: %1; }"
-        "QScrollBar:vertical { width: 10px; background: transparent; }"
-        "QScrollBar::handle:vertical { background: %3; border-radius: 5px; min-height: 32px; }"
-        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }")
-                      .arg(token.colorBgLayout.name(QColor::HexArgb),
-                           token.colorText.name(QColor::HexArgb),
-                           token.colorBorder.name(QColor::HexArgb)));
-    m_sidebar->setStyleSheet(QStringLiteral("QWidget { background: %1; } QLabel { color: %2; background: transparent; }")
-                                 .arg(token.colorBgContainer.name(QColor::HexArgb), token.colorText.name(QColor::HexArgb)));
-    m_titleBar->setStyleSheet(QStringLiteral("QWidget { background: %1; } QLabel { color: %2; background: transparent; }")
-                                  .arg(token.colorBgContainer.name(QColor::HexArgb), token.colorText.name(QColor::HexArgb)));
+    m_themeButton->setText(antTheme->themeMode() == Ant::ThemeMode::Dark
+        ? QStringLiteral("Light") : QStringLiteral("Dark"));
 }
