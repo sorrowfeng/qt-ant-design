@@ -105,15 +105,22 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
     {
         base = token.colorError;
     }
-    else if (color.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0 ||
-             color.compare(QStringLiteral("blue"), Qt::CaseInsensitive) == 0)
+    else if (color.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0)
     {
         base = token.colorPrimary;
     }
     else
     {
-        const QColor parsed(color);
-        base = parsed.isValid() ? parsed : token.colorText;
+        const QColor preset = AntPalette::presetColor(color);
+        if (preset.isValid())
+        {
+            base = preset;
+        }
+        else
+        {
+            const QColor parsed(color);
+            base = parsed.isValid() ? parsed : token.colorText;
+        }
     }
 
     const bool hasCustom = !color.trimmed().isEmpty();

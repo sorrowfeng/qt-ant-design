@@ -21,4 +21,9 @@ public:
     static QColor backgroundColor(const QColor& base, Ant::ThemeMode mode = Ant::ThemeMode::Default);
     static QColor borderColor(const QColor& base, Ant::ThemeMode mode = Ant::ThemeMode::Default);
     static QColor disabledColor(const QColor& foreground, const QColor& background);
+
+    // Look up Ant Design preset color by name (blue/purple/cyan/green/magenta/pink/
+    // red/orange/yellow/volcano/geekblue/gold/lime). Returns invalid QColor if name
+    // does not match a preset.
+    static QColor presetColor(const QString& name);
 };

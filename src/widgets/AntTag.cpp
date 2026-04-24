@@ -198,9 +198,14 @@ QColor AntTag::baseColor() const
     {
         return antTheme->tokens().colorError;
     }
-    if (m_color.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0 || m_color.compare(QStringLiteral("blue"), Qt::CaseInsensitive) == 0)
+    if (m_color.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0)
     {
         return antTheme->tokens().colorPrimary;
+    }
+    const QColor preset = AntPalette::presetColor(m_color);
+    if (preset.isValid())
+    {
+        return preset;
     }
     const QColor parsed(m_color);
     return parsed.isValid() ? parsed : antTheme->tokens().colorText;

@@ -8,6 +8,29 @@ int clampChannel(qreal value)
 {
     return std::clamp(static_cast<int>(std::round(value)), 0, 255);
 }
+
+// Ant Design 5.x preset color primaries (from submodules/ant-design/.../seed.ts)
+struct PresetEntry
+{
+    const char* name;
+    const char* hex;
+};
+
+constexpr PresetEntry kPresetColors[] = {
+    {"blue",     "#1677FF"},
+    {"purple",   "#722ED1"},
+    {"cyan",     "#13C2C2"},
+    {"green",    "#52C41A"},
+    {"magenta",  "#EB2F96"},
+    {"pink",     "#EB2F96"},
+    {"red",      "#F5222D"},
+    {"orange",   "#FA8C16"},
+    {"yellow",   "#FADB14"},
+    {"volcano",  "#FA541C"},
+    {"geekblue", "#2F54EB"},
+    {"gold",     "#FAAD14"},
+    {"lime",     "#A0D911"},
+};
 }
 
 QColor AntPalette::fromHex(const char* hex)
@@ -113,4 +136,17 @@ QColor AntPalette::borderColor(const QColor& base, Ant::ThemeMode mode)
 QColor AntPalette::disabledColor(const QColor& foreground, const QColor& background)
 {
     return mix(background, foreground, 0.25);
+}
+
+QColor AntPalette::presetColor(const QString& name)
+{
+    const QString key = name.trimmed().toLower();
+    for (const auto& entry : kPresetColors)
+    {
+        if (key == QLatin1String(entry.name))
+        {
+            return QColor(QLatin1String(entry.hex));
+        }
+    }
+    return QColor();
 }
