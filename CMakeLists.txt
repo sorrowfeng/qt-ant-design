@@ -58,6 +58,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntSkeleton.h
     src/widgets/AntSlider.h
     src/widgets/AntSpin.h
+    src/widgets/AntSteps.h
     src/widgets/AntSwitch.h
     src/widgets/AntTabs.h
     src/widgets/AntTag.h
@@ -106,6 +107,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntSkeleton.cpp
     src/widgets/AntSlider.cpp
     src/widgets/AntSpin.cpp
+    src/widgets/AntSteps.cpp
     src/widgets/AntSwitch.cpp
     src/widgets/AntTabs.cpp
     src/widgets/AntTag.cpp
@@ -199,6 +201,7 @@ install(FILES
     src/widgets/AntSkeleton.h
     src/widgets/AntSlider.h
     src/widgets/AntSpin.h
+    src/widgets/AntSteps.h
     src/widgets/AntSwitch.h
     src/widgets/AntTabs.h
     src/widgets/AntTag.h

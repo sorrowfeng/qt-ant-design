@@ -25,10 +25,10 @@
 ## 本次同步
 
 - 同步日期：`2026-04-24`
-- 已实现组件总数：`34`
+- 已实现组件总数：`35`
 - 已迁移至 `QProxyStyle` 的组件数：`9`
-- 仍使用 `paintEvent` 的组件数：`25`
-- 示例程序覆盖：`34 / 34`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 仍使用 `paintEvent` 的组件数：`26`
+- 示例程序覆盖：`35 / 35`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
 ## 近期更新摘要
 
@@ -44,6 +44,7 @@
   - `AntInputNumber`
   - `AntModal`
   - `AntSkeleton`
+  - `AntSteps`
   - `AntPopover`
   - `AntPopconfirm`
   - `AntTooltip`
@@ -86,6 +87,7 @@
 | `AntDropdown` | `dropdown` | `paintEvent` | 是 | `hover / click / contextMenu`、placement、arrow、auto flip |
 | `AntMenu` | `menu` | `paintEvent` | 是 | `vertical / horizontal / inline`、明暗主题 |
 | `AntPagination` | `pagination` | `paintEvent` | 是 | `simple / showQuickJumper / showSizeChanger` |
+| `AntSteps` | `steps` | `paintEvent` | 是 | 水平/垂直、当前步骤、错误态、点击切换 |
 | `AntTabs` | `tabs` | `paintEvent` | 是 | `line / card / editable-card` |
 
 ### 数据录入
@@ -141,14 +143,13 @@
 
 ### 高优先级
 
-- [ ] `AntSteps`
 - [ ] `AntResult`
 - [ ] `AntList`
+- [ ] `AntStatistic`
 
 ### 中优先级
 
 - [ ] `AntTimeline`
-- [ ] `AntStatistic`
 - [ ] `AntSpace`
 - [ ] `AntLayout`
 - [ ] `AntTypography`
@@ -208,7 +209,7 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 34 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 35 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
 
 当前示例页包括：
 
@@ -235,6 +236,7 @@
 - `Select`
 - `Slider`
 - `Spin`
+- `Steps`
 - `Switch`
 - `TimePicker`
 - `Card`

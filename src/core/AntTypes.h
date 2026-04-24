@@ -389,6 +389,22 @@ enum class FormLabelAlign
 };
 Q_ENUM_NS(FormLabelAlign)
 
+enum class StepStatus
+{
+    Wait,
+    Process,
+    Finish,
+    Error,
+};
+Q_ENUM_NS(StepStatus)
+
+enum class StepsDirection
+{
+    Horizontal,
+    Vertical,
+};
+Q_ENUM_NS(StepsDirection)
+
 enum class IconType
 {
     None,

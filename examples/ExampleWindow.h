@@ -50,6 +50,7 @@ private:
     QWidget* createSkeletonPage();
     QWidget* createSliderPage();
     QWidget* createSpinPage();
+    QWidget* createStepsPage();
     QWidget* createSwitchPage();
     QWidget* createTabsPage();
     QWidget* createTagPage();

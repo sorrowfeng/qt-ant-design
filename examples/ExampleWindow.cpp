@@ -44,6 +44,7 @@
 #include "widgets/AntSkeleton.h"
 #include "widgets/AntSlider.h"
 #include "widgets/AntSpin.h"
+#include "widgets/AntSteps.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTabs.h"
 #include "widgets/AntTag.h"
@@ -129,6 +130,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createSelectPage()));
     m_stack->addWidget(wrapPage(createSliderPage()));
     m_stack->addWidget(wrapPage(createSpinPage()));
+    m_stack->addWidget(wrapPage(createStepsPage()));
     m_stack->addWidget(wrapPage(createSwitchPage()));
     m_stack->addWidget(wrapPage(createTimePickerPage()));
     m_stack->addWidget(wrapPage(createCardPage()));
@@ -163,17 +165,18 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Select"), 20);
     addNavButton(QStringLiteral("Slider"), 21);
     addNavButton(QStringLiteral("Spin"), 22);
-    addNavButton(QStringLiteral("Switch"), 23);
-    addNavButton(QStringLiteral("TimePicker"), 24);
-    addNavButton(QStringLiteral("Card"), 25);
-    addNavButton(QStringLiteral("Skeleton"), 26);
-    addNavButton(QStringLiteral("Divider"), 27);
-    addNavButton(QStringLiteral("Icon"), 28);
-    addNavButton(QStringLiteral("InputNumber"), 29);
-    addNavButton(QStringLiteral("Alert"), 30);
-    addNavButton(QStringLiteral("Tooltip"), 31);
-    addNavButton(QStringLiteral("Form"), 32);
-    addNavButton(QStringLiteral("Empty"), 33);
+    addNavButton(QStringLiteral("Steps"), 23);
+    addNavButton(QStringLiteral("Switch"), 24);
+    addNavButton(QStringLiteral("TimePicker"), 25);
+    addNavButton(QStringLiteral("Card"), 26);
+    addNavButton(QStringLiteral("Skeleton"), 27);
+    addNavButton(QStringLiteral("Divider"), 28);
+    addNavButton(QStringLiteral("Icon"), 29);
+    addNavButton(QStringLiteral("InputNumber"), 30);
+    addNavButton(QStringLiteral("Alert"), 31);
+    addNavButton(QStringLiteral("Tooltip"), 32);
+    addNavButton(QStringLiteral("Form"), 33);
+    addNavButton(QStringLiteral("Empty"), 34);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -2304,6 +2307,50 @@ QWidget* ExampleWindow::createSpinPage()
     cardContent->addStretch();
     card->bodyLayout()->addLayout(cardContent);
     layout->addWidget(card);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createStepsPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(28);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basic = new AntSteps(page);
+    basic->addStep(QStringLiteral("Create Workspace"), QStringLiteral("Set up name, visibility and project members."));
+    basic->addStep(QStringLiteral("Configure Access"), QStringLiteral("Choose environments and grant permissions."));
+    basic->addStep(QStringLiteral("Review & Launch"), QStringLiteral("Confirm settings and publish to the team."));
+    basic->setCurrentIndex(1);
+    layout->addWidget(basic);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Clickable and Error State")));
+    auto* interactive = new AntSteps(page);
+    interactive->addStep(QStringLiteral("Draft"), QStringLiteral("Initial content prepared."));
+    interactive->addStep(QStringLiteral("Validation"), QStringLiteral("Checks are running on the latest revision."));
+    interactive->addStep(QStringLiteral("Approval"), QStringLiteral("A reviewer rejected the request."), QStringLiteral("Needs attention"), Ant::StepStatus::Error);
+    interactive->addStep(QStringLiteral("Release"), QStringLiteral("Will proceed after approval."));
+    interactive->setCurrentIndex(2);
+    auto* summary = new QLabel(QStringLiteral("Current step: Approval"), page);
+    connect(interactive, &AntSteps::stepClicked, this, [summary, interactive](int index) {
+        summary->setText(QStringLiteral("Current step: %1").arg(interactive->stepAt(index).title));
+    });
+    layout->addWidget(interactive);
+    layout->addWidget(summary);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
+    auto* vertical = new AntSteps(page);
+    vertical->setDirection(Ant::StepsDirection::Vertical);
+    vertical->setClickable(false);
+    vertical->addStep(QStringLiteral("Submitted"), QStringLiteral("The request has been created and queued."), QStringLiteral("09:12"), Ant::StepStatus::Finish);
+    vertical->addStep(QStringLiteral("Security Review"), QStringLiteral("Scanning package and permission changes."), QStringLiteral("10:24"));
+    vertical->addStep(QStringLiteral("Deployment"), QStringLiteral("Waiting for review to complete."), QStringLiteral("Pending"));
+    vertical->setCurrentIndex(1);
+    vertical->setMinimumHeight(280);
+    layout->addWidget(vertical);
 
     layout->addStretch();
     return page;
