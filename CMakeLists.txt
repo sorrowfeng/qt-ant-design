@@ -37,6 +37,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntPaginationStyle.h
     src/styles/AntPalette.h
     src/styles/AntRadioStyle.h
+    src/styles/AntRateStyle.h
     src/styles/AntSelectStyle.h
     src/styles/AntScrollBarStyle.h
     src/styles/AntSliderStyle.h
@@ -92,6 +93,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntPagination.h
     src/widgets/AntProgress.h
     src/widgets/AntRadio.h
+    src/widgets/AntRate.h
     src/widgets/AntResult.h
     src/widgets/AntScrollBar.h
     src/widgets/AntSelect.h
@@ -145,6 +147,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntPaginationStyle.cpp
     src/styles/AntPalette.cpp
     src/styles/AntRadioStyle.cpp
+    src/styles/AntRateStyle.cpp
     src/styles/AntSelectStyle.cpp
     src/styles/AntScrollBarStyle.cpp
     src/styles/AntSliderStyle.cpp
@@ -200,6 +203,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntPagination.cpp
     src/widgets/AntProgress.cpp
     src/widgets/AntRadio.cpp
+    src/widgets/AntRate.cpp
     src/widgets/AntResult.cpp
     src/widgets/AntScrollBar.cpp
     src/widgets/AntSelect.cpp
@@ -328,6 +332,7 @@ install(FILES
     src/widgets/AntPagination.h
     src/widgets/AntProgress.h
     src/widgets/AntRadio.h
+    src/widgets/AntRate.h
     src/widgets/AntResult.h
     src/widgets/AntScrollBar.h
     src/widgets/AntSelect.h

@@ -45,6 +45,7 @@ private:
     QWidget* createPaginationPage();
     QWidget* createProgressPage();
     QWidget* createRadioPage();
+    QWidget* createRatePage();
     QWidget* createResultPage();
     QWidget* createSelectPage();
     QWidget* createSkeletonPage();

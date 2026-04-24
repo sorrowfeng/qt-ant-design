@@ -205,6 +205,7 @@ AntThemeTokens AntTheme::createTokens(Ant::ThemeMode mode)
     }
 
     t.colorShadow = tokenShadow(mode);
+    t.colorRateStar = dark ? QColor(212, 177, 6) : QColor(250, 219, 20);
 
     return t;
 }

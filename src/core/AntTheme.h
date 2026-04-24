@@ -52,6 +52,7 @@ struct AntThemeTokens
     QColor colorBorderDisabled;
     QColor colorSplit;
     QColor colorShadow;
+    QColor colorRateStar;
 
     int fontSize = Ant::FontSize;
     int fontSizeSM = Ant::FontSizeSmall;

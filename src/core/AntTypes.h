@@ -567,6 +567,14 @@ enum class DrawerPlacement
 };
 Q_ENUM_NS(DrawerPlacement)
 
+enum class RateSize
+{
+    Small,
+    Middle,
+    Large,
+};
+Q_ENUM_NS(RateSize)
+
 constexpr int LineWidth = 1;
 constexpr int SizeUnit = 4;
 constexpr int SizeStep = 4;

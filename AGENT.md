@@ -25,10 +25,10 @@
 ## 本次同步
 
 - 同步日期：`2026-04-24`
-- 已实现组件总数：`52`
-- 已迁移至 `QProxyStyle` 的组件数：`51`
+- 已实现组件总数：`53`
+- 已迁移至 `QProxyStyle` 的组件数：`52`
 - 仍使用 `paintEvent` 的组件数：`1`（AntWidget 为基础类，无需 Style）
-- 示例程序覆盖：`50 / 50`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 示例程序覆盖：`52 / 52`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntTypography` 替代 `QLabel` 实现主题感知文本
 
 ## 近期更新摘要
@@ -114,6 +114,7 @@
 | `AntInput` | `input` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputStyle` |
 | `AntInputNumber` | `input-number` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputNumberStyle` |
 | `AntRadio` | `radio` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntRadioStyle` |
+| `AntRate` | `rate` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntRateStyle`；`count / value / allowHalf / allowClear / disabled / size`，hover 放大效果 |
 | `AntSelect` | `select` | `QProxyStyle` | 是 | 主控件迁移到 `src/styles/AntSelectStyle`，popup row 保持自绘 |
 | `AntSlider` | `slider` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSliderStyle` |
 | `AntSwitch` | `switch` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSwitchStyle` |
@@ -271,6 +272,7 @@
 - `Form`
 - `Empty`
 - `Result`
+- `Rate`
 - `List`
 - `Statistic`
 - `Timeline`

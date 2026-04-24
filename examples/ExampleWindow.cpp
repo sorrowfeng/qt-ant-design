@@ -39,6 +39,7 @@
 #include "widgets/AntPagination.h"
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
+#include "widgets/AntRate.h"
 #include "widgets/AntResult.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntSkeleton.h"
@@ -168,6 +169,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createDrawerPage()));
     m_stack->addWidget(wrapPage(createStatusBarPage()));
     m_stack->addWidget(wrapPage(createScrollBarPage()));
+    m_stack->addWidget(wrapPage(createRatePage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -219,6 +221,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Drawer"), 48);
     addNavButton(QStringLiteral("StatusBar"), 49);
     addNavButton(QStringLiteral("ScrollBar"), 50);
+    addNavButton(QStringLiteral("Rate"), 51);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -3790,6 +3793,65 @@ QWidget* ExampleWindow::createScrollBarPage()
     scrollArea->setWidget(scrollContent);
     layout->addWidget(scrollArea, 1);
 
+    return page;
+}
+
+QWidget* ExampleWindow::createRatePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basic = new AntRate();
+    basic->setValue(3.0);
+    layout->addWidget(basic);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Half Star")));
+    auto* half = new AntRate();
+    half->setAllowHalf(true);
+    half->setValue(2.5);
+    layout->addWidget(half);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
+    auto* sizeRow = new QHBoxLayout();
+    sizeRow->setSpacing(16);
+    auto* smallRate = new AntRate();
+    smallRate->setRateSize(Ant::RateSize::Small);
+    smallRate->setValue(3.0);
+    auto* middleRate = new AntRate();
+    middleRate->setValue(3.0);
+    auto* largeRate = new AntRate();
+    largeRate->setRateSize(Ant::RateSize::Large);
+    largeRate->setValue(3.0);
+    sizeRow->addWidget(smallRate);
+    sizeRow->addWidget(middleRate);
+    sizeRow->addWidget(largeRate);
+    sizeRow->addStretch();
+    layout->addLayout(sizeRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Disabled")));
+    auto* disabled = new AntRate();
+    disabled->setDisabled(true);
+    disabled->setValue(2.0);
+    layout->addWidget(disabled);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Allow Clear")));
+    auto* clearRow = new QHBoxLayout();
+    clearRow->setSpacing(16);
+    auto* clearEnabled = new AntRate();
+    clearEnabled->setValue(3.0);
+    clearEnabled->setAllowClear(true);
+    auto* clearDisabled = new AntRate();
+    clearDisabled->setValue(3.0);
+    clearDisabled->setAllowClear(false);
+    clearRow->addWidget(clearEnabled);
+    clearRow->addWidget(clearDisabled);
+    clearRow->addStretch();
+    layout->addLayout(clearRow);
+
+    layout->addStretch();
     return page;
 }
 
