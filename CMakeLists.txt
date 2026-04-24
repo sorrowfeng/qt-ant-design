@@ -45,6 +45,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntIcon.h
     src/widgets/AntInput.h
     src/widgets/AntInputNumber.h
+    src/widgets/AntList.h
     src/widgets/AntMessage.h
     src/widgets/AntMenu.h
     src/widgets/AntNotification.h
@@ -59,6 +60,7 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntSkeleton.h
     src/widgets/AntSlider.h
     src/widgets/AntSpin.h
+    src/widgets/AntStatistic.h
     src/widgets/AntSteps.h
     src/widgets/AntSwitch.h
     src/widgets/AntTabs.h
@@ -94,6 +96,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntEmpty.cpp
     src/widgets/AntIcon.cpp
     src/widgets/AntInput.cpp
+    src/widgets/AntList.cpp
     src/widgets/AntInputNumber.cpp
     src/widgets/AntMessage.cpp
     src/widgets/AntMenu.cpp
@@ -109,6 +112,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntSkeleton.cpp
     src/widgets/AntSlider.cpp
     src/widgets/AntSpin.cpp
+    src/widgets/AntStatistic.cpp
     src/widgets/AntSteps.cpp
     src/widgets/AntSwitch.cpp
     src/widgets/AntTabs.cpp
@@ -190,6 +194,7 @@ install(FILES
     src/widgets/AntIcon.h
     src/widgets/AntInput.h
     src/widgets/AntInputNumber.h
+    src/widgets/AntList.h
     src/widgets/AntMessage.h
     src/widgets/AntMenu.h
     src/widgets/AntNotification.h
@@ -204,6 +209,7 @@ install(FILES
     src/widgets/AntSkeleton.h
     src/widgets/AntSlider.h
     src/widgets/AntSpin.h
+    src/widgets/AntStatistic.h
     src/widgets/AntSteps.h
     src/widgets/AntSwitch.h
     src/widgets/AntTabs.h

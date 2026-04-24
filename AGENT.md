@@ -25,16 +25,18 @@
 ## 本次同步
 
 - 同步日期：`2026-04-24`
-- 已实现组件总数：`36`
+- 已实现组件总数：`38`
 - 已迁移至 `QProxyStyle` 的组件数：`9`
-- 仍使用 `paintEvent` 的组件数：`27`
-- 示例程序覆盖：`36 / 36`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 仍使用 `paintEvent` 的组件数：`29`
+- 示例程序覆盖：`38 / 38`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
 ## 近期更新摘要
 
 根据最近 20 条提交记录，近期主要改动如下：
 
 - 新增组件：
+  - `AntList`
+  - `AntStatistic`
   - `AntResult`
   - `AntAlert`
   - `AntDropdown`
@@ -127,6 +129,8 @@
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
 | `AntAvatar` | `avatar` | `paintEvent` | 是 | 文本、图标、图片头像 |
+| `AntList` | `list` | `paintEvent` | 是 | `header / footer / bordered / split / size / AntListItem / AntListItemMeta` |
+| `AntStatistic` | `statistic` | `paintEvent` | 是 | `title / value / precision / prefix / suffix / groupSeparator` |
 | `AntBadge` | `badge` | `paintEvent` | 是 | `count / dot / status / processing` |
 | `AntCard` | `card` | `paintEvent` | 是 | 封面、额外区、操作区、loading |
 | `AntEmpty` | `empty` | `paintEvent` | 是 | 默认插画、simple 模式、描述、自定义尺寸、extra action |
@@ -144,9 +148,6 @@
 以下清单基于 `submodules/ant-design/components/` 扫描，并扣除当前已实现组件后整理。仅保留与 Qt Widgets 组件库相关度较高的部分，按优先级排序。
 
 ### 高优先级
-
-- [ ] `AntList`
-- [ ] `AntStatistic`
 
 ### 中优先级
 
@@ -250,6 +251,8 @@
 - `Form`
 - `Empty`
 - `Result`
+- `List`
+- `Statistic`
 
 ## 构建与安装
 

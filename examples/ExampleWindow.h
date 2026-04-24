@@ -36,6 +36,7 @@ private:
     QWidget* createFormPage();
     QWidget* createIconPage();
     QWidget* createInputPage();
+    QWidget* createListPage();
     QWidget* createInputNumberPage();
     QWidget* createMessagePage();
     QWidget* createMenuPage();
@@ -51,6 +52,7 @@ private:
     QWidget* createSkeletonPage();
     QWidget* createSliderPage();
     QWidget* createSpinPage();
+    QWidget* createStatisticPage();
     QWidget* createStepsPage();
     QWidget* createSwitchPage();
     QWidget* createTabsPage();

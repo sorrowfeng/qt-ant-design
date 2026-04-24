@@ -31,6 +31,7 @@
 #include "widgets/AntIcon.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntInputNumber.h"
+#include "widgets/AntList.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntMenu.h"
 #include "widgets/AntModal.h"
@@ -45,6 +46,7 @@
 #include "widgets/AntSkeleton.h"
 #include "widgets/AntSlider.h"
 #include "widgets/AntSpin.h"
+#include "widgets/AntStatistic.h"
 #include "widgets/AntSteps.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTabs.h"
@@ -144,6 +146,8 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createFormPage()));
     m_stack->addWidget(wrapPage(createEmptyPage()));
     m_stack->addWidget(wrapPage(createResultPage()));
+    m_stack->addWidget(wrapPage(createListPage()));
+    m_stack->addWidget(wrapPage(createStatisticPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -180,6 +184,8 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Form"), 33);
     addNavButton(QStringLiteral("Empty"), 34);
     addNavButton(QStringLiteral("Result"), 35);
+    addNavButton(QStringLiteral("List"), 36);
+    addNavButton(QStringLiteral("Statistic"), 37);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -2920,6 +2926,218 @@ QWidget* ExampleWindow::createResultPage()
     actionRow->addWidget(noIcon);
     actionRow->addStretch();
     layout->addLayout(actionRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createListPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(28);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicList = new AntList(page);
+    basicList->setBordered(true);
+    basicList->setFixedWidth(480);
+
+    for (int i = 1; i <= 4; ++i)
+    {
+        auto* item = new AntListItem(basicList);
+        auto* meta = new AntListItemMeta(item);
+        meta->setTitle(QStringLiteral("Ant Design List Item %1").arg(i));
+        meta->setDescription(QStringLiteral("Description for item %1").arg(i));
+        item->setMeta(meta);
+        basicList->addItem(item);
+    }
+
+    layout->addWidget(basicList);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("With Header and Footer")));
+    auto* headerList = new AntList(page);
+    headerList->setBordered(true);
+    headerList->setFixedWidth(480);
+
+    auto* header = new QLabel(QStringLiteral("  Header"), headerList);
+    header->setFixedHeight(40);
+    QFont hf = header->font();
+    hf.setPixelSize(14);
+    hf.setWeight(QFont::DemiBold);
+    header->setFont(hf);
+    headerList->setHeaderWidget(header);
+
+    auto* footer = new QLabel(QStringLiteral("  Footer"), headerList);
+    footer->setFixedHeight(40);
+    QFont ff = footer->font();
+    ff.setPixelSize(12);
+    footer->setFont(ff);
+    headerList->setFooterWidget(footer);
+
+    for (int i = 1; i <= 3; ++i)
+    {
+        auto* item = new AntListItem(headerList);
+        auto* meta = new AntListItemMeta(item);
+        meta->setTitle(QStringLiteral("Item %1").arg(i));
+        item->setMeta(meta);
+        headerList->addItem(item);
+    }
+
+    layout->addWidget(headerList);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Split and Size")));
+    auto* splitRow = new QHBoxLayout();
+    splitRow->setSpacing(28);
+
+    auto* noSplit = new AntList(page);
+    noSplit->setBordered(true);
+    noSplit->setSplit(false);
+    noSplit->setFixedWidth(240);
+    for (int i = 1; i <= 3; ++i)
+    {
+        auto* item = new AntListItem(noSplit);
+        auto* meta = new AntListItemMeta(item);
+        meta->setTitle(QStringLiteral("No Split %1").arg(i));
+        item->setMeta(meta);
+        noSplit->addItem(item);
+    }
+
+    auto* smallList = new AntList(page);
+    smallList->setBordered(true);
+    smallList->setListSize(AntList::Small);
+    smallList->setFixedWidth(240);
+    for (int i = 1; i <= 3; ++i)
+    {
+        auto* item = new AntListItem(smallList);
+        auto* meta = new AntListItemMeta(item);
+        meta->setTitle(QStringLiteral("Small Item %1").arg(i));
+        item->setMeta(meta);
+        smallList->addItem(item);
+    }
+
+    auto* largeList = new AntList(page);
+    largeList->setBordered(true);
+    largeList->setListSize(AntList::Large);
+    largeList->setFixedWidth(240);
+    for (int i = 1; i <= 3; ++i)
+    {
+        auto* item = new AntListItem(largeList);
+        auto* meta = new AntListItemMeta(item);
+        meta->setTitle(QStringLiteral("Large Item %1").arg(i));
+        item->setMeta(meta);
+        largeList->addItem(item);
+    }
+
+    splitRow->addWidget(noSplit);
+    splitRow->addWidget(smallList);
+    splitRow->addWidget(largeList);
+    splitRow->addStretch();
+    layout->addLayout(splitRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createStatisticPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(28);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(48);
+
+    auto* users = new AntStatistic(page);
+    users->setTitle(QStringLiteral("Active Users"));
+    users->setValue(112893);
+    users->setFixedWidth(160);
+
+    auto* balance = new AntStatistic(page);
+    balance->setTitle(QStringLiteral("Account Balance (CNY)"));
+    balance->setValue(112893.56);
+    balance->setPrecision(2);
+    balance->setPrefix(QStringLiteral("¥"));
+    balance->setFixedWidth(200);
+
+    auto* items = new AntStatistic(page);
+    items->setTitle(QStringLiteral("Total Items"));
+    items->setValue(28);
+    items->setSuffix(QStringLiteral(" items"));
+    items->setFixedWidth(160);
+
+    basicRow->addWidget(users);
+    basicRow->addWidget(balance);
+    basicRow->addWidget(items);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Prefix and Suffix")));
+    auto* prefixRow = new QHBoxLayout();
+    prefixRow->setSpacing(48);
+
+    auto* feedback = new AntStatistic(page);
+    feedback->setTitle(QStringLiteral("Feedback"));
+    feedback->setValue(93);
+    feedback->setSuffix(QStringLiteral("%"));
+    feedback->setFixedWidth(140);
+
+    auto* price = new AntStatistic(page);
+    price->setTitle(QStringLiteral("Price"));
+    price->setValue(12680.0);
+    price->setPrecision(2);
+    price->setPrefix(QStringLiteral("$"));
+    price->setFixedWidth(180);
+
+    auto* speed = new AntStatistic(page);
+    speed->setTitle(QStringLiteral("Speed"));
+    speed->setValue(3.5);
+    speed->setPrecision(1);
+    speed->setSuffix(QStringLiteral(" MB/s"));
+    speed->setFixedWidth(160);
+
+    prefixRow->addWidget(feedback);
+    prefixRow->addWidget(price);
+    prefixRow->addWidget(speed);
+    prefixRow->addStretch();
+    layout->addLayout(prefixRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Card Style")));
+    auto* cardRow = new QHBoxLayout();
+    cardRow->setSpacing(24);
+
+    auto* card1 = new AntCard(QStringLiteral("Revenue"), page);
+    card1->setFixedWidth(220);
+    auto* stat1 = new AntStatistic(card1);
+    stat1->setTitle(QStringLiteral("This Week"));
+    stat1->setValue(58320);
+    stat1->setPrefix(QStringLiteral("¥"));
+    card1->bodyLayout()->addWidget(stat1);
+
+    auto* card2 = new AntCard(QStringLiteral("Orders"), page);
+    card2->setFixedWidth(220);
+    auto* stat2 = new AntStatistic(card2);
+    stat2->setTitle(QStringLiteral("This Month"));
+    stat2->setValue(1284);
+    stat2->setSuffix(QStringLiteral(" orders"));
+    card2->bodyLayout()->addWidget(stat2);
+
+    auto* card3 = new AntCard(QStringLiteral("Growth"), page);
+    card3->setFixedWidth(220);
+    auto* stat3 = new AntStatistic(card3);
+    stat3->setTitle(QStringLiteral("Year over Year"));
+    stat3->setValue(23.5);
+    stat3->setPrecision(1);
+    stat3->setSuffix(QStringLiteral("%"));
+    card3->bodyLayout()->addWidget(stat3);
+
+    cardRow->addWidget(card1);
+    cardRow->addWidget(card2);
+    cardRow->addWidget(card3);
+    cardRow->addStretch();
+    layout->addLayout(cardRow);
 
     layout->addStretch();
     return page;

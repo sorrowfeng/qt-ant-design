@@ -14,9 +14,9 @@
 
 - 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
-- 当前已移植 `36` 个核心组件
+- 当前已移植 `38` 个核心组件
 - 其中 `9` 个组件已经迁移到 `QProxyStyle` 架构，剩余组件仍采用 `paintEvent`，将继续逐步迁移
-- 示例程序已覆盖全部 `36` 个已实现组件
+- 示例程序已覆盖全部 `38` 个已实现组件
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
 
 ## 安装与集成
@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现组件总数：`36`
+当前已实现组件总数：`38`
 
 | 分类 | 组件 | 当前绘制方式 |
 | --- | --- | --- |
@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
 | 导航 | `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | `paintEvent` |
 | 数据录入 | `AntCheckbox` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntRadio` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` | 混合（`QProxyStyle` + `paintEvent`） |
 | 反馈 | `AntAlert` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntProgress` `AntSpin` | 混合（`QProxyStyle` + `paintEvent`） |
-| 数据展示 | `AntAvatar` `AntBadge` `AntCard` `AntEmpty` `AntPopover` `AntSkeleton` `AntTag` `AntTooltip` | `paintEvent` |
+| 数据展示 | `AntAvatar` `AntBadge` `AntCard` `AntEmpty` `AntList` `AntPopover` `AntSkeleton` `AntStatistic` `AntTag` `AntTooltip` | `paintEvent` |
 | 反馈 | `AntResult` | `paintEvent` |
 | 布局与其他 | `AntDivider` | `paintEvent` |
 
@@ -152,6 +152,8 @@ int main(int argc, char* argv[])
 - `AntAlert`：`success / info / warning / error`、图标、描述、关闭、横幅、自定义 action
 - `AntModal`：遮罩层、标题、正文、自定义内容、自定义 footer、确认/取消、居中或顶部偏移布局
 - `AntResult`：状态图标（success / error / warning / info）、标题、描述、自定义 extra 操作区
+- `AntList`：`header / footer / bordered / split / size`，`AntListItem` 支持 `Meta`（头像、标题、描述）和操作区
+- `AntStatistic`：数值展示、千分位分隔、前缀后缀、精度控制
 - `AntPopover`：标题、正文、action、点击/悬停触发、placement、箭头
 - `AntPopconfirm`：确认标题、说明、确认/取消按钮、禁用态、placement
 - `AntSkeleton`：支持 `active` shimmer、头像占位、标题/段落配置、圆角风格以及 `loading` 切换真实内容
@@ -238,8 +240,7 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 
 当前高优先级待开发组件：
 
-1. `AntList`
-3. `AntStatistic`
+（暂无）
 
 后续还会继续推进：
 
