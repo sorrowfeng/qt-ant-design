@@ -374,6 +374,21 @@ enum class CardVariant
 };
 Q_ENUM_NS(CardVariant)
 
+enum class FormLayout
+{
+    Horizontal,
+    Vertical,
+    Inline,
+};
+Q_ENUM_NS(FormLayout)
+
+enum class FormLabelAlign
+{
+    Left,
+    Right,
+};
+Q_ENUM_NS(FormLabelAlign)
+
 enum class IconType
 {
     None,

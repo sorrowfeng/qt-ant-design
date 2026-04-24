@@ -31,6 +31,7 @@ private:
     QWidget* createDatePickerPage();
     QWidget* createDropdownPage();
     QWidget* createDividerPage();
+    QWidget* createFormPage();
     QWidget* createIconPage();
     QWidget* createInputPage();
     QWidget* createInputNumberPage();

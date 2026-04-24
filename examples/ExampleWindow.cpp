@@ -25,6 +25,7 @@
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDropdown.h"
 #include "widgets/AntDivider.h"
+#include "widgets/AntForm.h"
 #include "widgets/AntIcon.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntInputNumber.h"
@@ -134,6 +135,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createInputNumberPage()));
     m_stack->addWidget(wrapPage(createAlertPage()));
     m_stack->addWidget(wrapPage(createTooltipPage()));
+    m_stack->addWidget(wrapPage(createFormPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -165,6 +167,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("InputNumber"), 28);
     addNavButton(QStringLiteral("Alert"), 29);
     addNavButton(QStringLiteral("Tooltip"), 30);
+    addNavButton(QStringLiteral("Form"), 31);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -2517,6 +2520,124 @@ QWidget* ExampleWindow::createSkeletonPage()
     switchRow->addWidget(toggle, 0, Qt::AlignTop);
     switchRow->addStretch();
     layout->addLayout(switchRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createFormPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(28);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Horizontal")));
+    auto* horizontalForm = new AntForm(page);
+    horizontalForm->setLabelWidth(112);
+
+    auto* username = new AntInput(horizontalForm);
+    username->setPlaceholderText(QStringLiteral("Enter workspace name"));
+    auto* userItem = horizontalForm->addItem(QStringLiteral("Workspace"), username, true);
+    userItem->setExtra(QStringLiteral("This name will be visible to your collaborators."));
+
+    auto* role = new AntSelect(horizontalForm);
+    role->setPlaceholderText(QStringLiteral("Select owner role"));
+    role->addOptions({QStringLiteral("Designer"), QStringLiteral("Engineer"), QStringLiteral("Reviewer")});
+    role->setCurrentIndex(1);
+    horizontalForm->addItem(QStringLiteral("Owner Role"), role, true);
+
+    auto* notify = new AntSwitch(horizontalForm);
+    notify->setChecked(true);
+    notify->setCheckedText(QStringLiteral("On"));
+    notify->setUncheckedText(QStringLiteral("Off"));
+    auto* notifyItem = horizontalForm->addItem(QStringLiteral("Notifications"), notify);
+    notifyItem->setExtra(QStringLiteral("Send summary updates to the project channel."));
+
+    layout->addWidget(horizontalForm);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Validation")));
+    auto* validationForm = new AntForm(page);
+    validationForm->setLabelWidth(112);
+
+    auto* email = new AntInput(validationForm);
+    email->setPlaceholderText(QStringLiteral("name@example.com"));
+    email->setStatus(Ant::InputStatus::Error);
+    auto* emailItem = validationForm->addItem(QStringLiteral("Email"), email, true);
+    emailItem->setValidateStatus(Ant::InputStatus::Error);
+    emailItem->setHelpText(QStringLiteral("Please enter a valid email address."));
+
+    auto* apiKey = new AntInput(validationForm);
+    apiKey->setPasswordMode(true);
+    apiKey->setText(QStringLiteral("temporary-token"));
+    apiKey->setStatus(Ant::InputStatus::Warning);
+    auto* keyItem = validationForm->addItem(QStringLiteral("API Key"), apiKey, true);
+    keyItem->setValidateStatus(Ant::InputStatus::Warning);
+    keyItem->setHelpText(QStringLiteral("This token will expire in 3 days. Rotate it soon."));
+
+    auto* agreement = new AntCheckbox(QStringLiteral("I understand this token can access production data"), validationForm);
+    auto* agreementItem = validationForm->addItem(QStringLiteral("Agreement"), agreement, true);
+    agreementItem->setExtra(QStringLiteral("Store the key in your team's secret manager."));
+
+    layout->addWidget(validationForm);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Vertical and Inline")));
+    auto* bottomRow = new QHBoxLayout();
+    bottomRow->setSpacing(28);
+
+    auto* verticalForm = new AntForm(page);
+    verticalForm->setFormLayout(Ant::FormLayout::Vertical);
+    verticalForm->setLabelAlign(Ant::FormLabelAlign::Left);
+
+    auto* project = new AntInput(verticalForm);
+    project->setPlaceholderText(QStringLiteral("Release dashboard"));
+    verticalForm->addItem(QStringLiteral("Project Name"), project, true);
+
+    auto* summary = new AntInput(verticalForm);
+    summary->setPlaceholderText(QStringLiteral("Short summary for teammates"));
+    auto* summaryItem = verticalForm->addItem(QStringLiteral("Summary"), summary);
+    summaryItem->setExtra(QStringLiteral("Keep it concise so it fits well in list views."));
+
+    auto* publishButton = new AntButton(QStringLiteral("Create Project"), verticalForm);
+    publishButton->setButtonType(Ant::ButtonType::Primary);
+    auto* actionItem = verticalForm->addItem(QString(), publishButton);
+    actionItem->setColon(false);
+
+    bottomRow->addWidget(verticalForm, 1);
+
+    auto* inlineWrap = new QWidget(page);
+    auto* inlineWrapLayout = new QVBoxLayout(inlineWrap);
+    inlineWrapLayout->setContentsMargins(0, 0, 0, 0);
+    inlineWrapLayout->setSpacing(12);
+
+    auto* inlineHint = new QLabel(QStringLiteral("Inline layout is handy for compact filters and toolbar forms."), inlineWrap);
+    inlineHint->setWordWrap(true);
+    inlineWrapLayout->addWidget(inlineHint);
+
+    auto* inlineForm = new AntForm(inlineWrap);
+    inlineForm->setFormLayout(Ant::FormLayout::Inline);
+    inlineForm->setLabelAlign(Ant::FormLabelAlign::Left);
+    inlineForm->setLabelWidth(72);
+
+    auto* search = new AntInput(inlineForm);
+    search->setPlaceholderText(QStringLiteral("Search issues"));
+    inlineForm->addItem(QStringLiteral("Keyword"), search);
+
+    auto* status = new AntSelect(inlineForm);
+    status->addOptions({QStringLiteral("Open"), QStringLiteral("In Progress"), QStringLiteral("Done")});
+    status->setCurrentIndex(0);
+    inlineForm->addItem(QStringLiteral("Status"), status);
+
+    auto* apply = new AntButton(QStringLiteral("Apply"), inlineForm);
+    apply->setButtonType(Ant::ButtonType::Primary);
+    auto* applyItem = inlineForm->addItem(QString(), apply);
+    applyItem->setColon(false);
+
+    inlineWrapLayout->addWidget(inlineForm);
+    inlineWrapLayout->addStretch();
+
+    bottomRow->addWidget(inlineWrap, 1);
+    layout->addLayout(bottomRow);
 
     layout->addStretch();
     return page;
