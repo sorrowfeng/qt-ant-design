@@ -25,16 +25,17 @@
 ## 本次同步
 
 - 同步日期：`2026-04-24`
-- 已实现组件总数：`35`
+- 已实现组件总数：`36`
 - 已迁移至 `QProxyStyle` 的组件数：`9`
-- 仍使用 `paintEvent` 的组件数：`26`
-- 示例程序覆盖：`35 / 35`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 仍使用 `paintEvent` 的组件数：`27`
+- 示例程序覆盖：`36 / 36`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
 ## 近期更新摘要
 
 根据最近 20 条提交记录，近期主要改动如下：
 
 - 新增组件：
+  - `AntResult`
   - `AntAlert`
   - `AntDropdown`
   - `AntDescriptions`
@@ -119,6 +120,7 @@
 | `AntTooltip` | `tooltip` | `paintEvent` | 是 | `title / placement / color / arrow / delay / auto flip` |
 | `AntPopover` | `popover` | `paintEvent` | 是 | `title / content / action / hover / click / placement` |
 | `AntPopconfirm` | `popconfirm` | `paintEvent` | 是 | `title / description / ok / cancel / disabled / placement` |
+| `AntResult` | `result` | `paintEvent` | 是 | `status / title / subTitle / extra / iconVisible` |
 
 ### 数据展示
 
@@ -143,7 +145,6 @@
 
 ### 高优先级
 
-- [ ] `AntResult`
 - [ ] `AntList`
 - [ ] `AntStatistic`
 
@@ -248,6 +249,7 @@
 - `Tooltip`
 - `Form`
 - `Empty`
+- `Result`
 
 ## 构建与安装
 

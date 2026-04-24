@@ -40,6 +40,7 @@
 #include "widgets/AntPagination.h"
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
+#include "widgets/AntResult.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntSkeleton.h"
 #include "widgets/AntSlider.h"
@@ -142,6 +143,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createTooltipPage()));
     m_stack->addWidget(wrapPage(createFormPage()));
     m_stack->addWidget(wrapPage(createEmptyPage()));
+    m_stack->addWidget(wrapPage(createResultPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -177,6 +179,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Tooltip"), 32);
     addNavButton(QStringLiteral("Form"), 33);
     addNavButton(QStringLiteral("Empty"), 34);
+    addNavButton(QStringLiteral("Result"), 35);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -2828,6 +2831,95 @@ QWidget* ExampleWindow::createEmptyPage()
     cardRow->addWidget(placeholderCard);
     cardRow->addStretch();
     layout->addLayout(cardRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createResultPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(28);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Status")));
+    auto* statusRow = new QHBoxLayout();
+    statusRow->setSpacing(28);
+
+    auto* success = new AntResult(page);
+    success->setFixedWidth(260);
+    success->setStatus(Ant::AlertType::Success);
+    success->setTitle(QStringLiteral("Successfully Purchased"));
+    success->setSubTitle("Order number: 2018122412345678. Your order has been placed and will be shipped within 24 hours.");
+    auto* successBtn = new AntButton(QStringLiteral("View Orders"), success);
+    successBtn->setButtonType(Ant::ButtonType::Primary);
+    success->setExtraWidget(successBtn);
+
+    auto* warning = new AntResult(page);
+    warning->setFixedWidth(260);
+    warning->setStatus(Ant::AlertType::Warning);
+    warning->setTitle(QStringLiteral("Attention Required"));
+    warning->setSubTitle("Your subscription will expire in 3 days. Please renew to avoid service interruption.");
+    auto* warningBtn = new AntButton(QStringLiteral("Renew Now"), warning);
+    warningBtn->setButtonType(Ant::ButtonType::Primary);
+    warning->setExtraWidget(warningBtn);
+
+    auto* error = new AntResult(page);
+    error->setFixedWidth(260);
+    error->setStatus(Ant::AlertType::Error);
+    error->setTitle(QStringLiteral("Submission Failed"));
+    error->setSubTitle("Please check the form fields and try again.");
+    auto* errorBtn = new AntButton(QStringLiteral("Retry"), error);
+    errorBtn->setButtonType(Ant::ButtonType::Primary);
+    error->setExtraWidget(errorBtn);
+
+    auto* info = new AntResult(page);
+    info->setFixedWidth(260);
+    info->setStatus(Ant::AlertType::Info);
+    info->setTitle(QStringLiteral("Processing"));
+    info->setSubTitle("Your request is being processed. Please wait a moment.");
+
+    statusRow->addWidget(success);
+    statusRow->addWidget(warning);
+    statusRow->addWidget(error);
+    statusRow->addWidget(info);
+    statusRow->addStretch();
+    layout->addLayout(statusRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("With Extra Actions")));
+    auto* actionRow = new QHBoxLayout();
+    actionRow->setSpacing(28);
+
+    auto* withActions = new AntResult(page);
+    withActions->setFixedWidth(400);
+    withActions->setStatus(Ant::AlertType::Success);
+    withActions->setTitle(QStringLiteral("Payment Complete"));
+    withActions->setSubTitle("Thank you for your purchase. A confirmation email has been sent to your inbox.");
+    auto* btnRow = new QWidget(withActions);
+    auto* btnLayout = new QHBoxLayout(btnRow);
+    btnLayout->setContentsMargins(0, 0, 0, 0);
+    btnLayout->setSpacing(12);
+    auto* goHome = new AntButton(QStringLiteral("Go Home"), btnRow);
+    goHome->setButtonType(Ant::ButtonType::Primary);
+    auto* viewDetail = new AntButton(QStringLiteral("View Detail"), btnRow);
+    btnLayout->addWidget(goHome);
+    btnLayout->addWidget(viewDetail);
+    withActions->setExtraWidget(btnRow);
+
+    auto* noIcon = new AntResult(page);
+    noIcon->setFixedWidth(400);
+    noIcon->setIconVisible(false);
+    noIcon->setTitle(QStringLiteral("Custom Content Area"));
+    noIcon->setSubTitle("This result has no icon. You can place any content here.");
+    auto* noIconBtn = new AntButton(QStringLiteral("Back"), noIcon);
+    noIconBtn->setButtonType(Ant::ButtonType::Primary);
+    noIcon->setExtraWidget(noIconBtn);
+
+    actionRow->addWidget(withActions);
+    actionRow->addWidget(noIcon);
+    actionRow->addStretch();
+    layout->addLayout(actionRow);
 
     layout->addStretch();
     return page;
