@@ -438,6 +438,70 @@ enum class IconTheme
 };
 Q_ENUM_NS(IconTheme)
 
+enum class TimelineMode
+{
+    Start,
+    Alternate,
+    End,
+};
+Q_ENUM_NS(TimelineMode)
+
+enum class TimelineOrientation
+{
+    Vertical,
+    Horizontal,
+};
+Q_ENUM_NS(TimelineOrientation)
+
+enum class TimelineDotVariant
+{
+    Outlined,
+    Filled,
+};
+Q_ENUM_NS(TimelineDotVariant)
+
+enum class SpaceOrientation
+{
+    Horizontal,
+    Vertical,
+};
+Q_ENUM_NS(SpaceOrientation)
+
+enum class SpaceSize
+{
+    Small,
+    Middle,
+    Large,
+};
+Q_ENUM_NS(SpaceSize)
+
+enum class LayoutSiderTheme
+{
+    Dark,
+    Light,
+};
+Q_ENUM_NS(LayoutSiderTheme)
+
+enum class TypographyType
+{
+    Default,
+    Secondary,
+    Success,
+    Warning,
+    Danger,
+};
+Q_ENUM_NS(TypographyType)
+
+enum class TypographyTitleLevel
+{
+    H1,
+    H2,
+    H3,
+    H4,
+    H5,
+};
+Q_ENUM_NS(TypographyTitleLevel)
+
 constexpr int LineWidth = 1;
 constexpr int SizeUnit = 4;
 constexpr int SizeStep = 4;

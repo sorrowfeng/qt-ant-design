@@ -54,6 +54,10 @@
 #include "widgets/AntTag.h"
 #include "widgets/AntTooltip.h"
 #include "widgets/AntTimePicker.h"
+#include "widgets/AntTimeline.h"
+#include "widgets/AntSpace.h"
+#include "widgets/AntLayout.h"
+#include "widgets/AntTypography.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -159,6 +163,10 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createResultPage()));
     m_stack->addWidget(wrapPage(createListPage()));
     m_stack->addWidget(wrapPage(createStatisticPage()));
+    m_stack->addWidget(wrapPage(createTimelinePage()));
+    m_stack->addWidget(wrapPage(createSpacePage()));
+    m_stack->addWidget(wrapPage(createLayoutPage()));
+    m_stack->addWidget(wrapPage(createTypographyPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -197,6 +205,10 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Result"), 35);
     addNavButton(QStringLiteral("List"), 36);
     addNavButton(QStringLiteral("Statistic"), 37);
+    addNavButton(QStringLiteral("Timeline"), 38);
+    addNavButton(QStringLiteral("Space"), 39);
+    addNavButton(QStringLiteral("Layout"), 40);
+    addNavButton(QStringLiteral("Typography"), 41);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -3234,6 +3246,240 @@ void ExampleWindow::addNavButton(const QString& text, int pageIndex)
         m_stack->setCurrentIndex(pageIndex);
     });
     m_navLayout->insertWidget(m_navLayout->count() - 1, button);
+}
+
+QWidget* ExampleWindow::createTimelinePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basic = new AntTimeline();
+    basic->addItem(QStringLiteral("Create services"), QStringLiteral("2015-09-01"));
+    basic->addItem(QStringLiteral("Solve initial network problems"), QStringLiteral("2015-09-01"));
+    basic->addItem(QStringLiteral("Technical testing"), QStringLiteral("2015-09-01"));
+    basic->addItem(QStringLiteral("Network problems being solved"), QStringLiteral("2015-09-01"));
+    layout->addWidget(basic);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Color")));
+    auto* color = new AntTimeline();
+    color->addItem(QStringLiteral("Create services"), QString(), QStringLiteral("green"));
+    color->addItem(QStringLiteral("Solve initial network problems"), QString(), QStringLiteral("red"));
+    color->addItem(QStringLiteral("Technical testing"), QString(), QStringLiteral("blue"));
+    color->addItem(QStringLiteral("Network problems being solved"), QString(), QStringLiteral("gray"));
+    layout->addWidget(color);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Filled")));
+    auto* filled = new AntTimeline();
+    filled->setDotVariant(Ant::TimelineDotVariant::Filled);
+    filled->addItem(QStringLiteral("Create services"), QStringLiteral("2015-09-01"), QStringLiteral("green"));
+    filled->addItem(QStringLiteral("Solve initial network problems"), QStringLiteral("2015-09-01"), QStringLiteral("red"));
+    filled->addItem(QStringLiteral("Technical testing"), QStringLiteral("2015-09-01"), QStringLiteral("blue"));
+    layout->addWidget(filled);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createSpacePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Horizontal (Small)")));
+    auto* hSmall = new AntSpace();
+    hSmall->setSize(Ant::SpaceSize::Small);
+    for (int i = 0; i < 4; ++i)
+    {
+        auto* btn = new AntButton(QStringLiteral("Button %1").arg(i + 1));
+        btn->setButtonType(Ant::ButtonType::Primary);
+        hSmall->addItem(btn);
+    }
+    layout->addWidget(hSmall);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Horizontal (Middle)")));
+    auto* hMiddle = new AntSpace();
+    hMiddle->setSize(Ant::SpaceSize::Middle);
+    for (int i = 0; i < 4; ++i)
+    {
+        auto* btn = new AntButton(QStringLiteral("Button %1").arg(i + 1));
+        hMiddle->addItem(btn);
+    }
+    layout->addWidget(hMiddle);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Horizontal (Large)")));
+    auto* hLarge = new AntSpace();
+    hLarge->setSize(Ant::SpaceSize::Large);
+    for (int i = 0; i < 3; ++i)
+    {
+        auto* btn = new AntButton(QStringLiteral("Button %1").arg(i + 1));
+        hLarge->addItem(btn);
+    }
+    layout->addWidget(hLarge);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
+    auto* vSpace = new AntSpace();
+    vSpace->setOrientation(Ant::SpaceOrientation::Vertical);
+    vSpace->setSize(Ant::SpaceSize::Middle);
+    for (int i = 0; i < 3; ++i)
+    {
+        auto* btn = new AntButton(QStringLiteral("Button %1").arg(i + 1));
+        btn->setButtonType(Ant::ButtonType::Primary);
+        btn->setBlock(true);
+        vSpace->addItem(btn);
+    }
+    layout->addWidget(vSpace);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createLayoutPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic Layout")));
+
+    auto* basicLayout = new AntLayout();
+    basicLayout->setFixedHeight(240);
+
+    auto* header = new AntLayoutHeader();
+    header->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorPrimary.name()));
+    auto* headerLabel = new QLabel(QStringLiteral("Header"), header);
+    headerLabel->setStyleSheet(QStringLiteral("color: white; padding: 16px; font-weight: bold;"));
+    headerLabel->setGeometry(16, 0, 200, 64);
+    basicLayout->setHeader(header);
+
+    auto* content = new AntLayoutContent();
+    content->setStyleSheet(QStringLiteral("background: %1; padding: 24px;").arg(antTheme->tokens().colorBgContainer.name()));
+    auto* contentLabel = new QLabel(QStringLiteral("Content"), content);
+    contentLabel->setGeometry(16, 16, 200, 30);
+    basicLayout->setContent(content);
+
+    auto* footer = new AntLayoutFooter();
+    footer->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorBgLayout.name()));
+    auto* footerLabel = new QLabel(QStringLiteral("Footer"), footer);
+    footerLabel->setStyleSheet(QStringLiteral("padding: 12px;"));
+    footerLabel->setGeometry(16, 0, 200, 48);
+    basicLayout->setFooter(footer);
+
+    layout->addWidget(basicLayout);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("With Sider")));
+
+    auto* siderLayout = new AntLayout();
+    siderLayout->setFixedHeight(240);
+
+    auto* siderHeader = new AntLayoutHeader();
+    siderHeader->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorPrimary.name()));
+    auto* siderHeaderLabel = new QLabel(QStringLiteral("Header"), siderHeader);
+    siderHeaderLabel->setStyleSheet(QStringLiteral("color: white; padding: 16px; font-weight: bold;"));
+    siderHeaderLabel->setGeometry(16, 0, 200, 64);
+    siderLayout->setHeader(siderHeader);
+
+    auto* sider = new AntLayoutSider();
+    sider->setWidth(200);
+    sider->setSiderTheme(Ant::LayoutSiderTheme::Light);
+    sider->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorBgContainer.name()));
+    auto* siderLabel = new QLabel(QStringLiteral("Sider"), sider);
+    siderLabel->setStyleSheet(QStringLiteral("padding: 16px;"));
+    siderLabel->setGeometry(0, 8, 200, 30);
+    siderLayout->addSider(sider);
+
+    auto* siderContent = new AntLayoutContent();
+    siderContent->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorBgContainer.name()));
+    auto* siderContentLabel = new QLabel(QStringLiteral("Content"), siderContent);
+    siderContentLabel->setStyleSheet(QStringLiteral("padding: 16px;"));
+    siderContentLabel->setGeometry(16, 16, 200, 30);
+    siderLayout->setContent(siderContent);
+
+    layout->addWidget(siderLayout);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createTypographyPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(24);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Title Levels")));
+    for (int i = 1; i <= 5; ++i)
+    {
+        auto* title = new AntTypography(QStringLiteral("Ant Design Title Level %1").arg(i));
+        title->setTitle(true);
+        title->setTitleLevel(static_cast<Ant::TypographyTitleLevel>(i - 1));
+        layout->addWidget(title);
+    }
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Text Types")));
+    auto* typesRow = new QHBoxLayout();
+    typesRow->setSpacing(16);
+    auto* primary = new AntTypography(QStringLiteral("Primary Text"));
+    auto* secondary = new AntTypography(QStringLiteral("Secondary Text"));
+    secondary->setType(Ant::TypographyType::Secondary);
+    auto* success = new AntTypography(QStringLiteral("Success Text"));
+    success->setType(Ant::TypographyType::Success);
+    auto* warning = new AntTypography(QStringLiteral("Warning Text"));
+    warning->setType(Ant::TypographyType::Warning);
+    auto* danger = new AntTypography(QStringLiteral("Danger Text"));
+    danger->setType(Ant::TypographyType::Danger);
+    typesRow->addWidget(primary);
+    typesRow->addWidget(secondary);
+    typesRow->addWidget(success);
+    typesRow->addWidget(warning);
+    typesRow->addWidget(danger);
+    typesRow->addStretch();
+    layout->addLayout(typesRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Decorations")));
+    auto* strongText = new AntTypography(QStringLiteral("Strong Text"));
+    strongText->setStrong(true);
+    layout->addWidget(strongText);
+
+    auto* underlineText = new AntTypography(QStringLiteral("Underline Text"));
+    underlineText->setUnderline(true);
+    layout->addWidget(underlineText);
+
+    auto* deleteText = new AntTypography(QStringLiteral("Delete Text"));
+    deleteText->setDelete(true);
+    layout->addWidget(deleteText);
+
+    auto* codeText = new AntTypography(QStringLiteral("Code Text"));
+    codeText->setCode(true);
+    layout->addWidget(codeText);
+
+    auto* markText = new AntTypography(QStringLiteral("Mark Text"));
+    markText->setMark(true);
+    layout->addWidget(markText);
+
+    auto* italicText = new AntTypography(QStringLiteral("Italic Text"));
+    italicText->setItalic(true);
+    layout->addWidget(italicText);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Paragraph")));
+    auto* paragraph = new AntTypography(
+        QStringLiteral("Ant Design is a design system for enterprise-level products. "
+                       "Create an efficient and enjoyable work experience with the design language."));
+    paragraph->setParagraph(true);
+    layout->addWidget(paragraph);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Copyable")));
+    auto* copyable = new AntTypography(QStringLiteral("This text is copyable. Click to copy!"));
+    copyable->setCopyable(true);
+    layout->addWidget(copyable);
+
+    layout->addStretch();
+    return page;
 }
 
 QSize ExampleWindow::sizeHint() const

@@ -61,6 +61,10 @@ private:
     QWidget* createTooltipPage();
     QWidget* createTimePickerPage();
     QWidget* createCardPage();
+    QWidget* createTimelinePage();
+    QWidget* createSpacePage();
+    QWidget* createLayoutPage();
+    QWidget* createTypographyPage();
     QWidget* wrapPage(QWidget* page);
     QLabel* createSectionTitle(const QString& title);
     void addNavButton(const QString& text, int pageIndex);

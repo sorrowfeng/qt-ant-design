@@ -15,7 +15,7 @@
 - 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
 - 当前已移植 `38` 个核心组件
-- 全部 `38` 个组件均已迁移到 `QProxyStyle` 架构
+- 全部 `42` 个组件均已迁移到 `QProxyStyle` 架构
 - 示例程序已覆盖全部 `38` 个已实现组件
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
 
@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现组件总数：`38`
+当前已实现组件总数：`42`
 
 | 分类 | 组件 | 当前绘制方式 |
 | --- | --- | --- |
@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 | 数据录入 | `AntCheckbox` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntRadio` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` | `QProxyStyle` |
 | 反馈 | `AntAlert` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntPopconfirm` `AntProgress` `AntSpin` `AntTooltip` `AntResult` | `QProxyStyle` |
 | 数据展示 | `AntAvatar` `AntBadge` `AntCard` `AntEmpty` `AntList` `AntSkeleton` `AntStatistic` `AntTag` | `QProxyStyle` |
-| 布局与其他 | `AntDivider` | `QProxyStyle` |
+| 布局与其他 | `AntDivider` `AntSpace` `AntLayout` `AntTimeline` `AntTypography` | `QProxyStyle` |
 
 ### 组件概览
 

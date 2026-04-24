@@ -25,8 +25,8 @@
 ## 本次同步
 
 - 同步日期：`2026-04-24`
-- 已实现组件总数：`38`
-- 已迁移至 `QProxyStyle` 的组件数：`38`
+- 已实现组件总数：`42`
+- 已迁移至 `QProxyStyle` 的组件数：`42`
 - 仍使用 `paintEvent` 的组件数：`0`
 - 示例程序覆盖：`38 / 38`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
@@ -64,7 +64,7 @@
   - 补充开发说明文档
   - 将 `AntButtonStyle` 统一归档到 `src/styles/`
 - 架构迁移到 `QProxyStyle`：
-  - 全部 38 个组件已完成迁移
+  - 全部 42 个组件已完成迁移
 
 ## 当前组件状态
 
@@ -135,6 +135,10 @@
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
 | `AntDivider` | `divider` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDividerStyle`；水平/垂直、带标题、虚线/点线 |
+| `AntSpace` | `space` | `QProxyStyle` | 是 | `src/styles/AntSpaceStyle`；水平/垂直间距容器，Small/Middle/Large，支持自定义间距 |
+| `AntLayout` | `layout` | `QProxyStyle` | 是 | `src/styles/AntLayoutStyle`；Header/Footer/Content/Sider 布局，Sider 可折叠 |
+| `AntTimeline` | `timeline` | `QProxyStyle` | 是 | `src/styles/AntTimelineStyle`；垂直/水平时间轴，outlined/filled，颜色预设 |
+| `AntTypography` | `typography` | `QProxyStyle` | 是 | `src/styles/AntTypographyStyle`；Title(H1-H5)/Text/Paragraph，类型/装饰/复制 |
 
 ## 待移植组件
 
@@ -143,11 +147,6 @@
 ### 高优先级
 
 ### 中优先级
-
-- [ ] `AntTimeline`
-- [ ] `AntSpace`
-- [ ] `AntLayout`
-- [ ] `AntTypography`
 
 ### 后续扩展
 
@@ -204,7 +203,7 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 38 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 42 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
 
 当前示例页包括：
 

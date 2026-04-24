@@ -57,8 +57,12 @@ set(QT_ANT_DESIGN_HEADERS
     src/styles/AntResultStyle.h
     src/styles/AntSkeletonStyle.h
     src/styles/AntStatisticStyle.h
+    src/styles/AntSpaceStyle.h
     src/styles/AntTagStyle.h
+    src/styles/AntTimelineStyle.h
     src/styles/AntTooltipStyle.h
+    src/styles/AntTypographyStyle.h
+    src/styles/AntLayoutStyle.h
     src/widgets/AntAlert.h
     src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
@@ -96,7 +100,11 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntTag.h
     src/widgets/AntTooltip.h
     src/widgets/AntTimePicker.h
+    src/widgets/AntTypography.h
+    src/widgets/AntTimeline.h
+    src/widgets/AntLayout.h
     src/widgets/AntCard.h
+    src/widgets/AntSpace.h
 )
 
 set(QT_ANT_DESIGN_SOURCES
@@ -130,7 +138,10 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntResultStyle.cpp
     src/styles/AntSkeletonStyle.cpp
     src/styles/AntStatisticStyle.cpp
+    src/styles/AntSpaceStyle.cpp
     src/styles/AntTagStyle.cpp
+    src/styles/AntTimelineStyle.cpp
+    src/styles/AntLayoutStyle.cpp
     src/styles/AntAlertStyle.cpp
     src/styles/AntIconStyle.cpp
     src/styles/AntMessageStyle.cpp
@@ -140,6 +151,7 @@ set(QT_ANT_DESIGN_SOURCES
     src/styles/AntPopconfirmStyle.cpp
     src/styles/AntProgressStyle.cpp
     src/styles/AntTooltipStyle.cpp
+    src/styles/AntTypographyStyle.cpp
     src/widgets/AntAlert.cpp
     src/widgets/AntAvatar.cpp
     src/widgets/AntBadge.cpp
@@ -177,7 +189,11 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntTag.cpp
     src/widgets/AntTooltip.cpp
     src/widgets/AntTimePicker.cpp
+    src/widgets/AntTypography.cpp
+    src/widgets/AntTimeline.cpp
+    src/widgets/AntLayout.cpp
     src/widgets/AntCard.cpp
+    src/widgets/AntSpace.cpp
     resources/qt-ant-design.qrc
 )
 
@@ -231,8 +247,10 @@ install(FILES
     src/styles/AntRadioStyle.h
     src/styles/AntSelectStyle.h
     src/styles/AntSliderStyle.h
+    src/styles/AntSpaceStyle.h
     src/styles/AntSpinStyle.h
     src/styles/AntSwitchStyle.h
+    src/styles/AntTypographyStyle.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/styles
 )
 
@@ -274,7 +292,9 @@ install(FILES
     src/widgets/AntTag.h
     src/widgets/AntTooltip.h
     src/widgets/AntTimePicker.h
+    src/widgets/AntTypography.h
     src/widgets/AntCard.h
+    src/widgets/AntSpace.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/widgets
 )
 
