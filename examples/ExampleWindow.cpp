@@ -11,6 +11,7 @@
 #include <QPoint>
 #include <QScrollArea>
 #include <QStackedWidget>
+#include <QScrollBar>
 #include <QTime>
 #include <QVBoxLayout>
 
@@ -68,8 +69,8 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_sidebar = new QWidget(m_central);
     m_sidebar->setFixedWidth(220);
     auto* sideLayout = new QVBoxLayout(m_sidebar);
-    sideLayout->setContentsMargins(20, 20, 20, 20);
-    sideLayout->setSpacing(12);
+    sideLayout->setContentsMargins(20, 12, 20, 12);
+    sideLayout->setSpacing(8);
 
     auto* brand = new QLabel(QStringLiteral("qt-ant-design"), m_sidebar);
     QFont brandFont = brand->font();
@@ -78,10 +79,20 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     brand->setFont(brandFont);
     sideLayout->addWidget(brand);
 
-    m_navLayout = new QVBoxLayout();
-    m_navLayout->setSpacing(8);
-    sideLayout->addLayout(m_navLayout);
-    sideLayout->addStretch();
+    auto* navScroll = new QScrollArea(m_sidebar);
+    navScroll->setWidgetResizable(true);
+    navScroll->setFrameShape(QFrame::NoFrame);
+    navScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    navScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    auto* navContainer = new QWidget();
+    m_navLayout = new QVBoxLayout(navContainer);
+    m_navLayout->setContentsMargins(0, 0, 4, 0);
+    m_navLayout->setSpacing(4);
+    m_navLayout->addStretch();
+
+    navScroll->setWidget(navContainer);
+    sideLayout->addWidget(navScroll, 1);
 
     m_content = new QWidget(m_central);
     auto* contentLayout = new QVBoxLayout(m_content);
@@ -3216,13 +3227,13 @@ QLabel* ExampleWindow::createSectionTitle(const QString& title)
 
 void ExampleWindow::addNavButton(const QString& text, int pageIndex)
 {
-    auto* button = new AntButton(text, m_sidebar);
+    auto* button = new AntButton(text);
     button->setButtonType(Ant::ButtonType::Text);
     button->setBlock(true);
     connect(button, &AntButton::clicked, this, [this, pageIndex]() {
         m_stack->setCurrentIndex(pageIndex);
     });
-    m_navLayout->addWidget(button);
+    m_navLayout->insertWidget(m_navLayout->count() - 1, button);
 }
 
 void ExampleWindow::applyTheme()
