@@ -3236,6 +3236,11 @@ void ExampleWindow::addNavButton(const QString& text, int pageIndex)
     m_navLayout->insertWidget(m_navLayout->count() - 1, button);
 }
 
+QSize ExampleWindow::sizeHint() const
+{
+    return QSize(1200, 800);
+}
+
 void ExampleWindow::applyTheme()
 {
     const auto& token = antTheme->tokens();
