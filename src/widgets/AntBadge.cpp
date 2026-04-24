@@ -6,6 +6,7 @@
 #include <QResizeEvent>
 #include <QShowEvent>
 #include <QHideEvent>
+#include <QStyleOption>
 #include <QTimer>
 
 #include <algorithm>
@@ -13,18 +14,68 @@
 #include "core/AntTheme.h"
 #include "styles/AntBadgeStyle.h"
 
+namespace
+{
+// Space reserved around the content widget to let its drop shadow bleed
+// outside its own rect without getting clipped by the AntBadge boundary.
+// AntButton's shadow radius is ~4px but we pad a bit extra for safety.
+constexpr int kShadowMargin = 8;
+
+// Transparent overlay painted on top of the content widget to host the
+// indicator. Needed because AntBadge's own paintEvent runs BEFORE child
+// widgets (the content), so painting the indicator there gets covered by
+// e.g. an AntButton child's opaque background.
+class BadgeIndicatorOverlay : public QWidget
+{
+public:
+    BadgeIndicatorOverlay(AntBadge* owner)
+        : QWidget(owner)
+        , m_owner(owner)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_NoSystemBackground);
+        setAttribute(Qt::WA_TranslucentBackground);
+        setFocusPolicy(Qt::NoFocus);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        if (!m_owner)
+        {
+            return;
+        }
+        QStyleOption option;
+        option.initFrom(m_owner);
+        option.rect = m_owner->rect();
+        QPainter p(this);
+        m_owner->style()->drawPrimitive(QStyle::PE_Widget, &option, &p, m_owner);
+    }
+
+private:
+    AntBadge* m_owner = nullptr;
+};
+} // namespace
+
 AntBadge::AntBadge(QWidget* parent)
     : QWidget(parent)
 {
     setStyle(new AntBadgeStyle(style()));
     setMouseTracking(true);
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
     m_animationTimer = new QTimer(this);
     connect(m_animationTimer, &QTimer::timeout, this, [this]() {
         m_pulse = (m_pulse + 6) % 100;
         update();
+        if (m_indicatorOverlay)
+        {
+            m_indicatorOverlay->update();
+        }
     });
+
+    m_indicatorOverlay = new BadgeIndicatorOverlay(this);
+    m_indicatorOverlay->raise();
 
     updateAnimationState();
 }
@@ -182,8 +233,15 @@ void AntBadge::setContentWidget(QWidget* widget)
         m_contentWidget->setParent(this);
         m_contentWidget->show();
     }
-    updateContentGeometry();
     updateGeometry();
+    adjustSize();
+    updateContentGeometry();
+    // Keep the indicator overlay on top of the (now reparented) content.
+    if (m_indicatorOverlay)
+    {
+        m_indicatorOverlay->setGeometry(rect());
+        m_indicatorOverlay->raise();
+    }
     update();
 }
 
@@ -201,8 +259,11 @@ QSize AntBadge::sizeHint() const
     const int w = indicatorWidth();
     if (m_contentWidget)
     {
+        // Total = left shadow margin + content + (right shadow / indicator half)
+        //       and same for vertical.
         const QSize content = m_contentWidget->sizeHint().expandedTo(m_contentWidget->minimumSizeHint());
-        return QSize(content.width() + contentRightReserve(), content.height() + contentTopReserve());
+        return QSize(kShadowMargin + content.width() + contentRightReserve(),
+                     contentTopReserve() + content.height() + kShadowMargin);
     }
     return QSize(w + 2, indicatorHeight() + 2);
 }
@@ -211,7 +272,9 @@ QSize AntBadge::minimumSizeHint() const
 {
     if (m_contentWidget)
     {
-        return m_contentWidget->minimumSizeHint() + QSize(contentRightReserve(), contentTopReserve());
+        const QSize cmin = m_contentWidget->minimumSizeHint();
+        return QSize(kShadowMargin + cmin.width() + contentRightReserve(),
+                     contentTopReserve() + cmin.height() + kShadowMargin);
     }
     return QSize(dotSize() + 2, dotSize() + 2);
 }
@@ -219,11 +282,24 @@ QSize AntBadge::minimumSizeHint() const
 void AntBadge::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
+    // The indicator is painted by m_indicatorOverlay (sibling layer above
+    // the content widget). Piggy-back on our own paint to refresh it so
+    // any call-site `update()` also repaints the indicator without every
+    // setter having to know about the overlay.
+    if (m_indicatorOverlay)
+    {
+        m_indicatorOverlay->update();
+    }
 }
 
 void AntBadge::resizeEvent(QResizeEvent* event)
 {
     updateContentGeometry();
+    if (m_indicatorOverlay)
+    {
+        m_indicatorOverlay->setGeometry(rect());
+        m_indicatorOverlay->raise();
+    }
     QWidget::resizeEvent(event);
 }
 
@@ -298,12 +374,24 @@ int AntBadge::indicatorWidth() const
 
 int AntBadge::contentTopReserve() const
 {
-    return shouldShowIndicator() ? indicatorHeight() / 2 + 2 + std::max(0, -m_offset.y()) : 0;
+    // Need enough room above the content for:
+    //   - the top half of the indicator (h/2)
+    //   - the content's top drop shadow (kShadowMargin)
+    //   - an extra few px as anti-clip guard for the 1px white outline
+    if (!shouldShowIndicator())
+    {
+        return kShadowMargin;
+    }
+    return std::max(indicatorHeight() / 2 + 4 + std::max(0, -m_offset.y()), kShadowMargin);
 }
 
 int AntBadge::contentRightReserve() const
 {
-    return shouldShowIndicator() ? indicatorWidth() / 2 + 2 + std::max(0, m_offset.x()) : 0;
+    if (!shouldShowIndicator())
+    {
+        return kShadowMargin;
+    }
+    return std::max(indicatorWidth() / 2 + 4 + std::max(0, m_offset.x()), kShadowMargin);
 }
 
 QString AntBadge::displayText() const
@@ -322,7 +410,10 @@ QRect AntBadge::contentRect() const
         return rect();
     }
     const QSize hint = m_contentWidget->sizeHint().expandedTo(m_contentWidget->minimumSizeHint());
-    return QRect(0, contentTopReserve(), width() - contentRightReserve(), height() - contentTopReserve()).adjusted(0, 0, 0, 0).intersected(QRect(0, contentTopReserve(), hint.width(), hint.height()));
+    // Content is inset by kShadowMargin on left/bottom and by contentTopReserve
+    // on top (which already includes shadow + indicator headroom). Right side
+    // gets contentRightReserve (indicator width + shadow). Size = hint.
+    return QRect(kShadowMargin, contentTopReserve(), hint.width(), hint.height());
 }
 
 QRectF AntBadge::indicatorRect() const

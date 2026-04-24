@@ -71,16 +71,24 @@ bool badgeShouldShowIndicator(const AntBadge* badge)
 
 int badgeContentTopReserve(const AntBadge* badge)
 {
-    return badgeShouldShowIndicator(badge)
-               ? badgeIndicatorHeight(badge) / 2 + 2 + std::max(0, -badge->offset().y())
-               : 0;
+    constexpr int kShadowMargin = 8;
+    if (!badgeShouldShowIndicator(badge))
+    {
+        return kShadowMargin;
+    }
+    return std::max(badgeIndicatorHeight(badge) / 2 + 4 + std::max(0, -badge->offset().y()),
+                    kShadowMargin);
 }
 
 int badgeContentRightReserve(const AntBadge* badge)
 {
-    return badgeShouldShowIndicator(badge)
-               ? badgeIndicatorWidth(badge) / 2 + 2 + std::max(0, badge->offset().x())
-               : 0;
+    constexpr int kShadowMargin = 8;
+    if (!badgeShouldShowIndicator(badge))
+    {
+        return kShadowMargin;
+    }
+    return std::max(badgeIndicatorWidth(badge) / 2 + 4 + std::max(0, badge->offset().x()),
+                    kShadowMargin);
 }
 
 QRect badgeContentRect(const AntBadge* badge, const QRect& widgetRect)
@@ -92,10 +100,9 @@ QRect badgeContentRect(const AntBadge* badge, const QRect& widgetRect)
     }
     const QSize hint = cw->sizeHint().expandedTo(cw->minimumSizeHint());
     const int topReserve = badgeContentTopReserve(badge);
-    const int rightReserve = badgeContentRightReserve(badge);
-    return QRect(0, topReserve, widgetRect.width() - rightReserve, widgetRect.height() - topReserve)
-        .adjusted(0, 0, 0, 0)
-        .intersected(QRect(0, topReserve, hint.width(), hint.height()));
+    // Must match AntBadge::contentRect (kShadowMargin = 8 from AntBadge.cpp).
+    constexpr int kShadowMargin = 8;
+    return QRect(kShadowMargin, topReserve, hint.width(), hint.height());
 }
 
 QRectF badgeIndicatorRect(const AntBadge* badge, const QRect& widgetRect)
@@ -294,16 +301,13 @@ QSize AntBadgeStyle::sizeFromContents(ContentsType type, const QStyleOption* opt
 
 bool AntBadgeStyle::eventFilter(QObject* watched, QEvent* event)
 {
-    auto* badge = qobject_cast<AntBadge*>(watched);
-    if (badge && event->type() == QEvent::Paint)
-    {
-        QStyleOption option;
-        option.initFrom(badge);
-        option.rect = badge->rect();
-        QPainter painter(badge);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, badge);
-        return true;
-    }
+    Q_UNUSED(watched)
+    Q_UNUSED(event)
+    // AntBadge paints the indicator through a dedicated overlay child widget
+    // (see AntBadge::m_indicatorOverlay). Painting from the style eventFilter
+    // here would hit AntBadge's surface, which is drawn _before_ children,
+    // so the indicator would be covered by any opaque content widget
+    // (AntButton, etc.). Leave it to the overlay.
     return QProxyStyle::eventFilter(watched, event);
 }
 

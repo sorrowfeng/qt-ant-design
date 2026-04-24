@@ -114,6 +114,7 @@ private:
     Ant::BadgeSize m_badgeSize = Ant::BadgeSize::Middle;
     Ant::BadgeStatus m_status = Ant::BadgeStatus::None;
     QWidget* m_contentWidget = nullptr;
+    QWidget* m_indicatorOverlay = nullptr;
     QTimer* m_animationTimer = nullptr;
     int m_pulse = 0;
     bool m_hovered = false;
