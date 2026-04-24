@@ -25,6 +25,7 @@
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDropdown.h"
 #include "widgets/AntDivider.h"
+#include "widgets/AntEmpty.h"
 #include "widgets/AntForm.h"
 #include "widgets/AntIcon.h"
 #include "widgets/AntInput.h"
@@ -136,6 +137,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createAlertPage()));
     m_stack->addWidget(wrapPage(createTooltipPage()));
     m_stack->addWidget(wrapPage(createFormPage()));
+    m_stack->addWidget(wrapPage(createEmptyPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -168,6 +170,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Alert"), 29);
     addNavButton(QStringLiteral("Tooltip"), 30);
     addNavButton(QStringLiteral("Form"), 31);
+    addNavButton(QStringLiteral("Empty"), 32);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -2638,6 +2641,90 @@ QWidget* ExampleWindow::createFormPage()
 
     bottomRow->addWidget(inlineWrap, 1);
     layout->addLayout(bottomRow);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createEmptyPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(28);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
+    auto* basicRow = new QHBoxLayout();
+    basicRow->setSpacing(28);
+
+    auto* basic = new AntEmpty(page);
+    basic->setFixedWidth(260);
+
+    auto* customText = new AntEmpty(page);
+    customText->setFixedWidth(320);
+    customText->setDescription(QStringLiteral("No matching issues found. Try adjusting the filters and search terms."));
+
+    auto* simple = new AntEmpty(page);
+    simple->setFixedWidth(220);
+    simple->setSimple(true);
+    simple->setDescription(QStringLiteral("No notifications"));
+
+    basicRow->addWidget(basic);
+    basicRow->addWidget(customText);
+    basicRow->addWidget(simple);
+    basicRow->addStretch();
+    layout->addLayout(basicRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("With Action")));
+    auto* actionRow = new QHBoxLayout();
+    actionRow->setSpacing(28);
+
+    auto* createProject = new AntEmpty(page);
+    createProject->setFixedWidth(360);
+    createProject->setDescription(QStringLiteral("You have not created any projects yet."));
+    auto* createButton = new AntButton(QStringLiteral("Create Project"), createProject);
+    createButton->setButtonType(Ant::ButtonType::Primary);
+    createProject->setExtraWidget(createButton);
+
+    auto* importData = new AntEmpty(page);
+    importData->setFixedWidth(360);
+    importData->setImageSize(QSize(148, 92));
+    importData->setDescription(QStringLiteral("Import data from CSV or connect a remote source to get started."));
+    auto* importButton = new AntButton(QStringLiteral("Import Data"), importData);
+    importButton->setButtonType(Ant::ButtonType::Default);
+    importData->setExtraWidget(importButton);
+
+    actionRow->addWidget(createProject);
+    actionRow->addWidget(importData);
+    actionRow->addStretch();
+    layout->addLayout(actionRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Embedded in Card")));
+    auto* cardRow = new QHBoxLayout();
+    cardRow->setSpacing(24);
+
+    auto* emptyCard = new AntCard(QStringLiteral("Recent Activity"), page);
+    emptyCard->setFixedWidth(420);
+    emptyCard->setExtra(QStringLiteral("0 items"));
+    auto* cardEmpty = new AntEmpty(emptyCard);
+    cardEmpty->setDescription(QStringLiteral("There is no activity in this workspace yet."));
+    auto* inviteButton = new AntButton(QStringLiteral("Invite Collaborators"), cardEmpty);
+    inviteButton->setButtonType(Ant::ButtonType::Primary);
+    cardEmpty->setExtraWidget(inviteButton);
+    emptyCard->bodyLayout()->addWidget(cardEmpty);
+
+    auto* placeholderCard = new AntCard(QStringLiteral("Archived Reports"), page);
+    placeholderCard->setFixedWidth(420);
+    auto* archiveEmpty = new AntEmpty(placeholderCard);
+    archiveEmpty->setSimple(true);
+    archiveEmpty->setImageVisible(false);
+    archiveEmpty->setDescription(QStringLiteral("Archived reports will appear here."));
+    placeholderCard->bodyLayout()->addWidget(archiveEmpty);
+
+    cardRow->addWidget(emptyCard);
+    cardRow->addWidget(placeholderCard);
+    cardRow->addStretch();
+    layout->addLayout(cardRow);
 
     layout->addStretch();
     return page;

@@ -25,10 +25,10 @@
 ## 本次同步
 
 - 同步日期：`2026-04-24`
-- 已实现组件总数：`32`
+- 已实现组件总数：`33`
 - 已迁移至 `QProxyStyle` 的组件数：`9`
-- 仍使用 `paintEvent` 的组件数：`23`
-- 示例程序覆盖：`32 / 32`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 仍使用 `paintEvent` 的组件数：`24`
+- 示例程序覆盖：`33 / 33`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
 ## 近期更新摘要
 
@@ -37,6 +37,7 @@
 - 新增组件：
   - `AntAlert`
   - `AntDropdown`
+  - `AntEmpty`
   - `AntForm`
   - `AntIcon`
   - `AntInputNumber`
@@ -122,6 +123,7 @@
 | `AntAvatar` | `avatar` | `paintEvent` | 是 | 文本、图标、图片头像 |
 | `AntBadge` | `badge` | `paintEvent` | 是 | `count / dot / status / processing` |
 | `AntCard` | `card` | `paintEvent` | 是 | 封面、额外区、操作区、loading |
+| `AntEmpty` | `empty` | `paintEvent` | 是 | 默认插画、simple 模式、描述、自定义尺寸、extra action |
 | `AntSkeleton` | `skeleton` | `paintEvent` | 是 | `active / avatar / title / paragraph / round / loading` |
 | `AntTag` | `tag` | `paintEvent` | 是 | `closable / checkable / variant` |
 
@@ -137,16 +139,15 @@
 
 ### 高优先级
 
-- [ ] `AntEmpty`
 - [ ] `AntDescriptions`
 - [ ] `AntSteps`
+- [ ] `AntResult`
 
 ### 中优先级
 
 - [ ] `AntTimeline`
 - [ ] `AntList`
 - [ ] `AntStatistic`
-- [ ] `AntResult`
 - [ ] `AntSpace`
 - [ ] `AntLayout`
 - [ ] `AntTypography`
@@ -206,7 +207,7 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 32 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 33 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
 
 当前示例页包括：
 
@@ -242,6 +243,7 @@
 - `Alert`
 - `Tooltip`
 - `Form`
+- `Empty`
 
 ## 构建与安装
 
