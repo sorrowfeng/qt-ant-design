@@ -67,6 +67,7 @@ private:
     void uninstallTarget();
     void handleTargetEnter();
     void handleTargetLeave();
+    void handlePopupEnter();
     void handlePopupLeave();
 
     QStringList m_itemLabels;

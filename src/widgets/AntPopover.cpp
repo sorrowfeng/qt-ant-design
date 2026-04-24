@@ -289,6 +289,15 @@ void AntPopover::hideEvent(QHideEvent* event)
     QWidget::hideEvent(event);
 }
 
+void AntPopover::enterEvent(QEnterEvent* event)
+{
+    if (m_trigger == Ant::PopoverTrigger::Hover)
+    {
+        m_closeTimer->stop();
+    }
+    QWidget::enterEvent(event);
+}
+
 void AntPopover::leaveEvent(QEvent* event)
 {
     if (m_trigger == Ant::PopoverTrigger::Hover)

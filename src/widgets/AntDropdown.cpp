@@ -103,6 +103,15 @@ protected:
         }
     }
 
+    void enterEvent(QEnterEvent* event) override
+    {
+        if (m_owner)
+        {
+            m_owner->handlePopupEnter();
+        }
+        QFrame::enterEvent(event);
+    }
+
     void leaveEvent(QEvent* event) override
     {
         if (m_owner)
@@ -489,6 +498,14 @@ void AntDropdown::handleTargetLeave()
     {
         m_openTimer->stop();
         m_closeTimer->start(120);
+    }
+}
+
+void AntDropdown::handlePopupEnter()
+{
+    if (m_trigger == Ant::DropdownTrigger::Hover)
+    {
+        m_closeTimer->stop();
     }
 }
 
