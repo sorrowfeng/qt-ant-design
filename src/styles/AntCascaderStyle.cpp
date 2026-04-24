@@ -197,7 +197,7 @@ bool AntCascaderStyle::eventFilter(QObject* watched, QEvent* event)
 
         QPainter painter(cascader);
         drawPrimitive(QStyle::PE_Widget, &option, &painter, cascader);
-        return false;
+        return true;
     }
 
     return QProxyStyle::eventFilter(watched, event);
