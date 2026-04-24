@@ -1,5 +1,7 @@
 #include "AntDropdown.h"
 
+#include <QApplication>
+#include <QCursor>
 #include <QEvent>
 #include <QFrame>
 #include <QGuiApplication>
@@ -38,10 +40,12 @@ class AntDropdown::PopupFrame : public QFrame
 {
 public:
     explicit PopupFrame(AntDropdown* owner)
-        : QFrame(nullptr, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+        : QFrame(nullptr, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
         , m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_ShowWithoutActivating, true);
+        setFocusPolicy(Qt::NoFocus);
         setMouseTracking(true);
     }
 
@@ -126,6 +130,7 @@ protected:
         if (m_owner && m_owner->m_open)
         {
             m_owner->m_open = false;
+            qApp->removeEventFilter(m_owner);
             Q_EMIT m_owner->openChanged(false);
         }
         QFrame::hideEvent(event);
@@ -168,6 +173,32 @@ AntDropdown::AntDropdown(QWidget* parent)
     m_closeTimer->setSingleShot(true);
     connect(m_closeTimer, &QTimer::timeout, this, [this]() {
         if (m_trigger == Ant::DropdownTrigger::Hover)
+        {
+            setOpen(false);
+        }
+    });
+
+    // Hover mode: once open, poll cursor position. Close only when the cursor
+    // has stayed outside of (target ∪ popup) for `threshold` consecutive
+    // ticks. This avoids edge flicker caused by Qt's Enter/Leave being
+    // dispatched as the popup window appears on top.
+    m_hoverTicker = new QTimer(this);
+    m_hoverTicker->setInterval(60);
+    connect(m_hoverTicker, &QTimer::timeout, this, [this]() {
+        if (m_trigger != Ant::DropdownTrigger::Hover || !m_open)
+        {
+            m_hoverTicker->stop();
+            return;
+        }
+        const QPoint gp = QCursor::pos();
+        const bool inTarget = m_target &&
+                              QRect(m_target->mapToGlobal(QPoint(0, 0)), m_target->size()).contains(gp);
+        const bool inPopup = m_popup && m_popup->isVisible() && m_popup->geometry().contains(gp);
+        if (inTarget || inPopup)
+        {
+            m_offTicks = 0;
+        }
+        else if (++m_offTicks >= 3) // ~180ms grace period
         {
             setOpen(false);
         }
@@ -277,9 +308,17 @@ void AntDropdown::setOpen(bool open)
         updatePopupGeometry(m_lastContextPos);
         m_popup->show();
         m_popup->raise();
+        qApp->installEventFilter(this);
+        if (m_trigger == Ant::DropdownTrigger::Hover)
+        {
+            m_offTicks = 0;
+            m_hoverTicker->start();
+        }
     }
     else
     {
+        m_hoverTicker->stop();
+        qApp->removeEventFilter(this);
         m_popup->hide();
     }
 
@@ -323,6 +362,22 @@ void AntDropdown::addDivider()
 
 bool AntDropdown::eventFilter(QObject* watched, QEvent* event)
 {
+    // Global click-outside handling (installed on qApp while popup is open).
+    if (m_open && event->type() == QEvent::MouseButtonPress)
+    {
+        auto* me = static_cast<QMouseEvent*>(event);
+        const QPoint gp = me->globalPosition().toPoint();
+        const bool insidePopup = m_popup && m_popup->isVisible() &&
+                                 m_popup->geometry().contains(gp);
+        const bool insideTarget = m_target &&
+                                  QRect(m_target->mapToGlobal(QPoint(0, 0)), m_target->size()).contains(gp);
+        if (!insidePopup && !insideTarget)
+        {
+            setOpen(false);
+            // Do not swallow — let the underlying widget still receive it.
+        }
+    }
+
     if (watched == m_target)
     {
         switch (event->type())
@@ -488,17 +543,25 @@ void AntDropdown::handleTargetEnter()
     if (m_trigger == Ant::DropdownTrigger::Hover)
     {
         m_closeTimer->stop();
-        m_openTimer->start(120);
+        m_offTicks = 0;
+        if (!m_open)
+        {
+            m_openTimer->start(120);
+        }
     }
 }
 
 void AntDropdown::handleTargetLeave()
 {
-    if (m_trigger == Ant::DropdownTrigger::Hover)
+    if (m_trigger != Ant::DropdownTrigger::Hover)
     {
-        m_openTimer->stop();
-        m_closeTimer->start(120);
+        return;
     }
+    m_openTimer->stop();
+    // Do NOT start a close timer here. Closing is decided by m_hoverTicker,
+    // which polls the real cursor position against (target ∪ popup). This
+    // avoids flicker when Qt dispatches Leave to the target at the moment
+    // the popup window is raised over the UI.
 }
 
 void AntDropdown::handlePopupEnter()
@@ -506,13 +569,12 @@ void AntDropdown::handlePopupEnter()
     if (m_trigger == Ant::DropdownTrigger::Hover)
     {
         m_closeTimer->stop();
+        m_offTicks = 0;
     }
 }
 
 void AntDropdown::handlePopupLeave()
 {
-    if (m_trigger == Ant::DropdownTrigger::Hover)
-    {
-        m_closeTimer->start(120);
-    }
+    // Hover ticker handles close; nothing to do here.
+    Q_UNUSED(0);
 }

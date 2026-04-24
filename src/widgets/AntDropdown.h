@@ -80,5 +80,7 @@ private:
     AntMenu* m_menu = nullptr;
     QTimer* m_openTimer = nullptr;
     QTimer* m_closeTimer = nullptr;
+    QTimer* m_hoverTicker = nullptr;
+    int m_offTicks = 0;
     QPoint m_lastContextPos;
 };
