@@ -365,6 +365,8 @@ QColor AntTypography::textColor() const
         return token.colorWarning;
     case Ant::TypographyType::Danger:
         return token.colorError;
+    case Ant::TypographyType::LightSolid:
+        return token.colorTextLightSolid;
     case Ant::TypographyType::Default:
     default:
         return token.colorText;

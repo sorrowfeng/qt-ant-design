@@ -14,6 +14,9 @@ public:
     explicit AntLayoutHeader(QWidget* parent = nullptr);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
 };
 
 class AntLayoutFooter : public QWidget
@@ -23,6 +26,9 @@ public:
     explicit AntLayoutFooter(QWidget* parent = nullptr);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
 };
 
 class AntLayoutContent : public QWidget
@@ -32,6 +38,9 @@ public:
     explicit AntLayoutContent(QWidget* parent = nullptr);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
 };
 
 class AntLayoutSider : public QWidget

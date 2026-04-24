@@ -29,6 +29,13 @@ QSize AntLayoutHeader::minimumSizeHint() const
     return QSize(0, 64);
 }
 
+void AntLayoutHeader::paintEvent(QPaintEvent* event)
+{
+    Q_UNUSED(event)
+    QPainter painter(this);
+    painter.fillRect(rect(), antTheme->tokens().colorPrimary);
+}
+
 // ─── AntLayoutFooter ───
 
 AntLayoutFooter::AntLayoutFooter(QWidget* parent)
@@ -50,6 +57,13 @@ QSize AntLayoutFooter::minimumSizeHint() const
     return QSize(0, 48);
 }
 
+void AntLayoutFooter::paintEvent(QPaintEvent* event)
+{
+    Q_UNUSED(event)
+    QPainter painter(this);
+    painter.fillRect(rect(), antTheme->tokens().colorBgLayout);
+}
+
 // ─── AntLayoutContent ───
 
 AntLayoutContent::AntLayoutContent(QWidget* parent)
@@ -69,6 +83,13 @@ QSize AntLayoutContent::sizeHint() const
 QSize AntLayoutContent::minimumSizeHint() const
 {
     return QSize(0, 0);
+}
+
+void AntLayoutContent::paintEvent(QPaintEvent* event)
+{
+    Q_UNUSED(event)
+    QPainter painter(this);
+    painter.fillRect(rect(), antTheme->tokens().colorBgContainer);
 }
 
 // ─── AntLayoutSider ───
@@ -195,6 +216,11 @@ QSize AntLayoutSider::minimumSizeHint() const
 void AntLayoutSider::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
+    QPainter painter(this);
+    QColor bg = (m_siderTheme == Ant::LayoutSiderTheme::Dark)
+                    ? antTheme->tokens().colorBgLayout
+                    : antTheme->tokens().colorBgContainer;
+    painter.fillRect(rect(), bg);
 }
 
 void AntLayoutSider::resizeEvent(QResizeEvent* event)

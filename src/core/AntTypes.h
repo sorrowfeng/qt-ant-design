@@ -489,6 +489,7 @@ enum class TypographyType
     Success,
     Warning,
     Danger,
+    LightSolid,
 };
 Q_ENUM_NS(TypographyType)
 

@@ -88,6 +88,11 @@ AntDescriptions::AntDescriptions(QWidget* parent)
 
     rebuildLayout();
     updateTheme();
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        rebuildGrid();
+        updateTheme();
+    });
 }
 
 QString AntDescriptions::title() const { return m_title; }

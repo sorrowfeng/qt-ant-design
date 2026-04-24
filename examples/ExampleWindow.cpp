@@ -618,10 +618,13 @@ QWidget* ExampleWindow::createDropdownPage()
     auto* contextHint = new AntTypography(QStringLiteral("Right click the area below to open a context dropdown."), page);
     layout->addWidget(contextHint);
 
-    auto* contextArea = new QLabel(QStringLiteral("Context trigger area"), page);
+    auto* contextArea = new AntWidget(page);
+    auto* contextLayout = new QVBoxLayout(contextArea);
+    contextLayout->setContentsMargins(0, 0, 0, 0);
+    auto* contextLabel = new AntTypography(QStringLiteral("Context trigger area"));
+    contextLayout->addWidget(contextLabel, 0, Qt::AlignCenter);
     contextArea->setMinimumSize(260, 120);
-    contextArea->setAlignment(Qt::AlignCenter);
-    contextArea->setStyleSheet(QStringLiteral("QLabel { border: 1px dashed rgba(0,0,0,0.18); border-radius: 8px; }"));
+    contextArea->setStyleSheet(QStringLiteral("border: 1px dashed %1; border-radius: 8px;").arg(antTheme->tokens().colorBorder.name()));
     auto* contextDropdown = new AntDropdown(page);
     contextDropdown->setTrigger(Ant::DropdownTrigger::ContextMenu);
     contextDropdown->setTarget(contextArea);
@@ -694,9 +697,8 @@ QWidget* ExampleWindow::createIconPage()
         blockLayout->setSpacing(8);
         blockLayout->addWidget(icon, 0, Qt::AlignHCenter);
 
-        auto* label = new QLabel(title, block);
-        label->setAlignment(Qt::AlignCenter);
-        blockLayout->addWidget(label);
+        auto* label = new AntTypography(title, block);
+        blockLayout->addWidget(label, 0, Qt::AlignHCenter);
         return block;
     };
 
@@ -2041,9 +2043,8 @@ QWidget* ExampleWindow::createTooltipPage()
     leftTip->setTitle(QStringLiteral("Appears on the left side"));
     leftTip->setPlacement(Ant::TooltipPlacement::Left);
     leftTip->setTarget(left);
-    auto* center = new QLabel(QStringLiteral("Hover the buttons around this area"), page);
+    auto* center = new AntTypography(QStringLiteral("Hover the buttons around this area"), page);
     center->setMinimumSize(220, 64);
-    center->setAlignment(Qt::AlignCenter);
     auto* right = new AntButton(QStringLiteral("Right"));
     auto* rightTip = new AntTooltip(page);
     rightTip->setTitle(QStringLiteral("Appears on the right side"));
@@ -3331,23 +3332,20 @@ QWidget* ExampleWindow::createLayoutPage()
     basicLayout->setFixedHeight(240);
 
     auto* header = new AntLayoutHeader();
-    header->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorPrimary.name()));
-    auto* headerLabel = new QLabel(QStringLiteral("Header"), header);
-    headerLabel->setStyleSheet(QStringLiteral("color: white; padding: 16px; font-weight: bold;"));
-    headerLabel->setGeometry(16, 0, 200, 64);
+    auto* headerLabel = new AntTypography(QStringLiteral("Header"), header);
+    headerLabel->setType(Ant::TypographyType::LightSolid);
+    headerLabel->setStrong(true);
+    headerLabel->setGeometry(16, 16, 200, 32);
     basicLayout->setHeader(header);
 
     auto* content = new AntLayoutContent();
-    content->setStyleSheet(QStringLiteral("background: %1; padding: 24px;").arg(antTheme->tokens().colorBgContainer.name()));
-    auto* contentLabel = new QLabel(QStringLiteral("Content"), content);
+    auto* contentLabel = new AntTypography(QStringLiteral("Content"), content);
     contentLabel->setGeometry(16, 16, 200, 30);
     basicLayout->setContent(content);
 
     auto* footer = new AntLayoutFooter();
-    footer->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorBgLayout.name()));
-    auto* footerLabel = new QLabel(QStringLiteral("Footer"), footer);
-    footerLabel->setStyleSheet(QStringLiteral("padding: 12px;"));
-    footerLabel->setGeometry(16, 0, 200, 48);
+    auto* footerLabel = new AntTypography(QStringLiteral("Footer"), footer);
+    footerLabel->setGeometry(16, 8, 200, 32);
     basicLayout->setFooter(footer);
 
     layout->addWidget(basicLayout);
@@ -3358,25 +3356,21 @@ QWidget* ExampleWindow::createLayoutPage()
     siderLayout->setFixedHeight(240);
 
     auto* siderHeader = new AntLayoutHeader();
-    siderHeader->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorPrimary.name()));
-    auto* siderHeaderLabel = new QLabel(QStringLiteral("Header"), siderHeader);
-    siderHeaderLabel->setStyleSheet(QStringLiteral("color: white; padding: 16px; font-weight: bold;"));
-    siderHeaderLabel->setGeometry(16, 0, 200, 64);
+    auto* siderHeaderLabel = new AntTypography(QStringLiteral("Header"), siderHeader);
+    siderHeaderLabel->setType(Ant::TypographyType::LightSolid);
+    siderHeaderLabel->setStrong(true);
+    siderHeaderLabel->setGeometry(16, 16, 200, 32);
     siderLayout->setHeader(siderHeader);
 
     auto* sider = new AntLayoutSider();
     sider->setWidth(200);
     sider->setSiderTheme(Ant::LayoutSiderTheme::Light);
-    sider->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorBgContainer.name()));
-    auto* siderLabel = new QLabel(QStringLiteral("Sider"), sider);
-    siderLabel->setStyleSheet(QStringLiteral("padding: 16px;"));
-    siderLabel->setGeometry(0, 8, 200, 30);
+    auto* siderLabel = new AntTypography(QStringLiteral("Sider"), sider);
+    siderLabel->setGeometry(16, 8, 200, 30);
     siderLayout->addSider(sider);
 
     auto* siderContent = new AntLayoutContent();
-    siderContent->setStyleSheet(QStringLiteral("background: %1;").arg(antTheme->tokens().colorBgContainer.name()));
-    auto* siderContentLabel = new QLabel(QStringLiteral("Content"), siderContent);
-    siderContentLabel->setStyleSheet(QStringLiteral("padding: 16px;"));
+    auto* siderContentLabel = new AntTypography(QStringLiteral("Content"), siderContent);
     siderContentLabel->setGeometry(16, 16, 200, 30);
     siderLayout->setContent(siderContent);
 
