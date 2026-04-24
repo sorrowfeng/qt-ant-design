@@ -62,6 +62,7 @@ void AntInput::setText(const QString& text) { m_lineEdit->setText(text); }
 void AntInput::setPlaceholderText(const QString& text) { m_lineEdit->setPlaceholderText(text); }
 Ant::InputSize AntInput::inputSize() const { return m_inputSize; }
 Ant::InputStatus AntInput::status() const { return m_status; }
+Ant::InputVariant AntInput::variant() const { return m_variant; }
 bool AntInput::allowClear() const { return m_allowClear; }
 bool AntInput::isPasswordMode() const { return m_passwordMode; }
 
@@ -88,6 +89,15 @@ void AntInput::setStatus(Ant::InputStatus status)
 void AntInput::setError(bool error)
 {
     setStatus(error ? Ant::InputStatus::Error : Ant::InputStatus::Normal);
+}
+
+void AntInput::setVariant(Ant::InputVariant variant)
+{
+    if (m_variant == variant)
+        return;
+    m_variant = variant;
+    update();
+    Q_EMIT variantChanged(m_variant);
 }
 
 void AntInput::setAllowClear(bool allowClear)

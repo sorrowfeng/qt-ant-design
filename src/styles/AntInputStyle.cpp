@@ -160,34 +160,102 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
     const auto& token = antTheme->tokens();
     const InputMetrics m = metricsFor(input);
     const QRectF frame = option->rect.adjusted(0.5, 0.5, -0.5, -0.5);
+    const auto variant = input->variant();
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    if (input->isInputFocused() && input->isEnabled())
+    // Focus outline glow (outlined / filled / underlined)
+    if (input->isInputFocused() && input->isEnabled() && variant != Ant::InputVariant::Borderless)
     {
         QColor focus = input->status() == Ant::InputStatus::Error ? token.colorErrorBg : token.colorPrimaryBg;
         focus.setAlphaF(0.65);
         painter->setPen(QPen(focus, token.controlOutlineWidth));
         painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(frame.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
+        if (variant == Ant::InputVariant::Underlined)
+        {
+            painter->drawLine(QPointF(frame.left(), frame.bottom() + 1), QPointF(frame.right(), frame.bottom() + 1));
+        }
+        else
+        {
+            painter->drawRoundedRect(frame.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
+        }
     }
 
-    painter->setPen(QPen(borderColorFor(input), token.lineWidth));
-    painter->setBrush(input->isEnabled() ? token.colorBgContainer : token.colorBgContainerDisabled);
-    painter->drawRoundedRect(frame, m.radius, m.radius);
-
-    auto drawAddon = [&](const QRect& rect) {
-        if (!rect.isValid() || rect.isEmpty())
+    // Background + border per variant
+    const bool enabled = input->isEnabled();
+    const QColor border = borderColorFor(input);
+    QColor bgFill;
+    switch (variant)
+    {
+    case Ant::InputVariant::Filled:
+    {
+        // Filled: filled bg, hover lightens, focus reveals border + white bg
+        const bool focused = input->isInputFocused() && enabled;
+        if (!enabled)
         {
-            return;
+            bgFill = token.colorBgContainerDisabled;
         }
-        painter->setPen(QPen(borderColorFor(input), token.lineWidth));
-        painter->setBrush(token.colorFillQuaternary);
-        painter->drawRect(rect.adjusted(0, 0, -1, -1));
-    };
-    drawAddon(input->addonBeforeRect());
-    drawAddon(input->addonAfterRect());
+        else if (focused)
+        {
+            bgFill = token.colorBgContainer;
+        }
+        else if (input->isInputHovered())
+        {
+            bgFill = token.colorFillTertiary;
+        }
+        else
+        {
+            bgFill = token.colorFillQuaternary;
+        }
+        painter->setPen(focused ? QPen(border, token.lineWidth) : Qt::NoPen);
+        painter->setBrush(bgFill);
+        painter->drawRoundedRect(frame, m.radius, m.radius);
+        break;
+    }
+    case Ant::InputVariant::Borderless:
+    {
+        // Borderless: transparent bg, no border at all
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(enabled ? Qt::transparent : QColor(token.colorBgContainerDisabled));
+        painter->drawRoundedRect(frame, m.radius, m.radius);
+        break;
+    }
+    case Ant::InputVariant::Underlined:
+    {
+        // Underlined: transparent bg, only bottom border
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(enabled ? Qt::transparent : QColor(token.colorBgContainerDisabled));
+        painter->drawRect(frame);
+        painter->setPen(QPen(border, token.lineWidth));
+        painter->drawLine(QPointF(frame.left(), frame.bottom()), QPointF(frame.right(), frame.bottom()));
+        break;
+    }
+    case Ant::InputVariant::Outlined:
+    default:
+    {
+        painter->setPen(QPen(border, token.lineWidth));
+        painter->setBrush(enabled ? token.colorBgContainer : token.colorBgContainerDisabled);
+        painter->drawRoundedRect(frame, m.radius, m.radius);
+        break;
+    }
+    }
+
+    // Addons only make sense on outlined; on other variants they'd look wrong
+    if (variant == Ant::InputVariant::Outlined)
+    {
+        auto drawAddon = [&](const QRect& rect) {
+            if (!rect.isValid() || rect.isEmpty())
+            {
+                return;
+            }
+            painter->setPen(QPen(border, token.lineWidth));
+            painter->setBrush(token.colorFillQuaternary);
+            painter->drawRect(rect.adjusted(0, 0, -1, -1));
+        };
+        drawAddon(input->addonBeforeRect());
+        drawAddon(input->addonAfterRect());
+    }
 
     painter->restore();
 }

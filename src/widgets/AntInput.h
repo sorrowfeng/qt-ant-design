@@ -32,6 +32,8 @@ public:
     void setInputSize(Ant::InputSize size);
     Ant::InputStatus status() const;
     void setStatus(Ant::InputStatus status);
+    Ant::InputVariant variant() const;
+    void setVariant(Ant::InputVariant variant);
     void setError(bool error);
 
     bool allowClear() const;
@@ -57,6 +59,7 @@ Q_SIGNALS:
     void textChanged(const QString& text);
     void inputSizeChanged(Ant::InputSize size);
     void statusChanged(Ant::InputStatus status);
+    void variantChanged(Ant::InputVariant variant);
     void allowClearChanged(bool allowClear);
     void passwordModeChanged(bool passwordMode);
     void focusIn();
@@ -97,6 +100,7 @@ private:
 
     Ant::InputSize m_inputSize = Ant::InputSize::Middle;
     Ant::InputStatus m_status = Ant::InputStatus::Normal;
+    Ant::InputVariant m_variant = Ant::InputVariant::Outlined;
     bool m_allowClear = false;
     bool m_passwordMode = false;
     bool m_passwordVisible = false;

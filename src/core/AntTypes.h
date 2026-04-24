@@ -55,6 +55,15 @@ enum class InputStatus
 };
 Q_ENUM_NS(InputStatus)
 
+enum class InputVariant
+{
+    Outlined,
+    Borderless,
+    Filled,
+    Underlined,
+};
+Q_ENUM_NS(InputVariant)
+
 enum class InputNumberVariant
 {
     Outlined,
@@ -575,6 +584,69 @@ enum class RateSize
     Large,
 };
 Q_ENUM_NS(RateSize)
+
+enum class SegmentedSize
+{
+    Small,
+    Middle,
+    Large,
+};
+Q_ENUM_NS(SegmentedSize)
+
+enum class SegmentedShape
+{
+    Default,
+    Round,
+};
+Q_ENUM_NS(SegmentedShape)
+
+enum class QRCodeErrorLevel
+{
+    L,
+    M,
+    Q,
+    H,
+};
+Q_ENUM_NS(QRCodeErrorLevel)
+
+enum class QRCodeStatus
+{
+    Active,
+    Expired,
+    Loading,
+    Scanned,
+};
+Q_ENUM_NS(QRCodeStatus)
+
+enum class FloatButtonType
+{
+    Default,
+    Primary,
+};
+Q_ENUM_NS(FloatButtonType)
+
+enum class FloatButtonShape
+{
+    Circle,
+    Square,
+};
+Q_ENUM_NS(FloatButtonShape)
+
+enum class FloatButtonTrigger
+{
+    Click,
+    Hover,
+};
+Q_ENUM_NS(FloatButtonTrigger)
+
+enum class FloatButtonPlacement
+{
+    BottomRight,
+    BottomLeft,
+    TopRight,
+    TopLeft,
+};
+Q_ENUM_NS(FloatButtonPlacement)
 
 constexpr int LineWidth = 1;
 constexpr int SizeUnit = 4;
