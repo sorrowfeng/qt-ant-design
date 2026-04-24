@@ -6,17 +6,15 @@
 
 #include <algorithm>
 
+#include "../styles/AntBreadcrumbStyle.h"
 #include "core/AntTheme.h"
 
 AntBreadcrumb::AntBreadcrumb(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntBreadcrumbStyle(style()));
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateBreadcrumbGeometry();
-        update();
-    });
 }
 
 QString AntBreadcrumb::separator() const { return m_separator; }
@@ -100,54 +98,6 @@ QSize AntBreadcrumb::minimumSizeHint() const
 void AntBreadcrumb::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-    QFont textFont = painter.font();
-    textFont.setPixelSize(token.fontSize);
-    painter.setFont(textFont);
-
-    const auto rects = itemRects();
-    for (int i = 0; i < rects.size(); ++i)
-    {
-        const AntBreadcrumbItem& item = m_items.at(i);
-        QRect rect = rects.at(i);
-        if (item.separatorOnly)
-        {
-            painter.setPen(token.colorTextTertiary);
-            painter.drawText(rect, Qt::AlignCenter, item.separator.isEmpty() ? m_separator : item.separator);
-            continue;
-        }
-
-        const bool hovered = i == m_hoveredIndex;
-        if (hovered && !item.disabled && !isLastRouteItem(i))
-        {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(token.colorFillQuaternary);
-            painter.drawRoundedRect(rect.adjusted(-token.paddingXXS, 2, token.paddingXXS, -2),
-                                    token.borderRadiusSM,
-                                    token.borderRadiusSM);
-        }
-
-        painter.setPen(itemColor(item, i, hovered));
-        int x = rect.left();
-        if (!item.iconText.isEmpty())
-        {
-            painter.drawText(QRect(x, rect.top(), 18, rect.height()), Qt::AlignCenter, item.iconText.left(2));
-            x += 18 + token.marginXS / 2;
-        }
-        painter.drawText(QRect(x, rect.top(), rect.right() - x, rect.height()),
-                         Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine,
-                         item.title);
-
-        if (i < m_items.size() - 1 && !m_items.at(i + 1).separatorOnly)
-        {
-            const QRect sepRect(rect.right() + token.marginXS, rect.top(), 20, rect.height());
-            painter.setPen(token.colorTextTertiary);
-            painter.drawText(sepRect, Qt::AlignCenter, m_separator);
-        }
-    }
 }
 
 void AntBreadcrumb::mouseMoveEvent(QMouseEvent* event)

@@ -13,11 +13,13 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
+#include "styles/AntMessageStyle.h"
 #include "styles/AntPalette.h"
 
 AntMessage::AntMessage(QWidget* parent)
     : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
 {
+    setStyle(new AntMessageStyle(style()));
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
     setAttribute(Qt::WA_DeleteOnClose, true);
@@ -30,12 +32,6 @@ AntMessage::AntMessage(QWidget* parent)
     m_loadingTimer = new QTimer(this);
     connect(m_loadingTimer, &QTimer::timeout, this, [this]() {
         m_loadingAngle = (m_loadingAngle + 30) % 360;
-        update();
-    });
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        adjustSize();
-        relayoutMessages(m_anchor);
         update();
     });
 }
@@ -157,38 +153,6 @@ QSize AntMessage::minimumSizeHint() const
 void AntMessage::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    const QRectF bubble = rect().adjusted(8, 4, -8, -8);
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    antTheme->drawEffectShadow(&painter, bubble.toRect(), 10, token.borderRadiusLG, 0.55);
-
-    painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-    painter.setBrush(token.colorBgElevated);
-    painter.drawRoundedRect(bubble, token.borderRadiusLG, token.borderRadiusLG);
-
-    const QRectF iconRect(bubble.left() + token.paddingSM, bubble.center().y() - 8, 16, 16);
-    if (m_messageType == Ant::MessageType::Loading)
-    {
-        drawLoadingIcon(painter, iconRect);
-    }
-    else
-    {
-        QFont iconFont = painter.font();
-        iconFont.setPixelSize(14);
-        iconFont.setWeight(QFont::DemiBold);
-        painter.setFont(iconFont);
-        painter.setPen(accentColor());
-        painter.drawText(iconRect, Qt::AlignCenter, iconText());
-    }
-
-    QFont textFont = painter.font();
-    textFont.setPixelSize(token.fontSize);
-    textFont.setWeight(QFont::Normal);
-    painter.setFont(textFont);
-    painter.setPen(token.colorText);
-    painter.drawText(bubble.adjusted(token.paddingSM + 24, 0, -token.paddingSM, 0), Qt::AlignVCenter | Qt::AlignLeft, m_text);
 }
 
 void AntMessage::showEvent(QShowEvent* event)

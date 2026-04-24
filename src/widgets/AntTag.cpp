@@ -6,16 +6,14 @@
 
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
+#include "styles/AntTagStyle.h"
 
 AntTag::AntTag(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntTagStyle(style()));
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
-        update();
-    });
 }
 
 AntTag::AntTag(const QString& text, QWidget* parent)
@@ -137,40 +135,6 @@ QSize AntTag::minimumSizeHint() const
 void AntTag::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-    const QRectF pill = rect().adjusted(0.5, 1.5, -0.5, -1.5);
-    painter.setPen(QPen(borderColor(), token.lineWidth));
-    painter.setBrush(backgroundColor());
-    painter.drawRoundedRect(pill, token.borderRadiusSM, token.borderRadiusSM);
-
-    QFont f = painter.font();
-    f.setPixelSize(token.fontSizeSM);
-    painter.setFont(f);
-    painter.setPen(textColor());
-
-    int x = token.paddingXS;
-    if (!m_iconText.isEmpty())
-    {
-        painter.drawText(QRect(x - 2, 0, 16, height()), Qt::AlignCenter, m_iconText.left(2));
-        x += 18;
-    }
-    const int rightReserve = m_closable ? 18 : token.paddingXXS;
-    painter.drawText(QRect(x, 0, width() - x - rightReserve, height()), Qt::AlignLeft | Qt::AlignVCenter, m_text);
-
-    if (m_closable)
-    {
-        const QRect close = closeRect();
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(m_closeHovered ? token.colorFillTertiary : Qt::transparent);
-        painter.drawRoundedRect(close, token.borderRadiusXS, token.borderRadiusXS);
-        painter.setPen(QPen(textColor(), 1.3, Qt::SolidLine, Qt::RoundCap));
-        const QPoint c = close.center();
-        painter.drawLine(QPoint(c.x() - 3, c.y() - 3), QPoint(c.x() + 3, c.y() + 3));
-        painter.drawLine(QPoint(c.x() + 3, c.y() - 3), QPoint(c.x() - 3, c.y() + 3));
-    }
 }
 
 void AntTag::mouseMoveEvent(QMouseEvent* event)

@@ -7,6 +7,7 @@
 #include <utility>
 #include <QVBoxLayout>
 
+#include "../styles/AntFormStyle.h"
 #include "core/AntTheme.h"
 
 AntFormItem::AntFormItem(QWidget* parent)
@@ -317,14 +318,11 @@ QColor AntFormItem::helpColor() const
 AntForm::AntForm(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntFormStyle(style()));
     m_layout = new QVBoxLayout(this);
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(m_itemSpacing);
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        rebuildLayout();
-        applyItemSettings();
-    });
 }
 
 Ant::FormLayout AntForm::formLayout() const { return m_formLayout; }

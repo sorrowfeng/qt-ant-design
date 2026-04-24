@@ -6,15 +6,13 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
+#include "styles/AntAvatarStyle.h"
 
 AntAvatar::AntAvatar(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntAvatarStyle(style()));
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
-        update();
-    });
 }
 
 AntAvatar::AntAvatar(const QString& text, QWidget* parent)
@@ -133,49 +131,6 @@ QSize AntAvatar::minimumSizeHint() const
 void AntAvatar::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    const QRectF avatarRect = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
-    const QPainterPath path = clipPath(avatarRect);
-    if (!m_pixmap.isNull())
-    {
-        painter.save();
-        painter.setClipPath(path);
-        painter.drawPixmap(avatarRect, m_pixmap, imageSourceRect(m_pixmap, avatarRect.size()));
-        painter.restore();
-        return;
-    }
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(isEnabled() ? token.colorTextPlaceholder : token.colorBgContainerDisabled);
-    painter.drawPath(path);
-
-    const QString content = !m_iconText.isEmpty() ? m_iconText : m_text;
-    if (content.isEmpty())
-    {
-        return;
-    }
-
-    QFont f = painter.font();
-    f.setPixelSize(!m_iconText.isEmpty() ? iconFontSize() : textFontSize());
-    f.setWeight(QFont::DemiBold);
-    if (m_iconText.isEmpty())
-    {
-        const int available = std::max(1, width() - m_gap * 2);
-        const int textWidth = QFontMetrics(f).horizontalAdvance(content);
-        if (textWidth > available)
-        {
-            const qreal scale = static_cast<qreal>(available) / textWidth;
-            f.setPixelSize(std::max(8, static_cast<int>(f.pixelSize() * scale)));
-        }
-    }
-
-    painter.setFont(f);
-    painter.setPen(isEnabled() ? token.colorTextLightSolid : token.colorTextDisabled);
-    painter.drawText(avatarRect, Qt::AlignCenter, content.left(4));
 }
 
 int AntAvatar::avatarExtent() const

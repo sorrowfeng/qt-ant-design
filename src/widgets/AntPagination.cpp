@@ -8,17 +8,15 @@
 #include <algorithm>
 #include <cmath>
 
+#include "../styles/AntPaginationStyle.h"
 #include "core/AntTheme.h"
 
 AntPagination::AntPagination(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntPaginationStyle(style()));
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updatePaginationGeometry();
-        update();
-    });
 }
 
 int AntPagination::current() const { return m_current; }
@@ -191,17 +189,6 @@ QSize AntPagination::minimumSizeHint() const
 void AntPagination::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-    QFont f = painter.font();
-    f.setPixelSize(fontSize());
-    painter.setFont(f);
-
-    const auto items = pageItems();
-    for (int i = 0; i < items.size(); ++i)
-    {
-        drawItem(painter, items.at(i), i == m_hoveredIndex);
-    }
 }
 
 void AntPagination::mouseMoveEvent(QMouseEvent* event)

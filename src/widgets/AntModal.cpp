@@ -17,6 +17,7 @@
 #include "AntButton.h"
 #include "AntIcon.h"
 #include "core/AntTheme.h"
+#include "styles/AntModalStyle.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -113,6 +114,7 @@ QRect fallbackGeometry()
 AntModal::AntModal(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntModalStyle(style()));
     setAttribute(Qt::WA_StyledBackground, false);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_DeleteOnClose, false);
@@ -176,12 +178,6 @@ AntModal::AntModal(QWidget* parent)
     dialogLayout->addWidget(m_headerWidget);
     dialogLayout->addWidget(m_bodyWidget);
     dialogLayout->addWidget(m_footerWidgetHost);
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        syncTheme();
-        updateDialogGeometry();
-        update();
-    });
 
     syncBody();
     syncFooter();
@@ -435,10 +431,6 @@ bool AntModal::eventFilter(QObject* watched, QEvent* event)
 void AntModal::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
-    const qreal opacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.58 : 0.45;
-    painter.fillRect(rect(), AntPalette::alpha(Qt::black, opacity));
 }
 
 void AntModal::mousePressEvent(QMouseEvent* event)

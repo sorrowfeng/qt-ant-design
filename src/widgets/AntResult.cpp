@@ -7,14 +7,12 @@
 #include "AntIcon.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
+#include "styles/AntResultStyle.h"
 
 AntResult::AntResult(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
-        update();
-    });
+    setStyle(new AntResultStyle(style()));
 }
 
 AntResult::AntResult(const QString& title, QWidget* parent)
@@ -154,45 +152,6 @@ QSize AntResult::minimumSizeHint() const
 void AntResult::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-
-    const Metrics m = metrics();
-    const auto& token = antTheme->tokens();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
-    if (m_iconVisible)
-    {
-        const QRect ir = iconRect();
-        AntIcon icon(iconTypeForStatus());
-        icon.setIconTheme(Ant::IconTheme::Filled);
-        icon.setColor(iconColor());
-        icon.setIconSize(m.iconSize);
-        icon.resize(ir.size());
-
-        QPixmap pixmap(ir.size() * devicePixelRatioF());
-        pixmap.setDevicePixelRatio(devicePixelRatioF());
-        pixmap.fill(Qt::transparent);
-        icon.render(&pixmap);
-        painter.drawPixmap(ir.topLeft(), pixmap);
-    }
-
-    QFont titleFont = painter.font();
-    titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(QFont::DemiBold);
-    painter.setFont(titleFont);
-    painter.setPen(token.colorText);
-    painter.drawText(titleRect(), Qt::AlignCenter | Qt::TextWordWrap, m_title);
-
-    if (!m_subTitle.isEmpty())
-    {
-        QFont subFont = painter.font();
-        subFont.setPixelSize(m.subTitleFontSize);
-        subFont.setWeight(QFont::Normal);
-        painter.setFont(subFont);
-        painter.setPen(token.colorTextSecondary);
-        painter.drawText(subTitleRect(), Qt::AlignCenter | Qt::TextWordWrap, m_subTitle);
-    }
 }
 
 void AntResult::resizeEvent(QResizeEvent* event)

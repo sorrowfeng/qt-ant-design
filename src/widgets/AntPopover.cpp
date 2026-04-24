@@ -8,6 +8,7 @@
 #include <QTimer>
 
 #include "core/AntTheme.h"
+#include "styles/AntPopoverStyle.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -43,6 +44,7 @@ bool isBottomPlacement(Ant::TooltipPlacement placement)
 AntPopover::AntPopover(QWidget* parent)
     : QWidget(parent, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
 {
+    setStyle(new AntPopoverStyle(style()));
     setAttribute(Qt::WA_TranslucentBackground, true);
     setMouseTracking(true);
 
@@ -57,14 +59,6 @@ AntPopover::AntPopover(QWidget* parent)
         {
             setOpen(false);
         }
-    });
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        if (isVisible())
-        {
-            updatePosition();
-        }
-        update();
     });
 }
 
@@ -279,36 +273,6 @@ bool AntPopover::eventFilter(QObject* watched, QEvent* event)
 void AntPopover::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    const QRect bubble = bubbleRect();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-    antTheme->drawEffectShadow(&painter, bubble, 12, token.borderRadiusLG, 0.55);
-    painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-    painter.setBrush(token.colorBgElevated);
-    painter.drawRoundedRect(bubble, token.borderRadiusLG, token.borderRadiusLG);
-    if (m_arrowVisible)
-    {
-        painter.drawPolygon(arrowPolygon());
-    }
-
-    if (!m_title.isEmpty())
-    {
-        QFont titleFont = painter.font();
-        titleFont.setPixelSize(token.fontSize);
-        titleFont.setWeight(QFont::DemiBold);
-        painter.setFont(titleFont);
-        painter.setPen(token.colorText);
-        painter.drawText(headerRect(), Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, m_title);
-    }
-
-    QFont bodyFont = painter.font();
-    bodyFont.setPixelSize(token.fontSizeSM);
-    bodyFont.setWeight(QFont::Normal);
-    painter.setFont(bodyFont);
-    painter.setPen(token.colorTextSecondary);
-    painter.drawText(bodyRect(), Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, m_content);
 }
 
 void AntPopover::resizeEvent(QResizeEvent* event)

@@ -8,6 +8,7 @@
 
 #include <algorithm>
 
+#include "../styles/AntMenuStyle.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -23,13 +24,10 @@ QColor withAlpha(QColor color, int alpha)
 AntMenu::AntMenu(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntMenuStyle(style()));
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateMenuGeometry();
-        update();
-    });
 }
 
 Ant::MenuMode AntMenu::mode() const { return m_mode; }
@@ -236,38 +234,6 @@ QSize AntMenu::minimumSizeHint() const
 void AntMenu::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    painter.fillRect(rect(), menuBackgroundColor());
-
-    if (m_mode != Ant::MenuMode::Horizontal)
-    {
-        painter.setPen(m_menuTheme == Ant::MenuTheme::Dark ? Qt::NoPen : QPen(token.colorSplit, token.lineWidth));
-        painter.drawLine(rect().topRight(), rect().bottomRight());
-    }
-    else
-    {
-        painter.setPen(m_menuTheme == Ant::MenuTheme::Dark ? Qt::NoPen : QPen(token.colorSplit, token.lineWidth));
-        painter.drawLine(rect().bottomLeft(), rect().bottomRight());
-    }
-
-    for (const auto& visible : visibleItems())
-    {
-        const AntMenuItem& item = m_items.at(visible.index);
-        if (item.divider)
-        {
-            painter.setPen(m_menuTheme == Ant::MenuTheme::Dark ? withAlpha(Qt::white, 18) : QPen(token.colorSplit, token.lineWidth).color());
-            const int y = visible.rect.center().y();
-            painter.drawLine(visible.rect.left() + token.marginSM, y, visible.rect.right() - token.marginSM, y);
-            continue;
-        }
-
-        const bool selected = item.key == m_selectedKey && !item.subMenu;
-        const bool hovered = visible.index == m_hoveredIndex;
-        drawItem(painter, item, visible.rect, selected, hovered);
-    }
 }
 
 void AntMenu::mouseMoveEvent(QMouseEvent* event)

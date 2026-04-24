@@ -5,14 +5,12 @@
 #include <QResizeEvent>
 
 #include "core/AntTheme.h"
+#include "styles/AntStatisticStyle.h"
 
 AntStatistic::AntStatistic(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
-        update();
-    });
+    setStyle(new AntStatisticStyle(style()));
 }
 
 AntStatistic::AntStatistic(const QString& title, QWidget* parent)
@@ -176,83 +174,6 @@ QSize AntStatistic::minimumSizeHint() const
 void AntStatistic::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-
-    const Metrics m = metrics();
-    const auto& token = antTheme->tokens();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-    if (!m_title.isEmpty())
-    {
-        QFont titleFont = painter.font();
-        titleFont.setPixelSize(m.titleFontSize);
-        painter.setFont(titleFont);
-        painter.setPen(token.colorTextSecondary);
-        painter.drawText(titleRect(), Qt::AlignLeft | Qt::AlignVCenter, m_title);
-    }
-
-    const QRect vr = valueRect();
-
-    QFont valueFont = painter.font();
-    valueFont.setPixelSize(m.valueFontSize);
-    valueFont.setWeight(QFont::DemiBold);
-    QFontMetrics valueFm(valueFont);
-
-    const QString formatted = formattedValue();
-    int contentWidth = valueFm.horizontalAdvance(formatted);
-
-    if (!m_prefix.isEmpty())
-    {
-        QFont prefixFont = painter.font();
-        prefixFont.setPixelSize(m.prefixFontSize);
-        prefixFont.setWeight(QFont::DemiBold);
-        QFontMetrics prefixFm(prefixFont);
-        contentWidth += prefixFm.horizontalAdvance(m_prefix) + m.spacing;
-    }
-    if (!m_suffix.isEmpty())
-    {
-        QFont suffixFont = painter.font();
-        suffixFont.setPixelSize(m.suffixFontSize);
-        suffixFont.setWeight(QFont::Normal);
-        QFontMetrics suffixFm(suffixFont);
-        contentWidth += m.spacing + suffixFm.horizontalAdvance(m_suffix);
-    }
-
-    int x = vr.left();
-    const int centerY = vr.top() + vr.height() / 2;
-
-    if (!m_prefix.isEmpty())
-    {
-        QFont prefixFont = painter.font();
-        prefixFont.setPixelSize(m.prefixFontSize);
-        prefixFont.setWeight(QFont::DemiBold);
-        painter.setFont(prefixFont);
-        painter.setPen(token.colorText);
-        QFontMetrics prefixFm(prefixFont);
-        const int prefixBaseline = centerY + prefixFm.ascent() / 2 - prefixFm.descent() / 2;
-        painter.drawText(x, prefixBaseline, m_prefix);
-        x += prefixFm.horizontalAdvance(m_prefix) + m.spacing;
-    }
-
-    painter.setFont(valueFont);
-    painter.setPen(token.colorText);
-    const int valueBaseline = centerY + valueFm.ascent() / 2 - valueFm.descent() / 2;
-    painter.drawText(x, valueBaseline, formatted);
-    x += valueFm.horizontalAdvance(formatted);
-
-    if (!m_suffix.isEmpty())
-    {
-        x += m.spacing;
-        QFont suffixFont = painter.font();
-        suffixFont.setPixelSize(m.suffixFontSize);
-        suffixFont.setWeight(QFont::Normal);
-        painter.setFont(suffixFont);
-        painter.setPen(token.colorTextSecondary);
-        QFontMetrics suffixFm(suffixFont);
-        const int suffixBaseline = centerY + suffixFm.ascent() / 2 - suffixFm.descent() / 2;
-        painter.drawText(x, suffixBaseline, m_suffix);
-    }
 }
 
 void AntStatistic::resizeEvent(QResizeEvent* event)

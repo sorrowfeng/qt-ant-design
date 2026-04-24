@@ -21,15 +21,44 @@ set(QT_ANT_DESIGN_HEADERS
     src/core/AntTypes.h
     src/core/AntTheme.h
     src/styles/AntButtonStyle.h
+    src/styles/AntCardStyle.h
     src/styles/AntCheckboxStyle.h
+    src/styles/AntDatePickerStyle.h
+    src/styles/AntDescriptionsStyle.h
+    src/styles/AntDividerStyle.h
+    src/styles/AntDropdownStyle.h
+    src/styles/AntBreadcrumbStyle.h
+    src/styles/AntFormStyle.h
     src/styles/AntInputStyle.h
     src/styles/AntInputNumberStyle.h
+    src/styles/AntListStyle.h
+    src/styles/AntMenuStyle.h
+    src/styles/AntPaginationStyle.h
     src/styles/AntPalette.h
     src/styles/AntRadioStyle.h
     src/styles/AntSelectStyle.h
     src/styles/AntSliderStyle.h
     src/styles/AntSpinStyle.h
+    src/styles/AntStepsStyle.h
     src/styles/AntSwitchStyle.h
+    src/styles/AntTabsStyle.h
+    src/styles/AntTimePickerStyle.h
+    src/styles/AntAlertStyle.h
+    src/styles/AntAvatarStyle.h
+    src/styles/AntBadgeStyle.h
+    src/styles/AntEmptyStyle.h
+    src/styles/AntIconStyle.h
+    src/styles/AntMessageStyle.h
+    src/styles/AntModalStyle.h
+    src/styles/AntNotificationStyle.h
+    src/styles/AntPopoverStyle.h
+    src/styles/AntPopconfirmStyle.h
+    src/styles/AntProgressStyle.h
+    src/styles/AntResultStyle.h
+    src/styles/AntSkeletonStyle.h
+    src/styles/AntStatisticStyle.h
+    src/styles/AntTagStyle.h
+    src/styles/AntTooltipStyle.h
     src/widgets/AntAlert.h
     src/widgets/AntAvatar.h
     src/widgets/AntBadge.h
@@ -73,15 +102,44 @@ set(QT_ANT_DESIGN_HEADERS
 set(QT_ANT_DESIGN_SOURCES
     src/core/AntTheme.cpp
     src/styles/AntButtonStyle.cpp
+    src/styles/AntCardStyle.cpp
     src/styles/AntCheckboxStyle.cpp
+    src/styles/AntDatePickerStyle.cpp
+    src/styles/AntDescriptionsStyle.cpp
+    src/styles/AntDividerStyle.cpp
+    src/styles/AntDropdownStyle.cpp
+    src/styles/AntBreadcrumbStyle.cpp
+    src/styles/AntFormStyle.cpp
     src/styles/AntInputStyle.cpp
     src/styles/AntInputNumberStyle.cpp
+    src/styles/AntListStyle.cpp
+    src/styles/AntMenuStyle.cpp
+    src/styles/AntPaginationStyle.cpp
     src/styles/AntPalette.cpp
     src/styles/AntRadioStyle.cpp
     src/styles/AntSelectStyle.cpp
     src/styles/AntSliderStyle.cpp
     src/styles/AntSpinStyle.cpp
+    src/styles/AntStepsStyle.cpp
     src/styles/AntSwitchStyle.cpp
+    src/styles/AntTabsStyle.cpp
+    src/styles/AntTimePickerStyle.cpp
+    src/styles/AntAvatarStyle.cpp
+    src/styles/AntBadgeStyle.cpp
+    src/styles/AntEmptyStyle.cpp
+    src/styles/AntResultStyle.cpp
+    src/styles/AntSkeletonStyle.cpp
+    src/styles/AntStatisticStyle.cpp
+    src/styles/AntTagStyle.cpp
+    src/styles/AntAlertStyle.cpp
+    src/styles/AntIconStyle.cpp
+    src/styles/AntMessageStyle.cpp
+    src/styles/AntModalStyle.cpp
+    src/styles/AntNotificationStyle.cpp
+    src/styles/AntPopoverStyle.cpp
+    src/styles/AntPopconfirmStyle.cpp
+    src/styles/AntProgressStyle.cpp
+    src/styles/AntTooltipStyle.cpp
     src/widgets/AntAlert.cpp
     src/widgets/AntAvatar.cpp
     src/widgets/AntBadge.cpp

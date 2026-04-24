@@ -9,6 +9,7 @@
 #include <QPainterPath>
 #include <QStringList>
 
+#include "../styles/AntDatePickerStyle.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -278,22 +279,13 @@ private:
 AntDatePicker::AntDatePicker(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntDatePickerStyle(style()));
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
     m_panelDate = QDate::currentDate();
     m_popup = new AntDatePickerPopup(this);
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updatePopupGeometry();
-        updateGeometry();
-        update();
-        if (m_popup)
-        {
-            m_popup->update();
-        }
-    });
 
     updateCursor();
 }
@@ -465,72 +457,6 @@ QSize AntDatePicker::minimumSizeHint() const
 void AntDatePicker::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const QRectF control = controlRect();
-    const bool focused = hasFocus() || m_open;
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
-    if (focused && isEnabled() && m_variant != Ant::DatePickerVariant::Borderless && m_variant != Ant::DatePickerVariant::Underlined)
-    {
-        painter.setPen(QPen(AntPalette::alpha(borderColor(), 0.16), token.controlOutlineWidth));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(control.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
-    }
-
-    if (m_variant != Ant::DatePickerVariant::Borderless && m_variant != Ant::DatePickerVariant::Underlined)
-    {
-        painter.setPen(QPen(borderColor(), token.lineWidth));
-        painter.setBrush(backgroundColor());
-        painter.drawRoundedRect(control.adjusted(0.5, 0.5, -0.5, -0.5), m.radius, m.radius);
-    }
-    else
-    {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(backgroundColor());
-        painter.drawRoundedRect(control, m.radius, m.radius);
-        if (m_variant == Ant::DatePickerVariant::Underlined)
-        {
-            painter.setPen(QPen(borderColor(), focused ? 2 : token.lineWidth));
-            painter.drawLine(QPointF(control.left(), control.bottom() - 0.5), QPointF(control.right(), control.bottom() - 0.5));
-        }
-    }
-
-    QFont f = painter.font();
-    f.setPixelSize(m.fontSize);
-    painter.setFont(f);
-
-    const QString text = hasSelectedDate() ? dateString() : m_placeholderText;
-    QColor textColor = hasSelectedDate() ? token.colorText : token.colorTextPlaceholder;
-    if (!isEnabled())
-    {
-        textColor = token.colorTextDisabled;
-    }
-    painter.setPen(textColor);
-    painter.drawText(control.adjusted(m.paddingX, 0, -(m.iconWidth + m.paddingX), 0), Qt::AlignVCenter | Qt::AlignLeft, text);
-
-    const QRectF icon = iconRect(m);
-    if (canClear())
-    {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(token.colorBgBase);
-        painter.drawEllipse(icon.adjusted(5, 5, -5, -5));
-        painter.setPen(QPen(token.colorTextTertiary, 1.5, Qt::SolidLine, Qt::RoundCap));
-        painter.drawLine(icon.center() + QPointF(-4, -4), icon.center() + QPointF(4, 4));
-        painter.drawLine(icon.center() + QPointF(4, -4), icon.center() + QPointF(-4, 4));
-    }
-    else
-    {
-        painter.setPen(QPen(isEnabled() ? token.colorTextTertiary : token.colorTextDisabled, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        painter.setBrush(Qt::NoBrush);
-        QRectF cal = icon.adjusted(7, 6, -7, -6);
-        painter.drawRoundedRect(cal, 2, 2);
-        painter.drawLine(QPointF(cal.left(), cal.top() + 5), QPointF(cal.right(), cal.top() + 5));
-        painter.drawLine(QPointF(cal.left() + 4, cal.top() - 2), QPointF(cal.left() + 4, cal.top() + 3));
-        painter.drawLine(QPointF(cal.right() - 4, cal.top() - 2), QPointF(cal.right() - 4, cal.top() + 3));
-    }
 }
 
 void AntDatePicker::enterEvent(QEnterEvent* event)

@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
+#include "styles/AntNotificationStyle.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -41,6 +42,7 @@ bool isRightPlacement(Ant::NotificationPlacement placement)
 AntNotification::AntNotification(QWidget* parent)
     : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
 {
+    setStyle(new AntNotificationStyle(style()));
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
     setAttribute(Qt::WA_DeleteOnClose, true);
@@ -56,12 +58,6 @@ AntNotification::AntNotification(QWidget* parent)
     m_spinnerTimer = new QTimer(this);
     connect(m_spinnerTimer, &QTimer::timeout, this, [this]() {
         m_spinnerAngle = (m_spinnerAngle + 30) % 360;
-        update();
-    });
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        adjustSize();
-        relayoutNotifications(m_anchor);
         update();
     });
 }
@@ -286,67 +282,6 @@ QSize AntNotification::minimumSizeHint() const
 void AntNotification::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    const QRectF card = noticeRect();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    antTheme->drawEffectShadow(&painter, card.toRect(), 14, token.borderRadiusLG, 0.7);
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(token.colorBgElevated);
-    painter.drawRoundedRect(card, token.borderRadiusLG, token.borderRadiusLG);
-
-    const QRectF iconRect(card.left() + token.paddingLG, card.top() + token.padding + 2, 22, 22);
-    drawTypeIcon(painter, iconRect);
-
-    if (m_closable)
-    {
-        const QRectF closeRect = closeButtonRect();
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(m_closeHovered ? token.colorFillTertiary : Qt::transparent);
-        painter.drawRoundedRect(closeRect, token.borderRadiusSM, token.borderRadiusSM);
-        painter.setPen(QPen(m_closeHovered ? token.colorTextSecondary : token.colorTextTertiary, 1.6, Qt::SolidLine, Qt::RoundCap));
-        const QPointF c = closeRect.center();
-        painter.drawLine(QPointF(c.x() - 4, c.y() - 4), QPointF(c.x() + 4, c.y() + 4));
-        painter.drawLine(QPointF(c.x() + 4, c.y() - 4), QPointF(c.x() - 4, c.y() + 4));
-    }
-
-    const qreal textLeft = iconRect.right() + token.marginSM;
-    const qreal textRight = card.right() - token.paddingLG - (m_closable ? 28 : 0);
-    QRectF titleRect(textLeft, card.top() + token.padding - 1, textRight - textLeft, token.controlHeightSM);
-
-    QFont titleFont = painter.font();
-    titleFont.setPixelSize(token.fontSizeLG);
-    titleFont.setWeight(QFont::DemiBold);
-    painter.setFont(titleFont);
-    painter.setPen(token.colorText);
-    if (!m_title.isEmpty())
-    {
-        painter.drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, m_title);
-        titleRect.moveTop(titleRect.bottom() + token.marginXS - 2);
-    }
-
-    QFont descFont = painter.font();
-    descFont.setPixelSize(token.fontSize);
-    descFont.setWeight(QFont::Normal);
-    painter.setFont(descFont);
-    painter.setPen(token.colorTextSecondary);
-    QTextOption option;
-    option.setWrapMode(QTextOption::WordWrap);
-    option.setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    const QRectF descRect(textLeft, titleRect.top(), textRight - textLeft, card.bottom() - titleRect.top() - token.padding);
-    painter.drawText(descRect, m_description, option);
-
-    if (m_showProgress && m_duration > 0)
-    {
-        const QRectF track(card.left(), card.bottom() - 2, card.width(), 2);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(token.colorFillQuaternary);
-        painter.drawRect(track);
-        painter.setBrush(accentColor());
-        painter.drawRect(QRectF(track.left(), track.top(), track.width() * progressRatio(), track.height()));
-    }
 }
 
 void AntNotification::showEvent(QShowEvent* event)

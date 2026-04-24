@@ -6,10 +6,12 @@
 #include "AntButton.h"
 #include "AntPopover.h"
 #include "core/AntTheme.h"
+#include "styles/AntPopconfirmStyle.h"
 
 AntPopconfirm::AntPopconfirm(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntPopconfirmStyle(style()));
     m_popover = new AntPopover(this);
     m_popover->setTrigger(Ant::PopoverTrigger::Click);
     m_popover->setTitle(QString());
@@ -17,11 +19,6 @@ AntPopconfirm::AntPopconfirm(QWidget* parent)
 
     rebuildActionWidget();
     syncPopoverContent();
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        rebuildActionWidget();
-        syncPopoverContent();
-    });
 }
 
 QString AntPopconfirm::title() const { return m_title; }

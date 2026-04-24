@@ -8,20 +8,17 @@
 
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
+#include "styles/AntSkeletonStyle.h"
 
 AntSkeleton::AntSkeleton(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntSkeletonStyle(style()));
     setAttribute(Qt::WA_Hover, false);
 
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, [this]() {
         m_shimmerOffset = (m_shimmerOffset + 18) % qMax(160, width() + 160);
-        update();
-    });
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
         update();
     });
 
@@ -249,50 +246,6 @@ QSize AntSkeleton::minimumSizeHint() const
 void AntSkeleton::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    if (!m_loading)
-    {
-        return;
-    }
-
-    const auto& token = antTheme->tokens();
-    const QList<QRectF> rects = placeholderRects();
-    if (rects.isEmpty())
-    {
-        return;
-    }
-
-    const QColor baseColor = token.colorFillTertiary;
-    const QColor highlight = AntPalette::mix(token.colorBgContainer, token.colorFillQuaternary, 0.45);
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    painter.setPen(Qt::NoPen);
-
-    for (const QRectF& rect : rects)
-    {
-        QBrush brush(baseColor);
-        if (m_active)
-        {
-            QLinearGradient gradient(rect.topLeft(), rect.topRight());
-            const qreal widthValue = qMax<qreal>(rect.width(), 1.0);
-            const qreal offset = static_cast<qreal>(m_shimmerOffset % static_cast<int>(widthValue + 120)) / widthValue;
-            gradient.setColorAt(qMax(0.0, offset - 0.6), baseColor);
-            gradient.setColorAt(qBound(0.0, offset - 0.2, 1.0), baseColor);
-            gradient.setColorAt(qBound(0.0, offset, 1.0), highlight);
-            gradient.setColorAt(qBound(0.0, offset + 0.2, 1.0), baseColor);
-            gradient.setColorAt(1.0, baseColor);
-            brush = QBrush(gradient);
-        }
-
-        painter.setBrush(brush);
-        qreal radius = m_round ? rect.height() / 2.0 : metrics().radius;
-        if (m_avatarVisible && rect.height() == metrics().avatarSize && rect.width() == metrics().avatarSize &&
-            m_avatarShape == Ant::AvatarShape::Circle)
-        {
-            radius = rect.width() / 2.0;
-        }
-        painter.drawRoundedRect(rect, radius, radius);
-    }
 }
 
 void AntSkeleton::resizeEvent(QResizeEvent* event)

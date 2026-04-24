@@ -6,11 +6,13 @@
 #include <QPainter>
 #include <QVBoxLayout>
 
+#include "../styles/AntCardStyle.h"
 #include "core/AntTheme.h"
 
 AntCard::AntCard(QWidget* parent)
     : QFrame(parent)
 {
+    setStyle(new AntCardStyle(style()));
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     setFrameShape(QFrame::NoFrame);
@@ -42,10 +44,6 @@ AntCard::AntCard(QWidget* parent)
     m_rootLayout->addWidget(m_body, 1);
     m_rootLayout->addWidget(m_actions);
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateTheme();
-        update();
-    });
     connect(&m_spinnerTimer, &QTimer::timeout, this, [this]() {
         m_spinnerAngle = (m_spinnerAngle + 30) % 360;
         update();
@@ -189,42 +187,6 @@ void AntCard::clearActions()
 void AntCard::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    const int radius = token.borderRadiusLG;
-    QRect cardRect = rect().adjusted(0, 0, -1, -1);
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-    if (m_hoverable && m_hovered)
-    {
-        antTheme->drawEffectShadow(&painter, rect(), 12, radius, 1.35);
-        cardRect.adjust(2, 2, -2, -2);
-    }
-
-    painter.setPen(m_bordered ? QPen(token.colorBorderSecondary, token.lineWidth) : Qt::NoPen);
-    painter.setBrush(token.colorBgContainer);
-    painter.drawRoundedRect(QRectF(cardRect), radius, radius);
-
-    if (m_header->isVisible())
-    {
-        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-        painter.drawLine(cardRect.left() + 1, m_header->geometry().bottom(), cardRect.right() - 1, m_header->geometry().bottom());
-    }
-    if (m_actions->isVisible())
-    {
-        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-        painter.drawLine(cardRect.left() + 1, m_actions->geometry().top(), cardRect.right() - 1, m_actions->geometry().top());
-    }
-    if (m_loading)
-    {
-        QColor mask = token.colorBgContainer;
-        mask.setAlphaF(0.72);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(mask);
-        painter.drawRoundedRect(QRectF(cardRect), radius, radius);
-        drawSpinner(painter, QRectF(width() / 2.0 - 14, height() / 2.0 - 14, 28, 28));
-    }
 }
 
 void AntCard::enterEvent(QEnterEvent* event)

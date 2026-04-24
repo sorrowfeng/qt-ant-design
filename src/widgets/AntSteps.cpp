@@ -3,17 +3,15 @@
 #include <QMouseEvent>
 #include <QPainter>
 
+#include "../styles/AntStepsStyle.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
 AntSteps::AntSteps(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntStepsStyle(style()));
     setMouseTracking(true);
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
-        update();
-    });
 }
 
 int AntSteps::currentIndex() const { return m_currentIndex; }
@@ -125,124 +123,6 @@ QSize AntSteps::minimumSizeHint() const
 void AntSteps::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    const QVector<QRect> rects = itemRects();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
-    for (int i = 0; i < rects.size(); ++i)
-    {
-        const QRect itemRect = rects.at(i);
-        const QRect circle = iconRect(itemRect);
-        const QRect textArea = textRect(itemRect);
-        const Ant::StepStatus status = effectiveStatus(i);
-        const QColor color = statusColor(status);
-        const bool disabled = m_steps.at(i).disabled;
-        const bool hovered = i == m_hoveredIndex && m_clickable && !disabled;
-
-        if (i < rects.size() - 1)
-        {
-            if (m_direction == Ant::StepsDirection::Horizontal)
-            {
-                const int y = circle.center().y();
-                const int x1 = circle.right() + 8;
-                const int x2 = rects.at(i + 1).left() - 8;
-                painter.setPen(QPen(i < m_currentIndex ? token.colorPrimary : token.colorSplit,
-                                    m.tailThickness,
-                                    Qt::SolidLine,
-                                    Qt::RoundCap));
-                painter.drawLine(QPoint(x1, y), QPoint(x2, y));
-            }
-            else
-            {
-                const int x = circle.center().x();
-                const int y1 = circle.bottom() + 8;
-                const int y2 = rects.at(i + 1).top() + 8;
-                painter.setPen(QPen(i < m_currentIndex ? token.colorPrimary : token.colorSplit,
-                                    m.tailThickness,
-                                    Qt::SolidLine,
-                                    Qt::RoundCap));
-                painter.drawLine(QPoint(x, y1), QPoint(x, y2));
-            }
-        }
-
-        QColor fill = Qt::transparent;
-        QColor border = color;
-        QColor numberColor = color;
-        if (status == Ant::StepStatus::Process)
-        {
-            fill = color;
-            numberColor = token.colorTextLightSolid;
-        }
-        else if (status == Ant::StepStatus::Finish)
-        {
-            fill = token.colorBgContainer;
-        }
-        else if (status == Ant::StepStatus::Error)
-        {
-            fill = token.colorBgContainer;
-            border = token.colorError;
-            numberColor = token.colorError;
-        }
-        else
-        {
-            border = disabled ? token.colorBorderDisabled : token.colorBorder;
-            numberColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
-        }
-
-        if (hovered)
-        {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(AntPalette::alpha(token.colorPrimary, 0.08));
-            painter.drawEllipse(circle.adjusted(-4, -4, 4, 4));
-        }
-
-        painter.setPen(QPen(border, 2));
-        painter.setBrush(fill);
-        painter.drawEllipse(circle);
-
-        QFont iconFont = painter.font();
-        iconFont.setPixelSize(14);
-        iconFont.setWeight(QFont::DemiBold);
-        painter.setFont(iconFont);
-        painter.setPen(numberColor);
-        painter.drawText(circle, Qt::AlignCenter, iconText(status, i));
-
-        QFont titleFont = painter.font();
-        titleFont.setPixelSize(m.titleFontSize);
-        titleFont.setWeight(status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
-        painter.setFont(titleFont);
-        painter.setPen(disabled ? token.colorTextDisabled : (status == Ant::StepStatus::Wait ? token.colorTextSecondary : token.colorText));
-        QRect titleRect = textArea;
-        titleRect.setHeight(m.titleFontSize + 8);
-        painter.drawText(titleRect, Qt::AlignLeft | Qt::AlignTop, m_steps.at(i).title);
-
-        if (!m_steps.at(i).subTitle.isEmpty())
-        {
-            QFont subFont = painter.font();
-            subFont.setPixelSize(m.descFontSize);
-            painter.setFont(subFont);
-            painter.setPen(token.colorTextTertiary);
-            QRect subRect = titleRect;
-            subRect.moveTop(titleRect.bottom() + 2);
-            subRect.setHeight(m.descFontSize + 6);
-            painter.drawText(subRect, Qt::AlignLeft | Qt::AlignTop, m_steps.at(i).subTitle);
-        }
-
-        if (!m_steps.at(i).description.isEmpty())
-        {
-            QFont descFont = painter.font();
-            descFont.setPixelSize(m.descFontSize);
-            descFont.setWeight(QFont::Normal);
-            painter.setFont(descFont);
-            painter.setPen(disabled ? token.colorTextDisabled : token.colorTextSecondary);
-            QRect descRect = textArea;
-            descRect.setTop(titleRect.bottom() + (m_steps.at(i).subTitle.isEmpty() ? 6 : 22));
-            painter.drawText(descRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, m_steps.at(i).description);
-        }
-    }
 }
 
 void AntSteps::mouseMoveEvent(QMouseEvent* event)

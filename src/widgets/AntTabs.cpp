@@ -9,11 +9,13 @@
 
 #include <algorithm>
 
+#include "../styles/AntTabsStyle.h"
 #include "core/AntTheme.h"
 
 AntTabs::AntTabs(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntTabsStyle(style()));
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
@@ -21,10 +23,6 @@ AntTabs::AntTabs(QWidget* parent)
     m_stack->setObjectName(QStringLiteral("AntTabsStack"));
     m_stack->setAutoFillBackground(false);
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateStackGeometry();
-        update();
-    });
 }
 
 QString AntTabs::activeKey() const { return m_activeKey; }
@@ -256,37 +254,6 @@ QSize AntTabs::minimumSizeHint() const
 void AntTabs::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    const auto& token = antTheme->tokens();
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    painter.fillRect(rect(), token.colorBgContainer);
-
-    const QRect bar = tabBarRect();
-    painter.setPen(QPen(token.colorSplit, token.lineWidth));
-    if (isHorizontal())
-    {
-        const int y = m_tabPlacement == Ant::TabsPlacement::Top ? bar.bottom() : bar.top();
-        painter.drawLine(bar.left(), y, bar.right(), y);
-    }
-    else
-    {
-        const int x = m_tabPlacement == Ant::TabsPlacement::Left ? bar.right() : bar.left();
-        painter.drawLine(x, bar.top(), x, bar.bottom());
-    }
-
-    const auto rects = tabRects();
-    for (int i = 0; i < rects.size(); ++i)
-    {
-        const bool active = m_tabs.at(i).key == m_activeKey;
-        const bool hovered = i == m_hoveredIndex;
-        drawTab(painter, m_tabs.at(i), rects.at(i), active, hovered);
-    }
-
-    const QRect addRect = addButtonRect();
-    if (!addRect.isNull())
-    {
-        drawAddButton(painter, addRect);
-    }
 }
 
 void AntTabs::resizeEvent(QResizeEvent* event)

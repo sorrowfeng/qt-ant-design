@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QResizeEvent>
 
+#include "../styles/AntListStyle.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -385,11 +386,7 @@ void AntListItem::syncLayout()
 AntList::AntList(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        syncLayout();
-        updateGeometry();
-        update();
-    });
+    setStyle(new AntListStyle(style()));
 }
 
 bool AntList::isBordered() const { return m_bordered; }
@@ -565,60 +562,6 @@ QSize AntList::minimumSizeHint() const
 void AntList::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-
-    const Metrics m = metrics();
-    const auto& token = antTheme->tokens();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing);
-
-    if (m_bordered)
-    {
-        painter.setPen(QPen(token.colorBorder, token.lineWidth));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(rect().adjusted(0, 0, -1, -1), m.radius, m.radius);
-    }
-
-    if (m_header)
-    {
-        const QRect hr = headerRect();
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(token.colorFillQuaternary);
-        if (m_bordered)
-        {
-            painter.drawRect(hr);
-        }
-        else
-        {
-            painter.drawRoundedRect(hr, m.radius, m.radius);
-        }
-        painter.setPen(QPen(token.colorBorder, token.lineWidth));
-        painter.drawLine(hr.bottomLeft(), hr.bottomRight());
-    }
-
-    if (m_split && m_items.size() > 1)
-    {
-        painter.setPen(QPen(token.colorSplit, token.lineWidth));
-        const QRect cr = contentRect();
-        int y = cr.top();
-        for (int i = 0; i < m_items.size() - 1; ++i)
-        {
-            const auto& item = m_items.at(i);
-            if (item)
-            {
-                y += item->sizeHint().height();
-                painter.drawLine(cr.left() + m.itemPaddingH, y, cr.right() - m.itemPaddingH, y);
-                y += 1;
-            }
-        }
-    }
-
-    if (m_footer)
-    {
-        const QRect fr = footerRect();
-        painter.setPen(QPen(token.colorBorder, token.lineWidth));
-        painter.drawLine(fr.topLeft(), fr.topRight());
-    }
 }
 
 void AntList::resizeEvent(QResizeEvent* event)

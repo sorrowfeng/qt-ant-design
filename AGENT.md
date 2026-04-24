@@ -26,8 +26,8 @@
 
 - 同步日期：`2026-04-24`
 - 已实现组件总数：`38`
-- 已迁移至 `QProxyStyle` 的组件数：`9`
-- 仍使用 `paintEvent` 的组件数：`29`
+- 已迁移至 `QProxyStyle` 的组件数：`38`
+- 仍使用 `paintEvent` 的组件数：`0`
 - 示例程序覆盖：`38 / 38`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 
 ## 近期更新摘要
@@ -64,14 +64,7 @@
   - 补充开发说明文档
   - 将 `AntButtonStyle` 统一归档到 `src/styles/`
 - 架构迁移到 `QProxyStyle`：
-  - `AntButton`
-  - `AntInput`
-  - `AntCheckbox`
-  - `AntRadio`
-  - `AntSwitch`
-  - `AntSlider`
-  - `AntSelect`
-  - `AntSpin`
+  - 全部 38 个组件已完成迁移
 
 ## 当前组件状态
 
@@ -80,68 +73,68 @@
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
 | `AntButton` | `button` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntButtonStyle` |
-| `AntIcon` | `icon` | `paintEvent` | 是 | 支持 `Outlined / Filled / TwoTone`、旋转、spin、自定义路径 |
+| `AntIcon` | `icon` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntIconStyle`；支持 `Outlined / Filled / TwoTone`、旋转、spin、自定义路径 |
 
 ### 导航
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntBreadcrumb` | `breadcrumb` | `paintEvent` | 是 | 路径项、分隔符、禁用项 |
-| `AntDropdown` | `dropdown` | `paintEvent` | 是 | `hover / click / contextMenu`、placement、arrow、auto flip |
-| `AntMenu` | `menu` | `paintEvent` | 是 | `vertical / horizontal / inline`、明暗主题 |
-| `AntPagination` | `pagination` | `paintEvent` | 是 | `simple / showQuickJumper / showSizeChanger` |
-| `AntSteps` | `steps` | `paintEvent` | 是 | 水平/垂直、当前步骤、错误态、点击切换 |
-| `AntTabs` | `tabs` | `paintEvent` | 是 | `line / card / editable-card` |
+| `AntBreadcrumb` | `breadcrumb` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntBreadcrumbStyle`；路径项、分隔符、禁用项 |
+| `AntDropdown` | `dropdown` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDropdownStyle`；`hover / click / contextMenu`、placement、arrow、auto flip |
+| `AntMenu` | `menu` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntMenuStyle`；`vertical / horizontal / inline`、明暗主题 |
+| `AntPagination` | `pagination` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntPaginationStyle`；`simple / showQuickJumper / showSizeChanger` |
+| `AntSteps` | `steps` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntStepsStyle`；水平/垂直、当前步骤、错误态、点击切换 |
+| `AntTabs` | `tabs` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTabsStyle`；`line / card / editable-card` |
 
 ### 数据录入
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
 | `AntCheckbox` | `checkbox` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntCheckboxStyle` |
-| `AntDatePicker` | `date-picker` | `paintEvent` | 是 | 自绘日期弹层 |
-| `AntDescriptions` | `descriptions` | `paintEvent` | 是 | 标题、extra、bordered、vertical、自定义值控件 |
-| `AntForm` | `form` | `paintEvent` | 是 | `AntForm / AntFormItem`、横向/纵向/行内布局、说明和校验提示 |
+| `AntDatePicker` | `date-picker` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDatePickerStyle`；自绘日期弹层 |
+| `AntDescriptions` | `descriptions` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDescriptionsStyle`；标题、extra、bordered、vertical、自定义值控件 |
+| `AntForm` | `form` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntFormStyle`；`AntForm / AntFormItem`、横向/纵向/行内布局、说明和校验提示 |
 | `AntInput` | `input` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputStyle` |
 | `AntInputNumber` | `input-number` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputNumberStyle` |
 | `AntRadio` | `radio` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntRadioStyle` |
 | `AntSelect` | `select` | `QProxyStyle` | 是 | 主控件迁移到 `src/styles/AntSelectStyle`，popup row 保持自绘 |
 | `AntSlider` | `slider` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSliderStyle` |
 | `AntSwitch` | `switch` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSwitchStyle` |
-| `AntTimePicker` | `time-picker` | `paintEvent` | 是 | 自绘时间弹层 |
+| `AntTimePicker` | `time-picker` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTimePickerStyle`；自绘时间弹层 |
 
 ### 反馈
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntMessage` | `message` | `paintEvent` | 是 | `Qt::ToolTip` 浮层消息 |
-| `AntModal` | `modal` | `paintEvent` | 是 | 遮罩层、标题/正文、自定义内容、自定义 footer、确认/取消 |
-| `AntNotification` | `notification` | `paintEvent` | 是 | 多 placement 通知 |
-| `AntProgress` | `progress` | `paintEvent` | 是 | `line / circle / dashboard` |
+| `AntMessage` | `message` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntMessageStyle`；`Qt::ToolTip` 浮层消息 |
+| `AntModal` | `modal` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntModalStyle`；遮罩层、标题/正文、自定义内容、自定义 footer、确认/取消 |
+| `AntNotification` | `notification` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntNotificationStyle`；多 placement 通知 |
+| `AntProgress` | `progress` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntProgressStyle`；`line / circle / dashboard` |
 | `AntSpin` | `spin` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSpinStyle` |
-| `AntAlert` | `alert` | `paintEvent` | 是 | `type / icon / description / closable / banner / action` |
-| `AntTooltip` | `tooltip` | `paintEvent` | 是 | `title / placement / color / arrow / delay / auto flip` |
-| `AntPopover` | `popover` | `paintEvent` | 是 | `title / content / action / hover / click / placement` |
-| `AntPopconfirm` | `popconfirm` | `paintEvent` | 是 | `title / description / ok / cancel / disabled / placement` |
-| `AntResult` | `result` | `paintEvent` | 是 | `status / title / subTitle / extra / iconVisible` |
+| `AntAlert` | `alert` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntAlertStyle`；`type / icon / description / closable / banner / action` |
+| `AntTooltip` | `tooltip` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTooltipStyle`；`title / placement / color / arrow / delay / auto flip` |
+| `AntPopover` | `popover` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntPopoverStyle`；`title / content / action / hover / click / placement` |
+| `AntPopconfirm` | `popconfirm` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntPopconfirmStyle`；`title / description / ok / cancel / disabled / placement` |
+| `AntResult` | `result` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntResultStyle`；`status / title / subTitle / extra / iconVisible` |
 
 ### 数据展示
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntAvatar` | `avatar` | `paintEvent` | 是 | 文本、图标、图片头像 |
-| `AntList` | `list` | `paintEvent` | 是 | `header / footer / bordered / split / size / AntListItem / AntListItemMeta` |
-| `AntStatistic` | `statistic` | `paintEvent` | 是 | `title / value / precision / prefix / suffix / groupSeparator` |
-| `AntBadge` | `badge` | `paintEvent` | 是 | `count / dot / status / processing` |
-| `AntCard` | `card` | `paintEvent` | 是 | 封面、额外区、操作区、loading |
-| `AntEmpty` | `empty` | `paintEvent` | 是 | 默认插画、simple 模式、描述、自定义尺寸、extra action |
-| `AntSkeleton` | `skeleton` | `paintEvent` | 是 | `active / avatar / title / paragraph / round / loading` |
-| `AntTag` | `tag` | `paintEvent` | 是 | `closable / checkable / variant` |
+| `AntAvatar` | `avatar` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntAvatarStyle`；文本、图标、图片头像 |
+| `AntList` | `list` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntListStyle`；`header / footer / bordered / split / size / AntListItem / AntListItemMeta` |
+| `AntStatistic` | `statistic` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntStatisticStyle`；`title / value / precision / prefix / suffix / groupSeparator` |
+| `AntBadge` | `badge` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntBadgeStyle`；`count / dot / status / processing` |
+| `AntCard` | `card` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntCardStyle`；封面、额外区、操作区、loading |
+| `AntEmpty` | `empty` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntEmptyStyle`；默认插画、simple 模式、描述、自定义尺寸、extra action |
+| `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSkeletonStyle`；`active / avatar / title / paragraph / round / loading` |
+| `AntTag` | `tag` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTagStyle`；`closable / checkable / variant` |
 
 ### 布局与其他
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntDivider` | `divider` | `paintEvent` | 是 | 水平/垂直、带标题、虚线/点线 |
+| `AntDivider` | `divider` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDividerStyle`；水平/垂直、带标题、虚线/点线 |
 
 ## 待移植组件
 
@@ -200,7 +193,7 @@
   - `polish`
   - `updateGeometry`
   - `update`
-- 尚未迁移的组件可继续使用 `paintEvent`，但新开发优先按 `QProxyStyle` 设计
+- 所有组件均已迁移到 `QProxyStyle`，新组件开发必须按 `QProxyStyle` 架构设计
 - 主题切换统一监听：
   - `AntTheme::themeChanged`
   - 或 `AntTheme::themeModeChanged`
@@ -211,7 +204,7 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 35 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 38 个已实现组件，左侧导航与右侧页面一一对应，当前没有“已实现但未展示”的组件。
 
 当前示例页包括：
 

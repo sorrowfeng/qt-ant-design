@@ -6,6 +6,7 @@
 #include <QTransform>
 
 #include "core/AntTheme.h"
+#include "styles/AntIconStyle.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -211,9 +212,9 @@ QPainterPath createLoadingPath()
 AntIcon::AntIcon(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntIconStyle(style()));
     setAttribute(Qt::WA_TransparentForMouseEvents);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
     m_spinTimer.setInterval(16);
     connect(&m_spinTimer, &QTimer::timeout, this, [this]() {
         m_spinAngle = (m_spinAngle + 6) % 360;
@@ -356,64 +357,6 @@ QSize AntIcon::minimumSizeHint() const
 void AntIcon::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-    const QRectF iconRect = rect().adjusted(1.0, 1.0, -1.0, -1.0);
-    if (iconRect.width() <= 0 || iconRect.height() <= 0)
-    {
-        return;
-    }
-
-    IconPaths paths;
-    if (m_hasCustomPath)
-    {
-        paths.primary = m_customPrimaryPath;
-        paths.secondary = m_customSecondaryPath;
-    }
-    else
-    {
-        paths = builtinPaths(m_iconType, m_iconTheme);
-    }
-
-    if (paths.primary.isEmpty() && paths.secondary.isEmpty())
-    {
-        return;
-    }
-
-    painter.translate(rect().center());
-    painter.rotate(m_rotate + m_spinAngle);
-    painter.translate(-rect().center());
-
-    const QColor primaryColor = effectivePrimaryColor();
-    const QColor secondaryColor = effectiveSecondaryColor();
-    const QPainterPath primaryPath = transformPath(paths.primary, iconRect);
-    const QPainterPath secondaryPath = transformPath(paths.secondary, iconRect);
-
-    if (paths.useStroke)
-    {
-        QPen pen(primaryColor, qMax<qreal>(1.6, iconRect.width() * 0.1), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        painter.setPen(pen);
-        painter.setBrush(Qt::NoBrush);
-        painter.drawPath(primaryPath);
-        if (!secondaryPath.isEmpty())
-        {
-            QPen secondaryPen(secondaryColor, pen.widthF(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-            painter.setPen(secondaryPen);
-            painter.drawPath(secondaryPath);
-        }
-        return;
-    }
-
-    painter.setPen(Qt::NoPen);
-    if (!secondaryPath.isEmpty())
-    {
-        painter.setBrush(secondaryColor);
-        painter.drawPath(secondaryPath);
-    }
-    painter.setBrush(primaryColor);
-    painter.drawPath(primaryPath);
 }
 
 void AntIcon::changeEvent(QEvent* event)

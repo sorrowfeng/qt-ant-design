@@ -11,6 +11,7 @@
 #include <QVBoxLayout>
 
 #include "AntMenu.h"
+#include "../styles/AntDropdownStyle.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -128,6 +129,7 @@ private:
 AntDropdown::AntDropdown(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntDropdownStyle(style()));
     m_popup = new PopupFrame(this);
     auto* layout = new QVBoxLayout(m_popup);
     layout->setContentsMargins(12, 18, 12, 18);
@@ -162,13 +164,6 @@ AntDropdown::AntDropdown(QWidget* parent)
         }
     });
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        if (m_popup->isVisible())
-        {
-            updatePopupGeometry();
-            m_popup->update();
-        }
-    });
 }
 
 AntDropdown::~AntDropdown()

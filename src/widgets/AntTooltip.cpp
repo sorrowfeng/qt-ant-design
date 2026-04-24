@@ -10,6 +10,7 @@
 #include <QTimer>
 
 #include "core/AntTheme.h"
+#include "styles/AntTooltipStyle.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -48,6 +49,7 @@ bool isBottomPlacement(Ant::TooltipPlacement placement)
 AntTooltip::AntTooltip(QWidget* parent)
     : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
 {
+    setStyle(new AntTooltipStyle(style()));
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
     setAttribute(Qt::WA_DeleteOnClose, false);
@@ -61,14 +63,6 @@ AntTooltip::AntTooltip(QWidget* parent)
         }
         updatePosition();
         show();
-    });
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        if (isVisible())
-        {
-            updatePosition();
-        }
-        update();
     });
 }
 
@@ -260,30 +254,6 @@ bool AntTooltip::eventFilter(QObject* watched, QEvent* event)
 void AntTooltip::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-
-    const auto& token = antTheme->tokens();
-    const QRect bubble = bubbleRect();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(bubbleColor());
-    painter.drawRoundedRect(bubble, token.borderRadiusSM, token.borderRadiusSM);
-    if (m_arrowVisible)
-    {
-        painter.drawPolygon(arrowPolygon());
-    }
-
-    painter.setPen(textColor());
-    QFont textFont = painter.font();
-    textFont.setPixelSize(token.fontSizeSM);
-    painter.setFont(textFont);
-    painter.drawText(bubble.adjusted(metrics().paddingX,
-                                     metrics().paddingY,
-                                     -metrics().paddingX,
-                                     -metrics().paddingY),
-                     Qt::AlignLeft | Qt::AlignVCenter | Qt::TextWordWrap,
-                     m_title);
 }
 
 void AntTooltip::hideEvent(QHideEvent* event)

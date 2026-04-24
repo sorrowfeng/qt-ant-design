@@ -8,17 +8,15 @@
 #include "AntButton.h"
 #include "AntIcon.h"
 #include "core/AntTheme.h"
+#include "styles/AntAlertStyle.h"
 #include "styles/AntPalette.h"
 
 AntAlert::AntAlert(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntAlertStyle(style()));
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
-        update();
-    });
 }
 
 AntAlert::AntAlert(const QString& title, QWidget* parent)
@@ -199,84 +197,6 @@ QSize AntAlert::minimumSizeHint() const
 void AntAlert::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-
-    const Metrics m = metrics();
-    const auto& token = antTheme->tokens();
-    const QRect body = rect().adjusted(0, 0, -1, -1);
-    const QRect content = contentRect();
-
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    painter.setPen(QPen(borderColor(), token.lineWidth));
-    painter.setBrush(backgroundColor());
-    painter.drawRoundedRect(body, m.radius, m.radius);
-
-    int textLeft = content.left();
-    if (m_showIcon || m_banner)
-    {
-        const QRect iconRect(textLeft,
-                             content.top() + (m_description.isEmpty() ? (content.height() - m.iconSize) / 2 : 2),
-                             m.iconSize,
-                             m.iconSize);
-        AntIcon icon(iconTypeForAlert());
-        icon.setIconTheme(Ant::IconTheme::Filled);
-        icon.setColor(iconColor());
-        icon.setIconSize(m.iconSize);
-        icon.resize(iconRect.size());
-
-        QPixmap pixmap(iconRect.size() * devicePixelRatioF());
-        pixmap.setDevicePixelRatio(devicePixelRatioF());
-        pixmap.fill(Qt::transparent);
-        icon.render(&pixmap);
-        painter.drawPixmap(iconRect.topLeft(), pixmap);
-        textLeft = iconRect.right() + 12;
-    }
-
-    int textRight = content.right();
-    if (m_actionWidget)
-    {
-        textRight = actionRect().left() - m.actionSpacing;
-    }
-    if (m_closable)
-    {
-        textRight = qMin(textRight, closeRect().left() - 8);
-        const QRect close = closeRect();
-        if (m_hoverClose)
-        {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(AntPalette::alpha(token.colorTextTertiary, 0.12));
-            painter.drawRoundedRect(close, token.borderRadiusXS, token.borderRadiusXS);
-        }
-        painter.setPen(QPen(token.colorTextTertiary, 1.5, Qt::SolidLine, Qt::RoundCap));
-        painter.drawLine(close.center() + QPoint(-4, -4), close.center() + QPoint(4, 4));
-        painter.drawLine(close.center() + QPoint(4, -4), close.center() + QPoint(-4, 4));
-    }
-
-    QFont titleFont = painter.font();
-    titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(m_description.isEmpty() ? QFont::Normal : QFont::DemiBold);
-    painter.setFont(titleFont);
-    painter.setPen(titleColor());
-
-    QRect titleRect(textLeft,
-                    content.top(),
-                    qMax(40, textRight - textLeft),
-                    m_description.isEmpty() ? content.height() : titleFont.pixelSize() + 6);
-    painter.drawText(titleRect, Qt::AlignLeft | (m_description.isEmpty() ? Qt::AlignVCenter : Qt::AlignTop), m_title);
-
-    if (!m_description.isEmpty())
-    {
-        QFont descFont = painter.font();
-        descFont.setPixelSize(m.descFontSize);
-        descFont.setWeight(QFont::Normal);
-        painter.setFont(descFont);
-        painter.setPen(descriptionColor());
-        QRect descRect(textLeft,
-                       titleRect.bottom() + 6,
-                       qMax(40, textRight - textLeft),
-                       content.bottom() - titleRect.bottom() - 6);
-        painter.drawText(descRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, m_description);
-    }
 }
 
 void AntAlert::resizeEvent(QResizeEvent* event)

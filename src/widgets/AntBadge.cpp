@@ -11,22 +11,18 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
+#include "styles/AntBadgeStyle.h"
 
 AntBadge::AntBadge(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntBadgeStyle(style()));
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
     m_animationTimer = new QTimer(this);
     connect(m_animationTimer, &QTimer::timeout, this, [this]() {
         m_pulse = (m_pulse + 6) % 100;
-        update();
-    });
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
-        updateContentGeometry();
         update();
     });
 
@@ -223,19 +219,6 @@ QSize AntBadge::minimumSizeHint() const
 void AntBadge::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-    if (isStatusMode() && !m_contentWidget)
-    {
-        drawStatus(painter);
-        return;
-    }
-
-    if (shouldShowIndicator())
-    {
-        drawIndicator(painter);
-    }
 }
 
 void AntBadge::resizeEvent(QResizeEvent* event)

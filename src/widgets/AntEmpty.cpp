@@ -5,14 +5,12 @@
 
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
+#include "styles/AntEmptyStyle.h"
 
 AntEmpty::AntEmpty(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
-        update();
-    });
+    setStyle(new AntEmptyStyle(style()));
 }
 
 QString AntEmpty::description() const { return m_description; }
@@ -136,56 +134,6 @@ QSize AntEmpty::minimumSizeHint() const
 void AntEmpty::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-
-    const auto& token = antTheme->tokens();
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
-    if (m_imageVisible)
-    {
-        const QRect r = imageRect();
-        const QColor primary = AntPalette::alpha(token.colorTextTertiary, antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.5 : 0.32);
-        const QColor fill = AntPalette::alpha(token.colorFillQuaternary, antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.78 : 1.0);
-        const QColor line = AntPalette::alpha(token.colorTextTertiary,
-                                              antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.68 : 0.45);
-
-        painter.save();
-        painter.translate(r.topLeft());
-        painter.scale(r.width() / 128.0, r.height() / 80.0);
-
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(AntPalette::alpha(token.colorPrimary, m_simple ? 0.12 : 0.08));
-        painter.drawEllipse(QRectF(16, 58, 96, 14));
-
-        painter.setBrush(fill);
-        painter.drawRoundedRect(QRectF(34, 10, 60, 46), 10, 10);
-        painter.setBrush(AntPalette::alpha(token.colorBgContainer, 0.88));
-        painter.drawRoundedRect(QRectF(42, 18, 44, 30), 6, 6);
-
-        painter.setPen(QPen(primary, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        painter.drawArc(QRectF(10, 20, 26, 26), 35 * 16, 260 * 16);
-        painter.drawArc(QRectF(92, 18, 22, 22), 220 * 16, 220 * 16);
-
-        painter.setPen(QPen(line, 2.2, Qt::SolidLine, Qt::RoundCap));
-        painter.drawLine(QPointF(49, 27), QPointF(79, 27));
-        painter.drawLine(QPointF(49, 34), QPointF(73, 34));
-        if (!m_simple)
-        {
-            painter.drawLine(QPointF(49, 41), QPointF(67, 41));
-            painter.setBrush(AntPalette::alpha(token.colorPrimary, 0.16));
-            painter.setPen(Qt::NoPen);
-            painter.drawEllipse(QRectF(20, 12, 8, 8));
-            painter.drawEllipse(QRectF(100, 42, 6, 6));
-        }
-        painter.restore();
-    }
-
-    QFont descFont = painter.font();
-    descFont.setPixelSize(token.fontSize);
-    descFont.setWeight(QFont::Normal);
-    painter.setFont(descFont);
-    painter.setPen(token.colorTextSecondary);
-    painter.drawText(descriptionRect(), Qt::AlignCenter | Qt::TextWordWrap, m_description);
 }
 
 void AntEmpty::resizeEvent(QResizeEvent* event)

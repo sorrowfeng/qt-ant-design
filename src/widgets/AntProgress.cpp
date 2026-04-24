@@ -8,19 +8,16 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
+#include "styles/AntProgressStyle.h"
 #include "styles/AntPalette.h"
 
 AntProgress::AntProgress(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntProgressStyle(style()));
     m_activeTimer = new QTimer(this);
     connect(m_activeTimer, &QTimer::timeout, this, [this]() {
         m_activeOffset = (m_activeOffset + 6) % 120;
-        update();
-    });
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
         update();
     });
 
@@ -135,16 +132,6 @@ QSize AntProgress::minimumSizeHint() const
 void AntProgress::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    if (m_progressType == Ant::ProgressType::Line)
-    {
-        drawLineProgress(painter);
-    }
-    else
-    {
-        drawCircleProgress(painter);
-    }
 }
 
 void AntProgress::showEvent(QShowEvent* event)

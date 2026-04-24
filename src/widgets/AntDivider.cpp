@@ -4,16 +4,14 @@
 
 #include <algorithm>
 
+#include "../styles/AntDividerStyle.h"
 #include "core/AntTheme.h"
 
 AntDivider::AntDivider(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntDividerStyle(style()));
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
-        update();
-    });
 }
 
 AntDivider::AntDivider(const QString& text, QWidget* parent)
@@ -125,16 +123,6 @@ QSize AntDivider::minimumSizeHint() const
 void AntDivider::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-    if (m_orientation == Ant::DividerOrientation::Vertical)
-    {
-        drawVertical(painter);
-    }
-    else
-    {
-        drawHorizontal(painter);
-    }
 }
 
 int AntDivider::horizontalMargin() const

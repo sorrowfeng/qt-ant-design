@@ -15,7 +15,7 @@
 - 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
 - 当前已移植 `38` 个核心组件
-- 其中 `9` 个组件已经迁移到 `QProxyStyle` 架构，剩余组件仍采用 `paintEvent`，将继续逐步迁移
+- 全部 `38` 个组件均已迁移到 `QProxyStyle` 架构
 - 示例程序已覆盖全部 `38` 个已实现组件
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
 
@@ -129,13 +129,12 @@ int main(int argc, char* argv[])
 
 | 分类 | 组件 | 当前绘制方式 |
 | --- | --- | --- |
-| 通用 | `AntButton` `AntIcon` | 混合（`QProxyStyle` + `paintEvent`） |
-| 导航 | `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | `paintEvent` |
-| 数据录入 | `AntCheckbox` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntRadio` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` | 混合（`QProxyStyle` + `paintEvent`） |
-| 反馈 | `AntAlert` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntProgress` `AntSpin` | 混合（`QProxyStyle` + `paintEvent`） |
-| 数据展示 | `AntAvatar` `AntBadge` `AntCard` `AntEmpty` `AntList` `AntPopover` `AntSkeleton` `AntStatistic` `AntTag` `AntTooltip` | `paintEvent` |
-| 反馈 | `AntResult` | `paintEvent` |
-| 布局与其他 | `AntDivider` | `paintEvent` |
+| 通用 | `AntButton` `AntIcon` | `QProxyStyle` |
+| 导航 | `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | `QProxyStyle` |
+| 数据录入 | `AntCheckbox` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntRadio` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` | `QProxyStyle` |
+| 反馈 | `AntAlert` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntPopconfirm` `AntProgress` `AntSpin` `AntTooltip` `AntResult` | `QProxyStyle` |
+| 数据展示 | `AntAvatar` `AntBadge` `AntCard` `AntEmpty` `AntList` `AntSkeleton` `AntStatistic` `AntTag` | `QProxyStyle` |
+| 布局与其他 | `AntDivider` | `QProxyStyle` |
 
 ### 组件概览
 
@@ -213,7 +212,7 @@ card->bodyLayout()->addWidget(new QLabel("Card content"));
 AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 ```
 
-目前主题切换会触发已迁移 `QProxyStyle` 组件的 `polish / updateGeometry / update`，以及传统 `paintEvent` 组件的重绘。
+目前主题切换会触发所有 `QProxyStyle` 组件的 `polish / updateGeometry / update`。
 
 ## 开发指南与贡献
 

@@ -9,6 +9,7 @@
 #include <utility>
 #include <QVBoxLayout>
 
+#include "../styles/AntDescriptionsStyle.h"
 #include "core/AntTheme.h"
 
 AntDescriptionsItem::AntDescriptionsItem(QWidget* parent)
@@ -61,6 +62,7 @@ void AntDescriptionsItem::setContentWidget(QWidget* widget)
 AntDescriptions::AntDescriptions(QWidget* parent)
     : QWidget(parent)
 {
+    setStyle(new AntDescriptionsStyle(style()));
     m_root = new QVBoxLayout(this);
     m_root->setContentsMargins(0, 0, 0, 0);
     m_root->setSpacing(16);
@@ -83,12 +85,6 @@ AntDescriptions::AntDescriptions(QWidget* parent)
 
     m_root->addWidget(m_header);
     m_root->addWidget(m_body);
-
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        rebuildLayout();
-        updateTheme();
-        update();
-    });
 
     rebuildLayout();
     updateTheme();
@@ -175,7 +171,7 @@ void AntDescriptions::clearItems()
     rebuildGrid();
 }
 
-void AntDescriptions::paintEvent(QPaintEvent* event) { QWidget::paintEvent(event); }
+void AntDescriptions::paintEvent(QPaintEvent* event) { Q_UNUSED(event) }
 
 void AntDescriptions::resizeEvent(QResizeEvent* event) { QWidget::resizeEvent(event); }
 
