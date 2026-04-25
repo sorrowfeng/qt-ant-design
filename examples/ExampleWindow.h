@@ -86,6 +86,10 @@ private:
     QWidget* createCalendarPage();
     QWidget* createColorPickerPage();
     QWidget* createDockWidgetPage();
+    QWidget* createImagePage();
+    QWidget* createCollapsePage();
+    QWidget* createSplitterPage();
+    QWidget* createLogPage();
     QWidget* wrapPage(QWidget* page);
     AntTypography* createSectionTitle(const QString& title);
     void addNavButton(const QString& text, int pageIndex);

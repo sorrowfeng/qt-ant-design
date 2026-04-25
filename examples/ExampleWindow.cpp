@@ -22,6 +22,10 @@
 #include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntScrollArea.h"
 #include "widgets/AntToolBar.h"
+#include "widgets/AntCollapse.h"
+#include "widgets/AntImage.h"
+#include "widgets/AntLog.h"
+#include "widgets/AntSplitter.h"
 #include "widgets/AntToolButton.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntBadge.h"
@@ -189,6 +193,10 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createWatermarkPage()));
     m_stack->addWidget(wrapPage(createQRCodePage()));
     m_stack->addWidget(wrapPage(createAffixPage()));
+    m_stack->addWidget(wrapPage(createImagePage()));
+    m_stack->addWidget(wrapPage(createCollapsePage()));
+    m_stack->addWidget(wrapPage(createSplitterPage()));
+    m_stack->addWidget(wrapPage(createLogPage()));
     m_stack->addWidget(wrapPage(createToolButtonPage()));
     m_stack->addWidget(wrapPage(createScrollAreaPage()));
     m_stack->addWidget(wrapPage(createPlainTextEditPage()));
@@ -255,15 +263,19 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Watermark"), 54);
     addNavButton(QStringLiteral("QRCode"), 55);
     addNavButton(QStringLiteral("Affix"), 56);
-    addNavButton(QStringLiteral("ToolButton"), 57);
-    addNavButton(QStringLiteral("ScrollArea"), 58);
-    addNavButton(QStringLiteral("PlainTextEdit"), 59);
-    addNavButton(QStringLiteral("MenuBar"), 60);
-    addNavButton(QStringLiteral("ToolBar"), 61);
-    addNavButton(QStringLiteral("AutoComplete"), 62);
-    addNavButton(QStringLiteral("Calendar"), 63);
-    addNavButton(QStringLiteral("ColorPicker"), 64);
-    addNavButton(QStringLiteral("DockWidget"), 65);
+    addNavButton(QStringLiteral("Image"), 57);
+    addNavButton(QStringLiteral("Collapse"), 58);
+    addNavButton(QStringLiteral("Splitter"), 59);
+    addNavButton(QStringLiteral("Log"), 60);
+    addNavButton(QStringLiteral("ToolButton"), 61);
+    addNavButton(QStringLiteral("ScrollArea"), 62);
+    addNavButton(QStringLiteral("PlainTextEdit"), 63);
+    addNavButton(QStringLiteral("MenuBar"), 64);
+    addNavButton(QStringLiteral("ToolBar"), 65);
+    addNavButton(QStringLiteral("AutoComplete"), 66);
+    addNavButton(QStringLiteral("Calendar"), 67);
+    addNavButton(QStringLiteral("ColorPicker"), 68);
+    addNavButton(QStringLiteral("DockWidget"), 69);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -4521,6 +4533,115 @@ QWidget* ExampleWindow::createDockWidgetPage()
     layout->addWidget(dock);
 
     layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createImagePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntImage"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* img = new AntImage(page);
+    img->setAlt(QStringLiteral("No image loaded"));
+    img->setImgWidth(200);
+    img->setImgHeight(200);
+    layout->addWidget(img);
+
+    auto* tip = new QLabel(QStringLiteral("Set src to load an image. Click to preview."));
+    layout->addWidget(tip);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createCollapsePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntCollapse"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* collapse = new AntCollapse(page);
+    collapse->setAccordion(true);
+
+    auto* p1 = collapse->addPanel(QStringLiteral("Panel 1 — First Item"));
+    auto* c1 = new QWidget();
+    auto* l1 = new QVBoxLayout(c1);
+    l1->addWidget(new QLabel(QStringLiteral("Content for panel 1. This area expands and collapses.")));
+    p1->setContentWidget(c1);
+
+    auto* p2 = collapse->addPanel(QStringLiteral("Panel 2 — Second Item"));
+    auto* c2 = new QWidget();
+    auto* l2 = new QVBoxLayout(c2);
+    l2->addWidget(new QLabel(QStringLiteral("Panel 2 content here.")));
+    p2->setContentWidget(c2);
+
+    auto* p3 = collapse->addPanel(QStringLiteral("Panel 3 — Third Item (Disabled)"));
+    p3->setDisabled(true);
+    auto* c3 = new QWidget();
+    auto* l3 = new QVBoxLayout(c3);
+    l3->addWidget(new QLabel(QStringLiteral("This panel is disabled.")));
+    p3->setContentWidget(c3);
+
+    layout->addWidget(collapse);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createSplitterPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntSplitter"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* splitter = new AntSplitter(Qt::Horizontal, page);
+    auto* left = new QTextEdit(splitter);
+    left->setPlainText(QStringLiteral("Left panel"));
+    auto* right = new QTextEdit(splitter);
+    right->setPlainText(QStringLiteral("Right panel"));
+    splitter->addWidget(left);
+    splitter->addWidget(right);
+    splitter->setSizes({200, 200});
+
+    layout->addWidget(splitter);
+    return page;
+}
+
+QWidget* ExampleWindow::createLogPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntLog"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* log = new AntLog(page);
+    layout->addWidget(log);
+
+    auto* btnRow = new QHBoxLayout();
+    auto* addBtn = new AntButton(QStringLiteral("Add Sample Logs"));
+    connect(addBtn, &QPushButton::clicked, log, [log]() {
+        log->debug(QStringLiteral("This is a debug message"));
+        log->info(QStringLiteral("Server started on port 8080"));
+        log->success(QStringLiteral("Database connection established"));
+        log->warning(QStringLiteral("Memory usage at 85%"));
+        log->error(QStringLiteral("Failed to connect to upstream service"));
+    });
+    btnRow->addWidget(addBtn);
+
+    auto* clearBtn = new AntButton(QStringLiteral("Clear"));
+    clearBtn->setButtonType(Ant::ButtonType::Default);
+    connect(clearBtn, &QPushButton::clicked, log, &AntLog::clear);
+    btnRow->addWidget(clearBtn);
+    btnRow->addStretch();
+    layout->addLayout(btnRow);
+
     return page;
 }
 

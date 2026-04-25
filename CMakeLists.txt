@@ -152,6 +152,10 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntAutoComplete.h
     src/widgets/AntColorPicker.h
     src/widgets/AntCalendar.h
+    src/widgets/AntImage.h
+    src/widgets/AntCollapse.h
+    src/widgets/AntSplitter.h
+    src/widgets/AntLog.h
 )
 
 set(QT_ANT_DESIGN_SOURCES
@@ -288,6 +292,10 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntAutoComplete.cpp
     src/widgets/AntColorPicker.cpp
     src/widgets/AntCalendar.cpp
+    src/widgets/AntImage.cpp
+    src/widgets/AntCollapse.cpp
+    src/widgets/AntSplitter.cpp
+    src/widgets/AntLog.cpp
     resources/qt-ant-design.qrc
 )
 
@@ -436,6 +444,10 @@ install(FILES
     src/widgets/AntAutoComplete.h
     src/widgets/AntColorPicker.h
     src/widgets/AntCalendar.h
+    src/widgets/AntImage.h
+    src/widgets/AntCollapse.h
+    src/widgets/AntSplitter.h
+    src/widgets/AntLog.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/widgets
 )
 
