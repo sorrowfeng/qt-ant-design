@@ -25,10 +25,11 @@
 ## 本次同步
 
 - 同步日期：`2026-04-25`
-- 已实现组件总数：`58`
-- 已迁移至 `QProxyStyle` 的组件数：`56`
+- 已实现组件总数：`66`
+- 已迁移至 `QProxyStyle` 的组件数：`62`
 - 仍使用 `paintEvent` 的组件数：`2`（AntWidget 为基础类 + AntAffix 为 QObject 工具类）
-- 示例程序覆盖：`56 / 56`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- 以下 3 个组件不依赖 Style 类（纯容器/对话框）：`AntScrollArea`、`AntColorPicker`、`AntDockWidget`
+- 示例程序覆盖：`66 / 66`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntTypography` 替代 `QLabel` 实现主题感知文本
 - 新增通用工具类：`AntWave`（`core/`，Ant Design 点击涟漪动画 overlay）
 

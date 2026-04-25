@@ -648,6 +648,30 @@ enum class FloatButtonPlacement
 };
 Q_ENUM_NS(FloatButtonPlacement)
 
+enum class TextEditVariant
+{
+    Outlined,
+    Filled,
+    Borderless,
+};
+Q_ENUM_NS(TextEditVariant)
+
+enum class ColorPickerMode
+{
+    RGB,
+    HSV,
+    HEX,
+};
+Q_ENUM_NS(ColorPickerMode)
+
+enum class CalendarMode
+{
+    Day,
+    Month,
+    Year,
+};
+Q_ENUM_NS(CalendarMode)
+
 constexpr int LineWidth = 1;
 constexpr int SizeUnit = 4;
 constexpr int SizeStep = 4;

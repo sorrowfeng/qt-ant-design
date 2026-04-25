@@ -173,7 +173,7 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
 
     const auto& token = antTheme->tokens();
     const ButtonMetrics m = metricsFor(button);
-    const QRectF outer = option->rect.adjusted(0, 0, -1, -1);
+    const QRectF outer = option->rect;
     const int radius = cornerRadiusFor(button, m);
     const bool hovered = option->state.testFlag(QStyle::State_MouseOver);
     const bool pressed = option->state.testFlag(QStyle::State_Sunken) || button->isDown();

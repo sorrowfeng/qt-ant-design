@@ -14,6 +14,15 @@
 #include "core/AntTheme.h"
 #include "widgets/AntWidget.h"
 #include "widgets/AntAlert.h"
+#include "widgets/AntAutoComplete.h"
+#include "widgets/AntCalendar.h"
+#include "widgets/AntColorPicker.h"
+#include "widgets/AntDockWidget.h"
+#include "widgets/AntMenuBar.h"
+#include "widgets/AntPlainTextEdit.h"
+#include "widgets/AntScrollArea.h"
+#include "widgets/AntToolBar.h"
+#include "widgets/AntToolButton.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntBadge.h"
 #include "widgets/AntBreadcrumb.h"
@@ -180,6 +189,15 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createWatermarkPage()));
     m_stack->addWidget(wrapPage(createQRCodePage()));
     m_stack->addWidget(wrapPage(createAffixPage()));
+    m_stack->addWidget(wrapPage(createToolButtonPage()));
+    m_stack->addWidget(wrapPage(createScrollAreaPage()));
+    m_stack->addWidget(wrapPage(createPlainTextEditPage()));
+    m_stack->addWidget(wrapPage(createMenuBarPage()));
+    m_stack->addWidget(wrapPage(createToolBarPage()));
+    m_stack->addWidget(wrapPage(createAutoCompletePage()));
+    m_stack->addWidget(wrapPage(createCalendarPage()));
+    m_stack->addWidget(wrapPage(createColorPickerPage()));
+    m_stack->addWidget(wrapPage(createDockWidgetPage()));
     addNavButton(QStringLiteral("Button"), 0);
     addNavButton(QStringLiteral("Breadcrumb"), 1);
     addNavButton(QStringLiteral("Checkbox"), 2);
@@ -237,6 +255,15 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     addNavButton(QStringLiteral("Watermark"), 54);
     addNavButton(QStringLiteral("QRCode"), 55);
     addNavButton(QStringLiteral("Affix"), 56);
+    addNavButton(QStringLiteral("ToolButton"), 57);
+    addNavButton(QStringLiteral("ScrollArea"), 58);
+    addNavButton(QStringLiteral("PlainTextEdit"), 59);
+    addNavButton(QStringLiteral("MenuBar"), 60);
+    addNavButton(QStringLiteral("ToolBar"), 61);
+    addNavButton(QStringLiteral("AutoComplete"), 62);
+    addNavButton(QStringLiteral("Calendar"), 63);
+    addNavButton(QStringLiteral("ColorPicker"), 64);
+    addNavButton(QStringLiteral("DockWidget"), 65);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
@@ -4200,6 +4227,298 @@ QWidget* ExampleWindow::createAffixPage()
     // Set up affix AFTER scroll area is fully configured
     auto* affix = new AntAffix(page);
     affix->setAffixedWidget(affixedBtn);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createToolButtonPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setSpacing(16);
+
+    auto* title = new QLabel(QStringLiteral("AntToolButton"));
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(20);
+    titleFont.setBold(true);
+    title->setFont(titleFont);
+    layout->addWidget(title);
+
+    // Types
+    auto* typeRow = new QHBoxLayout();
+    typeRow->setSpacing(12);
+    auto* btn1 = new AntToolButton(QStringLiteral("Default"));
+    btn1->setButtonType(Ant::ButtonType::Default);
+    typeRow->addWidget(btn1);
+    auto* btn2 = new AntToolButton(QStringLiteral("Primary"));
+    btn2->setButtonType(Ant::ButtonType::Primary);
+    typeRow->addWidget(btn2);
+    auto* btn3 = new AntToolButton(QStringLiteral("Text"));
+    btn3->setButtonType(Ant::ButtonType::Text);
+    typeRow->addWidget(btn3);
+    typeRow->addStretch();
+    layout->addLayout(typeRow);
+
+    // Sizes
+    auto* sizeRow = new QHBoxLayout();
+    sizeRow->setSpacing(12);
+    auto* smallBtn = new AntToolButton(QStringLiteral("Small"));
+    smallBtn->setButtonSize(Ant::ButtonSize::Small);
+    sizeRow->addWidget(smallBtn);
+    auto* midBtn = new AntToolButton(QStringLiteral("Middle"));
+    midBtn->setButtonSize(Ant::ButtonSize::Middle);
+    sizeRow->addWidget(midBtn);
+    auto* largeBtn = new AntToolButton(QStringLiteral("Large"));
+    largeBtn->setButtonSize(Ant::ButtonSize::Large);
+    sizeRow->addWidget(largeBtn);
+    sizeRow->addStretch();
+    layout->addLayout(sizeRow);
+
+    // Danger / Loading
+    auto* stateRow = new QHBoxLayout();
+    stateRow->setSpacing(12);
+    auto* dangerBtn = new AntToolButton(QStringLiteral("Danger"));
+    dangerBtn->setDanger(true);
+    stateRow->addWidget(dangerBtn);
+    auto* loadBtn = new AntToolButton(QStringLiteral("Loading"));
+    loadBtn->setLoading(true);
+    stateRow->addWidget(loadBtn);
+    stateRow->addStretch();
+    layout->addLayout(stateRow);
+
+    // With dropdown menu
+    auto* ddBtn = new AntToolButton(QStringLiteral("Actions"));
+    ddBtn->setButtonType(Ant::ButtonType::Primary);
+    auto* menu = new QMenu(ddBtn);
+    menu->addAction(QStringLiteral("Edit"));
+    menu->addAction(QStringLiteral("Delete"));
+    menu->addSeparator();
+    menu->addAction(QStringLiteral("Settings"));
+    ddBtn->setMenu(menu);
+    layout->addWidget(ddBtn);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createScrollAreaPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntScrollArea"));
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(20);
+    titleFont.setBold(true);
+    title->setFont(titleFont);
+    layout->addWidget(title);
+
+    auto* scroll = new AntScrollArea(page);
+    auto* content = new QWidget();
+    auto* contentLayout = new QVBoxLayout(content);
+    for (int i = 0; i < 30; ++i)
+    {
+        contentLayout->addWidget(new QLabel(QStringLiteral("Item %1 — Scroll to see the AntScrollBar").arg(i + 1)));
+    }
+    contentLayout->addStretch();
+    scroll->setWidget(content);
+    layout->addWidget(scroll);
+
+    return page;
+}
+
+QWidget* ExampleWindow::createPlainTextEditPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntPlainTextEdit"));
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(20);
+    titleFont.setBold(true);
+    title->setFont(titleFont);
+    layout->addWidget(title);
+
+    auto* te = new AntPlainTextEdit(page);
+    te->setPlaceholderText(QStringLiteral("Type something..."));
+    te->setMinimumHeight(150);
+    layout->addWidget(te);
+
+    auto* filled = new AntPlainTextEdit(page);
+    filled->setVariant(Ant::TextEditVariant::Filled);
+    filled->setPlaceholderText(QStringLiteral("Filled variant..."));
+    filled->setMinimumHeight(100);
+    layout->addWidget(filled);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createMenuBarPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntMenuBar"));
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(20);
+    titleFont.setBold(true);
+    title->setFont(titleFont);
+    layout->addWidget(title);
+
+    auto* menuBar = new AntMenuBar(page);
+    auto* fileMenu = menuBar->addMenu(QStringLiteral("File"));
+    fileMenu->addAction(QStringLiteral("New"));
+    fileMenu->addAction(QStringLiteral("Open"));
+    fileMenu->addSeparator();
+    fileMenu->addAction(QStringLiteral("Exit"));
+
+    auto* editMenu = menuBar->addMenu(QStringLiteral("Edit"));
+    editMenu->addAction(QStringLiteral("Undo"));
+    editMenu->addAction(QStringLiteral("Redo"));
+    editMenu->addSeparator();
+    editMenu->addAction(QStringLiteral("Preferences"));
+
+    menuBar->addMenu(QStringLiteral("View"));
+    menuBar->addMenu(QStringLiteral("Help"));
+    layout->addWidget(menuBar);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createToolBarPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntToolBar"));
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(20);
+    titleFont.setBold(true);
+    title->setFont(titleFont);
+    layout->addWidget(title);
+
+    auto* toolBar = new AntToolBar(QStringLiteral("Main Toolbar"), page);
+    toolBar->addAction(QStringLiteral("New"));
+    toolBar->addAction(QStringLiteral("Open"));
+    toolBar->addAction(QStringLiteral("Save"));
+    toolBar->addSeparator();
+    toolBar->addAction(QStringLiteral("Undo"));
+    toolBar->addAction(QStringLiteral("Redo"));
+    layout->addWidget(toolBar);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createAutoCompletePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntAutoComplete"));
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(20);
+    titleFont.setBold(true);
+    title->setFont(titleFont);
+    layout->addWidget(title);
+
+    auto* ac = new AntAutoComplete(page);
+    ac->setPlaceholderText(QStringLiteral("Type a color..."));
+    ac->addSuggestion(QStringLiteral("Red"));
+    ac->addSuggestion(QStringLiteral("Blue"));
+    ac->addSuggestion(QStringLiteral("Green"));
+    ac->addSuggestion(QStringLiteral("Yellow"));
+    ac->addSuggestion(QStringLiteral("Orange"));
+    ac->addSuggestion(QStringLiteral("Purple"));
+    ac->addSuggestion(QStringLiteral("Pink"));
+    ac->addSuggestion(QStringLiteral("Cyan"));
+    ac->addSuggestion(QStringLiteral("Magenta"));
+    ac->addSuggestion(QStringLiteral("Teal"));
+    layout->addWidget(ac);
+
+    connect(ac, &AntAutoComplete::suggestionClicked, page, [](const QString& text, const QVariant&) {
+        qDebug() << "Selected:" << text;
+    });
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createCalendarPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntCalendar"));
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(20);
+    titleFont.setBold(true);
+    title->setFont(titleFont);
+    layout->addWidget(title);
+
+    auto* cal = new AntCalendar(page);
+    layout->addWidget(cal);
+
+    auto* dateLabel = new QLabel(QStringLiteral("Selected: ") + cal->selectedDate().toString(QStringLiteral("yyyy-MM-dd")));
+    connect(cal, &AntCalendar::clicked, dateLabel, [dateLabel, cal]() {
+        dateLabel->setText(QStringLiteral("Selected: ") + cal->selectedDate().toString(QStringLiteral("yyyy-MM-dd")));
+    });
+    layout->addWidget(dateLabel);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createColorPickerPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntColorPicker"));
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(20);
+    titleFont.setBold(true);
+    title->setFont(titleFont);
+    layout->addWidget(title);
+
+    auto* openBtn = new AntButton(QStringLiteral("Open Color Picker"));
+    openBtn->setButtonType(Ant::ButtonType::Primary);
+    layout->addWidget(openBtn);
+
+    auto* colorLabel = new QLabel(QStringLiteral("Selected: none"));
+    layout->addWidget(colorLabel);
+
+    connect(openBtn, &QPushButton::clicked, page, [page, colorLabel]() {
+        QColor c = AntColorPicker::getColor(Qt::white, page->window(), QStringLiteral("Pick a Color"));
+        if (c.isValid())
+            colorLabel->setText(QStringLiteral("Selected: ") + c.name());
+    });
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createDockWidgetPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntDockWidget"));
+    QFont titleFont = title->font();
+    titleFont.setPixelSize(20);
+    titleFont.setBold(true);
+    title->setFont(titleFont);
+    layout->addWidget(title);
+
+    auto* infoLabel = new QLabel(QStringLiteral("Dock widgets can be created from QMainWindow.\nThis page shows the AntDockWidget API."));
+    infoLabel->setWordWrap(true);
+    layout->addWidget(infoLabel);
+
+    // Create a dock widget
+    auto* dock = new AntDockWidget(QStringLiteral("My Dock"), page);
+    auto* dockContent = new QWidget();
+    auto* dockLayout = new QVBoxLayout(dockContent);
+    dockLayout->addWidget(new QLabel(QStringLiteral("Dock content area")));
+    dockLayout->addStretch();
+    dock->setWidget(dockContent);
+    dock->setMinimumWidth(200);
+
+    layout->addWidget(dock);
 
     layout->addStretch();
     return page;

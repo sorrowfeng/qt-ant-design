@@ -137,6 +137,21 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntQRCode.h
     src/widgets/AntSegmented.h
     src/widgets/AntWatermark.h
+    src/styles/AntToolButtonStyle.h
+    src/styles/AntPlainTextEditStyle.h
+    src/styles/AntMenuBarStyle.h
+    src/styles/AntToolBarStyle.h
+    src/styles/AntAutoCompleteStyle.h
+    src/styles/AntCalendarStyle.h
+    src/widgets/AntToolButton.h
+    src/widgets/AntPlainTextEdit.h
+    src/widgets/AntMenuBar.h
+    src/widgets/AntToolBar.h
+    src/widgets/AntDockWidget.h
+    src/widgets/AntScrollArea.h
+    src/widgets/AntAutoComplete.h
+    src/widgets/AntColorPicker.h
+    src/widgets/AntCalendar.h
 )
 
 set(QT_ANT_DESIGN_SOURCES
@@ -258,6 +273,21 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntQRCode.cpp
     src/widgets/AntSegmented.cpp
     src/widgets/AntWatermark.cpp
+    src/styles/AntToolButtonStyle.cpp
+    src/styles/AntPlainTextEditStyle.cpp
+    src/styles/AntMenuBarStyle.cpp
+    src/styles/AntToolBarStyle.cpp
+    src/styles/AntAutoCompleteStyle.cpp
+    src/styles/AntCalendarStyle.cpp
+    src/widgets/AntToolButton.cpp
+    src/widgets/AntPlainTextEdit.cpp
+    src/widgets/AntMenuBar.cpp
+    src/widgets/AntToolBar.cpp
+    src/widgets/AntDockWidget.cpp
+    src/widgets/AntScrollArea.cpp
+    src/widgets/AntAutoComplete.cpp
+    src/widgets/AntColorPicker.cpp
+    src/widgets/AntCalendar.cpp
     resources/qt-ant-design.qrc
 )
 
@@ -330,6 +360,12 @@ install(FILES
     src/styles/AntQRCodeStyle.h
     src/styles/AntSegmentedStyle.h
     src/styles/AntWatermarkStyle.h
+    src/styles/AntToolButtonStyle.h
+    src/styles/AntPlainTextEditStyle.h
+    src/styles/AntMenuBarStyle.h
+    src/styles/AntToolBarStyle.h
+    src/styles/AntAutoCompleteStyle.h
+    src/styles/AntCalendarStyle.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/styles
 )
 
@@ -391,6 +427,15 @@ install(FILES
     src/widgets/AntQRCode.h
     src/widgets/AntSegmented.h
     src/widgets/AntWatermark.h
+    src/widgets/AntToolButton.h
+    src/widgets/AntPlainTextEdit.h
+    src/widgets/AntMenuBar.h
+    src/widgets/AntToolBar.h
+    src/widgets/AntDockWidget.h
+    src/widgets/AntScrollArea.h
+    src/widgets/AntAutoComplete.h
+    src/widgets/AntColorPicker.h
+    src/widgets/AntCalendar.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/widgets
 )
 

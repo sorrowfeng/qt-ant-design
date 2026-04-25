@@ -77,6 +77,15 @@ private:
     QWidget* createWatermarkPage();
     QWidget* createQRCodePage();
     QWidget* createAffixPage();
+    QWidget* createToolButtonPage();
+    QWidget* createScrollAreaPage();
+    QWidget* createPlainTextEditPage();
+    QWidget* createMenuBarPage();
+    QWidget* createToolBarPage();
+    QWidget* createAutoCompletePage();
+    QWidget* createCalendarPage();
+    QWidget* createColorPickerPage();
+    QWidget* createDockWidgetPage();
     QWidget* wrapPage(QWidget* page);
     AntTypography* createSectionTitle(const QString& title);
     void addNavButton(const QString& text, int pageIndex);
