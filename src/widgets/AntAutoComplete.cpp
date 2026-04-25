@@ -101,11 +101,15 @@ AntAutoComplete::AntAutoComplete(QWidget* parent)
         selectHighlighted();
     });
 
-    // Popup
-    m_popup = new QFrame(nullptr, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    // Popup — ToolTip avoids stealing keyboard focus from the lineEdit
+    m_popup = new QFrame(nullptr, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     m_popup->setAttribute(Qt::WA_TranslucentBackground);
+    m_popup->setAttribute(Qt::WA_ShowWithoutActivating);
     m_popup->setMouseTracking(true);
     m_popup->installEventFilter(this);
+
+    // Close popup when clicking outside
+    qApp->installEventFilter(this);
     m_popupLayout = new QVBoxLayout(m_popup);
     m_popupLayout->setContentsMargins(4, 4, 4, 4);
     m_popupLayout->setSpacing(0);
@@ -280,6 +284,16 @@ bool AntAutoComplete::eventFilter(QObject* watched, QEvent* event)
     if (watched == m_popup && event->type() == QEvent::Hide)
     {
         m_open = false;
+    }
+    // Close popup when clicking outside the widget + popup
+    if (m_open && event->type() == QEvent::MouseButtonPress)
+    {
+        auto* me = static_cast<QMouseEvent*>(event);
+        const QPoint globalPos = me->globalPos();
+        if (!rect().contains(mapFromGlobal(globalPos)) && !m_popup->rect().contains(m_popup->mapFromGlobal(globalPos)))
+        {
+            hidePopup();
+        }
     }
     return QWidget::eventFilter(watched, event);
 }

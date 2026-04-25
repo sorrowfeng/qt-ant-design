@@ -25,7 +25,7 @@
 ## 本次同步
 
 - 同步日期：`2026-04-25`
-- 已实现组件总数：`70`
+- 已实现组件总数：`80`
 - 已迁移至 `QProxyStyle` 的组件数：`62`
 - 仍使用 `paintEvent` 的组件数：`2`（AntWidget 为基础类 + AntAffix 为 QObject 工具类）
 - 以下 3 个组件不依赖 Style 类（纯容器/对话框）：`AntScrollArea`、`AntColorPicker`、`AntDockWidget`

@@ -156,6 +156,16 @@ set(QT_ANT_DESIGN_HEADERS
     src/widgets/AntCollapse.h
     src/widgets/AntSplitter.h
     src/widgets/AntLog.h
+    src/widgets/AntCarousel.h
+    src/widgets/AntGrid.h
+    src/widgets/AntFlex.h
+    src/widgets/AntAnchor.h
+    src/widgets/AntTransfer.h
+    src/widgets/AntTour.h
+    src/widgets/AntMentions.h
+    src/widgets/AntMasonry.h
+    src/widgets/AntApp.h
+    src/widgets/AntConfigProvider.h
 )
 
 set(QT_ANT_DESIGN_SOURCES
@@ -296,6 +306,16 @@ set(QT_ANT_DESIGN_SOURCES
     src/widgets/AntCollapse.cpp
     src/widgets/AntSplitter.cpp
     src/widgets/AntLog.cpp
+    src/widgets/AntCarousel.cpp
+    src/widgets/AntGrid.cpp
+    src/widgets/AntFlex.cpp
+    src/widgets/AntAnchor.cpp
+    src/widgets/AntTransfer.cpp
+    src/widgets/AntTour.cpp
+    src/widgets/AntMentions.cpp
+    src/widgets/AntMasonry.cpp
+    src/widgets/AntApp.cpp
+    src/widgets/AntConfigProvider.cpp
     resources/qt-ant-design.qrc
 )
 
@@ -448,6 +468,16 @@ install(FILES
     src/widgets/AntCollapse.h
     src/widgets/AntSplitter.h
     src/widgets/AntLog.h
+    src/widgets/AntCarousel.h
+    src/widgets/AntGrid.h
+    src/widgets/AntFlex.h
+    src/widgets/AntAnchor.h
+    src/widgets/AntTransfer.h
+    src/widgets/AntTour.h
+    src/widgets/AntMentions.h
+    src/widgets/AntMasonry.h
+    src/widgets/AntApp.h
+    src/widgets/AntConfigProvider.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/widgets
 )
 
