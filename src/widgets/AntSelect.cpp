@@ -4,6 +4,7 @@
 #include <QFocusEvent>
 #include <QFrame>
 #include <QKeyEvent>
+#include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -275,6 +276,34 @@ void AntSelect::setAllowClear(bool allowClear)
     m_allowClear = allowClear;
     update();
     Q_EMIT allowClearChanged(m_allowClear);
+}
+
+bool AntSelect::isEditable() const { return m_editable; }
+
+void AntSelect::setEditable(bool editable)
+{
+    if (m_editable == editable) return;
+    m_editable = editable;
+    if (editable)
+    {
+        if (!m_editField)
+        {
+            m_editField = new QLineEdit(this);
+            m_editField->setFrame(false);
+            m_editField->setStyleSheet(QStringLiteral("background:transparent; border:none;"));
+            m_editField->setVisible(false);
+            connect(m_editField, &QLineEdit::textChanged, this, [this]() {
+                if (!m_open) setOpen(true);
+                rebuildPopup();
+            });
+        }
+    }
+    else if (m_editField)
+    {
+        m_editField->hide();
+    }
+    update();
+    Q_EMIT editableChanged(m_editable);
 }
 
 bool AntSelect::isLoading() const { return m_loading; }
@@ -653,6 +682,11 @@ void AntSelect::rebuildPopup()
         return;
     }
 
+    // Filter for editable mode
+    QString filterText;
+    if (m_editable && m_editField)
+        filterText = m_editField->text().toLower();
+
     while (QLayoutItem* item = m_popupLayout->takeAt(0))
     {
         if (QWidget* widget = item->widget())
@@ -665,6 +699,8 @@ void AntSelect::rebuildPopup()
     const Metrics m = metrics();
     for (int i = 0; i < m_options.size(); ++i)
     {
+        if (!filterText.isEmpty() && !m_options.at(i).label.toLower().contains(filterText))
+            continue;
         auto* option = new AntSelectOptionWidget(this, i, m_popup);
         option->setFixedHeight(m.optionHeight);
         option->setEnabled(!m_options.at(i).disabled);

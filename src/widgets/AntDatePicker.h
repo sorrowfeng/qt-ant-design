@@ -52,6 +52,15 @@ public:
     bool allowClear() const;
     void setAllowClear(bool allowClear);
 
+    bool isRangeMode() const;
+    void setRangeMode(bool rangeMode);
+
+    QDate startDate() const;
+    void setStartDate(const QDate& date);
+
+    QDate endDate() const;
+    void setEndDate(const QDate& date);
+
     bool isOpen() const;
     void setOpen(bool open);
 
@@ -69,6 +78,9 @@ Q_SIGNALS:
     void statusChanged(Ant::DatePickerStatus status);
     void variantChanged(Ant::DatePickerVariant variant);
     void allowClearChanged(bool allowClear);
+    void rangeModeChanged(bool rangeMode);
+    void startDateChanged(const QDate& date);
+    void endDateChanged(const QDate& date);
     void openChanged(bool open);
     void cleared();
 
@@ -107,12 +119,16 @@ private:
 
     QDate m_selectedDate;
     QDate m_panelDate;
+    QDate m_startDate;
+    QDate m_endDate;
     QString m_displayFormat = QStringLiteral("yyyy-MM-dd");
     QString m_placeholderText = QStringLiteral("Select date");
     Ant::DatePickerSize m_pickerSize = Ant::DatePickerSize::Middle;
     Ant::DatePickerStatus m_status = Ant::DatePickerStatus::Normal;
     Ant::DatePickerVariant m_variant = Ant::DatePickerVariant::Outlined;
     bool m_allowClear = true;
+    bool m_rangeMode = false;
+    bool m_pickingEnd = false;
     bool m_hovered = false;
     bool m_pressed = false;
     bool m_open = false;

@@ -48,6 +48,9 @@ public:
     void setPrefixWidget(QWidget* widget);
     void setSuffixWidget(QWidget* widget);
 
+    bool isSearchMode() const;
+    void setSearchMode(bool searchMode);
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
     bool isInputFocused() const;
@@ -57,6 +60,7 @@ public:
 
 Q_SIGNALS:
     void textChanged(const QString& text);
+    void searchTriggered(const QString& text);
     void inputSizeChanged(Ant::InputSize size);
     void statusChanged(Ant::InputStatus status);
     void variantChanged(Ant::InputVariant variant);
@@ -104,6 +108,8 @@ private:
     bool m_allowClear = false;
     bool m_passwordMode = false;
     bool m_passwordVisible = false;
+    bool m_searchMode = false;
+    QToolButton* m_searchButton = nullptr;
     bool m_hovered = false;
     bool m_focused = false;
 };

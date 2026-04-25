@@ -9,6 +9,7 @@
 
 class QEnterEvent;
 class QEvent;
+class QLineEdit;
 class QFrame;
 class QFocusEvent;
 class QKeyEvent;
@@ -58,6 +59,9 @@ public:
     bool allowClear() const;
     void setAllowClear(bool allowClear);
 
+    bool isEditable() const;
+    void setEditable(bool editable);
+
     bool isLoading() const;
     void setLoading(bool loading);
 
@@ -94,6 +98,7 @@ Q_SIGNALS:
     void variantChanged(Ant::SelectVariant variant);
     void placeholderTextChanged(const QString& text);
     void allowClearChanged(bool allowClear);
+    void editableChanged(bool editable);
     void loadingChanged(bool loading);
     void openChanged(bool open);
     void currentIndexChanged(int index);
@@ -148,6 +153,7 @@ private:
     Ant::SelectVariant m_variant = Ant::SelectVariant::Outlined;
     QString m_placeholderText;
     bool m_allowClear = false;
+    bool m_editable = false;
     bool m_loading = false;
     bool m_hovered = false;
     bool m_pressed = false;
@@ -158,4 +164,5 @@ private:
     QVBoxLayout* m_popupLayout = nullptr;
     QPropertyAnimation* m_arrowAnimation = nullptr;
     QTimer* m_loadingTimer = nullptr;
+    QLineEdit* m_editField = nullptr;
 };

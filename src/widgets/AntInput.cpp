@@ -37,10 +37,23 @@ AntInput::AntInput(QWidget* parent)
     m_passwordButton->setText(QStringLiteral("..."));
     m_passwordButton->setAutoRaise(true);
     m_passwordButton->setFocusPolicy(Qt::NoFocus);
+    m_passwordButton->hide();
     connect(m_passwordButton, &QToolButton::clicked, this, [this]() {
         m_passwordVisible = !m_passwordVisible;
         m_lineEdit->setEchoMode(m_passwordVisible ? QLineEdit::Normal : QLineEdit::Password);
         m_passwordButton->setText(m_passwordVisible ? QStringLiteral("hide") : QStringLiteral("..."));
+    });
+
+    m_searchButton = new QToolButton(this);
+    m_searchButton->setText(QStringLiteral("⌕"));
+    m_searchButton->setAutoRaise(true);
+    m_searchButton->setFocusPolicy(Qt::NoFocus);
+    m_searchButton->hide();
+    connect(m_searchButton, &QToolButton::clicked, this, [this]() {
+        Q_EMIT searchTriggered(m_lineEdit->text());
+    });
+    connect(m_lineEdit, &QLineEdit::returnPressed, this, [this]() {
+        if (m_searchMode) Q_EMIT searchTriggered(m_lineEdit->text());
     });
 
     connect(m_lineEdit, &QLineEdit::textChanged, this, [this](const QString& value) {
@@ -118,6 +131,14 @@ void AntInput::setPasswordMode(bool passwordMode)
     m_lineEdit->setEchoMode(passwordMode ? QLineEdit::Password : QLineEdit::Normal);
     updateButtonVisibility();
     Q_EMIT passwordModeChanged(m_passwordMode);
+}
+
+bool AntInput::isSearchMode() const { return m_searchMode; }
+void AntInput::setSearchMode(bool searchMode)
+{
+    if (m_searchMode == searchMode) return;
+    m_searchMode = searchMode;
+    updateButtonVisibility();
 }
 
 void AntInput::setAddonBefore(const QString& text)
@@ -317,6 +338,7 @@ void AntInput::rebuildLayout()
     }
     m_layout->addWidget(m_clearButton);
     m_layout->addWidget(m_passwordButton);
+    m_layout->addWidget(m_searchButton);
     m_layout->addSpacing(m.paddingX);
     if (m_addonAfter)
         m_layout->addWidget(m_addonAfter);
@@ -329,6 +351,7 @@ void AntInput::updateButtonVisibility()
 {
     m_clearButton->setVisible(m_allowClear && !m_lineEdit->text().isEmpty() && isEnabled());
     m_passwordButton->setVisible(m_passwordMode);
+    m_searchButton->setVisible(m_searchMode);
 }
 
 void AntInput::updateVisualState()

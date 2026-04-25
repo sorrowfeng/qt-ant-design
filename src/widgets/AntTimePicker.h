@@ -56,6 +56,15 @@ public:
     bool allowClear() const;
     void setAllowClear(bool allowClear);
 
+    bool isRangeMode() const;
+    void setRangeMode(bool rangeMode);
+
+    QTime startTime() const;
+    void setStartTime(const QTime& time);
+
+    QTime endTime() const;
+    void setEndTime(const QTime& time);
+
     bool isOpen() const;
     void setOpen(bool open);
 
@@ -83,6 +92,9 @@ Q_SIGNALS:
     void statusChanged(Ant::TimePickerStatus status);
     void variantChanged(Ant::TimePickerVariant variant);
     void allowClearChanged(bool allowClear);
+    void rangeModeChanged(bool rangeMode);
+    void startTimeChanged(const QTime& time);
+    void endTimeChanged(const QTime& time);
     void openChanged(bool open);
     void hourStepChanged(int step);
     void minuteStepChanged(int step);
@@ -127,12 +139,16 @@ private:
 
     QTime m_selectedTime;
     QTime m_panelTime;
+    QTime m_startTime;
+    QTime m_endTime;
     QString m_displayFormat = QStringLiteral("HH:mm:ss");
     QString m_placeholderText = QStringLiteral("Select time");
     Ant::TimePickerSize m_pickerSize = Ant::TimePickerSize::Middle;
     Ant::TimePickerStatus m_status = Ant::TimePickerStatus::Normal;
     Ant::TimePickerVariant m_variant = Ant::TimePickerVariant::Outlined;
     bool m_allowClear = true;
+    bool m_rangeMode = false;
+    bool m_pickingEnd = false;
     bool m_hovered = false;
     bool m_open = false;
     bool m_showNow = true;
