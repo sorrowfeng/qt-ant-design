@@ -22,92 +22,55 @@
 - `ElaTheme` / 自绘控件的状态管理、动画、主题切换
 - Ant Design 的 token、组件状态、尺寸、交互和视觉层级
 
-## 本次同步
+## 项目状态
 
 - 同步日期：`2026-04-25`
 - 已实现组件总数：`80`
-- 已迁移至 `QProxyStyle` 的组件数：`62`
-- 仍使用 `paintEvent` 的组件数：`2`（AntWidget 为基础类 + AntAffix 为 QObject 工具类）
-- 以下 3 个组件不依赖 Style 类（纯容器/对话框）：`AntScrollArea`、`AntColorPicker`、`AntDockWidget`
-- 示例程序覆盖：`66 / 66`，当前所有已实现组件均已在 `examples/ExampleWindow.cpp` 中展示
+- Ant Design 标准组件覆盖率：`74 / 74`（100%）
+- Qt 专有组件：`6`（AntWindow、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar）
+- 已迁移至 `QProxyStyle` 的组件数：`~62`
+- 不依赖 Style 类的组件：`AntScrollArea`、`AntColorPicker`、`AntDockWidget`、`AntWidget`、`AntAffix`、`AntApp`、`AntConfigProvider`
+- 示例程序覆盖：`80 / 80`，所有组件均可在 `examples/ExampleWindow.cpp` 中查看
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntTypography` 替代 `QLabel` 实现主题感知文本
-- 新增通用工具类：`AntWave`（`core/`，Ant Design 点击涟漪动画 overlay）
 
-## 本轮视觉增强
+## 本轮新增组件（2026-04-25，第 2-4 批）
 
-- **Tag 13 色预设**：`AntPalette::presetColor()` 加入 `blue/purple/cyan/green/magenta/pink/red/orange/yellow/volcano/geekblue/gold/lime` 13 色映射；AntTag / AntTagStyle 接入
-- **Table 空态**：`AntTableStyle::drawTable` 在 `rowCount == 0 && !loading` 时居中绘制 Empty 插画 + "No Data" 文案
-- **Input 3 变体**：新增 `Ant::InputVariant { Outlined, Borderless, Filled, Underlined }`；`AntInput::setVariant` 控制；`AntInputStyle` 按变体分支绘制
-- **Wave 涟漪动画**：`core/AntWave` 新增，点击时在目标 widget 外绘制扩散阴影环（420ms OutCubic，opacity 0.2→0）；Button / Checkbox / Radio 已接入
-- **Modal/Drawer 进场动画**：Modal 使用 `QVariantAnimation` 驱动 `m_animProgress` + `QGraphicsOpacityEffect` 做 fade，`AntModalStyle` mask 透明度跟随动画；Drawer 新增 `maskProgress()`，mask 透明度跟随滑动进度
+### 第一批：Qt 基础设施（9 个）
+- `AntToolButton` — QToolButton + QProxyStyle，dropdown 箭头动画
+- `AntScrollArea` — QScrollArea 包裹器，AntScrollBar + QScroller
+- `AntPlainTextEdit` — QPlainTextEdit + eventFilter Style，3 变体
+- `AntMenuBar` — QMenuBar + drawControl Style
+- `AntToolBar` — QToolBar + drawControl Style，浮动阴影
+- `AntDockWidget` — QDockWidget，自定义标题栏，Win32 resize
+- `AntAutoComplete` — QWidget 组合，弹出建议，键盘导航
+- `AntCalendar` — QTableView + Model/View，Day/Month/Year 三态
+- `AntColorPicker` — QDialog，HS field，RGB/HSV，预设/自定义颜色
 
-## 本轮 Bug 修复
+### 第二批：数据展示与布局（4 个）
+- `AntImage` — 图片展示 + 全屏预览
+- `AntCollapse` — 折叠面板/手风琴，InOutCubic 动画
+- `AntSplitter` — QSplitter 主题化手柄
+- `AntLog` — 5 级别日志输出，彩色时间戳
 
-- **AntQRGenerator 启动闪退**：`reedSolomonGenerator` 越界 `result[-1]`（循环下界改 `j >= 1`）；`gfMul` GF(256) 周期折叠（`sum >= 255 ? sum - 255 : sum`），修复 QR 码 ECC 错误
-- **AntCascaderStyle eventFilter**：Paint 分支 `return false` 改 `return true`，与其他 53 个 Style 保持一致，避免叠加绘制
-- **AntMenu 空白**：`AntMenu::paintEvent` 原为空壳，`AntMenuStyle::eventFilter` 又 `return true` 吞了 Paint；现由 AntMenu 自行绘制背景 + 分隔线 + items（沿用已有 `drawItem`），Style 不再拦截 Paint。修复 Menu 页和 Dropdown popup 里菜单项全部不显示的问题
-- **AntDropdown hover 闪烁**：原来依赖 target Enter/Leave 事件判定 open/close，Qt::Popup 抢 mouse grab 和 Qt::ToolTip 弹出时触发"假 Leave"导致循环开合。改用 **鼠标位置轮询**（`QTimer` 60ms tick，连续 3 tick 不在 target ∪ popup 范围才关闭），popup 改 `Qt::ToolTip + WA_ShowWithoutActivating`，手动 `qApp` event filter 拦截外部点击关闭
-- **AntBadge indicator 位置/裁切**：
-  - 绘制顺序错误：AntBadge `paintEvent` 在子 widget 之前，indicator 被 content（AntButton）的不透明背景覆盖。新增透明 overlay 子 widget `m_indicatorOverlay`（z 序最顶），在 overlay `paintEvent` 里调 `AntBadgeStyle` 的 `drawPrimitive` 画 indicator；AntBadgeStyle eventFilter 不再拦截 AntBadge Paint
-  - 尺寸策略：`QSizePolicy::Minimum/Minimum` + `adjustSize()` 确保 badge 严格按 hint 大小
-  - Content 四周预留 `kShadowMargin = 8` 给 AntButton 阴影呼吸空间，防止右/下边框和阴影被 parent 裁切
+### 第三批：Ant Design 标准组件补齐（10 个）
+- `AntCarousel` — 轮播图，自动播放，圆点指示器
+- `AntGrid` (Row/Col) — 24 列栅格布局，span/offset
+- `AntFlex` — Flex 布局，gap/wrap/vertical
+- `AntAnchor` — 滚动锚点导航，active 高亮
+- `AntTransfer` — 穿梭框，双列表转移
+- `AntTour` — 遮罩式分步引导
+- `AntMentions` — @提及输入
+- `AntMasonry` — 瀑布流布局
+- `AntApp` — 应用包裹器
+- `AntConfigProvider` — 主题配置提供者
 
-## 近期更新摘要
-
-根据最近 20 条提交记录，近期主要改动如下：
-
-- 新增组件：
-  - `AntSegmented`（分段控制器，滑动指示器动画，选项图标/禁用/提示）
-  - `AntFloatButton`（浮动按钮，圆形/方形，Group/BackTop 模式，Badge）
-  - `AntWatermark`（水印叠加层，旋转文本平铺，自定义字体/间距/偏移）
-  - `AntQRCode`（二维码展示，嵌入式 QR 生成器，状态叠加层，图标支持）
-  - `AntAffix`（固钉工具，QObject 辅助类，滚动吸附/解除）
-  - `AntWidget`（基础类，自动处理主题切换）
-  - `AntTable`（数据表格，支持排序、选择、分页）
-  - `AntTree`（树形控件，支持展开/收起、选择、复选框）
-  - `AntUpload`（文件上传，支持文本/图片/卡片模式）
-  - `AntCascader`（级联选择器，多列弹出）
-  - `AntTreeSelect`（树形选择器，下拉树形结构）
-  - `AntWindow`（无边框窗口，自定义标题栏、拖拽、最小化/最大化/关闭按钮）
-  - `AntDrawer`（滑动面板，支持四个方向、动画、遮罩层）
-  - `AntStatusBar`（状态栏，左右项、分隔符、消息区、size grip）
-  - `AntScrollBar`（自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮）
-  - `AntList`
-  - `AntStatistic`
-  - `AntResult`
-  - `AntAlert`
-  - `AntDropdown`
-  - `AntDescriptions`
-  - `AntEmpty`
-  - `AntForm`
-  - `AntIcon`
-  - `AntInputNumber`
-  - `AntModal`
-  - `AntSkeleton`
-  - `AntSteps`
-  - `AntPopover`
-  - `AntPopconfirm`
-  - `AntTooltip`
-  - `AntMenu`
-  - `AntTabs`
-  - `AntBreadcrumb`
-  - `AntPagination`
-  - `AntTag`
-  - `AntBadge`
-  - `AntAvatar`
-  - `AntDivider`
-- 文档与工程整理：
-  - 新增并完善 `README.md`
-  - 补充开发说明文档
-  - 将 `AntButtonStyle` 统一归档到 `src/styles/`
-- 架构迁移到 `QProxyStyle`：
-  - 全部 42 个组件已完成迁移
-- 示例程序重构：
-  - `ExampleWindow` 改为继承 `AntWindow`，移除手动标题栏和鼠标拖拽逻辑
-  - 使用 `AntWidget` 作为布局容器替代裸 `QWidget`
-  - 使用 `AntTypography` 替代 `QLabel`，实现主题切换下的文字颜色自适应
-  - 使用 `AntScrollBar` 替代原生 `QScrollBar`
-  - 移除所有 `setStyleSheet` 调用（仅保留 Layout 演示页的区域背景色）
+### 已有组件增强
+- AntInput：新增 `searchMode` + `searchTriggered` 信号
+- AntSelect：新增 `editable` 模式，内联过滤
+- AntDatePicker：新增 `rangeMode`/`startDate`/`endDate`
+- AntTimePicker：新增 `rangeMode`/`startTime`/`endTime`
+- AntButtonStyle：修复 `adjusted(0,0,-1,-1)` 导致右/下边框 1px 缺失
+- AntAutoComplete：修复 Qt::Popup 抢占焦点问题
 
 ## 当前组件状态
 
@@ -115,110 +78,120 @@
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntButton` | `button` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntButtonStyle` |
-| `AntFloatButton` | `float-button` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntFloatButtonStyle`；圆形/方形、Group/BackTop、Badge |
-| `AntIcon` | `icon` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntIconStyle`；支持 `Outlined / Filled / TwoTone`、旋转、spin、自定义路径 |
+| `AntButton` | `button` | `QProxyStyle` | 是 | 五种类型、三种尺寸、三种形状 |
+| `AntFloatButton` | `float-button` | `QProxyStyle` | 是 | 圆形/方形、Group/BackTop、Badge |
+| `AntIcon` | `icon` | `QProxyStyle` | 是 | Outlined/Filled/TwoTone、旋转、spin |
+| `AntTypography` | `typography` | `QProxyStyle` | 是 | Title(H1-H5)/Text/Paragraph |
 
 ### 导航
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntBreadcrumb` | `breadcrumb` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntBreadcrumbStyle`；路径项、分隔符、禁用项 |
-| `AntDropdown` | `dropdown` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDropdownStyle`；`hover / click / contextMenu`、placement、arrow、auto flip |
-| `AntMenu` | `menu` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntMenuStyle`；`vertical / horizontal / inline`、明暗主题 |
-| `AntPagination` | `pagination` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntPaginationStyle`；`simple / showQuickJumper / showSizeChanger` |
-| `AntSteps` | `steps` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntStepsStyle`；水平/垂直、当前步骤、错误态、点击切换 |
-| `AntTabs` | `tabs` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTabsStyle`；`line / card / editable-card` |
+| `AntAnchor` | `anchor` | 自绘 | 是 | 滚动锚点，active 高亮 |
+| `AntBreadcrumb` | `breadcrumb` | `QProxyStyle` | 是 | 路径项、分隔符、禁用项 |
+| `AntDropdown` | `dropdown` | `QProxyStyle` | 是 | hover/click/contextMenu、placement、arrow |
+| `AntMenu` | `menu` | `QProxyStyle` | 是 | vertical/horizontal/inline、明暗主题 |
+| `AntPagination` | `pagination` | `QProxyStyle` | 是 | simple/showQuickJumper/showSizeChanger |
+| `AntSteps` | `steps` | `QProxyStyle` | 是 | 水平/垂直、当前步骤、错误态 |
+| `AntTabs` | `tabs` | `QProxyStyle` | 是 | line/card/editable-card |
 
 ### 数据录入
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntCheckbox` | `checkbox` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntCheckboxStyle` |
-| `AntDatePicker` | `date-picker` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDatePickerStyle`；自绘日期弹层 |
-| `AntDescriptions` | `descriptions` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDescriptionsStyle`；标题、extra、bordered、vertical、自定义值控件 |
-| `AntForm` | `form` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntFormStyle`；`AntForm / AntFormItem`、横向/纵向/行内布局、说明和校验提示 |
-| `AntInput` | `input` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputStyle` |
-| `AntInputNumber` | `input-number` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntInputNumberStyle` |
-| `AntRadio` | `radio` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntRadioStyle` |
-| `AntRate` | `rate` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntRateStyle`；`count / value / allowHalf / allowClear / disabled / size`，hover 放大效果 |
-| `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSegmentedStyle`；选项块、滑动指示器动画、图标、禁用项 |
-| `AntSelect` | `select` | `QProxyStyle` | 是 | 主控件迁移到 `src/styles/AntSelectStyle`，popup row 保持自绘 |
-| `AntSlider` | `slider` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSliderStyle` |
-| `AntSwitch` | `switch` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSwitchStyle` |
-| `AntTimePicker` | `time-picker` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTimePickerStyle`；自绘时间弹层 |
-| `AntUpload` | `upload` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntUploadStyle`；文本/图片/卡片三种模式，文件列表管理 |
-| `AntCascader` | `cascader` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntCascaderStyle`；多列弹出面板，点击/悬停展开 |
-| `AntTreeSelect` | `tree-select` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTreeSelectStyle`；下拉树形结构，支持多选和搜索 |
+| `AntAutoComplete` | `auto-complete` | `QProxyStyle` | 是 | 建议弹出、键盘导航 |
+| `AntCascader` | `cascader` | `QProxyStyle` | 是 | 多列弹出面板、点击/悬停展开 |
+| `AntCheckbox` | `checkbox` | `QProxyStyle` | 是 | |
+| `AntColorPicker` | `color-picker` | 自绘 | 是 | HS field、RGB/HSV、预设、static getColor() |
+| `AntDatePicker` | `date-picker` | `QProxyStyle` | 是 | 自绘日期弹层、RangePicker |
+| `AntDescriptions` | `descriptions` | `QProxyStyle` | 是 | 标题、extra、bordered、vertical |
+| `AntForm` | `form` | `QProxyStyle` | 是 | 横向/纵向/行内布局、校验提示 |
+| `AntInput` | `input` | `QProxyStyle` | 是 | 尺寸、状态、Password/Search、addon |
+| `AntInputNumber` | `input-number` | `QProxyStyle` | 是 | 精度、小步进、前后缀 |
+| `AntMentions` | `mentions` | `QProxyStyle` | 是 | @提及输入，弹出建议 |
+| `AntRadio` | `radio` | `QProxyStyle` | 是 | Radio.Group |
+| `AntRate` | `rate` | `QProxyStyle` | 是 | count/value/allowHalf/hover 放大 |
+| `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 滑动指示器动画、图标/禁用 |
+| `AntSelect` | `select` | `QProxyStyle` | 是 | 尺寸、状态、变体、可编辑模式 |
+| `AntSlider` | `slider` | `QProxyStyle` | 是 | |
+| `AntSwitch` | `switch` | `QProxyStyle` | 是 | |
+| `AntTimePicker` | `time-picker` | `QProxyStyle` | 是 | 自绘时间弹层、RangePicker |
+| `AntTransfer` | `transfer` | 自绘 | 是 | 穿梭框、双列表 |
+| `AntTreeSelect` | `tree-select` | `QProxyStyle` | 是 | 下拉树形结构 |
+| `AntUpload` | `upload` | `QProxyStyle` | 是 | 文本/图片/卡片三种模式 |
 
 ### 反馈
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntMessage` | `message` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntMessageStyle`；`Qt::ToolTip` 浮层消息 |
-| `AntModal` | `modal` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntModalStyle`；遮罩层、标题/正文、自定义内容、自定义 footer、确认/取消 |
-| `AntNotification` | `notification` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntNotificationStyle`；多 placement 通知 |
-| `AntProgress` | `progress` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntProgressStyle`；`line / circle / dashboard` |
-| `AntSpin` | `spin` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSpinStyle` |
-| `AntAlert` | `alert` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntAlertStyle`；`type / icon / description / closable / banner / action` |
-| `AntTooltip` | `tooltip` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTooltipStyle`；`title / placement / color / arrow / delay / auto flip` |
-| `AntPopover` | `popover` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntPopoverStyle`；`title / content / action / hover / click / placement` |
-| `AntPopconfirm` | `popconfirm` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntPopconfirmStyle`；`title / description / ok / cancel / disabled / placement` |
-| `AntResult` | `result` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntResultStyle`；`status / title / subTitle / extra / iconVisible` |
-| `AntWatermark` | `watermark` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntWatermarkStyle`；旋转文本平铺、多行、自定义字体/间距/偏移 |
+| `AntAlert` | `alert` | `QProxyStyle` | 是 | type/icon/description/closable/banner |
+| `AntDrawer` | `drawer` | `QProxyStyle` | 是 | Left/Right/Top/Bottom、动画、遮罩 |
+| `AntMessage` | `message` | `QProxyStyle` | 是 | Qt::ToolTip 浮层消息 |
+| `AntModal` | `modal` | `QProxyStyle` | 是 | 遮罩层、标题/正文、自定义 footer |
+| `AntNotification` | `notification` | `QProxyStyle` | 是 | 多 placement 通知 |
+| `AntPopconfirm` | `popconfirm` | `QProxyStyle` | 是 | title/description/ok/cancel/placement |
+| `AntPopover` | `popover` | `QProxyStyle` | 是 | title/content/action/hover/click/placement |
+| `AntProgress` | `progress` | `QProxyStyle` | 是 | line/circle/dashboard |
+| `AntResult` | `result` | `QProxyStyle` | 是 | status/title/subTitle/extra |
+| `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | active shimmer、头像/标题/段落占位 |
+| `AntSpin` | `spin` | `QProxyStyle` | 是 | small/middle/large/percent/delay |
+| `AntTooltip` | `tooltip` | `QProxyStyle` | 是 | title/placement/color/arrow/delay |
+| `AntWatermark` | `watermark` | `QProxyStyle` | 是 | 旋转文本平铺、多行、自定义间距 |
+| `AntTour` | `tour` | 自绘 | 是 | 遮罩式分步引导、目标高亮 |
 
 ### 数据展示
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntAvatar` | `avatar` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntAvatarStyle`；文本、图标、图片头像 |
-| `AntList` | `list` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntListStyle`；`header / footer / bordered / split / size / AntListItem / AntListItemMeta` |
-| `AntStatistic` | `statistic` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntStatisticStyle`；`title / value / precision / prefix / suffix / groupSeparator` |
-| `AntBadge` | `badge` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntBadgeStyle`；`count / dot / status / processing` |
-| `AntCard` | `card` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntCardStyle`；封面、额外区、操作区、loading |
-| `AntEmpty` | `empty` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntEmptyStyle`；默认插画、simple 模式、描述、自定义尺寸、extra action |
-| `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntSkeletonStyle`；`active / avatar / title / paragraph / round / loading` |
-| `AntTag` | `tag` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTagStyle`；`closable / checkable / variant` |
-| `AntQRCode` | `qr-code` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntQRCodeStyle`；嵌入式 QR 生成、状态叠加、图标、无边框 |
-| `AntTable` | `table` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTableStyle`；列排序、行选择、分页、加载状态 |
-| `AntTree` | `tree` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntTreeStyle`；展开/收起、节点选择、复选框、连接线 |
+| `AntAvatar` | `avatar` | `QProxyStyle` | 是 | 文本、图标、图片头像 |
+| `AntBadge` | `badge` | `QProxyStyle` | 是 | count/dot/status/processing |
+| `AntCalendar` | `calendar` | `QProxyStyle` | 是 | Day/Month/Year 三态 |
+| `AntCard` | `card` | `QProxyStyle` | 是 | 封面、extra、action 区、loading |
+| `AntCarousel` | `carousel` | 自绘 | 是 | 自动播放、圆点指示器 |
+| `AntCollapse` | `collapse` | 自绘 | 是 | 折叠面板、accordion 模式、动画 |
+| `AntEmpty` | `empty` | `QProxyStyle` | 是 | 默认插画、simple 模式 |
+| `AntImage` | `image` | 自绘 | 是 | 图片展示、全屏预览 |
+| `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size |
+| `AntPopover` | — | `QProxyStyle` | 是 | 已在反馈类 |
+| `AntQRCode` | `qr-code` | `QProxyStyle` | 是 | 嵌入式 QR 生成、状态叠加 |
+| `AntStatistic` | `statistic` | `QProxyStyle` | 是 | title/value/precision/prefix/suffix |
+| `AntTable` | `table` | `QProxyStyle` | 是 | 排序、选择、分页、空态插画 |
+| `AntTag` | `tag` | `QProxyStyle` | 是 | 13 色预设、closable/checkable/variant |
+| `AntTimeline` | `timeline` | `QProxyStyle` | 是 | 垂直/水平、outlined/filled、颜色 |
+| `AntTooltip` | — | `QProxyStyle` | 是 | 已在反馈类 |
+| `AntTree` | `tree` | `QProxyStyle` | 是 | 展开/收起、选择、复选框、连接线 |
 
-### 布局与其他
+### 布局及其他
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntDivider` | `divider` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDividerStyle`；水平/垂直、带标题、虚线/点线 |
-| `AntSpace` | `space` | `QProxyStyle` | 是 | `src/styles/AntSpaceStyle`；水平/垂直间距容器，Small/Middle/Large，支持自定义间距 |
-| `AntLayout` | `layout` | `QProxyStyle` | 是 | `src/styles/AntLayoutStyle`；Header/Footer/Content/Sider 布局，Sider 可折叠 |
-| `AntTimeline` | `timeline` | `QProxyStyle` | 是 | `src/styles/AntTimelineStyle`；垂直/水平时间轴，outlined/filled，颜色预设 |
-| `AntTypography` | `typography` | `QProxyStyle` | 是 | `src/styles/AntTypographyStyle`；Title(H1-H5)/Text/Paragraph，类型/装饰/复制 |
-| `AntWidget` | — | — | 是 | 基础 QWidget 子类，自动处理主题切换，提供 tokens() 和 onThemeChanged() |
-| `AntWindow` | — | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntWindowStyle`；无边框窗口，自定义标题栏、拖拽、最小化/最大化/关闭按钮 |
-| `AntDrawer` | `drawer` | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntDrawerStyle`；滑动面板，Left/Right/Top/Bottom、动画、遮罩层 |
-| `AntStatusBar` | — | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntStatusBarStyle`；左右项、分隔符、消息区、size grip |
-| `AntScrollBar` | — | `QProxyStyle` | 是 | 已迁移至 `src/styles/AntScrollBarStyle`；8px 细滚动条、自动隐藏、无箭头按钮 |
-| `AntAffix` | `affix` | QObject 工具 | 是 | QObject 辅助类，监听滚动容器，吸附时创建占位并重新布局 |
+| `AntAffix` | `affix` | QObject 工具 | 是 | 滚动吸附/解除 |
+| `AntApp` | `app` | QObject 工具 | 是 | 应用包裹器 |
+| `AntConfigProvider` | `config-provider` | QObject 工具 | 是 | 主题配置 |
+| `AntDivider` | `divider` | `QProxyStyle` | 是 | 水平/垂直、带标题、虚线 |
+| `AntFlex` | `flex` | 自绘 | 是 | 弹性布局、gap/wrap/vertical |
+| `AntGrid` (Row/Col) | `grid` | 自绘 | 是 | 24 列栅格、span/offset |
+| `AntLayout` | `layout` | `QProxyStyle` | 是 | Header/Footer/Content/Sider |
+| `AntMasonry` | `masonry` | 自绘 | 是 | 瀑布流、最短列优先 |
+| `AntSpace` | `space` | `QProxyStyle` | 是 | 水平/垂直间距容器 |
+| `AntSplitter` | `splitter` | 自绘 | 是 | 可拖拽分割面板 |
 
-## 待移植组件
+### Qt 专有组件
 
-以下清单基于 `submodules/ant-design/components/` 扫描，并扣除当前已实现组件后整理。仅保留与 Qt Widgets 组件库相关度较高的部分，按优先级排序。
-
-### 高优先级
-
-### 中优先级
-
-### 后续扩展
-
-- [ ] `AntCalendar`
-- [ ] `AntImage`
-- [ ] `AntAutoComplete`
-- [ ] `AntMentions`
-- [ ] `AntTransfer`
-- [ ] `AntSplitter`
-- [ ] `AntColorPicker`
-- [ ] `AntCarousel`
-- [ ] `AntTour`
-- [ ] `AntAnchor`
+| 组件 | 绘制方式 | 示例覆盖 | 说明 |
+| --- | --- | --- | --- |
+| `AntWidget` | — | 是 | 基础 QWidget，自动主题切换 |
+| `AntWindow` | `QProxyStyle` | 是 | 无边框窗口，自定义标题栏 |
+| `AntDockWidget` | 自绘 | 是 | 可停靠面板，Win32 resize |
+| `AntStatusBar` | `QProxyStyle` | 是 | 状态栏 |
+| `AntScrollBar` | `QProxyStyle` | 是 | 8px 细滚动条，自动隐藏 |
+| `AntScrollArea` | — | 是 | QScrollArea + AntScrollBar + QScroller |
+| `AntMenuBar` | `QProxyStyle` | 是 | 菜单栏 |
+| `AntToolBar` | `QProxyStyle` | 是 | 工具栏 |
+| `AntToolButton` | `QProxyStyle` | 是 | 带下拉菜单的按钮 |
+| `AntPlainTextEdit` | `QProxyStyle` | 是 | 多行文本编辑器 |
+| `AntLog` | 自绘 | 是 | 日志输出控件 |
+| `AntWave` | — | — | 涟漪动画 overlay（core/） |
 
 ## 开发规范
 
@@ -236,88 +209,25 @@
 - CMake 安装时，公开 Style 头文件需安装到：
   - `install/include/qt-ant-design/styles/`
 - 已迁移到 `QProxyStyle` 的组件，应在构造函数中安装独立 Style，并在主题切换时触发：
-  - `polish`
-  - `updateGeometry`
-  - `update`
-- 所有组件均已迁移到 `QProxyStyle`，新组件开发必须按 `QProxyStyle` 架构设计
+  - `polish` → `updateGeometry` → `update`
+- 纯容器/对话框组件（如 AntScrollArea、AntColorPicker）可不含独立 Style 类
 - 主题切换统一监听：
   - `AntTheme::themeChanged`
   - 或 `AntTheme::themeModeChanged`
-- 每次新增组件或架构迁移后，必须同步更新：
+- 每次新增组件后，必须同步更新：
   - `AGENT.md`
   - `README.md`
   - `examples/ExampleWindow.cpp`
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 50 个已实现组件，左侧导航与右侧页面一一对应，当前没有”已实现但未展示”的组件。
+当前 `examples/ExampleWindow.cpp` 已覆盖全部 80 个组件，左侧导航与右侧页面一一对应。
 
 示例程序架构：
 - `ExampleWindow` 继承 `AntWindow`（无边框窗口，自定义标题栏）
 - 使用 `AntWidget` 作为侧边栏和内容区容器
 - 使用 `AntTypography` 替代 `QLabel`，通过 `setTitle()` / `setParagraph()` / `setType()` 实现主题感知
 - 使用 `AntScrollBar` 替代原生滚动条
-- 仅保留 3 处 `QLabel`（需要 `setAlignment(Qt::AlignCenter)` 的场景）
-
-当前示例页包括：
-
-- `Button`
-- `Breadcrumb`
-- `Checkbox`
-- `DatePicker`
-- `Descriptions`
-- `Dropdown`
-- `Input`
-- `Message`
-- `Menu`
-- `Tabs`
-- `Badge`
-- `Avatar`
-- `Tag`
-- `Notification`
-- `Popover`
-- `Popconfirm`
-- `Modal`
-- `Pagination`
-- `Progress`
-- `Radio`
-- `Select`
-- `Slider`
-- `Spin`
-- `Steps`
-- `Switch`
-- `TimePicker`
-- `Card`
-- `Skeleton`
-- `Divider`
-- `Icon`
-- `InputNumber`
-- `Alert`
-- `Tooltip`
-- `Form`
-- `Empty`
-- `Result`
-- `Rate`
-- `List`
-- `Statistic`
-- `Timeline`
-- `Space`
-- `Layout`
-- `Typography`
-- `Table`
-- `Tree`
-- `Upload`
-- `Cascader`
-- `TreeSelect`
-- `Window`
-- `Drawer`
-- `StatusBar`
-- `ScrollBar`
-- `Segmented`
-- `FloatButton`
-- `Watermark`
-- `QRCode`
-- `Affix`
 
 ## 构建与安装
 

@@ -14,9 +14,9 @@
 
 - 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
-- 当前已移植 `80` 个核心组件
-- 全部 `62` 个组件均已迁移到 `QProxyStyle` 架构（另 3 个为容器/对话框，1 个为 QObject 工具类）
-- 示例程序已覆盖全部 `66` 个已实现组件
+- 当前已移植 `80` 个核心组件（Ant Design 标准组件 74/74 全覆盖）
+- 全部 `~62` 个组件使用 `QProxyStyle` 架构绘制
+- 示例程序已覆盖全部 `80` 个已实现组件
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
 
 ## 安装与集成
@@ -125,16 +125,17 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现组件总数：`66`
+当前已实现组件总数：`80`
 
 | 分类 | 组件 | 当前绘制方式 |
 | --- | --- | --- |
-| 通用 | `AntButton` `AntFloatButton` `AntIcon` | `QProxyStyle` |
-| 导航 | `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | `QProxyStyle` |
-| 数据录入 | `AntCheckbox` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntRadio` `AntRate` `AntSegmented` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` `AntUpload` `AntCascader` `AntTreeSelect` | `QProxyStyle` |
-| 反馈 | `AntAlert` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntSpin` `AntTooltip` `AntResult` `AntWatermark` | `QProxyStyle` |
-| 数据展示 | `AntAvatar` `AntBadge` `AntCard` `AntEmpty` `AntList` `AntQRCode` `AntSkeleton` `AntStatistic` `AntTag` `AntTable` `AntTree` | `QProxyStyle` |
-| 布局与其他 | `AntAffix` `AntDivider` `AntSpace` `AntLayout` `AntTimeline` `AntTypography` `AntWidget` `AntWindow` `AntDrawer` `AntStatusBar` `AntScrollBar` | `QProxyStyle` |
+| 通用 | `AntButton` `AntFloatButton` `AntIcon` `AntTypography` | `QProxyStyle` |
+| 导航 | `AntAnchor` `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | `QProxyStyle` |
+| 数据录入 | `AntAutoComplete` `AntCascader` `AntCheckbox` `AntColorPicker` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntMentions` `AntRadio` `AntRate` `AntSegmented` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` `AntTransfer` `AntTreeSelect` `AntUpload` | `QProxyStyle` |
+| 反馈 | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntTooltip` `AntTour` `AntWatermark` | `QProxyStyle` |
+| 数据展示 | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | `QProxyStyle` |
+| 布局与其他 | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | `QProxyStyle` |
+| Qt 专有 | `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | `QProxyStyle` |
 
 ### 组件概览
 
@@ -181,6 +182,29 @@ int main(int argc, char* argv[])
 - `AntWatermark`：水印叠加层，旋转文本平铺，多行内容，自定义字体/颜色/间距/偏移/角度
 - `AntQRCode`：二维码展示，嵌入式 QR 生成器（无外部依赖），状态叠加层（过期/加载/已扫描），图标，无边框
 - `AntAffix`：固钉工具，QObject 辅助类，监听滚动容器，自动吸附/解除，占位保持布局
+- `AntAutoComplete`：自动完成输入，弹出建议列表，键盘导航
+- `AntCalendar`：日历面板，Day/Month/Year 三态切换，日期选择
+- `AntCarousel`：轮播图，自动播放，圆点指示器，点击翻页
+- `AntCollapse`：折叠面板/手风琴，InOutCubic 展开动画，accordion 互斥模式
+- `AntColorPicker`：颜色选择器，HS field + value slider + RGB/HSV 输入，预设/自定义颜色
+- `AntImage`：图片展示，placeholder fallback，点击全屏预览
+- `AntTransfer`：穿梭框，双列表批量转移
+- `AntTour`：遮罩式分步引导，目标高亮，Prev/Next/Finish
+- `AntMentions`：@提及输入，输入 @ 弹出建议
+- `AntGrid` (Row/Col)：24 列栅格布局，span/offset/gutter
+- `AntFlex`：弹性布局容器，gap/wrap/vertical
+- `AntMasonry`：瀑布流布局，最短列优先
+- `AntSplitter`：可拖拽分割面板，主题色手柄
+- `AntAnchor`：滚动锚点导航，active 链接高亮
+- `AntApp`：应用包裹器，message/modal/notification 上下文
+- `AntConfigProvider`：主题/主色/字号/圆角全局配置
+- `AntToolButton`：QToolButton + QProxyStyle，dropdown 箭头动画
+- `AntMenuBar`：QMenuBar 主题化
+- `AntToolBar`：QToolBar 主题化，浮动阴影
+- `AntDockWidget`：可停靠面板，自定义标题栏，Win32 resize 边缘
+- `AntScrollArea`：QScrollArea + AntScrollBar + QScroller 手势滚动
+- `AntPlainTextEdit`：多行文本编辑器，3 种变体，上下文菜单
+- `AntLog`：5 级别彩色日志输出（Debug/Info/Success/Warning/Error），时间戳
 
 ## 使用示例
 
@@ -251,25 +275,6 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 6. 更新 `AGENT.md` 与 `README.md`
 
 欢迎提交 Issue 和 PR。
-
-## 路线图
-
-当前高优先级待开发组件：
-
-（暂无）
-
-后续还会继续推进：
-
-- `AntCalendar`（日历）
-- `AntImage`（图片）
-- `AntCarousel`（轮播图）
-- `AntColorPicker`（颜色选择器）
-- `AntTransfer`（穿梭框）
-- `AntAutoComplete`（自动完成）
-- `AntTour`（漫游式引导）
-- `AntAnchor`（锚点）
-- `AntSplitter`（分割面板）
-- `AntMentions`（提及）
 
 ## 致谢
 
