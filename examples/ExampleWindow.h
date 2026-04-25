@@ -20,6 +20,7 @@ protected:
     QSize sizeHint() const override;
 
 private:
+    QWidget* createShowcasePage();
     QWidget* createAlertPage();
     QWidget* createButtonPage();
     QWidget* createAvatarPage();
@@ -86,6 +87,16 @@ private:
     QWidget* createCalendarPage();
     QWidget* createColorPickerPage();
     QWidget* createDockWidgetPage();
+    QWidget* createAnchorPage();
+    QWidget* createAppPage();
+    QWidget* createCarouselPage();
+    QWidget* createConfigProviderPage();
+    QWidget* createFlexPage();
+    QWidget* createGridPage();
+    QWidget* createMasonryPage();
+    QWidget* createMentionsPage();
+    QWidget* createTourPage();
+    QWidget* createTransferPage();
     QWidget* createImagePage();
     QWidget* createCollapsePage();
     QWidget* createSplitterPage();

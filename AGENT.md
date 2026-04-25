@@ -25,12 +25,12 @@
 ## 项目状态
 
 - 同步日期：`2026-04-25`
-- 已实现组件总数：`80`
-- Ant Design 标准组件覆盖率：`74 / 74`（100%）
-- Qt 专有组件：`6`（AntWindow、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar）
+- 已实现公开组件总数：`81`
+- Ant Design 标准组件覆盖率：`70 / 70`（100%）
+- Qt / 桌面扩展组件：`11`（AntWindow、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntPlainTextEdit、AntDockWidget、AntLog）
 - 已迁移至 `QProxyStyle` 的组件数：`~62`
-- 不依赖 Style 类的组件：`AntScrollArea`、`AntColorPicker`、`AntDockWidget`、`AntWidget`、`AntAffix`、`AntApp`、`AntConfigProvider`
-- 示例程序覆盖：`80 / 80`，所有组件均可在 `examples/ExampleWindow.cpp` 中查看
+- 不依赖独立 Style 类的组件：`AntAffix`、`AntAnchor`、`AntApp`、`AntCarousel`、`AntCollapse`、`AntColorPicker`、`AntConfigProvider`、`AntDockWidget`、`AntFlex`、`AntGrid`、`AntImage`、`AntLog`、`AntMasonry`、`AntMentions`、`AntScrollArea`、`AntSplitter`、`AntTour`、`AntTransfer`、`AntWidget`
+- 示例程序覆盖：`80 / 81`；当前未单独提供示例页的组件：`AntWidget`
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntTypography` 替代 `QLabel` 实现主题感知文本
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
@@ -176,7 +176,7 @@
 | `AntSpace` | `space` | `QProxyStyle` | 是 | 水平/垂直间距容器 |
 | `AntSplitter` | `splitter` | 自绘 | 是 | 可拖拽分割面板 |
 
-### Qt 专有组件
+### Qt / 桌面扩展组件
 
 | 组件 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- |
@@ -191,7 +191,7 @@
 | `AntToolButton` | `QProxyStyle` | 是 | 带下拉菜单的按钮 |
 | `AntPlainTextEdit` | `QProxyStyle` | 是 | 多行文本编辑器 |
 | `AntLog` | 自绘 | 是 | 日志输出控件 |
-| `AntWave` | — | — | 涟漪动画 overlay（core/） |
+| `AntWave` | — | — | 内部涟漪动画 overlay（core/），不计入 `src/widgets` 公开组件统计 |
 
 ## 开发规范
 
@@ -221,7 +221,7 @@
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖全部 80 个组件，左侧导航与右侧页面一一对应。
+当前 `examples/ExampleWindow.cpp` 已覆盖 `80 / 81` 个公开组件，左侧导航与右侧页面一一对应。
 
 示例程序架构：
 - `ExampleWindow` 继承 `AntWindow`（无边框窗口，自定义标题栏）

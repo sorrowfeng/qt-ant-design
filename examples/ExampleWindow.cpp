@@ -7,18 +7,28 @@
 #include <QLabel>
 #include <QList>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QStackedWidget>
 #include <QTime>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
+#include "widgets/AntAnchor.h"
+#include "widgets/AntApp.h"
 #include "widgets/AntWidget.h"
 #include "widgets/AntAlert.h"
 #include "widgets/AntAutoComplete.h"
 #include "widgets/AntCalendar.h"
+#include "widgets/AntCarousel.h"
 #include "widgets/AntColorPicker.h"
+#include "widgets/AntConfigProvider.h"
 #include "widgets/AntDockWidget.h"
+#include "widgets/AntFlex.h"
+#include "widgets/AntGrid.h"
 #include "widgets/AntMenuBar.h"
+#include "widgets/AntMasonry.h"
+#include "widgets/AntMentions.h"
 #include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntScrollArea.h"
 #include "widgets/AntToolBar.h"
@@ -83,6 +93,8 @@
 #include "widgets/AntWatermark.h"
 #include "widgets/AntQRCode.h"
 #include "widgets/AntAffix.h"
+#include "widgets/AntTour.h"
+#include "widgets/AntTransfer.h"
 
 ExampleWindow::ExampleWindow(QWidget* parent)
     : AntWindow(parent)
@@ -136,6 +148,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack = new QStackedWidget(m_content);
     contentLayout->addWidget(m_stack, 1);
 
+    m_stack->addWidget(wrapPage(createShowcasePage()));
     m_stack->addWidget(wrapPage(createButtonPage()));
     m_stack->addWidget(wrapPage(createBreadcrumbPage()));
     m_stack->addWidget(wrapPage(createCheckboxPage()));
@@ -206,83 +219,293 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->addWidget(wrapPage(createCalendarPage()));
     m_stack->addWidget(wrapPage(createColorPickerPage()));
     m_stack->addWidget(wrapPage(createDockWidgetPage()));
-    addNavButton(QStringLiteral("Button"), 0);
-    addNavButton(QStringLiteral("Breadcrumb"), 1);
-    addNavButton(QStringLiteral("Checkbox"), 2);
-    addNavButton(QStringLiteral("DatePicker"), 3);
-    addNavButton(QStringLiteral("Descriptions"), 4);
-    addNavButton(QStringLiteral("Dropdown"), 5);
-    addNavButton(QStringLiteral("Input"), 6);
-    addNavButton(QStringLiteral("Message"), 7);
-    addNavButton(QStringLiteral("Menu"), 8);
-    addNavButton(QStringLiteral("Tabs"), 9);
-    addNavButton(QStringLiteral("Badge"), 10);
-    addNavButton(QStringLiteral("Avatar"), 11);
-    addNavButton(QStringLiteral("Tag"), 12);
-    addNavButton(QStringLiteral("Notification"), 13);
-    addNavButton(QStringLiteral("Popover"), 14);
-    addNavButton(QStringLiteral("Popconfirm"), 15);
-    addNavButton(QStringLiteral("Modal"), 16);
-    addNavButton(QStringLiteral("Pagination"), 17);
-    addNavButton(QStringLiteral("Progress"), 18);
-    addNavButton(QStringLiteral("Radio"), 19);
-    addNavButton(QStringLiteral("Select"), 20);
-    addNavButton(QStringLiteral("Slider"), 21);
-    addNavButton(QStringLiteral("Spin"), 22);
-    addNavButton(QStringLiteral("Steps"), 23);
-    addNavButton(QStringLiteral("Switch"), 24);
-    addNavButton(QStringLiteral("TimePicker"), 25);
-    addNavButton(QStringLiteral("Card"), 26);
-    addNavButton(QStringLiteral("Skeleton"), 27);
-    addNavButton(QStringLiteral("Divider"), 28);
-    addNavButton(QStringLiteral("Icon"), 29);
-    addNavButton(QStringLiteral("InputNumber"), 30);
-    addNavButton(QStringLiteral("Alert"), 31);
-    addNavButton(QStringLiteral("Tooltip"), 32);
-    addNavButton(QStringLiteral("Form"), 33);
-    addNavButton(QStringLiteral("Empty"), 34);
-    addNavButton(QStringLiteral("Result"), 35);
-    addNavButton(QStringLiteral("List"), 36);
-    addNavButton(QStringLiteral("Statistic"), 37);
-    addNavButton(QStringLiteral("Timeline"), 38);
-    addNavButton(QStringLiteral("Space"), 39);
-    addNavButton(QStringLiteral("Layout"), 40);
-    addNavButton(QStringLiteral("Typography"), 41);
-    addNavButton(QStringLiteral("Table"), 42);
-    addNavButton(QStringLiteral("Tree"), 43);
-    addNavButton(QStringLiteral("Upload"), 44);
-    addNavButton(QStringLiteral("Cascader"), 45);
-    addNavButton(QStringLiteral("TreeSelect"), 46);
-    addNavButton(QStringLiteral("Window"), 47);
-    addNavButton(QStringLiteral("Drawer"), 48);
-    addNavButton(QStringLiteral("StatusBar"), 49);
-    addNavButton(QStringLiteral("ScrollBar"), 50);
-    addNavButton(QStringLiteral("Rate"), 51);
-    addNavButton(QStringLiteral("Segmented"), 52);
-    addNavButton(QStringLiteral("FloatButton"), 53);
-    addNavButton(QStringLiteral("Watermark"), 54);
-    addNavButton(QStringLiteral("QRCode"), 55);
-    addNavButton(QStringLiteral("Affix"), 56);
-    addNavButton(QStringLiteral("Image"), 57);
-    addNavButton(QStringLiteral("Collapse"), 58);
-    addNavButton(QStringLiteral("Splitter"), 59);
-    addNavButton(QStringLiteral("Log"), 60);
-    addNavButton(QStringLiteral("ToolButton"), 61);
-    addNavButton(QStringLiteral("ScrollArea"), 62);
-    addNavButton(QStringLiteral("PlainTextEdit"), 63);
-    addNavButton(QStringLiteral("MenuBar"), 64);
-    addNavButton(QStringLiteral("ToolBar"), 65);
-    addNavButton(QStringLiteral("AutoComplete"), 66);
-    addNavButton(QStringLiteral("Calendar"), 67);
-    addNavButton(QStringLiteral("ColorPicker"), 68);
-    addNavButton(QStringLiteral("DockWidget"), 69);
+    m_stack->addWidget(wrapPage(createAnchorPage()));
+    m_stack->addWidget(wrapPage(createAppPage()));
+    m_stack->addWidget(wrapPage(createCarouselPage()));
+    m_stack->addWidget(wrapPage(createConfigProviderPage()));
+    m_stack->addWidget(wrapPage(createFlexPage()));
+    m_stack->addWidget(wrapPage(createGridPage()));
+    m_stack->addWidget(wrapPage(createMasonryPage()));
+    m_stack->addWidget(wrapPage(createMentionsPage()));
+    m_stack->addWidget(wrapPage(createTourPage()));
+    m_stack->addWidget(wrapPage(createTransferPage()));
+    addNavButton(QStringLiteral("Showcase"), 0);
+    addNavButton(QStringLiteral("Button"), 1);
+    addNavButton(QStringLiteral("Breadcrumb"), 2);
+    addNavButton(QStringLiteral("Checkbox"), 3);
+    addNavButton(QStringLiteral("DatePicker"), 4);
+    addNavButton(QStringLiteral("Descriptions"), 5);
+    addNavButton(QStringLiteral("Dropdown"), 6);
+    addNavButton(QStringLiteral("Input"), 7);
+    addNavButton(QStringLiteral("Message"), 8);
+    addNavButton(QStringLiteral("Menu"), 9);
+    addNavButton(QStringLiteral("Tabs"), 10);
+    addNavButton(QStringLiteral("Badge"), 11);
+    addNavButton(QStringLiteral("Avatar"), 12);
+    addNavButton(QStringLiteral("Tag"), 13);
+    addNavButton(QStringLiteral("Notification"), 14);
+    addNavButton(QStringLiteral("Popover"), 15);
+    addNavButton(QStringLiteral("Popconfirm"), 16);
+    addNavButton(QStringLiteral("Modal"), 17);
+    addNavButton(QStringLiteral("Pagination"), 18);
+    addNavButton(QStringLiteral("Progress"), 19);
+    addNavButton(QStringLiteral("Radio"), 20);
+    addNavButton(QStringLiteral("Select"), 21);
+    addNavButton(QStringLiteral("Slider"), 22);
+    addNavButton(QStringLiteral("Spin"), 23);
+    addNavButton(QStringLiteral("Steps"), 24);
+    addNavButton(QStringLiteral("Switch"), 25);
+    addNavButton(QStringLiteral("TimePicker"), 26);
+    addNavButton(QStringLiteral("Card"), 27);
+    addNavButton(QStringLiteral("Skeleton"), 28);
+    addNavButton(QStringLiteral("Divider"), 29);
+    addNavButton(QStringLiteral("Icon"), 30);
+    addNavButton(QStringLiteral("InputNumber"), 31);
+    addNavButton(QStringLiteral("Alert"), 32);
+    addNavButton(QStringLiteral("Tooltip"), 33);
+    addNavButton(QStringLiteral("Form"), 34);
+    addNavButton(QStringLiteral("Empty"), 35);
+    addNavButton(QStringLiteral("Result"), 36);
+    addNavButton(QStringLiteral("List"), 37);
+    addNavButton(QStringLiteral("Statistic"), 38);
+    addNavButton(QStringLiteral("Timeline"), 39);
+    addNavButton(QStringLiteral("Space"), 40);
+    addNavButton(QStringLiteral("Layout"), 41);
+    addNavButton(QStringLiteral("Typography"), 42);
+    addNavButton(QStringLiteral("Table"), 43);
+    addNavButton(QStringLiteral("Tree"), 44);
+    addNavButton(QStringLiteral("Upload"), 45);
+    addNavButton(QStringLiteral("Cascader"), 46);
+    addNavButton(QStringLiteral("TreeSelect"), 47);
+    addNavButton(QStringLiteral("Window"), 48);
+    addNavButton(QStringLiteral("Drawer"), 49);
+    addNavButton(QStringLiteral("StatusBar"), 50);
+    addNavButton(QStringLiteral("ScrollBar"), 51);
+    addNavButton(QStringLiteral("Rate"), 52);
+    addNavButton(QStringLiteral("Segmented"), 53);
+    addNavButton(QStringLiteral("FloatButton"), 54);
+    addNavButton(QStringLiteral("Watermark"), 55);
+    addNavButton(QStringLiteral("QRCode"), 56);
+    addNavButton(QStringLiteral("Affix"), 57);
+    addNavButton(QStringLiteral("Image"), 58);
+    addNavButton(QStringLiteral("Collapse"), 59);
+    addNavButton(QStringLiteral("Splitter"), 60);
+    addNavButton(QStringLiteral("Log"), 61);
+    addNavButton(QStringLiteral("ToolButton"), 62);
+    addNavButton(QStringLiteral("ScrollArea"), 63);
+    addNavButton(QStringLiteral("PlainTextEdit"), 64);
+    addNavButton(QStringLiteral("MenuBar"), 65);
+    addNavButton(QStringLiteral("ToolBar"), 66);
+    addNavButton(QStringLiteral("AutoComplete"), 67);
+    addNavButton(QStringLiteral("Calendar"), 68);
+    addNavButton(QStringLiteral("ColorPicker"), 69);
+    addNavButton(QStringLiteral("DockWidget"), 70);
+    addNavButton(QStringLiteral("Anchor"), 71);
+    addNavButton(QStringLiteral("App"), 72);
+    addNavButton(QStringLiteral("Carousel"), 73);
+    addNavButton(QStringLiteral("ConfigProvider"), 74);
+    addNavButton(QStringLiteral("Flex"), 75);
+    addNavButton(QStringLiteral("Grid"), 76);
+    addNavButton(QStringLiteral("Masonry"), 77);
+    addNavButton(QStringLiteral("Mentions"), 78);
+    addNavButton(QStringLiteral("Tour"), 79);
+    addNavButton(QStringLiteral("Transfer"), 80);
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
     setCentralWidget(m_central);
+    m_stack->setCurrentIndex(0);
 
     connect(antTheme, &AntTheme::themeChanged, this, &ExampleWindow::applyTheme);
     applyTheme();
+}
+
+QWidget* ExampleWindow::createShowcasePage()
+{
+    auto* page = new QWidget();
+    page->setObjectName(QStringLiteral("showcasePage"));
+    page->setStyleSheet(QStringLiteral(
+        "#showcasePage {"
+        "  background:qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #f7fbff, stop:0.55 #ffffff, stop:1 #eef7f3);"
+        "}"));
+
+    auto* root = new QVBoxLayout(page);
+    root->setContentsMargins(24, 24, 24, 24);
+
+    auto* surface = new QFrame(page);
+    surface->setObjectName(QStringLiteral("showcaseSurface"));
+    surface->setStyleSheet(QStringLiteral(
+        "#showcaseSurface {"
+        "  background:white;"
+        "  border:1px solid rgba(22,119,255,0.08);"
+        "  border-radius:16px;"
+        "}"));
+    surface->setMaximumWidth(760);
+
+    auto* surfaceLayout = new QVBoxLayout(surface);
+    surfaceLayout->setContentsMargins(160, 180, 160, 110);
+    surfaceLayout->setSpacing(14);
+
+    auto* info = new AntAlert(surface);
+    info->setTitle(QStringLiteral("信息内容展示"));
+    info->setAlertType(Ant::AlertType::Info);
+    info->setShowIcon(false);
+    surfaceLayout->addWidget(info);
+
+    auto* row1 = new QHBoxLayout();
+    row1->setSpacing(12);
+    auto* dropdown = new AntSelect(surface);
+    dropdown->setPlaceholderText(QStringLiteral("下拉菜单"));
+    dropdown->addOptions({QStringLiteral("苹果"), QStringLiteral("香蕉"), QStringLiteral("橘子")});
+    dropdown->setFixedWidth(140);
+    row1->addWidget(dropdown);
+
+    auto* colorBox = new QFrame(surface);
+    colorBox->setStyleSheet(QStringLiteral("background:white; border:1px solid #d9d9d9; border-radius:8px;"));
+    auto* colorLayout = new QHBoxLayout(colorBox);
+    colorLayout->setContentsMargins(10, 6, 10, 6);
+    colorLayout->setSpacing(8);
+    auto* swatch = new QLabel(colorBox);
+    swatch->setFixedSize(20, 20);
+    swatch->setStyleSheet(QStringLiteral("background:#1677ff; border-radius:4px;"));
+    colorLayout->addWidget(swatch);
+    colorLayout->addWidget(new QLabel(QStringLiteral("#1677FF"), colorBox));
+    row1->addWidget(colorBox);
+
+    auto* missingTags = new QFrame(surface);
+    missingTags->setStyleSheet(QStringLiteral(
+        "background:white; border:1px solid #d9d9d9; border-radius:8px;"));
+    auto* missingTagsLayout = new QHBoxLayout(missingTags);
+    missingTagsLayout->setContentsMargins(10, 6, 10, 6);
+    missingTagsLayout->setSpacing(6);
+    auto* appleTag = new AntTag(QStringLiteral("苹果"), missingTags);
+    appleTag->setClosable(true);
+    auto* bananaTag = new AntTag(QStringLiteral("香蕉"), missingTags);
+    bananaTag->setClosable(true);
+    missingTagsLayout->addWidget(appleTag);
+    missingTagsLayout->addWidget(bananaTag);
+    auto* missingSelectNote = new QLabel(QStringLiteral("缺 Select multiple/tags"), missingTags);
+    missingSelectNote->setStyleSheet(QStringLiteral("color:#bfbfbf; font-size:12px;"));
+    missingTagsLayout->addWidget(missingSelectNote);
+    missingTagsLayout->addStretch();
+    row1->addWidget(missingTags, 1);
+    surfaceLayout->addLayout(row1);
+
+    auto* row2 = new QHBoxLayout();
+    row2->setSpacing(12);
+    auto* datePicker = new AntDatePicker(surface);
+    datePicker->setPlaceholderText(QStringLiteral("请选择日期"));
+    datePicker->setFixedWidth(140);
+    row2->addWidget(datePicker);
+
+    auto* missingDate = new QFrame(surface);
+    missingDate->setStyleSheet(QStringLiteral(
+        "background:white; border:1px dashed #d9d9d9; border-radius:8px;"));
+    auto* missingDateLayout = new QHBoxLayout(missingDate);
+    missingDateLayout->setContentsMargins(10, 6, 10, 6);
+    missingDateLayout->setSpacing(6);
+    auto* springTag = new AntTag(QStringLiteral("苹果"), missingDate);
+    springTag->setClosable(true);
+    auto* summerTag = new AntTag(QStringLiteral("香蕉"), missingDate);
+    summerTag->setClosable(true);
+    missingDateLayout->addWidget(springTag);
+    missingDateLayout->addWidget(summerTag);
+    auto* missingDateNote = new QLabel(QStringLiteral("缺标签化多选日期/复合输入"), missingDate);
+    missingDateNote->setStyleSheet(QStringLiteral("color:#bfbfbf; font-size:12px;"));
+    missingDateLayout->addWidget(missingDateNote);
+    missingDateLayout->addStretch();
+    row2->addWidget(missingDate, 1);
+    surfaceLayout->addLayout(row2);
+
+    auto* progress = new AntProgress(surface);
+    progress->setPercent(60);
+    surfaceLayout->addWidget(progress);
+
+    auto* steps = new AntSteps(surface);
+    steps->addStep(QStringLiteral("已完成"), QString(), QString(), Ant::StepStatus::Finish);
+    steps->addStep(QStringLiteral("进行中"), QString(), QString(), Ant::StepStatus::Process);
+    steps->addStep(QStringLiteral("等待中"), QString(), QString(), Ant::StepStatus::Wait);
+    steps->setCurrentIndex(1);
+    surfaceLayout->addWidget(steps);
+
+    auto* slider = new AntSlider(surface);
+    slider->setValue(60);
+    connect(slider, &AntSlider::valueChanged, progress, &AntProgress::setPercent);
+    surfaceLayout->addWidget(slider);
+
+    auto* buttonRow = new QHBoxLayout();
+    buttonRow->setSpacing(12);
+    auto* primary = new AntButton(QStringLiteral("主要按钮"));
+    primary->setButtonType(Ant::ButtonType::Primary);
+    auto* danger = new AntButton(QStringLiteral("危险按钮"));
+    danger->setButtonType(Ant::ButtonType::Primary);
+    danger->setDanger(true);
+    auto* normal = new AntButton(QStringLiteral("默认按钮"));
+    auto* dashed = new AntButton(QStringLiteral("虚线按钮"));
+    dashed->setButtonType(Ant::ButtonType::Dashed);
+    buttonRow->addWidget(primary);
+    buttonRow->addWidget(danger);
+    buttonRow->addWidget(normal);
+    buttonRow->addWidget(dashed);
+    buttonRow->addStretch();
+    surfaceLayout->addLayout(buttonRow);
+
+    auto* stateRow = new QHBoxLayout();
+    stateRow->setSpacing(14);
+    auto* enabledSwitch = new AntSwitch(surface);
+    enabledSwitch->setChecked(true);
+    stateRow->addWidget(enabledSwitch);
+
+    auto* cbApple = new AntCheckbox(QStringLiteral("苹果"), surface);
+    cbApple->setChecked(true);
+    auto* cbBanana = new AntCheckbox(QStringLiteral("香蕉"), surface);
+    auto* cbOrange = new AntCheckbox(QStringLiteral("橘子"), surface);
+    stateRow->addWidget(cbApple);
+    stateRow->addWidget(cbBanana);
+    stateRow->addWidget(cbOrange);
+
+    auto* radioApple = new AntRadio(QStringLiteral("苹果"), surface);
+    radioApple->setChecked(true);
+    auto* radioBanana = new AntRadio(QStringLiteral("香蕉"), surface);
+    stateRow->addWidget(radioApple);
+    stateRow->addWidget(radioBanana);
+    stateRow->addStretch();
+    surfaceLayout->addLayout(stateRow);
+
+    auto* segmentedRow = new QHBoxLayout();
+    segmentedRow->setSpacing(14);
+    auto* abc = new AntSegmented(surface);
+    abc->setOptions({
+        {QStringLiteral("a"), QStringLiteral("A")},
+        {QStringLiteral("b"), QStringLiteral("B")},
+        {QStringLiteral("c"), QStringLiteral("C")},
+    });
+    abc->setValue(QStringLiteral("a"));
+    segmentedRow->addWidget(abc);
+
+    auto* cadence = new AntSegmented(surface);
+    cadence->setOptions({
+        {QStringLiteral("daily"), QStringLiteral("每日")},
+        {QStringLiteral("weekly"), QStringLiteral("每周")},
+        {QStringLiteral("monthly"), QStringLiteral("每月")},
+    });
+    cadence->setValue(QStringLiteral("daily"));
+    segmentedRow->addWidget(cadence);
+    segmentedRow->addStretch();
+    surfaceLayout->addLayout(segmentedRow);
+
+    root->addWidget(surface, 0, Qt::AlignCenter);
+    root->addStretch();
+
+    auto* modal = new AntModal(page);
+    modal->setTitle(QStringLiteral("Ant Design"));
+    modal->setContent(QStringLiteral("Ant Design 使用 CSS-in-JS 技术以提供动态与混合主题的能力。与此同时，我们使用组件级别的 CSS-in-JS 解决方案，让你的应用获得更好的性能。"));
+    modal->setOkText(QStringLiteral("确定"));
+    modal->setCancelText(QStringLiteral("取消"));
+    modal->setDialogWidth(460);
+    QTimer::singleShot(0, page, [modal]() { modal->setOpen(true); });
+
+    return page;
 }
 
 QWidget* ExampleWindow::createButtonPage()
@@ -4531,6 +4754,453 @@ QWidget* ExampleWindow::createDockWidgetPage()
     dock->setMinimumWidth(200);
 
     layout->addWidget(dock);
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createAnchorPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QHBoxLayout(page);
+
+    auto* scrollArea = new QScrollArea(page);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setMinimumHeight(420);
+    scrollArea->setVerticalScrollBar(new AntScrollBar(Qt::Vertical));
+
+    auto* content = new QWidget();
+    auto* contentLayout = new QVBoxLayout(content);
+    contentLayout->setContentsMargins(24, 24, 24, 24);
+    contentLayout->setSpacing(24);
+
+    struct SectionInfo
+    {
+        QString title;
+        QString body;
+    };
+    const QList<SectionInfo> sections = {
+        {QStringLiteral("Overview"), QStringLiteral("Anchor tracks the current reading position and highlights the active link.")},
+        {QStringLiteral("Workflow"), QStringLiteral("Use it to jump between long sections in forms, docs or settings panels.")},
+        {QStringLiteral("Tokens"), QStringLiteral("Spacing, text hierarchy and active color should stay aligned with the current theme.")},
+        {QStringLiteral("Integration"), QStringLiteral("Pair it with a scroll area and drive the target scroll position from linkClicked.")},
+    };
+
+    QVector<int> offsets;
+    int currentY = 0;
+    for (const auto& section : sections)
+    {
+        offsets.append(currentY);
+
+        auto* card = new AntCard(section.title, content);
+        auto* bodyLayout = card->bodyLayout();
+        bodyLayout->addWidget(new AntTypography(section.body, card));
+        bodyLayout->addWidget(new AntTypography(
+            QStringLiteral("Section details: this block is intentionally taller so the anchor can track movement while you scroll."),
+            card));
+        bodyLayout->addWidget(new AntTypography(
+            QStringLiteral("The demo keeps the interaction simple: click a link on the right and the content scrolls to that section."),
+            card));
+        contentLayout->addWidget(card);
+
+        currentY += card->sizeHint().height() + contentLayout->spacing();
+    }
+    contentLayout->addStretch();
+    scrollArea->setWidget(content);
+
+    auto* anchor = new AntAnchor(page);
+    anchor->setFixedWidth(220);
+    anchor->setScrollArea(scrollArea);
+    for (int i = 0; i < sections.size(); ++i)
+        anchor->addLink(sections[i].title, offsets[i]);
+
+    connect(anchor, &AntAnchor::linkClicked, scrollArea, [scrollArea](int, int targetY) {
+        scrollArea->verticalScrollBar()->setValue(targetY);
+    });
+
+    layout->addWidget(scrollArea, 1);
+    layout->addWidget(anchor);
+    return page;
+}
+
+QWidget* ExampleWindow::createAppPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntApp"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* desc = new QLabel(
+        QStringLiteral("AntApp provides an application-level wrapper around message, modal and notification context. "
+                       "In the current port the wrapper exists and tracks the root widget, while feedback calls are still minimal."),
+        page);
+    desc->setWordWrap(true);
+    layout->addWidget(desc);
+
+    auto* app = new AntApp(page, page);
+    auto* status = new QLabel(QStringLiteral("Instance root: %1").arg(app->rootWidget() == page ? QStringLiteral("attached") : QStringLiteral("missing")));
+    layout->addWidget(status);
+
+    auto* buttonRow = new QHBoxLayout();
+    auto* msgBtn = new AntButton(QStringLiteral("Show Message"));
+    auto* modalBtn = new AntButton(QStringLiteral("Show Modal"));
+    auto* notificationBtn = new AntButton(QStringLiteral("Show Notification"));
+    buttonRow->addWidget(msgBtn);
+    buttonRow->addWidget(modalBtn);
+    buttonRow->addWidget(notificationBtn);
+    buttonRow->addStretch();
+    layout->addLayout(buttonRow);
+
+    connect(msgBtn, &AntButton::clicked, page, [this, app]() {
+        app->showMessage(QStringLiteral("Build started"));
+        AntMessage::info(QStringLiteral("AntApp message API is wired to the current root widget."), this, 1600);
+    });
+    connect(modalBtn, &AntButton::clicked, page, [this, app]() {
+        app->showModal(QStringLiteral("Publish"), QStringLiteral("AntApp modal wrapper placeholder"));
+        AntNotification::info(QStringLiteral("AntApp"),
+                              QStringLiteral("Modal wrapper exists; full context-driven implementation can be expanded later."),
+                              this);
+    });
+    connect(notificationBtn, &AntButton::clicked, page, [this, app]() {
+        app->showNotification(QStringLiteral("Deploy"), QStringLiteral("Notification placeholder"));
+        AntNotification::success(QStringLiteral("AntApp"),
+                                 QStringLiteral("Singleton instance is available and ready to host global feedback APIs."),
+                                 this);
+    });
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createCarouselPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntCarousel"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* carousel = new AntCarousel(page);
+    carousel->setMinimumHeight(220);
+    carousel->setInterval(2200);
+
+    const QList<QPair<QString, QString>> slides = {
+        {QStringLiteral("#1677ff"), QStringLiteral("Release Status")},
+        {QStringLiteral("#13c2c2"), QStringLiteral("Design Tokens")},
+        {QStringLiteral("#52c41a"), QStringLiteral("Gallery Coverage")},
+    };
+
+    for (const auto& slide : slides)
+    {
+        auto* card = new QWidget();
+        card->setStyleSheet(QStringLiteral("background:%1; border-radius:12px;").arg(slide.first));
+        auto* cardLayout = new QVBoxLayout(card);
+        cardLayout->setContentsMargins(24, 24, 24, 24);
+        auto* heading = new QLabel(slide.second, card);
+        QFont headingFont = heading->font();
+        headingFont.setPixelSize(24);
+        headingFont.setBold(true);
+        heading->setFont(headingFont);
+        heading->setStyleSheet(QStringLiteral("color:white;"));
+        cardLayout->addWidget(heading);
+        auto* body = new QLabel(QStringLiteral("Click the left/right side of the carousel to switch slides. Dots stay in sync with the current page."), card);
+        body->setWordWrap(true);
+        body->setStyleSheet(QStringLiteral("color:white;"));
+        cardLayout->addWidget(body);
+        cardLayout->addStretch();
+        carousel->addSlide(card);
+    }
+
+    auto* current = new QLabel(QStringLiteral("Current slide: 1 / %1").arg(carousel->count()), page);
+    connect(carousel, &AntCarousel::currentIndexChanged, current, [current, carousel](int index) {
+        current->setText(QStringLiteral("Current slide: %1 / %2").arg(index + 1).arg(carousel->count()));
+    });
+
+    auto* controls = new QHBoxLayout();
+    auto* autoplay = new AntSwitch();
+    autoplay->setChecked(carousel->autoPlay());
+    auto* dots = new AntSwitch();
+    dots->setChecked(carousel->showDots());
+    controls->addWidget(new QLabel(QStringLiteral("Auto play")));
+    controls->addWidget(autoplay);
+    controls->addSpacing(16);
+    controls->addWidget(new QLabel(QStringLiteral("Show dots")));
+    controls->addWidget(dots);
+    controls->addStretch();
+
+    connect(autoplay, &AntSwitch::checkedChanged, carousel, &AntCarousel::setAutoPlay);
+    connect(dots, &AntSwitch::checkedChanged, carousel, &AntCarousel::setShowDots);
+
+    layout->addWidget(carousel);
+    layout->addWidget(current);
+    layout->addLayout(controls);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createConfigProviderPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntConfigProvider"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* provider = new AntConfigProvider(page);
+    provider->setThemeMode(antTheme->themeMode());
+    provider->setPrimaryColor(QColor(QStringLiteral("#1677ff")));
+    provider->setFontSize(14);
+    provider->setBorderRadius(6);
+
+    auto* summary = new QLabel(page);
+    auto updateSummary = [summary, provider]() {
+        summary->setText(QStringLiteral("theme=%1, primary=%2, fontSize=%3, radius=%4")
+                             .arg(provider->themeMode() == Ant::ThemeMode::Dark ? QStringLiteral("dark") : QStringLiteral("light"))
+                             .arg(provider->primaryColor().name())
+                             .arg(provider->fontSize())
+                             .arg(provider->borderRadius()));
+    };
+    updateSummary();
+    layout->addWidget(summary);
+
+    auto* buttonRow = new QHBoxLayout();
+    auto* lightBtn = new AntButton(QStringLiteral("Light"));
+    auto* darkBtn = new AntButton(QStringLiteral("Dark"));
+    auto* applyBtn = new AntButton(QStringLiteral("Apply Theme Mode"));
+    applyBtn->setButtonType(Ant::ButtonType::Primary);
+    buttonRow->addWidget(lightBtn);
+    buttonRow->addWidget(darkBtn);
+    buttonRow->addWidget(applyBtn);
+    buttonRow->addStretch();
+    layout->addLayout(buttonRow);
+
+    connect(lightBtn, &AntButton::clicked, page, [provider, updateSummary]() {
+        provider->setThemeMode(Ant::ThemeMode::Default);
+        updateSummary();
+    });
+    connect(darkBtn, &AntButton::clicked, page, [provider, updateSummary]() {
+        provider->setThemeMode(Ant::ThemeMode::Dark);
+        updateSummary();
+    });
+    connect(applyBtn, &AntButton::clicked, page, [this, provider]() {
+        provider->apply();
+        AntMessage::success(QStringLiteral("ConfigProvider applied theme mode"), this, 1400);
+    });
+
+    auto* note = new QLabel(
+        QStringLiteral("This demo focuses on the current C++ API surface. The provider already stores theme, primary color, font size and radius settings; theme mode application is live."),
+        page);
+    note->setWordWrap(true);
+    layout->addWidget(note);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createFlexPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntFlex"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto makeChip = [](const QString& text, const QString& color) {
+        auto* label = new QLabel(text);
+        label->setAlignment(Qt::AlignCenter);
+        label->setMinimumHeight(40);
+        label->setStyleSheet(QStringLiteral("background:%1; color:white; border-radius:8px; padding:0 14px;").arg(color));
+        return label;
+    };
+
+    auto* horizontal = new AntFlex(page);
+    horizontal->setGap(12);
+    horizontal->addWidget(makeChip(QStringLiteral("Design"), QStringLiteral("#1677ff")));
+    horizontal->addWidget(makeChip(QStringLiteral("Build"), QStringLiteral("#13c2c2")));
+    horizontal->addWidget(makeChip(QStringLiteral("Review"), QStringLiteral("#52c41a")));
+    horizontal->addStretch();
+
+    auto* vertical = new AntFlex(page);
+    vertical->setVertical(true);
+    vertical->setGap(10);
+    vertical->addWidget(makeChip(QStringLiteral("Token sync"), QStringLiteral("#722ed1")));
+    vertical->addWidget(makeChip(QStringLiteral("Motion polish"), QStringLiteral("#eb2f96")));
+    vertical->addWidget(makeChip(QStringLiteral("Example coverage"), QStringLiteral("#fa8c16")));
+
+    layout->addWidget(new QLabel(QStringLiteral("Horizontal gap layout")));
+    layout->addWidget(horizontal);
+    layout->addSpacing(16);
+    layout->addWidget(new QLabel(QStringLiteral("Vertical layout")));
+    layout->addWidget(vertical);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createGridPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntGrid"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto makeBlock = [](const QString& text, const QString& color) {
+        auto* label = new QLabel(text);
+        label->setAlignment(Qt::AlignCenter);
+        label->setMinimumHeight(48);
+        label->setStyleSheet(QStringLiteral("background:%1; color:white; border-radius:8px;").arg(color));
+        return label;
+    };
+
+    auto* row1 = new AntRow(page);
+    row1->setGutter(12);
+    row1->addWidget(makeBlock(QStringLiteral("span 8"), QStringLiteral("#1677ff")), 8);
+    row1->addWidget(makeBlock(QStringLiteral("span 8"), QStringLiteral("#13c2c2")), 8);
+    row1->addWidget(makeBlock(QStringLiteral("span 8"), QStringLiteral("#52c41a")), 8);
+
+    auto* row2 = new AntRow(page);
+    row2->setGutter(12);
+    row2->addWidget(makeBlock(QStringLiteral("span 6"), QStringLiteral("#722ed1")), 6);
+    row2->addWidget(makeBlock(QStringLiteral("span 6 offset 2"), QStringLiteral("#eb2f96")), 6, 2);
+    row2->addWidget(makeBlock(QStringLiteral("span 10"), QStringLiteral("#fa8c16")), 10);
+
+    layout->addWidget(new QLabel(QStringLiteral("24-column layout with span and offset")));
+    layout->addWidget(row1);
+    layout->addWidget(row2);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createMasonryPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntMasonry"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* masonry = new AntMasonry(page);
+    masonry->setColumns(3);
+    masonry->setSpacing(12);
+    masonry->setMinimumHeight(420);
+
+    const QList<int> heights = {90, 150, 120, 180, 110, 140};
+    const QList<QString> colors = {
+        QStringLiteral("#1677ff"), QStringLiteral("#13c2c2"), QStringLiteral("#52c41a"),
+        QStringLiteral("#722ed1"), QStringLiteral("#eb2f96"), QStringLiteral("#fa8c16")
+    };
+    for (int i = 0; i < heights.size(); ++i)
+    {
+        auto* card = new QLabel(QStringLiteral("Tile %1").arg(i + 1), masonry);
+        card->setAlignment(Qt::AlignCenter);
+        card->setMinimumHeight(heights[i]);
+        card->setStyleSheet(QStringLiteral("background:%1; color:white; border-radius:10px;").arg(colors[i % colors.size()]));
+        masonry->addWidget(card);
+    }
+
+    layout->addWidget(masonry);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createMentionsPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntMentions"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* mentions = new AntMentions(page);
+    mentions->setPlaceholderText(QStringLiteral("Type @ to mention teammates"));
+    mentions->setSuggestions({QStringLiteral("alice"), QStringLiteral("bob"), QStringLiteral("charlie"),
+                              QStringLiteral("design-team"), QStringLiteral("frontend"), QStringLiteral("release-bot")});
+    layout->addWidget(mentions);
+
+    auto* picked = new QLabel(QStringLiteral("Selected mention: none"), page);
+    layout->addWidget(picked);
+
+    connect(mentions, &AntMentions::mentionSelected, picked, [picked](const QString& text) {
+        picked->setText(QStringLiteral("Selected mention: %1").arg(text));
+    });
+
+    auto* help = new QLabel(
+        QStringLiteral("The popup filters suggestions after the prefix. Click one item to insert the mention and keep typing."),
+        page);
+    help->setWordWrap(true);
+    layout->addWidget(help);
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createTourPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntTour"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* card = new AntCard(QStringLiteral("Release Checklist"), page);
+    auto* bodyLayout = card->bodyLayout();
+    auto* trigger = new AntButton(QStringLiteral("Start Tour"), card);
+    trigger->setButtonType(Ant::ButtonType::Primary);
+    auto* targetA = new AntInput(card);
+    targetA->setPlaceholderText(QStringLiteral("Version"));
+    auto* targetB = new AntSelect(card);
+    targetB->addOption(QStringLiteral("Stable"));
+    targetB->addOption(QStringLiteral("Beta"));
+    auto* targetC = new AntButton(QStringLiteral("Publish"), card);
+    bodyLayout->addWidget(trigger);
+    bodyLayout->addWidget(targetA);
+    bodyLayout->addWidget(targetB);
+    bodyLayout->addWidget(targetC);
+    layout->addWidget(card);
+
+    auto* status = new QLabel(QStringLiteral("Tour not started"), page);
+    layout->addWidget(status);
+
+    auto* tour = new AntTour(page);
+    tour->addStep({trigger, QStringLiteral("Start"), QStringLiteral("Launch the walkthrough from here.")});
+    tour->addStep({targetA, QStringLiteral("Version"), QStringLiteral("Choose the version you want to publish.")});
+    tour->addStep({targetB, QStringLiteral("Channel"), QStringLiteral("Pick a release channel before publishing.")});
+    tour->addStep({targetC, QStringLiteral("Publish"), QStringLiteral("Finish by confirming the action.")});
+
+    connect(trigger, &AntButton::clicked, page, [tour]() { tour->start(); });
+    connect(tour, &AntTour::stepChanged, status, [status](int index) {
+        status->setText(QStringLiteral("Tour step: %1").arg(index + 1));
+    });
+    connect(tour, &AntTour::finished, status, [status]() {
+        status->setText(QStringLiteral("Tour finished"));
+    });
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* ExampleWindow::createTransferPage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    auto* title = new QLabel(QStringLiteral("AntTransfer"));
+    QFont f = title->font(); f.setPixelSize(20); f.setBold(true); title->setFont(f);
+    layout->addWidget(title);
+
+    auto* transfer = new AntTransfer(page);
+    transfer->setSourceItems({QStringLiteral("Dashboard"), QStringLiteral("Analytics"), QStringLiteral("Billing"),
+                              QStringLiteral("Settings"), QStringLiteral("Audit Log")});
+    transfer->setTargetItems({QStringLiteral("Users")});
+    layout->addWidget(transfer);
+
+    auto* summary = new QLabel(page);
+    auto updateSummary = [summary, transfer]() {
+        summary->setText(QStringLiteral("source=%1, target=%2")
+                             .arg(transfer->sourceItems().join(QStringLiteral(", ")))
+                             .arg(transfer->targetItems().join(QStringLiteral(", "))));
+    };
+    updateSummary();
+    connect(transfer, &AntTransfer::itemsChanged, summary, updateSummary);
+    layout->addWidget(summary);
 
     layout->addStretch();
     return page;
