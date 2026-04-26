@@ -1,8 +1,10 @@
 #include "AntStatistic.h"
 
+#include <QDateTime>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QResizeEvent>
+#include <QTimer>
 
 #include "core/AntTheme.h"
 #include "styles/AntStatisticStyle.h"
@@ -123,6 +125,60 @@ void AntStatistic::setValueWidget(QWidget* widget)
     update();
 }
 
+bool AntStatistic::isCountdownMode() const { return m_countdownMode; }
+
+void AntStatistic::setCountdownMode(bool countdown)
+{
+    if (m_countdownMode == countdown)
+    {
+        return;
+    }
+    m_countdownMode = countdown;
+    if (m_countdownMode)
+    {
+        if (!m_countdownTimer)
+        {
+            m_countdownTimer = new QTimer(this);
+            connect(m_countdownTimer, &QTimer::timeout, this, [this]() {
+                const double now = QDateTime::currentMSecsSinceEpoch() / 1000.0;
+                const double remaining = m_value - now;
+                if (remaining <= 0)
+                {
+                    m_countdownTimer->stop();
+                    Q_EMIT countdownFinished();
+                }
+                update();
+            });
+        }
+        m_countdownTimer->start(1000);
+    }
+    else
+    {
+        if (m_countdownTimer)
+        {
+            m_countdownTimer->stop();
+        }
+    }
+    update();
+    Q_EMIT countdownModeChanged(m_countdownMode);
+}
+
+QString AntStatistic::countdownFormat() const { return m_countdownFormat; }
+
+void AntStatistic::setCountdownFormat(const QString& format)
+{
+    if (m_countdownFormat == format)
+    {
+        return;
+    }
+    m_countdownFormat = format;
+    if (m_countdownMode)
+    {
+        update();
+    }
+    Q_EMIT countdownFormatChanged(m_countdownFormat);
+}
+
 QSize AntStatistic::sizeHint() const
 {
     const Metrics m = metrics();
@@ -220,6 +276,26 @@ QRect AntStatistic::valueRect() const
 
 QString AntStatistic::formattedValue() const
 {
+    // Countdown mode: format remaining time
+    if (m_countdownMode)
+    {
+        const double now = QDateTime::currentMSecsSinceEpoch() / 1000.0;
+        const double remaining = qMax(0.0, m_value - now);
+        const int totalSecs = static_cast<int>(remaining);
+
+        const int days = totalSecs / 86400;
+        const int hours = (totalSecs % 86400) / 3600;
+        const int minutes = (totalSecs % 3600) / 60;
+        const int seconds = totalSecs % 60;
+
+        QString result = m_countdownFormat;
+        result.replace(QStringLiteral("DD"), QString::number(days));
+        result.replace(QStringLiteral("HH"), QString::number(hours).rightJustified(2, QChar('0')));
+        result.replace(QStringLiteral("mm"), QString::number(minutes).rightJustified(2, QChar('0')));
+        result.replace(QStringLiteral("ss"), QString::number(seconds).rightJustified(2, QChar('0')));
+        return result;
+    }
+
     QString numStr;
 
     if (m_precision > 0)

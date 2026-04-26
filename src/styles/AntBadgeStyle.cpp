@@ -4,6 +4,7 @@
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyleOption>
 
 #include <algorithm>
@@ -245,6 +246,78 @@ void drawBadgeStatus(const QStyleOption* option, QPainter* painter, const AntBad
     }
 }
 
+void drawBadgeRibbon(const QStyleOption* option, QPainter* painter, const AntBadge* badge)
+{
+    if (badge->badgeMode() != Ant::BadgeMode::Ribbon || badge->ribbonText().isEmpty())
+        return;
+
+    const auto& token = antTheme->tokens();
+    const QRect& r = option->rect;
+
+    // Ribbon size
+    QFont f = painter->font();
+    f.setPixelSize(token.fontSizeSM);
+    f.setWeight(QFont::DemiBold);
+    const QFontMetrics fm(f);
+    const int textW = fm.horizontalAdvance(badge->ribbonText());
+    const int ribbonW = textW + token.paddingXS * 2;
+    const int ribbonH = fm.height() + token.paddingXXS * 2;
+    const int foldSize = ribbonH / 2;
+
+    // Position: top-right corner
+    const int rx = r.width() - ribbonW;
+    const int ry = 0;
+
+    // Resolve ribbon color
+    QColor color;
+    const QString rc = badge->ribbonColor();
+    const QColor custom(rc);
+    if (custom.isValid())
+        color = custom;
+    else if (rc.compare(QStringLiteral("success"), Qt::CaseInsensitive) == 0)
+        color = token.colorSuccess;
+    else if (rc.compare(QStringLiteral("warning"), Qt::CaseInsensitive) == 0)
+        color = token.colorWarning;
+    else if (rc.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0)
+        color = token.colorPrimary;
+    else
+        color = token.colorError;
+
+    painter->save();
+    painter->setRenderHints(QPainter::Antialiasing);
+
+    // Main ribbon body
+    QPainterPath ribbonPath;
+    ribbonPath.moveTo(rx, ry);
+    ribbonPath.lineTo(rx + ribbonW, ry);
+    ribbonPath.lineTo(rx + ribbonW, ry + ribbonH);
+    ribbonPath.lineTo(rx + ribbonW - foldSize, ry + ribbonH - foldSize);
+    ribbonPath.lineTo(rx, ry + ribbonH - foldSize);
+    ribbonPath.closeSubpath();
+
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(color);
+    painter->drawPath(ribbonPath);
+
+    // Fold shadow triangle
+    QPainterPath foldPath;
+    foldPath.moveTo(rx + ribbonW - foldSize, ry + ribbonH - foldSize);
+    foldPath.lineTo(rx + ribbonW, ry + ribbonH);
+    foldPath.lineTo(rx + ribbonW - foldSize, ry + ribbonH);
+    foldPath.closeSubpath();
+    QColor shadow = color.darker(130);
+    painter->setBrush(shadow);
+    painter->drawPath(foldPath);
+
+    // Text
+    painter->setFont(f);
+    painter->setPen(token.colorTextLightSolid);
+    QRect textRect(rx, ry, ribbonW - foldSize, ribbonH - foldSize);
+    painter->drawText(textRect, Qt::AlignCenter, badge->ribbonText());
+
+    painter->restore();
+}
+
 } // namespace
 
 AntBadgeStyle::AntBadgeStyle(QStyle* style)
@@ -325,6 +398,13 @@ void AntBadgeStyle::drawBadge(const QStyleOption* option, QPainter* painter, con
     if (badgeIsStatusMode(badge) && !badge->contentWidget())
     {
         drawBadgeStatus(option, painter, badge);
+        painter->restore();
+        return;
+    }
+
+    if (badge->badgeMode() == Ant::BadgeMode::Ribbon)
+    {
+        drawBadgeRibbon(option, painter, badge);
         painter->restore();
         return;
     }

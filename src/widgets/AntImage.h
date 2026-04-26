@@ -30,6 +30,8 @@ public:
     int imgHeight() const;
     void setImgHeight(int h);
 
+    void setPreviewGroup(const QList<AntImage*>& group);
+
     QSize sizeHint() const override;
 
 Q_SIGNALS:
@@ -48,7 +50,9 @@ protected:
 
 private:
     void showPreviewDialog();
+    void showPreviewDialogAt(int index);
 
+    QList<AntImage*> m_previewGroup;
     QString m_src;
     QString m_alt = QStringLiteral("Image");
     bool m_preview = true;

@@ -248,11 +248,15 @@ QWidget* createTypographyPage(QWidget* /*owner*/)
     warning->setType(Ant::TypographyType::Warning);
     auto* danger = new AntTypography(QStringLiteral("Danger Text"));
     danger->setType(Ant::TypographyType::Danger);
+    auto* link = new AntTypography(QStringLiteral("Link Text"));
+    link->setType(Ant::TypographyType::Link);
+    link->setHref(QStringLiteral("https://ant.design"));
     typesRow->addWidget(primary);
     typesRow->addWidget(secondary);
     typesRow->addWidget(success);
     typesRow->addWidget(warning);
     typesRow->addWidget(danger);
+    typesRow->addWidget(link);
     typesRow->addStretch();
     layout->addLayout(typesRow);
 

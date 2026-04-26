@@ -400,6 +400,24 @@ QWidget* createFormPage(QWidget* /*owner*/)
     bottomRow->addWidget(inlineWrap, 1);
     layout->addLayout(bottomRow);
 
+    layout->addWidget(createSectionTitle(QStringLiteral("Form List")));
+    auto* formList = new AntFormList(page);
+    formList->setMinCount(1);
+    formList->setMaxCount(5);
+    formList->setItemFactory([](int index) -> QWidget* {
+        auto* item = new AntForm();
+        item->setLabelWidth(80);
+        auto* nameInput = new AntInput(item);
+        nameInput->setPlaceholderText(QStringLiteral("Name #%1").arg(index + 1));
+        nameInput->setText(QStringLiteral("Item %1").arg(index + 1));
+        item->addItem(QStringLiteral("Name"), nameInput);
+        auto* valueInput = new AntInput(item);
+        valueInput->setPlaceholderText(QStringLiteral("Value"));
+        item->addItem(QStringLiteral("Value"), valueInput);
+        return item;
+    });
+    layout->addWidget(formList);
+
     layout->addStretch();
     return page;
 }
@@ -811,6 +829,46 @@ QWidget* createSelectPage(QWidget* /*owner*/)
     stateRow->addStretch();
     layout->addLayout(stateRow);
 
+    layout->addWidget(createSectionTitle(QStringLiteral("Multiple")));
+    auto* multiRow = new QHBoxLayout();
+    multiRow->setSpacing(16);
+    auto* multi = new AntSelect();
+    multi->setSelectMode(Ant::SelectMode::Multiple);
+    multi->setPlaceholderText(QStringLiteral("Select tags"));
+    multi->addOptions({QStringLiteral("Apple"), QStringLiteral("Pear"), QStringLiteral("Orange"), QStringLiteral("Banana"), QStringLiteral("Grape")});
+    multi->addSelectedIndex(0);
+    multi->addSelectedIndex(2);
+    multi->setAllowClear(true);
+    multi->setFixedWidth(320);
+    multiRow->addWidget(multi);
+
+    auto* multiMax = new AntSelect();
+    multiMax->setSelectMode(Ant::SelectMode::Multiple);
+    multiMax->setPlaceholderText(QStringLiteral("Max 3 tags"));
+    multiMax->addOptions({QStringLiteral("Design"), QStringLiteral("Develop"), QStringLiteral("Test"), QStringLiteral("Deploy"), QStringLiteral("Review")});
+    multiMax->addSelectedIndex(0);
+    multiMax->addSelectedIndex(1);
+    multiMax->addSelectedIndex(2);
+    multiMax->addSelectedIndex(3);
+    multiMax->setMaxTagCount(3);
+    multiMax->setFixedWidth(320);
+    multiRow->addWidget(multiMax);
+    multiRow->addStretch();
+    layout->addLayout(multiRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Tags")));
+    auto* tagRow = new QHBoxLayout();
+    tagRow->setSpacing(16);
+    auto* tags = new AntSelect();
+    tags->setSelectMode(Ant::SelectMode::Tags);
+    tags->setPlaceholderText(QStringLiteral("Type and press Enter"));
+    tags->addOptions({QStringLiteral("Tag 1"), QStringLiteral("Tag 2")});
+    tags->addSelectedIndex(0);
+    tags->setFixedWidth(320);
+    tagRow->addWidget(tags);
+    tagRow->addStretch();
+    layout->addLayout(tagRow);
+
     layout->addStretch();
     return page;
 }
@@ -1111,6 +1169,13 @@ QWidget* createUploadPage(QWidget* /*owner*/)
     auto* picUpload = new AntUpload(page);
     picUpload->setListType(Ant::UploadListType::PictureCard);
     layout->addWidget(picUpload);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Dragger")));
+
+    auto* dragger = new AntUpload(page);
+    dragger->setDraggerMode(true);
+    dragger->setFixedHeight(180);
+    layout->addWidget(dragger);
 
     layout->addStretch();
     return page;

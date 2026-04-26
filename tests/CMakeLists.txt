@@ -1,0 +1,17 @@
+set(CMAKE_AUTOMOC ON)
+
+function(add_ant_test TEST_NAME)
+    add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
+    target_link_libraries(${TEST_NAME} PRIVATE qt-ant-design Qt6::Test)
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endfunction()
+
+add_ant_test(TestAntTypes)
+add_ant_test(TestAntButton)
+add_ant_test(TestAntCheckbox)
+add_ant_test(TestAntSwitch)
+add_ant_test(TestAntSelect)
+add_ant_test(TestAntInput)
+add_ant_test(TestAntTag)
+add_ant_test(TestAntBadge)
+add_ant_test(TestAntModal)

@@ -18,6 +18,7 @@ class AntSkeleton : public QWidget
     Q_PROPERTY(bool titleVisible READ titleVisible WRITE setTitleVisible NOTIFY titleVisibleChanged)
     Q_PROPERTY(bool paragraphVisible READ paragraphVisible WRITE setParagraphVisible NOTIFY paragraphVisibleChanged)
     Q_PROPERTY(int paragraphRows READ paragraphRows WRITE setParagraphRows NOTIFY paragraphRowsChanged)
+    Q_PROPERTY(Ant::SkeletonElement element READ element WRITE setElement NOTIFY elementChanged)
 
 public:
     explicit AntSkeleton(QWidget* parent = nullptr);
@@ -46,6 +47,9 @@ public:
     int paragraphRows() const;
     void setParagraphRows(int rows);
 
+    Ant::SkeletonElement element() const;
+    void setElement(Ant::SkeletonElement element);
+
     QWidget* contentWidget() const;
     void setContentWidget(QWidget* widget);
 
@@ -67,6 +71,7 @@ Q_SIGNALS:
     void titleVisibleChanged(bool visible);
     void paragraphVisibleChanged(bool visible);
     void paragraphRowsChanged(int rows);
+    void elementChanged(Ant::SkeletonElement element);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -98,6 +103,7 @@ private:
     bool m_titleVisible = true;
     bool m_paragraphVisible = true;
     int m_paragraphRows = 3;
+    Ant::SkeletonElement m_element = Ant::SkeletonElement::Default;
     qreal m_titleWidthRatio = 0.42;
     QList<qreal> m_paragraphWidthRatios;
     QPointer<QWidget> m_contentWidget;

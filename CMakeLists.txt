@@ -17,6 +17,12 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
+find_package(Qt6 COMPONENTS Test)
+if(Qt6Test_FOUND)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
 set(QT_ANT_DESIGN_HEADERS
     src/core/AntTypes.h
     src/core/AntTheme.h

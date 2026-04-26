@@ -11,6 +11,7 @@
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSelect.h"
+#include <QFontMetrics>
 
 namespace
 {
@@ -118,12 +119,99 @@ QColor backgroundColorFor(const AntSelect* select)
 
 bool canClear(const AntSelect* select)
 {
-    return select
-        && select->isEnabled()
-        && select->allowClear()
-        && select->isHoveredState()
-        && !select->isLoading()
-        && select->currentIndex() >= 0;
+    if (!select || !select->isEnabled() || !select->allowClear() || select->isHoveredState() == false || select->isLoading())
+    {
+        return false;
+    }
+    if (select->selectMode() != Ant::SelectMode::Single)
+    {
+        return !select->selectedIndices().isEmpty();
+    }
+    return select->currentIndex() >= 0;
+}
+
+struct TagLayout
+{
+    QRectF rect;
+    QString text;
+    int index;
+};
+
+QList<TagLayout> layoutTags(const AntSelect* select, const QRectF& textArea, int fontSize, int tagHeight, int tagHPad, int tagVPad, int gap, int maxCount)
+{
+    QList<TagLayout> tags;
+    const auto& token = antTheme->tokens();
+    QFont f;
+    f.setPixelSize(fontSize);
+    const QFontMetrics fm(f);
+
+    const QList<int> indices = select->selectedIndices();
+    const int total = indices.size();
+    const int showCount = (maxCount > 0 && total > maxCount) ? maxCount : total;
+
+    qreal x = textArea.left();
+    qreal y = textArea.top();
+    const qreal maxX = textArea.right();
+
+    for (int i = 0; i < showCount; ++i)
+    {
+        const int idx = indices.at(i);
+        if (idx < 0 || idx >= select->count())
+            continue;
+        const QString text = select->optionAt(idx).label;
+        const int textW = fm.horizontalAdvance(text);
+        const int tagW = textW + tagHPad * 2;
+
+        if (x + tagW > maxX && x > textArea.left())
+        {
+            x = textArea.left();
+            y += tagHeight + tagVPad;
+        }
+
+        if (y + tagHeight <= textArea.bottom() + tagVPad)
+        {
+            tags.append({QRectF(x, y, tagW, tagHeight), text, idx});
+        }
+        x += tagW + gap;
+    }
+
+    // Overflow tag
+    if (maxCount > 0 && total > maxCount)
+    {
+        const QString overflowText = QStringLiteral("+ %1").arg(total - maxCount);
+        const int overW = fm.horizontalAdvance(overflowText) + tagHPad * 2;
+        if (x + overW > maxX && x > textArea.left())
+        {
+            x = textArea.left();
+            y += tagHeight + tagVPad;
+        }
+        if (y + tagHeight <= textArea.bottom() + tagVPad)
+        {
+            tags.append({QRectF(x, y, overW, tagHeight), overflowText, -1});
+        }
+    }
+
+    return tags;
+}
+
+void drawTag(QPainter* painter, const QRectF& rect, const QString& text, int fontSize, bool disabled)
+{
+    const auto& token = antTheme->tokens();
+    const QColor tagBg = disabled ? token.colorBgContainerDisabled : token.colorFillTertiary;
+    const QColor tagText = disabled ? token.colorTextDisabled : token.colorText;
+    const QColor tagBorder = disabled ? token.colorBorderDisabled : token.colorBorderSecondary;
+
+    painter->setPen(QPen(tagBorder, token.lineWidth));
+    painter->setBrush(tagBg);
+    painter->drawRoundedRect(rect, token.borderRadiusSM, token.borderRadiusSM);
+
+    QFont f = painter->font();
+    f.setPixelSize(fontSize);
+    f.setWeight(QFont::Normal);
+    painter->setFont(f);
+    painter->setPen(tagText);
+    const QRectF textRect = rect.adjusted(6, 0, -6, 0);
+    painter->drawText(textRect, Qt::AlignCenter, text);
 }
 }
 
@@ -220,6 +308,7 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
     const bool focused = option->state.testFlag(QStyle::State_HasFocus) || select->isOpen();
     const QColor borderColor = borderColorFor(select);
     const QColor backgroundColor = backgroundColorFor(select);
+    const bool multiMode = select->selectMode() != Ant::SelectMode::Single;
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
@@ -255,20 +344,48 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
         }
     }
 
-    const bool hasValue = select->currentIndex() >= 0;
-    const QString displayText = hasValue ? select->currentText() : select->placeholderText();
-    QColor textColor = hasValue ? token.colorText : token.colorTextPlaceholder;
-    if (disabled)
+    if (multiMode && !select->selectedIndices().isEmpty())
     {
-        textColor = token.colorTextDisabled;
-    }
+        // Draw tags in multi/tags mode
+        const int tagFontSize = metrics.fontSize - 2;
+        const int tagHeight = tagFontSize + token.paddingXXS * 2 + 4;
+        const int gap = token.paddingXXS;
+        const QRectF textArea = control.adjusted(metrics.paddingX, token.paddingXXS, -(metrics.arrowWidth + metrics.paddingX), -token.paddingXXS);
 
-    QFont font = painter->font();
-    font.setPixelSize(metrics.fontSize);
-    painter->setFont(font);
-    painter->setPen(textColor);
-    const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);
-    painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, displayText);
+        const QList<TagLayout> tags = layoutTags(select, textArea, tagFontSize, tagHeight, 6, 2, gap, select->maxTagCount());
+        for (const auto& tag : tags)
+        {
+            drawTag(painter, tag.rect, tag.text, tagFontSize, disabled);
+        }
+    }
+    else if (multiMode && select->selectedIndices().isEmpty())
+    {
+        // Placeholder text for empty multi-mode
+        QFont font = painter->font();
+        font.setPixelSize(metrics.fontSize);
+        painter->setFont(font);
+        painter->setPen(disabled ? token.colorTextDisabled : token.colorTextPlaceholder);
+        const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);
+        painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, select->placeholderText());
+    }
+    else
+    {
+        // Single mode text
+        const bool hasValue = select->currentIndex() >= 0;
+        const QString displayText = hasValue ? select->currentText() : select->placeholderText();
+        QColor textColor = hasValue ? token.colorText : token.colorTextPlaceholder;
+        if (disabled)
+        {
+            textColor = token.colorTextDisabled;
+        }
+
+        QFont font = painter->font();
+        font.setPixelSize(metrics.fontSize);
+        painter->setFont(font);
+        painter->setPen(textColor);
+        const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);
+        painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, displayText);
+    }
 
     if (select->isLoading())
     {

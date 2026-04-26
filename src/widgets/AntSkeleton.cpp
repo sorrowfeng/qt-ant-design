@@ -141,6 +141,20 @@ void AntSkeleton::setParagraphRows(int rows)
     Q_EMIT paragraphRowsChanged(m_paragraphRows);
 }
 
+Ant::SkeletonElement AntSkeleton::element() const { return m_element; }
+
+void AntSkeleton::setElement(Ant::SkeletonElement element)
+{
+    if (m_element == element)
+    {
+        return;
+    }
+    m_element = element;
+    updateGeometry();
+    update();
+    Q_EMIT elementChanged(m_element);
+}
+
 QWidget* AntSkeleton::contentWidget() const
 {
     return m_contentWidget.data();
@@ -200,6 +214,29 @@ QSize AntSkeleton::sizeHint() const
     if (!m_loading && m_contentWidget)
     {
         return m_contentWidget->sizeHint();
+    }
+
+    // Element mode: return fixed sizes
+    if (m_element != Ant::SkeletonElement::Default)
+    {
+        const Metrics m = metrics();
+        switch (m_element)
+        {
+        case Ant::SkeletonElement::Button:
+            return QSize(120, 32);
+        case Ant::SkeletonElement::Avatar:
+            return QSize(m.avatarSize, m.avatarSize);
+        case Ant::SkeletonElement::Input:
+            return QSize(200, 32);
+        case Ant::SkeletonElement::Image:
+            return QSize(200, 200);
+        case Ant::SkeletonElement::Node:
+            if (m_contentWidget)
+                return m_contentWidget->sizeHint();
+            return QSize(200, 100);
+        default:
+            break;
+        }
     }
 
     const Metrics m = metrics();
@@ -271,6 +308,40 @@ QList<QRectF> AntSkeleton::placeholderRects() const
 {
     QList<QRectF> rects;
     const Metrics m = metrics();
+
+    // Element mode
+    if (m_element != Ant::SkeletonElement::Default)
+    {
+        const QSize hint = sizeHint();
+        const qreal w = qMin(static_cast<qreal>(width()), static_cast<qreal>(hint.width()));
+        const qreal h = hint.height();
+        switch (m_element)
+        {
+        case Ant::SkeletonElement::Button:
+            rects.append(QRectF(0, 0, w, h));
+            break;
+        case Ant::SkeletonElement::Avatar:
+            rects.append(QRectF(0, 0, m.avatarSize, m.avatarSize));
+            break;
+        case Ant::SkeletonElement::Input:
+            rects.append(QRectF(0, 0, w, h));
+            break;
+        case Ant::SkeletonElement::Image:
+        {
+            const qreal sz = qMin(w, h);
+            rects.append(QRectF((w - sz) / 2, 0, sz, sz));
+            break;
+        }
+        case Ant::SkeletonElement::Node:
+            rects.append(QRectF(0, 0, w, h));
+            break;
+        default:
+            break;
+        }
+        return rects;
+    }
+
+    // Default paragraph mode
     int textLeft = 0;
     int textWidth = width();
     const int totalHeight = sizeHint().height();

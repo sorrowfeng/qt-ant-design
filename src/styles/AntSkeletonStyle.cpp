@@ -56,6 +56,40 @@ QList<QRectF> skeletonPlaceholderRects(const AntSkeleton* skeleton, int width)
 {
     QList<QRectF> rects;
     const Metrics m = skeletonMetrics();
+
+    // Element mode
+    if (skeleton->element() != Ant::SkeletonElement::Default)
+    {
+        const QSize hint = skeleton->sizeHint();
+        const qreal w = qMin(static_cast<qreal>(width), static_cast<qreal>(hint.width()));
+        const qreal h = hint.height();
+        switch (skeleton->element())
+        {
+        case Ant::SkeletonElement::Button:
+            rects.append(QRectF(0, 0, w, h));
+            break;
+        case Ant::SkeletonElement::Avatar:
+            rects.append(QRectF(0, 0, m.avatarSize, m.avatarSize));
+            break;
+        case Ant::SkeletonElement::Input:
+            rects.append(QRectF(0, 0, w, h));
+            break;
+        case Ant::SkeletonElement::Image:
+        {
+            const qreal sz = qMin(w, h);
+            rects.append(QRectF((w - sz) / 2, 0, sz, sz));
+            break;
+        }
+        case Ant::SkeletonElement::Node:
+            rects.append(QRectF(0, 0, w, h));
+            break;
+        default:
+            break;
+        }
+        return rects;
+    }
+
+    // Default paragraph mode
     int textLeft = 0;
     int textWidth = width;
     const int totalHeight = skeleton->sizeHint().height();
@@ -195,7 +229,6 @@ void AntSkeletonStyle::drawSkeleton(const QStyleOption* option, QPainter* painte
         QBrush brush(baseColor);
         if (skeleton->isActive())
         {
-            // Static rendering: shimmer offset at 0
             const int shimmerOffset = 0;
             QLinearGradient gradient(rect.topLeft(), rect.topRight());
             const qreal widthValue = qMax<qreal>(rect.width(), 1.0);
@@ -211,13 +244,37 @@ void AntSkeletonStyle::drawSkeleton(const QStyleOption* option, QPainter* painte
         painter->setBrush(brush);
         const Metrics met = skeletonMetrics();
         qreal radius = skeleton->isRound() ? rect.height() / 2.0 : met.radius;
-        if (skeleton->avatarVisible() &&
-            rect.height() == met.avatarSize && rect.width() == met.avatarSize &&
-            skeleton->avatarShape() == Ant::AvatarShape::Circle)
+        if (skeleton->element() == Ant::SkeletonElement::Avatar ||
+            (skeleton->element() == Ant::SkeletonElement::Default &&
+             skeleton->avatarVisible() &&
+             rect.height() == met.avatarSize && rect.width() == met.avatarSize &&
+             skeleton->avatarShape() == Ant::AvatarShape::Circle))
         {
             radius = rect.width() / 2.0;
         }
+        if (skeleton->element() == Ant::SkeletonElement::Button || skeleton->element() == Ant::SkeletonElement::Input)
+        {
+            radius = rect.height() / 2.0;
+        }
         painter->drawRoundedRect(rect, radius, radius);
+
+        // Image element: draw centered placeholder icon
+        if (skeleton->element() == Ant::SkeletonElement::Image)
+        {
+            painter->setPen(highlight);
+            painter->setBrush(Qt::NoBrush);
+            const qreal iconSize = qMin(rect.width(), rect.height()) * 0.3;
+            const qreal cx = rect.center().x();
+            const qreal cy = rect.center().y();
+            QRectF iconRect(cx - iconSize / 2, cy - iconSize / 2, iconSize, iconSize);
+            painter->drawRect(iconRect);
+            // Draw mountain/triangle icon
+            QPolygonF tri;
+            tri << QPointF(iconRect.left(), iconRect.bottom())
+                << QPointF(iconRect.center().x(), iconRect.top() + iconSize * 0.2)
+                << QPointF(iconRect.right(), iconRect.bottom());
+            painter->drawPolygon(tri);
+        }
     }
 
     painter->restore();

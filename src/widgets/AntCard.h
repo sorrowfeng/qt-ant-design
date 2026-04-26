@@ -7,6 +7,7 @@
 
 class QHBoxLayout;
 class QLabel;
+class QGridLayout;
 class QVBoxLayout;
 
 class AntCard : public QFrame
@@ -43,6 +44,15 @@ public:
     void addActionWidget(QWidget* widget);
     void clearActions();
 
+    // Card.Meta
+    void setMetaAvatar(QWidget* avatar);
+    void setMetaTitle(const QString& title);
+    void setMetaDescription(const QString& description);
+
+    // Card.Grid
+    void addGridItem(QWidget* item);
+    void clearGridItems();
+
 Q_SIGNALS:
     void titleChanged(const QString& title);
     void extraChanged(const QString& extra);
@@ -66,10 +76,17 @@ private:
     QLabel* m_titleLabel = nullptr;
     QLabel* m_extraLabel = nullptr;
     QWidget* m_cover = nullptr;
+    QWidget* m_meta = nullptr;
+    QHBoxLayout* m_metaLayout = nullptr;
+    QWidget* m_metaAvatarContainer = nullptr;
+    QVBoxLayout* m_metaTextLayout = nullptr;
+    QLabel* m_metaTitleLabel = nullptr;
+    QLabel* m_metaDescLabel = nullptr;
     QWidget* m_body = nullptr;
     QVBoxLayout* m_bodyLayout = nullptr;
     QWidget* m_actions = nullptr;
     QHBoxLayout* m_actionsLayout = nullptr;
+    QGridLayout* m_gridLayout = nullptr;
 
     QString m_title;
     QString m_extra;

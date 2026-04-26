@@ -97,6 +97,32 @@ QWidget* createAvatarPage(QWidget* /*owner*/)
     badgeRow->addStretch();
     layout->addLayout(badgeRow);
 
+    layout->addWidget(createSectionTitle(QStringLiteral("Group")));
+    auto* groupRow = new QHBoxLayout();
+    groupRow->setSpacing(28);
+
+    auto* group1 = new AntAvatarGroup(page);
+    group1->setMaxCount(3);
+    group1->addAvatar(new AntAvatar(QStringLiteral("A")));
+    group1->addAvatar(new AntAvatar(QStringLiteral("B")));
+    group1->addAvatar(new AntAvatar(QStringLiteral("C")));
+    group1->addAvatar(new AntAvatar(QStringLiteral("D")));
+    group1->addAvatar(new AntAvatar(QStringLiteral("E")));
+    groupRow->addWidget(group1);
+
+    auto* group2 = new AntAvatarGroup(page);
+    group2->setMaxCount(4);
+    group2->setAvatarSize(Ant::AvatarSize::Small);
+    for (const QString& name : {QStringLiteral("X"), QStringLiteral("Y"), QStringLiteral("Z"), QStringLiteral("W"), QStringLiteral("V"), QStringLiteral("U")})
+    {
+        auto* av = new AntAvatar(name);
+        av->setShape(Ant::AvatarShape::Square);
+        group2->addAvatar(av);
+    }
+    groupRow->addWidget(group2);
+    groupRow->addStretch();
+    layout->addLayout(groupRow);
+
     layout->addStretch();
     return page;
 }
@@ -176,6 +202,33 @@ QWidget* createBadgePage(QWidget* /*owner*/)
     }
     layout->addLayout(statusCol);
 
+    layout->addWidget(createSectionTitle(QStringLiteral("Ribbon")));
+    auto* ribbonRow = new QHBoxLayout();
+    ribbonRow->setSpacing(28);
+
+    auto* ribbonCard1 = new AntCard(QStringLiteral("Pushes Open"), page);
+    ribbonCard1->setFixedWidth(280);
+    ribbonCard1->setMinimumHeight(120);
+    ribbonCard1->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card with a default ribbon badge in the corner.")));
+    auto* ribbon1 = new AntBadge();
+    ribbon1->setBadgeMode(Ant::BadgeMode::Ribbon);
+    ribbon1->setRibbonText(QStringLiteral("Ribbon"));
+    ribbon1->setContentWidget(ribbonCard1);
+    ribbonRow->addWidget(ribbon1);
+
+    auto* ribbonCard2 = new AntCard(QStringLiteral("Pushes Open"), page);
+    ribbonCard2->setFixedWidth(280);
+    ribbonCard2->setMinimumHeight(120);
+    ribbonCard2->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card with a colored ribbon badge.")));
+    auto* ribbon2 = new AntBadge();
+    ribbon2->setBadgeMode(Ant::BadgeMode::Ribbon);
+    ribbon2->setRibbonText(QStringLiteral("Success"));
+    ribbon2->setRibbonColor(QStringLiteral("success"));
+    ribbon2->setContentWidget(ribbonCard2);
+    ribbonRow->addWidget(ribbon2);
+    ribbonRow->addStretch();
+    layout->addLayout(ribbonRow);
+
     layout->addStretch();
     return page;
 }
@@ -239,6 +292,40 @@ QWidget* createCardPage(QWidget* /*owner*/)
     actionCard->addActionWidget(new AntTypography(QStringLiteral("Share")));
     actionCard->addActionWidget(new AntTypography(QStringLiteral("Delete")));
     layout->addWidget(actionCard);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Meta")));
+    auto* metaRow = new QHBoxLayout();
+    metaRow->setSpacing(18);
+
+    auto* metaCard = new AntCard(QStringLiteral("Project Card"), page);
+    metaCard->setFixedWidth(320);
+    metaCard->setMetaTitle(QStringLiteral("Ant Design"));
+    metaCard->setMetaDescription(QStringLiteral("A design system for enterprise-level products."));
+    metaCard->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card body content goes here.")));
+    metaRow->addWidget(metaCard);
+
+    auto* metaCard2 = new AntCard(QStringLiteral("With Avatar"), page);
+    metaCard2->setFixedWidth(320);
+    auto* metaAvatar = new AntAvatar(QStringLiteral("AD"));
+    metaAvatar->setAvatarSize(Ant::AvatarSize::Small);
+    metaCard2->setMetaAvatar(metaAvatar);
+    metaCard2->setMetaTitle(QStringLiteral("Design Team"));
+    metaCard2->setMetaDescription(QStringLiteral("Shared component library and design tokens."));
+    metaRow->addWidget(metaCard2);
+    metaRow->addStretch();
+    layout->addLayout(metaRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Grid")));
+    auto* gridCard = new AntCard(QStringLiteral("Grid Layout"), page);
+    gridCard->setMinimumHeight(200);
+    gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 1")));
+    gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 2")));
+    gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 3")));
+    gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 4")));
+    gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 5")));
+    gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 6")));
+    layout->addWidget(gridCard);
+
     layout->addStretch();
     return page;
 }

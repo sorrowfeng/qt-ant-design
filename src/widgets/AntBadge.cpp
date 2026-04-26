@@ -214,6 +214,40 @@ void AntBadge::setStatus(Ant::BadgeStatus status)
     Q_EMIT statusChanged(m_status);
 }
 
+Ant::BadgeMode AntBadge::badgeMode() const { return m_badgeMode; }
+
+void AntBadge::setBadgeMode(Ant::BadgeMode mode)
+{
+    if (m_badgeMode == mode)
+        return;
+    m_badgeMode = mode;
+    updateGeometry();
+    update();
+    Q_EMIT badgeModeChanged(m_badgeMode);
+}
+
+QString AntBadge::ribbonText() const { return m_ribbonText; }
+
+void AntBadge::setRibbonText(const QString& text)
+{
+    if (m_ribbonText == text)
+        return;
+    m_ribbonText = text;
+    update();
+    Q_EMIT ribbonTextChanged(m_ribbonText);
+}
+
+QString AntBadge::ribbonColor() const { return m_ribbonColor; }
+
+void AntBadge::setRibbonColor(const QString& color)
+{
+    if (m_ribbonColor == color)
+        return;
+    m_ribbonColor = color;
+    update();
+    Q_EMIT ribbonColorChanged(m_ribbonColor);
+}
+
 QWidget* AntBadge::contentWidget() const { return m_contentWidget; }
 
 void AntBadge::setContentWidget(QWidget* widget)

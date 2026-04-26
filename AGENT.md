@@ -24,9 +24,10 @@
 
 ## 项目状态
 
-- 同步日期：`2026-04-25`
+- 同步日期：`2026-04-26`
 - 已实现公开组件总数：`81`
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
+- 子组件/变体完整度：`15 / 15`（100%）
 - Qt / 桌面扩展组件：`11`（AntWindow、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntPlainTextEdit、AntDockWidget、AntLog）
 - 已迁移至 `QProxyStyle` 的组件数：`~62`
 - 不依赖独立 Style 类的组件：`AntAffix`、`AntAnchor`、`AntApp`、`AntCarousel`、`AntCollapse`、`AntColorPicker`、`AntConfigProvider`、`AntDockWidget`、`AntFlex`、`AntGrid`、`AntImage`、`AntLog`、`AntMasonry`、`AntMentions`、`AntScrollArea`、`AntSplitter`、`AntTour`、`AntTransfer`、`AntWidget`
@@ -72,6 +73,29 @@
 - AntButtonStyle：修复 `adjusted(0,0,-1,-1)` 导致右/下边框 1px 缺失
 - AntAutoComplete：修复 Qt::Popup 抢占焦点问题
 
+## 子组件/变体完整度（2026-04-26）
+
+### Phase 1: 简单变体（6 项）
+- `Typography.Link` — `TypographyType::Link`、`href` 属性、`linkActivated` 信号、自动下划线 + 手型光标
+- `Message.placement` — `Ant::MessagePlacement` 枚举（Top/TopLeft/TopRight/Bottom/BottomLeft/BottomRight）
+- `Card.Meta` — `setMetaAvatar()`/`setMetaTitle()`/`setMetaDescription()` 方法
+- `Card.Grid` — `addGridItem()` 方法，body 转 QGridLayout（3 列）
+- `Statistic.Countdown` — `countdownMode`/`countdownFormat` 属性、`countdownFinished` 信号
+- `Skeleton.Element` — `Ant::SkeletonElement` 枚举（Button/Avatar/Input/Image/Node）
+
+### Phase 2: 中等复杂度（6 项）
+- `Avatar.Group` — `AntAvatarGroup` 类，`maxCount`、重叠布局、"+N" 溢出
+- `Badge.Ribbon` — `Ant::BadgeMode::Ribbon`、`ribbonText`/`ribbonColor`、折叠丝带绘制
+- `Upload.Dragger` — `draggerMode`、拖放文件支持、虚线边框区域
+- `Image.PreviewGroup` — `setPreviewGroup()`、左右导航、键盘支持
+- `Modal 命令式 API` — `info()`/`success()`/`warning()`/`error()`/`confirm()` 静态方法
+- `Form.Provider` — `AntFormProvider` 类，注册表单、信号转发
+
+### Phase 3: 高复杂度（3 项）
+- `Select multiple/tags` — `Ant::SelectMode` 枚举、`selectedIndices`、tag 渲染、`addTag()`、Backspace 删除
+- `Form.List` — `AntFormList` 类、动态增删行、`minCount`/`maxCount`、工厂回调
+- `Skeleton.Node` — 作为 `Skeleton.Element::Node` 已在 Phase 1 实现
+
 ## 当前组件状态
 
 ### 通用
@@ -81,7 +105,7 @@
 | `AntButton` | `button` | `QProxyStyle` | 是 | 五种类型、三种尺寸、三种形状 |
 | `AntFloatButton` | `float-button` | `QProxyStyle` | 是 | 圆形/方形、Group/BackTop、Badge |
 | `AntIcon` | `icon` | `QProxyStyle` | 是 | Outlined/Filled/TwoTone、旋转、spin |
-| `AntTypography` | `typography` | `QProxyStyle` | 是 | Title(H1-H5)/Text/Paragraph |
+| `AntTypography` | `typography` | `QProxyStyle` | 是 | Title(H1-H5)/Text/Paragraph/Link |
 
 ### 导航
 
@@ -105,20 +129,20 @@
 | `AntColorPicker` | `color-picker` | 自绘 | 是 | HS field、RGB/HSV、预设、static getColor() |
 | `AntDatePicker` | `date-picker` | `QProxyStyle` | 是 | 自绘日期弹层、RangePicker |
 | `AntDescriptions` | `descriptions` | `QProxyStyle` | 是 | 标题、extra、bordered、vertical |
-| `AntForm` | `form` | `QProxyStyle` | 是 | 横向/纵向/行内布局、校验提示 |
+| `AntForm` | `form` | `QProxyStyle` | 是 | 横向/纵向/行内布局、校验提示、Provider、List |
 | `AntInput` | `input` | `QProxyStyle` | 是 | 尺寸、状态、Password/Search、addon |
 | `AntInputNumber` | `input-number` | `QProxyStyle` | 是 | 精度、小步进、前后缀 |
 | `AntMentions` | `mentions` | `QProxyStyle` | 是 | @提及输入，弹出建议 |
 | `AntRadio` | `radio` | `QProxyStyle` | 是 | Radio.Group |
 | `AntRate` | `rate` | `QProxyStyle` | 是 | count/value/allowHalf/hover 放大 |
 | `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 滑动指示器动画、图标/禁用 |
-| `AntSelect` | `select` | `QProxyStyle` | 是 | 尺寸、状态、变体、可编辑模式 |
+| `AntSelect` | `select` | `QProxyStyle` | 是 | 尺寸、状态、变体、可编辑模式、Multiple/Tags |
 | `AntSlider` | `slider` | `QProxyStyle` | 是 | |
 | `AntSwitch` | `switch` | `QProxyStyle` | 是 | |
 | `AntTimePicker` | `time-picker` | `QProxyStyle` | 是 | 自绘时间弹层、RangePicker |
 | `AntTransfer` | `transfer` | 自绘 | 是 | 穿梭框、双列表 |
 | `AntTreeSelect` | `tree-select` | `QProxyStyle` | 是 | 下拉树形结构 |
-| `AntUpload` | `upload` | `QProxyStyle` | 是 | 文本/图片/卡片三种模式 |
+| `AntUpload` | `upload` | `QProxyStyle` | 是 | 文本/图片/卡片三种模式、Dragger |
 
 ### 反馈
 
@@ -126,14 +150,14 @@
 | --- | --- | --- | --- | --- |
 | `AntAlert` | `alert` | `QProxyStyle` | 是 | type/icon/description/closable/banner |
 | `AntDrawer` | `drawer` | `QProxyStyle` | 是 | Left/Right/Top/Bottom、动画、遮罩 |
-| `AntMessage` | `message` | `QProxyStyle` | 是 | Qt::ToolTip 浮层消息 |
-| `AntModal` | `modal` | `QProxyStyle` | 是 | 遮罩层、标题/正文、自定义 footer |
+| `AntMessage` | `message` | `QProxyStyle` | 是 | Qt::ToolTip 浮层消息、6 种 placement |
+| `AntModal` | `modal` | `QProxyStyle` | 是 | 遮罩层、标题/正文、自定义 footer、命令式 API |
 | `AntNotification` | `notification` | `QProxyStyle` | 是 | 多 placement 通知 |
 | `AntPopconfirm` | `popconfirm` | `QProxyStyle` | 是 | title/description/ok/cancel/placement |
 | `AntPopover` | `popover` | `QProxyStyle` | 是 | title/content/action/hover/click/placement |
 | `AntProgress` | `progress` | `QProxyStyle` | 是 | line/circle/dashboard |
 | `AntResult` | `result` | `QProxyStyle` | 是 | status/title/subTitle/extra |
-| `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | active shimmer、头像/标题/段落占位 |
+| `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | active shimmer、头像/标题/段落占位、Element 变体 |
 | `AntSpin` | `spin` | `QProxyStyle` | 是 | small/middle/large/percent/delay |
 | `AntTooltip` | `tooltip` | `QProxyStyle` | 是 | title/placement/color/arrow/delay |
 | `AntWatermark` | `watermark` | `QProxyStyle` | 是 | 旋转文本平铺、多行、自定义间距 |
@@ -143,18 +167,18 @@
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntAvatar` | `avatar` | `QProxyStyle` | 是 | 文本、图标、图片头像 |
-| `AntBadge` | `badge` | `QProxyStyle` | 是 | count/dot/status/processing |
+| `AntAvatar` | `avatar` | `QProxyStyle` | 是 | 文本、图标、图片头像、Group |
+| `AntBadge` | `badge` | `QProxyStyle` | 是 | count/dot/status/processing/Ribbon |
 | `AntCalendar` | `calendar` | `QProxyStyle` | 是 | Day/Month/Year 三态 |
-| `AntCard` | `card` | `QProxyStyle` | 是 | 封面、extra、action 区、loading |
+| `AntCard` | `card` | `QProxyStyle` | 是 | 封面、extra、action 区、loading、Meta、Grid |
 | `AntCarousel` | `carousel` | 自绘 | 是 | 自动播放、圆点指示器 |
 | `AntCollapse` | `collapse` | 自绘 | 是 | 折叠面板、accordion 模式、动画 |
 | `AntEmpty` | `empty` | `QProxyStyle` | 是 | 默认插画、simple 模式 |
-| `AntImage` | `image` | 自绘 | 是 | 图片展示、全屏预览 |
+| `AntImage` | `image` | 自绘 | 是 | 图片展示、全屏预览、PreviewGroup |
 | `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size |
 | `AntPopover` | — | `QProxyStyle` | 是 | 已在反馈类 |
 | `AntQRCode` | `qr-code` | `QProxyStyle` | 是 | 嵌入式 QR 生成、状态叠加 |
-| `AntStatistic` | `statistic` | `QProxyStyle` | 是 | title/value/precision/prefix/suffix |
+| `AntStatistic` | `statistic` | `QProxyStyle` | 是 | title/value/precision/prefix/suffix/Countdown |
 | `AntTable` | `table` | `QProxyStyle` | 是 | 排序、选择、分页、空态插画 |
 | `AntTag` | `tag` | `QProxyStyle` | 是 | 13 色预设、closable/checkable/variant |
 | `AntTimeline` | `timeline` | `QProxyStyle` | 是 | 垂直/水平、outlined/filled、颜色 |

@@ -7,6 +7,46 @@
 #include "core/AntTypes.h"
 
 class QPaintEvent;
+class QResizeEvent;
+class AntAvatar;
+
+class AntAvatarGroup : public QWidget
+{
+    Q_OBJECT
+    Q_PROPERTY(int maxCount READ maxCount WRITE setMaxCount NOTIFY maxCountChanged)
+    Q_PROPERTY(Ant::AvatarSize avatarSize READ avatarSize WRITE setAvatarSize NOTIFY avatarSizeChanged)
+
+public:
+    explicit AntAvatarGroup(QWidget* parent = nullptr);
+
+    int maxCount() const;
+    void setMaxCount(int maxCount);
+
+    Ant::AvatarSize avatarSize() const;
+    void setAvatarSize(Ant::AvatarSize size);
+
+    void addAvatar(AntAvatar* avatar);
+    void removeAvatar(AntAvatar* avatar);
+    QList<AntAvatar*> avatars() const;
+
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
+
+Q_SIGNALS:
+    void maxCountChanged(int maxCount);
+    void avatarSizeChanged(Ant::AvatarSize size);
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+
+private:
+    void relayout();
+
+    int m_maxCount = 0; // 0 = no limit
+    Ant::AvatarSize m_avatarSize = Ant::AvatarSize::Middle;
+    QList<AntAvatar*> m_avatars;
+};
 
 class AntAvatar : public QWidget
 {

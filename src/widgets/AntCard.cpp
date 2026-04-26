@@ -1,6 +1,7 @@
 #include "AntCard.h"
 
 #include <QEvent>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPainter>
@@ -35,12 +36,31 @@ AntCard::AntCard(QWidget* parent)
     m_bodyLayout = new QVBoxLayout(m_body);
     m_bodyLayout->setSpacing(8);
 
+    m_meta = new QWidget(this);
+    m_metaLayout = new QHBoxLayout(m_meta);
+    m_metaLayout->setContentsMargins(0, 0, 0, 0);
+    m_metaLayout->setSpacing(12);
+    m_metaAvatarContainer = new QWidget(m_meta);
+    m_metaAvatarContainer->setFixedSize(0, 0);
+    m_metaAvatarContainer->hide();
+    m_metaTextLayout = new QVBoxLayout();
+    m_metaTextLayout->setSpacing(2);
+    m_metaTextLayout->setContentsMargins(0, 0, 0, 0);
+    m_metaTitleLabel = new QLabel(m_meta);
+    m_metaDescLabel = new QLabel(m_meta);
+    m_metaTextLayout->addWidget(m_metaTitleLabel);
+    m_metaTextLayout->addWidget(m_metaDescLabel);
+    m_metaLayout->addWidget(m_metaAvatarContainer);
+    m_metaLayout->addLayout(m_metaTextLayout, 1);
+    m_meta->hide();
+
     m_actions = new QWidget(this);
     m_actionsLayout = new QHBoxLayout(m_actions);
     m_actionsLayout->setContentsMargins(0, 0, 0, 0);
     m_actionsLayout->setSpacing(0);
 
     m_rootLayout->addWidget(m_header);
+    m_rootLayout->addWidget(m_meta);
     m_rootLayout->addWidget(m_body, 1);
     m_rootLayout->addWidget(m_actions);
 
@@ -184,6 +204,85 @@ void AntCard::clearActions()
     rebuildChrome();
 }
 
+void AntCard::setMetaAvatar(QWidget* avatar)
+{
+    // Remove old avatar
+    if (auto* old = m_metaAvatarContainer->findChild<QWidget*>(QString(), Qt::FindDirectChildrenOnly))
+    {
+        m_metaAvatarContainer->layout()->removeWidget(old);
+        old->deleteLater();
+    }
+    // Clear existing layout children
+    while (QLayoutItem* item = m_metaAvatarContainer->layout() ? m_metaAvatarContainer->layout()->takeAt(0) : nullptr)
+    {
+        delete item;
+    }
+
+    if (avatar)
+    {
+        if (!m_metaAvatarContainer->layout())
+        {
+            auto* lay = new QVBoxLayout(m_metaAvatarContainer);
+            lay->setContentsMargins(0, 0, 0, 0);
+        }
+        avatar->setParent(m_metaAvatarContainer);
+        m_metaAvatarContainer->layout()->addWidget(avatar);
+        const int sz = 48;
+        m_metaAvatarContainer->setFixedSize(sz, sz);
+        m_metaAvatarContainer->show();
+    }
+    else
+    {
+        m_metaAvatarContainer->setFixedSize(0, 0);
+        m_metaAvatarContainer->hide();
+    }
+    m_meta->setVisible(!m_metaTitleLabel->text().isEmpty() || !m_metaDescLabel->text().isEmpty() || avatar != nullptr);
+}
+
+void AntCard::setMetaTitle(const QString& title)
+{
+    m_metaTitleLabel->setText(title);
+    m_metaTitleLabel->setVisible(!title.isEmpty());
+    updateTheme();
+    m_meta->setVisible(!title.isEmpty() || !m_metaDescLabel->text().isEmpty());
+}
+
+void AntCard::setMetaDescription(const QString& description)
+{
+    m_metaDescLabel->setText(description);
+    m_metaDescLabel->setVisible(!description.isEmpty());
+    m_meta->setVisible(!m_metaTitleLabel->text().isEmpty() || !description.isEmpty());
+}
+
+void AntCard::addGridItem(QWidget* item)
+{
+    if (!m_gridLayout)
+    {
+        // Convert body layout from VBoxLayout to GridLayout
+        delete m_bodyLayout;
+        m_gridLayout = new QGridLayout(m_body);
+        m_gridLayout->setSpacing(8);
+        m_bodyLayout = nullptr;
+    }
+    const int count = m_gridLayout->count();
+    const int row = count / 3;
+    const int col = count % 3;
+    m_gridLayout->addWidget(item, row, col);
+}
+
+void AntCard::clearGridItems()
+{
+    if (m_gridLayout)
+    {
+        while (QLayoutItem* item = m_gridLayout->takeAt(0))
+        {
+            if (item->widget())
+                item->widget()->deleteLater();
+            delete item;
+        }
+    }
+}
+
 void AntCard::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
@@ -219,7 +318,12 @@ void AntCard::rebuildChrome()
 
     if (auto* layout = qobject_cast<QHBoxLayout*>(m_header->layout()))
         layout->setContentsMargins(headerPadding, 0, headerPadding, 0);
-    m_bodyLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, bodyPadding);
+    if (m_meta->isVisible())
+        m_metaLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, 0);
+    if (m_bodyLayout)
+        m_bodyLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, bodyPadding);
+    else if (m_gridLayout)
+        m_gridLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, bodyPadding);
     m_actions->setMinimumHeight(48);
     m_actions->setMaximumHeight(48);
 }
@@ -239,7 +343,20 @@ void AntCard::updateTheme()
     m_extraLabel->setFont(extraFont);
     m_extraLabel->setStyleSheet(QStringLiteral("QLabel { background: transparent; color: %1; }").arg(token.colorTextSecondary.name(QColor::HexArgb)));
 
+    // Meta labels
+    QFont metaTitleFont = m_metaTitleLabel->font();
+    metaTitleFont.setPixelSize(token.fontSizeLG);
+    metaTitleFont.setWeight(QFont::DemiBold);
+    m_metaTitleLabel->setFont(metaTitleFont);
+    m_metaTitleLabel->setStyleSheet(QStringLiteral("QLabel { background: transparent; color: %1; }").arg(token.colorText.name(QColor::HexArgb)));
+
+    QFont metaDescFont = m_metaDescLabel->font();
+    metaDescFont.setPixelSize(token.fontSize);
+    m_metaDescLabel->setFont(metaDescFont);
+    m_metaDescLabel->setStyleSheet(QStringLiteral("QLabel { background: transparent; color: %1; }").arg(token.colorTextSecondary.name(QColor::HexArgb)));
+
     m_header->setStyleSheet(QStringLiteral("background: transparent;"));
+    m_meta->setStyleSheet(QStringLiteral("background: transparent;"));
     m_body->setStyleSheet(QStringLiteral("background: transparent;"));
     m_actions->setStyleSheet(QStringLiteral("background: transparent;"));
 }

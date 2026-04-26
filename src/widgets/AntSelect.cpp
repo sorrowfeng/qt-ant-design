@@ -89,7 +89,10 @@ protected:
 
         const auto& token = antTheme->tokens();
         const AntSelectOption option = m_select->m_options.at(m_index);
-        const bool selected = m_select->m_currentIndex == m_index;
+        const bool multiMode = m_select->selectMode() != Ant::SelectMode::Single;
+        const bool selected = multiMode
+            ? m_select->selectedIndices().contains(m_index)
+            : m_select->m_currentIndex == m_index;
         const bool highlighted = m_select->m_highlightedIndex == m_index || m_hovered;
         const bool disabled = option.disabled;
 
@@ -97,29 +100,57 @@ protected:
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
         QRectF bg = rect().adjusted(4, 2, -4, -2);
-        if (selected)
-        {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(AntPalette::alpha(token.colorPrimary, antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.24 : 0.12));
-            painter.drawRoundedRect(bg, token.borderRadiusSM, token.borderRadiusSM);
-        }
-        else if (highlighted && !disabled)
+        if (highlighted && !disabled)
         {
             painter.setPen(Qt::NoPen);
             painter.setBrush(token.colorFillQuaternary);
             painter.drawRoundedRect(bg, token.borderRadiusSM, token.borderRadiusSM);
         }
 
+        const int checkSize = 14;
+        const int leftPad = multiMode ? checkSize + 18 : 14;
+
+        if (multiMode)
+        {
+            // Draw checkbox
+            const qreal cx = 12 + checkSize / 2.0;
+            const qreal cy = height() / 2.0;
+            QRectF checkRect(cx - checkSize / 2.0, cy - checkSize / 2.0, checkSize, checkSize);
+
+            if (selected)
+            {
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(disabled ? token.colorTextDisabled : token.colorPrimary);
+                painter.drawRoundedRect(checkRect, 3, 3);
+
+                // Checkmark
+                QPen checkPen(token.colorTextLightSolid, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+                painter.setPen(checkPen);
+                QPainterPath check;
+                check.moveTo(cx - 4, cy);
+                check.lineTo(cx - 1, cy + 3);
+                check.lineTo(cx + 5, cy - 4);
+                painter.drawPath(check);
+            }
+            else
+            {
+                painter.setPen(QPen(disabled ? token.colorBorderDisabled : token.colorBorder, token.lineWidth));
+                painter.setBrush(Qt::NoBrush);
+                painter.drawRoundedRect(checkRect, 3, 3);
+            }
+        }
+
         QFont f = painter.font();
         f.setPixelSize(token.fontSize);
-        f.setWeight(selected ? QFont::DemiBold : QFont::Normal);
+        f.setWeight(selected && !multiMode ? QFont::DemiBold : QFont::Normal);
         painter.setFont(f);
         painter.setPen(disabled ? token.colorTextDisabled : token.colorText);
 
-        QRect textRect = rect().adjusted(14, 0, selected ? -34 : -14, 0);
+        const int rightPad = (!multiMode && selected) ? 34 : 14;
+        QRect textRect = rect().adjusted(leftPad, 0, -rightPad, 0);
         painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, option.label);
 
-        if (selected)
+        if (!multiMode && selected)
         {
             QPen checkPen(disabled ? token.colorTextDisabled : token.colorPrimary, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
             painter.setPen(checkPen);
@@ -155,7 +186,14 @@ protected:
     {
         if (event->button() == Qt::LeftButton && m_select && m_index >= 0 && m_index < m_select->m_options.size() && !m_select->m_options.at(m_index).disabled)
         {
-            m_select->selectOptionFromPopup(m_index);
+            if (m_select->selectMode() != Ant::SelectMode::Single)
+            {
+                m_select->toggleOptionFromPopup(m_index);
+            }
+            else
+            {
+                m_select->selectOptionFromPopup(m_index);
+            }
             event->accept();
             return;
         }
@@ -500,8 +538,7 @@ void AntSelect::mousePressEvent(QMouseEvent* event)
         const Metrics m = metrics();
         if (canClear() && clearButtonRect(m).contains(event->position()))
         {
-            setCurrentIndex(-1);
-            Q_EMIT cleared();
+            clearSelection();
             event->accept();
             return;
         }
@@ -528,9 +565,24 @@ void AntSelect::keyPressEvent(QKeyEvent* event)
     case Qt::Key_Space:
     case Qt::Key_Return:
     case Qt::Key_Enter:
+        if (m_selectMode == Ant::SelectMode::Tags && m_editField && !m_editField->text().trimmed().isEmpty())
+        {
+            addTag(m_editField->text().trimmed());
+            m_editField->clear();
+            rebuildPopup();
+            event->accept();
+            return;
+        }
         if (m_open && m_highlightedIndex >= 0)
         {
-            selectOptionFromPopup(m_highlightedIndex);
+            if (m_selectMode != Ant::SelectMode::Single)
+            {
+                toggleOptionFromPopup(m_highlightedIndex);
+            }
+            else
+            {
+                selectOptionFromPopup(m_highlightedIndex);
+            }
         }
         else
         {
@@ -557,6 +609,15 @@ void AntSelect::keyPressEvent(QKeyEvent* event)
         }
         setHighlightedIndex(nextEnabledIndex(m_highlightedIndex, -1));
         event->accept();
+        return;
+    case Qt::Key_Backspace:
+        if (m_selectMode != Ant::SelectMode::Single && m_editField && m_editField->text().isEmpty() && !m_selectedIndices.isEmpty())
+        {
+            removeSelectedIndex(m_selectedIndices.last());
+            event->accept();
+            return;
+        }
+        QWidget::keyPressEvent(event);
         return;
     default:
         QWidget::keyPressEvent(event);
@@ -798,5 +859,195 @@ void AntSelect::updateCursor()
 
 bool AntSelect::canClear() const
 {
+    if (m_selectMode != Ant::SelectMode::Single)
+    {
+        return isEnabled() && m_allowClear && m_hovered && !m_loading && !m_selectedIndices.isEmpty();
+    }
     return isEnabled() && m_allowClear && m_hovered && !m_loading && m_currentIndex >= 0;
+}
+
+Ant::SelectMode AntSelect::selectMode() const { return m_selectMode; }
+
+void AntSelect::setSelectMode(Ant::SelectMode mode)
+{
+    if (m_selectMode == mode)
+    {
+        return;
+    }
+    m_selectMode = mode;
+    if (m_selectMode == Ant::SelectMode::Single)
+    {
+        m_selectedIndices.clear();
+    }
+    else
+    {
+        // Convert current single selection to multi
+        if (m_currentIndex >= 0 && !m_selectedIndices.contains(m_currentIndex))
+        {
+            m_selectedIndices.append(m_currentIndex);
+        }
+    }
+    // Tags mode requires editable field
+    if (m_selectMode == Ant::SelectMode::Tags)
+    {
+        setEditable(true);
+    }
+    rebuildPopup();
+    update();
+    Q_EMIT selectModeChanged(m_selectMode);
+}
+
+int AntSelect::maxTagCount() const { return m_maxTagCount; }
+
+void AntSelect::setMaxTagCount(int count)
+{
+    count = qMax(0, count);
+    if (m_maxTagCount == count)
+    {
+        return;
+    }
+    m_maxTagCount = count;
+    update();
+    Q_EMIT maxTagCountChanged(m_maxTagCount);
+}
+
+QList<int> AntSelect::selectedIndices() const { return m_selectedIndices; }
+
+QList<QVariant> AntSelect::selectedValues() const
+{
+    QList<QVariant> values;
+    for (int idx : m_selectedIndices)
+    {
+        if (idx >= 0 && idx < m_options.size())
+        {
+            values.append(m_options.at(idx).value);
+        }
+    }
+    return values;
+}
+
+QStringList AntSelect::selectedTexts() const
+{
+    QStringList texts;
+    for (int idx : m_selectedIndices)
+    {
+        if (idx >= 0 && idx < m_options.size())
+        {
+            texts.append(m_options.at(idx).label);
+        }
+    }
+    return texts;
+}
+
+void AntSelect::setSelectedIndices(const QList<int>& indices)
+{
+    m_selectedIndices.clear();
+    for (int idx : indices)
+    {
+        if (idx >= 0 && idx < m_options.size() && !m_options.at(idx).disabled && !m_selectedIndices.contains(idx))
+        {
+            m_selectedIndices.append(idx);
+        }
+    }
+    if (!m_selectedIndices.isEmpty())
+    {
+        m_currentIndex = m_selectedIndices.last();
+    }
+    else
+    {
+        m_currentIndex = -1;
+    }
+    rebuildPopup();
+    update();
+    Q_EMIT selectionChanged(selectedValues());
+}
+
+void AntSelect::addSelectedIndex(int index)
+{
+    if (index < 0 || index >= m_options.size() || m_options.at(index).disabled || m_selectedIndices.contains(index))
+    {
+        return;
+    }
+    m_selectedIndices.append(index);
+    m_currentIndex = index;
+    rebuildPopup();
+    update();
+    Q_EMIT selectionChanged(selectedValues());
+}
+
+void AntSelect::removeSelectedIndex(int index)
+{
+    if (!m_selectedIndices.contains(index))
+    {
+        return;
+    }
+    m_selectedIndices.removeOne(index);
+    QVariant value;
+    if (index >= 0 && index < m_options.size())
+    {
+        value = m_options.at(index).value;
+    }
+    m_currentIndex = m_selectedIndices.isEmpty() ? -1 : m_selectedIndices.last();
+    rebuildPopup();
+    update();
+    Q_EMIT tagRemoved(value);
+    Q_EMIT selectionChanged(selectedValues());
+}
+
+void AntSelect::clearSelection()
+{
+    if (m_selectMode != Ant::SelectMode::Single)
+    {
+        m_selectedIndices.clear();
+        m_currentIndex = -1;
+        rebuildPopup();
+        update();
+        Q_EMIT selectionChanged(QList<QVariant>());
+    }
+    else
+    {
+        setCurrentIndex(-1);
+    }
+    Q_EMIT cleared();
+}
+
+void AntSelect::addTag(const QString& text)
+{
+    if (text.isEmpty())
+    {
+        return;
+    }
+    // Check if option with this label already exists
+    for (int i = 0; i < m_options.size(); ++i)
+    {
+        if (m_options.at(i).label == text)
+        {
+            if (!m_selectedIndices.contains(i))
+            {
+                addSelectedIndex(i);
+            }
+            return;
+        }
+    }
+    // Add new option and select it
+    addOption(text, text);
+    addSelectedIndex(m_options.size() - 1);
+}
+
+void AntSelect::toggleOptionFromPopup(int index)
+{
+    if (index < 0 || index >= m_options.size() || m_options.at(index).disabled)
+    {
+        return;
+    }
+
+    if (m_selectedIndices.contains(index))
+    {
+        removeSelectedIndex(index);
+    }
+    else
+    {
+        addSelectedIndex(index);
+    }
+    // Don't close popup in multi mode
 }

@@ -3,6 +3,8 @@
 #include <QPointer>
 #include <QWidget>
 
+#include "core/AntTypes.h"
+
 class AntButton;
 class QAbstractButton;
 class QEvent;
@@ -30,6 +32,13 @@ class AntModal : public QWidget
 
 public:
     explicit AntModal(QWidget* parent = nullptr);
+
+    // Command-style static API
+    static AntModal* info(const QString& title, const QString& content, QWidget* parent = nullptr);
+    static AntModal* success(const QString& title, const QString& content, QWidget* parent = nullptr);
+    static AntModal* warning(const QString& title, const QString& content, QWidget* parent = nullptr);
+    static AntModal* error(const QString& title, const QString& content, QWidget* parent = nullptr);
+    static AntModal* confirm(const QString& title, const QString& content, QWidget* parent = nullptr);
 
     QString title() const;
     void setTitle(const QString& title);

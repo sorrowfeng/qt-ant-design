@@ -38,6 +38,8 @@ class AntSelect : public QWidget
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(int maxVisibleItems READ maxVisibleItems WRITE setMaxVisibleItems NOTIFY maxVisibleItemsChanged)
+    Q_PROPERTY(Ant::SelectMode selectMode READ selectMode WRITE setSelectMode NOTIFY selectModeChanged)
+    Q_PROPERTY(int maxTagCount READ maxTagCount WRITE setMaxTagCount NOTIFY maxTagCountChanged)
     Q_PROPERTY(qreal arrowRotation READ arrowRotation WRITE setArrowRotation)
 
 public:
@@ -83,6 +85,22 @@ public:
     int maxVisibleItems() const;
     void setMaxVisibleItems(int count);
 
+    Ant::SelectMode selectMode() const;
+    void setSelectMode(Ant::SelectMode mode);
+
+    int maxTagCount() const;
+    void setMaxTagCount(int count);
+
+    QList<int> selectedIndices() const;
+    QList<QVariant> selectedValues() const;
+    QStringList selectedTexts() const;
+    void setSelectedIndices(const QList<int>& indices);
+    void addSelectedIndex(int index);
+    void removeSelectedIndex(int index);
+    void clearSelection();
+
+    void addTag(const QString& text);
+
     qreal arrowRotation() const;
     void setArrowRotation(qreal rotation);
     bool isHoveredState() const;
@@ -107,6 +125,10 @@ Q_SIGNALS:
     void optionSelected(int index, const QVariant& value);
     void cleared();
     void maxVisibleItemsChanged(int count);
+    void selectModeChanged(Ant::SelectMode mode);
+    void maxTagCountChanged(int count);
+    void selectionChanged(const QList<QVariant>& values);
+    void tagRemoved(const QVariant& value);
 
 protected:
     void enterEvent(QEnterEvent* event) override;
@@ -138,6 +160,7 @@ private:
     void rebuildPopup();
     void updatePopupGeometry();
     void selectOptionFromPopup(int index);
+    void toggleOptionFromPopup(int index);
     void setHighlightedIndex(int index);
     int nextEnabledIndex(int start, int direction) const;
     void animateArrow(bool open);
@@ -148,6 +171,9 @@ private:
     int m_currentIndex = -1;
     int m_highlightedIndex = -1;
     int m_maxVisibleItems = 6;
+    Ant::SelectMode m_selectMode = Ant::SelectMode::Single;
+    QList<int> m_selectedIndices;
+    int m_maxTagCount = 0; // 0 = show all
     Ant::SelectSize m_selectSize = Ant::SelectSize::Middle;
     Ant::SelectStatus m_status = Ant::SelectStatus::Normal;
     Ant::SelectVariant m_variant = Ant::SelectVariant::Outlined;

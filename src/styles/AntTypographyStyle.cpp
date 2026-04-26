@@ -63,6 +63,10 @@ QFont buildFont(const AntTypography* typo, const QFont& baseFont)
     {
         f.setUnderline(true);
     }
+    if (typo->type() == Ant::TypographyType::Link)
+    {
+        f.setUnderline(true);
+    }
 
     return f;
 }
@@ -84,6 +88,8 @@ QColor textColorForType(const AntTypography* typo)
         return token.colorWarning;
     case Ant::TypographyType::Danger:
         return token.colorError;
+    case Ant::TypographyType::Link:
+        return token.colorPrimary;
     case Ant::TypographyType::Default:
     default:
         return token.colorText;
@@ -113,10 +119,13 @@ AntTypographyStyle::AntTypographyStyle(QStyle* style)
 void AntTypographyStyle::polish(QWidget* widget)
 {
     QProxyStyle::polish(widget);
-    if (qobject_cast<AntTypography*>(widget))
+    if (auto* typo = qobject_cast<AntTypography*>(widget))
     {
         widget->installEventFilter(this);
         widget->setAttribute(Qt::WA_Hover);
+        widget->setCursor(typo->type() == Ant::TypographyType::Link
+                              ? Qt::PointingHandCursor
+                              : Qt::ArrowCursor);
     }
 }
 

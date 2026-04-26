@@ -28,6 +28,7 @@ class AntUpload : public QWidget
     Q_PROPERTY(int maxCount READ maxCount WRITE setMaxCount NOTIFY maxCountChanged)
     Q_PROPERTY(bool disabled READ isDisabled WRITE setDisabled NOTIFY disabledChanged)
     Q_PROPERTY(Ant::UploadListType listType READ listType WRITE setListType NOTIFY listTypeChanged)
+    Q_PROPERTY(bool draggerMode READ isDraggerMode WRITE setDraggerMode NOTIFY draggerModeChanged)
 
 public:
     explicit AntUpload(QWidget* parent = nullptr);
@@ -47,6 +48,9 @@ public:
     Ant::UploadListType listType() const;
     void setListType(Ant::UploadListType type);
 
+    bool isDraggerMode() const;
+    void setDraggerMode(bool dragger);
+
     void addFile(const AntUploadFile& file);
     void removeFile(const QString& uid);
     void updateFileStatus(const QString& uid, Ant::UploadFileStatus status, int percent = -1);
@@ -62,6 +66,7 @@ Q_SIGNALS:
     void maxCountChanged(int maxCount);
     void disabledChanged(bool disabled);
     void listTypeChanged(Ant::UploadListType type);
+    void draggerModeChanged(bool dragger);
     void fileAdded(const AntUploadFile& file);
     void fileRemoved(const QString& uid);
     void fileStatusChanged(const QString& uid, Ant::UploadFileStatus status);
@@ -72,6 +77,9 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dragLeaveEvent(QDragLeaveEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 
 private:
     friend class AntUploadStyle;
@@ -86,6 +94,8 @@ private:
     int m_maxCount = 0;
     bool m_disabled = false;
     Ant::UploadListType m_listType = Ant::UploadListType::Text;
+    bool m_draggerMode = false;
+    bool m_dragOver = false;
     QVector<AntUploadFile> m_files;
 
     QPoint m_mousePos;

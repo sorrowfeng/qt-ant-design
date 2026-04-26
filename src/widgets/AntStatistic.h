@@ -4,6 +4,7 @@
 #include <QWidget>
 
 class QPaintEvent;
+class QTimer;
 
 class AntStatistic : public QWidget
 {
@@ -14,6 +15,8 @@ class AntStatistic : public QWidget
     Q_PROPERTY(QString groupSeparator READ groupSeparator WRITE setGroupSeparator NOTIFY groupSeparatorChanged)
     Q_PROPERTY(QString prefix READ prefix WRITE setPrefix NOTIFY prefixChanged)
     Q_PROPERTY(QString suffix READ suffix WRITE setSuffix NOTIFY suffixChanged)
+    Q_PROPERTY(bool countdownMode READ isCountdownMode WRITE setCountdownMode NOTIFY countdownModeChanged)
+    Q_PROPERTY(QString countdownFormat READ countdownFormat WRITE setCountdownFormat NOTIFY countdownFormatChanged)
 
 public:
     explicit AntStatistic(QWidget* parent = nullptr);
@@ -39,6 +42,11 @@ public:
 
     void setValueWidget(QWidget* widget);
 
+    bool isCountdownMode() const;
+    void setCountdownMode(bool countdown);
+    QString countdownFormat() const;
+    void setCountdownFormat(const QString& format);
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -49,6 +57,9 @@ Q_SIGNALS:
     void groupSeparatorChanged(const QString& separator);
     void prefixChanged(const QString& prefix);
     void suffixChanged(const QString& suffix);
+    void countdownModeChanged(bool countdown);
+    void countdownFormatChanged(const QString& format);
+    void countdownFinished();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -78,4 +89,7 @@ private:
     QString m_prefix;
     QString m_suffix;
     QPointer<QWidget> m_valueWidget;
+    bool m_countdownMode = false;
+    QString m_countdownFormat = QStringLiteral("HH:mm:ss");
+    QTimer* m_countdownTimer = nullptr;
 };

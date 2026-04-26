@@ -26,6 +26,7 @@ class AntTypography : public QWidget
     Q_PROPERTY(bool copyable READ isCopyable WRITE setCopyable NOTIFY copyableChanged)
     Q_PROPERTY(bool ellipsis READ isEllipsis WRITE setEllipsis NOTIFY ellipsisChanged)
     Q_PROPERTY(int ellipsisRows READ ellipsisRows WRITE setEllipsisRows NOTIFY ellipsisRowsChanged)
+    Q_PROPERTY(QString href READ href WRITE setHref NOTIFY hrefChanged)
 
 public:
     explicit AntTypography(QWidget* parent = nullptr);
@@ -67,6 +68,9 @@ public:
     int ellipsisRows() const;
     void setEllipsisRows(int rows);
 
+    QString href() const;
+    void setHref(const QString& href);
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -86,7 +90,9 @@ Q_SIGNALS:
     void copyableChanged(bool copyable);
     void ellipsisChanged(bool ellipsis);
     void ellipsisRowsChanged(int rows);
+    void hrefChanged(const QString& href);
     void copied(const QString& text);
+    void linkActivated(const QString& href);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -116,4 +122,5 @@ private:
     bool m_ellipsis = false;
     int m_ellipsisRows = 1;
     bool m_copyHovered = false;
+    QString m_href;
 };

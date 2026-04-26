@@ -2,9 +2,11 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QDesktopServices>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QResizeEvent>
+#include <QUrl>
 
 #include "core/AntTheme.h"
 #include "styles/AntTypographyStyle.h"
@@ -232,6 +234,18 @@ void AntTypography::setEllipsisRows(int rows)
     Q_EMIT ellipsisRowsChanged(m_ellipsisRows);
 }
 
+QString AntTypography::href() const { return m_href; }
+
+void AntTypography::setHref(const QString& href)
+{
+    if (m_href == href)
+    {
+        return;
+    }
+    m_href = href;
+    Q_EMIT hrefChanged(m_href);
+}
+
 QSize AntTypography::sizeHint() const
 {
     const auto& token = antTheme->tokens();
@@ -282,6 +296,12 @@ void AntTypography::mousePressEvent(QMouseEvent* event)
     {
         QApplication::clipboard()->setText(m_text);
         Q_EMIT copied(m_text);
+        return;
+    }
+    if (m_type == Ant::TypographyType::Link && !m_href.isEmpty())
+    {
+        Q_EMIT linkActivated(m_href);
+        QDesktopServices::openUrl(QUrl(m_href));
         return;
     }
     QWidget::mousePressEvent(event);
@@ -367,6 +387,8 @@ QColor AntTypography::textColor() const
         return token.colorError;
     case Ant::TypographyType::LightSolid:
         return token.colorTextLightSolid;
+    case Ant::TypographyType::Link:
+        return token.colorPrimary;
     case Ant::TypographyType::Default:
     default:
         return token.colorText;

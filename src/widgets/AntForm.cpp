@@ -4,11 +4,57 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <utility>
 #include <QVBoxLayout>
+#include <functional>
 
 #include "../styles/AntFormStyle.h"
 #include "core/AntTheme.h"
+
+// ── AntFormProvider ──
+
+AntFormProvider::AntFormProvider(QWidget* parent)
+    : QWidget(parent)
+{
+}
+
+void AntFormProvider::addForm(AntForm* form, const QString& name)
+{
+    if (!form)
+        return;
+    for (const auto& entry : m_forms)
+    {
+        if (entry.form == form)
+            return;
+    }
+    FormEntry entry;
+    entry.form = form;
+    entry.name = name.isEmpty() ? QString::number(m_forms.size()) : name;
+    m_forms.append(entry);
+}
+
+void AntFormProvider::removeForm(AntForm* form)
+{
+    for (int i = 0; i < m_forms.size(); ++i)
+    {
+        if (m_forms[i].form == form)
+        {
+            m_forms.removeAt(i);
+            return;
+        }
+    }
+}
+
+QList<AntForm*> AntFormProvider::forms() const
+{
+    QList<AntForm*> result;
+    for (const auto& entry : m_forms)
+        result.append(entry.form);
+    return result;
+}
+
+// ── AntFormItem ──
 
 AntFormItem::AntFormItem(QWidget* parent)
     : QWidget(parent)
@@ -494,4 +540,226 @@ void AntForm::applyItemSettings()
             item->setEnabled(isEnabled());
         }
     }
+}
+
+// ── AntFormList ──
+
+AntFormList::AntFormList(QWidget* parent)
+    : QWidget(parent)
+{
+    m_layout = new QVBoxLayout(this);
+    m_layout->setContentsMargins(0, 0, 0, 0);
+    m_layout->setSpacing(12);
+
+    m_addButton = new QPushButton(QStringLiteral("+ Add"), this);
+    m_addButton->setCursor(Qt::PointingHandCursor);
+    m_addButton->setFixedHeight(32);
+    connect(m_addButton, &QPushButton::clicked, this, [this]() { addItem(); });
+
+    const auto& token = antTheme->tokens();
+    QFont btnFont = m_addButton->font();
+    btnFont.setPixelSize(token.fontSizeSM);
+    m_addButton->setFont(btnFont);
+    m_addButton->setStyleSheet(QStringLiteral(
+        "QPushButton { border: 1px dashed %1; border-radius: 6px; color: %2; background: transparent; }"
+        "QPushButton:hover { border-color: %3; color: %3; }")
+        .arg(token.colorBorder.name(), token.colorPrimary.name(), token.colorPrimaryHover.name()));
+
+    m_layout->addWidget(m_addButton);
+    updateAddButton();
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        rebuildAll();
+    });
+}
+
+int AntFormList::minCount() const { return m_minCount; }
+
+void AntFormList::setMinCount(int count)
+{
+    count = qMax(0, count);
+    if (m_minCount == count)
+    {
+        return;
+    }
+    m_minCount = count;
+    // Add items if below minimum
+    while (m_items.size() < m_minCount)
+    {
+        addItem();
+    }
+    updateAddButton();
+    Q_EMIT minCountChanged(m_minCount);
+}
+
+int AntFormList::maxCount() const { return m_maxCount; }
+
+void AntFormList::setMaxCount(int count)
+{
+    count = qMax(0, count);
+    if (m_maxCount == count)
+    {
+        return;
+    }
+    m_maxCount = count;
+    // Remove items if above maximum
+    while (m_maxCount > 0 && m_items.size() > m_maxCount)
+    {
+        removeItem(m_items.size() - 1);
+    }
+    updateAddButton();
+    Q_EMIT maxCountChanged(m_maxCount);
+}
+
+int AntFormList::count() const { return m_items.size(); }
+
+void AntFormList::setItemFactory(AntFormListItemFactory factory)
+{
+    m_factory = std::move(factory);
+    rebuildAll();
+}
+
+void AntFormList::addItem()
+{
+    if (m_maxCount > 0 && m_items.size() >= m_maxCount)
+    {
+        return;
+    }
+
+    const int index = m_items.size();
+    const auto& token = antTheme->tokens();
+
+    auto* container = new QWidget(this);
+    auto* rowLayout = new QHBoxLayout(container);
+    rowLayout->setContentsMargins(0, 0, 0, 0);
+    rowLayout->setSpacing(8);
+
+    QWidget* content = nullptr;
+    if (m_factory)
+    {
+        content = m_factory(index);
+    }
+    if (!content)
+    {
+        content = new QWidget(container);
+    }
+    content->setParent(container);
+    rowLayout->addWidget(content, 1);
+
+    auto* removeBtn = new QPushButton(QStringLiteral("Remove"), container);
+    removeBtn->setCursor(Qt::PointingHandCursor);
+    removeBtn->setFixedSize(64, 28);
+    QFont btnFont = removeBtn->font();
+    btnFont.setPixelSize(token.fontSizeSM);
+    removeBtn->setFont(btnFont);
+    removeBtn->setStyleSheet(QStringLiteral(
+        "QPushButton { border: 1px solid %1; border-radius: 4px; color: %2; background: transparent; }"
+        "QPushButton:hover { border-color: %3; color: %3; background: %4; }")
+        .arg(token.colorBorder.name(), token.colorTextSecondary.name(),
+             token.colorError.name(), token.colorErrorBg.name()));
+    connect(removeBtn, &QPushButton::clicked, this, [this, index]() {
+        // Find the actual index at click time (indices shift after removal)
+        for (int i = 0; i < m_items.size(); ++i)
+        {
+            if (m_items[i].removeButton == sender())
+            {
+                removeItem(i);
+                return;
+            }
+        }
+    });
+    rowLayout->addWidget(removeBtn, 0, Qt::AlignTop);
+
+    ListItem item;
+    item.container = container;
+    item.content = content;
+    item.removeButton = removeBtn;
+    m_items.append(item);
+
+    m_layout->insertWidget(m_layout->count() - 1, container);
+    updateAddButton();
+    Q_EMIT itemAdded(index);
+    Q_EMIT countChanged(m_items.size());
+    Q_EMIT fieldsChanged(itemValues());
+}
+
+void AntFormList::removeItem(int index)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+    if (m_items.size() <= m_minCount)
+    {
+        return;
+    }
+
+    ListItem item = m_items.takeAt(index);
+    m_layout->removeWidget(item.container);
+    item.container->deleteLater();
+
+    updateAddButton();
+    Q_EMIT itemRemoved(index);
+    Q_EMIT countChanged(m_items.size());
+    Q_EMIT fieldsChanged(itemValues());
+}
+
+void AntFormList::clearItems()
+{
+    while (!m_items.isEmpty())
+    {
+        ListItem item = m_items.takeLast();
+        m_layout->removeWidget(item.container);
+        item.container->deleteLater();
+    }
+    updateAddButton();
+    Q_EMIT countChanged(0);
+    Q_EMIT fieldsChanged(QList<QVariantMap>());
+}
+
+QList<QVariantMap> AntFormList::itemValues() const
+{
+    QList<QVariantMap> values;
+    for (const ListItem& item : m_items)
+    {
+        Q_UNUSED(item)
+        // Each item's content widget values would need to be extracted
+        // by the factory-created widget. This is a structural placeholder.
+        values.append(QVariantMap());
+    }
+    return values;
+}
+
+void AntFormList::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::EnabledChange)
+    {
+        for (const ListItem& item : std::as_const(m_items))
+        {
+            if (item.container)
+            {
+                item.container->setEnabled(isEnabled());
+            }
+        }
+        m_addButton->setEnabled(isEnabled());
+    }
+    QWidget::changeEvent(event);
+}
+
+void AntFormList::rebuildAll()
+{
+    // Recreate all items with the factory
+    const int oldCount = m_items.size();
+    clearItems();
+    for (int i = 0; i < qMax(m_minCount, oldCount); ++i)
+    {
+        addItem();
+    }
+}
+
+void AntFormList::updateAddButton()
+{
+    const bool canAdd = m_maxCount == 0 || m_items.size() < m_maxCount;
+    m_addButton->setVisible(canAdd);
+    m_addButton->setEnabled(isEnabled() && canAdd);
 }

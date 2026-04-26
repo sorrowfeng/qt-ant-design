@@ -190,6 +190,28 @@ QWidget* createMessagePage(QWidget* owner)
     durationRow->addStretch();
     layout->addLayout(durationRow);
 
+    layout->addWidget(createSectionTitle(QStringLiteral("Placement")));
+    auto* placementRow = new QHBoxLayout();
+    placementRow->setSpacing(12);
+    const QList<QPair<QString, Ant::MessagePlacement>> placements = {
+        {QStringLiteral("Top"), Ant::MessagePlacement::Top},
+        {QStringLiteral("TopLeft"), Ant::MessagePlacement::TopLeft},
+        {QStringLiteral("TopRight"), Ant::MessagePlacement::TopRight},
+        {QStringLiteral("Bottom"), Ant::MessagePlacement::Bottom},
+        {QStringLiteral("BottomLeft"), Ant::MessagePlacement::BottomLeft},
+        {QStringLiteral("BottomRight"), Ant::MessagePlacement::BottomRight},
+    };
+    for (const auto& item : placements)
+    {
+        auto* btn = new AntButton(item.first);
+        QObject::connect(btn, &AntButton::clicked, owner, [owner, item]() {
+            AntMessage::info(QStringLiteral("Message at %1").arg(item.first), owner, 2000, item.second);
+        });
+        placementRow->addWidget(btn);
+    }
+    placementRow->addStretch();
+    layout->addLayout(placementRow);
+
     layout->addStretch();
     return page;
 }
@@ -329,6 +351,39 @@ QWidget* createModalPage(QWidget* owner)
     behaviorRow->addWidget(soloButton);
     behaviorRow->addStretch();
     layout->addLayout(behaviorRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Command API")));
+    auto* cmdRow = new QHBoxLayout();
+    cmdRow->setSpacing(16);
+    auto* infoBtn = new AntButton(QStringLiteral("Info"));
+    QObject::connect(infoBtn, &AntButton::clicked, owner, [owner]() {
+        AntModal::info(QStringLiteral("Information"), QStringLiteral("This is an informational modal dialog."), owner);
+    });
+    auto* successBtn = new AntButton(QStringLiteral("Success"));
+    successBtn->setButtonType(Ant::ButtonType::Primary);
+    QObject::connect(successBtn, &AntButton::clicked, owner, [owner]() {
+        AntModal::success(QStringLiteral("Success"), QStringLiteral("The operation completed successfully."), owner);
+    });
+    auto* warningBtn = new AntButton(QStringLiteral("Warning"));
+    QObject::connect(warningBtn, &AntButton::clicked, owner, [owner]() {
+        AntModal::warning(QStringLiteral("Warning"), QStringLiteral("Please review before proceeding."), owner);
+    });
+    auto* errorBtn = new AntButton(QStringLiteral("Error"));
+    errorBtn->setDanger(true);
+    QObject::connect(errorBtn, &AntButton::clicked, owner, [owner]() {
+        AntModal::error(QStringLiteral("Error"), QStringLiteral("An unexpected error occurred."), owner);
+    });
+    auto* confirmBtn = new AntButton(QStringLiteral("Confirm"));
+    QObject::connect(confirmBtn, &AntButton::clicked, owner, [owner]() {
+        AntModal::confirm(QStringLiteral("Confirm"), QStringLiteral("Are you sure you want to delete this item?"), owner);
+    });
+    cmdRow->addWidget(infoBtn);
+    cmdRow->addWidget(successBtn);
+    cmdRow->addWidget(warningBtn);
+    cmdRow->addWidget(errorBtn);
+    cmdRow->addWidget(confirmBtn);
+    cmdRow->addStretch();
+    layout->addLayout(cmdRow);
 
     layout->addStretch();
     return page;
@@ -752,6 +807,32 @@ QWidget* createSkeletonPage(QWidget* /*owner*/)
     switchRow->addWidget(toggle, 0, Qt::AlignTop);
     switchRow->addStretch();
     layout->addLayout(switchRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Element Variants")));
+    auto* elementRow = new QHBoxLayout();
+    elementRow->setSpacing(20);
+
+    auto* btnSkeleton = new AntSkeleton(page);
+    btnSkeleton->setElement(Ant::SkeletonElement::Button);
+    btnSkeleton->setFixedWidth(120);
+
+    auto* avatarSkeleton = new AntSkeleton(page);
+    avatarSkeleton->setElement(Ant::SkeletonElement::Avatar);
+
+    auto* inputSkeleton = new AntSkeleton(page);
+    inputSkeleton->setElement(Ant::SkeletonElement::Input);
+    inputSkeleton->setFixedWidth(200);
+
+    auto* imageSkeleton = new AntSkeleton(page);
+    imageSkeleton->setElement(Ant::SkeletonElement::Image);
+    imageSkeleton->setFixedSize(160, 160);
+
+    elementRow->addWidget(btnSkeleton);
+    elementRow->addWidget(avatarSkeleton);
+    elementRow->addWidget(inputSkeleton);
+    elementRow->addWidget(imageSkeleton);
+    elementRow->addStretch();
+    layout->addLayout(elementRow);
 
     layout->addStretch();
     return page;

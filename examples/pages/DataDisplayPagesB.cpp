@@ -20,6 +20,7 @@
 #include "widgets/AntSegmented.h"
 #include "widgets/AntStatistic.h"
 #include "widgets/AntTable.h"
+#include <QDateTime>
 #include "widgets/AntTabs.h"
 #include "widgets/AntTag.h"
 #include "widgets/AntTimeline.h"
@@ -356,6 +357,29 @@ QWidget* createStatisticPage(QWidget* /*owner*/)
     cardRow->addWidget(card3);
     cardRow->addStretch();
     layout->addLayout(cardRow);
+
+    layout->addWidget(createSectionTitle(QStringLiteral("Countdown")));
+    auto* countdownRow = new QHBoxLayout();
+    countdownRow->setSpacing(48);
+
+    auto* countdown = new AntStatistic(page);
+    countdown->setTitle(QStringLiteral("Countdown"));
+    countdown->setCountdownMode(true);
+    countdown->setCountdownFormat(QStringLiteral("HH:mm:ss"));
+    countdown->setValue(QDateTime::currentDateTime().addSecs(3661).toMSecsSinceEpoch() / 1000.0);
+    countdown->setFixedWidth(180);
+
+    auto* countdown2 = new AntStatistic(page);
+    countdown2->setTitle(QStringLiteral("Days Left"));
+    countdown2->setCountdownMode(true);
+    countdown2->setCountdownFormat(QStringLiteral("DD HH:mm:ss"));
+    countdown2->setValue(QDateTime::currentDateTime().addDays(2).addSecs(7200).toMSecsSinceEpoch() / 1000.0);
+    countdown2->setFixedWidth(220);
+
+    countdownRow->addWidget(countdown);
+    countdownRow->addWidget(countdown2);
+    countdownRow->addStretch();
+    layout->addLayout(countdownRow);
 
     layout->addStretch();
     return page;

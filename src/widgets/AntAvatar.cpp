@@ -2,6 +2,7 @@
 
 #include <QPainter>
 #include <QPainterPath>
+#include <QResizeEvent>
 
 #include <algorithm>
 
@@ -202,4 +203,122 @@ QRectF AntAvatar::imageSourceRect(const QPixmap& pixmap, const QSizeF& targetSiz
     }
     const qreal height = source.width() / targetRatio;
     return QRectF(0, (source.height() - height) / 2.0, source.width(), height);
+}
+
+// ── AntAvatarGroup ──
+
+AntAvatarGroup::AntAvatarGroup(QWidget* parent)
+    : QWidget(parent)
+{
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+}
+
+int AntAvatarGroup::maxCount() const { return m_maxCount; }
+
+void AntAvatarGroup::setMaxCount(int maxCount)
+{
+    maxCount = qMax(0, maxCount);
+    if (m_maxCount == maxCount)
+        return;
+    m_maxCount = maxCount;
+    relayout();
+    Q_EMIT maxCountChanged(m_maxCount);
+}
+
+Ant::AvatarSize AntAvatarGroup::avatarSize() const { return m_avatarSize; }
+
+void AntAvatarGroup::setAvatarSize(Ant::AvatarSize size)
+{
+    if (m_avatarSize == size)
+        return;
+    m_avatarSize = size;
+    for (auto* av : m_avatars)
+        av->setAvatarSize(size);
+    relayout();
+    Q_EMIT avatarSizeChanged(m_avatarSize);
+}
+
+void AntAvatarGroup::addAvatar(AntAvatar* avatar)
+{
+    if (!avatar || m_avatars.contains(avatar))
+        return;
+    avatar->setParent(this);
+    avatar->setAvatarSize(m_avatarSize);
+    m_avatars.append(avatar);
+    relayout();
+}
+
+void AntAvatarGroup::removeAvatar(AntAvatar* avatar)
+{
+    if (m_avatars.removeOne(avatar))
+    {
+        avatar->setParent(nullptr);
+        relayout();
+    }
+}
+
+QList<AntAvatar*> AntAvatarGroup::avatars() const { return m_avatars; }
+
+QSize AntAvatarGroup::sizeHint() const
+{
+    if (m_avatars.isEmpty())
+        return QSize(0, 0);
+    const int sz = m_avatars.first()->sizeHint().width();
+    const int visible = (m_maxCount > 0 && m_avatars.size() > m_maxCount)
+                            ? m_maxCount + 1 // +1 for overflow
+                            : m_avatars.size();
+    const int overlap = sz * 2 / 5;
+    const int totalW = sz + (visible - 1) * (sz - overlap);
+    return QSize(totalW, sz);
+}
+
+QSize AntAvatarGroup::minimumSizeHint() const
+{
+    return QSize(24, 24);
+}
+
+void AntAvatarGroup::paintEvent(QPaintEvent* event)
+{
+    Q_UNUSED(event)
+}
+
+void AntAvatarGroup::resizeEvent(QResizeEvent* event)
+{
+    relayout();
+    QWidget::resizeEvent(event);
+}
+
+void AntAvatarGroup::relayout()
+{
+    const int total = m_avatars.size();
+    if (total == 0)
+        return;
+
+    const int sz = m_avatars.first()->sizeHint().width();
+    const int overlap = sz * 2 / 5;
+    const int step = sz - overlap;
+
+    int visibleCount = total;
+    bool showOverflow = false;
+    if (m_maxCount > 0 && total > m_maxCount)
+    {
+        visibleCount = m_maxCount;
+        showOverflow = true;
+    }
+
+    // Hide overflow avatars
+    for (int i = visibleCount; i < total; ++i)
+        m_avatars[i]->hide();
+
+    // Position visible avatars (left to right, later on top)
+    for (int i = 0; i < visibleCount; ++i)
+    {
+        m_avatars[i]->setFixedSize(sz, sz);
+        m_avatars[i]->move(i * step, 0);
+        m_avatars[i]->show();
+        m_avatars[i]->raise();
+    }
+
+    updateGeometry();
+    update();
 }

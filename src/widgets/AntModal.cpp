@@ -207,6 +207,45 @@ AntModal::AntModal(QWidget* parent)
 
 qreal AntModal::animationProgress() const { return m_animProgress; }
 
+// ── Command-style static API ──
+
+static AntModal* createCommandModal(const QString& title, const QString& content,
+                                     Ant::IconType icon, bool showCancel, QWidget* parent)
+{
+    auto* modal = new AntModal(parent ? parent : qApp->activeWindow());
+    modal->setTitle(title);
+    modal->setContent(content);
+    modal->setShowCancel(showCancel);
+    modal->setOkText(showCancel ? QStringLiteral("OK") : QStringLiteral("OK"));
+    modal->setOpen(true);
+    return modal;
+}
+
+AntModal* AntModal::info(const QString& title, const QString& content, QWidget* parent)
+{
+    return createCommandModal(title, content, Ant::IconType::InfoCircle, false, parent);
+}
+
+AntModal* AntModal::success(const QString& title, const QString& content, QWidget* parent)
+{
+    return createCommandModal(title, content, Ant::IconType::CheckCircle, false, parent);
+}
+
+AntModal* AntModal::warning(const QString& title, const QString& content, QWidget* parent)
+{
+    return createCommandModal(title, content, Ant::IconType::ExclamationCircle, false, parent);
+}
+
+AntModal* AntModal::error(const QString& title, const QString& content, QWidget* parent)
+{
+    return createCommandModal(title, content, Ant::IconType::CloseCircle, false, parent);
+}
+
+AntModal* AntModal::confirm(const QString& title, const QString& content, QWidget* parent)
+{
+    return createCommandModal(title, content, Ant::IconType::ExclamationCircle, true, parent);
+}
+
 QString AntModal::title() const { return m_title; }
 
 void AntModal::setTitle(const QString& title)

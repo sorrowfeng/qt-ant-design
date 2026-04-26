@@ -1,6 +1,10 @@
 #include "AntUpload.h"
 
+#include <QDateTime>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QEvent>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QPainter>
 
@@ -90,6 +94,67 @@ void AntUpload::setListType(Ant::UploadListType type)
     updateGeometry();
     update();
     Q_EMIT listTypeChanged(m_listType);
+}
+
+bool AntUpload::isDraggerMode() const { return m_draggerMode; }
+
+void AntUpload::setDraggerMode(bool dragger)
+{
+    if (m_draggerMode == dragger)
+        return;
+    m_draggerMode = dragger;
+    setAcceptDrops(dragger);
+    updateGeometry();
+    update();
+    Q_EMIT draggerModeChanged(m_draggerMode);
+}
+
+void AntUpload::dragEnterEvent(QDragEnterEvent* event)
+{
+    if (m_draggerMode && event->mimeData()->hasUrls())
+    {
+        m_dragOver = true;
+        update();
+        event->acceptProposedAction();
+    }
+    else
+    {
+        QWidget::dragEnterEvent(event);
+    }
+}
+
+void AntUpload::dragLeaveEvent(QDragLeaveEvent* event)
+{
+    m_dragOver = false;
+    update();
+    QWidget::dragLeaveEvent(event);
+}
+
+void AntUpload::dropEvent(QDropEvent* event)
+{
+    m_dragOver = false;
+    if (m_draggerMode && event->mimeData()->hasUrls())
+    {
+        const QList<QUrl> urls = event->mimeData()->urls();
+        for (const QUrl& url : urls)
+        {
+            if (url.isLocalFile())
+            {
+                AntUploadFile file;
+                file.uid = QString::number(QDateTime::currentMSecsSinceEpoch());
+                file.name = url.fileName();
+                file.url = url.toLocalFile();
+                file.status = Ant::UploadFileStatus::Done;
+                addFile(file);
+            }
+        }
+        event->acceptProposedAction();
+        update();
+    }
+    else
+    {
+        QWidget::dropEvent(event);
+    }
 }
 
 void AntUpload::addFile(const AntUploadFile& file)

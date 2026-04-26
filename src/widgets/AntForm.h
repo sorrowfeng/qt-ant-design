@@ -7,6 +7,8 @@
 
 class QLabel;
 class QBoxLayout;
+class QPushButton;
+class QVBoxLayout;
 
 class AntFormItem : public QWidget
 {
@@ -87,6 +89,32 @@ private:
     QLabel* m_helpLabel = nullptr;
 };
 
+class AntForm; // forward declaration
+
+class AntFormProvider : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit AntFormProvider(QWidget* parent = nullptr);
+
+    void addForm(AntForm* form, const QString& name = QString());
+    void removeForm(AntForm* form);
+    QList<AntForm*> forms() const;
+
+Q_SIGNALS:
+    void formChanged(const QString& formName, const QString& fieldName, const QVariant& value);
+    void formFinished(const QString& formName, const QVariantMap& values);
+
+private:
+    struct FormEntry
+    {
+        AntForm* form = nullptr;
+        QString name;
+    };
+    QList<FormEntry> m_forms;
+};
+
 class AntForm : public QWidget
 {
     Q_OBJECT
@@ -146,4 +174,62 @@ private:
     int m_itemSpacing = 16;
     QBoxLayout* m_layout = nullptr;
     QList<AntFormItem*> m_items;
+};
+
+using AntFormListItemFactory = std::function<QWidget*(int index)>;
+
+class AntFormList : public QWidget
+{
+    Q_OBJECT
+    Q_PROPERTY(int minCount READ minCount WRITE setMinCount NOTIFY minCountChanged)
+    Q_PROPERTY(int maxCount READ maxCount WRITE setMaxCount NOTIFY maxCountChanged)
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
+
+public:
+    explicit AntFormList(QWidget* parent = nullptr);
+
+    int minCount() const;
+    void setMinCount(int count);
+
+    int maxCount() const;
+    void setMaxCount(int count);
+
+    int count() const;
+
+    void setItemFactory(AntFormListItemFactory factory);
+
+    void addItem();
+    void removeItem(int index);
+    void clearItems();
+
+    QList<QVariantMap> itemValues() const;
+
+Q_SIGNALS:
+    void minCountChanged(int count);
+    void maxCountChanged(int count);
+    void countChanged(int count);
+    void itemAdded(int index);
+    void itemRemoved(int index);
+    void fieldsChanged(const QList<QVariantMap>& values);
+
+protected:
+    void changeEvent(QEvent* event) override;
+
+private:
+    struct ListItem
+    {
+        QWidget* container = nullptr;
+        QWidget* content = nullptr;
+        QPushButton* removeButton = nullptr;
+    };
+
+    void rebuildAll();
+    void updateAddButton();
+
+    int m_minCount = 0;
+    int m_maxCount = 0; // 0 = unlimited
+    AntFormListItemFactory m_factory;
+    QVBoxLayout* m_layout = nullptr;
+    QPushButton* m_addButton = nullptr;
+    QList<ListItem> m_items;
 };

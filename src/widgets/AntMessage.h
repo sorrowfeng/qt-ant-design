@@ -28,12 +28,13 @@ public:
     static AntMessage* open(const QString& text,
                             Ant::MessageType type = Ant::MessageType::Info,
                             QWidget* anchor = nullptr,
-                            int durationMs = 3000);
-    static AntMessage* info(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000);
-    static AntMessage* success(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000);
-    static AntMessage* warning(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000);
-    static AntMessage* error(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000);
-    static AntMessage* loading(const QString& text, QWidget* anchor = nullptr, int durationMs = 0);
+                            int durationMs = 3000,
+                            Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
+    static AntMessage* info(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
+    static AntMessage* success(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
+    static AntMessage* warning(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
+    static AntMessage* error(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
+    static AntMessage* loading(const QString& text, QWidget* anchor = nullptr, int durationMs = 0, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
 
     QString text() const;
     void setText(const QString& text);
@@ -68,6 +69,8 @@ protected:
 private:
     static QList<AntMessage*>& activeMessages();
     static void relayoutMessages(QWidget* anchor = nullptr);
+
+    Ant::MessagePlacement m_placement = Ant::MessagePlacement::Top;
 
     QColor accentColor() const;
     QString iconText() const;

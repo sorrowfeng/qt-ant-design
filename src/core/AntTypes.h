@@ -105,6 +105,14 @@ enum class SelectVariant
 };
 Q_ENUM_NS(SelectVariant)
 
+enum class SelectMode
+{
+    Single,
+    Multiple,
+    Tags,
+};
+Q_ENUM_NS(SelectMode)
+
 enum class DatePickerSize
 {
     Large,
@@ -189,6 +197,17 @@ enum class MessageType
     Loading,
 };
 Q_ENUM_NS(MessageType)
+
+enum class MessagePlacement
+{
+    Top,
+    TopLeft,
+    TopRight,
+    Bottom,
+    BottomLeft,
+    BottomRight,
+};
+Q_ENUM_NS(MessagePlacement)
 
 enum class AlertType
 {
@@ -323,6 +342,14 @@ enum class BadgeStatus
 };
 Q_ENUM_NS(BadgeStatus)
 
+enum class BadgeMode
+{
+    Default,
+    Dot,
+    Ribbon,
+};
+Q_ENUM_NS(BadgeMode)
+
 enum class AvatarShape
 {
     Circle,
@@ -382,6 +409,17 @@ enum class CardVariant
     Borderless,
 };
 Q_ENUM_NS(CardVariant)
+
+enum class SkeletonElement
+{
+    Default,
+    Button,
+    Avatar,
+    Input,
+    Image,
+    Node,
+};
+Q_ENUM_NS(SkeletonElement)
 
 enum class FormLayout
 {
@@ -499,6 +537,7 @@ enum class TypographyType
     Warning,
     Danger,
     LightSolid,
+    Link,
 };
 Q_ENUM_NS(TypographyType)
 
