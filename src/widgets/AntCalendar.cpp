@@ -223,7 +223,7 @@ AntCalendar::AntCalendar(QWidget* parent)
 
     m_prevBtn = new AntButton(QStringLiteral("<"), m_header);
     m_prevBtn->setButtonType(Ant::ButtonType::Text);
-    m_prevBtn->setButtonSize(Ant::ButtonSize::Small);
+    m_prevBtn->setButtonSize(Ant::Size::Small);
     m_prevBtn->setFixedSize(28, 28);
 
     m_titleBtn = new AntButton(m_header);
@@ -232,7 +232,7 @@ AntCalendar::AntCalendar(QWidget* parent)
 
     m_nextBtn = new AntButton(QStringLiteral(">"), m_header);
     m_nextBtn->setButtonType(Ant::ButtonType::Text);
-    m_nextBtn->setButtonSize(Ant::ButtonSize::Small);
+    m_nextBtn->setButtonSize(Ant::Size::Small);
     m_nextBtn->setFixedSize(28, 28);
 
     headerLayout->addWidget(m_prevBtn);

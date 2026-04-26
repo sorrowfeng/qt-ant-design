@@ -28,9 +28,9 @@ void AntSteps::setCurrentIndex(int index)
     Q_EMIT currentIndexChanged(m_currentIndex);
 }
 
-Ant::StepsDirection AntSteps::direction() const { return m_direction; }
+Ant::Orientation AntSteps::direction() const { return m_direction; }
 
-void AntSteps::setDirection(Ant::StepsDirection direction)
+void AntSteps::setDirection(Ant::Orientation direction)
 {
     if (m_direction == direction)
     {
@@ -108,7 +108,7 @@ void AntSteps::clearSteps()
 QSize AntSteps::sizeHint() const
 {
     const Metrics m = metrics();
-    if (m_direction == Ant::StepsDirection::Vertical)
+    if (m_direction == Ant::Orientation::Vertical)
     {
         return QSize(420, qMax(120, m_steps.size() * 92));
     }
@@ -182,7 +182,7 @@ QVector<QRect> AntSteps::itemRects() const
     {
         return rects;
     }
-    if (m_direction == Ant::StepsDirection::Horizontal)
+    if (m_direction == Ant::Orientation::Horizontal)
     {
         const int itemWidth = qMax(160, width() / m_steps.size());
         for (int i = 0; i < m_steps.size(); ++i)
@@ -204,7 +204,7 @@ QVector<QRect> AntSteps::itemRects() const
 QRect AntSteps::iconRect(const QRect& itemRect) const
 {
     const Metrics m = metrics();
-    if (m_direction == Ant::StepsDirection::Horizontal)
+    if (m_direction == Ant::Orientation::Horizontal)
     {
         return QRect(itemRect.left(), 8, m.iconSize, m.iconSize);
     }
@@ -214,7 +214,7 @@ QRect AntSteps::iconRect(const QRect& itemRect) const
 QRect AntSteps::textRect(const QRect& itemRect) const
 {
     const Metrics m = metrics();
-    if (m_direction == Ant::StepsDirection::Horizontal)
+    if (m_direction == Ant::Orientation::Horizontal)
     {
         return QRect(itemRect.left() + m.iconSize + 12, 6, itemRect.width() - m.iconSize - 16, itemRect.height() - 12);
     }

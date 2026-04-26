@@ -161,7 +161,7 @@ void AntPopconfirm::rebuildActionWidget()
     {
         m_cancelButton = new AntButton(m_cancelText, m_actionContainer);
         m_cancelButton->setButtonType(Ant::ButtonType::Default);
-        m_cancelButton->setButtonSize(Ant::ButtonSize::Small);
+        m_cancelButton->setButtonSize(Ant::Size::Small);
         connect(m_cancelButton, &AntButton::clicked, this, [this]() {
             m_popover->setOpen(false);
             Q_EMIT cancelRequested();
@@ -171,7 +171,7 @@ void AntPopconfirm::rebuildActionWidget()
 
     m_okButton = new AntButton(m_okText, m_actionContainer);
     m_okButton->setButtonType(Ant::ButtonType::Primary);
-    m_okButton->setButtonSize(Ant::ButtonSize::Small);
+    m_okButton->setButtonSize(Ant::Size::Small);
     connect(m_okButton, &AntButton::clicked, this, [this]() {
         m_popover->setOpen(false);
         Q_EMIT confirmRequested();

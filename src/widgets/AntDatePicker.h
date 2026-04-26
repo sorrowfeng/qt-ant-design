@@ -19,9 +19,9 @@ class AntDatePicker : public QWidget
     Q_PROPERTY(QDate selectedDate READ selectedDate WRITE setSelectedDate NOTIFY selectedDateChanged)
     Q_PROPERTY(QString displayFormat READ displayFormat WRITE setDisplayFormat NOTIFY displayFormatChanged)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)
-    Q_PROPERTY(Ant::DatePickerSize pickerSize READ pickerSize WRITE setPickerSize NOTIFY pickerSizeChanged)
-    Q_PROPERTY(Ant::DatePickerStatus status READ status WRITE setStatus NOTIFY statusChanged)
-    Q_PROPERTY(Ant::DatePickerVariant variant READ variant WRITE setVariant NOTIFY variantChanged)
+    Q_PROPERTY(Ant::Size pickerSize READ pickerSize WRITE setPickerSize NOTIFY pickerSizeChanged)
+    Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
 
@@ -40,14 +40,14 @@ public:
     QString placeholderText() const;
     void setPlaceholderText(const QString& text);
 
-    Ant::DatePickerSize pickerSize() const;
-    void setPickerSize(Ant::DatePickerSize size);
+    Ant::Size pickerSize() const;
+    void setPickerSize(Ant::Size size);
 
-    Ant::DatePickerStatus status() const;
-    void setStatus(Ant::DatePickerStatus status);
+    Ant::Status status() const;
+    void setStatus(Ant::Status status);
 
-    Ant::DatePickerVariant variant() const;
-    void setVariant(Ant::DatePickerVariant variant);
+    Ant::Variant variant() const;
+    void setVariant(Ant::Variant variant);
 
     bool allowClear() const;
     void setAllowClear(bool allowClear);
@@ -74,9 +74,9 @@ Q_SIGNALS:
     void dateStringChanged(const QString& text);
     void displayFormatChanged(const QString& format);
     void placeholderTextChanged(const QString& text);
-    void pickerSizeChanged(Ant::DatePickerSize size);
-    void statusChanged(Ant::DatePickerStatus status);
-    void variantChanged(Ant::DatePickerVariant variant);
+    void pickerSizeChanged(Ant::Size size);
+    void statusChanged(Ant::Status status);
+    void variantChanged(Ant::Variant variant);
     void allowClearChanged(bool allowClear);
     void rangeModeChanged(bool rangeMode);
     void startDateChanged(const QDate& date);
@@ -123,9 +123,9 @@ private:
     QDate m_endDate;
     QString m_displayFormat = QStringLiteral("yyyy-MM-dd");
     QString m_placeholderText = QStringLiteral("Select date");
-    Ant::DatePickerSize m_pickerSize = Ant::DatePickerSize::Middle;
-    Ant::DatePickerStatus m_status = Ant::DatePickerStatus::Normal;
-    Ant::DatePickerVariant m_variant = Ant::DatePickerVariant::Outlined;
+    Ant::Size m_pickerSize = Ant::Size::Middle;
+    Ant::Status m_status = Ant::Status::Normal;
+    Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_allowClear = true;
     bool m_rangeMode = false;
     bool m_pickingEnd = false;

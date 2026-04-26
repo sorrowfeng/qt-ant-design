@@ -19,26 +19,26 @@ void TestAntDataEntryB::propertiesAndSignals()
 {
     // AntCascader
     auto* w1 = new AntCascader;
-    QCOMPARE(w1->cascaderSize(), Ant::SelectSize::Middle);
-    QCOMPARE(w1->status(), Ant::SelectStatus::Normal);
-    QCOMPARE(w1->variant(), Ant::SelectVariant::Outlined);
-    QCOMPARE(w1->expandTrigger(), Ant::CascaderExpandTrigger::Click);
+    QCOMPARE(w1->cascaderSize(), Ant::Size::Middle);
+    QCOMPARE(w1->status(), Ant::Status::Normal);
+    QCOMPARE(w1->variant(), Ant::Variant::Outlined);
+    QCOMPARE(w1->expandTrigger(), Ant::Trigger::Click);
     QCOMPARE(w1->isOpen(), false);
     QCOMPARE(w1->allowClear(), false);
 
     QSignalSpy sizeSpy1(w1, &AntCascader::cascaderSizeChanged);
-    w1->setCascaderSize(Ant::SelectSize::Large);
-    QCOMPARE(w1->cascaderSize(), Ant::SelectSize::Large);
+    w1->setCascaderSize(Ant::Size::Large);
+    QCOMPARE(w1->cascaderSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy1.count(), 1);
 
     QSignalSpy statusSpy1(w1, &AntCascader::statusChanged);
-    w1->setStatus(Ant::SelectStatus::Error);
-    QCOMPARE(w1->status(), Ant::SelectStatus::Error);
+    w1->setStatus(Ant::Status::Error);
+    QCOMPARE(w1->status(), Ant::Status::Error);
     QCOMPARE(statusSpy1.count(), 1);
 
     QSignalSpy triggerSpy(w1, &AntCascader::expandTriggerChanged);
-    w1->setExpandTrigger(Ant::CascaderExpandTrigger::Hover);
-    QCOMPARE(w1->expandTrigger(), Ant::CascaderExpandTrigger::Hover);
+    w1->setExpandTrigger(Ant::Trigger::Hover);
+    QCOMPARE(w1->expandTrigger(), Ant::Trigger::Hover);
     QCOMPARE(triggerSpy.count(), 1);
 
     QSignalSpy clearSpy1(w1, &AntCascader::allowClearChanged);
@@ -51,21 +51,21 @@ void TestAntDataEntryB::propertiesAndSignals()
 
     // AntDatePicker
     auto* w2 = new AntDatePicker;
-    QCOMPARE(w2->pickerSize(), Ant::DatePickerSize::Middle);
-    QCOMPARE(w2->status(), Ant::DatePickerStatus::Normal);
-    QCOMPARE(w2->variant(), Ant::DatePickerVariant::Outlined);
+    QCOMPARE(w2->pickerSize(), Ant::Size::Middle);
+    QCOMPARE(w2->status(), Ant::Status::Normal);
+    QCOMPARE(w2->variant(), Ant::Variant::Outlined);
     QCOMPARE(w2->allowClear(), true);
     QCOMPARE(w2->isOpen(), false);
     QCOMPARE(w2->hasSelectedDate(), false);
 
     QSignalSpy sizeSpy2(w2, &AntDatePicker::pickerSizeChanged);
-    w2->setPickerSize(Ant::DatePickerSize::Large);
-    QCOMPARE(w2->pickerSize(), Ant::DatePickerSize::Large);
+    w2->setPickerSize(Ant::Size::Large);
+    QCOMPARE(w2->pickerSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy2.count(), 1);
 
     QSignalSpy statusSpy2(w2, &AntDatePicker::statusChanged);
-    w2->setStatus(Ant::DatePickerStatus::Error);
-    QCOMPARE(w2->status(), Ant::DatePickerStatus::Error);
+    w2->setStatus(Ant::Status::Error);
+    QCOMPARE(w2->status(), Ant::Status::Error);
     QCOMPARE(statusSpy2.count(), 1);
 
     QSignalSpy dateSpy(w2, &AntDatePicker::selectedDateChanged);
@@ -84,16 +84,16 @@ void TestAntDataEntryB::propertiesAndSignals()
 
     // AntTimePicker
     auto* w3 = new AntTimePicker;
-    QCOMPARE(w3->pickerSize(), Ant::TimePickerSize::Middle);
-    QCOMPARE(w3->status(), Ant::TimePickerStatus::Normal);
-    QCOMPARE(w3->variant(), Ant::TimePickerVariant::Outlined);
+    QCOMPARE(w3->pickerSize(), Ant::Size::Middle);
+    QCOMPARE(w3->status(), Ant::Status::Normal);
+    QCOMPARE(w3->variant(), Ant::Variant::Outlined);
     QCOMPARE(w3->allowClear(), true);
     QCOMPARE(w3->isOpen(), false);
     QCOMPARE(w3->hasSelectedTime(), false);
 
     QSignalSpy sizeSpy3(w3, &AntTimePicker::pickerSizeChanged);
-    w3->setPickerSize(Ant::TimePickerSize::Small);
-    QCOMPARE(w3->pickerSize(), Ant::TimePickerSize::Small);
+    w3->setPickerSize(Ant::Size::Small);
+    QCOMPARE(w3->pickerSize(), Ant::Size::Small);
     QCOMPARE(sizeSpy3.count(), 1);
 
     QSignalSpy timeSpy(w3, &AntTimePicker::selectedTimeChanged);
@@ -141,16 +141,16 @@ void TestAntDataEntryB::propertiesAndSignals()
 
     // AntTreeSelect
     auto* w6 = new AntTreeSelect;
-    QCOMPARE(w6->selectSize(), Ant::SelectSize::Middle);
-    QCOMPARE(w6->status(), Ant::SelectStatus::Normal);
-    QCOMPARE(w6->variant(), Ant::SelectVariant::Outlined);
+    QCOMPARE(w6->selectSize(), Ant::Size::Middle);
+    QCOMPARE(w6->status(), Ant::Status::Normal);
+    QCOMPARE(w6->variant(), Ant::Variant::Outlined);
     QCOMPARE(w6->isMultiple(), false);
     QCOMPARE(w6->isTreeCheckable(), false);
     QCOMPARE(w6->isOpen(), false);
 
     QSignalSpy sizeSpy6(w6, &AntTreeSelect::selectSizeChanged);
-    w6->setSelectSize(Ant::SelectSize::Large);
-    QCOMPARE(w6->selectSize(), Ant::SelectSize::Large);
+    w6->setSelectSize(Ant::Size::Large);
+    QCOMPARE(w6->selectSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy6.count(), 1);
 
     QSignalSpy multiSpy6(w6, &AntTreeSelect::multipleChanged);

@@ -1,13 +1,11 @@
 #include "AntSliderStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
 #include <algorithm>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSlider.h"
 
@@ -153,21 +151,9 @@ void drawDots(QPainter& painter, const AntSlider* slider, const SliderMetrics& m
 }
 
 AntSliderStyle::AntSliderStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntSlider*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntSlider>();
 }
 
 void AntSliderStyle::polish(QWidget* widget)

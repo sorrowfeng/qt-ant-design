@@ -1,6 +1,5 @@
 #include "AntSwitchStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
@@ -9,7 +8,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSwitch.h"
 
@@ -30,7 +28,7 @@ SwitchMetrics metricsFor(const AntSwitch* sw)
     const auto& token = antTheme->tokens();
     SwitchMetrics metrics;
     const qreal defaultHeight = token.fontSize * token.lineHeight;
-    if (!sw || sw->switchSize() == Ant::SwitchSize::Middle)
+    if (!sw || sw->switchSize() == Ant::Size::Middle)
     {
         metrics.trackHeight = static_cast<int>(std::round(defaultHeight));
         metrics.trackPadding = 2;
@@ -127,21 +125,9 @@ void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int
 }
 
 AntSwitchStyle::AntSwitchStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntSwitch*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntSwitch>();
 }
 
 void AntSwitchStyle::polish(QWidget* widget)
@@ -230,7 +216,7 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
     painter->drawRoundedRect(track, track.height() / 2.0, track.height() / 2.0);
 
     const QString label = sw->isChecked() ? sw->checkedText() : sw->uncheckedText();
-    if (!label.isEmpty() && sw->switchSize() == Ant::SwitchSize::Middle)
+    if (!label.isEmpty() && sw->switchSize() == Ant::Size::Middle)
     {
         QRectF textRect = track.adjusted(metrics.trackPadding + metrics.innerMinMargin,
                                          0,

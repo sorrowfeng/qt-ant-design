@@ -1,30 +1,16 @@
 #include "AntTimePickerStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntTimePicker.h"
 
 AntTimePickerStyle::AntTimePickerStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntTimePicker*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntTimePicker>();
 }
 
 void AntTimePickerStyle::polish(QWidget* widget)
@@ -96,12 +82,12 @@ TimePickerMetrics timePickerMetrics(const AntTimePicker* picker)
     m.radius = token.borderRadius;
     m.paddingX = token.paddingSM - token.lineWidth;
     m.iconWidth = token.fontSize + token.paddingXS * 2;
-    if (picker->pickerSize() == Ant::TimePickerSize::Large)
+    if (picker->pickerSize() == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
     }
-    else if (picker->pickerSize() == Ant::TimePickerSize::Small)
+    else if (picker->pickerSize() == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;
@@ -132,11 +118,11 @@ QColor timePickerBorderColor(const AntTimePicker* picker)
         return token.colorBorderDisabled;
     }
     const bool focused = picker->hasFocus() || picker->isOpen();
-    if (picker->status() == Ant::TimePickerStatus::Error)
+    if (picker->status() == Ant::Status::Error)
     {
         return focused ? token.colorErrorHover : token.colorError;
     }
-    if (picker->status() == Ant::TimePickerStatus::Warning)
+    if (picker->status() == Ant::Status::Warning)
     {
         return focused ? token.colorWarningHover : token.colorWarning;
     }
@@ -154,12 +140,12 @@ QColor timePickerBackgroundColor(const AntTimePicker* picker)
     {
         return token.colorBgContainerDisabled;
     }
-    if (picker->variant() == Ant::TimePickerVariant::Filled)
+    if (picker->variant() == Ant::Variant::Filled)
     {
         return token.colorFillQuaternary;
     }
-    if (picker->variant() == Ant::TimePickerVariant::Borderless ||
-        picker->variant() == Ant::TimePickerVariant::Underlined)
+    if (picker->variant() == Ant::Variant::Borderless ||
+        picker->variant() == Ant::Variant::Underlined)
     {
         return QColor(0, 0, 0, 0);
     }
@@ -190,8 +176,8 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
 
     // Focus ring
     if (focused && picker->isEnabled() &&
-        picker->variant() != Ant::TimePickerVariant::Borderless &&
-        picker->variant() != Ant::TimePickerVariant::Underlined)
+        picker->variant() != Ant::Variant::Borderless &&
+        picker->variant() != Ant::Variant::Underlined)
     {
         painter->setPen(QPen(AntPalette::alpha(timePickerBorderColor(picker), 0.16), token.controlOutlineWidth));
         painter->setBrush(Qt::NoBrush);
@@ -199,8 +185,8 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
     }
 
     // Border and background
-    if (picker->variant() != Ant::TimePickerVariant::Borderless &&
-        picker->variant() != Ant::TimePickerVariant::Underlined)
+    if (picker->variant() != Ant::Variant::Borderless &&
+        picker->variant() != Ant::Variant::Underlined)
     {
         painter->setPen(QPen(timePickerBorderColor(picker), token.lineWidth));
         painter->setBrush(timePickerBackgroundColor(picker));
@@ -211,7 +197,7 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
         painter->setPen(Qt::NoPen);
         painter->setBrush(timePickerBackgroundColor(picker));
         painter->drawRoundedRect(control, m.radius, m.radius);
-        if (picker->variant() == Ant::TimePickerVariant::Underlined)
+        if (picker->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(timePickerBorderColor(picker), focused ? 2 : token.lineWidth));
             painter->drawLine(QPointF(control.left(), control.bottom() - 0.5),

@@ -1,30 +1,16 @@
 #include "AntDatePickerStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntDatePicker.h"
 
 AntDatePickerStyle::AntDatePickerStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntDatePicker*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntDatePicker>();
 }
 
 void AntDatePickerStyle::polish(QWidget* widget)
@@ -96,12 +82,12 @@ PickerMetrics datePickerMetrics(const AntDatePicker* picker)
     m.radius = token.borderRadius;
     m.paddingX = token.paddingSM - token.lineWidth;
     m.iconWidth = token.fontSize + token.paddingXS * 2;
-    if (picker->pickerSize() == Ant::DatePickerSize::Large)
+    if (picker->pickerSize() == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
     }
-    else if (picker->pickerSize() == Ant::DatePickerSize::Small)
+    else if (picker->pickerSize() == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;
@@ -132,11 +118,11 @@ QColor datePickerBorderColor(const AntDatePicker* picker)
         return token.colorBorderDisabled;
     }
     const bool focused = picker->hasFocus() || picker->isOpen();
-    if (picker->status() == Ant::DatePickerStatus::Error)
+    if (picker->status() == Ant::Status::Error)
     {
         return focused ? token.colorErrorHover : token.colorError;
     }
-    if (picker->status() == Ant::DatePickerStatus::Warning)
+    if (picker->status() == Ant::Status::Warning)
     {
         return focused ? token.colorWarningHover : token.colorWarning;
     }
@@ -154,12 +140,12 @@ QColor datePickerBackgroundColor(const AntDatePicker* picker)
     {
         return token.colorBgContainerDisabled;
     }
-    if (picker->variant() == Ant::DatePickerVariant::Filled)
+    if (picker->variant() == Ant::Variant::Filled)
     {
         return token.colorFillQuaternary;
     }
-    if (picker->variant() == Ant::DatePickerVariant::Borderless ||
-        picker->variant() == Ant::DatePickerVariant::Underlined)
+    if (picker->variant() == Ant::Variant::Borderless ||
+        picker->variant() == Ant::Variant::Underlined)
     {
         return QColor(0, 0, 0, 0);
     }
@@ -190,8 +176,8 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
 
     // Focus ring
     if (focused && picker->isEnabled() &&
-        picker->variant() != Ant::DatePickerVariant::Borderless &&
-        picker->variant() != Ant::DatePickerVariant::Underlined)
+        picker->variant() != Ant::Variant::Borderless &&
+        picker->variant() != Ant::Variant::Underlined)
     {
         painter->setPen(QPen(AntPalette::alpha(datePickerBorderColor(picker), 0.16), token.controlOutlineWidth));
         painter->setBrush(Qt::NoBrush);
@@ -199,8 +185,8 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
     }
 
     // Border and background
-    if (picker->variant() != Ant::DatePickerVariant::Borderless &&
-        picker->variant() != Ant::DatePickerVariant::Underlined)
+    if (picker->variant() != Ant::Variant::Borderless &&
+        picker->variant() != Ant::Variant::Underlined)
     {
         painter->setPen(QPen(datePickerBorderColor(picker), token.lineWidth));
         painter->setBrush(datePickerBackgroundColor(picker));
@@ -211,7 +197,7 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
         painter->setPen(Qt::NoPen);
         painter->setBrush(datePickerBackgroundColor(picker));
         painter->drawRoundedRect(control, m.radius, m.radius);
-        if (picker->variant() == Ant::DatePickerVariant::Underlined)
+        if (picker->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(datePickerBorderColor(picker), focused ? 2 : token.lineWidth));
             painter->drawLine(QPointF(control.left(), control.bottom() - 0.5),

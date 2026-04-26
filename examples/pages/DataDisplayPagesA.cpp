@@ -57,11 +57,11 @@ QWidget* createAvatarPage(QWidget* /*owner*/)
     auto* sizeRow = new QHBoxLayout();
     sizeRow->setSpacing(12);
     auto* large = new AntAvatar(QStringLiteral("L"));
-    large->setAvatarSize(Ant::AvatarSize::Large);
+    large->setAvatarSize(Ant::Size::Large);
     auto* middle = new AntAvatar(QStringLiteral("M"));
-    middle->setAvatarSize(Ant::AvatarSize::Middle);
+    middle->setAvatarSize(Ant::Size::Middle);
     auto* small = new AntAvatar(QStringLiteral("S"));
-    small->setAvatarSize(Ant::AvatarSize::Small);
+    small->setAvatarSize(Ant::Size::Small);
     sizeRow->addWidget(large);
     sizeRow->addWidget(middle);
     sizeRow->addWidget(small);
@@ -112,7 +112,7 @@ QWidget* createAvatarPage(QWidget* /*owner*/)
 
     auto* group2 = new AntAvatarGroup(page);
     group2->setMaxCount(4);
-    group2->setAvatarSize(Ant::AvatarSize::Small);
+    group2->setAvatarSize(Ant::Size::Small);
     for (const QString& name : {QStringLiteral("X"), QStringLiteral("Y"), QStringLiteral("Z"), QStringLiteral("W"), QStringLiteral("V"), QStringLiteral("U")})
     {
         auto* av = new AntAvatar(name);
@@ -171,7 +171,7 @@ QWidget* createBadgePage(QWidget* /*owner*/)
     dotRow->addWidget(dot);
 
     auto* small = new AntBadge(8);
-    small->setBadgeSize(Ant::BadgeSize::Small);
+    small->setBadgeSize(Ant::Size::Small);
     small->setContentWidget(makeAnchor(QStringLiteral("Small")));
     dotRow->addWidget(small);
 
@@ -307,7 +307,7 @@ QWidget* createCardPage(QWidget* /*owner*/)
     auto* metaCard2 = new AntCard(QStringLiteral("With Avatar"), page);
     metaCard2->setFixedWidth(320);
     auto* metaAvatar = new AntAvatar(QStringLiteral("AD"));
-    metaAvatar->setAvatarSize(Ant::AvatarSize::Small);
+    metaAvatar->setAvatarSize(Ant::Size::Small);
     metaCard2->setMetaAvatar(metaAvatar);
     metaCard2->setMetaTitle(QStringLiteral("Design Team"));
     metaCard2->setMetaDescription(QStringLiteral("Shared component library and design tokens."));

@@ -44,7 +44,7 @@ void TestAntDataDisplayB::propertiesAndSignals()
     // AntTable
     auto* tbl = new AntTable;
     QCOMPARE(tbl->isBordered(), true);
-    QCOMPARE(tbl->tableSize(), Ant::TableSize::Middle);
+    QCOMPARE(tbl->tableSize(), Ant::Size::Middle);
     QCOMPARE(tbl->isLoading(), false);
     QCOMPARE(tbl->rowSelection(), Ant::TableSelectionMode::None);
     QCOMPARE(tbl->currentPage(), 1);
@@ -57,8 +57,8 @@ void TestAntDataDisplayB::propertiesAndSignals()
     QCOMPARE(tBorderSpy.count(), 1);
 
     QSignalSpy tSizeSpy(tbl, &AntTable::tableSizeChanged);
-    tbl->setTableSize(Ant::TableSize::Small);
-    QCOMPARE(tbl->tableSize(), Ant::TableSize::Small);
+    tbl->setTableSize(Ant::Size::Small);
+    QCOMPARE(tbl->tableSize(), Ant::Size::Small);
     QCOMPARE(tSizeSpy.count(), 1);
 
     QSignalSpy tLoadSpy(tbl, &AntTable::loadingChanged);

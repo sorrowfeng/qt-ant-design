@@ -1,6 +1,5 @@
 #include "AntCascaderStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -8,7 +7,6 @@
 
 #include <algorithm>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntCascader.h"
 
@@ -38,12 +36,12 @@ CascaderMetrics metricsFor(const AntCascader* cascader)
         return metrics;
     }
 
-    if (cascader->cascaderSize() == Ant::SelectSize::Large)
+    if (cascader->cascaderSize() == Ant::Size::Large)
     {
         metrics.height = token.controlHeightLG;
         metrics.fontSize = token.fontSizeLG;
     }
-    else if (cascader->cascaderSize() == Ant::SelectSize::Small)
+    else if (cascader->cascaderSize() == Ant::Size::Small)
     {
         metrics.height = token.controlHeightSM;
         metrics.fontSize = token.fontSizeSM;
@@ -78,13 +76,13 @@ QColor borderColorFor(const AntCascader* cascader)
     {
         return token.colorBorderDisabled;
     }
-    if (cascader->status() == Ant::SelectStatus::Error)
+    if (cascader->status() == Ant::Status::Error)
     {
         return (cascader->isHoveredState() || cascader->hasFocus() || cascader->isOpen())
             ? token.colorErrorHover
             : token.colorError;
     }
-    if (cascader->status() == Ant::SelectStatus::Warning)
+    if (cascader->status() == Ant::Status::Warning)
     {
         return (cascader->isHoveredState() || cascader->hasFocus() || cascader->isOpen())
             ? token.colorWarningHover
@@ -104,12 +102,12 @@ QColor backgroundColorFor(const AntCascader* cascader)
     {
         return token.colorBgContainerDisabled;
     }
-    if (cascader->variant() == Ant::SelectVariant::Filled)
+    if (cascader->variant() == Ant::Variant::Filled)
     {
         return cascader->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary;
     }
-    if (cascader->variant() == Ant::SelectVariant::Borderless
-        || cascader->variant() == Ant::SelectVariant::Underlined)
+    if (cascader->variant() == Ant::Variant::Borderless
+        || cascader->variant() == Ant::Variant::Underlined)
     {
         return QColor(0, 0, 0, 0);
     }
@@ -127,21 +125,9 @@ bool canClear(const AntCascader* cascader)
 } // namespace
 
 AntCascaderStyle::AntCascaderStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntCascader*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntCascader>();
 }
 
 void AntCascaderStyle::polish(QWidget* widget)
@@ -225,8 +211,8 @@ void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painte
 
     if (focused
         && !disabled
-        && cascader->variant() != Ant::SelectVariant::Borderless
-        && cascader->variant() != Ant::SelectVariant::Underlined)
+        && cascader->variant() != Ant::Variant::Borderless
+        && cascader->variant() != Ant::Variant::Underlined)
     {
         const QColor outline = AntPalette::alpha(bColor, 0.16);
         painter->setPen(QPen(outline, token.controlOutlineWidth));
@@ -234,8 +220,8 @@ void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painte
         painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), metrics.radius + 1, metrics.radius + 1);
     }
 
-    if (cascader->variant() != Ant::SelectVariant::Borderless
-        && cascader->variant() != Ant::SelectVariant::Underlined)
+    if (cascader->variant() != Ant::Variant::Borderless
+        && cascader->variant() != Ant::Variant::Underlined)
     {
         painter->setPen(QPen(bColor, token.lineWidth));
         painter->setBrush(bgColor);
@@ -246,7 +232,7 @@ void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painte
         painter->setPen(Qt::NoPen);
         painter->setBrush(bgColor);
         painter->drawRoundedRect(control, metrics.radius, metrics.radius);
-        if (cascader->variant() == Ant::SelectVariant::Underlined)
+        if (cascader->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(bColor, focused ? 2 : token.lineWidth));
             painter->drawLine(QPointF(control.left(), control.bottom() - 0.5),

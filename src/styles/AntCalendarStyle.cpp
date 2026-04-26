@@ -1,28 +1,20 @@
 #include "AntCalendarStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "widgets/AntCalendar.h"
 
 AntCalendarStyle::AntCalendarStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntCalendar*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntCalendar>();
+}
+
+void AntCalendarStyle::onThemeUpdate(QWidget* w)
+{
+    w->update();
 }
 
 void AntCalendarStyle::polish(QWidget* widget)

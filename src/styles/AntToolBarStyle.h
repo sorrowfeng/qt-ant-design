@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class AntToolBarStyle : public QProxyStyle
+class AntToolBarStyle : public AntStyleBase
 {
     Q_OBJECT
 
@@ -15,4 +15,7 @@ public:
                        QPainter* painter, const QWidget* widget) const override;
     int pixelMetric(PixelMetric metric, const QStyleOption* option,
                     const QWidget* widget) const override;
+
+protected:
+    void onThemeUpdate(QWidget* w) override;
 };

@@ -21,7 +21,7 @@ class AntSteps : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
-    Q_PROPERTY(Ant::StepsDirection direction READ direction WRITE setDirection NOTIFY directionChanged)
+    Q_PROPERTY(Ant::Orientation direction READ direction WRITE setDirection NOTIFY directionChanged)
     Q_PROPERTY(bool clickable READ isClickable WRITE setClickable NOTIFY clickableChanged)
 
 public:
@@ -30,8 +30,8 @@ public:
     int currentIndex() const;
     void setCurrentIndex(int index);
 
-    Ant::StepsDirection direction() const;
-    void setDirection(Ant::StepsDirection direction);
+    Ant::Orientation direction() const;
+    void setDirection(Ant::Orientation direction);
 
     bool isClickable() const;
     void setClickable(bool clickable);
@@ -52,7 +52,7 @@ public:
 
 Q_SIGNALS:
     void currentIndexChanged(int index);
-    void directionChanged(Ant::StepsDirection direction);
+    void directionChanged(Ant::Orientation direction);
     void clickableChanged(bool clickable);
     void stepClicked(int index);
 
@@ -84,7 +84,7 @@ private:
 
     QVector<AntStepItem> m_steps;
     int m_currentIndex = 0;
-    Ant::StepsDirection m_direction = Ant::StepsDirection::Horizontal;
+    Ant::Orientation m_direction = Ant::Orientation::Horizontal;
     bool m_clickable = true;
     int m_hoveredIndex = -1;
 };

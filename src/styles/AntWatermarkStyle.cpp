@@ -1,13 +1,11 @@
 #include "AntWatermarkStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
 #include <cmath>
 
-#include "core/AntTheme.h"
 #include "widgets/AntWatermark.h"
 
 namespace
@@ -72,21 +70,9 @@ void drawWatermarkPattern(QPainter* painter, const QPointF& center, const AntWat
 } // namespace
 
 AntWatermarkStyle::AntWatermarkStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntWatermark*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntWatermark>();
 }
 
 void AntWatermarkStyle::polish(QWidget* widget)

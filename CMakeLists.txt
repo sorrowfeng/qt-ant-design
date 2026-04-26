@@ -17,489 +17,38 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
-find_package(Qt6 COMPONENTS Test)
-if(Qt6Test_FOUND)
-    enable_testing()
-    add_subdirectory(tests)
+# Options
+option(BUILD_EXAMPLES "Build example application" ON)
+option(BUILD_TESTS "Build unit tests (requires Qt6::Test)" ON)
+
+# Library
+add_subdirectory(src)
+
+# Examples
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
 
-set(QT_ANT_DESIGN_HEADERS
-    src/core/AntTypes.h
-    src/core/AntTheme.h
-    src/core/AntWave.h
-    src/styles/AntButtonStyle.h
-    src/styles/AntCardStyle.h
-    src/styles/AntCheckboxStyle.h
-    src/styles/AntDatePickerStyle.h
-    src/styles/AntDescriptionsStyle.h
-    src/styles/AntDrawerStyle.h
-    src/styles/AntDividerStyle.h
-    src/styles/AntDropdownStyle.h
-    src/styles/AntBreadcrumbStyle.h
-    src/styles/AntFormStyle.h
-    src/styles/AntInputStyle.h
-    src/styles/AntInputNumberStyle.h
-    src/styles/AntListStyle.h
-    src/styles/AntMenuStyle.h
-    src/styles/AntPaginationStyle.h
-    src/styles/AntPalette.h
-    src/styles/AntRadioStyle.h
-    src/styles/AntRateStyle.h
-    src/styles/AntSelectStyle.h
-    src/styles/AntScrollBarStyle.h
-    src/styles/AntSliderStyle.h
-    src/styles/AntSpinStyle.h
-    src/styles/AntStepsStyle.h
-    src/styles/AntSwitchStyle.h
-    src/styles/AntTabsStyle.h
-    src/styles/AntTimePickerStyle.h
-    src/styles/AntAlertStyle.h
-    src/styles/AntAvatarStyle.h
-    src/styles/AntBadgeStyle.h
-    src/styles/AntEmptyStyle.h
-    src/styles/AntIconStyle.h
-    src/styles/AntMessageStyle.h
-    src/styles/AntModalStyle.h
-    src/styles/AntNotificationStyle.h
-    src/styles/AntPopoverStyle.h
-    src/styles/AntPopconfirmStyle.h
-    src/styles/AntProgressStyle.h
-    src/styles/AntResultStyle.h
-    src/styles/AntSkeletonStyle.h
-    src/styles/AntStatisticStyle.h
-    src/styles/AntSpaceStyle.h
-    src/styles/AntTagStyle.h
-    src/styles/AntTimelineStyle.h
-    src/styles/AntTooltipStyle.h
-    src/styles/AntTypographyStyle.h
-    src/styles/AntLayoutStyle.h
-    src/styles/AntWindowStyle.h
-    src/widgets/AntAlert.h
-    src/widgets/AntAvatar.h
-    src/widgets/AntBadge.h
-    src/widgets/AntBreadcrumb.h
-    src/widgets/AntButton.h
-    src/widgets/AntCheckbox.h
-    src/widgets/AntDatePicker.h
-    src/widgets/AntDescriptions.h
-    src/widgets/AntDrawer.h
-    src/widgets/AntDropdown.h
-    src/widgets/AntDivider.h
-    src/widgets/AntForm.h
-    src/widgets/AntEmpty.h
-    src/widgets/AntIcon.h
-    src/widgets/AntInput.h
-    src/widgets/AntInputNumber.h
-    src/widgets/AntList.h
-    src/widgets/AntMessage.h
-    src/widgets/AntMenu.h
-    src/widgets/AntNotification.h
-    src/widgets/AntModal.h
-    src/widgets/AntPopover.h
-    src/widgets/AntPopconfirm.h
-    src/widgets/AntPagination.h
-    src/widgets/AntProgress.h
-    src/widgets/AntRadio.h
-    src/widgets/AntRate.h
-    src/widgets/AntResult.h
-    src/widgets/AntScrollBar.h
-    src/widgets/AntSelect.h
-    src/widgets/AntSkeleton.h
-    src/widgets/AntSlider.h
-    src/widgets/AntSpin.h
-    src/widgets/AntStatistic.h
-    src/widgets/AntSteps.h
-    src/widgets/AntSwitch.h
-    src/widgets/AntTabs.h
-    src/widgets/AntTag.h
-    src/widgets/AntTooltip.h
-    src/widgets/AntTimePicker.h
-    src/widgets/AntTypography.h
-    src/widgets/AntTimeline.h
-    src/widgets/AntLayout.h
-    src/widgets/AntCard.h
-    src/widgets/AntSpace.h
-    src/widgets/AntWidget.h
-    src/widgets/AntWindow.h
-    src/widgets/AntTable.h
-    src/widgets/AntTree.h
-    src/widgets/AntUpload.h
-    src/widgets/AntCascader.h
-    src/widgets/AntTreeSelect.h
-    src/styles/AntTableStyle.h
-    src/styles/AntTreeStyle.h
-    src/styles/AntUploadStyle.h
-    src/styles/AntCascaderStyle.h
-    src/styles/AntTreeSelectStyle.h
-    src/styles/AntStatusBarStyle.h
-    src/widgets/AntStatusBar.h
-    src/core/AntQRGenerator.h
-    src/styles/AntFloatButtonStyle.h
-    src/styles/AntQRCodeStyle.h
-    src/styles/AntSegmentedStyle.h
-    src/styles/AntWatermarkStyle.h
-    src/widgets/AntAffix.h
-    src/widgets/AntFloatButton.h
-    src/widgets/AntQRCode.h
-    src/widgets/AntSegmented.h
-    src/widgets/AntWatermark.h
-    src/styles/AntToolButtonStyle.h
-    src/styles/AntPlainTextEditStyle.h
-    src/styles/AntMenuBarStyle.h
-    src/styles/AntToolBarStyle.h
-    src/styles/AntAutoCompleteStyle.h
-    src/styles/AntCalendarStyle.h
-    src/widgets/AntToolButton.h
-    src/widgets/AntPlainTextEdit.h
-    src/widgets/AntMenuBar.h
-    src/widgets/AntToolBar.h
-    src/widgets/AntDockWidget.h
-    src/widgets/AntScrollArea.h
-    src/widgets/AntAutoComplete.h
-    src/widgets/AntColorPicker.h
-    src/widgets/AntCalendar.h
-    src/widgets/AntImage.h
-    src/widgets/AntCollapse.h
-    src/widgets/AntSplitter.h
-    src/widgets/AntLog.h
-    src/widgets/AntCarousel.h
-    src/widgets/AntGrid.h
-    src/widgets/AntFlex.h
-    src/widgets/AntAnchor.h
-    src/widgets/AntTransfer.h
-    src/widgets/AntTour.h
-    src/widgets/AntMentions.h
-    src/widgets/AntMasonry.h
-    src/widgets/AntApp.h
-    src/widgets/AntConfigProvider.h
-)
+# Tests
+if(BUILD_TESTS)
+    find_package(Qt6 COMPONENTS Test)
+    if(Qt6Test_FOUND)
+        enable_testing()
+        add_subdirectory(tests)
+    endif()
+endif()
 
-set(QT_ANT_DESIGN_SOURCES
-    src/core/AntTheme.cpp
-    src/core/AntWave.cpp
-    src/styles/AntButtonStyle.cpp
-    src/styles/AntCardStyle.cpp
-    src/styles/AntCheckboxStyle.cpp
-    src/styles/AntDatePickerStyle.cpp
-    src/styles/AntDescriptionsStyle.cpp
-    src/styles/AntDrawerStyle.cpp
-    src/styles/AntDividerStyle.cpp
-    src/styles/AntDropdownStyle.cpp
-    src/styles/AntBreadcrumbStyle.cpp
-    src/styles/AntFormStyle.cpp
-    src/styles/AntInputStyle.cpp
-    src/styles/AntInputNumberStyle.cpp
-    src/styles/AntListStyle.cpp
-    src/styles/AntMenuStyle.cpp
-    src/styles/AntPaginationStyle.cpp
-    src/styles/AntPalette.cpp
-    src/styles/AntRadioStyle.cpp
-    src/styles/AntRateStyle.cpp
-    src/styles/AntSelectStyle.cpp
-    src/styles/AntScrollBarStyle.cpp
-    src/styles/AntSliderStyle.cpp
-    src/styles/AntSpinStyle.cpp
-    src/styles/AntStepsStyle.cpp
-    src/styles/AntSwitchStyle.cpp
-    src/styles/AntTabsStyle.cpp
-    src/styles/AntTimePickerStyle.cpp
-    src/styles/AntAvatarStyle.cpp
-    src/styles/AntBadgeStyle.cpp
-    src/styles/AntEmptyStyle.cpp
-    src/styles/AntResultStyle.cpp
-    src/styles/AntSkeletonStyle.cpp
-    src/styles/AntStatisticStyle.cpp
-    src/styles/AntSpaceStyle.cpp
-    src/styles/AntTagStyle.cpp
-    src/styles/AntTimelineStyle.cpp
-    src/styles/AntLayoutStyle.cpp
-    src/styles/AntWindowStyle.cpp
-    src/styles/AntAlertStyle.cpp
-    src/styles/AntIconStyle.cpp
-    src/styles/AntMessageStyle.cpp
-    src/styles/AntModalStyle.cpp
-    src/styles/AntNotificationStyle.cpp
-    src/styles/AntPopoverStyle.cpp
-    src/styles/AntPopconfirmStyle.cpp
-    src/styles/AntProgressStyle.cpp
-    src/styles/AntTooltipStyle.cpp
-    src/styles/AntTypographyStyle.cpp
-    src/widgets/AntAlert.cpp
-    src/widgets/AntAvatar.cpp
-    src/widgets/AntBadge.cpp
-    src/widgets/AntBreadcrumb.cpp
-    src/widgets/AntButton.cpp
-    src/widgets/AntCheckbox.cpp
-    src/widgets/AntDatePicker.cpp
-    src/widgets/AntDescriptions.cpp
-    src/widgets/AntDrawer.cpp
-    src/widgets/AntDropdown.cpp
-    src/widgets/AntDivider.cpp
-    src/widgets/AntForm.cpp
-    src/widgets/AntEmpty.cpp
-    src/widgets/AntIcon.cpp
-    src/widgets/AntInput.cpp
-    src/widgets/AntList.cpp
-    src/widgets/AntInputNumber.cpp
-    src/widgets/AntMessage.cpp
-    src/widgets/AntMenu.cpp
-    src/widgets/AntNotification.cpp
-    src/widgets/AntModal.cpp
-    src/widgets/AntPopover.cpp
-    src/widgets/AntPopconfirm.cpp
-    src/widgets/AntPagination.cpp
-    src/widgets/AntProgress.cpp
-    src/widgets/AntRadio.cpp
-    src/widgets/AntRate.cpp
-    src/widgets/AntResult.cpp
-    src/widgets/AntScrollBar.cpp
-    src/widgets/AntSelect.cpp
-    src/widgets/AntSkeleton.cpp
-    src/widgets/AntSlider.cpp
-    src/widgets/AntSpin.cpp
-    src/widgets/AntStatistic.cpp
-    src/widgets/AntSteps.cpp
-    src/widgets/AntSwitch.cpp
-    src/widgets/AntTabs.cpp
-    src/widgets/AntTag.cpp
-    src/widgets/AntTooltip.cpp
-    src/widgets/AntTimePicker.cpp
-    src/widgets/AntTypography.cpp
-    src/widgets/AntTimeline.cpp
-    src/widgets/AntLayout.cpp
-    src/widgets/AntCard.cpp
-    src/widgets/AntSpace.cpp
-    src/widgets/AntWidget.cpp
-    src/widgets/AntWindow.cpp
-    src/widgets/AntTable.cpp
-    src/widgets/AntTree.cpp
-    src/widgets/AntUpload.cpp
-    src/widgets/AntCascader.cpp
-    src/widgets/AntTreeSelect.cpp
-    src/styles/AntTableStyle.cpp
-    src/styles/AntTreeStyle.cpp
-    src/styles/AntUploadStyle.cpp
-    src/styles/AntCascaderStyle.cpp
-    src/styles/AntTreeSelectStyle.cpp
-    src/styles/AntStatusBarStyle.cpp
-    src/widgets/AntStatusBar.cpp
-    src/core/AntQRGenerator.cpp
-    src/styles/AntFloatButtonStyle.cpp
-    src/styles/AntQRCodeStyle.cpp
-    src/styles/AntSegmentedStyle.cpp
-    src/styles/AntWatermarkStyle.cpp
-    src/widgets/AntAffix.cpp
-    src/widgets/AntFloatButton.cpp
-    src/widgets/AntQRCode.cpp
-    src/widgets/AntSegmented.cpp
-    src/widgets/AntWatermark.cpp
-    src/styles/AntToolButtonStyle.cpp
-    src/styles/AntPlainTextEditStyle.cpp
-    src/styles/AntMenuBarStyle.cpp
-    src/styles/AntToolBarStyle.cpp
-    src/styles/AntAutoCompleteStyle.cpp
-    src/styles/AntCalendarStyle.cpp
-    src/widgets/AntToolButton.cpp
-    src/widgets/AntPlainTextEdit.cpp
-    src/widgets/AntMenuBar.cpp
-    src/widgets/AntToolBar.cpp
-    src/widgets/AntDockWidget.cpp
-    src/widgets/AntScrollArea.cpp
-    src/widgets/AntAutoComplete.cpp
-    src/widgets/AntColorPicker.cpp
-    src/widgets/AntCalendar.cpp
-    src/widgets/AntImage.cpp
-    src/widgets/AntCollapse.cpp
-    src/widgets/AntSplitter.cpp
-    src/widgets/AntLog.cpp
-    src/widgets/AntCarousel.cpp
-    src/widgets/AntGrid.cpp
-    src/widgets/AntFlex.cpp
-    src/widgets/AntAnchor.cpp
-    src/widgets/AntTransfer.cpp
-    src/widgets/AntTour.cpp
-    src/widgets/AntMentions.cpp
-    src/widgets/AntMasonry.cpp
-    src/widgets/AntApp.cpp
-    src/widgets/AntConfigProvider.cpp
-    resources/qt-ant-design.qrc
-)
+# Install targets
+set(INSTALL_TARGETS qt-ant-design)
+if(BUILD_EXAMPLES)
+    list(APPEND INSTALL_TARGETS qt-ant-design-example)
+endif()
 
-add_library(qt-ant-design STATIC
-    ${QT_ANT_DESIGN_HEADERS}
-    ${QT_ANT_DESIGN_SOURCES}
-)
-
-target_include_directories(qt-ant-design
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design>
-)
-
-target_link_libraries(qt-ant-design
-    PUBLIC
-        Qt6::Core
-        Qt6::Widgets
-)
-
-add_executable(qt-ant-design-example
-    examples/main.cpp
-    examples/ExampleWindow.h
-    examples/ExampleWindow.cpp
-    examples/pages/Pages.h
-    examples/pages/PageCommon.h
-    examples/pages/PageCommon.cpp
-    examples/pages/PageRegistry.h
-    examples/pages/PageRegistry.cpp
-    examples/pages/ShowcasePage.cpp
-    examples/pages/GeneralPages.cpp
-    examples/pages/LayoutPages.cpp
-    examples/pages/NavigationPages.cpp
-    examples/pages/DataEntryPages.cpp
-    examples/pages/DataDisplayPagesA.cpp
-    examples/pages/DataDisplayPagesB.cpp
-    examples/pages/FeedbackPages.cpp
-    examples/pages/OtherPages.cpp
-    examples/pages/QtExtPages.cpp
-)
-
-target_link_libraries(qt-ant-design-example
-    PRIVATE
-        qt-ant-design
-)
-
-install(TARGETS qt-ant-design qt-ant-design-example
+install(TARGETS ${INSTALL_TARGETS}
     EXPORT qt-ant-design-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-
-install(FILES
-    src/core/AntTypes.h
-    src/core/AntTheme.h
-    src/core/AntQRGenerator.h
-    src/core/AntWave.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/core
-)
-
-install(FILES
-    src/styles/AntButtonStyle.h
-    src/styles/AntCheckboxStyle.h
-    src/styles/AntInputStyle.h
-    src/styles/AntInputNumberStyle.h
-    src/styles/AntPalette.h
-    src/styles/AntRadioStyle.h
-    src/styles/AntSelectStyle.h
-    src/styles/AntScrollBarStyle.h
-    src/styles/AntSliderStyle.h
-    src/styles/AntSpaceStyle.h
-    src/styles/AntSpinStyle.h
-    src/styles/AntSwitchStyle.h
-    src/styles/AntTypographyStyle.h
-    src/styles/AntDrawerStyle.h
-    src/styles/AntTableStyle.h
-    src/styles/AntTreeStyle.h
-    src/styles/AntUploadStyle.h
-    src/styles/AntCascaderStyle.h
-    src/styles/AntTreeSelectStyle.h
-    src/styles/AntWindowStyle.h
-    src/styles/AntStatusBarStyle.h
-    src/styles/AntFloatButtonStyle.h
-    src/styles/AntQRCodeStyle.h
-    src/styles/AntSegmentedStyle.h
-    src/styles/AntWatermarkStyle.h
-    src/styles/AntToolButtonStyle.h
-    src/styles/AntPlainTextEditStyle.h
-    src/styles/AntMenuBarStyle.h
-    src/styles/AntToolBarStyle.h
-    src/styles/AntAutoCompleteStyle.h
-    src/styles/AntCalendarStyle.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/styles
-)
-
-install(FILES
-    src/widgets/AntAlert.h
-    src/widgets/AntAvatar.h
-    src/widgets/AntBadge.h
-    src/widgets/AntBreadcrumb.h
-    src/widgets/AntButton.h
-    src/widgets/AntCheckbox.h
-    src/widgets/AntDatePicker.h
-    src/widgets/AntDescriptions.h
-    src/widgets/AntDrawer.h
-    src/widgets/AntDropdown.h
-    src/widgets/AntDivider.h
-    src/widgets/AntForm.h
-    src/widgets/AntEmpty.h
-    src/widgets/AntIcon.h
-    src/widgets/AntInput.h
-    src/widgets/AntInputNumber.h
-    src/widgets/AntList.h
-    src/widgets/AntMessage.h
-    src/widgets/AntMenu.h
-    src/widgets/AntNotification.h
-    src/widgets/AntModal.h
-    src/widgets/AntPopover.h
-    src/widgets/AntPopconfirm.h
-    src/widgets/AntPagination.h
-    src/widgets/AntProgress.h
-    src/widgets/AntRadio.h
-    src/widgets/AntRate.h
-    src/widgets/AntResult.h
-    src/widgets/AntScrollBar.h
-    src/widgets/AntSelect.h
-    src/widgets/AntSkeleton.h
-    src/widgets/AntSlider.h
-    src/widgets/AntSpin.h
-    src/widgets/AntStatistic.h
-    src/widgets/AntSteps.h
-    src/widgets/AntSwitch.h
-    src/widgets/AntTabs.h
-    src/widgets/AntTag.h
-    src/widgets/AntTooltip.h
-    src/widgets/AntTimePicker.h
-    src/widgets/AntTypography.h
-    src/widgets/AntTimeline.h
-    src/widgets/AntCard.h
-    src/widgets/AntSpace.h
-    src/widgets/AntWidget.h
-    src/widgets/AntTable.h
-    src/widgets/AntTree.h
-    src/widgets/AntUpload.h
-    src/widgets/AntCascader.h
-    src/widgets/AntTreeSelect.h
-    src/widgets/AntStatusBar.h
-    src/widgets/AntWindow.h
-    src/widgets/AntAffix.h
-    src/widgets/AntFloatButton.h
-    src/widgets/AntQRCode.h
-    src/widgets/AntSegmented.h
-    src/widgets/AntWatermark.h
-    src/widgets/AntToolButton.h
-    src/widgets/AntPlainTextEdit.h
-    src/widgets/AntMenuBar.h
-    src/widgets/AntToolBar.h
-    src/widgets/AntDockWidget.h
-    src/widgets/AntScrollArea.h
-    src/widgets/AntAutoComplete.h
-    src/widgets/AntColorPicker.h
-    src/widgets/AntCalendar.h
-    src/widgets/AntImage.h
-    src/widgets/AntCollapse.h
-    src/widgets/AntSplitter.h
-    src/widgets/AntLog.h
-    src/widgets/AntCarousel.h
-    src/widgets/AntGrid.h
-    src/widgets/AntFlex.h
-    src/widgets/AntAnchor.h
-    src/widgets/AntTransfer.h
-    src/widgets/AntTour.h
-    src/widgets/AntMentions.h
-    src/widgets/AntMasonry.h
-    src/widgets/AntApp.h
-    src/widgets/AntConfigProvider.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/widgets
 )
 
 install(EXPORT qt-ant-design-targets
@@ -507,7 +56,8 @@ install(EXPORT qt-ant-design-targets
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/qt-ant-design
 )
 
-if(WIN32)
+# Windows deployment
+if(BUILD_EXAMPLES AND WIN32)
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${Qt6_DIR}/../../../bin")
     if(WINDEPLOYQT_EXECUTABLE)
         install(CODE "
@@ -520,6 +70,6 @@ if(WIN32)
             endif()
         ")
     else()
-        message(WARNING \"windeployqt was not found. Installed example may require Qt DLLs in PATH.\")
+        message(WARNING "windeployqt was not found. Installed example may require Qt DLLs in PATH.")
     endif()
 endif()

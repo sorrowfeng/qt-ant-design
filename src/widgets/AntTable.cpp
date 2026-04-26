@@ -125,9 +125,9 @@ void AntTable::setBordered(bool bordered)
     Q_EMIT borderedChanged(m_bordered);
 }
 
-Ant::TableSize AntTable::tableSize() const { return m_tableSize; }
+Ant::Size AntTable::tableSize() const { return m_tableSize; }
 
-void AntTable::setTableSize(Ant::TableSize size)
+void AntTable::setTableSize(Ant::Size size)
 {
     if (m_tableSize == size)
     {
@@ -409,14 +409,14 @@ AntTable::TableMetrics AntTable::metrics() const
     const auto& token = antTheme->tokens();
     switch (m_tableSize)
     {
-    case Ant::TableSize::Large:
+    case Ant::Size::Large:
         m.headerHeight = 48;
         m.rowHeight = 54;
         m.cellVPadding = 16;
         m.fontSize = token.fontSizeLG;
         m.fontSizeSM = token.fontSize;
         break;
-    case Ant::TableSize::Small:
+    case Ant::Size::Small:
         m.headerHeight = 32;
         m.rowHeight = 40;
         m.cellVPadding = 8;

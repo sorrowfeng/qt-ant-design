@@ -45,11 +45,11 @@ QWidget* createDividerPage(QWidget* /*owner*/)
     layout->addWidget(createSectionTitle(QStringLiteral("Variant and Size")));
     auto* dashed = new AntDivider(QStringLiteral("Dashed"));
     dashed->setVariant(Ant::DividerVariant::Dashed);
-    dashed->setDividerSize(Ant::DividerSize::Small);
+    dashed->setDividerSize(Ant::Size::Small);
     layout->addWidget(dashed);
     auto* dotted = new AntDivider(QStringLiteral("Dotted"));
     dotted->setVariant(Ant::DividerVariant::Dotted);
-    dotted->setDividerSize(Ant::DividerSize::Middle);
+    dotted->setDividerSize(Ant::Size::Middle);
     layout->addWidget(dotted);
 
     layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
@@ -57,11 +57,11 @@ QWidget* createDividerPage(QWidget* /*owner*/)
     verticalRow->setSpacing(0);
     verticalRow->addWidget(new AntTypography(QStringLiteral("Text")));
     auto* v1 = new AntDivider();
-    v1->setOrientation(Ant::DividerOrientation::Vertical);
+    v1->setOrientation(Ant::Orientation::Vertical);
     verticalRow->addWidget(v1);
     verticalRow->addWidget(new AntTypography(QStringLiteral("Link")));
     auto* v2 = new AntDivider();
-    v2->setOrientation(Ant::DividerOrientation::Vertical);
+    v2->setOrientation(Ant::Orientation::Vertical);
     v2->setVariant(Ant::DividerVariant::Dashed);
     verticalRow->addWidget(v2);
     verticalRow->addWidget(new AntTypography(QStringLiteral("Action")));
@@ -221,7 +221,7 @@ QWidget* createSpacePage(QWidget* /*owner*/)
 
     layout->addWidget(createSectionTitle(QStringLiteral("Horizontal (Small)")));
     auto* hSmall = new AntSpace();
-    hSmall->setSize(Ant::SpaceSize::Small);
+    hSmall->setSize(Ant::Size::Small);
     for (int i = 0; i < 4; ++i)
     {
         auto* btn = new AntButton(QStringLiteral("Button %1").arg(i + 1));
@@ -232,7 +232,7 @@ QWidget* createSpacePage(QWidget* /*owner*/)
 
     layout->addWidget(createSectionTitle(QStringLiteral("Horizontal (Middle)")));
     auto* hMiddle = new AntSpace();
-    hMiddle->setSize(Ant::SpaceSize::Middle);
+    hMiddle->setSize(Ant::Size::Middle);
     for (int i = 0; i < 4; ++i)
     {
         auto* btn = new AntButton(QStringLiteral("Button %1").arg(i + 1));
@@ -242,7 +242,7 @@ QWidget* createSpacePage(QWidget* /*owner*/)
 
     layout->addWidget(createSectionTitle(QStringLiteral("Horizontal (Large)")));
     auto* hLarge = new AntSpace();
-    hLarge->setSize(Ant::SpaceSize::Large);
+    hLarge->setSize(Ant::Size::Large);
     for (int i = 0; i < 3; ++i)
     {
         auto* btn = new AntButton(QStringLiteral("Button %1").arg(i + 1));
@@ -252,8 +252,8 @@ QWidget* createSpacePage(QWidget* /*owner*/)
 
     layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
     auto* vSpace = new AntSpace();
-    vSpace->setOrientation(Ant::SpaceOrientation::Vertical);
-    vSpace->setSize(Ant::SpaceSize::Middle);
+    vSpace->setOrientation(Ant::Orientation::Vertical);
+    vSpace->setSize(Ant::Size::Middle);
     for (int i = 0; i < 3; ++i)
     {
         auto* btn = new AntButton(QStringLiteral("Button %1").arg(i + 1));

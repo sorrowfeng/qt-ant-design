@@ -1,6 +1,5 @@
 #include "AntAvatarStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
@@ -9,7 +8,6 @@
 
 #include <algorithm>
 
-#include "core/AntTheme.h"
 #include "widgets/AntAvatar.h"
 
 namespace
@@ -24,11 +22,11 @@ int avatarExtent(const AntAvatar* avatar)
     const auto& token = antTheme->tokens();
     switch (avatar->avatarSize())
     {
-    case Ant::AvatarSize::Large:
+    case Ant::Size::Large:
         return token.controlHeightLG;
-    case Ant::AvatarSize::Small:
+    case Ant::Size::Small:
         return token.controlHeightSM;
-    case Ant::AvatarSize::Middle:
+    case Ant::Size::Middle:
         return token.controlHeight;
     }
     return token.controlHeight;
@@ -37,7 +35,7 @@ int avatarExtent(const AntAvatar* avatar)
 int avatarTextFontSize(const AntAvatar* avatar)
 {
     const auto& token = antTheme->tokens();
-    if (avatar->avatarSize() == Ant::AvatarSize::Small)
+    if (avatar->avatarSize() == Ant::Size::Small)
     {
         return token.fontSizeSM;
     }
@@ -47,11 +45,11 @@ int avatarTextFontSize(const AntAvatar* avatar)
 int avatarIconFontSize(const AntAvatar* avatar)
 {
     const auto& token = antTheme->tokens();
-    if (avatar->avatarSize() == Ant::AvatarSize::Large || avatar->customSize() >= token.controlHeightLG)
+    if (avatar->avatarSize() == Ant::Size::Large || avatar->customSize() >= token.controlHeightLG)
     {
         return token.fontSizeXL;
     }
-    if (avatar->avatarSize() == Ant::AvatarSize::Small && avatar->customSize() == 0)
+    if (avatar->avatarSize() == Ant::Size::Small && avatar->customSize() == 0)
     {
         return token.fontSize;
     }
@@ -89,21 +87,9 @@ QRectF avatarImageSourceRect(const QPixmap& pixmap, const QSizeF& targetSize)
 } // namespace
 
 AntAvatarStyle::AntAvatarStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntAvatar*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntAvatar>();
 }
 
 void AntAvatarStyle::polish(QWidget* widget)

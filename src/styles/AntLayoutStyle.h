@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class AntLayoutStyle : public QProxyStyle
+class AntLayoutStyle : public AntStyleBase
 {
     Q_OBJECT
 

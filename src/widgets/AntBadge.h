@@ -23,7 +23,7 @@ class AntBadge : public QWidget
     Q_PROPERTY(bool showZero READ showZero WRITE setShowZero NOTIFY showZeroChanged)
     Q_PROPERTY(int overflowCount READ overflowCount WRITE setOverflowCount NOTIFY overflowCountChanged)
     Q_PROPERTY(QPoint offset READ offset WRITE setOffset NOTIFY offsetChanged)
-    Q_PROPERTY(Ant::BadgeSize badgeSize READ badgeSize WRITE setBadgeSize NOTIFY badgeSizeChanged)
+    Q_PROPERTY(Ant::Size badgeSize READ badgeSize WRITE setBadgeSize NOTIFY badgeSizeChanged)
     Q_PROPERTY(Ant::BadgeStatus status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(Ant::BadgeMode badgeMode READ badgeMode WRITE setBadgeMode NOTIFY badgeModeChanged)
     Q_PROPERTY(QString ribbonText READ ribbonText WRITE setRibbonText NOTIFY ribbonTextChanged)
@@ -54,8 +54,8 @@ public:
     QPoint offset() const;
     void setOffset(const QPoint& offset);
 
-    Ant::BadgeSize badgeSize() const;
-    void setBadgeSize(Ant::BadgeSize size);
+    Ant::Size badgeSize() const;
+    void setBadgeSize(Ant::Size size);
 
     Ant::BadgeStatus status() const;
     void setStatus(Ant::BadgeStatus status);
@@ -83,7 +83,7 @@ Q_SIGNALS:
     void showZeroChanged(bool showZero);
     void overflowCountChanged(int overflowCount);
     void offsetChanged(const QPoint& offset);
-    void badgeSizeChanged(Ant::BadgeSize size);
+    void badgeSizeChanged(Ant::Size size);
     void statusChanged(Ant::BadgeStatus status);
     void badgeModeChanged(Ant::BadgeMode mode);
     void ribbonTextChanged(const QString& text);
@@ -126,7 +126,7 @@ private:
     bool m_showZero = false;
     int m_overflowCount = 99;
     QPoint m_offset;
-    Ant::BadgeSize m_badgeSize = Ant::BadgeSize::Middle;
+    Ant::Size m_badgeSize = Ant::Size::Middle;
     Ant::BadgeStatus m_status = Ant::BadgeStatus::None;
     Ant::BadgeMode m_badgeMode = Ant::BadgeMode::Default;
     QString m_ribbonText;

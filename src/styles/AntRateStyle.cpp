@@ -1,6 +1,5 @@
 #include "AntRateStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -9,7 +8,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntRate.h"
 
@@ -26,12 +24,12 @@ RateMetrics metricsFor(const AntRate* rate)
 {
     const auto& token = antTheme->tokens();
     RateMetrics m;
-    switch (rate ? rate->rateSize() : Ant::RateSize::Middle)
+    switch (rate ? rate->rateSize() : Ant::Size::Middle)
     {
-        case Ant::RateSize::Small:
+        case Ant::Size::Small:
             m.starSize = static_cast<int>(std::round(token.controlHeightSM * 0.625));
             break;
-        case Ant::RateSize::Large:
+        case Ant::Size::Large:
             m.starSize = static_cast<int>(std::round(token.controlHeightLG * 0.625));
             break;
         default:
@@ -101,21 +99,9 @@ int hoveredStarIndex(const AntRate* rate)
 }
 
 AntRateStyle::AntRateStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntRate*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntRate>();
 }
 
 void AntRateStyle::polish(QWidget* widget)

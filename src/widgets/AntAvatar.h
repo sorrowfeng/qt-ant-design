@@ -14,7 +14,7 @@ class AntAvatarGroup : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int maxCount READ maxCount WRITE setMaxCount NOTIFY maxCountChanged)
-    Q_PROPERTY(Ant::AvatarSize avatarSize READ avatarSize WRITE setAvatarSize NOTIFY avatarSizeChanged)
+    Q_PROPERTY(Ant::Size avatarSize READ avatarSize WRITE setAvatarSize NOTIFY avatarSizeChanged)
 
 public:
     explicit AntAvatarGroup(QWidget* parent = nullptr);
@@ -22,8 +22,8 @@ public:
     int maxCount() const;
     void setMaxCount(int maxCount);
 
-    Ant::AvatarSize avatarSize() const;
-    void setAvatarSize(Ant::AvatarSize size);
+    Ant::Size avatarSize() const;
+    void setAvatarSize(Ant::Size size);
 
     void addAvatar(AntAvatar* avatar);
     void removeAvatar(AntAvatar* avatar);
@@ -34,7 +34,7 @@ public:
 
 Q_SIGNALS:
     void maxCountChanged(int maxCount);
-    void avatarSizeChanged(Ant::AvatarSize size);
+    void avatarSizeChanged(Ant::Size size);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -44,7 +44,7 @@ private:
     void relayout();
 
     int m_maxCount = 0; // 0 = no limit
-    Ant::AvatarSize m_avatarSize = Ant::AvatarSize::Middle;
+    Ant::Size m_avatarSize = Ant::Size::Middle;
     QList<AntAvatar*> m_avatars;
 };
 
@@ -57,7 +57,7 @@ class AntAvatar : public QWidget
     Q_PROPERTY(int gap READ gap WRITE setGap NOTIFY gapChanged)
     Q_PROPERTY(int customSize READ customSize WRITE setCustomSize NOTIFY customSizeChanged)
     Q_PROPERTY(Ant::AvatarShape shape READ shape WRITE setShape NOTIFY shapeChanged)
-    Q_PROPERTY(Ant::AvatarSize avatarSize READ avatarSize WRITE setAvatarSize NOTIFY avatarSizeChanged)
+    Q_PROPERTY(Ant::Size avatarSize READ avatarSize WRITE setAvatarSize NOTIFY avatarSizeChanged)
 
 public:
     explicit AntAvatar(QWidget* parent = nullptr);
@@ -81,8 +81,8 @@ public:
     Ant::AvatarShape shape() const;
     void setShape(Ant::AvatarShape shape);
 
-    Ant::AvatarSize avatarSize() const;
-    void setAvatarSize(Ant::AvatarSize size);
+    Ant::Size avatarSize() const;
+    void setAvatarSize(Ant::Size size);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -94,7 +94,7 @@ Q_SIGNALS:
     void gapChanged(int gap);
     void customSizeChanged(int size);
     void shapeChanged(Ant::AvatarShape shape);
-    void avatarSizeChanged(Ant::AvatarSize size);
+    void avatarSizeChanged(Ant::Size size);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -113,5 +113,5 @@ private:
     int m_gap = 4;
     int m_customSize = 0;
     Ant::AvatarShape m_shape = Ant::AvatarShape::Circle;
-    Ant::AvatarSize m_avatarSize = Ant::AvatarSize::Middle;
+    Ant::Size m_avatarSize = Ant::Size::Middle;
 };

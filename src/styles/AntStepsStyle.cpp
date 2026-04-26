@@ -1,31 +1,17 @@
 #include "AntStepsStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSteps.h"
 
 AntStepsStyle::AntStepsStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntSteps*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntSteps>();
 }
 
 void AntStepsStyle::polish(QWidget* widget)
@@ -109,7 +95,7 @@ QVector<QRect> stepsItemRects(const AntSteps* steps, const QRect& bounds)
     {
         return rects;
     }
-    if (steps->direction() == Ant::StepsDirection::Horizontal)
+    if (steps->direction() == Ant::Orientation::Horizontal)
     {
         const int itemWidth = qMax(160, bounds.width() / count);
         for (int i = 0; i < count; ++i)
@@ -128,20 +114,20 @@ QVector<QRect> stepsItemRects(const AntSteps* steps, const QRect& bounds)
     return rects;
 }
 
-QRect stepsIconRect(const QRect& itemRect, Ant::StepsDirection direction)
+QRect stepsIconRect(const QRect& itemRect, Ant::Orientation direction)
 {
     const StepsMetrics m = stepsMetrics();
-    if (direction == Ant::StepsDirection::Horizontal)
+    if (direction == Ant::Orientation::Horizontal)
     {
         return QRect(itemRect.left(), 8, m.iconSize, m.iconSize);
     }
     return QRect(itemRect.left(), itemRect.top() + 8, m.iconSize, m.iconSize);
 }
 
-QRect stepsTextRect(const QRect& itemRect, Ant::StepsDirection direction)
+QRect stepsTextRect(const QRect& itemRect, Ant::Orientation direction)
 {
     const StepsMetrics m = stepsMetrics();
-    if (direction == Ant::StepsDirection::Horizontal)
+    if (direction == Ant::Orientation::Horizontal)
     {
         return QRect(itemRect.left() + m.iconSize + 12, 6, itemRect.width() - m.iconSize - 16, itemRect.height() - 12);
     }
@@ -236,7 +222,7 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         // Tail line
         if (i < rects.size() - 1)
         {
-            if (steps->direction() == Ant::StepsDirection::Horizontal)
+            if (steps->direction() == Ant::Orientation::Horizontal)
             {
                 const int y = circle.center().y();
                 const int x1 = circle.right() + 8;

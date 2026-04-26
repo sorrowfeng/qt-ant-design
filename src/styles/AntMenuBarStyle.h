@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class AntMenuBarStyle : public QProxyStyle
+class AntMenuBarStyle : public AntStyleBase
 {
     Q_OBJECT
 
@@ -15,4 +15,7 @@ public:
                     const QWidget* widget) const override;
     QSize sizeFromContents(ContentsType type, const QStyleOption* option,
                            const QSize& size, const QWidget* widget) const override;
+
+protected:
+    void onThemeUpdate(QWidget* w) override;
 };

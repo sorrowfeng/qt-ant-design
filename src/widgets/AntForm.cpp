@@ -157,9 +157,9 @@ void AntFormItem::setColon(bool colon)
     Q_EMIT colonChanged(m_colon);
 }
 
-Ant::InputStatus AntFormItem::validateStatus() const { return m_validateStatus; }
+Ant::Status AntFormItem::validateStatus() const { return m_validateStatus; }
 
-void AntFormItem::setValidateStatus(Ant::InputStatus status)
+void AntFormItem::setValidateStatus(Ant::Status status)
 {
     if (m_validateStatus == status)
     {
@@ -351,11 +351,11 @@ QColor AntFormItem::helpColor() const
     const auto& token = antTheme->tokens();
     switch (m_validateStatus)
     {
-    case Ant::InputStatus::Error:
+    case Ant::Status::Error:
         return token.colorError;
-    case Ant::InputStatus::Warning:
+    case Ant::Status::Warning:
         return token.colorWarning;
-    case Ant::InputStatus::Normal:
+    case Ant::Status::Normal:
     default:
         return token.colorTextSecondary;
     }

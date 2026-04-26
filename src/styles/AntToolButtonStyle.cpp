@@ -1,11 +1,9 @@
 #include "AntToolButtonStyle.h"
 
-#include <QApplication>
 #include <QPainter>
 #include <QStyleOptionComplex>
 #include <QStyleOptionToolButton>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntToolButton.h"
 
@@ -26,23 +24,23 @@ ToolButtonMetrics toolMetrics(const AntToolButton* btn)
 {
     const auto& token = antTheme->tokens();
     ToolButtonMetrics m;
-    switch (btn ? btn->buttonSize() : Ant::ButtonSize::Middle)
+    switch (btn ? btn->buttonSize() : Ant::Size::Middle)
     {
-    case Ant::ButtonSize::Large:
+    case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         m.paddingX = token.padding;
         m.radius = token.borderRadiusLG;
         m.iconSize = 16;
         break;
-    case Ant::ButtonSize::Small:
+    case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingXS;
         m.radius = token.borderRadiusSM;
         m.iconSize = 12;
         break;
-    case Ant::ButtonSize::Middle:
+    case Ant::Size::Middle:
         m.height = token.controlHeight;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingSM + token.lineWidth * 3;
@@ -145,21 +143,9 @@ void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int
 } // namespace
 
 AntToolButtonStyle::AntToolButtonStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntToolButton*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntToolButton>();
 }
 
 void AntToolButtonStyle::drawComplexControl(ComplexControl control, const QStyleOptionComplex* option,

@@ -68,9 +68,9 @@ void AntToolButton::setButtonType(Ant::ButtonType type)
     Q_EMIT buttonTypeChanged(m_buttonType);
 }
 
-Ant::ButtonSize AntToolButton::buttonSize() const { return m_buttonSize; }
+Ant::Size AntToolButton::buttonSize() const { return m_buttonSize; }
 
-void AntToolButton::setButtonSize(Ant::ButtonSize size)
+void AntToolButton::setButtonSize(Ant::Size size)
 {
     if (m_buttonSize == size) return;
     m_buttonSize = size;
@@ -177,21 +177,21 @@ AntToolButton::Metrics AntToolButton::metrics() const
     Metrics m;
     switch (m_buttonSize)
     {
-    case Ant::ButtonSize::Large:
+    case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         m.paddingX = token.padding;
         m.radius = token.borderRadiusLG;
         m.iconSize = 16;
         break;
-    case Ant::ButtonSize::Small:
+    case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingXS;
         m.radius = token.borderRadiusSM;
         m.iconSize = 12;
         break;
-    case Ant::ButtonSize::Middle:
+    case Ant::Size::Middle:
         m.height = token.controlHeight;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingSM + token.lineWidth * 3;

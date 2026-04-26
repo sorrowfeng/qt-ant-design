@@ -25,17 +25,9 @@
 #include "widgets/AntInput.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntMentions.h"
-#include "widgets/AntRadio.h"
-#include "widgets/AntRate.h"
 #include "widgets/AntSelect.h"
-#include "widgets/AntSlider.h"
 #include "widgets/AntSwitch.h"
-#include "widgets/AntTimePicker.h"
-#include "widgets/AntTransfer.h"
-#include "widgets/AntTree.h"
-#include "widgets/AntTreeSelect.h"
 #include "widgets/AntTypography.h"
-#include "widgets/AntUpload.h"
 
 namespace example::pages
 {
@@ -234,12 +226,12 @@ QWidget* createDatePickerPage(QWidget* /*owner*/)
     auto* sizeRow = new QHBoxLayout();
     sizeRow->setSpacing(16);
     auto* large = new AntDatePicker();
-    large->setPickerSize(Ant::DatePickerSize::Large);
+    large->setPickerSize(Ant::Size::Large);
     large->setSelectedDate(QDate::currentDate());
     auto* middle = new AntDatePicker();
     middle->setSelectedDate(QDate::currentDate());
     auto* small = new AntDatePicker();
-    small->setPickerSize(Ant::DatePickerSize::Small);
+    small->setPickerSize(Ant::Size::Small);
     small->setSelectedDate(QDate::currentDate());
     sizeRow->addWidget(large);
     sizeRow->addWidget(middle);
@@ -251,16 +243,16 @@ QWidget* createDatePickerPage(QWidget* /*owner*/)
     auto* variantRow = new QHBoxLayout();
     variantRow->setSpacing(16);
     auto* error = new AntDatePicker();
-    error->setStatus(Ant::DatePickerStatus::Error);
+    error->setStatus(Ant::Status::Error);
     error->setPlaceholderText(QStringLiteral("Error"));
     auto* warning = new AntDatePicker();
-    warning->setStatus(Ant::DatePickerStatus::Warning);
+    warning->setStatus(Ant::Status::Warning);
     warning->setPlaceholderText(QStringLiteral("Warning"));
     auto* filled = new AntDatePicker();
-    filled->setVariant(Ant::DatePickerVariant::Filled);
+    filled->setVariant(Ant::Variant::Filled);
     filled->setSelectedDate(QDate::currentDate());
     auto* underlined = new AntDatePicker();
-    underlined->setVariant(Ant::DatePickerVariant::Underlined);
+    underlined->setVariant(Ant::Variant::Underlined);
     underlined->setSelectedDate(QDate::currentDate());
     variantRow->addWidget(error);
     variantRow->addWidget(warning);
@@ -323,17 +315,17 @@ QWidget* createFormPage(QWidget* /*owner*/)
 
     auto* email = new AntInput(validationForm);
     email->setPlaceholderText(QStringLiteral("name@example.com"));
-    email->setStatus(Ant::InputStatus::Error);
+    email->setStatus(Ant::Status::Error);
     auto* emailItem = validationForm->addItem(QStringLiteral("Email"), email, true);
-    emailItem->setValidateStatus(Ant::InputStatus::Error);
+    emailItem->setValidateStatus(Ant::Status::Error);
     emailItem->setHelpText(QStringLiteral("Please enter a valid email address."));
 
     auto* apiKey = new AntInput(validationForm);
     apiKey->setPasswordMode(true);
     apiKey->setText(QStringLiteral("temporary-token"));
-    apiKey->setStatus(Ant::InputStatus::Warning);
+    apiKey->setStatus(Ant::Status::Warning);
     auto* keyItem = validationForm->addItem(QStringLiteral("API Key"), apiKey, true);
-    keyItem->setValidateStatus(Ant::InputStatus::Warning);
+    keyItem->setValidateStatus(Ant::Status::Warning);
     keyItem->setHelpText(QStringLiteral("This token will expire in 3 days. Rotate it soon."));
 
     auto* agreement = new AntCheckbox(QStringLiteral("I understand this token can access production data"), validationForm);
@@ -432,13 +424,13 @@ QWidget* createInputPage(QWidget* /*owner*/)
     layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
     auto* large = new AntInput();
     large->setPlaceholderText(QStringLiteral("Large input"));
-    large->setInputSize(Ant::InputSize::Large);
+    large->setInputSize(Ant::Size::Large);
     auto* middle = new AntInput();
     middle->setPlaceholderText(QStringLiteral("Middle input with clear"));
     middle->setAllowClear(true);
     auto* small = new AntInput();
     small->setPlaceholderText(QStringLiteral("Small input"));
-    small->setInputSize(Ant::InputSize::Small);
+    small->setInputSize(Ant::Size::Small);
     layout->addWidget(large);
     layout->addWidget(middle);
     layout->addWidget(small);
@@ -453,7 +445,7 @@ QWidget* createInputPage(QWidget* /*owner*/)
     password->setPasswordMode(true);
     auto* error = new AntInput();
     error->setText(QStringLiteral("Invalid value"));
-    error->setStatus(Ant::InputStatus::Error);
+    error->setStatus(Ant::Status::Error);
     auto* disabled = new AntInput();
     disabled->setText(QStringLiteral("Disabled"));
     disabled->setEnabled(false);
@@ -465,16 +457,16 @@ QWidget* createInputPage(QWidget* /*owner*/)
     layout->addWidget(createSectionTitle(QStringLiteral("Variants")));
     auto* outlined = new AntInput();
     outlined->setPlaceholderText(QStringLiteral("Outlined (default)"));
-    outlined->setVariant(Ant::InputVariant::Outlined);
+    outlined->setVariant(Ant::Variant::Outlined);
     auto* filled = new AntInput();
     filled->setPlaceholderText(QStringLiteral("Filled"));
-    filled->setVariant(Ant::InputVariant::Filled);
+    filled->setVariant(Ant::Variant::Filled);
     auto* borderless = new AntInput();
     borderless->setPlaceholderText(QStringLiteral("Borderless"));
-    borderless->setVariant(Ant::InputVariant::Borderless);
+    borderless->setVariant(Ant::Variant::Borderless);
     auto* underlined = new AntInput();
     underlined->setPlaceholderText(QStringLiteral("Underlined"));
-    underlined->setVariant(Ant::InputVariant::Underlined);
+    underlined->setVariant(Ant::Variant::Underlined);
     layout->addWidget(outlined);
     layout->addWidget(filled);
     layout->addWidget(borderless);
@@ -511,12 +503,12 @@ QWidget* createInputNumberPage(QWidget* owner)
     auto* sizeRow = new QHBoxLayout();
     sizeRow->setSpacing(16);
     auto* large = new AntInputNumber();
-    large->setInputSize(Ant::InputSize::Large);
+    large->setInputSize(Ant::Size::Large);
     large->setValue(100);
     auto* middle = new AntInputNumber();
     middle->setValue(100);
     auto* small = new AntInputNumber();
-    small->setInputSize(Ant::InputSize::Small);
+    small->setInputSize(Ant::Size::Small);
     small->setValue(100);
     sizeRow->addWidget(large);
     sizeRow->addWidget(middle);
@@ -528,16 +520,16 @@ QWidget* createInputNumberPage(QWidget* owner)
     auto* statusRow = new QHBoxLayout();
     statusRow->setSpacing(16);
     auto* error = new AntInputNumber();
-    error->setStatus(Ant::InputStatus::Error);
+    error->setStatus(Ant::Status::Error);
     error->setValue(12);
     auto* warning = new AntInputNumber();
-    warning->setStatus(Ant::InputStatus::Warning);
+    warning->setStatus(Ant::Status::Warning);
     warning->setValue(64);
     auto* filled = new AntInputNumber();
-    filled->setVariant(Ant::InputNumberVariant::Filled);
+    filled->setVariant(Ant::Variant::Filled);
     filled->setValue(128);
     auto* underlined = new AntInputNumber();
-    underlined->setVariant(Ant::InputNumberVariant::Underlined);
+    underlined->setVariant(Ant::Variant::Underlined);
     underlined->setValue(256);
     statusRow->addWidget(error);
     statusRow->addWidget(warning);
@@ -582,7 +574,7 @@ QWidget* createInputNumberPage(QWidget* owner)
     disabled->setValue(10);
     disabled->setEnabled(false);
     auto* borderless = new AntInputNumber();
-    borderless->setVariant(Ant::InputNumberVariant::Borderless);
+    borderless->setVariant(Ant::Variant::Borderless);
     borderless->setValue(77);
     controlledRow->addWidget(quantity);
     controlledRow->addWidget(summary);
@@ -625,558 +617,6 @@ QWidget* createMentionsPage(QWidget* /*owner*/)
         page);
     help->setWordWrap(true);
     layout->addWidget(help);
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createRadioPage(QWidget* /*owner*/)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(28, 28, 28, 28);
-    layout->setSpacing(24);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
-    auto* basicRow = new QHBoxLayout();
-    basicRow->setSpacing(24);
-    auto* radioA = new AntRadio(QStringLiteral("Option A"));
-    auto* radioB = new AntRadio(QStringLiteral("Option B"));
-    auto* radioC = new AntRadio(QStringLiteral("Option C"));
-    radioA->setChecked(true);
-    basicRow->addWidget(radioA);
-    basicRow->addWidget(radioB);
-    basicRow->addWidget(radioC);
-    basicRow->addStretch();
-    layout->addLayout(basicRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Disabled")));
-    auto* disabledRow = new QHBoxLayout();
-    disabledRow->setSpacing(24);
-    auto* disabled = new AntRadio(QStringLiteral("Disabled"));
-    disabled->setEnabled(false);
-    auto* disabledChecked = new AntRadio(QStringLiteral("Disabled checked"));
-    disabledChecked->setChecked(true);
-    disabledChecked->setEnabled(false);
-    disabledRow->addWidget(disabled);
-    disabledRow->addWidget(disabledChecked);
-    disabledRow->addStretch();
-    layout->addLayout(disabledRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Vertical Group")));
-    auto* group = new QWidget();
-    auto* groupLayout = new QVBoxLayout(group);
-    groupLayout->setContentsMargins(0, 0, 0, 0);
-    groupLayout->setSpacing(12);
-    auto* apple = new AntRadio(QStringLiteral("Apple"));
-    auto* pear = new AntRadio(QStringLiteral("Pear"));
-    auto* orange = new AntRadio(QStringLiteral("Orange"));
-    pear->setChecked(true);
-    groupLayout->addWidget(apple);
-    groupLayout->addWidget(pear);
-    groupLayout->addWidget(orange);
-    layout->addWidget(group);
-
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createRatePage(QWidget* /*owner*/)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(28, 28, 28, 28);
-    layout->setSpacing(24);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
-    auto* basic = new AntRate();
-    basic->setValue(3.0);
-    layout->addWidget(basic);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Half Star")));
-    auto* half = new AntRate();
-    half->setAllowHalf(true);
-    half->setValue(2.5);
-    layout->addWidget(half);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
-    auto* sizeRow = new QHBoxLayout();
-    sizeRow->setSpacing(16);
-    auto* smallRate = new AntRate();
-    smallRate->setRateSize(Ant::RateSize::Small);
-    smallRate->setValue(3.0);
-    auto* middleRate = new AntRate();
-    middleRate->setValue(3.0);
-    auto* largeRate = new AntRate();
-    largeRate->setRateSize(Ant::RateSize::Large);
-    largeRate->setValue(3.0);
-    sizeRow->addWidget(smallRate);
-    sizeRow->addWidget(middleRate);
-    sizeRow->addWidget(largeRate);
-    sizeRow->addStretch();
-    layout->addLayout(sizeRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Disabled")));
-    auto* disabled = new AntRate();
-    disabled->setDisabled(true);
-    disabled->setValue(2.0);
-    layout->addWidget(disabled);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Allow Clear")));
-    auto* clearRow = new QHBoxLayout();
-    clearRow->setSpacing(16);
-    auto* clearEnabled = new AntRate();
-    clearEnabled->setValue(3.0);
-    clearEnabled->setAllowClear(true);
-    auto* clearDisabled = new AntRate();
-    clearDisabled->setValue(3.0);
-    clearDisabled->setAllowClear(false);
-    clearRow->addWidget(clearEnabled);
-    clearRow->addWidget(clearDisabled);
-    clearRow->addStretch();
-    layout->addLayout(clearRow);
-
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createSelectPage(QWidget* /*owner*/)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(28, 28, 28, 28);
-    layout->setSpacing(24);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
-    auto* basicRow = new QHBoxLayout();
-    basicRow->setSpacing(16);
-    auto* basic = new AntSelect();
-    basic->setPlaceholderText(QStringLiteral("Select a fruit"));
-    basic->addOptions({QStringLiteral("Apple"), QStringLiteral("Pear"), QStringLiteral("Orange")});
-    auto* withValue = new AntSelect();
-    withValue->addOptions({QStringLiteral("China"), QStringLiteral("United States"), QStringLiteral("Japan")});
-    withValue->setCurrentIndex(0);
-    withValue->setAllowClear(true);
-    basicRow->addWidget(basic);
-    basicRow->addWidget(withValue);
-    basicRow->addStretch();
-    layout->addLayout(basicRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
-    auto* sizeRow = new QHBoxLayout();
-    sizeRow->setSpacing(16);
-    auto* large = new AntSelect();
-    large->setSelectSize(Ant::SelectSize::Large);
-    large->addOptions({QStringLiteral("Large"), QStringLiteral("Option")});
-    large->setCurrentIndex(0);
-    auto* middle = new AntSelect();
-    middle->addOptions({QStringLiteral("Middle"), QStringLiteral("Option")});
-    middle->setCurrentIndex(0);
-    auto* small = new AntSelect();
-    small->setSelectSize(Ant::SelectSize::Small);
-    small->addOptions({QStringLiteral("Small"), QStringLiteral("Option")});
-    small->setCurrentIndex(0);
-    sizeRow->addWidget(large);
-    sizeRow->addWidget(middle);
-    sizeRow->addWidget(small);
-    sizeRow->addStretch();
-    layout->addLayout(sizeRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Status and Variant")));
-    auto* variantRow = new QHBoxLayout();
-    variantRow->setSpacing(16);
-    auto* error = new AntSelect();
-    error->setStatus(Ant::SelectStatus::Error);
-    error->setPlaceholderText(QStringLiteral("Error"));
-    error->addOptions({QStringLiteral("Invalid option"), QStringLiteral("Valid option")});
-    auto* warning = new AntSelect();
-    warning->setStatus(Ant::SelectStatus::Warning);
-    warning->setPlaceholderText(QStringLiteral("Warning"));
-    warning->addOptions({QStringLiteral("Risky option"), QStringLiteral("Safe option")});
-    auto* filled = new AntSelect();
-    filled->setVariant(Ant::SelectVariant::Filled);
-    filled->addOptions({QStringLiteral("Filled"), QStringLiteral("Outlined")});
-    filled->setCurrentIndex(0);
-    auto* underlined = new AntSelect();
-    underlined->setVariant(Ant::SelectVariant::Underlined);
-    underlined->addOptions({QStringLiteral("Underlined"), QStringLiteral("Borderless")});
-    underlined->setCurrentIndex(0);
-    variantRow->addWidget(error);
-    variantRow->addWidget(warning);
-    variantRow->addWidget(filled);
-    variantRow->addWidget(underlined);
-    variantRow->addStretch();
-    layout->addLayout(variantRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("States")));
-    auto* stateRow = new QHBoxLayout();
-    stateRow->setSpacing(16);
-    auto* disabled = new AntSelect();
-    disabled->addOptions({QStringLiteral("Disabled")});
-    disabled->setCurrentIndex(0);
-    disabled->setEnabled(false);
-    auto* loading = new AntSelect();
-    loading->addOptions({QStringLiteral("Loading"), QStringLiteral("Loaded")});
-    loading->setCurrentIndex(0);
-    loading->setLoading(true);
-    auto* disabledOption = new AntSelect();
-    disabledOption->setPlaceholderText(QStringLiteral("Option disabled"));
-    disabledOption->addOption(QStringLiteral("Enabled"));
-    disabledOption->addOption(QStringLiteral("Disabled option"), QStringLiteral("disabled"), true);
-    disabledOption->addOption(QStringLiteral("Another enabled"));
-    stateRow->addWidget(disabled);
-    stateRow->addWidget(loading);
-    stateRow->addWidget(disabledOption);
-    stateRow->addStretch();
-    layout->addLayout(stateRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Multiple")));
-    auto* multiRow = new QHBoxLayout();
-    multiRow->setSpacing(16);
-    auto* multi = new AntSelect();
-    multi->setSelectMode(Ant::SelectMode::Multiple);
-    multi->setPlaceholderText(QStringLiteral("Select tags"));
-    multi->addOptions({QStringLiteral("Apple"), QStringLiteral("Pear"), QStringLiteral("Orange"), QStringLiteral("Banana"), QStringLiteral("Grape")});
-    multi->addSelectedIndex(0);
-    multi->addSelectedIndex(2);
-    multi->setAllowClear(true);
-    multi->setFixedWidth(320);
-    multiRow->addWidget(multi);
-
-    auto* multiMax = new AntSelect();
-    multiMax->setSelectMode(Ant::SelectMode::Multiple);
-    multiMax->setPlaceholderText(QStringLiteral("Max 3 tags"));
-    multiMax->addOptions({QStringLiteral("Design"), QStringLiteral("Develop"), QStringLiteral("Test"), QStringLiteral("Deploy"), QStringLiteral("Review")});
-    multiMax->addSelectedIndex(0);
-    multiMax->addSelectedIndex(1);
-    multiMax->addSelectedIndex(2);
-    multiMax->addSelectedIndex(3);
-    multiMax->setMaxTagCount(3);
-    multiMax->setFixedWidth(320);
-    multiRow->addWidget(multiMax);
-    multiRow->addStretch();
-    layout->addLayout(multiRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Tags")));
-    auto* tagRow = new QHBoxLayout();
-    tagRow->setSpacing(16);
-    auto* tags = new AntSelect();
-    tags->setSelectMode(Ant::SelectMode::Tags);
-    tags->setPlaceholderText(QStringLiteral("Type and press Enter"));
-    tags->addOptions({QStringLiteral("Tag 1"), QStringLiteral("Tag 2")});
-    tags->addSelectedIndex(0);
-    tags->setFixedWidth(320);
-    tagRow->addWidget(tags);
-    tagRow->addStretch();
-    layout->addLayout(tagRow);
-
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createSliderPage(QWidget* owner)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(28, 28, 28, 28);
-    layout->setSpacing(24);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
-    auto* basicRow = new QHBoxLayout();
-    basicRow->setSpacing(16);
-    auto* basic = new AntSlider();
-    basic->setValue(30);
-    auto* basicValue = new AntTypography(QString::number(basic->value()));
-    basicValue->setMinimumWidth(36);
-    QObject::connect(basic, &AntSlider::valueChanged, owner, [basicValue](int value) {
-        basicValue->setText(QString::number(value));
-    });
-    basicRow->addWidget(basic, 1);
-    basicRow->addWidget(basicValue);
-    layout->addLayout(basicRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Dots and Step")));
-    auto* dotsRow = new QHBoxLayout();
-    dotsRow->setSpacing(16);
-    auto* dots = new AntSlider();
-    dots->setRange(0, 50);
-    dots->setSingleStep(10);
-    dots->setDots(true);
-    dots->setValue(20);
-    auto* reverse = new AntSlider();
-    reverse->setReverse(true);
-    reverse->setValue(60);
-    dotsRow->addWidget(dots, 1);
-    dotsRow->addWidget(reverse, 1);
-    layout->addLayout(dotsRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
-    auto* verticalRow = new QHBoxLayout();
-    verticalRow->setSpacing(28);
-    auto* vertical = new AntSlider(Qt::Vertical);
-    vertical->setFixedHeight(180);
-    vertical->setValue(45);
-    auto* verticalReverse = new AntSlider(Qt::Vertical);
-    verticalReverse->setFixedHeight(180);
-    verticalReverse->setReverse(true);
-    verticalReverse->setValue(25);
-    verticalRow->addWidget(vertical);
-    verticalRow->addWidget(verticalReverse);
-    verticalRow->addStretch();
-    layout->addLayout(verticalRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("States")));
-    auto* stateRow = new QHBoxLayout();
-    stateRow->setSpacing(16);
-    auto* disabled = new AntSlider();
-    disabled->setValue(40);
-    disabled->setEnabled(false);
-    auto* noTrack = new AntSlider();
-    noTrack->setValue(70);
-    noTrack->setIncluded(false);
-    stateRow->addWidget(disabled, 1);
-    stateRow->addWidget(noTrack, 1);
-    layout->addLayout(stateRow);
-
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createSwitchPage(QWidget* /*owner*/)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(28, 28, 28, 28);
-    layout->setSpacing(24);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
-    auto* basicRow = new QHBoxLayout();
-    basicRow->setSpacing(18);
-    auto* offSwitch = new AntSwitch();
-    auto* onSwitch = new AntSwitch();
-    onSwitch->setChecked(true);
-    auto* smallSwitch = new AntSwitch();
-    smallSwitch->setSwitchSize(Ant::SwitchSize::Small);
-    smallSwitch->setChecked(true);
-    basicRow->addWidget(offSwitch);
-    basicRow->addWidget(onSwitch);
-    basicRow->addWidget(smallSwitch);
-    basicRow->addStretch();
-    layout->addLayout(basicRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Text")));
-    auto* textRow = new QHBoxLayout();
-    textRow->setSpacing(18);
-    auto* textSwitch = new AntSwitch();
-    textSwitch->setCheckedText(QStringLiteral("ON"));
-    textSwitch->setUncheckedText(QStringLiteral("OFF"));
-    textSwitch->setChecked(true);
-    auto* zhSwitch = new AntSwitch();
-    zhSwitch->setCheckedText(QStringLiteral("开"));
-    zhSwitch->setUncheckedText(QStringLiteral("关"));
-    textRow->addWidget(textSwitch);
-    textRow->addWidget(zhSwitch);
-    textRow->addStretch();
-    layout->addLayout(textRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("States")));
-    auto* stateRow = new QHBoxLayout();
-    stateRow->setSpacing(18);
-    auto* loading = new AntSwitch();
-    loading->setChecked(true);
-    loading->setLoading(true);
-    auto* disabledOff = new AntSwitch();
-    disabledOff->setEnabled(false);
-    auto* disabledOn = new AntSwitch();
-    disabledOn->setChecked(true);
-    disabledOn->setEnabled(false);
-    stateRow->addWidget(loading);
-    stateRow->addWidget(disabledOff);
-    stateRow->addWidget(disabledOn);
-    stateRow->addStretch();
-    layout->addLayout(stateRow);
-
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createTimePickerPage(QWidget* /*owner*/)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(28, 28, 28, 28);
-    layout->setSpacing(24);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Basic")));
-    auto* basicRow = new QHBoxLayout();
-    basicRow->setSpacing(16);
-    auto* basic = new AntTimePicker();
-    basic->setPlaceholderText(QStringLiteral("Select time"));
-    auto* selected = new AntTimePicker();
-    selected->setSelectedTime(QTime(13, 30, 56));
-    selected->setAllowClear(true);
-    auto* customFormat = new AntTimePicker();
-    customFormat->setSelectedTime(QTime(9, 15, 0));
-    customFormat->setDisplayFormat(QStringLiteral("HH:mm"));
-    customFormat->setSecondStep(10);
-    basicRow->addWidget(basic);
-    basicRow->addWidget(selected);
-    basicRow->addWidget(customFormat);
-    basicRow->addStretch();
-    layout->addLayout(basicRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Size")));
-    auto* sizeRow = new QHBoxLayout();
-    sizeRow->setSpacing(16);
-    auto* large = new AntTimePicker();
-    large->setPickerSize(Ant::TimePickerSize::Large);
-    large->setSelectedTime(QTime::currentTime());
-    auto* middle = new AntTimePicker();
-    middle->setSelectedTime(QTime::currentTime());
-    auto* small = new AntTimePicker();
-    small->setPickerSize(Ant::TimePickerSize::Small);
-    small->setSelectedTime(QTime::currentTime());
-    sizeRow->addWidget(large);
-    sizeRow->addWidget(middle);
-    sizeRow->addWidget(small);
-    sizeRow->addStretch();
-    layout->addLayout(sizeRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Status and Variant")));
-    auto* variantRow = new QHBoxLayout();
-    variantRow->setSpacing(16);
-    auto* error = new AntTimePicker();
-    error->setStatus(Ant::TimePickerStatus::Error);
-    error->setPlaceholderText(QStringLiteral("Error"));
-    auto* warning = new AntTimePicker();
-    warning->setStatus(Ant::TimePickerStatus::Warning);
-    warning->setPlaceholderText(QStringLiteral("Warning"));
-    auto* filled = new AntTimePicker();
-    filled->setVariant(Ant::TimePickerVariant::Filled);
-    filled->setSelectedTime(QTime(8, 0, 0));
-    auto* underlined = new AntTimePicker();
-    underlined->setVariant(Ant::TimePickerVariant::Underlined);
-    underlined->setSelectedTime(QTime(18, 45, 0));
-    variantRow->addWidget(error);
-    variantRow->addWidget(warning);
-    variantRow->addWidget(filled);
-    variantRow->addWidget(underlined);
-    variantRow->addStretch();
-    layout->addLayout(variantRow);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("States and Step")));
-    auto* stateRow = new QHBoxLayout();
-    stateRow->setSpacing(16);
-    auto* disabled = new AntTimePicker();
-    disabled->setSelectedTime(QTime(12, 0, 0));
-    disabled->setEnabled(false);
-    auto* stepped = new AntTimePicker();
-    stepped->setMinuteStep(15);
-    stepped->setSecondStep(15);
-    stepped->setSelectedTime(QTime(10, 30, 30));
-    auto* noNow = new AntTimePicker();
-    noNow->setShowNow(false);
-    noNow->setSelectedTime(QTime(22, 10, 5));
-    stateRow->addWidget(disabled);
-    stateRow->addWidget(stepped);
-    stateRow->addWidget(noNow);
-    stateRow->addStretch();
-    layout->addLayout(stateRow);
-
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createTransferPage(QWidget* /*owner*/)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    auto* title = new QLabel(QStringLiteral("AntTransfer"));
-    QFont f = title->font();
-    f.setPixelSize(20);
-    f.setBold(true);
-    title->setFont(f);
-    layout->addWidget(title);
-
-    auto* transfer = new AntTransfer(page);
-    transfer->setSourceItems({QStringLiteral("Dashboard"), QStringLiteral("Analytics"), QStringLiteral("Billing"),
-                              QStringLiteral("Settings"), QStringLiteral("Audit Log")});
-    transfer->setTargetItems({QStringLiteral("Users")});
-    layout->addWidget(transfer);
-
-    auto* summary = new QLabel(page);
-    auto updateSummary = [summary, transfer]() {
-        summary->setText(QStringLiteral("source=%1, target=%2")
-                             .arg(transfer->sourceItems().join(QStringLiteral(", ")))
-                             .arg(transfer->targetItems().join(QStringLiteral(", "))));
-    };
-    updateSummary();
-    QObject::connect(transfer, &AntTransfer::itemsChanged, summary, updateSummary);
-    layout->addWidget(summary);
-
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createTreeSelectPage(QWidget* /*owner*/)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(24, 16, 24, 16);
-    layout->setSpacing(16);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Basic TreeSelect")));
-
-    auto* treeSelect = new AntTreeSelect(page);
-    treeSelect->setPlaceholder(QStringLiteral("Please select"));
-
-    QVector<AntTreeNode> treeData;
-    AntTreeNode parent1;
-    parent1.key = QStringLiteral("node1");
-    parent1.title = QStringLiteral("Node 1");
-    parent1.children.push_back({QStringLiteral("node1-1"), QStringLiteral("Node 1-1")});
-    parent1.children.push_back({QStringLiteral("node1-2"), QStringLiteral("Node 1-2")});
-    treeData.push_back(parent1);
-
-    AntTreeNode parent2;
-    parent2.key = QStringLiteral("node2");
-    parent2.title = QStringLiteral("Node 2");
-    parent2.children.push_back({QStringLiteral("node2-1"), QStringLiteral("Node 2-1")});
-    treeData.push_back(parent2);
-
-    treeSelect->setTreeData(treeData);
-    layout->addWidget(treeSelect);
-
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createUploadPage(QWidget* /*owner*/)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(24, 16, 24, 16);
-    layout->setSpacing(16);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Basic Upload")));
-
-    auto* upload = new AntUpload(page);
-    upload->addFile({QStringLiteral("file1"), QStringLiteral("document.pdf"), Ant::UploadFileStatus::Done, 100});
-    upload->addFile({QStringLiteral("file2"), QStringLiteral("image.png"), Ant::UploadFileStatus::Uploading, 45});
-    layout->addWidget(upload);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Picture Card")));
-
-    auto* picUpload = new AntUpload(page);
-    picUpload->setListType(Ant::UploadListType::PictureCard);
-    layout->addWidget(picUpload);
-
-    layout->addWidget(createSectionTitle(QStringLiteral("Dragger")));
-
-    auto* dragger = new AntUpload(page);
-    dragger->setDraggerMode(true);
-    dragger->setFixedHeight(180);
-    layout->addWidget(dragger);
-
     layout->addStretch();
     return page;
 }

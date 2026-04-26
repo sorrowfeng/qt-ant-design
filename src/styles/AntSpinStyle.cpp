@@ -1,6 +1,5 @@
 #include "AntSpinStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
@@ -8,7 +7,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "core/AntTheme.h"
 #include "widgets/AntSpin.h"
 
 namespace
@@ -32,14 +30,14 @@ SpinMetrics metricsFor(const AntSpin* spin)
         return metrics;
     }
 
-    if (spin->spinSize() == Ant::SpinSize::Small)
+    if (spin->spinSize() == Ant::Size::Small)
     {
         metrics.indicatorSize = 14;
         metrics.dotSize = 4;
         metrics.fontSize = token.fontSizeSM;
         metrics.spacing = 6;
     }
-    else if (spin->spinSize() == Ant::SpinSize::Large)
+    else if (spin->spinSize() == Ant::Size::Large)
     {
         metrics.indicatorSize = 32;
         metrics.dotSize = 8;
@@ -85,10 +83,10 @@ void drawPercent(QPainter& painter, const AntSpin* spin, const QRectF& rect)
     painter.setPen(QPen(token.colorPrimary, lineWidth, Qt::SolidLine, Qt::RoundCap));
     painter.drawArc(arcRect, 90 * 16, -spin->percent() * 360 * 16 / 100);
 
-    if (spin->spinSize() != Ant::SpinSize::Small)
+    if (spin->spinSize() != Ant::Size::Small)
     {
         QFont font = painter.font();
-        font.setPixelSize(spin->spinSize() == Ant::SpinSize::Large ? 10 : 8);
+        font.setPixelSize(spin->spinSize() == Ant::Size::Large ? 10 : 8);
         font.setWeight(QFont::DemiBold);
         painter.setFont(font);
         painter.setPen(token.colorTextSecondary);
@@ -98,21 +96,9 @@ void drawPercent(QPainter& painter, const AntSpin* spin, const QRectF& rect)
 }
 
 AntSpinStyle::AntSpinStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntSpin*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntSpin>();
 }
 
 void AntSpinStyle::polish(QWidget* widget)

@@ -14,7 +14,7 @@ void TestAntSwitch::propertiesAndSignals()
 {
     auto* sw = new AntSwitch;
     QCOMPARE(sw->isChecked(), false);
-    QCOMPARE(sw->switchSize(), Ant::SwitchSize::Middle);
+    QCOMPARE(sw->switchSize(), Ant::Size::Middle);
     QCOMPARE(sw->isLoading(), false);
     QCOMPARE(sw->checkedText(), QString());
     QCOMPARE(sw->uncheckedText(), QString());
@@ -25,8 +25,8 @@ void TestAntSwitch::propertiesAndSignals()
     QCOMPARE(checkedSpy.count(), 1);
 
     QSignalSpy sizeSpy(sw, &AntSwitch::switchSizeChanged);
-    sw->setSwitchSize(Ant::SwitchSize::Small);
-    QCOMPARE(sw->switchSize(), Ant::SwitchSize::Small);
+    sw->setSwitchSize(Ant::Size::Small);
+    QCOMPARE(sw->switchSize(), Ant::Size::Small);
     QCOMPARE(sizeSpy.count(), 1);
 
     QSignalSpy loadingSpy(sw, &AntSwitch::loadingChanged);

@@ -16,9 +16,9 @@ AntSpace::AntSpace(QWidget* parent)
     m_layout->setSpacing(spacingValue());
 }
 
-Ant::SpaceOrientation AntSpace::orientation() const { return m_orientation; }
+Ant::Orientation AntSpace::orientation() const { return m_orientation; }
 
-void AntSpace::setOrientation(Ant::SpaceOrientation orientation)
+void AntSpace::setOrientation(Ant::Orientation orientation)
 {
     if (m_orientation == orientation)
     {
@@ -31,9 +31,9 @@ void AntSpace::setOrientation(Ant::SpaceOrientation orientation)
     Q_EMIT orientationChanged(m_orientation);
 }
 
-Ant::SpaceSize AntSpace::size() const { return m_size; }
+Ant::Size AntSpace::size() const { return m_size; }
 
-void AntSpace::setSize(Ant::SpaceSize size)
+void AntSpace::setSize(Ant::Size size)
 {
     if (m_size == size)
     {
@@ -179,11 +179,11 @@ int AntSpace::spacingValue() const
 
     switch (m_size)
     {
-    case Ant::SpaceSize::Small:
+    case Ant::Size::Small:
         return 8;
-    case Ant::SpaceSize::Middle:
+    case Ant::Size::Middle:
         return 16;
-    case Ant::SpaceSize::Large:
+    case Ant::Size::Large:
         return 24;
     }
     return 8;
@@ -199,7 +199,7 @@ void AntSpace::rebuildLayout()
     delete m_layout;
     m_layout = nullptr;
 
-    if (m_orientation == Ant::SpaceOrientation::Horizontal)
+    if (m_orientation == Ant::Orientation::Horizontal)
     {
         auto* hLayout = new QHBoxLayout(this);
         hLayout->setContentsMargins(0, 0, 0, 0);

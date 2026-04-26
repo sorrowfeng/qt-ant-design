@@ -13,18 +13,18 @@ class QBoxLayout;
 class AntSpace : public QWidget
 {
     Q_OBJECT
-    Q_PROPERTY(Ant::SpaceOrientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
-    Q_PROPERTY(Ant::SpaceSize size READ size WRITE setSize NOTIFY sizeChanged)
+    Q_PROPERTY(Ant::Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(bool wrap READ isWrap WRITE setWrap NOTIFY wrapChanged)
 
 public:
     explicit AntSpace(QWidget* parent = nullptr);
 
-    Ant::SpaceOrientation orientation() const;
-    void setOrientation(Ant::SpaceOrientation orientation);
+    Ant::Orientation orientation() const;
+    void setOrientation(Ant::Orientation orientation);
 
-    Ant::SpaceSize size() const;
-    void setSize(Ant::SpaceSize size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
 
     int customSpacing() const;
     void setCustomSpacing(int spacing);
@@ -49,8 +49,8 @@ public:
     QSize minimumSizeHint() const override;
 
 Q_SIGNALS:
-    void orientationChanged(Ant::SpaceOrientation orientation);
-    void sizeChanged(Ant::SpaceSize size);
+    void orientationChanged(Ant::Orientation orientation);
+    void sizeChanged(Ant::Size size);
     void wrapChanged(bool wrap);
 
 protected:
@@ -61,8 +61,8 @@ private:
     int spacingValue() const;
     void rebuildLayout();
 
-    Ant::SpaceOrientation m_orientation = Ant::SpaceOrientation::Horizontal;
-    Ant::SpaceSize m_size = Ant::SpaceSize::Small;
+    Ant::Orientation m_orientation = Ant::Orientation::Horizontal;
+    Ant::Size m_size = Ant::Size::Small;
     int m_customSpacing = -1;
     bool m_wrap = false;
     Qt::Alignment m_alignment = Qt::Alignment();

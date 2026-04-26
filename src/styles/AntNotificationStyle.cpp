@@ -1,6 +1,5 @@
 #include "AntNotificationStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -8,7 +7,6 @@
 #include <QStyleOption>
 #include <QTextOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntNotification.h"
 
@@ -105,21 +103,9 @@ void drawTypeIcon(QPainter& painter, const QRectF& rect, Ant::MessageType type, 
 } // namespace
 
 AntNotificationStyle::AntNotificationStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntNotification*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntNotification>();
 }
 
 void AntNotificationStyle::polish(QWidget* widget)

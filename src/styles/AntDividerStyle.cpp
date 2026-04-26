@@ -1,30 +1,16 @@
 #include "AntDividerStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntDivider.h"
 
 AntDividerStyle::AntDividerStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntDivider*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntDivider>();
 }
 
 void AntDividerStyle::polish(QWidget* widget)
@@ -87,7 +73,7 @@ void AntDividerStyle::drawDivider(const QStyleOption* option, QPainter* painter,
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing);
 
-    const bool horizontal = divider->orientation() == Ant::DividerOrientation::Horizontal;
+    const bool horizontal = divider->orientation() == Ant::Orientation::Horizontal;
     const bool hasTitle = !divider->text().isEmpty();
     const QColor lineColor = token.colorBorder;
     const QColor textColor = token.colorTextSecondary;
@@ -105,10 +91,10 @@ void AntDividerStyle::drawDivider(const QStyleOption* option, QPainter* painter,
     int lineWidth = 1;
     switch (divider->dividerSize())
     {
-    case Ant::DividerSize::Small:
+    case Ant::Size::Small:
         lineWidth = 1;
         break;
-    case Ant::DividerSize::Large:
+    case Ant::Size::Large:
         lineWidth = 3;
         break;
     default:

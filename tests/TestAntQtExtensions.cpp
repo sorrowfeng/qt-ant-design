@@ -84,7 +84,7 @@ void TestAntQtExtensions::formItem()
     QCOMPARE(w->extra(), QString());
     QCOMPARE(w->isRequired(), false);
     QCOMPARE(w->colon(), true);
-    QCOMPARE(w->validateStatus(), Ant::InputStatus::Normal);
+    QCOMPARE(w->validateStatus(), Ant::Status::Normal);
 
     QSignalSpy labelSpy(w, &AntFormItem::labelChanged);
     w->setLabel("Username");
@@ -112,8 +112,8 @@ void TestAntQtExtensions::formItem()
     QCOMPARE(colonSpy.count(), 1);
 
     QSignalSpy statusSpy(w, &AntFormItem::validateStatusChanged);
-    w->setValidateStatus(Ant::InputStatus::Error);
-    QCOMPARE(w->validateStatus(), Ant::InputStatus::Error);
+    w->setValidateStatus(Ant::Status::Error);
+    QCOMPARE(w->validateStatus(), Ant::Status::Error);
     QCOMPARE(statusSpy.count(), 1);
 }
 
@@ -212,11 +212,11 @@ void TestAntQtExtensions::log()
 void TestAntQtExtensions::plainTextEdit()
 {
     auto* w = new AntPlainTextEdit;
-    QCOMPARE(w->variant(), Ant::TextEditVariant::Outlined);
+    QCOMPARE(w->variant(), Ant::Variant::Outlined);
 
     QSignalSpy varSpy(w, &AntPlainTextEdit::variantChanged);
-    w->setVariant(Ant::TextEditVariant::Filled);
-    QCOMPARE(w->variant(), Ant::TextEditVariant::Filled);
+    w->setVariant(Ant::Variant::Filled);
+    QCOMPARE(w->variant(), Ant::Variant::Filled);
     QCOMPARE(varSpy.count(), 1);
 
     QSignalSpy phSpy(w, &AntPlainTextEdit::placeholderTextChanged);
@@ -305,7 +305,7 @@ void TestAntQtExtensions::toolButton()
 {
     auto* w = new AntToolButton;
     QCOMPARE(w->buttonType(), Ant::ButtonType::Default);
-    QCOMPARE(w->buttonSize(), Ant::ButtonSize::Middle);
+    QCOMPARE(w->buttonSize(), Ant::Size::Middle);
     QCOMPARE(w->isDanger(), false);
     QCOMPARE(w->isLoading(), false);
     QCOMPARE(w->arrowRotation(), 0.0);
@@ -316,8 +316,8 @@ void TestAntQtExtensions::toolButton()
     QCOMPARE(typeSpy.count(), 1);
 
     QSignalSpy sizeSpy(w, &AntToolButton::buttonSizeChanged);
-    w->setButtonSize(Ant::ButtonSize::Large);
-    QCOMPARE(w->buttonSize(), Ant::ButtonSize::Large);
+    w->setButtonSize(Ant::Size::Large);
+    QCOMPARE(w->buttonSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy.count(), 1);
 
     QSignalSpy dangerSpy(w, &AntToolButton::dangerChanged);

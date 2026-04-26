@@ -19,9 +19,9 @@ void TestAntSelect::propertiesAndSignals()
     QCOMPARE(sel->isLoading(), false);
     QCOMPARE(sel->count(), 0);
     QCOMPARE(sel->maxTagCount(), 0);
-    QCOMPARE(sel->selectSize(), Ant::SelectSize::Middle);
-    QCOMPARE(sel->status(), Ant::SelectStatus::Normal);
-    QCOMPARE(sel->variant(), Ant::SelectVariant::Outlined);
+    QCOMPARE(sel->selectSize(), Ant::Size::Middle);
+    QCOMPARE(sel->status(), Ant::Status::Normal);
+    QCOMPARE(sel->variant(), Ant::Variant::Outlined);
 
     // Options
     sel->addOption("Apple", "apple");
@@ -68,18 +68,18 @@ void TestAntSelect::propertiesAndSignals()
 
     // Other properties
     QSignalSpy sizeSpy(sel, &AntSelect::selectSizeChanged);
-    sel->setSelectSize(Ant::SelectSize::Large);
-    QCOMPARE(sel->selectSize(), Ant::SelectSize::Large);
+    sel->setSelectSize(Ant::Size::Large);
+    QCOMPARE(sel->selectSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy.count(), 1);
 
     QSignalSpy statusSpy(sel, &AntSelect::statusChanged);
-    sel->setStatus(Ant::SelectStatus::Error);
-    QCOMPARE(sel->status(), Ant::SelectStatus::Error);
+    sel->setStatus(Ant::Status::Error);
+    QCOMPARE(sel->status(), Ant::Status::Error);
     QCOMPARE(statusSpy.count(), 1);
 
     QSignalSpy variantSpy(sel, &AntSelect::variantChanged);
-    sel->setVariant(Ant::SelectVariant::Filled);
-    QCOMPARE(sel->variant(), Ant::SelectVariant::Filled);
+    sel->setVariant(Ant::Variant::Filled);
+    QCOMPARE(sel->variant(), Ant::Variant::Filled);
     QCOMPARE(variantSpy.count(), 1);
 
     // Option inspection

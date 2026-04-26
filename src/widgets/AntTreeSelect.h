@@ -15,9 +15,9 @@ class AntTreeSelect : public QWidget
     Q_PROPERTY(bool multiple READ isMultiple WRITE setMultiple NOTIFY multipleChanged)
     Q_PROPERTY(bool treeCheckable READ isTreeCheckable WRITE setTreeCheckable NOTIFY treeCheckableChanged)
     Q_PROPERTY(bool showSearch READ isShowSearch WRITE setShowSearch NOTIFY showSearchChanged)
-    Q_PROPERTY(Ant::SelectSize selectSize READ selectSize WRITE setSelectSize NOTIFY selectSizeChanged)
-    Q_PROPERTY(Ant::SelectStatus status READ status WRITE setStatus NOTIFY statusChanged)
-    Q_PROPERTY(Ant::SelectVariant variant READ variant WRITE setVariant NOTIFY variantChanged)
+    Q_PROPERTY(Ant::Size selectSize READ selectSize WRITE setSelectSize NOTIFY selectSizeChanged)
+    Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
     Q_PROPERTY(bool isOpen READ isOpen WRITE setOpen NOTIFY openChanged)
 
 public:
@@ -45,14 +45,14 @@ public:
     bool isShowSearch() const;
     void setShowSearch(bool enable);
 
-    Ant::SelectSize selectSize() const;
-    void setSelectSize(Ant::SelectSize size);
+    Ant::Size selectSize() const;
+    void setSelectSize(Ant::Size size);
 
-    Ant::SelectStatus status() const;
-    void setStatus(Ant::SelectStatus status);
+    Ant::Status status() const;
+    void setStatus(Ant::Status status);
 
-    Ant::SelectVariant variant() const;
-    void setVariant(Ant::SelectVariant variant);
+    Ant::Variant variant() const;
+    void setVariant(Ant::Variant variant);
 
     bool isOpen() const;
     void setOpen(bool open);
@@ -68,9 +68,9 @@ Q_SIGNALS:
     void multipleChanged(bool enable);
     void treeCheckableChanged(bool enable);
     void showSearchChanged(bool enable);
-    void selectSizeChanged(Ant::SelectSize size);
-    void statusChanged(Ant::SelectStatus status);
-    void variantChanged(Ant::SelectVariant variant);
+    void selectSizeChanged(Ant::Size size);
+    void statusChanged(Ant::Status status);
+    void variantChanged(Ant::Variant variant);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -101,9 +101,9 @@ private:
     bool m_multiple = false;
     bool m_treeCheckable = false;
     bool m_showSearch = false;
-    Ant::SelectSize m_selectSize = Ant::SelectSize::Middle;
-    Ant::SelectStatus m_status = Ant::SelectStatus::Normal;
-    Ant::SelectVariant m_variant = Ant::SelectVariant::Outlined;
+    Ant::Size m_selectSize = Ant::Size::Middle;
+    Ant::Status m_status = Ant::Status::Normal;
+    Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_open = false;
     bool m_hovered = false;
     QString m_displayText;

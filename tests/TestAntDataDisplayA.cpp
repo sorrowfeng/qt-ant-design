@@ -24,7 +24,7 @@ void TestAntDataDisplayA::propertiesAndSignals()
     QCOMPARE(a->gap(), 4);
     QCOMPARE(a->customSize(), 0);
     QCOMPARE(a->shape(), Ant::AvatarShape::Circle);
-    QCOMPARE(a->avatarSize(), Ant::AvatarSize::Middle);
+    QCOMPARE(a->avatarSize(), Ant::Size::Middle);
 
     QSignalSpy textSpy(a, &AntAvatar::textChanged);
     a->setText("AB");
@@ -42,8 +42,8 @@ void TestAntDataDisplayA::propertiesAndSignals()
     QCOMPARE(shapeSpy.count(), 1);
 
     QSignalSpy sizeSpy(a, &AntAvatar::avatarSizeChanged);
-    a->setAvatarSize(Ant::AvatarSize::Large);
-    QCOMPARE(a->avatarSize(), Ant::AvatarSize::Large);
+    a->setAvatarSize(Ant::Size::Large);
+    QCOMPARE(a->avatarSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy.count(), 1);
 
     QSignalSpy gapSpy(a, &AntAvatar::gapChanged);
@@ -57,7 +57,7 @@ void TestAntDataDisplayA::propertiesAndSignals()
     // AntAvatarGroup
     auto* g = new AntAvatarGroup;
     QCOMPARE(g->maxCount(), 0);
-    QCOMPARE(g->avatarSize(), Ant::AvatarSize::Middle);
+    QCOMPARE(g->avatarSize(), Ant::Size::Middle);
 
     QSignalSpy gMaxSpy(g, &AntAvatarGroup::maxCountChanged);
     g->setMaxCount(3);
@@ -65,8 +65,8 @@ void TestAntDataDisplayA::propertiesAndSignals()
     QCOMPARE(gMaxSpy.count(), 1);
 
     QSignalSpy gSizeSpy(g, &AntAvatarGroup::avatarSizeChanged);
-    g->setAvatarSize(Ant::AvatarSize::Small);
-    QCOMPARE(g->avatarSize(), Ant::AvatarSize::Small);
+    g->setAvatarSize(Ant::Size::Small);
+    QCOMPARE(g->avatarSize(), Ant::Size::Small);
     QCOMPARE(gSizeSpy.count(), 1);
 
     auto* av1 = new AntAvatar("A");

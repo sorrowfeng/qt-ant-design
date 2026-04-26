@@ -33,12 +33,12 @@ AntInputNumber::AntInputNumber(QWidget* parent)
     updateEditStyle();
 }
 
-Ant::InputSize AntInputNumber::inputSize() const
+Ant::Size AntInputNumber::inputSize() const
 {
     return m_inputSize;
 }
 
-void AntInputNumber::setInputSize(Ant::InputSize size)
+void AntInputNumber::setInputSize(Ant::Size size)
 {
     if (m_inputSize == size)
     {
@@ -51,12 +51,12 @@ void AntInputNumber::setInputSize(Ant::InputSize size)
     Q_EMIT inputSizeChanged(m_inputSize);
 }
 
-Ant::InputStatus AntInputNumber::status() const
+Ant::Status AntInputNumber::status() const
 {
     return m_status;
 }
 
-void AntInputNumber::setStatus(Ant::InputStatus status)
+void AntInputNumber::setStatus(Ant::Status status)
 {
     if (m_status == status)
     {
@@ -67,12 +67,12 @@ void AntInputNumber::setStatus(Ant::InputStatus status)
     Q_EMIT statusChanged(m_status);
 }
 
-Ant::InputNumberVariant AntInputNumber::variant() const
+Ant::Variant AntInputNumber::variant() const
 {
     return m_variant;
 }
 
-void AntInputNumber::setVariant(Ant::InputNumberVariant variant)
+void AntInputNumber::setVariant(Ant::Variant variant)
 {
     if (m_variant == variant)
     {
@@ -231,19 +231,19 @@ AntInputNumber::Metrics AntInputNumber::metrics() const
     Metrics m;
     switch (m_inputSize)
     {
-    case Ant::InputSize::Large:
+    case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         m.radius = token.borderRadiusLG;
         m.paddingX = token.paddingSM;
         break;
-    case Ant::InputSize::Small:
+    case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;
         m.radius = token.borderRadiusSM;
         m.paddingX = token.paddingXS;
         break;
-    case Ant::InputSize::Middle:
+    case Ant::Size::Middle:
         m.height = token.controlHeight;
         m.fontSize = token.fontSize;
         m.radius = token.borderRadius;

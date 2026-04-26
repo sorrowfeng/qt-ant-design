@@ -19,9 +19,9 @@ class AntTimePicker : public QWidget
     Q_PROPERTY(QTime selectedTime READ selectedTime WRITE setSelectedTime NOTIFY selectedTimeChanged)
     Q_PROPERTY(QString displayFormat READ displayFormat WRITE setDisplayFormat NOTIFY displayFormatChanged)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)
-    Q_PROPERTY(Ant::TimePickerSize pickerSize READ pickerSize WRITE setPickerSize NOTIFY pickerSizeChanged)
-    Q_PROPERTY(Ant::TimePickerStatus status READ status WRITE setStatus NOTIFY statusChanged)
-    Q_PROPERTY(Ant::TimePickerVariant variant READ variant WRITE setVariant NOTIFY variantChanged)
+    Q_PROPERTY(Ant::Size pickerSize READ pickerSize WRITE setPickerSize NOTIFY pickerSizeChanged)
+    Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
     Q_PROPERTY(int hourStep READ hourStep WRITE setHourStep NOTIFY hourStepChanged)
@@ -44,14 +44,14 @@ public:
     QString placeholderText() const;
     void setPlaceholderText(const QString& text);
 
-    Ant::TimePickerSize pickerSize() const;
-    void setPickerSize(Ant::TimePickerSize size);
+    Ant::Size pickerSize() const;
+    void setPickerSize(Ant::Size size);
 
-    Ant::TimePickerStatus status() const;
-    void setStatus(Ant::TimePickerStatus status);
+    Ant::Status status() const;
+    void setStatus(Ant::Status status);
 
-    Ant::TimePickerVariant variant() const;
-    void setVariant(Ant::TimePickerVariant variant);
+    Ant::Variant variant() const;
+    void setVariant(Ant::Variant variant);
 
     bool allowClear() const;
     void setAllowClear(bool allowClear);
@@ -88,9 +88,9 @@ Q_SIGNALS:
     void timeStringChanged(const QString& text);
     void displayFormatChanged(const QString& format);
     void placeholderTextChanged(const QString& text);
-    void pickerSizeChanged(Ant::TimePickerSize size);
-    void statusChanged(Ant::TimePickerStatus status);
-    void variantChanged(Ant::TimePickerVariant variant);
+    void pickerSizeChanged(Ant::Size size);
+    void statusChanged(Ant::Status status);
+    void variantChanged(Ant::Variant variant);
     void allowClearChanged(bool allowClear);
     void rangeModeChanged(bool rangeMode);
     void startTimeChanged(const QTime& time);
@@ -143,9 +143,9 @@ private:
     QTime m_endTime;
     QString m_displayFormat = QStringLiteral("HH:mm:ss");
     QString m_placeholderText = QStringLiteral("Select time");
-    Ant::TimePickerSize m_pickerSize = Ant::TimePickerSize::Middle;
-    Ant::TimePickerStatus m_status = Ant::TimePickerStatus::Normal;
-    Ant::TimePickerVariant m_variant = Ant::TimePickerVariant::Outlined;
+    Ant::Size m_pickerSize = Ant::Size::Middle;
+    Ant::Status m_status = Ant::Status::Normal;
+    Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_allowClear = true;
     bool m_rangeMode = false;
     bool m_pickingEnd = false;

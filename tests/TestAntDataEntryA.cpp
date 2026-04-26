@@ -18,24 +18,24 @@ void TestAntDataEntryA::propertiesAndSignals()
 {
     // AntInputNumber
     auto* w1 = new AntInputNumber;
-    QCOMPARE(w1->inputSize(), Ant::InputSize::Middle);
-    QCOMPARE(w1->status(), Ant::InputStatus::Normal);
-    QCOMPARE(w1->variant(), Ant::InputNumberVariant::Outlined);
+    QCOMPARE(w1->inputSize(), Ant::Size::Middle);
+    QCOMPARE(w1->status(), Ant::Status::Normal);
+    QCOMPARE(w1->variant(), Ant::Variant::Outlined);
     QCOMPARE(w1->controlsVisible(), true);
 
     QSignalSpy sizeSpy1(w1, &AntInputNumber::inputSizeChanged);
-    w1->setInputSize(Ant::InputSize::Large);
-    QCOMPARE(w1->inputSize(), Ant::InputSize::Large);
+    w1->setInputSize(Ant::Size::Large);
+    QCOMPARE(w1->inputSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy1.count(), 1);
 
     QSignalSpy statusSpy1(w1, &AntInputNumber::statusChanged);
-    w1->setStatus(Ant::InputStatus::Error);
-    QCOMPARE(w1->status(), Ant::InputStatus::Error);
+    w1->setStatus(Ant::Status::Error);
+    QCOMPARE(w1->status(), Ant::Status::Error);
     QCOMPARE(statusSpy1.count(), 1);
 
     QSignalSpy varSpy1(w1, &AntInputNumber::variantChanged);
-    w1->setVariant(Ant::InputNumberVariant::Filled);
-    QCOMPARE(w1->variant(), Ant::InputNumberVariant::Filled);
+    w1->setVariant(Ant::Variant::Filled);
+    QCOMPARE(w1->variant(), Ant::Variant::Filled);
     QCOMPARE(varSpy1.count(), 1);
 
     QSignalSpy ctrlSpy1(w1, &AntInputNumber::controlsVisibleChanged);
@@ -101,7 +101,7 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(w4->allowHalf(), false);
     QCOMPARE(w4->allowClear(), true);
     QCOMPARE(w4->isDisabled(), false);
-    QCOMPARE(w4->rateSize(), Ant::RateSize::Middle);
+    QCOMPARE(w4->rateSize(), Ant::Size::Middle);
 
     QSignalSpy halfSpy(w4, &AntRate::allowHalfChanged);
     w4->setAllowHalf(true);
@@ -124,15 +124,15 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(disabledSpy4.count(), 1);
 
     QSignalSpy sizeSpy4(w4, &AntRate::rateSizeChanged);
-    w4->setRateSize(Ant::RateSize::Small);
-    QCOMPARE(w4->rateSize(), Ant::RateSize::Small);
+    w4->setRateSize(Ant::Size::Small);
+    QCOMPARE(w4->rateSize(), Ant::Size::Small);
     QCOMPARE(sizeSpy4.count(), 1);
 
     // AntSegmented
     auto* w5 = new AntSegmented;
     QCOMPARE(w5->value(), QString());
     QCOMPARE(w5->isBlock(), false);
-    QCOMPARE(w5->segmentedSize(), Ant::SegmentedSize::Middle);
+    QCOMPARE(w5->segmentedSize(), Ant::Size::Middle);
     QCOMPARE(w5->isVertical(), false);
     QCOMPARE(w5->shape(), Ant::SegmentedShape::Default);
 
@@ -151,8 +151,8 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(blockSpy.count(), 1);
 
     QSignalSpy sizeSpy5(w5, &AntSegmented::segmentedSizeChanged);
-    w5->setSegmentedSize(Ant::SegmentedSize::Large);
-    QCOMPARE(w5->segmentedSize(), Ant::SegmentedSize::Large);
+    w5->setSegmentedSize(Ant::Size::Large);
+    QCOMPARE(w5->segmentedSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy5.count(), 1);
 
     QSignalSpy vertSpy(w5, &AntSegmented::verticalChanged);

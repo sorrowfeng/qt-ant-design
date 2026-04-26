@@ -108,9 +108,9 @@ void AntFloatButton::removeChild(AntFloatButton* child)
 
 QVector<AntFloatButton*> AntFloatButton::childButtons() const { return m_children; }
 
-Ant::FloatButtonTrigger AntFloatButton::groupTrigger() const { return m_groupTrigger; }
+Ant::Trigger AntFloatButton::groupTrigger() const { return m_groupTrigger; }
 
-void AntFloatButton::setGroupTrigger(Ant::FloatButtonTrigger trigger)
+void AntFloatButton::setGroupTrigger(Ant::Trigger trigger)
 {
     m_groupTrigger = trigger;
 }
@@ -245,7 +245,7 @@ void AntFloatButton::mouseReleaseEvent(QMouseEvent* event)
 void AntFloatButton::enterEvent(QEnterEvent* event)
 {
     m_hovered = true;
-    if (!m_children.isEmpty() && m_groupTrigger == Ant::FloatButtonTrigger::Hover)
+    if (!m_children.isEmpty() && m_groupTrigger == Ant::Trigger::Hover)
     {
         setOpen(true);
     }

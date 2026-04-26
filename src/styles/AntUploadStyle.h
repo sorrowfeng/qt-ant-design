@@ -1,10 +1,10 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
 struct AntUploadFile;
 
-class AntUploadStyle : public QProxyStyle
+class AntUploadStyle : public AntStyleBase
 {
     Q_OBJECT
 

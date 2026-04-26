@@ -205,12 +205,12 @@ void AntTreeSelect::setShowSearch(bool enable)
     }
 }
 
-Ant::SelectSize AntTreeSelect::selectSize() const
+Ant::Size AntTreeSelect::selectSize() const
 {
     return m_selectSize;
 }
 
-void AntTreeSelect::setSelectSize(Ant::SelectSize size)
+void AntTreeSelect::setSelectSize(Ant::Size size)
 {
     if (m_selectSize != size)
     {
@@ -221,12 +221,12 @@ void AntTreeSelect::setSelectSize(Ant::SelectSize size)
     }
 }
 
-Ant::SelectStatus AntTreeSelect::status() const
+Ant::Status AntTreeSelect::status() const
 {
     return m_status;
 }
 
-void AntTreeSelect::setStatus(Ant::SelectStatus status)
+void AntTreeSelect::setStatus(Ant::Status status)
 {
     if (m_status != status)
     {
@@ -236,12 +236,12 @@ void AntTreeSelect::setStatus(Ant::SelectStatus status)
     }
 }
 
-Ant::SelectVariant AntTreeSelect::variant() const
+Ant::Variant AntTreeSelect::variant() const
 {
     return m_variant;
 }
 
-void AntTreeSelect::setVariant(Ant::SelectVariant variant)
+void AntTreeSelect::setVariant(Ant::Variant variant)
 {
     if (m_variant != variant)
     {

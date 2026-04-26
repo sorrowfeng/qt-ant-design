@@ -1,10 +1,8 @@
 #include "AntScrollBarStyle.h"
 
-#include <QApplication>
 #include <QPainter>
 #include <QStyleOptionSlider>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntScrollBar.h"
 
@@ -78,21 +76,9 @@ qreal handleAlphaFor(const QWidget* widget, const QStyle::State& state)
 }
 
 AntScrollBarStyle::AntScrollBarStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntScrollBar*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntScrollBar>();
 }
 
 void AntScrollBarStyle::polish(QWidget* widget)

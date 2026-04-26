@@ -1,12 +1,10 @@
 #include "AntInputNumberStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOptionSpinBox>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntInputNumber.h"
 
@@ -38,20 +36,20 @@ InputNumberMetrics metricsFor(const AntInputNumber* input)
 
     switch (input->inputSize())
     {
-    case Ant::InputSize::Large:
+    case Ant::Size::Large:
         metrics.height = token.controlHeightLG;
         metrics.fontSize = token.fontSizeLG;
         metrics.radius = token.borderRadiusLG;
         metrics.handlerWidth = token.fontSizeLG + token.padding;
         break;
-    case Ant::InputSize::Small:
+    case Ant::Size::Small:
         metrics.height = token.controlHeightSM;
         metrics.fontSize = token.fontSizeSM;
         metrics.radius = token.borderRadiusSM;
         metrics.paddingX = token.paddingXS;
         metrics.handlerWidth = token.fontSize + token.paddingXS + token.paddingXXS;
         break;
-    case Ant::InputSize::Middle:
+    case Ant::Size::Middle:
         break;
     }
 
@@ -71,11 +69,11 @@ QColor borderColorFor(const AntInputNumber* input)
     {
         return token.colorBorderDisabled;
     }
-    if (input->status() == Ant::InputStatus::Error)
+    if (input->status() == Ant::Status::Error)
     {
         return (input->isHoveredState() || input->hasFocus()) ? token.colorErrorHover : token.colorError;
     }
-    if (input->status() == Ant::InputStatus::Warning)
+    if (input->status() == Ant::Status::Warning)
     {
         return (input->isHoveredState() || input->hasFocus()) ? token.colorWarningHover : token.colorWarning;
     }
@@ -99,12 +97,12 @@ QColor backgroundColorFor(const AntInputNumber* input)
     }
     switch (input->variant())
     {
-    case Ant::InputNumberVariant::Filled:
+    case Ant::Variant::Filled:
         return input->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary;
-    case Ant::InputNumberVariant::Borderless:
-    case Ant::InputNumberVariant::Underlined:
+    case Ant::Variant::Borderless:
+    case Ant::Variant::Underlined:
         return QColor(0, 0, 0, 0);
-    case Ant::InputNumberVariant::Outlined:
+    case Ant::Variant::Outlined:
     default:
         return token.colorBgContainer;
     }
@@ -112,21 +110,9 @@ QColor backgroundColorFor(const AntInputNumber* input)
 }
 
 AntInputNumberStyle::AntInputNumberStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntInputNumber*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntInputNumber>();
 }
 
 void AntInputNumberStyle::polish(QWidget* widget)
@@ -287,16 +273,16 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
 
     if (focused
         && !disabled
-        && input->variant() != Ant::InputNumberVariant::Borderless
-        && input->variant() != Ant::InputNumberVariant::Underlined)
+        && input->variant() != Ant::Variant::Borderless
+        && input->variant() != Ant::Variant::Underlined)
     {
         painter->setPen(QPen(AntPalette::alpha(borderColor, 0.16), token.controlOutlineWidth));
         painter->setBrush(Qt::NoBrush);
         painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), metrics.radius + 1, metrics.radius + 1);
     }
 
-    if (input->variant() != Ant::InputNumberVariant::Borderless
-        && input->variant() != Ant::InputNumberVariant::Underlined)
+    if (input->variant() != Ant::Variant::Borderless
+        && input->variant() != Ant::Variant::Underlined)
     {
         painter->setPen(QPen(borderColor, token.lineWidth));
         painter->setBrush(backgroundColor);
@@ -307,7 +293,7 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
         painter->setPen(Qt::NoPen);
         painter->setBrush(backgroundColor);
         painter->drawRoundedRect(control, metrics.radius, metrics.radius);
-        if (input->variant() == Ant::InputNumberVariant::Underlined)
+        if (input->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(borderColor, focused ? 2 : token.lineWidth));
             painter->drawLine(QPointF(control.left(), control.bottom() - 0.5),

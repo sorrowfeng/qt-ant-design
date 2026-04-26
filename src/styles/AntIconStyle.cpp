@@ -1,13 +1,11 @@
 #include "AntIconStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPathStroker>
 #include <QStyleOption>
 #include <QTransform>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntIcon.h"
 
@@ -398,21 +396,9 @@ QPainterPath transformPath(const QPainterPath& path, const QRectF& targetRect)
 } // namespace
 
 AntIconStyle::AntIconStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntIcon*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntIcon>();
 }
 
 void AntIconStyle::polish(QWidget* widget)

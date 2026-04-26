@@ -39,7 +39,7 @@ public:
 
         auto* floatBtn = new AntButton(this);
         floatBtn->setButtonType(Ant::ButtonType::Text);
-        floatBtn->setButtonSize(Ant::ButtonSize::Small);
+        floatBtn->setButtonSize(Ant::Size::Small);
         floatBtn->setText(QStringLiteral("⯈")); // float icon
         floatBtn->setFixedSize(26, 26);
         connect(floatBtn, &QPushButton::clicked, dock, [dock]() {
@@ -49,7 +49,7 @@ public:
 
         auto* closeBtn = new AntButton(this);
         closeBtn->setButtonType(Ant::ButtonType::Text);
-        closeBtn->setButtonSize(Ant::ButtonSize::Small);
+        closeBtn->setButtonSize(Ant::Size::Small);
         closeBtn->setText(QStringLiteral("✕")); // X mark
         closeBtn->setFixedSize(26, 26);
         connect(closeBtn, &QPushButton::clicked, dock, &QDockWidget::close);

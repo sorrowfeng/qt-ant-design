@@ -77,7 +77,7 @@
 
 ### Phase 1: 简单变体（6 项）
 - `Typography.Link` — `TypographyType::Link`、`href` 属性、`linkActivated` 信号、自动下划线 + 手型光标
-- `Message.placement` — `Ant::MessagePlacement` 枚举（Top/TopLeft/TopRight/Bottom/BottomLeft/BottomRight）
+- `Message.placement` — `Ant::Placement` 枚举（Top/TopLeft/TopRight/Bottom/BottomLeft/BottomRight）
 - `Card.Meta` — `setMetaAvatar()`/`setMetaTitle()`/`setMetaDescription()` 方法
 - `Card.Grid` — `addGridItem()` 方法，body 转 QGridLayout（3 列）
 - `Statistic.Countdown` — `countdownMode`/`countdownFormat` 属性、`countdownFinished` 信号
@@ -242,6 +242,68 @@
   - `AGENT.md`
   - `README.md`
   - `examples/ExampleWindow.cpp`
+
+### 绘制模式层级
+
+项目使用三种绘制模式，**优先级从高到低**：
+
+| 模式 | 适用场景 | 实现方式 | 使用组件数 |
+| --- | --- | --- | --- |
+| **Pattern A: eventFilter** | 自定义 QWidget 子类（`AntResult`、`AntAlert` 等） | Style 类通过 `eventFilter` 拦截 `QEvent::Paint`，调用 `drawWidget()` | ~55 |
+| **Pattern B: drawControl** | 标准 Qt 子类（`QPushButton`、`QCheckBox`、`QMenuBar`） | Style 类重写 `drawControl()` / `drawComplexControl()` | ~5 |
+| **Pattern C: paintEvent** | 简单组件或不需要独立 Style 的组件 | Widget 自身重写 `paintEvent()` | ~19 |
+
+**新增组件应优先使用 Pattern A**，除非组件继承自标准 Qt 控件（此时用 Pattern B）。
+
+#### Pattern A 实现模板
+
+```cpp
+// AntXxxStyle.h
+class AntXxxStyle : public AntStyleBase
+{
+    Q_OBJECT
+public:
+    explicit AntXxxStyle(QStyle* style = nullptr);
+    void polish(QWidget* widget) override;
+    void unpolish(QWidget* widget) override;
+    bool drawWidget(QWidget* widget, QPaintEvent* event) override;
+};
+
+// AntXxxStyle.cpp
+AntXxxStyle::AntXxxStyle(QStyle* style)
+    : AntStyleBase(style)
+{
+    connectThemeUpdate<AntXxx>();
+}
+
+void AntXxxStyle::polish(QWidget* widget)
+{
+    QProxyStyle::polish(widget);
+    installPaintFilter<AntXxx>(widget);
+}
+
+void AntXxxStyle::unpolish(QWidget* widget)
+{
+    removePaintFilter<AntXxx>(widget);
+    QProxyStyle::unpolish(widget);
+}
+
+bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
+{
+    auto* xxx = qobject_cast<AntXxx*>(widget);
+    if (!xxx) return false;
+    QPainter painter(xxx);
+    // ... painting logic ...
+    return true;
+}
+```
+
+`AntStyleBase` 提供的辅助方法：
+- `installPaintFilter<T>(widget)` — 安装 eventFilter + WA_Hover
+- `removePaintFilter<T>(widget)` — 移除 eventFilter
+- `drawWidget(widget, event)` — 虚方法，子类重写实现绘制
+- `connectThemeUpdate<T>()` — 连接主题切换信号
+- `onThemeUpdate(w)` — 主题切换时的默认行为（updateGeometry + update）
 
 ## 示例程序
 

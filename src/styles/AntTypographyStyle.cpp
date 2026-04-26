@@ -1,12 +1,10 @@
 #include "AntTypographyStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "widgets/AntTypography.h"
 
 namespace
@@ -99,21 +97,9 @@ QColor textColorForType(const AntTypography* typo)
 } // namespace
 
 AntTypographyStyle::AntTypographyStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntTypography*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntTypography>();
 }
 
 void AntTypographyStyle::polish(QWidget* widget)

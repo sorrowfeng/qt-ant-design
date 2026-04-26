@@ -151,9 +151,9 @@ void AntPagination::setShowSizeChanger(bool show)
     Q_EMIT showSizeChangerChanged(m_showSizeChanger);
 }
 
-Ant::PaginationSize AntPagination::paginationSize() const { return m_paginationSize; }
+Ant::Size AntPagination::paginationSize() const { return m_paginationSize; }
 
-void AntPagination::setPaginationSize(Ant::PaginationSize size)
+void AntPagination::setPaginationSize(Ant::Size size)
 {
     if (m_paginationSize == size)
     {
@@ -337,11 +337,11 @@ int AntPagination::itemSize() const
     const auto& token = antTheme->tokens();
     switch (m_paginationSize)
     {
-    case Ant::PaginationSize::Large:
+    case Ant::Size::Large:
         return token.controlHeightLG;
-    case Ant::PaginationSize::Small:
+    case Ant::Size::Small:
         return token.controlHeightSM;
-    case Ant::PaginationSize::Middle:
+    case Ant::Size::Middle:
     default:
         return token.controlHeight;
     }
@@ -349,12 +349,12 @@ int AntPagination::itemSize() const
 
 int AntPagination::itemSpacing() const
 {
-    return m_paginationSize == Ant::PaginationSize::Small ? antTheme->tokens().paddingXXS : antTheme->tokens().marginXS;
+    return m_paginationSize == Ant::Size::Small ? antTheme->tokens().paddingXXS : antTheme->tokens().marginXS;
 }
 
 int AntPagination::fontSize() const
 {
-    return m_paginationSize == Ant::PaginationSize::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSize;
+    return m_paginationSize == Ant::Size::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSize;
 }
 
 int AntPagination::rangeStart() const

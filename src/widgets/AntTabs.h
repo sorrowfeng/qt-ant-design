@@ -27,7 +27,7 @@ class AntTabs : public QWidget
     Q_OBJECT
     Q_PROPERTY(QString activeKey READ activeKey WRITE setActiveKey NOTIFY activeKeyChanged)
     Q_PROPERTY(Ant::TabsType tabsType READ tabsType WRITE setTabsType NOTIFY tabsTypeChanged)
-    Q_PROPERTY(Ant::TabsSize tabsSize READ tabsSize WRITE setTabsSize NOTIFY tabsSizeChanged)
+    Q_PROPERTY(Ant::Size tabsSize READ tabsSize WRITE setTabsSize NOTIFY tabsSizeChanged)
     Q_PROPERTY(Ant::TabsPlacement tabPlacement READ tabPlacement WRITE setTabPlacement NOTIFY tabPlacementChanged)
     Q_PROPERTY(bool centered READ isCentered WRITE setCentered NOTIFY centeredChanged)
     Q_PROPERTY(bool animated READ isAnimated WRITE setAnimated NOTIFY animatedChanged)
@@ -43,8 +43,8 @@ public:
     Ant::TabsType tabsType() const;
     void setTabsType(Ant::TabsType type);
 
-    Ant::TabsSize tabsSize() const;
-    void setTabsSize(Ant::TabsSize size);
+    Ant::Size tabsSize() const;
+    void setTabsSize(Ant::Size size);
 
     Ant::TabsPlacement tabPlacement() const;
     void setTabPlacement(Ant::TabsPlacement placement);
@@ -78,7 +78,7 @@ public:
 Q_SIGNALS:
     void activeKeyChanged(const QString& key);
     void tabsTypeChanged(Ant::TabsType type);
-    void tabsSizeChanged(Ant::TabsSize size);
+    void tabsSizeChanged(Ant::Size size);
     void tabPlacementChanged(Ant::TabsPlacement placement);
     void centeredChanged(bool centered);
     void animatedChanged(bool animated);
@@ -123,7 +123,7 @@ private:
     QStackedWidget* m_stack = nullptr;
     QString m_activeKey;
     Ant::TabsType m_tabsType = Ant::TabsType::Line;
-    Ant::TabsSize m_tabsSize = Ant::TabsSize::Middle;
+    Ant::Size m_tabsSize = Ant::Size::Middle;
     Ant::TabsPlacement m_tabPlacement = Ant::TabsPlacement::Top;
     bool m_centered = false;
     bool m_animated = true;

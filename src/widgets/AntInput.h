@@ -14,8 +14,8 @@ class QLabel;
 class AntInput : public QWidget
 {
     Q_OBJECT
-    Q_PROPERTY(Ant::InputSize inputSize READ inputSize WRITE setInputSize NOTIFY inputSizeChanged)
-    Q_PROPERTY(Ant::InputStatus status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::Size inputSize READ inputSize WRITE setInputSize NOTIFY inputSizeChanged)
+    Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
     Q_PROPERTY(bool passwordMode READ isPasswordMode WRITE setPasswordMode NOTIFY passwordModeChanged)
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
@@ -28,12 +28,12 @@ public:
     void setText(const QString& text);
     void setPlaceholderText(const QString& text);
 
-    Ant::InputSize inputSize() const;
-    void setInputSize(Ant::InputSize size);
-    Ant::InputStatus status() const;
-    void setStatus(Ant::InputStatus status);
-    Ant::InputVariant variant() const;
-    void setVariant(Ant::InputVariant variant);
+    Ant::Size inputSize() const;
+    void setInputSize(Ant::Size size);
+    Ant::Status status() const;
+    void setStatus(Ant::Status status);
+    Ant::Variant variant() const;
+    void setVariant(Ant::Variant variant);
     void setError(bool error);
 
     bool allowClear() const;
@@ -61,9 +61,9 @@ public:
 Q_SIGNALS:
     void textChanged(const QString& text);
     void searchTriggered(const QString& text);
-    void inputSizeChanged(Ant::InputSize size);
-    void statusChanged(Ant::InputStatus status);
-    void variantChanged(Ant::InputVariant variant);
+    void inputSizeChanged(Ant::Size size);
+    void statusChanged(Ant::Status status);
+    void variantChanged(Ant::Variant variant);
     void allowClearChanged(bool allowClear);
     void passwordModeChanged(bool passwordMode);
     void focusIn();
@@ -102,9 +102,9 @@ private:
     QToolButton* m_clearButton = nullptr;
     QToolButton* m_passwordButton = nullptr;
 
-    Ant::InputSize m_inputSize = Ant::InputSize::Middle;
-    Ant::InputStatus m_status = Ant::InputStatus::Normal;
-    Ant::InputVariant m_variant = Ant::InputVariant::Outlined;
+    Ant::Size m_inputSize = Ant::Size::Middle;
+    Ant::Status m_status = Ant::Status::Normal;
+    Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_allowClear = false;
     bool m_passwordMode = false;
     bool m_passwordVisible = false;

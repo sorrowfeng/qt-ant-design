@@ -29,9 +29,9 @@ struct AntSelectOption
 class AntSelect : public QWidget
 {
     Q_OBJECT
-    Q_PROPERTY(Ant::SelectSize selectSize READ selectSize WRITE setSelectSize NOTIFY selectSizeChanged)
-    Q_PROPERTY(Ant::SelectStatus status READ status WRITE setStatus NOTIFY statusChanged)
-    Q_PROPERTY(Ant::SelectVariant variant READ variant WRITE setVariant NOTIFY variantChanged)
+    Q_PROPERTY(Ant::Size selectSize READ selectSize WRITE setSelectSize NOTIFY selectSizeChanged)
+    Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
@@ -46,14 +46,14 @@ public:
     explicit AntSelect(QWidget* parent = nullptr);
     ~AntSelect() override;
 
-    Ant::SelectSize selectSize() const;
-    void setSelectSize(Ant::SelectSize size);
+    Ant::Size selectSize() const;
+    void setSelectSize(Ant::Size size);
 
-    Ant::SelectStatus status() const;
-    void setStatus(Ant::SelectStatus status);
+    Ant::Status status() const;
+    void setStatus(Ant::Status status);
 
-    Ant::SelectVariant variant() const;
-    void setVariant(Ant::SelectVariant variant);
+    Ant::Variant variant() const;
+    void setVariant(Ant::Variant variant);
 
     QString placeholderText() const;
     void setPlaceholderText(const QString& text);
@@ -111,9 +111,9 @@ public:
     QSize minimumSizeHint() const override;
 
 Q_SIGNALS:
-    void selectSizeChanged(Ant::SelectSize size);
-    void statusChanged(Ant::SelectStatus status);
-    void variantChanged(Ant::SelectVariant variant);
+    void selectSizeChanged(Ant::Size size);
+    void statusChanged(Ant::Status status);
+    void variantChanged(Ant::Variant variant);
     void placeholderTextChanged(const QString& text);
     void allowClearChanged(bool allowClear);
     void editableChanged(bool editable);
@@ -140,6 +140,7 @@ protected:
     void changeEvent(QEvent* event) override;
 
 private:
+    friend class AntSelectPopup;
     friend class AntSelectOptionWidget;
 
     struct Metrics
@@ -174,9 +175,9 @@ private:
     Ant::SelectMode m_selectMode = Ant::SelectMode::Single;
     QList<int> m_selectedIndices;
     int m_maxTagCount = 0; // 0 = show all
-    Ant::SelectSize m_selectSize = Ant::SelectSize::Middle;
-    Ant::SelectStatus m_status = Ant::SelectStatus::Normal;
-    Ant::SelectVariant m_variant = Ant::SelectVariant::Outlined;
+    Ant::Size m_selectSize = Ant::Size::Middle;
+    Ant::Status m_status = Ant::Status::Normal;
+    Ant::Variant m_variant = Ant::Variant::Outlined;
     QString m_placeholderText;
     bool m_allowClear = false;
     bool m_editable = false;

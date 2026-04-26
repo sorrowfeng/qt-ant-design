@@ -1,6 +1,5 @@
 #include "AntBadgeStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
@@ -9,7 +8,6 @@
 
 #include <algorithm>
 
-#include "core/AntTheme.h"
 #include "widgets/AntBadge.h"
 
 namespace
@@ -17,7 +15,7 @@ namespace
 
 int badgeIndicatorHeight(const AntBadge* badge)
 {
-    return badge->badgeSize() == Ant::BadgeSize::Small ? antTheme->tokens().fontSize : 20;
+    return badge->badgeSize() == Ant::Size::Small ? antTheme->tokens().fontSize : 20;
 }
 
 int badgeDotSize()
@@ -321,21 +319,9 @@ void drawBadgeRibbon(const QStyleOption* option, QPainter* painter, const AntBad
 } // namespace
 
 AntBadgeStyle::AntBadgeStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntBadge*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntBadge>();
 }
 
 void AntBadgeStyle::polish(QWidget* widget)

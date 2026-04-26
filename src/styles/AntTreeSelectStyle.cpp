@@ -1,31 +1,17 @@
 #include "AntTreeSelectStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "widgets/AntTreeSelect.h"
 
 AntTreeSelectStyle::AntTreeSelectStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntTreeSelect*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntTreeSelect>();
 }
 
 void AntTreeSelectStyle::polish(QWidget* widget)
@@ -93,11 +79,11 @@ TreeSelectMetrics metricsFor(const AntTreeSelect* select)
     const auto& token = antTheme->tokens();
     switch (select->selectSize())
     {
-    case Ant::SelectSize::Large:
+    case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         break;
-    case Ant::SelectSize::Small:
+    case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;
         break;
@@ -113,9 +99,9 @@ TreeSelectMetrics metricsFor(const AntTreeSelect* select)
 QColor borderColorFor(const AntTreeSelect* select)
 {
     const auto& token = antTheme->tokens();
-    if (select->status() == Ant::SelectStatus::Error)
+    if (select->status() == Ant::Status::Error)
         return token.colorError;
-    if (select->status() == Ant::SelectStatus::Warning)
+    if (select->status() == Ant::Status::Warning)
         return token.colorWarning;
     return token.colorBorder;
 }
@@ -125,7 +111,7 @@ QColor backgroundColorFor(const AntTreeSelect* select)
     const auto& token = antTheme->tokens();
     switch (select->variant())
     {
-    case Ant::SelectVariant::Filled:
+    case Ant::Variant::Filled:
         return token.colorFillQuaternary;
     default:
         return token.colorBgContainer;
@@ -152,8 +138,8 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    if (focused && !disabled && select->variant() != Ant::SelectVariant::Borderless
-        && select->variant() != Ant::SelectVariant::Underlined)
+    if (focused && !disabled && select->variant() != Ant::Variant::Borderless
+        && select->variant() != Ant::Variant::Underlined)
     {
         const QColor outline = token.colorPrimaryBorder;
         painter->setPen(QPen(outline, token.controlOutlineWidth));
@@ -161,8 +147,8 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
         painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
     }
 
-    if (select->variant() != Ant::SelectVariant::Borderless
-        && select->variant() != Ant::SelectVariant::Underlined)
+    if (select->variant() != Ant::Variant::Borderless
+        && select->variant() != Ant::Variant::Underlined)
     {
         painter->setPen(QPen(borderColor, token.lineWidth));
         painter->setBrush(backgroundColor);
@@ -173,7 +159,7 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
         painter->setPen(Qt::NoPen);
         painter->setBrush(backgroundColor);
         painter->drawRoundedRect(control, m.radius, m.radius);
-        if (select->variant() == Ant::SelectVariant::Underlined)
+        if (select->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(borderColor, focused ? 2 : token.lineWidth));
             painter->drawLine(QPointF(control.left(), control.bottom() - 0.5),

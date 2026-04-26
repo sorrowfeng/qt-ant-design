@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class AntTimePickerStyle : public QProxyStyle
+class AntTimePickerStyle : public AntStyleBase
 {
     Q_OBJECT
 

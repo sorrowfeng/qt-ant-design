@@ -8,23 +8,23 @@
 class AntInputNumber : public QDoubleSpinBox
 {
     Q_OBJECT
-    Q_PROPERTY(Ant::InputSize inputSize READ inputSize WRITE setInputSize NOTIFY inputSizeChanged)
-    Q_PROPERTY(Ant::InputStatus status READ status WRITE setStatus NOTIFY statusChanged)
-    Q_PROPERTY(Ant::InputNumberVariant variant READ variant WRITE setVariant NOTIFY variantChanged)
+    Q_PROPERTY(Ant::Size inputSize READ inputSize WRITE setInputSize NOTIFY inputSizeChanged)
+    Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
     Q_PROPERTY(bool controlsVisible READ controlsVisible WRITE setControlsVisible NOTIFY controlsVisibleChanged)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText)
 
 public:
     explicit AntInputNumber(QWidget* parent = nullptr);
 
-    Ant::InputSize inputSize() const;
-    void setInputSize(Ant::InputSize size);
+    Ant::Size inputSize() const;
+    void setInputSize(Ant::Size size);
 
-    Ant::InputStatus status() const;
-    void setStatus(Ant::InputStatus status);
+    Ant::Status status() const;
+    void setStatus(Ant::Status status);
 
-    Ant::InputNumberVariant variant() const;
-    void setVariant(Ant::InputNumberVariant variant);
+    Ant::Variant variant() const;
+    void setVariant(Ant::Variant variant);
 
     bool controlsVisible() const;
     void setControlsVisible(bool visible);
@@ -45,9 +45,9 @@ public:
     QAbstractSpinBox::StepEnabled stepEnabledFlags() const;
 
 Q_SIGNALS:
-    void inputSizeChanged(Ant::InputSize size);
-    void statusChanged(Ant::InputStatus status);
-    void variantChanged(Ant::InputNumberVariant variant);
+    void inputSizeChanged(Ant::Size size);
+    void statusChanged(Ant::Status status);
+    void variantChanged(Ant::Variant variant);
     void controlsVisibleChanged(bool visible);
 
 protected:
@@ -73,9 +73,9 @@ private:
     void updateEditStyle();
     QStyle::SubControl hitSubControl(const QPoint& pos) const;
 
-    Ant::InputSize m_inputSize = Ant::InputSize::Middle;
-    Ant::InputStatus m_status = Ant::InputStatus::Normal;
-    Ant::InputNumberVariant m_variant = Ant::InputNumberVariant::Outlined;
+    Ant::Size m_inputSize = Ant::Size::Middle;
+    Ant::Status m_status = Ant::Status::Normal;
+    Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_controlsVisible = true;
     bool m_hovered = false;
     bool m_stepPressed = false;

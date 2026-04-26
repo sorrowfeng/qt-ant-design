@@ -11,7 +11,7 @@ class AntToolButton : public QToolButton
 {
     Q_OBJECT
     Q_PROPERTY(Ant::ButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged)
-    Q_PROPERTY(Ant::ButtonSize buttonSize READ buttonSize WRITE setButtonSize NOTIFY buttonSizeChanged)
+    Q_PROPERTY(Ant::Size buttonSize READ buttonSize WRITE setButtonSize NOTIFY buttonSizeChanged)
     Q_PROPERTY(bool danger READ isDanger WRITE setDanger NOTIFY dangerChanged)
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
     Q_PROPERTY(qreal arrowRotation READ arrowRotation WRITE setArrowRotation NOTIFY arrowRotationChanged)
@@ -23,8 +23,8 @@ public:
     Ant::ButtonType buttonType() const;
     void setButtonType(Ant::ButtonType type);
 
-    Ant::ButtonSize buttonSize() const;
-    void setButtonSize(Ant::ButtonSize size);
+    Ant::Size buttonSize() const;
+    void setButtonSize(Ant::Size size);
 
     bool isDanger() const;
     void setDanger(bool danger);
@@ -42,7 +42,7 @@ public:
 
 Q_SIGNALS:
     void buttonTypeChanged(Ant::ButtonType type);
-    void buttonSizeChanged(Ant::ButtonSize size);
+    void buttonSizeChanged(Ant::Size size);
     void dangerChanged(bool danger);
     void loadingChanged(bool loading);
     void arrowRotationChanged(qreal rotation);
@@ -69,7 +69,7 @@ private:
     void updateGeometryFromState();
 
     Ant::ButtonType m_buttonType = Ant::ButtonType::Default;
-    Ant::ButtonSize m_buttonSize = Ant::ButtonSize::Middle;
+    Ant::Size m_buttonSize = Ant::Size::Middle;
     bool m_danger = false;
     bool m_loading = false;
     bool m_hovered = false;

@@ -36,7 +36,7 @@ AntMessage::AntMessage(QWidget* parent)
     });
 }
 
-AntMessage* AntMessage::open(const QString& text, Ant::MessageType type, QWidget* anchor, int durationMs, Ant::MessagePlacement placement)
+AntMessage* AntMessage::open(const QString& text, Ant::MessageType type, QWidget* anchor, int durationMs, Ant::Placement placement)
 {
     auto* message = new AntMessage();
     message->m_anchor = anchor;
@@ -57,27 +57,27 @@ AntMessage* AntMessage::open(const QString& text, Ant::MessageType type, QWidget
     return message;
 }
 
-AntMessage* AntMessage::info(const QString& text, QWidget* anchor, int durationMs, Ant::MessagePlacement placement)
+AntMessage* AntMessage::info(const QString& text, QWidget* anchor, int durationMs, Ant::Placement placement)
 {
     return open(text, Ant::MessageType::Info, anchor, durationMs, placement);
 }
 
-AntMessage* AntMessage::success(const QString& text, QWidget* anchor, int durationMs, Ant::MessagePlacement placement)
+AntMessage* AntMessage::success(const QString& text, QWidget* anchor, int durationMs, Ant::Placement placement)
 {
     return open(text, Ant::MessageType::Success, anchor, durationMs, placement);
 }
 
-AntMessage* AntMessage::warning(const QString& text, QWidget* anchor, int durationMs, Ant::MessagePlacement placement)
+AntMessage* AntMessage::warning(const QString& text, QWidget* anchor, int durationMs, Ant::Placement placement)
 {
     return open(text, Ant::MessageType::Warning, anchor, durationMs, placement);
 }
 
-AntMessage* AntMessage::error(const QString& text, QWidget* anchor, int durationMs, Ant::MessagePlacement placement)
+AntMessage* AntMessage::error(const QString& text, QWidget* anchor, int durationMs, Ant::Placement placement)
 {
     return open(text, Ant::MessageType::Error, anchor, durationMs, placement);
 }
 
-AntMessage* AntMessage::loading(const QString& text, QWidget* anchor, int durationMs, Ant::MessagePlacement placement)
+AntMessage* AntMessage::loading(const QString& text, QWidget* anchor, int durationMs, Ant::Placement placement)
 {
     return open(text, Ant::MessageType::Loading, anchor, durationMs, placement);
 }
@@ -231,7 +231,7 @@ void AntMessage::relayoutMessages(QWidget* anchor)
         if (!msg)
             continue;
         const auto p = msg->m_placement;
-        if (p == Ant::MessagePlacement::Bottom || p == Ant::MessagePlacement::BottomLeft || p == Ant::MessagePlacement::BottomRight)
+        if (p == Ant::Placement::Bottom || p == Ant::Placement::BottomLeft || p == Ant::Placement::BottomRight)
             bottomMsgs.append(msg);
         else
             topMsgs.append(msg);
@@ -245,10 +245,10 @@ void AntMessage::relayoutMessages(QWidget* anchor)
         int x;
         switch (message->m_placement)
         {
-        case Ant::MessagePlacement::TopLeft:
+        case Ant::Placement::TopLeft:
             x = targetRect.left() + 24;
             break;
-        case Ant::MessagePlacement::TopRight:
+        case Ant::Placement::TopRight:
             x = targetRect.right() - message->width() - 24;
             break;
         default: // Top (center)
@@ -268,10 +268,10 @@ void AntMessage::relayoutMessages(QWidget* anchor)
         int x;
         switch (message->m_placement)
         {
-        case Ant::MessagePlacement::BottomLeft:
+        case Ant::Placement::BottomLeft:
             x = targetRect.left() + 24;
             break;
-        case Ant::MessagePlacement::BottomRight:
+        case Ant::Placement::BottomRight:
             x = targetRect.right() - message->width() - 24;
             break;
         default: // Bottom (center)

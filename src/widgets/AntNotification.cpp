@@ -22,20 +22,20 @@ namespace
 constexpr int NoticeWidth = 384;
 constexpr int ShadowInset = 10;
 
-bool isTopPlacement(Ant::NotificationPlacement placement)
+bool isTopPlacement(Ant::Placement placement)
 {
-    return placement == Ant::NotificationPlacement::Top || placement == Ant::NotificationPlacement::TopLeft ||
-           placement == Ant::NotificationPlacement::TopRight;
+    return placement == Ant::Placement::Top || placement == Ant::Placement::TopLeft ||
+           placement == Ant::Placement::TopRight;
 }
 
-bool isLeftPlacement(Ant::NotificationPlacement placement)
+bool isLeftPlacement(Ant::Placement placement)
 {
-    return placement == Ant::NotificationPlacement::TopLeft || placement == Ant::NotificationPlacement::BottomLeft;
+    return placement == Ant::Placement::TopLeft || placement == Ant::Placement::BottomLeft;
 }
 
-bool isRightPlacement(Ant::NotificationPlacement placement)
+bool isRightPlacement(Ant::Placement placement)
 {
-    return placement == Ant::NotificationPlacement::TopRight || placement == Ant::NotificationPlacement::BottomRight;
+    return placement == Ant::Placement::TopRight || placement == Ant::Placement::BottomRight;
 }
 } // namespace
 
@@ -67,7 +67,7 @@ AntNotification* AntNotification::open(const QString& title,
                                        Ant::MessageType type,
                                        QWidget* anchor,
                                        int durationMs,
-                                       Ant::NotificationPlacement placement)
+                                       Ant::Placement placement)
 {
     auto* notification = new AntNotification();
     notification->m_anchor = anchor;
@@ -93,7 +93,7 @@ AntNotification* AntNotification::info(const QString& title,
                                        const QString& description,
                                        QWidget* anchor,
                                        int durationMs,
-                                       Ant::NotificationPlacement placement)
+                                       Ant::Placement placement)
 {
     return open(title, description, Ant::MessageType::Info, anchor, durationMs, placement);
 }
@@ -102,7 +102,7 @@ AntNotification* AntNotification::success(const QString& title,
                                           const QString& description,
                                           QWidget* anchor,
                                           int durationMs,
-                                          Ant::NotificationPlacement placement)
+                                          Ant::Placement placement)
 {
     return open(title, description, Ant::MessageType::Success, anchor, durationMs, placement);
 }
@@ -111,7 +111,7 @@ AntNotification* AntNotification::warning(const QString& title,
                                           const QString& description,
                                           QWidget* anchor,
                                           int durationMs,
-                                          Ant::NotificationPlacement placement)
+                                          Ant::Placement placement)
 {
     return open(title, description, Ant::MessageType::Warning, anchor, durationMs, placement);
 }
@@ -120,7 +120,7 @@ AntNotification* AntNotification::error(const QString& title,
                                         const QString& description,
                                         QWidget* anchor,
                                         int durationMs,
-                                        Ant::NotificationPlacement placement)
+                                        Ant::Placement placement)
 {
     return open(title, description, Ant::MessageType::Error, anchor, durationMs, placement);
 }
@@ -179,9 +179,9 @@ void AntNotification::setNotificationType(Ant::MessageType type)
     Q_EMIT notificationTypeChanged(m_notificationType);
 }
 
-Ant::NotificationPlacement AntNotification::placement() const { return m_placement; }
+Ant::Placement AntNotification::placement() const { return m_placement; }
 
-void AntNotification::setPlacement(Ant::NotificationPlacement placement)
+void AntNotification::setPlacement(Ant::Placement placement)
 {
     if (m_placement == placement)
     {
@@ -372,13 +372,13 @@ void AntNotification::relayoutNotifications(QWidget* anchor)
     }
 
     const auto& token = antTheme->tokens();
-    for (Ant::NotificationPlacement placement :
-         {Ant::NotificationPlacement::Top,
-          Ant::NotificationPlacement::TopLeft,
-          Ant::NotificationPlacement::TopRight,
-          Ant::NotificationPlacement::Bottom,
-          Ant::NotificationPlacement::BottomLeft,
-          Ant::NotificationPlacement::BottomRight})
+    for (Ant::Placement placement :
+         {Ant::Placement::Top,
+          Ant::Placement::TopLeft,
+          Ant::Placement::TopRight,
+          Ant::Placement::Bottom,
+          Ant::Placement::BottomLeft,
+          Ant::Placement::BottomRight})
     {
         int edge = token.marginLG;
         int cursor = isTopPlacement(placement) ? targetRect.top() + edge : targetRect.bottom() - edge;

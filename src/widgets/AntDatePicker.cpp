@@ -359,9 +359,9 @@ void AntDatePicker::setPlaceholderText(const QString& text)
     Q_EMIT placeholderTextChanged(m_placeholderText);
 }
 
-Ant::DatePickerSize AntDatePicker::pickerSize() const { return m_pickerSize; }
+Ant::Size AntDatePicker::pickerSize() const { return m_pickerSize; }
 
-void AntDatePicker::setPickerSize(Ant::DatePickerSize size)
+void AntDatePicker::setPickerSize(Ant::Size size)
 {
     if (m_pickerSize == size)
     {
@@ -373,9 +373,9 @@ void AntDatePicker::setPickerSize(Ant::DatePickerSize size)
     Q_EMIT pickerSizeChanged(m_pickerSize);
 }
 
-Ant::DatePickerStatus AntDatePicker::status() const { return m_status; }
+Ant::Status AntDatePicker::status() const { return m_status; }
 
-void AntDatePicker::setStatus(Ant::DatePickerStatus status)
+void AntDatePicker::setStatus(Ant::Status status)
 {
     if (m_status == status)
     {
@@ -386,9 +386,9 @@ void AntDatePicker::setStatus(Ant::DatePickerStatus status)
     Q_EMIT statusChanged(m_status);
 }
 
-Ant::DatePickerVariant AntDatePicker::variant() const { return m_variant; }
+Ant::Variant AntDatePicker::variant() const { return m_variant; }
 
-void AntDatePicker::setVariant(Ant::DatePickerVariant variant)
+void AntDatePicker::setVariant(Ant::Variant variant)
 {
     if (m_variant == variant)
     {
@@ -561,12 +561,12 @@ AntDatePicker::Metrics AntDatePicker::metrics() const
     m.radius = token.borderRadius;
     m.paddingX = token.paddingSM - token.lineWidth;
     m.iconWidth = token.fontSize + token.paddingXS * 2;
-    if (m_pickerSize == Ant::DatePickerSize::Large)
+    if (m_pickerSize == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
     }
-    else if (m_pickerSize == Ant::DatePickerSize::Small)
+    else if (m_pickerSize == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;
@@ -595,11 +595,11 @@ QColor AntDatePicker::borderColor() const
     {
         return token.colorBorderDisabled;
     }
-    if (m_status == Ant::DatePickerStatus::Error)
+    if (m_status == Ant::Status::Error)
     {
         return (m_hovered || hasFocus() || m_open) ? token.colorErrorHover : token.colorError;
     }
-    if (m_status == Ant::DatePickerStatus::Warning)
+    if (m_status == Ant::Status::Warning)
     {
         return (m_hovered || hasFocus() || m_open) ? token.colorWarningHover : token.colorWarning;
     }
@@ -617,11 +617,11 @@ QColor AntDatePicker::backgroundColor() const
     {
         return token.colorBgContainerDisabled;
     }
-    if (m_variant == Ant::DatePickerVariant::Filled)
+    if (m_variant == Ant::Variant::Filled)
     {
         return m_hovered ? token.colorFillTertiary : token.colorFillQuaternary;
     }
-    if (m_variant == Ant::DatePickerVariant::Borderless || m_variant == Ant::DatePickerVariant::Underlined)
+    if (m_variant == Ant::Variant::Borderless || m_variant == Ant::Variant::Underlined)
     {
         return QColor(0, 0, 0, 0);
     }

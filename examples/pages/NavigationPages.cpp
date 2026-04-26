@@ -354,11 +354,11 @@ QWidget* createPaginationPage(QWidget* /*owner*/)
     auto* sizeRow = new QVBoxLayout();
     sizeRow->setSpacing(12);
     auto* large = new AntPagination();
-    large->setPaginationSize(Ant::PaginationSize::Large);
+    large->setPaginationSize(Ant::Size::Large);
     large->setTotal(260);
     large->setCurrent(8);
     auto* small = new AntPagination();
-    small->setPaginationSize(Ant::PaginationSize::Small);
+    small->setPaginationSize(Ant::Size::Small);
     small->setTotal(260);
     small->setCurrent(8);
     small->setShowLessItems(true);
@@ -422,7 +422,7 @@ QWidget* createStepsPage(QWidget* owner)
 
     layout->addWidget(createSectionTitle(QStringLiteral("Vertical")));
     auto* vertical = new AntSteps(page);
-    vertical->setDirection(Ant::StepsDirection::Vertical);
+    vertical->setDirection(Ant::Orientation::Vertical);
     vertical->setClickable(false);
     vertical->addStep(QStringLiteral("Submitted"), QStringLiteral("The request has been created and queued."), QStringLiteral("09:12"), Ant::StepStatus::Finish);
     vertical->addStep(QStringLiteral("Security Review"), QStringLiteral("Scanning package and permission changes."), QStringLiteral("10:24"));

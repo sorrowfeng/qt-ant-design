@@ -1,29 +1,21 @@
 #include "AntAutoCompleteStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntAutoComplete.h"
 
 AntAutoCompleteStyle::AntAutoCompleteStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntAutoComplete*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntAutoComplete>();
+}
+
+void AntAutoCompleteStyle::onThemeUpdate(QWidget* w)
+{
+    w->update();
 }
 
 void AntAutoCompleteStyle::polish(QWidget* widget)

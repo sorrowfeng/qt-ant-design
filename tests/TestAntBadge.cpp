@@ -34,7 +34,7 @@ void TestAntBadge::defaultValues()
     QCOMPARE(badge.showZero(), false);
     QCOMPARE(badge.overflowCount(), 99);
     QCOMPARE(badge.offset(), QPoint());
-    QCOMPARE(badge.badgeSize(), Ant::BadgeSize::Middle);
+    QCOMPARE(badge.badgeSize(), Ant::Size::Middle);
     QCOMPARE(badge.status(), Ant::BadgeStatus::None);
     QCOMPARE(badge.badgeMode(), Ant::BadgeMode::Default);
     QCOMPARE(badge.ribbonText(), QString());
@@ -101,8 +101,8 @@ void TestAntBadge::setOffset()
 void TestAntBadge::setBadgeSize()
 {
     AntBadge badge;
-    badge.setBadgeSize(Ant::BadgeSize::Small);
-    QCOMPARE(badge.badgeSize(), Ant::BadgeSize::Small);
+    badge.setBadgeSize(Ant::Size::Small);
+    QCOMPARE(badge.badgeSize(), Ant::Size::Small);
 }
 
 void TestAntBadge::setStatus()
@@ -167,7 +167,7 @@ void TestAntBadge::signalsEmitted()
     QCOMPARE(overflowSpy.count(), 1);
 
     QSignalSpy sizeSpy(&badge, &AntBadge::badgeSizeChanged);
-    badge.setBadgeSize(Ant::BadgeSize::Small);
+    badge.setBadgeSize(Ant::Size::Small);
     QCOMPARE(sizeSpy.count(), 1);
 
     QSignalSpy statusSpy(&badge, &AntBadge::statusChanged);

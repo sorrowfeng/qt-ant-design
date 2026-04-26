@@ -29,12 +29,12 @@ public:
                             Ant::MessageType type = Ant::MessageType::Info,
                             QWidget* anchor = nullptr,
                             int durationMs = 3000,
-                            Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
-    static AntMessage* info(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
-    static AntMessage* success(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
-    static AntMessage* warning(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
-    static AntMessage* error(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
-    static AntMessage* loading(const QString& text, QWidget* anchor = nullptr, int durationMs = 0, Ant::MessagePlacement placement = Ant::MessagePlacement::Top);
+                            Ant::Placement placement = Ant::Placement::Top);
+    static AntMessage* info(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::Placement placement = Ant::Placement::Top);
+    static AntMessage* success(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::Placement placement = Ant::Placement::Top);
+    static AntMessage* warning(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::Placement placement = Ant::Placement::Top);
+    static AntMessage* error(const QString& text, QWidget* anchor = nullptr, int durationMs = 3000, Ant::Placement placement = Ant::Placement::Top);
+    static AntMessage* loading(const QString& text, QWidget* anchor = nullptr, int durationMs = 0, Ant::Placement placement = Ant::Placement::Top);
 
     QString text() const;
     void setText(const QString& text);
@@ -70,7 +70,7 @@ private:
     static QList<AntMessage*>& activeMessages();
     static void relayoutMessages(QWidget* anchor = nullptr);
 
-    Ant::MessagePlacement m_placement = Ant::MessagePlacement::Top;
+    Ant::Placement m_placement = Ant::Placement::Top;
 
     QColor accentColor() const;
     QString iconText() const;

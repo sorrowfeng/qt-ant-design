@@ -1,12 +1,10 @@
 #include "AntSkeletonStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QLinearGradient>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSkeleton.h"
 
@@ -131,21 +129,9 @@ QList<QRectF> skeletonPlaceholderRects(const AntSkeleton* skeleton, int width)
 } // namespace
 
 AntSkeletonStyle::AntSkeletonStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntSkeleton*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntSkeleton>();
 }
 
 void AntSkeletonStyle::polish(QWidget* widget)

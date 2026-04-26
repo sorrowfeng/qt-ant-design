@@ -220,12 +220,12 @@ QWidget* createSegmentedPage(QWidget* /*owner*/)
     sizeRow->setSpacing(12);
     auto* segSm = new AntSegmented();
     segSm->setOptions({{QStringLiteral("s"), QStringLiteral("S")}, {QStringLiteral("m"), QStringLiteral("M")}});
-    segSm->setSegmentedSize(Ant::SegmentedSize::Small);
+    segSm->setSegmentedSize(Ant::Size::Small);
     auto* segMd = new AntSegmented();
     segMd->setOptions({{QStringLiteral("a"), QStringLiteral("A")}, {QStringLiteral("b"), QStringLiteral("B")}});
     auto* segLg = new AntSegmented();
     segLg->setOptions({{QStringLiteral("x"), QStringLiteral("X")}, {QStringLiteral("y"), QStringLiteral("Y")}});
-    segLg->setSegmentedSize(Ant::SegmentedSize::Large);
+    segLg->setSegmentedSize(Ant::Size::Large);
     sizeRow->addWidget(segSm);
     sizeRow->addWidget(segMd);
     sizeRow->addWidget(segLg);
@@ -472,7 +472,7 @@ QWidget* createTabsPage(QWidget* owner)
     placementRow->setSpacing(18);
     auto* centered = new AntTabs();
     centered->setCentered(true);
-    centered->setTabsSize(Ant::TabsSize::Large);
+    centered->setTabsSize(Ant::Size::Large);
     centered->setMinimumSize(360, 160);
     centered->addTab(makePane(QStringLiteral("Centered large tabs")), QStringLiteral("overview"), QStringLiteral("Overview"), QStringLiteral("O"));
     centered->addTab(makePane(QStringLiteral("Reports content")), QStringLiteral("reports"), QStringLiteral("Reports"), QStringLiteral("R"));
@@ -493,7 +493,7 @@ QWidget* createTabsPage(QWidget* owner)
     cardRow->setSpacing(18);
     auto* cardTabs = new AntTabs();
     cardTabs->setTabsType(Ant::TabsType::Card);
-    cardTabs->setTabsSize(Ant::TabsSize::Small);
+    cardTabs->setTabsSize(Ant::Size::Small);
     cardTabs->setMinimumSize(360, 160);
     cardTabs->addTab(makePane(QStringLiteral("Small card tab")), QStringLiteral("card-a"), QStringLiteral("Card A"));
     cardTabs->addTab(makePane(QStringLiteral("Another card tab")), QStringLiteral("card-b"), QStringLiteral("Card B"));

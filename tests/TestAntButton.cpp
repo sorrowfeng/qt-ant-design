@@ -15,7 +15,7 @@ void TestAntButton::propertiesAndSignals()
     // Heap-allocate to avoid QProxyStyle destructor crash in test environment
     auto* btn = new AntButton;
     QCOMPARE(btn->buttonType(), Ant::ButtonType::Default);
-    QCOMPARE(btn->buttonSize(), Ant::ButtonSize::Middle);
+    QCOMPARE(btn->buttonSize(), Ant::Size::Middle);
     QCOMPARE(btn->buttonShape(), Ant::ButtonShape::Default);
     QCOMPARE(btn->isLoading(), false);
     QCOMPARE(btn->isDanger(), false);
@@ -29,8 +29,8 @@ void TestAntButton::propertiesAndSignals()
     QCOMPARE(typeSpy.at(0).at(0).value<Ant::ButtonType>(), Ant::ButtonType::Primary);
 
     QSignalSpy sizeSpy(btn, &AntButton::buttonSizeChanged);
-    btn->setButtonSize(Ant::ButtonSize::Large);
-    QCOMPARE(btn->buttonSize(), Ant::ButtonSize::Large);
+    btn->setButtonSize(Ant::Size::Large);
+    QCOMPARE(btn->buttonSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy.count(), 1);
 
     QSignalSpy shapeSpy(btn, &AntButton::buttonShapeChanged);

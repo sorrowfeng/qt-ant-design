@@ -21,7 +21,7 @@ class AntNotification : public QWidget
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
     Q_PROPERTY(Ant::MessageType notificationType READ notificationType WRITE setNotificationType NOTIFY notificationTypeChanged)
-    Q_PROPERTY(Ant::NotificationPlacement placement READ placement WRITE setPlacement NOTIFY placementChanged)
+    Q_PROPERTY(Ant::Placement placement READ placement WRITE setPlacement NOTIFY placementChanged)
     Q_PROPERTY(int duration READ duration WRITE setDuration NOTIFY durationChanged)
     Q_PROPERTY(bool pauseOnHover READ pauseOnHover WRITE setPauseOnHover NOTIFY pauseOnHoverChanged)
     Q_PROPERTY(bool showProgress READ showProgress WRITE setShowProgress NOTIFY showProgressChanged)
@@ -35,27 +35,27 @@ public:
                                  Ant::MessageType type = Ant::MessageType::Info,
                                  QWidget* anchor = nullptr,
                                  int durationMs = 4500,
-                                 Ant::NotificationPlacement placement = Ant::NotificationPlacement::TopRight);
+                                 Ant::Placement placement = Ant::Placement::TopRight);
     static AntNotification* info(const QString& title,
                                  const QString& description,
                                  QWidget* anchor = nullptr,
                                  int durationMs = 4500,
-                                 Ant::NotificationPlacement placement = Ant::NotificationPlacement::TopRight);
+                                 Ant::Placement placement = Ant::Placement::TopRight);
     static AntNotification* success(const QString& title,
                                     const QString& description,
                                     QWidget* anchor = nullptr,
                                     int durationMs = 4500,
-                                    Ant::NotificationPlacement placement = Ant::NotificationPlacement::TopRight);
+                                    Ant::Placement placement = Ant::Placement::TopRight);
     static AntNotification* warning(const QString& title,
                                     const QString& description,
                                     QWidget* anchor = nullptr,
                                     int durationMs = 4500,
-                                    Ant::NotificationPlacement placement = Ant::NotificationPlacement::TopRight);
+                                    Ant::Placement placement = Ant::Placement::TopRight);
     static AntNotification* error(const QString& title,
                                   const QString& description,
                                   QWidget* anchor = nullptr,
                                   int durationMs = 4500,
-                                  Ant::NotificationPlacement placement = Ant::NotificationPlacement::TopRight);
+                                  Ant::Placement placement = Ant::Placement::TopRight);
     static void closeAll();
 
     QString title() const;
@@ -67,8 +67,8 @@ public:
     Ant::MessageType notificationType() const;
     void setNotificationType(Ant::MessageType type);
 
-    Ant::NotificationPlacement placement() const;
-    void setPlacement(Ant::NotificationPlacement placement);
+    Ant::Placement placement() const;
+    void setPlacement(Ant::Placement placement);
 
     int duration() const;
     void setDuration(int durationMs);
@@ -89,7 +89,7 @@ Q_SIGNALS:
     void titleChanged(const QString& title);
     void descriptionChanged(const QString& description);
     void notificationTypeChanged(Ant::MessageType type);
-    void placementChanged(Ant::NotificationPlacement placement);
+    void placementChanged(Ant::Placement placement);
     void durationChanged(int durationMs);
     void pauseOnHoverChanged(bool pause);
     void showProgressChanged(bool show);
@@ -124,7 +124,7 @@ private:
     QString m_title;
     QString m_description;
     Ant::MessageType m_notificationType = Ant::MessageType::Info;
-    Ant::NotificationPlacement m_placement = Ant::NotificationPlacement::TopRight;
+    Ant::Placement m_placement = Ant::Placement::TopRight;
     int m_duration = 4500;
     int m_remainingMs = 4500;
     bool m_pauseOnHover = true;

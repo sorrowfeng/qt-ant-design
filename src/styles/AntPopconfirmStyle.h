@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class AntPopconfirmStyle : public QProxyStyle
+class AntPopconfirmStyle : public AntStyleBase
 {
     Q_OBJECT
 

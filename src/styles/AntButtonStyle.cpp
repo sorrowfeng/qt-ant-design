@@ -1,11 +1,9 @@
 #include "AntButtonStyle.h"
 
-#include <QApplication>
 #include <QPainter>
 #include <QStyleOption>
 
 #include "widgets/AntButton.h"
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -31,23 +29,23 @@ ButtonMetrics metricsFor(const AntButton* button)
 {
     const auto& token = antTheme->tokens();
     ButtonMetrics m;
-    switch (button ? button->buttonSize() : Ant::ButtonSize::Middle)
+    switch (button ? button->buttonSize() : Ant::Size::Middle)
     {
-    case Ant::ButtonSize::Large:
+    case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         m.paddingX = token.padding;
         m.radius = token.borderRadiusLG;
         m.iconSize = 16;
         break;
-    case Ant::ButtonSize::Small:
+    case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingXS;
         m.radius = token.borderRadiusSM;
         m.iconSize = 12;
         break;
-    case Ant::ButtonSize::Middle:
+    case Ant::Size::Middle:
         m.height = token.controlHeight;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingSM + token.lineWidth * 3;
@@ -93,21 +91,9 @@ void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int
 }
 
 AntButtonStyle::AntButtonStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntButton*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntButton>();
 }
 
 void AntButtonStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

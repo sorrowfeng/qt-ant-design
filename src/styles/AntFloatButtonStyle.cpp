@@ -1,11 +1,9 @@
 #include "AntFloatButtonStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "widgets/AntFloatButton.h"
 
 namespace
@@ -82,21 +80,9 @@ void drawBadgeIndicator(QPainter* painter, const AntFloatButton* fb, const QRect
 } // namespace
 
 AntFloatButtonStyle::AntFloatButtonStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntFloatButton*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntFloatButton>();
 }
 
 void AntFloatButtonStyle::polish(QWidget* widget)

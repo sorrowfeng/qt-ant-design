@@ -104,9 +104,9 @@ void AntAvatar::setShape(Ant::AvatarShape shape)
     Q_EMIT shapeChanged(m_shape);
 }
 
-Ant::AvatarSize AntAvatar::avatarSize() const { return m_avatarSize; }
+Ant::Size AntAvatar::avatarSize() const { return m_avatarSize; }
 
-void AntAvatar::setAvatarSize(Ant::AvatarSize size)
+void AntAvatar::setAvatarSize(Ant::Size size)
 {
     if (m_avatarSize == size)
     {
@@ -143,11 +143,11 @@ int AntAvatar::avatarExtent() const
     const auto& token = antTheme->tokens();
     switch (m_avatarSize)
     {
-    case Ant::AvatarSize::Large:
+    case Ant::Size::Large:
         return token.controlHeightLG;
-    case Ant::AvatarSize::Small:
+    case Ant::Size::Small:
         return token.controlHeightSM;
-    case Ant::AvatarSize::Middle:
+    case Ant::Size::Middle:
         return token.controlHeight;
     }
     return token.controlHeight;
@@ -156,7 +156,7 @@ int AntAvatar::avatarExtent() const
 int AntAvatar::textFontSize() const
 {
     const auto& token = antTheme->tokens();
-    if (m_avatarSize == Ant::AvatarSize::Small)
+    if (m_avatarSize == Ant::Size::Small)
     {
         return token.fontSizeSM;
     }
@@ -166,11 +166,11 @@ int AntAvatar::textFontSize() const
 int AntAvatar::iconFontSize() const
 {
     const auto& token = antTheme->tokens();
-    if (m_avatarSize == Ant::AvatarSize::Large || m_customSize >= token.controlHeightLG)
+    if (m_avatarSize == Ant::Size::Large || m_customSize >= token.controlHeightLG)
     {
         return token.fontSizeXL;
     }
-    if (m_avatarSize == Ant::AvatarSize::Small && m_customSize == 0)
+    if (m_avatarSize == Ant::Size::Small && m_customSize == 0)
     {
         return token.fontSize;
     }
@@ -225,9 +225,9 @@ void AntAvatarGroup::setMaxCount(int maxCount)
     Q_EMIT maxCountChanged(m_maxCount);
 }
 
-Ant::AvatarSize AntAvatarGroup::avatarSize() const { return m_avatarSize; }
+Ant::Size AntAvatarGroup::avatarSize() const { return m_avatarSize; }
 
-void AntAvatarGroup::setAvatarSize(Ant::AvatarSize size)
+void AntAvatarGroup::setAvatarSize(Ant::Size size)
 {
     if (m_avatarSize == size)
         return;

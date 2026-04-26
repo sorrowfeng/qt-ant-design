@@ -73,13 +73,13 @@ QLineEdit* AntInput::lineEdit() const { return m_lineEdit; }
 QString AntInput::text() const { return m_lineEdit->text(); }
 void AntInput::setText(const QString& text) { m_lineEdit->setText(text); }
 void AntInput::setPlaceholderText(const QString& text) { m_lineEdit->setPlaceholderText(text); }
-Ant::InputSize AntInput::inputSize() const { return m_inputSize; }
-Ant::InputStatus AntInput::status() const { return m_status; }
-Ant::InputVariant AntInput::variant() const { return m_variant; }
+Ant::Size AntInput::inputSize() const { return m_inputSize; }
+Ant::Status AntInput::status() const { return m_status; }
+Ant::Variant AntInput::variant() const { return m_variant; }
 bool AntInput::allowClear() const { return m_allowClear; }
 bool AntInput::isPasswordMode() const { return m_passwordMode; }
 
-void AntInput::setInputSize(Ant::InputSize size)
+void AntInput::setInputSize(Ant::Size size)
 {
     if (m_inputSize == size)
         return;
@@ -90,7 +90,7 @@ void AntInput::setInputSize(Ant::InputSize size)
     Q_EMIT inputSizeChanged(m_inputSize);
 }
 
-void AntInput::setStatus(Ant::InputStatus status)
+void AntInput::setStatus(Ant::Status status)
 {
     if (m_status == status)
         return;
@@ -101,10 +101,10 @@ void AntInput::setStatus(Ant::InputStatus status)
 
 void AntInput::setError(bool error)
 {
-    setStatus(error ? Ant::InputStatus::Error : Ant::InputStatus::Normal);
+    setStatus(error ? Ant::Status::Error : Ant::Status::Normal);
 }
 
-void AntInput::setVariant(Ant::InputVariant variant)
+void AntInput::setVariant(Ant::Variant variant)
 {
     if (m_variant == variant)
         return;
@@ -272,21 +272,21 @@ AntInput::Metrics AntInput::metrics() const
     Metrics m;
     switch (m_inputSize)
     {
-    case Ant::InputSize::Large:
+    case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         m.paddingX = token.paddingSM;
         m.radius = token.borderRadiusLG;
         m.iconSize = 18;
         break;
-    case Ant::InputSize::Small:
+    case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingXS;
         m.radius = token.borderRadiusSM;
         m.iconSize = 14;
         break;
-    case Ant::InputSize::Middle:
+    case Ant::Size::Middle:
         m.height = token.controlHeight;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingSM - token.lineWidth;
@@ -385,9 +385,9 @@ QColor AntInput::borderColor() const
     const auto& token = antTheme->tokens();
     if (!isEnabled())
         return token.colorBorderDisabled;
-    if (m_status == Ant::InputStatus::Error)
+    if (m_status == Ant::Status::Error)
         return m_hovered || m_focused ? token.colorErrorHover : token.colorError;
-    if (m_status == Ant::InputStatus::Warning)
+    if (m_status == Ant::Status::Warning)
         return m_hovered || m_focused ? token.colorWarningHover : token.colorWarning;
     if (m_focused)
         return token.colorPrimary;

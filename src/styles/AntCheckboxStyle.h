@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class AntCheckboxStyle : public QProxyStyle
+class AntCheckboxStyle : public AntStyleBase
 {
     Q_OBJECT
 

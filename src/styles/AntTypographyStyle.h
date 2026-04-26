@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class AntTypographyStyle : public QProxyStyle
+class AntTypographyStyle : public AntStyleBase
 {
     Q_OBJECT
 

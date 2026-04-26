@@ -47,12 +47,12 @@ QWidget* createButtonPage(QWidget* /*owner*/)
     shapeRow->setSpacing(12);
     auto* large = new AntButton(QStringLiteral("Large"));
     large->setButtonType(Ant::ButtonType::Primary);
-    large->setButtonSize(Ant::ButtonSize::Large);
+    large->setButtonSize(Ant::Size::Large);
     auto* middle = new AntButton(QStringLiteral("Middle"));
     middle->setButtonType(Ant::ButtonType::Primary);
     auto* small = new AntButton(QStringLiteral("Small"));
     small->setButtonType(Ant::ButtonType::Primary);
-    small->setButtonSize(Ant::ButtonSize::Small);
+    small->setButtonSize(Ant::Size::Small);
     auto* round = new AntButton(QStringLiteral("Round"));
     round->setButtonShape(Ant::ButtonShape::Round);
     auto* circle = new AntButton(QStringLiteral("A"));

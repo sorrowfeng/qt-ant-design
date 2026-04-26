@@ -22,7 +22,7 @@ class AntPagination : public QWidget
     Q_PROPERTY(bool showTotal READ isShowTotal WRITE setShowTotal NOTIFY showTotalChanged)
     Q_PROPERTY(bool showQuickJumper READ isShowQuickJumper WRITE setShowQuickJumper NOTIFY showQuickJumperChanged)
     Q_PROPERTY(bool showSizeChanger READ isShowSizeChanger WRITE setShowSizeChanger NOTIFY showSizeChangerChanged)
-    Q_PROPERTY(Ant::PaginationSize paginationSize READ paginationSize WRITE setPaginationSize NOTIFY paginationSizeChanged)
+    Q_PROPERTY(Ant::Size paginationSize READ paginationSize WRITE setPaginationSize NOTIFY paginationSizeChanged)
 
 public:
     explicit AntPagination(QWidget* parent = nullptr);
@@ -54,8 +54,8 @@ public:
     bool isShowSizeChanger() const;
     void setShowSizeChanger(bool show);
 
-    Ant::PaginationSize paginationSize() const;
-    void setPaginationSize(Ant::PaginationSize size);
+    Ant::Size paginationSize() const;
+    void setPaginationSize(Ant::Size size);
 
     int pageCount() const;
 
@@ -72,7 +72,7 @@ Q_SIGNALS:
     void showTotalChanged(bool show);
     void showQuickJumperChanged(bool show);
     void showSizeChangerChanged(bool show);
-    void paginationSizeChanged(Ant::PaginationSize size);
+    void paginationSizeChanged(Ant::Size size);
     void change(int page, int pageSize);
     void showSizeChange(int current, int pageSize);
 
@@ -129,6 +129,6 @@ private:
     bool m_showTotal = false;
     bool m_showQuickJumper = false;
     bool m_showSizeChanger = false;
-    Ant::PaginationSize m_paginationSize = Ant::PaginationSize::Middle;
+    Ant::Size m_paginationSize = Ant::Size::Middle;
     int m_hoveredIndex = -1;
 };

@@ -129,12 +129,12 @@ void AntRate::setDisabled(bool disabled)
     Q_EMIT disabledChanged(m_disabled);
 }
 
-Ant::RateSize AntRate::rateSize() const
+Ant::Size AntRate::rateSize() const
 {
     return m_rateSize;
 }
 
-void AntRate::setRateSize(Ant::RateSize size)
+void AntRate::setRateSize(Ant::Size size)
 {
     if (m_rateSize == size)
     {
@@ -163,10 +163,10 @@ QSize AntRate::sizeHint() const
     int starSize = static_cast<int>(std::round(token.controlHeight * 0.625));
     switch (m_rateSize)
     {
-        case Ant::RateSize::Small:
+        case Ant::Size::Small:
             starSize = static_cast<int>(std::round(token.controlHeightSM * 0.625));
             break;
-        case Ant::RateSize::Large:
+        case Ant::Size::Large:
             starSize = static_cast<int>(std::round(token.controlHeightLG * 0.625));
             break;
         default:
@@ -308,10 +308,10 @@ double AntRate::starValueAt(const QPoint& pos) const
     int starSize = static_cast<int>(std::round(token.controlHeight * 0.625));
     switch (m_rateSize)
     {
-        case Ant::RateSize::Small:
+        case Ant::Size::Small:
             starSize = static_cast<int>(std::round(token.controlHeightSM * 0.625));
             break;
-        case Ant::RateSize::Large:
+        case Ant::Size::Large:
             starSize = static_cast<int>(std::round(token.controlHeightLG * 0.625));
             break;
         default:

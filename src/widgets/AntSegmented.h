@@ -20,7 +20,7 @@ class AntSegmented : public QWidget
     Q_OBJECT
     Q_PROPERTY(QString value READ value WRITE setValue NOTIFY valueChanged)
     Q_PROPERTY(bool block READ isBlock WRITE setBlock NOTIFY blockChanged)
-    Q_PROPERTY(Ant::SegmentedSize segmentedSize READ segmentedSize WRITE setSegmentedSize NOTIFY segmentedSizeChanged)
+    Q_PROPERTY(Ant::Size segmentedSize READ segmentedSize WRITE setSegmentedSize NOTIFY segmentedSizeChanged)
     Q_PROPERTY(bool vertical READ isVertical WRITE setVertical NOTIFY verticalChanged)
     Q_PROPERTY(Ant::SegmentedShape shape READ shape WRITE setShape NOTIFY shapeChanged)
 
@@ -34,8 +34,8 @@ public:
     void setValue(const QString& value);
     bool isBlock() const;
     void setBlock(bool block);
-    Ant::SegmentedSize segmentedSize() const;
-    void setSegmentedSize(Ant::SegmentedSize size);
+    Ant::Size segmentedSize() const;
+    void setSegmentedSize(Ant::Size size);
     bool isVertical() const;
     void setVertical(bool vertical);
     Ant::SegmentedShape shape() const;
@@ -51,7 +51,7 @@ public:
 Q_SIGNALS:
     void valueChanged(const QString& value);
     void blockChanged(bool block);
-    void segmentedSizeChanged(Ant::SegmentedSize size);
+    void segmentedSizeChanged(Ant::Size size);
     void verticalChanged(bool vertical);
     void shapeChanged(Ant::SegmentedShape shape);
 
@@ -71,7 +71,7 @@ private:
     QVector<AntSegmentedOption> m_options;
     QString m_value;
     bool m_block = false;
-    Ant::SegmentedSize m_size = Ant::SegmentedSize::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     bool m_vertical = false;
     Ant::SegmentedShape m_shape = Ant::SegmentedShape::Default;
     int m_hoveredIndex = -1;

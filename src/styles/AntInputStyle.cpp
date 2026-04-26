@@ -1,12 +1,10 @@
 #include "AntInputStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
 #include "widgets/AntInput.h"
-#include "core/AntTheme.h"
 
 namespace
 {
@@ -23,23 +21,23 @@ InputMetrics metricsFor(const AntInput* input)
 {
     const auto& token = antTheme->tokens();
     InputMetrics m;
-    switch (input ? input->inputSize() : Ant::InputSize::Middle)
+    switch (input ? input->inputSize() : Ant::Size::Middle)
     {
-    case Ant::InputSize::Large:
+    case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         m.paddingX = token.paddingSM;
         m.radius = token.borderRadiusLG;
         m.iconSize = 18;
         break;
-    case Ant::InputSize::Small:
+    case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingXS;
         m.radius = token.borderRadiusSM;
         m.iconSize = 14;
         break;
-    case Ant::InputSize::Middle:
+    case Ant::Size::Middle:
         m.height = token.controlHeight;
         m.fontSize = token.fontSize;
         m.paddingX = token.paddingSM - token.lineWidth;
@@ -57,11 +55,11 @@ QColor borderColorFor(const AntInput* input)
     {
         return token.colorBorderDisabled;
     }
-    if (input->status() == Ant::InputStatus::Error)
+    if (input->status() == Ant::Status::Error)
     {
         return input->isInputHovered() || input->isInputFocused() ? token.colorErrorHover : token.colorError;
     }
-    if (input->status() == Ant::InputStatus::Warning)
+    if (input->status() == Ant::Status::Warning)
     {
         return input->isInputHovered() || input->isInputFocused() ? token.colorWarningHover : token.colorWarning;
     }
@@ -78,21 +76,9 @@ QColor borderColorFor(const AntInput* input)
 }
 
 AntInputStyle::AntInputStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntInput*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntInput>();
 }
 
 void AntInputStyle::polish(QWidget* widget)
@@ -166,13 +152,13 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
     // Focus outline glow (outlined / filled / underlined)
-    if (input->isInputFocused() && input->isEnabled() && variant != Ant::InputVariant::Borderless)
+    if (input->isInputFocused() && input->isEnabled() && variant != Ant::Variant::Borderless)
     {
-        QColor focus = input->status() == Ant::InputStatus::Error ? token.colorErrorBg : token.colorPrimaryBg;
+        QColor focus = input->status() == Ant::Status::Error ? token.colorErrorBg : token.colorPrimaryBg;
         focus.setAlphaF(0.65);
         painter->setPen(QPen(focus, token.controlOutlineWidth));
         painter->setBrush(Qt::NoBrush);
-        if (variant == Ant::InputVariant::Underlined)
+        if (variant == Ant::Variant::Underlined)
         {
             painter->drawLine(QPointF(frame.left(), frame.bottom() + 1), QPointF(frame.right(), frame.bottom() + 1));
         }
@@ -188,7 +174,7 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
     QColor bgFill;
     switch (variant)
     {
-    case Ant::InputVariant::Filled:
+    case Ant::Variant::Filled:
     {
         // Filled: filled bg, hover lightens, focus reveals border + white bg
         const bool focused = input->isInputFocused() && enabled;
@@ -213,7 +199,7 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
         painter->drawRoundedRect(frame, m.radius, m.radius);
         break;
     }
-    case Ant::InputVariant::Borderless:
+    case Ant::Variant::Borderless:
     {
         // Borderless: transparent bg, no border at all
         painter->setPen(Qt::NoPen);
@@ -221,7 +207,7 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
         painter->drawRoundedRect(frame, m.radius, m.radius);
         break;
     }
-    case Ant::InputVariant::Underlined:
+    case Ant::Variant::Underlined:
     {
         // Underlined: transparent bg, only bottom border
         painter->setPen(Qt::NoPen);
@@ -231,7 +217,7 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
         painter->drawLine(QPointF(frame.left(), frame.bottom()), QPointF(frame.right(), frame.bottom()));
         break;
     }
-    case Ant::InputVariant::Outlined:
+    case Ant::Variant::Outlined:
     default:
     {
         painter->setPen(QPen(border, token.lineWidth));
@@ -242,7 +228,7 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
     }
 
     // Addons only make sense on outlined; on other variants they'd look wrong
-    if (variant == Ant::InputVariant::Outlined)
+    if (variant == Ant::Variant::Outlined)
     {
         auto drawAddon = [&](const QRect& rect) {
             if (!rect.isValid() || rect.isEmpty())

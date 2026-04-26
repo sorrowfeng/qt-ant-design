@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class AntCalendarStyle : public QProxyStyle
+class AntCalendarStyle : public AntStyleBase
 {
     Q_OBJECT
 
@@ -14,6 +14,9 @@ public:
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
+
+protected:
+    void onThemeUpdate(QWidget* w) override;
 
 private:
     void drawFrame(const QStyleOption* option, QPainter* painter) const;

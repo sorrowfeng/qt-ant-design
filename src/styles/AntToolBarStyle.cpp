@@ -1,27 +1,19 @@
 #include "AntToolBarStyle.h"
 
-#include <QApplication>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "widgets/AntToolBar.h"
 
 AntToolBarStyle::AntToolBarStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntToolBar*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntToolBar>();
+}
+
+void AntToolBarStyle::onThemeUpdate(QWidget* w)
+{
+    w->update();
 }
 
 void AntToolBarStyle::drawControl(ControlElement element, const QStyleOption* option,

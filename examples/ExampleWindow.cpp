@@ -65,7 +65,7 @@ void ExampleWindow::buildSidebar()
     m_themeButton = new AntButton(QStringLiteral("Dark"), m_sidebar);
     m_themeButton->setButtonType(Ant::ButtonType::Default);
     m_themeButton->setButtonShape(Ant::ButtonShape::Round);
-    m_themeButton->setButtonSize(Ant::ButtonSize::Small);
+    m_themeButton->setButtonSize(Ant::Size::Small);
     connect(m_themeButton, &AntButton::clicked, antTheme, &AntTheme::toggleThemeMode);
     sideLayout->addWidget(m_themeButton);
 

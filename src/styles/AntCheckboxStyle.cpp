@@ -1,13 +1,11 @@
 #include "AntCheckboxStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOptionButton>
 
 #include "widgets/AntCheckbox.h"
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -17,21 +15,9 @@ constexpr int TextSpacing = 8;
 }
 
 AntCheckboxStyle::AntCheckboxStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntCheckbox*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntCheckbox>();
 }
 
 void AntCheckboxStyle::polish(QWidget* widget)

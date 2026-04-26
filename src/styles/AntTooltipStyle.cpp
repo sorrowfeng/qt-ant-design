@@ -1,11 +1,9 @@
 #include "AntTooltipStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntTooltip.h"
 
@@ -104,21 +102,9 @@ QPolygonF computeArrowPolygon(const QRect& rect, const QRect& bubble, const Metr
 } // namespace
 
 AntTooltipStyle::AntTooltipStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntTooltip*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntTooltip>();
 }
 
 void AntTooltipStyle::polish(QWidget* widget)

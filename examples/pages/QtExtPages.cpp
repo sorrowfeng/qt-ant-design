@@ -177,7 +177,7 @@ QWidget* createPlainTextEditPage(QWidget* /*owner*/)
     layout->addWidget(te);
 
     auto* filled = new AntPlainTextEdit(page);
-    filled->setVariant(Ant::TextEditVariant::Filled);
+    filled->setVariant(Ant::Variant::Filled);
     filled->setPlaceholderText(QStringLiteral("Filled variant..."));
     filled->setMinimumHeight(100);
     layout->addWidget(filled);
@@ -333,13 +333,13 @@ QWidget* createToolButtonPage(QWidget* /*owner*/)
     auto* sizeRow = new QHBoxLayout();
     sizeRow->setSpacing(12);
     auto* smallBtn = new AntToolButton(QStringLiteral("Small"));
-    smallBtn->setButtonSize(Ant::ButtonSize::Small);
+    smallBtn->setButtonSize(Ant::Size::Small);
     sizeRow->addWidget(smallBtn);
     auto* midBtn = new AntToolButton(QStringLiteral("Middle"));
-    midBtn->setButtonSize(Ant::ButtonSize::Middle);
+    midBtn->setButtonSize(Ant::Size::Middle);
     sizeRow->addWidget(midBtn);
     auto* largeBtn = new AntToolButton(QStringLiteral("Large"));
-    largeBtn->setButtonSize(Ant::ButtonSize::Large);
+    largeBtn->setButtonSize(Ant::Size::Large);
     sizeRow->addWidget(largeBtn);
     sizeRow->addStretch();
     layout->addLayout(sizeRow);

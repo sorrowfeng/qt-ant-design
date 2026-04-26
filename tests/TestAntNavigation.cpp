@@ -126,7 +126,7 @@ void TestAntNavigation::propertiesAndSignals()
     // AntSteps
     auto* steps = new AntSteps;
     QCOMPARE(steps->currentIndex(), 0);
-    QCOMPARE(steps->direction(), Ant::StepsDirection::Horizontal);
+    QCOMPARE(steps->direction(), Ant::Orientation::Horizontal);
     QCOMPARE(steps->isClickable(), true);
     QCOMPARE(steps->count(), 0);
 
@@ -141,8 +141,8 @@ void TestAntNavigation::propertiesAndSignals()
     QCOMPARE(idxSpy.count(), 1);
 
     QSignalSpy dirSpy(steps, &AntSteps::directionChanged);
-    steps->setDirection(Ant::StepsDirection::Vertical);
-    QCOMPARE(steps->direction(), Ant::StepsDirection::Vertical);
+    steps->setDirection(Ant::Orientation::Vertical);
+    QCOMPARE(steps->direction(), Ant::Orientation::Vertical);
     QCOMPARE(dirSpy.count(), 1);
 
     QSignalSpy clickSpy(steps, &AntSteps::clickableChanged);
@@ -156,7 +156,7 @@ void TestAntNavigation::propertiesAndSignals()
     // AntTabs
     auto* tabs = new AntTabs;
     QCOMPARE(tabs->tabsType(), Ant::TabsType::Line);
-    QCOMPARE(tabs->tabsSize(), Ant::TabsSize::Middle);
+    QCOMPARE(tabs->tabsSize(), Ant::Size::Middle);
     QCOMPARE(tabs->tabPlacement(), Ant::TabsPlacement::Top);
     QCOMPARE(tabs->isCentered(), false);
     QCOMPARE(tabs->isAnimated(), true);
@@ -167,8 +167,8 @@ void TestAntNavigation::propertiesAndSignals()
     QCOMPARE(typeSpy.count(), 1);
 
     QSignalSpy tSizeSpy(tabs, &AntTabs::tabsSizeChanged);
-    tabs->setTabsSize(Ant::TabsSize::Large);
-    QCOMPARE(tabs->tabsSize(), Ant::TabsSize::Large);
+    tabs->setTabsSize(Ant::Size::Large);
+    QCOMPARE(tabs->tabsSize(), Ant::Size::Large);
     QCOMPARE(tSizeSpy.count(), 1);
 
     QSignalSpy placeSpy2(tabs, &AntTabs::tabPlacementChanged);

@@ -39,8 +39,8 @@ public:
     void addChild(AntFloatButton* child);
     void removeChild(AntFloatButton* child);
     QVector<AntFloatButton*> childButtons() const;
-    Ant::FloatButtonTrigger groupTrigger() const;
-    void setGroupTrigger(Ant::FloatButtonTrigger trigger);
+    Ant::Trigger groupTrigger() const;
+    void setGroupTrigger(Ant::Trigger trigger);
     bool isOpen() const;
     void setOpen(bool open);
     QString closeIcon() const;
@@ -100,7 +100,7 @@ private:
 
     // Group
     QVector<AntFloatButton*> m_children;
-    Ant::FloatButtonTrigger m_groupTrigger = Ant::FloatButtonTrigger::Click;
+    Ant::Trigger m_groupTrigger = Ant::Trigger::Click;
     bool m_open = false;
     QString m_closeIcon;
 

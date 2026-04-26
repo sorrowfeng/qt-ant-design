@@ -33,9 +33,9 @@ void TestAntTypes::buttonTypeValues()
 
 void TestAntTypes::buttonSizeValues()
 {
-    QCOMPARE(static_cast<int>(Ant::ButtonSize::Large), 0);
-    QCOMPARE(static_cast<int>(Ant::ButtonSize::Middle), 1);
-    QCOMPARE(static_cast<int>(Ant::ButtonSize::Small), 2);
+    QCOMPARE(static_cast<int>(Ant::Size::Large), 0);
+    QCOMPARE(static_cast<int>(Ant::Size::Middle), 1);
+    QCOMPARE(static_cast<int>(Ant::Size::Small), 2);
 }
 
 void TestAntTypes::buttonShapeValues()
@@ -47,30 +47,30 @@ void TestAntTypes::buttonShapeValues()
 
 void TestAntTypes::inputSizeValues()
 {
-    QCOMPARE(static_cast<int>(Ant::InputSize::Large), 0);
-    QCOMPARE(static_cast<int>(Ant::InputSize::Middle), 1);
-    QCOMPARE(static_cast<int>(Ant::InputSize::Small), 2);
+    QCOMPARE(static_cast<int>(Ant::Size::Large), 0);
+    QCOMPARE(static_cast<int>(Ant::Size::Middle), 1);
+    QCOMPARE(static_cast<int>(Ant::Size::Small), 2);
 }
 
 void TestAntTypes::inputStatusValues()
 {
-    QCOMPARE(static_cast<int>(Ant::InputStatus::Normal), 0);
-    QCOMPARE(static_cast<int>(Ant::InputStatus::Error), 1);
-    QCOMPARE(static_cast<int>(Ant::InputStatus::Warning), 2);
+    QCOMPARE(static_cast<int>(Ant::Status::Normal), 0);
+    QCOMPARE(static_cast<int>(Ant::Status::Error), 1);
+    QCOMPARE(static_cast<int>(Ant::Status::Warning), 2);
 }
 
 void TestAntTypes::inputVariantValues()
 {
-    QCOMPARE(static_cast<int>(Ant::InputVariant::Outlined), 0);
-    QCOMPARE(static_cast<int>(Ant::InputVariant::Borderless), 1);
-    QCOMPARE(static_cast<int>(Ant::InputVariant::Filled), 2);
-    QCOMPARE(static_cast<int>(Ant::InputVariant::Underlined), 3);
+    QCOMPARE(static_cast<int>(Ant::Variant::Outlined), 0);
+    QCOMPARE(static_cast<int>(Ant::Variant::Borderless), 1);
+    QCOMPARE(static_cast<int>(Ant::Variant::Filled), 2);
+    QCOMPARE(static_cast<int>(Ant::Variant::Underlined), 3);
 }
 
 void TestAntTypes::switchSizeValues()
 {
-    QCOMPARE(static_cast<int>(Ant::SwitchSize::Middle), 0);
-    QCOMPARE(static_cast<int>(Ant::SwitchSize::Small), 1);
+    QCOMPARE(static_cast<int>(Ant::Size::Middle), 1);
+    QCOMPARE(static_cast<int>(Ant::Size::Small), 2);
 }
 
 void TestAntTypes::selectModeValues()
@@ -99,12 +99,12 @@ void TestAntTypes::skeletonElementValues()
 
 void TestAntTypes::messagePlacementValues()
 {
-    QCOMPARE(static_cast<int>(Ant::MessagePlacement::Top), 0);
-    QCOMPARE(static_cast<int>(Ant::MessagePlacement::TopLeft), 1);
-    QCOMPARE(static_cast<int>(Ant::MessagePlacement::TopRight), 2);
-    QCOMPARE(static_cast<int>(Ant::MessagePlacement::Bottom), 3);
-    QCOMPARE(static_cast<int>(Ant::MessagePlacement::BottomLeft), 4);
-    QCOMPARE(static_cast<int>(Ant::MessagePlacement::BottomRight), 5);
+    QCOMPARE(static_cast<int>(Ant::Placement::Top), 0);
+    QCOMPARE(static_cast<int>(Ant::Placement::TopLeft), 1);
+    QCOMPARE(static_cast<int>(Ant::Placement::TopRight), 2);
+    QCOMPARE(static_cast<int>(Ant::Placement::Bottom), 3);
+    QCOMPARE(static_cast<int>(Ant::Placement::BottomLeft), 4);
+    QCOMPARE(static_cast<int>(Ant::Placement::BottomRight), 5);
 }
 
 void TestAntTypes::typographyTypeValues()
@@ -126,7 +126,7 @@ void TestAntTypes::enumRegistration()
     QVERIFY(me.isValid());
     QCOMPARE(me.keyCount(), 5);
 
-    me = QMetaEnum::fromType<Ant::ButtonSize>();
+    me = QMetaEnum::fromType<Ant::Size>();
     QVERIFY(me.isValid());
     QCOMPARE(me.keyCount(), 3);
 
@@ -142,7 +142,7 @@ void TestAntTypes::enumRegistration()
     QVERIFY(me.isValid());
     QCOMPARE(me.keyCount(), 6);
 
-    me = QMetaEnum::fromType<Ant::MessagePlacement>();
+    me = QMetaEnum::fromType<Ant::Placement>();
     QVERIFY(me.isValid());
     QCOMPARE(me.keyCount(), 6);
 }

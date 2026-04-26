@@ -43,13 +43,13 @@ public:
         lay->addWidget(descLabel);
         auto* btnRow = new QHBoxLayout();
         prevBtn = new AntButton(QStringLiteral("Prev"));
-        prevBtn->setButtonSize(Ant::ButtonSize::Small);
+        prevBtn->setButtonSize(Ant::Size::Small);
         nextBtn = new AntButton(QStringLiteral("Next"));
         nextBtn->setButtonType(Ant::ButtonType::Primary);
-        nextBtn->setButtonSize(Ant::ButtonSize::Small);
+        nextBtn->setButtonSize(Ant::Size::Small);
         closeBtn = new AntButton(QStringLiteral("Close"));
         closeBtn->setButtonType(Ant::ButtonType::Text);
-        closeBtn->setButtonSize(Ant::ButtonSize::Small);
+        closeBtn->setButtonSize(Ant::Size::Small);
         btnRow->addWidget(prevBtn);
         btnRow->addWidget(nextBtn);
         btnRow->addWidget(closeBtn);

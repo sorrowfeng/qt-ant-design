@@ -30,9 +30,9 @@ AntPlainTextEdit::AntPlainTextEdit(const QString& text, QWidget* parent)
     setPlainText(text);
 }
 
-Ant::TextEditVariant AntPlainTextEdit::variant() const { return m_variant; }
+Ant::Variant AntPlainTextEdit::variant() const { return m_variant; }
 
-void AntPlainTextEdit::setVariant(Ant::TextEditVariant variant)
+void AntPlainTextEdit::setVariant(Ant::Variant variant)
 {
     if (m_variant == variant) return;
     m_variant = variant;

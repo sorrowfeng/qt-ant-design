@@ -1,12 +1,10 @@
 #include "AntRadioStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOptionButton>
 
 #include "widgets/AntRadio.h"
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -17,21 +15,9 @@ constexpr qreal DotRatio = 0.5;
 }
 
 AntRadioStyle::AntRadioStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntRadio*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntRadio>();
 }
 
 void AntRadioStyle::polish(QWidget* widget)

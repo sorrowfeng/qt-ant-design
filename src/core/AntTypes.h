@@ -6,6 +6,64 @@ namespace Ant
 {
 Q_NAMESPACE
 
+// ============================================================================
+// Shared enums (consolidated from per-component duplicates)
+// ============================================================================
+
+enum class Size
+{
+    Large,
+    Middle,
+    Small,
+};
+Q_ENUM_NS(Size)
+
+enum class Variant
+{
+    Outlined,
+    Borderless,
+    Filled,
+    Underlined,
+};
+Q_ENUM_NS(Variant)
+
+enum class Status
+{
+    Normal,
+    Error,
+    Warning,
+};
+Q_ENUM_NS(Status)
+
+enum class Placement
+{
+    Top,
+    TopLeft,
+    TopRight,
+    Bottom,
+    BottomLeft,
+    BottomRight,
+};
+Q_ENUM_NS(Placement)
+
+enum class Orientation
+{
+    Horizontal,
+    Vertical,
+};
+Q_ENUM_NS(Orientation)
+
+enum class Trigger
+{
+    Click,
+    Hover,
+};
+Q_ENUM_NS(Trigger)
+
+// ============================================================================
+// Component-specific enums (unique values, not duplicated)
+// ============================================================================
+
 enum class ThemeMode
 {
     Default,
@@ -23,14 +81,6 @@ enum class ButtonType
 };
 Q_ENUM_NS(ButtonType)
 
-enum class ButtonSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(ButtonSize)
-
 enum class ButtonShape
 {
     Default,
@@ -39,72 +89,6 @@ enum class ButtonShape
 };
 Q_ENUM_NS(ButtonShape)
 
-enum class InputSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(InputSize)
-
-enum class InputStatus
-{
-    Normal,
-    Error,
-    Warning,
-};
-Q_ENUM_NS(InputStatus)
-
-enum class InputVariant
-{
-    Outlined,
-    Borderless,
-    Filled,
-    Underlined,
-};
-Q_ENUM_NS(InputVariant)
-
-enum class InputNumberVariant
-{
-    Outlined,
-    Borderless,
-    Filled,
-    Underlined,
-};
-Q_ENUM_NS(InputNumberVariant)
-
-enum class SwitchSize
-{
-    Middle,
-    Small,
-};
-Q_ENUM_NS(SwitchSize)
-
-enum class SelectSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(SelectSize)
-
-enum class SelectStatus
-{
-    Normal,
-    Error,
-    Warning,
-};
-Q_ENUM_NS(SelectStatus)
-
-enum class SelectVariant
-{
-    Outlined,
-    Borderless,
-    Filled,
-    Underlined,
-};
-Q_ENUM_NS(SelectVariant)
-
 enum class SelectMode
 {
     Single,
@@ -112,64 +96,6 @@ enum class SelectMode
     Tags,
 };
 Q_ENUM_NS(SelectMode)
-
-enum class DatePickerSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(DatePickerSize)
-
-enum class DatePickerStatus
-{
-    Normal,
-    Error,
-    Warning,
-};
-Q_ENUM_NS(DatePickerStatus)
-
-enum class DatePickerVariant
-{
-    Outlined,
-    Borderless,
-    Filled,
-    Underlined,
-};
-Q_ENUM_NS(DatePickerVariant)
-
-enum class TimePickerSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(TimePickerSize)
-
-enum class TimePickerStatus
-{
-    Normal,
-    Error,
-    Warning,
-};
-Q_ENUM_NS(TimePickerStatus)
-
-enum class TimePickerVariant
-{
-    Outlined,
-    Borderless,
-    Filled,
-    Underlined,
-};
-Q_ENUM_NS(TimePickerVariant)
-
-enum class SpinSize
-{
-    Small,
-    Middle,
-    Large,
-};
-Q_ENUM_NS(SpinSize)
 
 enum class ProgressType
 {
@@ -197,17 +123,6 @@ enum class MessageType
     Loading,
 };
 Q_ENUM_NS(MessageType)
-
-enum class MessagePlacement
-{
-    Top,
-    TopLeft,
-    TopRight,
-    Bottom,
-    BottomLeft,
-    BottomRight,
-};
-Q_ENUM_NS(MessagePlacement)
 
 enum class AlertType
 {
@@ -257,17 +172,6 @@ enum class PopoverTrigger
 };
 Q_ENUM_NS(PopoverTrigger)
 
-enum class NotificationPlacement
-{
-    Top,
-    TopLeft,
-    TopRight,
-    Bottom,
-    BottomLeft,
-    BottomRight,
-};
-Q_ENUM_NS(NotificationPlacement)
-
 enum class MenuMode
 {
     Vertical,
@@ -291,14 +195,6 @@ enum class TabsType
 };
 Q_ENUM_NS(TabsType)
 
-enum class TabsSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(TabsSize)
-
 enum class TabsPlacement
 {
     Top,
@@ -308,14 +204,6 @@ enum class TabsPlacement
 };
 Q_ENUM_NS(TabsPlacement)
 
-enum class PaginationSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(PaginationSize)
-
 enum class TagVariant
 {
     Filled,
@@ -323,13 +211,6 @@ enum class TagVariant
     Outlined,
 };
 Q_ENUM_NS(TagVariant)
-
-enum class BadgeSize
-{
-    Middle,
-    Small,
-};
-Q_ENUM_NS(BadgeSize)
 
 enum class BadgeStatus
 {
@@ -357,21 +238,6 @@ enum class AvatarShape
 };
 Q_ENUM_NS(AvatarShape)
 
-enum class AvatarSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(AvatarSize)
-
-enum class DividerOrientation
-{
-    Horizontal,
-    Vertical,
-};
-Q_ENUM_NS(DividerOrientation)
-
 enum class DividerTitlePlacement
 {
     Start,
@@ -387,14 +253,6 @@ enum class DividerVariant
     Dotted,
 };
 Q_ENUM_NS(DividerVariant)
-
-enum class DividerSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(DividerSize)
 
 enum class CardSize
 {
@@ -444,13 +302,6 @@ enum class StepStatus
     Error,
 };
 Q_ENUM_NS(StepStatus)
-
-enum class StepsDirection
-{
-    Horizontal,
-    Vertical,
-};
-Q_ENUM_NS(StepsDirection)
 
 enum class IconType
 {
@@ -507,21 +358,6 @@ enum class TimelineDotVariant
 };
 Q_ENUM_NS(TimelineDotVariant)
 
-enum class SpaceOrientation
-{
-    Horizontal,
-    Vertical,
-};
-Q_ENUM_NS(SpaceOrientation)
-
-enum class SpaceSize
-{
-    Small,
-    Middle,
-    Large,
-};
-Q_ENUM_NS(SpaceSize)
-
 enum class LayoutSiderTheme
 {
     Dark,
@@ -550,14 +386,6 @@ enum class TypographyTitleLevel
     H5,
 };
 Q_ENUM_NS(TypographyTitleLevel)
-
-enum class TableSize
-{
-    Large,
-    Middle,
-    Small,
-};
-Q_ENUM_NS(TableSize)
 
 enum class TableSortOrder
 {
@@ -600,13 +428,6 @@ enum class UploadFileStatus
 };
 Q_ENUM_NS(UploadFileStatus)
 
-enum class CascaderExpandTrigger
-{
-    Click,
-    Hover,
-};
-Q_ENUM_NS(CascaderExpandTrigger)
-
 enum class DrawerPlacement
 {
     Left,
@@ -615,22 +436,6 @@ enum class DrawerPlacement
     Bottom,
 };
 Q_ENUM_NS(DrawerPlacement)
-
-enum class RateSize
-{
-    Small,
-    Middle,
-    Large,
-};
-Q_ENUM_NS(RateSize)
-
-enum class SegmentedSize
-{
-    Small,
-    Middle,
-    Large,
-};
-Q_ENUM_NS(SegmentedSize)
 
 enum class SegmentedShape
 {
@@ -671,13 +476,6 @@ enum class FloatButtonShape
 };
 Q_ENUM_NS(FloatButtonShape)
 
-enum class FloatButtonTrigger
-{
-    Click,
-    Hover,
-};
-Q_ENUM_NS(FloatButtonTrigger)
-
 enum class FloatButtonPlacement
 {
     BottomRight,
@@ -686,14 +484,6 @@ enum class FloatButtonPlacement
     TopLeft,
 };
 Q_ENUM_NS(FloatButtonPlacement)
-
-enum class TextEditVariant
-{
-    Outlined,
-    Filled,
-    Borderless,
-};
-Q_ENUM_NS(TextEditVariant)
 
 enum class ColorPickerMode
 {

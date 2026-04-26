@@ -15,196 +15,130 @@
 #include <algorithm>
 
 #include "../styles/AntSelectStyle.h"
+#include "AntSelectPopup.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
-class AntSelectPopup : public QFrame
+void AntSelectOptionWidget::paintEvent(QPaintEvent* event)
 {
-public:
-    explicit AntSelectPopup(AntSelect* owner)
-        : QFrame(nullptr, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
-          m_owner(owner)
+    Q_UNUSED(event)
+    if (!m_select || m_index < 0 || m_index >= m_select->m_options.size())
     {
-        setAttribute(Qt::WA_TranslucentBackground, true);
-        setObjectName(QStringLiteral("AntSelectPopup"));
+        return;
     }
 
-protected:
-    void paintEvent(QPaintEvent* event) override
+    const auto& token = antTheme->tokens();
+    const AntSelectOption option = m_select->m_options.at(m_index);
+    const bool multiMode = m_select->selectMode() != Ant::SelectMode::Single;
+    const bool selected = multiMode
+        ? m_select->selectedIndices().contains(m_index)
+        : m_select->m_currentIndex == m_index;
+    const bool highlighted = m_select->m_highlightedIndex == m_index || m_hovered;
+    const bool disabled = option.disabled;
+
+    QPainter painter(this);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+    QRectF bg = rect().adjusted(4, 2, -4, -2);
+    if (highlighted && !disabled)
     {
-        Q_UNUSED(event)
-
-        const auto& token = antTheme->tokens();
-        QPainter painter(this);
-        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-        antTheme->drawEffectShadow(&painter, rect().adjusted(2, 2, -2, -2), 10, token.borderRadiusLG, 0.55);
-
-        QRectF panel = rect().adjusted(8, 4, -8, -8);
-        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-        painter.setBrush(token.colorBgElevated);
-        painter.drawRoundedRect(panel, token.borderRadiusLG, token.borderRadiusLG);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(token.colorFillQuaternary);
+        painter.drawRoundedRect(bg, token.borderRadiusSM, token.borderRadiusSM);
     }
 
-    void hideEvent(QHideEvent* event) override
+    const int checkSize = 14;
+    const int leftPad = multiMode ? checkSize + 18 : 14;
+
+    if (multiMode)
     {
-        if (m_owner && m_owner->isOpen())
-        {
-            m_owner->setOpen(false);
-        }
-        QFrame::hideEvent(event);
-    }
+        // Draw checkbox
+        const qreal cx = 12 + checkSize / 2.0;
+        const qreal cy = height() / 2.0;
+        QRectF checkRect(cx - checkSize / 2.0, cy - checkSize / 2.0, checkSize, checkSize);
 
-private:
-    AntSelect* m_owner = nullptr;
-};
-
-class AntSelectOptionWidget : public QWidget
-{
-public:
-    AntSelectOptionWidget(AntSelect* select, int index, QWidget* parent)
-        : QWidget(parent),
-          m_select(select),
-          m_index(index)
-    {
-        setAttribute(Qt::WA_Hover, true);
-        setMouseTracking(true);
-        setFixedHeight(antTheme->tokens().controlHeight);
-        setCursor(Qt::PointingHandCursor);
-    }
-
-    void setIndex(int index)
-    {
-        m_index = index;
-        update();
-    }
-
-protected:
-    void paintEvent(QPaintEvent* event) override
-    {
-        Q_UNUSED(event)
-        if (!m_select || m_index < 0 || m_index >= m_select->m_options.size())
-        {
-            return;
-        }
-
-        const auto& token = antTheme->tokens();
-        const AntSelectOption option = m_select->m_options.at(m_index);
-        const bool multiMode = m_select->selectMode() != Ant::SelectMode::Single;
-        const bool selected = multiMode
-            ? m_select->selectedIndices().contains(m_index)
-            : m_select->m_currentIndex == m_index;
-        const bool highlighted = m_select->m_highlightedIndex == m_index || m_hovered;
-        const bool disabled = option.disabled;
-
-        QPainter painter(this);
-        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
-        QRectF bg = rect().adjusted(4, 2, -4, -2);
-        if (highlighted && !disabled)
+        if (selected)
         {
             painter.setPen(Qt::NoPen);
-            painter.setBrush(token.colorFillQuaternary);
-            painter.drawRoundedRect(bg, token.borderRadiusSM, token.borderRadiusSM);
-        }
+            painter.setBrush(disabled ? token.colorTextDisabled : token.colorPrimary);
+            painter.drawRoundedRect(checkRect, 3, 3);
 
-        const int checkSize = 14;
-        const int leftPad = multiMode ? checkSize + 18 : 14;
-
-        if (multiMode)
-        {
-            // Draw checkbox
-            const qreal cx = 12 + checkSize / 2.0;
-            const qreal cy = height() / 2.0;
-            QRectF checkRect(cx - checkSize / 2.0, cy - checkSize / 2.0, checkSize, checkSize);
-
-            if (selected)
-            {
-                painter.setPen(Qt::NoPen);
-                painter.setBrush(disabled ? token.colorTextDisabled : token.colorPrimary);
-                painter.drawRoundedRect(checkRect, 3, 3);
-
-                // Checkmark
-                QPen checkPen(token.colorTextLightSolid, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-                painter.setPen(checkPen);
-                QPainterPath check;
-                check.moveTo(cx - 4, cy);
-                check.lineTo(cx - 1, cy + 3);
-                check.lineTo(cx + 5, cy - 4);
-                painter.drawPath(check);
-            }
-            else
-            {
-                painter.setPen(QPen(disabled ? token.colorBorderDisabled : token.colorBorder, token.lineWidth));
-                painter.setBrush(Qt::NoBrush);
-                painter.drawRoundedRect(checkRect, 3, 3);
-            }
-        }
-
-        QFont f = painter.font();
-        f.setPixelSize(token.fontSize);
-        f.setWeight(selected && !multiMode ? QFont::DemiBold : QFont::Normal);
-        painter.setFont(f);
-        painter.setPen(disabled ? token.colorTextDisabled : token.colorText);
-
-        const int rightPad = (!multiMode && selected) ? 34 : 14;
-        QRect textRect = rect().adjusted(leftPad, 0, -rightPad, 0);
-        painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, option.label);
-
-        if (!multiMode && selected)
-        {
-            QPen checkPen(disabled ? token.colorTextDisabled : token.colorPrimary, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+            // Checkmark
+            QPen checkPen(token.colorTextLightSolid, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
             painter.setPen(checkPen);
-            const qreal cx = width() - 20;
-            const qreal cy = height() / 2.0;
             QPainterPath check;
-            check.moveTo(cx - 6, cy);
-            check.lineTo(cx - 2, cy + 4);
-            check.lineTo(cx + 7, cy - 6);
+            check.moveTo(cx - 4, cy);
+            check.lineTo(cx - 1, cy + 3);
+            check.lineTo(cx + 5, cy - 4);
             painter.drawPath(check);
         }
-    }
-
-    void enterEvent(QEnterEvent* event) override
-    {
-        m_hovered = true;
-        if (m_select)
+        else
         {
-            m_select->setHighlightedIndex(m_index);
+            painter.setPen(QPen(disabled ? token.colorBorderDisabled : token.colorBorder, token.lineWidth));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRoundedRect(checkRect, 3, 3);
         }
-        update();
-        QWidget::enterEvent(event);
     }
 
-    void leaveEvent(QEvent* event) override
-    {
-        m_hovered = false;
-        update();
-        QWidget::leaveEvent(event);
-    }
+    QFont f = painter.font();
+    f.setPixelSize(token.fontSize);
+    f.setWeight(selected && !multiMode ? QFont::DemiBold : QFont::Normal);
+    painter.setFont(f);
+    painter.setPen(disabled ? token.colorTextDisabled : token.colorText);
 
-    void mousePressEvent(QMouseEvent* event) override
+    const int rightPad = (!multiMode && selected) ? 34 : 14;
+    QRect textRect = rect().adjusted(leftPad, 0, -rightPad, 0);
+    painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, option.label);
+
+    if (!multiMode && selected)
     {
-        if (event->button() == Qt::LeftButton && m_select && m_index >= 0 && m_index < m_select->m_options.size() && !m_select->m_options.at(m_index).disabled)
+        QPen checkPen(disabled ? token.colorTextDisabled : token.colorPrimary, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        painter.setPen(checkPen);
+        const qreal cx = width() - 20;
+        const qreal cy = height() / 2.0;
+        QPainterPath check;
+        check.moveTo(cx - 6, cy);
+        check.lineTo(cx - 2, cy + 4);
+        check.lineTo(cx + 7, cy - 6);
+        painter.drawPath(check);
+    }
+}
+
+void AntSelectOptionWidget::enterEvent(QEnterEvent* event)
+{
+    m_hovered = true;
+    if (m_select)
+    {
+        m_select->setHighlightedIndex(m_index);
+    }
+    update();
+    QWidget::enterEvent(event);
+}
+
+void AntSelectOptionWidget::leaveEvent(QEvent* event)
+{
+    m_hovered = false;
+    update();
+    QWidget::leaveEvent(event);
+}
+
+void AntSelectOptionWidget::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton && m_select && m_index >= 0 && m_index < m_select->m_options.size() && !m_select->m_options.at(m_index).disabled)
+    {
+        if (m_select->selectMode() != Ant::SelectMode::Single)
         {
-            if (m_select->selectMode() != Ant::SelectMode::Single)
-            {
-                m_select->toggleOptionFromPopup(m_index);
-            }
-            else
-            {
-                m_select->selectOptionFromPopup(m_index);
-            }
-            event->accept();
-            return;
+            m_select->toggleOptionFromPopup(m_index);
         }
-        QWidget::mousePressEvent(event);
+        else
+        {
+            m_select->selectOptionFromPopup(m_index);
+        }
+        event->accept();
+        return;
     }
-
-private:
-    AntSelect* m_select = nullptr;
-    int m_index = -1;
-    bool m_hovered = false;
-};
+    QWidget::mousePressEvent(event);
+}
 
 AntSelect::AntSelect(QWidget* parent)
     : QWidget(parent)
@@ -249,9 +183,9 @@ AntSelect::~AntSelect()
     }
 }
 
-Ant::SelectSize AntSelect::selectSize() const { return m_selectSize; }
+Ant::Size AntSelect::selectSize() const { return m_selectSize; }
 
-void AntSelect::setSelectSize(Ant::SelectSize size)
+void AntSelect::setSelectSize(Ant::Size size)
 {
     if (m_selectSize == size)
     {
@@ -264,9 +198,9 @@ void AntSelect::setSelectSize(Ant::SelectSize size)
     Q_EMIT selectSizeChanged(m_selectSize);
 }
 
-Ant::SelectStatus AntSelect::status() const { return m_status; }
+Ant::Status AntSelect::status() const { return m_status; }
 
-void AntSelect::setStatus(Ant::SelectStatus status)
+void AntSelect::setStatus(Ant::Status status)
 {
     if (m_status == status)
     {
@@ -277,9 +211,9 @@ void AntSelect::setStatus(Ant::SelectStatus status)
     Q_EMIT statusChanged(m_status);
 }
 
-Ant::SelectVariant AntSelect::variant() const { return m_variant; }
+Ant::Variant AntSelect::variant() const { return m_variant; }
 
-void AntSelect::setVariant(Ant::SelectVariant variant)
+void AntSelect::setVariant(Ant::Variant variant)
 {
     if (m_variant == variant)
     {
@@ -666,13 +600,13 @@ AntSelect::Metrics AntSelect::metrics() const
     m.arrowWidth = token.fontSize + token.paddingXS * 2;
     m.optionHeight = token.controlHeight;
 
-    if (m_selectSize == Ant::SelectSize::Large)
+    if (m_selectSize == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         m.optionHeight = token.controlHeightLG;
     }
-    else if (m_selectSize == Ant::SelectSize::Small)
+    else if (m_selectSize == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;
@@ -703,11 +637,11 @@ QColor AntSelect::borderColor() const
     {
         return token.colorBorderDisabled;
     }
-    if (m_status == Ant::SelectStatus::Error)
+    if (m_status == Ant::Status::Error)
     {
         return (m_hovered || hasFocus() || m_open) ? token.colorErrorHover : token.colorError;
     }
-    if (m_status == Ant::SelectStatus::Warning)
+    if (m_status == Ant::Status::Warning)
     {
         return (m_hovered || hasFocus() || m_open) ? token.colorWarningHover : token.colorWarning;
     }
@@ -725,11 +659,11 @@ QColor AntSelect::backgroundColor() const
     {
         return token.colorBgContainerDisabled;
     }
-    if (m_variant == Ant::SelectVariant::Filled)
+    if (m_variant == Ant::Variant::Filled)
     {
         return m_hovered ? token.colorFillTertiary : token.colorFillQuaternary;
     }
-    if (m_variant == Ant::SelectVariant::Borderless || m_variant == Ant::SelectVariant::Underlined)
+    if (m_variant == Ant::Variant::Borderless || m_variant == Ant::Variant::Underlined)
     {
         return QColor(0, 0, 0, 0);
     }

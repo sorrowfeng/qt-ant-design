@@ -12,7 +12,7 @@ class AntRate : public QWidget
     Q_PROPERTY(bool allowHalf READ allowHalf WRITE setAllowHalf NOTIFY allowHalfChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
     Q_PROPERTY(bool disabled READ isDisabled WRITE setDisabled NOTIFY disabledChanged)
-    Q_PROPERTY(Ant::RateSize rateSize READ rateSize WRITE setRateSize NOTIFY rateSizeChanged)
+    Q_PROPERTY(Ant::Size rateSize READ rateSize WRITE setRateSize NOTIFY rateSizeChanged)
 
 public:
     explicit AntRate(QWidget* parent = nullptr);
@@ -32,8 +32,8 @@ public:
     bool isDisabled() const;
     void setDisabled(bool disabled);
 
-    Ant::RateSize rateSize() const;
-    void setRateSize(Ant::RateSize size);
+    Ant::Size rateSize() const;
+    void setRateSize(Ant::Size size);
 
     double hoverValue() const;
     bool isHoveredState() const;
@@ -47,7 +47,7 @@ Q_SIGNALS:
     void allowHalfChanged(bool allow);
     void allowClearChanged(bool allow);
     void disabledChanged(bool disabled);
-    void rateSizeChanged(Ant::RateSize size);
+    void rateSizeChanged(Ant::Size size);
     void hoverChanged(double value);
 
 protected:
@@ -74,5 +74,5 @@ private:
     bool m_hovered = false;
     bool m_pressed = false;
     bool m_focused = false;
-    Ant::RateSize m_rateSize = Ant::RateSize::Middle;
+    Ant::Size m_rateSize = Ant::Size::Middle;
 };

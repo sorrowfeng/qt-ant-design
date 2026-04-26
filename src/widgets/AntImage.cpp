@@ -37,7 +37,7 @@ public:
         {
             m_prevBtn = new AntButton(QStringLiteral("◀"), this);
             m_prevBtn->setButtonType(Ant::ButtonType::Text);
-            m_prevBtn->setButtonSize(Ant::ButtonSize::Small);
+            m_prevBtn->setButtonSize(Ant::Size::Small);
             m_prevBtn->setFixedSize(32, 32);
             topRow->addWidget(m_prevBtn);
         }
@@ -48,14 +48,14 @@ public:
         topRow->addStretch();
         auto* closeBtn = new AntButton(QStringLiteral("✕"), this);
         closeBtn->setButtonType(Ant::ButtonType::Text);
-        closeBtn->setButtonSize(Ant::ButtonSize::Small);
+        closeBtn->setButtonSize(Ant::Size::Small);
         closeBtn->setFixedSize(32, 32);
         topRow->addWidget(closeBtn);
         if (m_pixmaps.size() > 1)
         {
             m_nextBtn = new AntButton(QStringLiteral("▶"), this);
             m_nextBtn->setButtonType(Ant::ButtonType::Text);
-            m_nextBtn->setButtonSize(Ant::ButtonSize::Small);
+            m_nextBtn->setButtonSize(Ant::Size::Small);
             m_nextBtn->setFixedSize(32, 32);
             topRow->addWidget(m_nextBtn);
         }

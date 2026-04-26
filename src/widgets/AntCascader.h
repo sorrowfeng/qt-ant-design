@@ -32,10 +32,10 @@ class AntCascader : public QWidget
     Q_PROPERTY(QStringList value READ value WRITE setValue NOTIFY valueChanged)
     Q_PROPERTY(QString placeholder READ placeholder WRITE setPlaceholder NOTIFY placeholderChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
-    Q_PROPERTY(Ant::SelectSize cascaderSize READ cascaderSize WRITE setCascaderSize NOTIFY cascaderSizeChanged)
-    Q_PROPERTY(Ant::SelectStatus status READ status WRITE setStatus NOTIFY statusChanged)
-    Q_PROPERTY(Ant::SelectVariant variant READ variant WRITE setVariant NOTIFY variantChanged)
-    Q_PROPERTY(Ant::CascaderExpandTrigger expandTrigger READ expandTrigger WRITE setExpandTrigger NOTIFY expandTriggerChanged)
+    Q_PROPERTY(Ant::Size cascaderSize READ cascaderSize WRITE setCascaderSize NOTIFY cascaderSizeChanged)
+    Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
+    Q_PROPERTY(Ant::Trigger expandTrigger READ expandTrigger WRITE setExpandTrigger NOTIFY expandTriggerChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
     Q_PROPERTY(qreal arrowRotation READ arrowRotation WRITE setArrowRotation)
 
@@ -55,17 +55,17 @@ public:
     bool allowClear() const;
     void setAllowClear(bool allowClear);
 
-    Ant::SelectSize cascaderSize() const;
-    void setCascaderSize(Ant::SelectSize size);
+    Ant::Size cascaderSize() const;
+    void setCascaderSize(Ant::Size size);
 
-    Ant::SelectStatus status() const;
-    void setStatus(Ant::SelectStatus status);
+    Ant::Status status() const;
+    void setStatus(Ant::Status status);
 
-    Ant::SelectVariant variant() const;
-    void setVariant(Ant::SelectVariant variant);
+    Ant::Variant variant() const;
+    void setVariant(Ant::Variant variant);
 
-    Ant::CascaderExpandTrigger expandTrigger() const;
-    void setExpandTrigger(Ant::CascaderExpandTrigger trigger);
+    Ant::Trigger expandTrigger() const;
+    void setExpandTrigger(Ant::Trigger trigger);
 
     bool isOpen() const;
     void setOpen(bool open);
@@ -86,10 +86,10 @@ Q_SIGNALS:
     void valueChanged(const QStringList& path);
     void placeholderChanged(const QString& placeholder);
     void allowClearChanged(bool allowClear);
-    void cascaderSizeChanged(Ant::SelectSize size);
-    void statusChanged(Ant::SelectStatus status);
-    void variantChanged(Ant::SelectVariant variant);
-    void expandTriggerChanged(Ant::CascaderExpandTrigger trigger);
+    void cascaderSizeChanged(Ant::Size size);
+    void statusChanged(Ant::Status status);
+    void variantChanged(Ant::Variant variant);
+    void expandTriggerChanged(Ant::Trigger trigger);
     void openChanged(bool open);
 
 protected:
@@ -131,10 +131,10 @@ private:
     QStringList m_value;
     QString m_placeholder;
     bool m_allowClear = false;
-    Ant::SelectSize m_cascaderSize = Ant::SelectSize::Middle;
-    Ant::SelectStatus m_status = Ant::SelectStatus::Normal;
-    Ant::SelectVariant m_variant = Ant::SelectVariant::Outlined;
-    Ant::CascaderExpandTrigger m_expandTrigger = Ant::CascaderExpandTrigger::Click;
+    Ant::Size m_cascaderSize = Ant::Size::Middle;
+    Ant::Status m_status = Ant::Status::Normal;
+    Ant::Variant m_variant = Ant::Variant::Outlined;
+    Ant::Trigger m_expandTrigger = Ant::Trigger::Click;
     bool m_open = false;
     bool m_hovered = false;
     bool m_pressed = false;

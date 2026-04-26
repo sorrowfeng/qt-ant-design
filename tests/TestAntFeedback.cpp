@@ -157,7 +157,7 @@ void TestAntFeedback::notification()
     QCOMPARE(w->title(), QString());
     QCOMPARE(w->description(), QString());
     QCOMPARE(w->notificationType(), Ant::MessageType::Info);
-    QCOMPARE(w->placement(), Ant::NotificationPlacement::TopRight);
+    QCOMPARE(w->placement(), Ant::Placement::TopRight);
     QCOMPARE(w->duration(), 4500);
     QCOMPARE(w->pauseOnHover(), true);
     QCOMPARE(w->showProgress(), false);
@@ -179,8 +179,8 @@ void TestAntFeedback::notification()
     QCOMPARE(typeSpy.count(), 1);
 
     QSignalSpy placeSpy(w, &AntNotification::placementChanged);
-    w->setPlacement(Ant::NotificationPlacement::BottomLeft);
-    QCOMPARE(w->placement(), Ant::NotificationPlacement::BottomLeft);
+    w->setPlacement(Ant::Placement::BottomLeft);
+    QCOMPARE(w->placement(), Ant::Placement::BottomLeft);
     QCOMPARE(placeSpy.count(), 1);
 
     QSignalSpy durSpy(w, &AntNotification::durationChanged);
@@ -406,7 +406,7 @@ void TestAntFeedback::spin()
 {
     auto* w = new AntSpin;
     QCOMPARE(w->isSpinning(), true);
-    QCOMPARE(w->spinSize(), Ant::SpinSize::Middle);
+    QCOMPARE(w->spinSize(), Ant::Size::Middle);
     QCOMPARE(w->description(), QString());
     QCOMPARE(w->delay(), 0);
 
@@ -416,8 +416,8 @@ void TestAntFeedback::spin()
     QCOMPARE(spinSpy.count(), 1);
 
     QSignalSpy sizeSpy(w, &AntSpin::spinSizeChanged);
-    w->setSpinSize(Ant::SpinSize::Large);
-    QCOMPARE(w->spinSize(), Ant::SpinSize::Large);
+    w->setSpinSize(Ant::Size::Large);
+    QCOMPARE(w->spinSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy.count(), 1);
 
     QSignalSpy descSpy(w, &AntSpin::descriptionChanged);

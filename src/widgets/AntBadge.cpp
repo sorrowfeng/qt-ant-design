@@ -184,9 +184,9 @@ void AntBadge::setOffset(const QPoint& offset)
     Q_EMIT offsetChanged(m_offset);
 }
 
-Ant::BadgeSize AntBadge::badgeSize() const { return m_badgeSize; }
+Ant::Size AntBadge::badgeSize() const { return m_badgeSize; }
 
-void AntBadge::setBadgeSize(Ant::BadgeSize size)
+void AntBadge::setBadgeSize(Ant::Size size)
 {
     if (m_badgeSize == size)
     {
@@ -380,7 +380,7 @@ void AntBadge::hideEvent(QHideEvent* event)
 
 int AntBadge::indicatorHeight() const
 {
-    return m_badgeSize == Ant::BadgeSize::Small ? antTheme->tokens().fontSize : 20;
+    return m_badgeSize == Ant::Size::Small ? antTheme->tokens().fontSize : 20;
 }
 
 int AntBadge::dotSize() const
@@ -401,7 +401,7 @@ int AntBadge::indicatorWidth() const
     }
     const int h = indicatorHeight();
     QFont f = font();
-    f.setPixelSize(m_badgeSize == Ant::BadgeSize::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSizeSM);
+    f.setPixelSize(m_badgeSize == Ant::Size::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSizeSM);
     const int textWidth = QFontMetrics(f).horizontalAdvance(displayText());
     return std::max(h, textWidth + antTheme->tokens().paddingXS * 2);
 }

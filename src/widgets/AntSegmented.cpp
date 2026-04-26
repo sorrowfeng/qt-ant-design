@@ -77,9 +77,9 @@ void AntSegmented::setBlock(bool block)
     Q_EMIT blockChanged(m_block);
 }
 
-Ant::SegmentedSize AntSegmented::segmentedSize() const { return m_size; }
+Ant::Size AntSegmented::segmentedSize() const { return m_size; }
 
-void AntSegmented::setSegmentedSize(Ant::SegmentedSize size)
+void AntSegmented::setSegmentedSize(Ant::Size size)
 {
     if (m_size == size) return;
     m_size = size;
@@ -116,11 +116,11 @@ QSize AntSegmented::sizeHint() const
     int fontSize;
     switch (m_size)
     {
-    case Ant::SegmentedSize::Small:
+    case Ant::Size::Small:
         h = token.controlHeightSM;
         fontSize = token.fontSizeSM;
         break;
-    case Ant::SegmentedSize::Large:
+    case Ant::Size::Large:
         h = token.controlHeightLG;
         fontSize = token.fontSizeLG;
         break;

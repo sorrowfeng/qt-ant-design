@@ -1,31 +1,17 @@
 #include "AntTableStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntTable.h"
 
 AntTableStyle::AntTableStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntTable*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntTable>();
 }
 
 void AntTableStyle::polish(QWidget* widget)
@@ -89,20 +75,20 @@ struct TableMetrics
     int fontSizeSM = 12;
 };
 
-TableMetrics tableMetrics(Ant::TableSize size)
+TableMetrics tableMetrics(Ant::Size size)
 {
     TableMetrics m;
     const auto& token = antTheme->tokens();
     switch (size)
     {
-    case Ant::TableSize::Large:
+    case Ant::Size::Large:
         m.headerHeight = 48;
         m.rowHeight = 54;
         m.cellVPadding = 16;
         m.fontSize = token.fontSizeLG;
         m.fontSizeSM = token.fontSize;
         break;
-    case Ant::TableSize::Small:
+    case Ant::Size::Small:
         m.headerHeight = 32;
         m.rowHeight = 40;
         m.cellVPadding = 8;

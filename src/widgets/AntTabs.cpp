@@ -46,9 +46,9 @@ void AntTabs::setTabsType(Ant::TabsType type)
     Q_EMIT tabsTypeChanged(m_tabsType);
 }
 
-Ant::TabsSize AntTabs::tabsSize() const { return m_tabsSize; }
+Ant::Size AntTabs::tabsSize() const { return m_tabsSize; }
 
-void AntTabs::setTabsSize(Ant::TabsSize size)
+void AntTabs::setTabsSize(Ant::Size size)
 {
     if (m_tabsSize == size)
     {
@@ -506,22 +506,22 @@ int AntTabs::tabBarExtent() const
     {
         switch (m_tabsSize)
         {
-        case Ant::TabsSize::Large:
+        case Ant::Size::Large:
             return token.controlHeightLG + 8;
-        case Ant::TabsSize::Small:
+        case Ant::Size::Small:
             return token.controlHeight;
-        case Ant::TabsSize::Middle:
+        case Ant::Size::Middle:
         default:
             return token.controlHeightLG;
         }
     }
     switch (m_tabsSize)
     {
-    case Ant::TabsSize::Large:
+    case Ant::Size::Large:
         return 56;
-    case Ant::TabsSize::Small:
+    case Ant::Size::Small:
         return 38;
-    case Ant::TabsSize::Middle:
+    case Ant::Size::Middle:
     default:
         return 46;
     }
@@ -532,11 +532,11 @@ int AntTabs::tabPaddingX() const
     const auto& token = antTheme->tokens();
     switch (m_tabsSize)
     {
-    case Ant::TabsSize::Large:
+    case Ant::Size::Large:
         return token.paddingLG;
-    case Ant::TabsSize::Small:
+    case Ant::Size::Small:
         return token.paddingSM;
-    case Ant::TabsSize::Middle:
+    case Ant::Size::Middle:
     default:
         return token.padding;
     }
@@ -547,11 +547,11 @@ int AntTabs::tabFontSize() const
     const auto& token = antTheme->tokens();
     switch (m_tabsSize)
     {
-    case Ant::TabsSize::Large:
+    case Ant::Size::Large:
         return token.fontSizeLG;
-    case Ant::TabsSize::Small:
+    case Ant::Size::Small:
         return token.fontSize;
-    case Ant::TabsSize::Middle:
+    case Ant::Size::Middle:
     default:
         return token.fontSize;
     }

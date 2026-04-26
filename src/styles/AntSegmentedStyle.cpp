@@ -1,35 +1,33 @@
 #include "AntSegmentedStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "widgets/AntSegmented.h"
 
 namespace
 {
 
-int segmentedHeight(Ant::SegmentedSize size)
+int segmentedHeight(Ant::Size size)
 {
     const auto& token = antTheme->tokens();
     switch (size)
     {
-    case Ant::SegmentedSize::Small:  return token.controlHeightSM;
-    case Ant::SegmentedSize::Large:  return token.controlHeightLG;
+    case Ant::Size::Small:  return token.controlHeightSM;
+    case Ant::Size::Large:  return token.controlHeightLG;
     default:                         return token.controlHeight;
     }
 }
 
-int segmentedFontSize(Ant::SegmentedSize size)
+int segmentedFontSize(Ant::Size size)
 {
     const auto& token = antTheme->tokens();
     switch (size)
     {
-    case Ant::SegmentedSize::Small:  return token.fontSizeSM;
-    case Ant::SegmentedSize::Large:  return token.fontSizeLG;
+    case Ant::Size::Small:  return token.fontSizeSM;
+    case Ant::Size::Large:  return token.fontSizeLG;
     default:                         return token.fontSize;
     }
 }
@@ -44,8 +42,8 @@ int segmentedRadius(const AntSegmented* seg)
     }
     switch (seg->segmentedSize())
     {
-    case Ant::SegmentedSize::Small:  return token.borderRadiusSM;
-    case Ant::SegmentedSize::Large:  return token.borderRadiusLG;
+    case Ant::Size::Small:  return token.borderRadiusSM;
+    case Ant::Size::Large:  return token.borderRadiusLG;
     default:                         return token.borderRadius;
     }
 }
@@ -92,21 +90,9 @@ QRectF segmentedThumbRect(const AntSegmented* seg, const QRect& widgetRect)
 } // namespace
 
 AntSegmentedStyle::AntSegmentedStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntSegmented*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntSegmented>();
 }
 
 void AntSegmentedStyle::polish(QWidget* widget)

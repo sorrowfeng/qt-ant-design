@@ -395,9 +395,9 @@ void AntTimePicker::setPlaceholderText(const QString& text)
     Q_EMIT placeholderTextChanged(m_placeholderText);
 }
 
-Ant::TimePickerSize AntTimePicker::pickerSize() const { return m_pickerSize; }
+Ant::Size AntTimePicker::pickerSize() const { return m_pickerSize; }
 
-void AntTimePicker::setPickerSize(Ant::TimePickerSize size)
+void AntTimePicker::setPickerSize(Ant::Size size)
 {
     if (m_pickerSize == size)
     {
@@ -409,9 +409,9 @@ void AntTimePicker::setPickerSize(Ant::TimePickerSize size)
     Q_EMIT pickerSizeChanged(m_pickerSize);
 }
 
-Ant::TimePickerStatus AntTimePicker::status() const { return m_status; }
+Ant::Status AntTimePicker::status() const { return m_status; }
 
-void AntTimePicker::setStatus(Ant::TimePickerStatus status)
+void AntTimePicker::setStatus(Ant::Status status)
 {
     if (m_status == status)
     {
@@ -422,9 +422,9 @@ void AntTimePicker::setStatus(Ant::TimePickerStatus status)
     Q_EMIT statusChanged(m_status);
 }
 
-Ant::TimePickerVariant AntTimePicker::variant() const { return m_variant; }
+Ant::Variant AntTimePicker::variant() const { return m_variant; }
 
-void AntTimePicker::setVariant(Ant::TimePickerVariant variant)
+void AntTimePicker::setVariant(Ant::Variant variant)
 {
     if (m_variant == variant)
     {
@@ -650,12 +650,12 @@ AntTimePicker::Metrics AntTimePicker::metrics() const
     m.radius = token.borderRadius;
     m.paddingX = token.paddingSM - token.lineWidth;
     m.iconWidth = token.fontSize + token.paddingXS * 2;
-    if (m_pickerSize == Ant::TimePickerSize::Large)
+    if (m_pickerSize == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
     }
-    else if (m_pickerSize == Ant::TimePickerSize::Small)
+    else if (m_pickerSize == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;
@@ -684,11 +684,11 @@ QColor AntTimePicker::borderColor() const
     {
         return token.colorBorderDisabled;
     }
-    if (m_status == Ant::TimePickerStatus::Error)
+    if (m_status == Ant::Status::Error)
     {
         return (m_hovered || hasFocus() || m_open) ? token.colorErrorHover : token.colorError;
     }
-    if (m_status == Ant::TimePickerStatus::Warning)
+    if (m_status == Ant::Status::Warning)
     {
         return (m_hovered || hasFocus() || m_open) ? token.colorWarningHover : token.colorWarning;
     }
@@ -706,11 +706,11 @@ QColor AntTimePicker::backgroundColor() const
     {
         return token.colorBgContainerDisabled;
     }
-    if (m_variant == Ant::TimePickerVariant::Filled)
+    if (m_variant == Ant::Variant::Filled)
     {
         return m_hovered ? token.colorFillTertiary : token.colorFillQuaternary;
     }
-    if (m_variant == Ant::TimePickerVariant::Borderless || m_variant == Ant::TimePickerVariant::Underlined)
+    if (m_variant == Ant::Variant::Borderless || m_variant == Ant::Variant::Underlined)
     {
         return QColor(0, 0, 0, 0);
     }

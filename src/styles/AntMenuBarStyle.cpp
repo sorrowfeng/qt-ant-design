@@ -1,28 +1,20 @@
 #include "AntMenuBarStyle.h"
 
-#include <QApplication>
 #include <QPainter>
 #include <QStyleOptionMenuItem>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntMenuBar.h"
 
 AntMenuBarStyle::AntMenuBarStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntMenuBar*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntMenuBar>();
+}
+
+void AntMenuBarStyle::onThemeUpdate(QWidget* w)
+{
+    w->update();
 }
 
 void AntMenuBarStyle::drawControl(ControlElement element, const QStyleOption* option,

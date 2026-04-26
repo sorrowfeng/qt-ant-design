@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class AntPaginationStyle : public QProxyStyle
+class AntPaginationStyle : public AntStyleBase
 {
     Q_OBJECT
 

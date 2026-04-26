@@ -1,13 +1,11 @@
 #include "AntAlertStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntAlert.h"
 #include "widgets/AntIcon.h"
@@ -122,21 +120,9 @@ QRect computeCloseRect(const AntAlert* alert, const Metrics& m, const QRect& con
 } // namespace
 
 AntAlertStyle::AntAlertStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntAlert*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntAlert>();
 }
 
 void AntAlertStyle::polish(QWidget* widget)

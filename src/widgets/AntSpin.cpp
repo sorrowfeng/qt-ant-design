@@ -65,9 +65,9 @@ void AntSpin::setSpinning(bool spinning)
     Q_EMIT spinningChanged(m_spinning);
 }
 
-Ant::SpinSize AntSpin::spinSize() const { return m_spinSize; }
+Ant::Size AntSpin::spinSize() const { return m_spinSize; }
 
-void AntSpin::setSpinSize(Ant::SpinSize size)
+void AntSpin::setSpinSize(Ant::Size size)
 {
     if (m_spinSize == size)
     {
@@ -168,14 +168,14 @@ AntSpin::Metrics AntSpin::metrics() const
     const auto& token = antTheme->tokens();
     Metrics m;
     m.fontSize = token.fontSize;
-    if (m_spinSize == Ant::SpinSize::Small)
+    if (m_spinSize == Ant::Size::Small)
     {
         m.indicatorSize = 14;
         m.dotSize = 4;
         m.fontSize = token.fontSizeSM;
         m.spacing = 6;
     }
-    else if (m_spinSize == Ant::SpinSize::Large)
+    else if (m_spinSize == Ant::Size::Large)
     {
         m.indicatorSize = 32;
         m.dotSize = 8;

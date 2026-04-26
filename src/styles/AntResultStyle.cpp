@@ -1,13 +1,11 @@
 #include "AntResultStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOption>
 
 #include "widgets/AntIcon.h"
-#include "core/AntTheme.h"
 #include "widgets/AntResult.h"
 
 namespace
@@ -110,21 +108,9 @@ Ant::IconType resultIconTypeForStatus(const AntResult* result)
 } // namespace
 
 AntResultStyle::AntResultStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntResult*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntResult>();
 }
 
 void AntResultStyle::polish(QWidget* widget)

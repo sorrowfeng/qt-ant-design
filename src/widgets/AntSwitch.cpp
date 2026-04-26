@@ -59,9 +59,9 @@ void AntSwitch::setChecked(bool checked)
     Q_EMIT toggled(m_checked);
 }
 
-Ant::SwitchSize AntSwitch::switchSize() const { return m_switchSize; }
+Ant::Size AntSwitch::switchSize() const { return m_switchSize; }
 
-void AntSwitch::setSwitchSize(Ant::SwitchSize size)
+void AntSwitch::setSwitchSize(Ant::Size size)
 {
     if (m_switchSize == size)
     {
@@ -224,7 +224,7 @@ AntSwitch::Metrics AntSwitch::metrics() const
     const auto& token = antTheme->tokens();
     Metrics m;
     const qreal height = token.fontSize * token.lineHeight;
-    if (m_switchSize == Ant::SwitchSize::Small)
+    if (m_switchSize == Ant::Size::Small)
     {
         m.trackHeight = token.controlHeight / 2;
         m.trackPadding = 2;

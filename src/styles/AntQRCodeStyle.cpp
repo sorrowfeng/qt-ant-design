@@ -1,6 +1,5 @@
 #include "AntQRCodeStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -8,7 +7,6 @@
 
 #include <cmath>
 
-#include "core/AntTheme.h"
 #include "widgets/AntQRCode.h"
 
 namespace
@@ -165,21 +163,9 @@ void drawQRStatusOverlay(QPainter* painter, const AntQRCode* qr)
 } // namespace
 
 AntQRCodeStyle::AntQRCodeStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntQRCode*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntQRCode>();
 }
 
 void AntQRCodeStyle::polish(QWidget* widget)

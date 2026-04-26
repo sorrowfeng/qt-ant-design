@@ -27,10 +27,10 @@ void TestAntLayout::divider()
     auto* w = new AntDivider;
     QCOMPARE(w->text(), QString());
     QCOMPARE(w->isPlain(), true);
-    QCOMPARE(w->orientation(), Ant::DividerOrientation::Horizontal);
+    QCOMPARE(w->orientation(), Ant::Orientation::Horizontal);
     QCOMPARE(w->titlePlacement(), Ant::DividerTitlePlacement::Center);
     QCOMPARE(w->variant(), Ant::DividerVariant::Solid);
-    QCOMPARE(w->dividerSize(), Ant::DividerSize::Large);
+    QCOMPARE(w->dividerSize(), Ant::Size::Large);
 
     QSignalSpy textSpy(w, &AntDivider::textChanged);
     w->setText("OR");
@@ -43,8 +43,8 @@ void TestAntLayout::divider()
     QCOMPARE(plainSpy.count(), 1);
 
     QSignalSpy orientSpy(w, &AntDivider::orientationChanged);
-    w->setOrientation(Ant::DividerOrientation::Vertical);
-    QCOMPARE(w->orientation(), Ant::DividerOrientation::Vertical);
+    w->setOrientation(Ant::Orientation::Vertical);
+    QCOMPARE(w->orientation(), Ant::Orientation::Vertical);
     QCOMPARE(orientSpy.count(), 1);
 
     QSignalSpy placeSpy(w, &AntDivider::titlePlacementChanged);
@@ -58,8 +58,8 @@ void TestAntLayout::divider()
     QCOMPARE(varSpy.count(), 1);
 
     QSignalSpy sizeSpy(w, &AntDivider::dividerSizeChanged);
-    w->setDividerSize(Ant::DividerSize::Small);
-    QCOMPARE(w->dividerSize(), Ant::DividerSize::Small);
+    w->setDividerSize(Ant::Size::Small);
+    QCOMPARE(w->dividerSize(), Ant::Size::Small);
     QCOMPARE(sizeSpy.count(), 1);
 
     auto* w2 = new AntDivider("Text");
@@ -128,19 +128,19 @@ void TestAntLayout::grid()
 void TestAntLayout::space()
 {
     auto* w = new AntSpace;
-    QCOMPARE(w->orientation(), Ant::SpaceOrientation::Horizontal);
-    QCOMPARE(w->size(), Ant::SpaceSize::Small);
+    QCOMPARE(w->orientation(), Ant::Orientation::Horizontal);
+    QCOMPARE(w->size(), Ant::Size::Small);
     QCOMPARE(w->isWrap(), false);
     QCOMPARE(w->itemCount(), 0);
 
     QSignalSpy orientSpy(w, &AntSpace::orientationChanged);
-    w->setOrientation(Ant::SpaceOrientation::Vertical);
-    QCOMPARE(w->orientation(), Ant::SpaceOrientation::Vertical);
+    w->setOrientation(Ant::Orientation::Vertical);
+    QCOMPARE(w->orientation(), Ant::Orientation::Vertical);
     QCOMPARE(orientSpy.count(), 1);
 
     QSignalSpy sizeSpy(w, &AntSpace::sizeChanged);
-    w->setSize(Ant::SpaceSize::Large);
-    QCOMPARE(w->size(), Ant::SpaceSize::Large);
+    w->setSize(Ant::Size::Large);
+    QCOMPARE(w->size(), Ant::Size::Large);
     QCOMPARE(sizeSpy.count(), 1);
 
     QSignalSpy wrapSpy(w, &AntSpace::wrapChanged);

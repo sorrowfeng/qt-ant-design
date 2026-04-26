@@ -1,11 +1,9 @@
 #include "AntPlainTextEditStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntPlainTextEdit.h"
 
@@ -32,20 +30,14 @@ Metrics frameMetrics()
 } // namespace
 
 AntPlainTextEditStyle::AntPlainTextEditStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntPlainTextEdit*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntPlainTextEdit>();
+}
+
+void AntPlainTextEditStyle::onThemeUpdate(QWidget* w)
+{
+    w->update();
 }
 
 void AntPlainTextEditStyle::polish(QWidget* widget)
@@ -104,12 +96,12 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
     const QRectF r = option->rect;
     const bool focused = te->hasFocus();
     const bool enabled = option->state.testFlag(QStyle::State_Enabled);
-    const Ant::TextEditVariant variant = te->variant();
+    const Ant::Variant variant = te->variant();
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing);
 
-    if (variant == Ant::TextEditVariant::Filled)
+    if (variant == Ant::Variant::Filled)
     {
         QColor bg = token.colorFillTertiary;
         if (focused) bg = token.colorBgContainer;
@@ -123,7 +115,7 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
             painter->drawRoundedRect(r, m.radius, m.radius);
         }
     }
-    else if (variant == Ant::TextEditVariant::Outlined)
+    else if (variant == Ant::Variant::Outlined)
     {
         QColor border = token.colorBorder;
         if (focused) border = token.colorPrimary;
@@ -135,7 +127,7 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
     // Borderless: no frame
 
     // Focus glow
-    if (focused && enabled && variant != Ant::TextEditVariant::Borderless)
+    if (focused && enabled && variant != Ant::Variant::Borderless)
     {
         const QColor focus = AntPalette::alpha(token.colorPrimary, 0.18);
         painter->setPen(QPen(focus, m.focusWidth));

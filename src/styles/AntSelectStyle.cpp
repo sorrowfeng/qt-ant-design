@@ -1,6 +1,5 @@
 #include "AntSelectStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -8,7 +7,6 @@
 
 #include <algorithm>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSelect.h"
 #include <QFontMetrics>
@@ -39,12 +37,12 @@ SelectMetrics metricsFor(const AntSelect* select)
         return metrics;
     }
 
-    if (select->selectSize() == Ant::SelectSize::Large)
+    if (select->selectSize() == Ant::Size::Large)
     {
         metrics.height = token.controlHeightLG;
         metrics.fontSize = token.fontSizeLG;
     }
-    else if (select->selectSize() == Ant::SelectSize::Small)
+    else if (select->selectSize() == Ant::Size::Small)
     {
         metrics.height = token.controlHeightSM;
         metrics.fontSize = token.fontSizeSM;
@@ -79,13 +77,13 @@ QColor borderColorFor(const AntSelect* select)
     {
         return token.colorBorderDisabled;
     }
-    if (select->status() == Ant::SelectStatus::Error)
+    if (select->status() == Ant::Status::Error)
     {
         return (select->isHoveredState() || select->hasFocus() || select->isOpen())
             ? token.colorErrorHover
             : token.colorError;
     }
-    if (select->status() == Ant::SelectStatus::Warning)
+    if (select->status() == Ant::Status::Warning)
     {
         return (select->isHoveredState() || select->hasFocus() || select->isOpen())
             ? token.colorWarningHover
@@ -105,12 +103,12 @@ QColor backgroundColorFor(const AntSelect* select)
     {
         return token.colorBgContainerDisabled;
     }
-    if (select->variant() == Ant::SelectVariant::Filled)
+    if (select->variant() == Ant::Variant::Filled)
     {
         return select->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary;
     }
-    if (select->variant() == Ant::SelectVariant::Borderless
-        || select->variant() == Ant::SelectVariant::Underlined)
+    if (select->variant() == Ant::Variant::Borderless
+        || select->variant() == Ant::Variant::Underlined)
     {
         return QColor(0, 0, 0, 0);
     }
@@ -216,21 +214,9 @@ void drawTag(QPainter* painter, const QRectF& rect, const QString& text, int fon
 }
 
 AntSelectStyle::AntSelectStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* widget : widgets)
-        {
-            if (qobject_cast<AntSelect*>(widget) && widget->style() == this)
-            {
-                unpolish(widget);
-                polish(widget);
-                widget->updateGeometry();
-                widget->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntSelect>();
 }
 
 void AntSelectStyle::polish(QWidget* widget)
@@ -315,8 +301,8 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
 
     if (focused
         && !disabled
-        && select->variant() != Ant::SelectVariant::Borderless
-        && select->variant() != Ant::SelectVariant::Underlined)
+        && select->variant() != Ant::Variant::Borderless
+        && select->variant() != Ant::Variant::Underlined)
     {
         const QColor outline = AntPalette::alpha(borderColor, 0.16);
         painter->setPen(QPen(outline, token.controlOutlineWidth));
@@ -324,8 +310,8 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
         painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), metrics.radius + 1, metrics.radius + 1);
     }
 
-    if (select->variant() != Ant::SelectVariant::Borderless
-        && select->variant() != Ant::SelectVariant::Underlined)
+    if (select->variant() != Ant::Variant::Borderless
+        && select->variant() != Ant::Variant::Underlined)
     {
         painter->setPen(QPen(borderColor, token.lineWidth));
         painter->setBrush(backgroundColor);
@@ -336,7 +322,7 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
         painter->setPen(Qt::NoPen);
         painter->setBrush(backgroundColor);
         painter->drawRoundedRect(control, metrics.radius, metrics.radius);
-        if (select->variant() == Ant::SelectVariant::Underlined)
+        if (select->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(borderColor, focused ? 2 : token.lineWidth));
             painter->drawLine(QPointF(control.left(), control.bottom() - 0.5),

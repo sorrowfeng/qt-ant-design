@@ -14,9 +14,9 @@ void TestAntInput::propertiesAndSignals()
 {
     auto* input = new AntInput;
     QCOMPARE(input->text(), QString());
-    QCOMPARE(input->inputSize(), Ant::InputSize::Middle);
-    QCOMPARE(input->status(), Ant::InputStatus::Normal);
-    QCOMPARE(input->variant(), Ant::InputVariant::Outlined);
+    QCOMPARE(input->inputSize(), Ant::Size::Middle);
+    QCOMPARE(input->status(), Ant::Status::Normal);
+    QCOMPARE(input->variant(), Ant::Variant::Outlined);
     QCOMPARE(input->allowClear(), false);
     QCOMPARE(input->isPasswordMode(), false);
     QCOMPARE(input->isSearchMode(), false);
@@ -30,17 +30,17 @@ void TestAntInput::propertiesAndSignals()
     QCOMPARE(input->lineEdit()->placeholderText(), "Enter text");
 
     QSignalSpy sizeSpy(input, &AntInput::inputSizeChanged);
-    input->setInputSize(Ant::InputSize::Large);
-    QCOMPARE(input->inputSize(), Ant::InputSize::Large);
+    input->setInputSize(Ant::Size::Large);
+    QCOMPARE(input->inputSize(), Ant::Size::Large);
     QCOMPARE(sizeSpy.count(), 1);
 
     QSignalSpy statusSpy(input, &AntInput::statusChanged);
-    input->setStatus(Ant::InputStatus::Error);
-    QCOMPARE(input->status(), Ant::InputStatus::Error);
+    input->setStatus(Ant::Status::Error);
+    QCOMPARE(input->status(), Ant::Status::Error);
     QCOMPARE(statusSpy.count(), 1);
 
-    input->setVariant(Ant::InputVariant::Filled);
-    QCOMPARE(input->variant(), Ant::InputVariant::Filled);
+    input->setVariant(Ant::Variant::Filled);
+    QCOMPARE(input->variant(), Ant::Variant::Filled);
 
     QSignalSpy clearSpy(input, &AntInput::allowClearChanged);
     input->setAllowClear(true);

@@ -18,7 +18,7 @@ class AntFormItem : public QWidget
     Q_PROPERTY(QString extra READ extra WRITE setExtra NOTIFY extraChanged)
     Q_PROPERTY(bool required READ isRequired WRITE setRequired NOTIFY requiredChanged)
     Q_PROPERTY(bool colon READ colon WRITE setColon NOTIFY colonChanged)
-    Q_PROPERTY(Ant::InputStatus validateStatus READ validateStatus WRITE setValidateStatus NOTIFY validateStatusChanged)
+    Q_PROPERTY(Ant::Status validateStatus READ validateStatus WRITE setValidateStatus NOTIFY validateStatusChanged)
 
 public:
     explicit AntFormItem(QWidget* parent = nullptr);
@@ -38,8 +38,8 @@ public:
     bool colon() const;
     void setColon(bool colon);
 
-    Ant::InputStatus validateStatus() const;
-    void setValidateStatus(Ant::InputStatus status);
+    Ant::Status validateStatus() const;
+    void setValidateStatus(Ant::Status status);
 
     QWidget* fieldWidget() const;
     void setFieldWidget(QWidget* widget);
@@ -56,7 +56,7 @@ Q_SIGNALS:
     void extraChanged(const QString& text);
     void requiredChanged(bool required);
     void colonChanged(bool colon);
-    void validateStatusChanged(Ant::InputStatus status);
+    void validateStatusChanged(Ant::Status status);
 
 protected:
     void changeEvent(QEvent* event) override;
@@ -73,7 +73,7 @@ private:
     bool m_required = false;
     bool m_colon = true;
     bool m_useFormColon = true;
-    Ant::InputStatus m_validateStatus = Ant::InputStatus::Normal;
+    Ant::Status m_validateStatus = Ant::Status::Normal;
     Ant::FormLayout m_layoutMode = Ant::FormLayout::Horizontal;
     Ant::FormLabelAlign m_labelAlign = Ant::FormLabelAlign::Right;
     bool m_showRequiredMark = true;

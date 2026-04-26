@@ -1,6 +1,5 @@
 #include "AntPaginationStyle.h"
 
-#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
@@ -9,26 +8,13 @@
 #include <algorithm>
 #include <cmath>
 
-#include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntPagination.h"
 
 AntPaginationStyle::AntPaginationStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        const auto widgets = QApplication::allWidgets();
-        for (QWidget* w : widgets)
-        {
-            if (qobject_cast<AntPagination*>(w) && w->style() == this)
-            {
-                unpolish(w);
-                polish(w);
-                w->updateGeometry();
-                w->update();
-            }
-        }
-    });
+    connectThemeUpdate<AntPagination>();
 }
 
 void AntPaginationStyle::polish(QWidget* widget)
@@ -108,11 +94,11 @@ int paginationItemSize(const AntPagination* p)
     const auto& token = antTheme->tokens();
     switch (p->paginationSize())
     {
-    case Ant::PaginationSize::Large:
+    case Ant::Size::Large:
         return token.controlHeightLG;
-    case Ant::PaginationSize::Small:
+    case Ant::Size::Small:
         return token.controlHeightSM;
-    case Ant::PaginationSize::Middle:
+    case Ant::Size::Middle:
     default:
         return token.controlHeight;
     }
@@ -120,12 +106,12 @@ int paginationItemSize(const AntPagination* p)
 
 int paginationItemSpacing(const AntPagination* p)
 {
-    return p->paginationSize() == Ant::PaginationSize::Small ? antTheme->tokens().paddingXXS : antTheme->tokens().marginXS;
+    return p->paginationSize() == Ant::Size::Small ? antTheme->tokens().paddingXXS : antTheme->tokens().marginXS;
 }
 
 int paginationFontSize(const AntPagination* p)
 {
-    return p->paginationSize() == Ant::PaginationSize::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSize;
+    return p->paginationSize() == Ant::Size::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSize;
 }
 
 int paginationRangeStart(const AntPagination* p)

@@ -48,17 +48,17 @@ void AntDivider::setPlain(bool plain)
     Q_EMIT plainChanged(m_plain);
 }
 
-Ant::DividerOrientation AntDivider::orientation() const { return m_orientation; }
+Ant::Orientation AntDivider::orientation() const { return m_orientation; }
 
-void AntDivider::setOrientation(Ant::DividerOrientation orientation)
+void AntDivider::setOrientation(Ant::Orientation orientation)
 {
     if (m_orientation == orientation)
     {
         return;
     }
     m_orientation = orientation;
-    setSizePolicy(m_orientation == Ant::DividerOrientation::Horizontal ? QSizePolicy::Expanding : QSizePolicy::Fixed,
-                  m_orientation == Ant::DividerOrientation::Horizontal ? QSizePolicy::Fixed : QSizePolicy::Preferred);
+    setSizePolicy(m_orientation == Ant::Orientation::Horizontal ? QSizePolicy::Expanding : QSizePolicy::Fixed,
+                  m_orientation == Ant::Orientation::Horizontal ? QSizePolicy::Fixed : QSizePolicy::Preferred);
     updateGeometry();
     update();
     Q_EMIT orientationChanged(m_orientation);
@@ -90,9 +90,9 @@ void AntDivider::setVariant(Ant::DividerVariant variant)
     Q_EMIT variantChanged(m_variant);
 }
 
-Ant::DividerSize AntDivider::dividerSize() const { return m_dividerSize; }
+Ant::Size AntDivider::dividerSize() const { return m_dividerSize; }
 
-void AntDivider::setDividerSize(Ant::DividerSize size)
+void AntDivider::setDividerSize(Ant::Size size)
 {
     if (m_dividerSize == size)
     {
@@ -106,7 +106,7 @@ void AntDivider::setDividerSize(Ant::DividerSize size)
 
 QSize AntDivider::sizeHint() const
 {
-    if (m_orientation == Ant::DividerOrientation::Vertical)
+    if (m_orientation == Ant::Orientation::Vertical)
     {
         return QSize(antTheme->tokens().marginLG, antTheme->tokens().fontSizeLG + 4);
     }
@@ -117,7 +117,7 @@ QSize AntDivider::sizeHint() const
 
 QSize AntDivider::minimumSizeHint() const
 {
-    return m_orientation == Ant::DividerOrientation::Vertical ? QSize(antTheme->tokens().marginSM, 16) : QSize(40, 1);
+    return m_orientation == Ant::Orientation::Vertical ? QSize(antTheme->tokens().marginSM, 16) : QSize(40, 1);
 }
 
 void AntDivider::paintEvent(QPaintEvent* event)
@@ -130,11 +130,11 @@ int AntDivider::horizontalMargin() const
     const auto& token = antTheme->tokens();
     switch (m_dividerSize)
     {
-    case Ant::DividerSize::Small:
+    case Ant::Size::Small:
         return token.marginXS;
-    case Ant::DividerSize::Middle:
+    case Ant::Size::Middle:
         return token.margin;
-    case Ant::DividerSize::Large:
+    case Ant::Size::Large:
         return token.marginLG;
     }
     return token.marginLG;
