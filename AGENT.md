@@ -25,14 +25,14 @@
 ## 项目状态
 
 - 同步日期：`2026-04-26`
-- 已实现公开组件总数：`81`
+- 已实现公开组件总数：`82`
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
 - 子组件/变体完整度：`15 / 15`（100%）
-- Qt / 桌面扩展组件：`11`（AntWindow、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntPlainTextEdit、AntDockWidget、AntLog）
+- Qt / 桌面扩展组件：`12`（AntWindow、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntPlainTextEdit、AntDockWidget、AntLog、AntNavItem）
 - 已迁移至 `QProxyStyle` 的组件数：`~62`
-- 不依赖独立 Style 类的组件：`AntAffix`、`AntAnchor`、`AntApp`、`AntCarousel`、`AntCollapse`、`AntColorPicker`、`AntConfigProvider`、`AntDockWidget`、`AntFlex`、`AntGrid`、`AntImage`、`AntLog`、`AntMasonry`、`AntMentions`、`AntScrollArea`、`AntSplitter`、`AntTour`、`AntTransfer`、`AntWidget`
-- 示例程序覆盖：`80 / 81`；当前未单独提供示例页的组件：`AntWidget`
-- 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntTypography` 替代 `QLabel` 实现主题感知文本
+- 不依赖独立 Style 类的组件：`AntAffix`、`AntAnchor`、`AntApp`、`AntCarousel`、`AntCollapse`、`AntColorPicker`、`AntConfigProvider`、`AntDockWidget`、`AntFlex`、`AntGrid`、`AntImage`、`AntLog`、`AntMasonry`、`AntMentions`、`AntNavItem`、`AntScrollArea`、`AntSplitter`、`AntTour`、`AntTransfer`、`AntWidget`
+- 示例程序覆盖：`80 / 82`；当前未单独提供示例页的组件：`AntWidget`、`AntNavItem`（NavItem 用于示例程序自身导航）
+- 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -215,6 +215,7 @@
 | `AntToolButton` | `QProxyStyle` | 是 | 带下拉菜单的按钮 |
 | `AntPlainTextEdit` | `QProxyStyle` | 是 | 多行文本编辑器 |
 | `AntLog` | 自绘 | 是 | 日志输出控件 |
+| `AntNavItem` | 自绘 | 是 | 侧边栏导航项，active/hover 状态，clicked 信号 |
 | `AntWave` | — | — | 内部涟漪动画 overlay（core/），不计入 `src/widgets` 公开组件统计 |
 
 ## 开发规范
@@ -304,6 +305,7 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 - `drawWidget(widget, event)` — 虚方法，子类重写实现绘制
 - `connectThemeUpdate<T>()` — 连接主题切换信号
 - `onThemeUpdate(w)` — 主题切换时的默认行为（updateGeometry + update）
+- `drawCrispRoundedRect(painter, rect, pen, brush, rx, ry)` — 0.5px 子像素偏移绘制圆角矩形，解决边框锯齿问题
 
 ## 示例程序
 
@@ -335,11 +337,11 @@ cmake --install build --config Debug
 
 ### 概述
 
-项目使用 QTest 框架进行单元测试，覆盖所有 81 个组件的属性、getter/setter 和信号验证。
+项目使用 QTest 框架进行单元测试，覆盖所有 82 个组件的属性、getter/setter 和信号验证。
 
 - **测试框架**：Qt6::Test（QTest + QSignalSpy）
 - **测试数量**：17 个测试可执行文件
-- **覆盖组件**：81 个组件全部覆盖
+- **覆盖组件**：82 个组件全部覆盖
 - **运行方式**：`ctest -C Debug --output-on-failure`
 
 ### 测试文件结构
@@ -363,7 +365,7 @@ tests/
 ├── TestAntFeedback.cpp         # Alert, Drawer, Message, Notification, Popconfirm, Popover, Progress, Result, Skeleton, Spin, Tooltip, Tour
 ├── TestAntNavigation.cpp       # Breadcrumb, Dropdown, Menu, Pagination, Steps, Tabs, Anchor
 ├── TestAntLayout.cpp           # Divider, Flex, Grid, Space, Layout, Masonry, Affix
-└── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker
+└── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, NavItem, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker
 ```
 
 ### 测试模式
