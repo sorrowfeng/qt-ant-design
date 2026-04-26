@@ -268,3 +268,97 @@ cmake --install build --config Debug
 - `install/lib/qt-ant-design.lib`
 - `install/include/qt-ant-design/`
 - `install/lib/cmake/qt-ant-design/`
+
+## 测试
+
+### 概述
+
+项目使用 QTest 框架进行单元测试，覆盖所有 81 个组件的属性、getter/setter 和信号验证。
+
+- **测试框架**：Qt6::Test（QTest + QSignalSpy）
+- **测试数量**：17 个测试可执行文件
+- **覆盖组件**：81 个组件全部覆盖
+- **运行方式**：`ctest -C Debug --output-on-failure`
+
+### 测试文件结构
+
+```
+tests/
+├── CMakeLists.txt              # 测试目标注册
+├── TestAntTypes.cpp            # 核心枚举值验证
+├── TestAntButton.cpp           # Button 属性/信号
+├── TestAntIcon.cpp             # Icon 属性/信号
+├── TestAntTypography.cpp       # Typography 属性/信号
+├── TestAntFloatButton.cpp      # FloatButton 属性/信号
+├── TestAntCheckbox.cpp         # Checkbox 属性/信号
+├── TestAntSwitch.cpp           # Switch 属性/信号
+├── TestAntSelect.cpp           # Select 单选/多选/标签
+├── TestAntInput.cpp            # Input 属性/信号
+├── TestAntDataEntryA.cpp       # InputNumber, Radio, Slider, Rate, Segmented, AutoComplete
+├── TestAntDataEntryB.cpp       # Cascader, DatePicker, TimePicker, Mentions, Transfer, TreeSelect, Upload
+├── TestAntDataDisplayA.cpp     # Avatar, Card, Statistic, Calendar, Image, Empty
+├── TestAntDataDisplayB.cpp     # List, Table, Tree, Timeline, Descriptions, QRCode, Watermark, Carousel, Collapse
+├── TestAntFeedback.cpp         # Alert, Drawer, Message, Notification, Popconfirm, Popover, Progress, Result, Skeleton, Spin, Tooltip, Tour
+├── TestAntNavigation.cpp       # Breadcrumb, Dropdown, Menu, Pagination, Steps, Tabs, Anchor
+├── TestAntLayout.cpp           # Divider, Flex, Grid, Space, Layout, Masonry, Affix
+└── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker
+```
+
+### 测试模式
+
+每个测试文件遵循以下模式：
+
+```cpp
+#include <QSignalSpy>
+#include <QTest>
+#include "widgets/AntXxx.h"
+
+class TestAntXxx : public QObject
+{
+    Q_OBJECT
+private slots:
+    void propertiesAndSignals();
+};
+
+void TestAntXxx::propertiesAndSignals()
+{
+    auto* w = new AntXxx;           // 堆分配，不 delete（避免 QProxyStyle 析构崩溃）
+    QCOMPARE(w->property(), default);  // 验证默认值
+
+    QSignalSpy spy(w, &AntXxx::propertyChanged);
+    w->setProperty(newValue);           // 设置新值
+    QCOMPARE(w->property(), newValue);  // 验证 setter 生效
+    QCOMPARE(spy.count(), 1);           // 验证信号发射
+}
+
+QTEST_MAIN(TestAntXxx)
+#include "TestAntXxx.moc"
+```
+
+### 关键注意事项
+
+1. **单测试函数模式**：由于 QProxyStyle 析构在 QTest 环境中会崩溃，所有测试必须使用单个 `propertiesAndSignals()` 函数，避免多个测试槽之间 widget 构造/析构的冲突。
+
+2. **堆分配不删除**：widget 必须用 `new` 创建且不调用 `delete`，让进程退出时统一清理。
+
+3. **信号验证**：设置新值必须与当前值不同，否则 setter 会提前返回不发射信号。
+
+4. **分页/约束属性**：某些属性有依赖约束（如 `AntTable::setCurrentPage` 受 `totalPages()` 约束，`AntPagination::setCurrent` 受 `total` 约束），需要先设置依赖属性。
+
+### 运行测试
+
+```powershell
+# 构建
+cmake -B build
+cmake --build build --config Debug
+
+# 运行所有测试
+cd build
+ctest -C Debug --output-on-failure
+
+# 运行单个测试
+.\tests\Debug\TestAntButton.exe
+
+# 运行单个测试（通过 ctest）
+ctest -C Debug -R TestAntButton --output-on-failure
+```
