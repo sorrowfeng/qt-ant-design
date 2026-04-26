@@ -89,7 +89,11 @@ AntAutoComplete::AntAutoComplete(QWidget* parent)
     // Internal line edit
     m_lineEdit = new QLineEdit(this);
     m_lineEdit->setFrame(false);
-    m_lineEdit->setStyleSheet(QStringLiteral("background:transparent; border:none;"));
+    {
+        QPalette p = m_lineEdit->palette();
+        p.setColor(QPalette::Base, Qt::transparent);
+        m_lineEdit->setPalette(p);
+    }
     m_lineEdit->installEventFilter(this);
     m_lineEdit->setMouseTracking(true);
 

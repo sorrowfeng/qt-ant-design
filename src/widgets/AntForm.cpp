@@ -4,6 +4,7 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPainter>
 #include <QPushButton>
 #include <utility>
 #include <QVBoxLayout>
@@ -542,6 +543,90 @@ void AntForm::applyItemSettings()
     }
 }
 
+// ── Custom button classes for AntFormList ──
+
+namespace
+{
+
+class FormAddButton : public QPushButton
+{
+public:
+    explicit FormAddButton(QWidget* parent = nullptr) : QPushButton(parent)
+    {
+        setCursor(Qt::PointingHandCursor);
+        setFixedHeight(32);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const auto& token = antTheme->tokens();
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+
+        const bool hovered = m_hovered;
+        QColor borderColor = hovered ? token.colorPrimaryHover : token.colorBorder;
+        QColor textColor = hovered ? token.colorPrimaryHover : token.colorPrimary;
+
+        p.setPen(QPen(borderColor, 1, Qt::DashLine));
+        p.setBrush(Qt::NoBrush);
+        p.drawRoundedRect(rect().adjusted(0, 0, -1, -1), 6, 6);
+
+        p.setPen(textColor);
+        QFont f = font();
+        f.setPixelSize(token.fontSizeSM);
+        p.setFont(f);
+        p.drawText(rect(), Qt::AlignCenter, text());
+    }
+
+    void enterEvent(QEnterEvent*) override { m_hovered = true; update(); }
+    void leaveEvent(QEvent*) override { m_hovered = false; update(); }
+
+private:
+    bool m_hovered = false;
+};
+
+class FormRemoveButton : public QPushButton
+{
+public:
+    explicit FormRemoveButton(QWidget* parent = nullptr) : QPushButton(parent)
+    {
+        setCursor(Qt::PointingHandCursor);
+        setFixedSize(64, 28);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const auto& token = antTheme->tokens();
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+
+        const bool hovered = m_hovered;
+        QColor borderColor = hovered ? token.colorError : token.colorBorder;
+        QColor textColor = hovered ? token.colorError : token.colorTextSecondary;
+        QColor bgColor = hovered ? token.colorErrorBg : Qt::transparent;
+
+        p.setPen(QPen(borderColor, 1));
+        p.setBrush(bgColor);
+        p.drawRoundedRect(rect().adjusted(0, 0, -1, -1), 4, 4);
+
+        p.setPen(textColor);
+        QFont f = font();
+        f.setPixelSize(token.fontSizeSM);
+        p.setFont(f);
+        p.drawText(rect(), Qt::AlignCenter, text());
+    }
+
+    void enterEvent(QEnterEvent*) override { m_hovered = true; update(); }
+    void leaveEvent(QEvent*) override { m_hovered = false; update(); }
+
+private:
+    bool m_hovered = false;
+};
+
+} // namespace
+
 // ── AntFormList ──
 
 AntFormList::AntFormList(QWidget* parent)
@@ -551,19 +636,14 @@ AntFormList::AntFormList(QWidget* parent)
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(12);
 
-    m_addButton = new QPushButton(QStringLiteral("+ Add"), this);
-    m_addButton->setCursor(Qt::PointingHandCursor);
-    m_addButton->setFixedHeight(32);
+    m_addButton = new FormAddButton(this);
+    m_addButton->setText(QStringLiteral("+ Add"));
     connect(m_addButton, &QPushButton::clicked, this, [this]() { addItem(); });
 
     const auto& token = antTheme->tokens();
     QFont btnFont = m_addButton->font();
     btnFont.setPixelSize(token.fontSizeSM);
     m_addButton->setFont(btnFont);
-    m_addButton->setStyleSheet(QStringLiteral(
-        "QPushButton { border: 1px dashed %1; border-radius: 6px; color: %2; background: transparent; }"
-        "QPushButton:hover { border-color: %3; color: %3; }")
-        .arg(token.colorBorder.name(), token.colorPrimary.name(), token.colorPrimaryHover.name()));
 
     m_layout->addWidget(m_addButton);
     updateAddButton();
@@ -646,17 +726,11 @@ void AntFormList::addItem()
     content->setParent(container);
     rowLayout->addWidget(content, 1);
 
-    auto* removeBtn = new QPushButton(QStringLiteral("Remove"), container);
-    removeBtn->setCursor(Qt::PointingHandCursor);
-    removeBtn->setFixedSize(64, 28);
+    auto* removeBtn = new FormRemoveButton(container);
+    removeBtn->setText(QStringLiteral("Remove"));
     QFont btnFont = removeBtn->font();
     btnFont.setPixelSize(token.fontSizeSM);
     removeBtn->setFont(btnFont);
-    removeBtn->setStyleSheet(QStringLiteral(
-        "QPushButton { border: 1px solid %1; border-radius: 4px; color: %2; background: transparent; }"
-        "QPushButton:hover { border-color: %3; color: %3; background: %4; }")
-        .arg(token.colorBorder.name(), token.colorTextSecondary.name(),
-             token.colorError.name(), token.colorErrorBg.name()));
     connect(removeBtn, &QPushButton::clicked, this, [this, index]() {
         // Find the actual index at click time (indices shift after removal)
         for (int i = 0; i < m_items.size(); ++i)

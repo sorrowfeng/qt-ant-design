@@ -269,10 +269,12 @@ void AntInputNumber::updateEditStyle()
     lineEdit()->setFrame(false);
     lineEdit()->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    const QString textColor = isEnabled() ? token.colorText.name(QColor::HexArgb) : token.colorTextDisabled.name(QColor::HexArgb);
-    lineEdit()->setStyleSheet(
-        QStringLiteral("QLineEdit { background: transparent; border: none; color: %1; selection-background-color: %2; padding: 0; }")
-            .arg(textColor, token.colorPrimary.name(QColor::HexArgb)));
+    QPalette lePalette = lineEdit()->palette();
+    lePalette.setColor(QPalette::Base, Qt::transparent);
+    lePalette.setColor(QPalette::Text, isEnabled() ? token.colorText : token.colorTextDisabled);
+    lePalette.setColor(QPalette::Highlight, token.colorPrimary);
+    lePalette.setColor(QPalette::HighlightedText, token.colorTextLightSolid);
+    lineEdit()->setPalette(lePalette);
 
     setMinimumHeight(m.height);
     setMaximumHeight(m.height);

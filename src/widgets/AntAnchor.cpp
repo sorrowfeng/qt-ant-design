@@ -87,15 +87,24 @@ bool AntAnchor::eventFilter(QObject* watched, QEvent* event)
 
 void AntAnchor::paintEvent(QPaintEvent*)
 {
-    // Re-color labels based on active state
     const auto& token = antTheme->tokens();
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+
     for (int i = 0; i < m_layout->count(); ++i)
     {
         if (auto* label = qobject_cast<QLabel*>(m_layout->itemAt(i)->widget()))
         {
-            QColor c = (i == m_activeIndex) ? token.colorPrimary : token.colorTextSecondary;
-            label->setStyleSheet(QStringLiteral("color:%1; border-left:2px solid %2;")
-                                     .arg(c.name(), i == m_activeIndex ? c.name() : QStringLiteral("transparent")));
+            // Update label text color via QPalette
+            QPalette lp = label->palette();
+            lp.setColor(QPalette::WindowText, (i == m_activeIndex) ? token.colorPrimary : token.colorTextSecondary);
+            label->setPalette(lp);
+
+            // Draw 2px active indicator on the left edge
+            if (i == m_activeIndex)
+            {
+                p.fillRect(QRect(label->x(), label->y(), 2, label->height()), token.colorPrimary);
+            }
         }
     }
 }

@@ -15,7 +15,6 @@ AntButton::AntButton(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setAttribute(Qt::WA_Hover, true);
-    setFlat(true);
 
     auto* buttonStyle = new AntButtonStyle(style());
     buttonStyle->setParent(this);

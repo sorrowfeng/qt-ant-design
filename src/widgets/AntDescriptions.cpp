@@ -12,6 +12,32 @@
 #include "../styles/AntDescriptionsStyle.h"
 #include "core/AntTheme.h"
 
+namespace
+{
+
+class BorderedCell : public QWidget
+{
+public:
+    BorderedCell(QWidget* parent, const QColor& bg, const QColor& border)
+        : QWidget(parent), m_bg(bg), m_border(border) {}
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setPen(QPen(m_border, 1));
+        p.setBrush(m_bg);
+        p.drawRect(rect().adjusted(0, 0, -1, -1));
+    }
+
+private:
+    QColor m_bg;
+    QColor m_border;
+};
+
+} // namespace
+
 AntDescriptionsItem::AntDescriptionsItem(QWidget* parent)
     : QWidget(parent)
 {
@@ -270,7 +296,9 @@ void AntDescriptions::updateTheme()
 QWidget* AntDescriptions::buildLabelCell(const QString& text)
 {
     const auto& token = antTheme->tokens();
-    auto* cell = new QWidget(m_body);
+    QWidget* cell = m_bordered
+        ? new BorderedCell(m_body, token.colorFillQuaternary, token.colorSplit)
+        : new QWidget(m_body);
     auto* layout = new QVBoxLayout(cell);
     layout->setContentsMargins(token.paddingSM, token.paddingSM, token.paddingSM, token.paddingSM);
     layout->setSpacing(0);
@@ -283,19 +311,15 @@ QWidget* AntDescriptions::buildLabelCell(const QString& text)
     p.setColor(QPalette::WindowText, token.colorTextSecondary);
     label->setPalette(p);
     layout->addWidget(label);
-    if (m_bordered)
-    {
-        cell->setStyleSheet(QStringLiteral("QWidget { background: %1; border: 1px solid %2; }")
-                                .arg(token.colorFillQuaternary.name(QColor::HexArgb),
-                                     token.colorSplit.name(QColor::HexArgb)));
-    }
     return cell;
 }
 
 QWidget* AntDescriptions::buildContentCell(AntDescriptionsItem* item)
 {
     const auto& token = antTheme->tokens();
-    auto* cell = new QWidget(m_body);
+    QWidget* cell = m_bordered
+        ? new BorderedCell(m_body, token.colorBgContainer, token.colorSplit)
+        : new QWidget(m_body);
     auto* layout = new QVBoxLayout(cell);
     layout->setContentsMargins(token.paddingSM, token.paddingSM, token.paddingSM, token.paddingSM);
     layout->setSpacing(0);
@@ -316,12 +340,6 @@ QWidget* AntDescriptions::buildContentCell(AntDescriptionsItem* item)
         p.setColor(QPalette::WindowText, token.colorText);
         label->setPalette(p);
         layout->addWidget(label);
-    }
-    if (m_bordered)
-    {
-        cell->setStyleSheet(QStringLiteral("QWidget { background: %1; border: 1px solid %2; }")
-                                .arg(token.colorBgContainer.name(QColor::HexArgb),
-                                     token.colorSplit.name(QColor::HexArgb)));
     }
     return cell;
 }

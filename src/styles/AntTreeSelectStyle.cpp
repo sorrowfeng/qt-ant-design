@@ -142,23 +142,21 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
         && select->variant() != Ant::Variant::Underlined)
     {
         const QColor outline = token.colorPrimaryBorder;
-        painter->setPen(QPen(outline, token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(),
+            QPen(outline, token.controlOutlineWidth), Qt::NoBrush,
+            m.radius + 1, m.radius + 1);
     }
 
     if (select->variant() != Ant::Variant::Borderless
         && select->variant() != Ant::Variant::Underlined)
     {
-        painter->setPen(QPen(borderColor, token.lineWidth));
-        painter->setBrush(backgroundColor);
-        painter->drawRoundedRect(control, m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(),
+            QPen(borderColor, token.lineWidth), backgroundColor, m.radius, m.radius);
     }
     else
     {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(backgroundColor);
-        painter->drawRoundedRect(control, m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(),
+            Qt::NoPen, backgroundColor, m.radius, m.radius);
         if (select->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(borderColor, focused ? 2 : token.lineWidth));
@@ -205,9 +203,8 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
                 break;
 
             QRectF tagRect(x, y, tagW, tagH);
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(token.colorFillQuaternary);
-            painter->drawRoundedRect(tagRect, token.borderRadiusXS, token.borderRadiusXS);
+            AntStyleBase::drawCrispRoundedRect(painter, tagRect.toRect(),
+                Qt::NoPen, token.colorFillQuaternary, token.borderRadiusXS, token.borderRadiusXS);
 
             painter->setFont(tagFont);
             painter->setPen(token.colorText);

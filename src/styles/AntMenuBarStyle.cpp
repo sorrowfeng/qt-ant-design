@@ -46,9 +46,8 @@ void AntMenuBarStyle::drawControl(ControlElement element, const QStyleOption* op
         if (active || pressed)
         {
             QColor bg = active ? token.colorFillTertiary : token.colorFillQuaternary;
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(bg);
-            painter->drawRoundedRect(r.adjusted(4, 3, -4, -3), 4, 4);
+            AntStyleBase::drawCrispRoundedRect(painter, r.toRect().adjusted(4, 3, -4, -3),
+                Qt::NoPen, bg, 4, 4);
         }
 
         // Text

@@ -244,14 +244,13 @@ void AntSliderStyle::drawSlider(const QStyleOption* option, QPainter* painter, c
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(railColor);
-    painter->drawRoundedRect(groove, metrics.railSize / 2.0, metrics.railSize / 2.0);
+    AntStyleBase::drawCrispRoundedRect(painter, groove.toRect(),
+        Qt::NoPen, railColor, metrics.railSize / 2.0, metrics.railSize / 2.0);
 
     if (slider->included())
     {
-        painter->setBrush(trackColor);
-        painter->drawRoundedRect(track, metrics.railSize / 2.0, metrics.railSize / 2.0);
+        AntStyleBase::drawCrispRoundedRect(painter, track.toRect(),
+            Qt::NoPen, trackColor, metrics.railSize / 2.0, metrics.railSize / 2.0);
     }
 
     if (slider->dots())

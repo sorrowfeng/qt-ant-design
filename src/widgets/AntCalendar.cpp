@@ -255,7 +255,9 @@ AntCalendar::AntCalendar(QWidget* parent)
         QFont f = label->font();
         f.setPixelSize(antTheme->tokens().fontSizeSM);
         label->setFont(f);
-        label->setStyleSheet(QStringLiteral("color:%1").arg(antTheme->tokens().colorTextSecondary.name()));
+        QPalette lp = label->palette();
+        lp.setColor(QPalette::WindowText, antTheme->tokens().colorTextSecondary);
+        label->setPalette(lp);
         weekdayLayout->addWidget(label);
     }
     mainLayout->addWidget(m_weekdayRow);
@@ -286,7 +288,11 @@ AntCalendar::AntCalendar(QWidget* parent)
             for (auto* child : m_weekdayRow->children())
             {
                 if (auto* label = qobject_cast<QLabel*>(child))
-                    label->setStyleSheet(QStringLiteral("color:%1").arg(token.colorTextSecondary.name()));
+                {
+                    QPalette lp = label->palette();
+                    lp.setColor(QPalette::WindowText, token.colorTextSecondary);
+                    label->setPalette(lp);
+                }
             }
         }
         update();

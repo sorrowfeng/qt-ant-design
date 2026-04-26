@@ -252,16 +252,15 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
         antTheme->drawEffectShadow(painter, option->rect, 4, radius, button->buttonType() == Ant::ButtonType::Primary ? 0.45 : 0.25);
     }
 
-    painter->setBrush(colors.background);
-    painter->setPen(colors.border.alpha() == 0 ? Qt::NoPen : QPen(colors.border, token.lineWidth, colors.borderStyle));
-    painter->drawRoundedRect(outer, radius, radius);
+    AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
+        colors.border.alpha() == 0 ? Qt::NoPen : QPen(colors.border, token.lineWidth, colors.borderStyle),
+        colors.background, radius, radius);
 
     if (focused && enabled)
     {
         const QColor focus = AntPalette::alpha(button->isDanger() ? token.colorError : token.colorPrimary, 0.18);
-        painter->setPen(QPen(focus, token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(outer.adjusted(2, 2, -2, -2), radius, radius);
+        AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
+            QPen(focus, token.controlOutlineWidth), Qt::NoBrush, radius, radius);
     }
 
     QRectF textRect = contentRectFor(button, m, option->rect);

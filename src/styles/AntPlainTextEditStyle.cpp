@@ -105,14 +105,12 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
     {
         QColor bg = token.colorFillTertiary;
         if (focused) bg = token.colorBgContainer;
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(enabled ? bg : token.colorBgContainerDisabled);
-        painter->drawRoundedRect(r, m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, r.toRect(),
+            Qt::NoPen, enabled ? bg : token.colorBgContainerDisabled, m.radius, m.radius);
         if (focused)
         {
-            painter->setPen(QPen(token.colorBorder, m.lineWidth));
-            painter->setBrush(Qt::NoBrush);
-            painter->drawRoundedRect(r, m.radius, m.radius);
+            AntStyleBase::drawCrispRoundedRect(painter, r.toRect(),
+                QPen(token.colorBorder, m.lineWidth), Qt::NoBrush, m.radius, m.radius);
         }
     }
     else if (variant == Ant::Variant::Outlined)
@@ -120,9 +118,8 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
         QColor border = token.colorBorder;
         if (focused) border = token.colorPrimary;
         if (!enabled) border = token.colorBorderDisabled;
-        painter->setPen(QPen(border, m.lineWidth));
-        painter->setBrush(token.colorBgContainer);
-        painter->drawRoundedRect(r, m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, r.toRect(),
+            QPen(border, m.lineWidth), token.colorBgContainer, m.radius, m.radius);
     }
     // Borderless: no frame
 
@@ -130,9 +127,8 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
     if (focused && enabled && variant != Ant::Variant::Borderless)
     {
         const QColor focus = AntPalette::alpha(token.colorPrimary, 0.18);
-        painter->setPen(QPen(focus, m.focusWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(r.adjusted(1, 1, -1, -1), m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, r.toRect(),
+            QPen(focus, m.focusWidth), Qt::NoBrush, m.radius, m.radius);
     }
 
     // Placeholder

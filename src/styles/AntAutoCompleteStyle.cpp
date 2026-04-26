@@ -75,16 +75,14 @@ void AntAutoCompleteStyle::drawFrame(const QStyleOption* option, QPainter* paint
     QColor border = focused ? token.colorPrimary : token.colorBorder;
     if (!enabled) border = token.colorBorderDisabled;
 
-    painter->setPen(QPen(border, token.lineWidth));
-    painter->setBrush(enabled ? token.colorBgContainer : token.colorBgContainerDisabled);
-    painter->drawRoundedRect(r, token.borderRadius, token.borderRadius);
+    AntStyleBase::drawCrispRoundedRect(painter, r.toRect(), QPen(border, token.lineWidth),
+        enabled ? QBrush(token.colorBgContainer) : QBrush(token.colorBgContainerDisabled), token.borderRadius, token.borderRadius);
 
     if (focused && enabled)
     {
         const QColor focus = AntPalette::alpha(token.colorPrimary, 0.18);
-        painter->setPen(QPen(focus, token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(r.adjusted(1, 1, -1, -1), token.borderRadius, token.borderRadius);
+        AntStyleBase::drawCrispRoundedRect(painter, r.adjusted(1, 1, -1, -1).toRect(),
+            QPen(focus, token.controlOutlineWidth), Qt::NoBrush, token.borderRadius, token.borderRadius);
     }
 
     painter->restore();

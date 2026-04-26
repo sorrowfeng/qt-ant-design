@@ -117,9 +117,8 @@ void AntTreeStyle::drawTree(const QStyleOption* option, QPainter* painter, const
         {
             painter->fillRect(QRect(0, y, viewWidth, RowHeight), token.colorPrimaryBg);
             // Left accent bar
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(token.colorPrimary);
-            painter->drawRoundedRect(QRectF(0, y + 4, 3, RowHeight - 8), 1.5, 1.5);
+            AntStyleBase::drawCrispRoundedRect(painter, QRect(0, y + 4, 3, RowHeight - 8),
+                Qt::NoPen, token.colorPrimary, 1.5, 1.5);
         }
         else if (isHovered && !node->disabled)
         {
@@ -181,9 +180,8 @@ void AntTreeStyle::drawTree(const QStyleOption* option, QPainter* painter, const
             if (node->checked && !node->halfChecked)
             {
                 // Checked: filled primary with white checkmark
-                painter->setPen(Qt::NoPen);
-                painter->setBrush(token.colorPrimary);
-                painter->drawRoundedRect(cbRect, token.borderRadiusSM, token.borderRadiusSM);
+                AntStyleBase::drawCrispRoundedRect(painter, cbRect.toRect(),
+                    Qt::NoPen, token.colorPrimary, token.borderRadiusSM, token.borderRadiusSM);
 
                 QPainterPath check;
                 check.moveTo(cbRect.left() + cbRect.width() * 0.28, cbRect.top() + cbRect.height() * 0.52);
@@ -196,21 +194,20 @@ void AntTreeStyle::drawTree(const QStyleOption* option, QPainter* painter, const
             else if (node->halfChecked)
             {
                 // Half-checked: border with horizontal line
-                painter->setPen(QPen(token.colorPrimary, token.lineWidth));
-                painter->setBrush(token.colorBgContainer);
-                painter->drawRoundedRect(cbRect, token.borderRadiusSM, token.borderRadiusSM);
+                AntStyleBase::drawCrispRoundedRect(painter, cbRect.toRect(),
+                    QPen(token.colorPrimary, token.lineWidth), token.colorBgContainer,
+                    token.borderRadiusSM, token.borderRadiusSM);
 
-                painter->setPen(Qt::NoPen);
-                painter->setBrush(token.colorPrimary);
                 const QRectF mark(cbRect.left() + 4, cbRect.center().y() - 1.5, cbRect.width() - 8, 3);
-                painter->drawRoundedRect(mark, 1.5, 1.5);
+                AntStyleBase::drawCrispRoundedRect(painter, mark.toRect(),
+                    Qt::NoPen, token.colorPrimary, 1.5, 1.5);
             }
             else
             {
                 // Unchecked: border only
-                painter->setPen(QPen(token.colorBorder, token.lineWidth));
-                painter->setBrush(token.colorBgContainer);
-                painter->drawRoundedRect(cbRect, token.borderRadiusSM, token.borderRadiusSM);
+                AntStyleBase::drawCrispRoundedRect(painter, cbRect.toRect(),
+                    QPen(token.colorBorder, token.lineWidth), token.colorBgContainer,
+                    token.borderRadiusSM, token.borderRadiusSM);
             }
             x += CheckboxZoneWidth;
         }

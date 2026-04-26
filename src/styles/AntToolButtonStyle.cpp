@@ -230,17 +230,16 @@ void AntToolButtonStyle::drawToolButton(const QStyleOptionComplex* option, QPain
     }
 
     // Background + Border
-    painter->setBrush(colors.bg);
-    painter->setPen(colors.border.alpha() == 0 ? Qt::NoPen : QPen(colors.border, token.lineWidth));
-    painter->drawRoundedRect(outer, m.radius, m.radius);
+    AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
+        colors.border.alpha() == 0 ? Qt::NoPen : QPen(colors.border, token.lineWidth),
+        colors.bg, m.radius, m.radius);
 
     // Focus ring
     if (bopt->state.testFlag(QStyle::State_HasFocus) && enabled)
     {
         const QColor focus = AntPalette::alpha(btn->isDanger() ? token.colorError : token.colorPrimary, 0.18);
-        painter->setPen(QPen(focus, token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(outer.adjusted(2, 2, -2, -2), m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
+            QPen(focus, token.controlOutlineWidth), Qt::NoBrush, m.radius, m.radius);
     }
 
     // Icon

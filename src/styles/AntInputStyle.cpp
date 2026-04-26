@@ -156,15 +156,14 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
     {
         QColor focus = input->status() == Ant::Status::Error ? token.colorErrorBg : token.colorPrimaryBg;
         focus.setAlphaF(0.65);
-        painter->setPen(QPen(focus, token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
         if (variant == Ant::Variant::Underlined)
         {
             painter->drawLine(QPointF(frame.left(), frame.bottom() + 1), QPointF(frame.right(), frame.bottom() + 1));
         }
         else
         {
-            painter->drawRoundedRect(frame.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
+            AntStyleBase::drawCrispRoundedRect(painter, frame.adjusted(-1, -1, 1, 1).toRect(),
+                QPen(focus, token.controlOutlineWidth), Qt::NoBrush, m.radius + 1, m.radius + 1);
         }
     }
 
@@ -194,17 +193,15 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
         {
             bgFill = token.colorFillQuaternary;
         }
-        painter->setPen(focused ? QPen(border, token.lineWidth) : Qt::NoPen);
-        painter->setBrush(bgFill);
-        painter->drawRoundedRect(frame, m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, frame.toRect(),
+            focused ? QPen(border, token.lineWidth) : Qt::NoPen, bgFill, m.radius, m.radius);
         break;
     }
     case Ant::Variant::Borderless:
     {
         // Borderless: transparent bg, no border at all
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(enabled ? Qt::transparent : QColor(token.colorBgContainerDisabled));
-        painter->drawRoundedRect(frame, m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, frame.toRect(), Qt::NoPen,
+            enabled ? QBrush(Qt::transparent) : QBrush(QColor(token.colorBgContainerDisabled)), m.radius, m.radius);
         break;
     }
     case Ant::Variant::Underlined:
@@ -220,9 +217,8 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
     case Ant::Variant::Outlined:
     default:
     {
-        painter->setPen(QPen(border, token.lineWidth));
-        painter->setBrush(enabled ? token.colorBgContainer : token.colorBgContainerDisabled);
-        painter->drawRoundedRect(frame, m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, frame.toRect(), QPen(border, token.lineWidth),
+            enabled ? QBrush(token.colorBgContainer) : QBrush(token.colorBgContainerDisabled), m.radius, m.radius);
         break;
     }
     }

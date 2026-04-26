@@ -67,9 +67,8 @@ void drawBadgeIndicator(QPainter* painter, const AntFloatButton* fb, const QRect
         const QPointF topRight = buttonRect.topRight();
         const QRectF badgeRect(topRight.x() - badgeW + 4, topRight.y() - 4, badgeW, badgeH);
 
-        painter->setPen(QPen(token.colorBgContainer, 2));
-        painter->setBrush(token.colorError);
-        painter->drawRoundedRect(badgeRect, badgeH / 2, badgeH / 2);
+        AntStyleBase::drawCrispRoundedRect(painter, badgeRect.toRect(),
+            QPen(token.colorBgContainer, 2), token.colorError, badgeH / 2, badgeH / 2);
 
         painter->setFont(f);
         painter->setPen(token.colorTextLightSolid);
@@ -159,16 +158,16 @@ void AntFloatButtonStyle::drawMainButton(const QStyleOption* option, QPainter* p
 
     // Background
     QColor bg = floatButtonBgColor(fb, hovered, false);
-    painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-    painter->setBrush(bg);
-
     if (fb->floatButtonShape() == Ant::FloatButtonShape::Circle)
     {
+        painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        painter->setBrush(bg);
         painter->drawEllipse(r.adjusted(0.5, 0.5, -0.5, -0.5));
     }
     else
     {
-        painter->drawRoundedRect(r.adjusted(0.5, 0.5, -0.5, -0.5), radius, radius);
+        AntStyleBase::drawCrispRoundedRect(painter, r.toRect(),
+            QPen(token.colorBorderSecondary, token.lineWidth), bg, radius, radius);
     }
 
     // Badge

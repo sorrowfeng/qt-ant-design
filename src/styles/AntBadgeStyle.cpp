@@ -8,6 +8,7 @@
 
 #include <algorithm>
 
+#include "core/AntStyleBase.h"
 #include "widgets/AntBadge.h"
 
 namespace
@@ -196,7 +197,9 @@ void drawBadgeIndicator(const QStyleOption* option, QPainter* painter, const Ant
         return;
     }
 
-    painter->drawRoundedRect(r, r.height() / 2.0, r.height() / 2.0);
+    AntStyleBase::drawCrispRoundedRect(painter, r.toRect(),
+        QPen(token.colorBgContainer, token.lineWidth), fill,
+        r.height() / 2.0, r.height() / 2.0);
 
     QFont f = painter->font();
     f.setPixelSize(token.fontSizeSM);

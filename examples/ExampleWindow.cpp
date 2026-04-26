@@ -2,6 +2,7 @@
 
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QScrollArea>
 #include <QStackedWidget>
 #include <QString>
@@ -14,6 +15,7 @@
 #include "pages/PageCommon.h"
 #include "pages/PageRegistry.h"
 #include "widgets/AntButton.h"
+#include "widgets/AntNavItem.h"
 #include "widgets/AntScrollBar.h"
 #include "widgets/AntTypography.h"
 #include "widgets/AntWidget.h"
@@ -53,21 +55,29 @@ void ExampleWindow::buildSidebar()
 {
     m_sidebar = new AntWidget(m_central);
     m_sidebar->setFixedWidth(220);
-    auto* sideLayout = new QVBoxLayout(m_sidebar);
-    sideLayout->setContentsMargins(20, 12, 20, 12);
-    sideLayout->setSpacing(8);
 
-    auto* brand = new AntTypography(QStringLiteral("qt-ant-design"), m_sidebar);
+    auto* sideLayout = new QVBoxLayout(m_sidebar);
+    sideLayout->setContentsMargins(0, 0, 0, 0);
+    sideLayout->setSpacing(0);
+
+    auto* brandArea = new QWidget(m_sidebar);
+    auto* brandLayout = new QVBoxLayout(brandArea);
+    brandLayout->setContentsMargins(20, 16, 20, 16);
+    brandLayout->setSpacing(8);
+
+    auto* brand = new AntTypography(QStringLiteral("qt-ant-design"), brandArea);
     brand->setTitle(true);
     brand->setTitleLevel(Ant::TypographyTitleLevel::H4);
-    sideLayout->addWidget(brand);
+    brandLayout->addWidget(brand);
 
-    m_themeButton = new AntButton(QStringLiteral("Dark"), m_sidebar);
+    m_themeButton = new AntButton(QStringLiteral("Dark"), brandArea);
     m_themeButton->setButtonType(Ant::ButtonType::Default);
     m_themeButton->setButtonShape(Ant::ButtonShape::Round);
     m_themeButton->setButtonSize(Ant::Size::Small);
     connect(m_themeButton, &AntButton::clicked, antTheme, &AntTheme::toggleThemeMode);
-    sideLayout->addWidget(m_themeButton);
+    brandLayout->addWidget(m_themeButton);
+
+    sideLayout->addWidget(brandArea);
 
     auto* navScroll = new QScrollArea(m_sidebar);
     navScroll->setWidgetResizable(true);
@@ -76,10 +86,10 @@ void ExampleWindow::buildSidebar()
     navScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     navScroll->setVerticalScrollBar(new AntScrollBar(Qt::Vertical));
 
-    auto* navContainer = new AntWidget();
+    auto* navContainer = new QWidget();
     m_navLayout = new QVBoxLayout(navContainer);
-    m_navLayout->setContentsMargins(0, 0, 4, 0);
-    m_navLayout->setSpacing(4);
+    m_navLayout->setContentsMargins(0, 8, 0, 0);
+    m_navLayout->setSpacing(0);
     m_navLayout->addStretch();
 
     navScroll->setWidget(navContainer);
@@ -107,21 +117,50 @@ void ExampleWindow::buildPages()
 
 void ExampleWindow::addCategoryHeader(const QString& title)
 {
-    auto* header = new AntTypography(title);
-    header->setType(Ant::TypographyType::Secondary);
-    header->setStrong(true);
+    auto* header = new AntTypography(title.toUpper());
+    header->setTitle(true);
+    header->setTitleLevel(Ant::TypographyTitleLevel::H5);
+    header->setContentsMargins(20, 12, 20, 4);
     m_navLayout->insertWidget(m_navLayout->count() - 1, header);
 }
 
 void ExampleWindow::addNavButton(const QString& text, int pageIndex)
 {
-    auto* button = new AntButton(text);
-    button->setButtonType(Ant::ButtonType::Text);
-    button->setBlock(true);
-    connect(button, &AntButton::clicked, this, [this, pageIndex]() {
-        m_stack->setCurrentIndex(pageIndex);
+    auto* item = new AntNavItem(text);
+    m_navLayout->insertWidget(m_navLayout->count() - 1, item);
+    m_navItems.append(item);
+
+    connect(item, &AntNavItem::clicked, this, [this, item]() {
+        int idx = m_navItems.indexOf(item);
+        if (idx >= 0)
+        {
+            m_stack->setCurrentIndex(idx);
+            setActiveNav(idx);
+        }
     });
-    m_navLayout->insertWidget(m_navLayout->count() - 1, button);
+
+    connect(item, &QObject::destroyed, this, [this, item]() {
+        m_navItems.removeOne(item);
+    });
+
+    if (pageIndex == 0)
+    {
+        setActiveNav(0);
+    }
+}
+
+void ExampleWindow::setActiveNav(int index)
+{
+    if (index < 0 || index >= m_navItems.size())
+    {
+        return;
+    }
+
+    for (int i = 0; i < m_navItems.size(); ++i)
+    {
+        m_navItems[i]->setActive(i == index);
+    }
+    m_activeIndex = index;
 }
 
 QSize ExampleWindow::sizeHint() const
@@ -131,6 +170,9 @@ QSize ExampleWindow::sizeHint() const
 
 void ExampleWindow::applyTheme()
 {
-    m_themeButton->setText(antTheme->themeMode() == Ant::ThemeMode::Dark
-        ? QStringLiteral("Light") : QStringLiteral("Dark"));
+    const bool isDark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+
+    m_themeButton->setText(isDark ? QStringLiteral("Light") : QStringLiteral("Dark"));
+
+    setActiveNav(m_activeIndex);
 }

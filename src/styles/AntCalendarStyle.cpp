@@ -67,9 +67,9 @@ void AntCalendarStyle::drawFrame(const QStyleOption* option, QPainter* painter) 
 
     antTheme->drawEffectShadow(painter, option->rect, 6, 8, 0.12);
 
-    painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-    painter->setBrush(token.colorBgElevated);
-    painter->drawRoundedRect(option->rect, 8, 8);
+    AntStyleBase::drawCrispRoundedRect(painter, option->rect,
+        QPen(token.colorBorderSecondary, token.lineWidth),
+        token.colorBgElevated, 8, 8);
 
     painter->restore();
 }

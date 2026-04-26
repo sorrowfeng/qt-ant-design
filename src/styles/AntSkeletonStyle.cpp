@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "core/AntStyleBase.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSkeleton.h"
 
@@ -227,7 +228,6 @@ void AntSkeletonStyle::drawSkeleton(const QStyleOption* option, QPainter* painte
             brush = QBrush(gradient);
         }
 
-        painter->setBrush(brush);
         const Metrics met = skeletonMetrics();
         qreal radius = skeleton->isRound() ? rect.height() / 2.0 : met.radius;
         if (skeleton->element() == Ant::SkeletonElement::Avatar ||
@@ -242,7 +242,7 @@ void AntSkeletonStyle::drawSkeleton(const QStyleOption* option, QPainter* painte
         {
             radius = rect.height() / 2.0;
         }
-        painter->drawRoundedRect(rect, radius, radius);
+        AntStyleBase::drawCrispRoundedRect(painter, rect.toRect(), Qt::NoPen, brush, radius, radius);
 
         // Image element: draw centered placeholder icon
         if (skeleton->element() == Ant::SkeletonElement::Image)

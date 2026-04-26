@@ -1,10 +1,14 @@
 #pragma once
 
 #include <QApplication>
+#include <QBrush>
+#include <QPen>
 #include <QProxyStyle>
 #include <QWidget>
 
 #include "AntTheme.h"
+
+class QPainter;
 
 // Base class for all Ant Design style classes.
 // Provides automatic theme-change handling.
@@ -15,6 +19,11 @@ public:
         : QProxyStyle(style)
     {
     }
+
+    // Draw a rounded rect with sub-pixel precision for crisp borders.
+    // When pen is valid, rect is inset by 0.5px to center the border on pixel boundaries.
+    static void drawCrispRoundedRect(QPainter* painter, const QRect& rect,
+        const QPen& pen, const QBrush& brush, qreal rx, qreal ry);
 
 protected:
     // Called when theme changes. Override to customize.

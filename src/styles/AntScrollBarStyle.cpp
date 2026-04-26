@@ -263,9 +263,6 @@ void AntScrollBarStyle::drawScrollBar(const QStyleOptionComplex* option,
             QColor handleColor = color;
             handleColor.setAlphaF(alpha);
 
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(handleColor);
-
             const bool vertical = isVertical(widget);
             const int radius = m.handleRadius;
 
@@ -287,7 +284,8 @@ void AntScrollBarStyle::drawScrollBar(const QStyleOptionComplex* option,
                 }
             }
 
-            painter->drawRoundedRect(handleRect, radius, radius);
+            AntStyleBase::drawCrispRoundedRect(painter, handleRect,
+                Qt::NoPen, handleColor, radius, radius);
         }
     }
 

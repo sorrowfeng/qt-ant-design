@@ -163,17 +163,16 @@ void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* pain
 
     // Track background
     const QRectF track = option->rect.adjusted(2, 2, -2, -2);
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(token.colorFillQuaternary);
-    painter->drawRoundedRect(track, r, r);
+    AntStyleBase::drawCrispRoundedRect(painter, track.toRect(),
+        Qt::NoPen, token.colorFillQuaternary, r, r);
 
     // Thumb
     if (selIdx >= 0 && selIdx < itemRects.size())
     {
         QRectF thumb = itemRects[selIdx].adjusted(1, 1, -1, -1);
-        painter->setBrush(token.colorBgContainer);
         antTheme->drawEffectShadow(painter, thumb.toRect(), 6, 4, 0.08);
-        painter->drawRoundedRect(thumb, r - 1, r - 1);
+        AntStyleBase::drawCrispRoundedRect(painter, thumb.toRect(),
+            Qt::NoPen, token.colorBgContainer, r - 1, r - 1);
     }
 
     // Separators
@@ -229,11 +228,10 @@ void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* pain
         // Hover overlay
         if (isHovered && !isSel && !isDisabled && enabled)
         {
-            painter->setPen(Qt::NoPen);
             QColor hoverBg = token.colorPrimary;
             hoverBg.setAlphaF(0.06);
-            painter->setBrush(hoverBg);
-            painter->drawRoundedRect(r0.adjusted(1, 1, -1, -1), r - 1, r - 1);
+            AntStyleBase::drawCrispRoundedRect(painter, r0.toRect(),
+                Qt::NoPen, hoverBg, r - 1, r - 1);
         }
 
         // Draw icon + label

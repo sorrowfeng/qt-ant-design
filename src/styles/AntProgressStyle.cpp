@@ -130,14 +130,13 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
         }
         bar = bar.adjusted(1, 0, -1, 0);
 
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(computeRailColor(progress));
-        painter->drawRoundedRect(bar, strokeWidth / 2.0, strokeWidth / 2.0);
+        AntStyleBase::drawCrispRoundedRect(painter, bar.toRect(),
+            Qt::NoPen, computeRailColor(progress), strokeWidth / 2.0, strokeWidth / 2.0);
 
         QRectF filled = bar;
         filled.setWidth(bar.width() * percent / 100.0);
-        painter->setBrush(computeProgressColor(progress));
-        painter->drawRoundedRect(filled, strokeWidth / 2.0, strokeWidth / 2.0);
+        AntStyleBase::drawCrispRoundedRect(painter, filled.toRect(),
+            Qt::NoPen, computeProgressColor(progress), strokeWidth / 2.0, strokeWidth / 2.0);
 
         if (progress->status() == Ant::ProgressStatus::Active && percent > 0 && percent < 100)
         {
@@ -145,8 +144,8 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
             shine.setColorAt(0.0, QColor(255, 255, 255, 0));
             shine.setColorAt(0.5, QColor(255, 255, 255, 110));
             shine.setColorAt(1.0, QColor(255, 255, 255, 0));
-            painter->setBrush(shine);
-            painter->drawRoundedRect(filled, strokeWidth / 2.0, strokeWidth / 2.0);
+            AntStyleBase::drawCrispRoundedRect(painter, filled.toRect(),
+                Qt::NoPen, shine, strokeWidth / 2.0, strokeWidth / 2.0);
         }
 
         if (showInfo)

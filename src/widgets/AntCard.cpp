@@ -336,29 +336,39 @@ void AntCard::updateTheme()
     titleFont.setPixelSize(small ? token.fontSize : token.fontSizeLG);
     titleFont.setWeight(QFont::DemiBold);
     m_titleLabel->setFont(titleFont);
-    m_titleLabel->setStyleSheet(QStringLiteral("QLabel { background: transparent; color: %1; }").arg(token.colorText.name(QColor::HexArgb)));
+    QPalette titlePal = m_titleLabel->palette();
+    titlePal.setColor(QPalette::WindowText, token.colorText);
+    m_titleLabel->setPalette(titlePal);
 
     QFont extraFont = m_extraLabel->font();
     extraFont.setPixelSize(token.fontSize);
     m_extraLabel->setFont(extraFont);
-    m_extraLabel->setStyleSheet(QStringLiteral("QLabel { background: transparent; color: %1; }").arg(token.colorTextSecondary.name(QColor::HexArgb)));
+    QPalette extraPal = m_extraLabel->palette();
+    extraPal.setColor(QPalette::WindowText, token.colorTextSecondary);
+    m_extraLabel->setPalette(extraPal);
 
     // Meta labels
     QFont metaTitleFont = m_metaTitleLabel->font();
     metaTitleFont.setPixelSize(token.fontSizeLG);
     metaTitleFont.setWeight(QFont::DemiBold);
     m_metaTitleLabel->setFont(metaTitleFont);
-    m_metaTitleLabel->setStyleSheet(QStringLiteral("QLabel { background: transparent; color: %1; }").arg(token.colorText.name(QColor::HexArgb)));
+    QPalette metaTitlePal = m_metaTitleLabel->palette();
+    metaTitlePal.setColor(QPalette::WindowText, token.colorText);
+    m_metaTitleLabel->setPalette(metaTitlePal);
 
     QFont metaDescFont = m_metaDescLabel->font();
     metaDescFont.setPixelSize(token.fontSize);
     m_metaDescLabel->setFont(metaDescFont);
-    m_metaDescLabel->setStyleSheet(QStringLiteral("QLabel { background: transparent; color: %1; }").arg(token.colorTextSecondary.name(QColor::HexArgb)));
+    QPalette metaDescPal = m_metaDescLabel->palette();
+    metaDescPal.setColor(QPalette::WindowText, token.colorTextSecondary);
+    m_metaDescLabel->setPalette(metaDescPal);
 
-    m_header->setStyleSheet(QStringLiteral("background: transparent;"));
-    m_meta->setStyleSheet(QStringLiteral("background: transparent;"));
-    m_body->setStyleSheet(QStringLiteral("background: transparent;"));
-    m_actions->setStyleSheet(QStringLiteral("background: transparent;"));
+    // Ensure container widgets don't paint their own backgrounds
+    for (auto* w : {m_header, m_meta, m_body, m_actions})
+    {
+        if (w)
+            w->setAutoFillBackground(false);
+    }
 }
 
 void AntCard::drawSpinner(QPainter& painter, const QRectF& rect) const

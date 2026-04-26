@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "core/AntStyleBase.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntTable.h"
 
@@ -173,15 +174,11 @@ void drawCheckbox(QPainter* painter, const QRect& rect, bool checked, bool parti
 
     if (checked || partial)
     {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(fillColor);
-        painter->drawRoundedRect(rect, r, r);
+        AntStyleBase::drawCrispRoundedRect(painter, rect, Qt::NoPen, fillColor, r, r);
     }
     else
     {
-        painter->setPen(QPen(borderColor, 1.5));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(rect.adjusted(0, 0, -1, -1), r, r);
+        AntStyleBase::drawCrispRoundedRect(painter, rect, QPen(borderColor, 1.5), Qt::NoBrush, r, r);
     }
 
     if (checked)
@@ -509,10 +506,9 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
         painter->setBrush(AntPalette::alpha(token.colorPrimary, 0.08));
         painter->drawEllipse(QRectF(16, 58, 96, 14));
 
-        painter->setBrush(fill);
-        painter->drawRoundedRect(QRectF(34, 10, 60, 46), 10, 10);
-        painter->setBrush(AntPalette::alpha(token.colorBgContainer, 0.88));
-        painter->drawRoundedRect(QRectF(42, 18, 44, 30), 6, 6);
+        AntStyleBase::drawCrispRoundedRect(painter, QRect(34, 10, 60, 46), Qt::NoPen, fill, 10, 10);
+        AntStyleBase::drawCrispRoundedRect(painter, QRect(42, 18, 44, 30), Qt::NoPen,
+            AntPalette::alpha(token.colorBgContainer, 0.88), 6, 6);
 
         painter->setPen(QPen(primary, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         painter->drawArc(QRectF(10, 20, 26, 26), 35 * 16, 260 * 16);
@@ -600,15 +596,12 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
 
             if (isCurrent)
             {
-                painter->setPen(Qt::NoPen);
-                painter->setBrush(token.colorPrimary);
-                painter->drawRoundedRect(btnRect, 4, 4);
+                AntStyleBase::drawCrispRoundedRect(painter, btnRect, Qt::NoPen, token.colorPrimary, 4, 4);
             }
             else
             {
-                painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-                painter->setBrush(Qt::NoBrush);
-                painter->drawRoundedRect(btnRect, 4, 4);
+                AntStyleBase::drawCrispRoundedRect(painter, btnRect,
+                    QPen(token.colorBorderSecondary, token.lineWidth), Qt::NoBrush, 4, 4);
             }
 
             QFont btnFont = painter->font();

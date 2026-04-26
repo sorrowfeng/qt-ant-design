@@ -210,9 +210,8 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     antTheme->drawEffectShadow(painter, card.toRect(), 14, token.borderRadiusLG, 0.7);
 
     // Card background
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(token.colorBgElevated);
-    painter->drawRoundedRect(card, token.borderRadiusLG, token.borderRadiusLG);
+    AntStyleBase::drawCrispRoundedRect(painter, card.toRect(),
+        Qt::NoPen, token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
 
     // Type icon
     const QRectF iconRect(card.left() + token.paddingLG, card.top() + token.padding + 2, 22, 22);
@@ -222,9 +221,9 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     if (closable)
     {
         const QRectF closeRect = computeCloseButtonRect(card);
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(closeHovered ? token.colorFillTertiary : Qt::transparent);
-        painter->drawRoundedRect(closeRect, token.borderRadiusSM, token.borderRadiusSM);
+        AntStyleBase::drawCrispRoundedRect(painter, closeRect.toRect(),
+            Qt::NoPen, closeHovered ? token.colorFillTertiary : Qt::transparent,
+            token.borderRadiusSM, token.borderRadiusSM);
         painter->setPen(QPen(closeHovered ? token.colorTextSecondary : token.colorTextTertiary,
                              1.6, Qt::SolidLine, Qt::RoundCap));
         const QPointF c = closeRect.center();

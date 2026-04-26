@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "core/AntStyleBase.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntList.h"
 
@@ -150,24 +151,24 @@ void AntListStyle::drawList(const QStyleOption* option, QPainter* painter, const
     // Border
     if (list->isBordered())
     {
-        painter->setPen(QPen(token.colorBorder, token.lineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(option->rect.adjusted(0, 0, -1, -1), m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, option->rect,
+            QPen(token.colorBorder, token.lineWidth), Qt::NoBrush, m.radius, m.radius);
     }
 
     // Header background
     if (list->headerWidget())
     {
         const QRect hr = listHeaderRect(list, m);
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(token.colorFillQuaternary);
         if (list->isBordered())
         {
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(token.colorFillQuaternary);
             painter->drawRect(hr);
         }
         else
         {
-            painter->drawRoundedRect(hr, m.radius, m.radius);
+            AntStyleBase::drawCrispRoundedRect(painter, hr, Qt::NoPen,
+                token.colorFillQuaternary, m.radius, m.radius);
         }
         painter->setPen(QPen(token.colorBorder, token.lineWidth));
         painter->drawLine(hr.bottomLeft(), hr.bottomRight());

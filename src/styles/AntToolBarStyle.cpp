@@ -35,9 +35,9 @@ void AntToolBarStyle::drawControl(ControlElement element, const QStyleOption* op
             antTheme->drawEffectShadow(painter, option->rect, shadowBorder, 6, 0.15);
 
             painter->setRenderHint(QPainter::Antialiasing);
-            painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-            painter->setBrush(token.colorBgElevated);
-            painter->drawRoundedRect(bg, 6, 6);
+            AntStyleBase::drawCrispRoundedRect(painter, bg.toRect(),
+                QPen(token.colorBorderSecondary, token.lineWidth),
+                token.colorBgElevated, 6, 6);
         }
 
         painter->restore();

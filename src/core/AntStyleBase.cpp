@@ -5,6 +5,17 @@
 #include <QPainter>
 #include <QStyleOption>
 
+void AntStyleBase::drawCrispRoundedRect(QPainter* painter, const QRect& rect,
+    const QPen& pen, const QBrush& brush, qreal rx, qreal ry)
+{
+    painter->setPen(pen);
+    painter->setBrush(brush);
+    if (pen.style() != Qt::NoPen && pen.widthF() > 0)
+        painter->drawRoundedRect(QRectF(rect).adjusted(0.5, 0.5, -0.5, -0.5), rx, ry);
+    else
+        painter->drawRoundedRect(QRectF(rect), rx, ry);
+}
+
 bool AntStyleBase::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::Paint)

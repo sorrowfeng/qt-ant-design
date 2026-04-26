@@ -75,7 +75,11 @@ AntMentions::AntMentions(QWidget* parent)
 
     m_lineEdit = new QLineEdit(this);
     m_lineEdit->setFrame(false);
-    m_lineEdit->setStyleSheet(QStringLiteral("background:transparent; border:none;"));
+    {
+        QPalette p = m_lineEdit->palette();
+        p.setColor(QPalette::Base, Qt::transparent);
+        m_lineEdit->setPalette(p);
+    }
 
     connect(m_lineEdit, &QLineEdit::textEdited, this, [this]() {
         checkForPrefix();

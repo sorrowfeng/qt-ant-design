@@ -28,22 +28,12 @@ QWidget* createShowcasePage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
     page->setObjectName(QStringLiteral("showcasePage"));
-    page->setStyleSheet(QStringLiteral(
-        "#showcasePage {"
-        "  background:qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #f7fbff, stop:0.55 #ffffff, stop:1 #eef7f3);"
-        "}"));
 
     auto* root = new QVBoxLayout(page);
     root->setContentsMargins(24, 24, 24, 24);
 
-    auto* surface = new QFrame(page);
+    auto* surface = new QWidget(page);
     surface->setObjectName(QStringLiteral("showcaseSurface"));
-    surface->setStyleSheet(QStringLiteral(
-        "#showcaseSurface {"
-        "  background:white;"
-        "  border:1px solid rgba(22,119,255,0.08);"
-        "  border-radius:16px;"
-        "}"));
     surface->setMaximumWidth(760);
 
     auto* surfaceLayout = new QVBoxLayout(surface);
@@ -65,20 +55,16 @@ QWidget* createShowcasePage(QWidget* /*owner*/)
     row1->addWidget(dropdown);
 
     auto* colorBox = new QFrame(surface);
-    colorBox->setStyleSheet(QStringLiteral("background:white; border:1px solid #d9d9d9; border-radius:8px;"));
     auto* colorLayout = new QHBoxLayout(colorBox);
     colorLayout->setContentsMargins(10, 6, 10, 6);
     colorLayout->setSpacing(8);
     auto* swatch = new QLabel(colorBox);
     swatch->setFixedSize(20, 20);
-    swatch->setStyleSheet(QStringLiteral("background:#1677ff; border-radius:4px;"));
     colorLayout->addWidget(swatch);
     colorLayout->addWidget(new QLabel(QStringLiteral("#1677FF"), colorBox));
     row1->addWidget(colorBox);
 
     auto* missingTags = new QFrame(surface);
-    missingTags->setStyleSheet(QStringLiteral(
-        "background:white; border:1px solid #d9d9d9; border-radius:8px;"));
     auto* missingTagsLayout = new QHBoxLayout(missingTags);
     missingTagsLayout->setContentsMargins(10, 6, 10, 6);
     missingTagsLayout->setSpacing(6);
@@ -89,7 +75,6 @@ QWidget* createShowcasePage(QWidget* /*owner*/)
     missingTagsLayout->addWidget(appleTag);
     missingTagsLayout->addWidget(bananaTag);
     auto* missingSelectNote = new QLabel(QStringLiteral("缺 Select multiple/tags"), missingTags);
-    missingSelectNote->setStyleSheet(QStringLiteral("color:#bfbfbf; font-size:12px;"));
     missingTagsLayout->addWidget(missingSelectNote);
     missingTagsLayout->addStretch();
     row1->addWidget(missingTags, 1);
@@ -103,8 +88,6 @@ QWidget* createShowcasePage(QWidget* /*owner*/)
     row2->addWidget(datePicker);
 
     auto* missingDate = new QFrame(surface);
-    missingDate->setStyleSheet(QStringLiteral(
-        "background:white; border:1px dashed #d9d9d9; border-radius:8px;"));
     auto* missingDateLayout = new QHBoxLayout(missingDate);
     missingDateLayout->setContentsMargins(10, 6, 10, 6);
     missingDateLayout->setSpacing(6);
@@ -115,7 +98,6 @@ QWidget* createShowcasePage(QWidget* /*owner*/)
     missingDateLayout->addWidget(springTag);
     missingDateLayout->addWidget(summerTag);
     auto* missingDateNote = new QLabel(QStringLiteral("缺标签化多选日期/复合输入"), missingDate);
-    missingDateNote->setStyleSheet(QStringLiteral("color:#bfbfbf; font-size:12px;"));
     missingDateLayout->addWidget(missingDateNote);
     missingDateLayout->addStretch();
     row2->addWidget(missingDate, 1);

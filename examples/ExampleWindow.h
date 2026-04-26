@@ -1,8 +1,11 @@
 #pragma once
 
+#include <QVector>
+
 #include "widgets/AntWindow.h"
 
 class AntButton;
+class AntNavItem;
 class QStackedWidget;
 class QVBoxLayout;
 class QWidget;
@@ -22,6 +25,7 @@ private:
     void buildPages();
     void addCategoryHeader(const QString& title);
     void addNavButton(const QString& text, int pageIndex);
+    void setActiveNav(int index);
     void applyTheme();
 
     QWidget* m_central = nullptr;
@@ -30,4 +34,6 @@ private:
     QVBoxLayout* m_navLayout = nullptr;
     QStackedWidget* m_stack = nullptr;
     AntButton* m_themeButton = nullptr;
+    QVector<AntNavItem*> m_navItems;
+    int m_activeIndex = 0;
 };

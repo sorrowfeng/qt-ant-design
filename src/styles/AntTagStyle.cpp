@@ -184,9 +184,8 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
         textCol = token.colorText;
     }
 
-    painter->setPen(QPen(border, token.lineWidth));
-    painter->setBrush(bg);
-    painter->drawRoundedRect(pill, token.borderRadiusSM, token.borderRadiusSM);
+    AntStyleBase::drawCrispRoundedRect(painter, pill.toRect(), QPen(border, token.lineWidth), bg,
+        token.borderRadiusSM, token.borderRadiusSM);
 
     QFont f = painter->font();
     f.setPixelSize(token.fontSizeSM);
@@ -208,9 +207,8 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
     if (closable)
     {
         const QRect close(option->rect.width() - 19, option->rect.height() / 2 - 8, 16, 16);
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(Qt::transparent);
-        painter->drawRoundedRect(close, token.borderRadiusXS, token.borderRadiusXS);
+        AntStyleBase::drawCrispRoundedRect(painter, close, Qt::NoPen, Qt::transparent,
+            token.borderRadiusXS, token.borderRadiusXS);
         painter->setPen(QPen(textCol, 1.3, Qt::SolidLine, Qt::RoundCap));
         const QPoint c = close.center();
         painter->drawLine(QPoint(c.x() - 3, c.y() - 3), QPoint(c.x() + 3, c.y() + 3));

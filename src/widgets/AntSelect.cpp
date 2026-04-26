@@ -262,7 +262,11 @@ void AntSelect::setEditable(bool editable)
         {
             m_editField = new QLineEdit(this);
             m_editField->setFrame(false);
-            m_editField->setStyleSheet(QStringLiteral("background:transparent; border:none;"));
+            {
+                QPalette ep = m_editField->palette();
+                ep.setColor(QPalette::Base, Qt::transparent);
+                m_editField->setPalette(ep);
+            }
             m_editField->setVisible(false);
             connect(m_editField, &QLineEdit::textChanged, this, [this]() {
                 if (!m_open) setOpen(true);

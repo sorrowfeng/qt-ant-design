@@ -72,7 +72,7 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
 
     const auto& token = antTheme->tokens();
     const int radius = token.borderRadiusLG;
-    QRect cardRect = option->rect.adjusted(0, 0, -1, -1);
+    QRect cardRect = option->rect;
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
@@ -86,9 +86,9 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
     }
 
     // Card border and background
-    painter->setPen(card->isBordered() ? QPen(token.colorBorderSecondary, token.lineWidth) : Qt::NoPen);
-    painter->setBrush(token.colorBgContainer);
-    painter->drawRoundedRect(QRectF(cardRect), radius, radius);
+    AntStyleBase::drawCrispRoundedRect(painter, cardRect,
+        card->isBordered() ? QPen(token.colorBorderSecondary, token.lineWidth) : Qt::NoPen,
+        token.colorBgContainer, radius, radius);
 
     // Header separator line
     QWidget* headerWidget = card->findChild<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
@@ -104,9 +104,7 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
     {
         QColor mask = token.colorBgContainer;
         mask.setAlphaF(0.72);
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(mask);
-        painter->drawRoundedRect(QRectF(cardRect), radius, radius);
+        AntStyleBase::drawCrispRoundedRect(painter, cardRect, Qt::NoPen, mask, radius, radius);
 
         // Spinner
         painter->setPen(QPen(token.colorPrimary, 3, Qt::SolidLine, Qt::RoundCap));

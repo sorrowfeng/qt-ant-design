@@ -76,9 +76,8 @@ void AntCheckboxStyle::drawControl(ControlElement element, const QStyleOption* o
 
         painter->save();
         painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-        painter->setPen(QPen(border, token.lineWidth));
-        painter->setBrush(background);
-        painter->drawRoundedRect(box, token.borderRadiusSM, token.borderRadiusSM);
+        AntStyleBase::drawCrispRoundedRect(painter, box.toRect(),
+            QPen(border, token.lineWidth), background, token.borderRadiusSM, token.borderRadiusSM);
 
         if (checkbox->isChecked() && !checkbox->isIndeterminate())
         {
@@ -92,18 +91,17 @@ void AntCheckboxStyle::drawControl(ControlElement element, const QStyleOption* o
         }
         else if (checkbox->isIndeterminate())
         {
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(enabled ? token.colorPrimary : token.colorTextDisabled);
             const QRectF mark(box.left() + 4, box.center().y() - 1.5, box.width() - 8, 3);
-            painter->drawRoundedRect(mark, 1.5, 1.5);
+            AntStyleBase::drawCrispRoundedRect(painter, mark.toRect(),
+                Qt::NoPen, enabled ? token.colorPrimary : token.colorTextDisabled, 1.5, 1.5);
         }
 
         if (bopt->state.testFlag(QStyle::State_HasFocus) && enabled)
         {
             const QColor focus = AntPalette::alpha(token.colorPrimary, 0.22);
-            painter->setPen(QPen(focus, token.controlOutlineWidth));
-            painter->setBrush(Qt::NoBrush);
-            painter->drawRoundedRect(box.adjusted(-2, -2, 2, 2), token.borderRadiusSM + 2, token.borderRadiusSM + 2);
+            AntStyleBase::drawCrispRoundedRect(painter, box.toRect(),
+                QPen(focus, token.controlOutlineWidth), Qt::NoBrush,
+                token.borderRadiusSM + 2, token.borderRadiusSM + 2);
         }
 
         if (!checkbox->text().isEmpty())

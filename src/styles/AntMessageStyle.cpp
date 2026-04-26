@@ -127,9 +127,9 @@ void AntMessageStyle::drawMessage(const QStyleOption* option, QPainter* painter,
     antTheme->drawEffectShadow(painter, bubble.toRect(), 10, token.borderRadiusLG, 0.55);
 
     // Bubble
-    painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-    painter->setBrush(token.colorBgElevated);
-    painter->drawRoundedRect(bubble, token.borderRadiusLG, token.borderRadiusLG);
+    AntStyleBase::drawCrispRoundedRect(painter, bubble.toRect(),
+        QPen(token.colorBorderSecondary, token.lineWidth),
+        token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
 
     // Icon
     const QRectF iconRect(bubble.left() + token.paddingSM, bubble.center().y() - 8, 16, 16);

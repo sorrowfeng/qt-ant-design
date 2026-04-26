@@ -230,9 +230,9 @@ void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const
         const QColor focusColor = AntPalette::alpha(token.colorPrimary, 0.22);
         QRectF focusRect(option->rect.left(), option->rect.top() + (option->rect.height() - m.starSize) / 2.0 - 2,
                          m.totalWidth, m.starSize + 4);
-        painter->setPen(QPen(focusColor, token.controlOutlineWidth, Qt::DashLine));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(focusRect, token.borderRadiusXS, token.borderRadiusXS);
+        AntStyleBase::drawCrispRoundedRect(painter, focusRect.toRect(),
+            QPen(focusColor, token.controlOutlineWidth, Qt::DashLine), Qt::NoBrush,
+            token.borderRadiusXS, token.borderRadiusXS);
     }
 
     painter->restore();

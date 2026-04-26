@@ -220,16 +220,16 @@ void AntAlertStyle::drawAlert(const QStyleOption* option, QPainter* painter, con
     const bool closable = alert->isClosable();
     const bool hoverClose = alert->property("antStyle_closeHover").toBool();
 
-    const QRect body = option->rect.adjusted(0, 0, -1, -1);
+    const QRect body = option->rect;
     const QRect content = computeContentRect(option->rect, m);
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
     // Background and border
-    painter->setPen(QPen(computeBorderColor(alertType), token.lineWidth));
-    painter->setBrush(computeBackgroundColor(alertType));
-    painter->drawRoundedRect(body, m.radius, m.radius);
+    AntStyleBase::drawCrispRoundedRect(painter, body,
+        QPen(computeBorderColor(alertType), token.lineWidth),
+        computeBackgroundColor(alertType), m.radius, m.radius);
 
     // Icon
     int textLeft = content.left();
@@ -262,9 +262,9 @@ void AntAlertStyle::drawAlert(const QStyleOption* option, QPainter* painter, con
 
         if (hoverClose)
         {
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(AntPalette::alpha(token.colorTextTertiary, 0.12));
-            painter->drawRoundedRect(close, token.borderRadiusXS, token.borderRadiusXS);
+            AntStyleBase::drawCrispRoundedRect(painter, close,
+                Qt::NoPen, AntPalette::alpha(token.colorTextTertiary, 0.12),
+                token.borderRadiusXS, token.borderRadiusXS);
         }
         painter->setPen(QPen(token.colorTextTertiary, 1.5, Qt::SolidLine, Qt::RoundCap));
         painter->drawLine(close.center() + QPoint(-4, -4), close.center() + QPoint(4, 4));

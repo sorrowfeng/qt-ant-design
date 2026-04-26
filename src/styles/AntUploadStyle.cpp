@@ -6,6 +6,7 @@
 #include <QPainterPath>
 #include <QStyleOption>
 
+#include "core/AntStyleBase.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntUpload.h"
 
@@ -19,13 +20,11 @@ constexpr int CardSize = 100;
 constexpr int CardGap = 8;
 constexpr int GridColumns = 4;
 
-void drawDashedBorder(QPainter* painter, const QRectF& rect, qreal radius, const QColor& color)
+void drawDashedBorder(QPainter* painter, const QRect& rect, qreal radius, const QColor& color)
 {
     QPen pen(color, 1, Qt::DashLine);
     pen.setDashPattern({4, 4});
-    painter->setPen(pen);
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRoundedRect(rect, radius, radius);
+    AntStyleBase::drawCrispRoundedRect(painter, rect, pen, Qt::NoBrush, radius, radius);
 }
 } // namespace
 
@@ -166,20 +165,18 @@ void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool 
 
     if (rect.width() == CardSize && rect.height() == CardSize)
     {
-        const QRectF cardRect = QRectF(rect).adjusted(0.5, 0.5, -0.5, -0.5);
         const QColor borderColor = disabled ? token.colorBorderDisabled
                                             : (hovered ? token.colorPrimary : token.colorBorder);
-        drawDashedBorder(painter, cardRect, token.borderRadius, borderColor);
+        drawDashedBorder(painter, rect, token.borderRadius, borderColor);
 
         const QColor iconColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
         drawPlusIcon(painter, rect.center(), 16, iconColor);
         return;
     }
 
-    const QRectF triggerRect = QRectF(rect).adjusted(0.5, 0.5, -0.5, -0.5);
     const QColor borderColor = disabled ? token.colorBorderDisabled
                                         : (hovered ? token.colorPrimary : token.colorBorder);
-    drawDashedBorder(painter, triggerRect, token.borderRadiusSM, borderColor);
+    drawDashedBorder(painter, rect, token.borderRadiusSM, borderColor);
 
     const QColor iconColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
     const int iconSize = 14;
@@ -294,9 +291,9 @@ void AntUploadStyle::drawPictureFileItem(QPainter* painter, const QRect& itemRec
     const int thumbTop = itemRect.top() + (itemRect.height() - thumbSize) / 2;
     const QRect thumbRect(thumbLeft, thumbTop, thumbSize, thumbSize);
 
-    painter->setPen(QPen(token.colorBorderSecondary, 1));
-    painter->setBrush(token.colorFillTertiary);
-    painter->drawRoundedRect(thumbRect, token.borderRadiusSM, token.borderRadiusSM);
+    AntStyleBase::drawCrispRoundedRect(painter, thumbRect,
+        QPen(token.colorBorderSecondary, 1), token.colorFillTertiary,
+        token.borderRadiusSM, token.borderRadiusSM);
 
     if (!file.thumbUrl.isEmpty())
     {
@@ -339,11 +336,11 @@ void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRec
                                           bool hovered) const
 {
     const auto& token = antTheme->tokens();
-    const QRectF cr = QRectF(cardRect).adjusted(0.5, 0.5, -0.5, -0.5);
+    const QRect cr = cardRect;
 
-    painter->setPen(QPen(token.colorBorderSecondary, 1));
-    painter->setBrush(token.colorBgContainer);
-    painter->drawRoundedRect(cr, token.borderRadius, token.borderRadius);
+    AntStyleBase::drawCrispRoundedRect(painter, cr,
+        QPen(token.colorBorderSecondary, 1), token.colorBgContainer,
+        token.borderRadius, token.borderRadius);
 
     if (!file.thumbUrl.isEmpty())
     {
@@ -385,9 +382,8 @@ void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRec
     if (file.status == Ant::UploadFileStatus::Uploading)
     {
         QColor mask(0, 0, 0, 120);
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(mask);
-        painter->drawRoundedRect(cr, token.borderRadius, token.borderRadius);
+        AntStyleBase::drawCrispRoundedRect(painter, cr, Qt::NoPen, mask,
+            token.borderRadius, token.borderRadius);
 
         const int spinnerSize = 28;
         const QRect spinnerRect(
@@ -409,9 +405,8 @@ void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRec
     if (hovered && file.status != Ant::UploadFileStatus::Uploading)
     {
         QColor hoverOverlay(0, 0, 0, 100);
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(hoverOverlay);
-        painter->drawRoundedRect(cr, token.borderRadius, token.borderRadius);
+        AntStyleBase::drawCrispRoundedRect(painter, cr, Qt::NoPen, hoverOverlay,
+            token.borderRadius, token.borderRadius);
 
         const int actionIconSize = 18;
         const int actionGap = 16;
@@ -449,16 +444,13 @@ void AntUploadStyle::drawProgressBar(QPainter* painter, const QRect& rect, int p
     const auto& token = antTheme->tokens();
     const int radius = rect.height() / 2;
 
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(token.colorBorderSecondary);
-    painter->drawRoundedRect(rect, radius, radius);
+    AntStyleBase::drawCrispRoundedRect(painter, rect, Qt::NoPen, token.colorBorderSecondary, radius, radius);
 
     if (percent > 0)
     {
         const int fillWidth = rect.width() * qBound(0, percent, 100) / 100;
         const QRect fillRect(rect.left(), rect.top(), fillWidth, rect.height());
-        painter->setBrush(token.colorPrimary);
-        painter->drawRoundedRect(fillRect, radius, radius);
+        AntStyleBase::drawCrispRoundedRect(painter, fillRect, Qt::NoPen, token.colorPrimary, radius, radius);
     }
 }
 
@@ -504,11 +496,10 @@ void AntUploadStyle::drawFileIcon(QPainter* painter, const QRect& rect, const QC
     const auto& token = antTheme->tokens();
     const int radius = token.borderRadiusXS;
 
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(token.colorPrimaryBg);
-    painter->drawRoundedRect(rect, radius, radius);
+    AntStyleBase::drawCrispRoundedRect(painter, rect, Qt::NoPen, token.colorPrimaryBg, radius, radius);
 
     const QRect foldRect(rect.right() - rect.width() / 3, rect.top(), rect.width() / 3, rect.height() / 3);
+    painter->setPen(Qt::NoPen);
     painter->setBrush(color);
     QPainterPath foldPath;
     foldPath.moveTo(foldRect.bottomLeft());
@@ -518,9 +509,8 @@ void AntUploadStyle::drawFileIcon(QPainter* painter, const QRect& rect, const QC
     foldPath.closeSubpath();
     painter->drawPath(foldPath);
 
-    painter->setPen(QPen(color, 1.2));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRoundedRect(rect.adjusted(0, rect.height() / 3 - 1, 0, -2), radius, radius);
+    AntStyleBase::drawCrispRoundedRect(painter, rect.adjusted(0, rect.height() / 3 - 1, 0, -2),
+        QPen(color, 1.2), Qt::NoBrush, radius, radius);
 }
 
 void AntUploadStyle::drawEyeIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const

@@ -267,9 +267,10 @@ void AntPaginationStyle::drawPagination(const QStyleOption* option, QPainter* pa
         const PageItem& item = items.at(i);
         if (item.kind != PageItemKind::Text)
         {
-            painter->setPen(QPen(item.active ? token.colorPrimary : token.colorBorder, token.lineWidth));
-            painter->setBrush(paginationItemBackgroundColor(item, false, pagination->isDisabled()));
-            painter->drawRoundedRect(item.rect.adjusted(0, 0, -1, -1), token.borderRadius, token.borderRadius);
+            AntStyleBase::drawCrispRoundedRect(painter, item.rect,
+                QPen(item.active ? token.colorPrimary : token.colorBorder, token.lineWidth),
+                paginationItemBackgroundColor(item, false, pagination->isDisabled()),
+                token.borderRadius, token.borderRadius);
         }
         painter->setPen(paginationItemTextColor(item, false));
         painter->drawText(item.rect, Qt::AlignCenter | Qt::TextSingleLine, item.text);

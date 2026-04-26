@@ -365,19 +365,35 @@ void AntInput::updateVisualState()
     setMinimumHeight(m.height);
     setMaximumHeight(m.height);
 
-    const QString textColor = isEnabled() ? token.colorText.name(QColor::HexArgb) : token.colorTextDisabled.name(QColor::HexArgb);
-    m_lineEdit->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; color: %1; selection-background-color: %2; }")
-                                  .arg(textColor, token.colorPrimary.name(QColor::HexArgb)));
+    // LineEdit colors via QPalette
+    QPalette lePalette = m_lineEdit->palette();
+    lePalette.setColor(QPalette::Base, Qt::transparent);
+    lePalette.setColor(QPalette::Text, isEnabled() ? token.colorText : token.colorTextDisabled);
+    lePalette.setColor(QPalette::Highlight, token.colorPrimary);
+    lePalette.setColor(QPalette::HighlightedText, Qt::white);
+    m_lineEdit->setPalette(lePalette);
 
-    const QString toolStyle = QStringLiteral("QToolButton { border: none; background: transparent; color: %1; padding: 0 4px; }")
-                                  .arg(token.colorTextTertiary.name(QColor::HexArgb));
-    m_clearButton->setStyleSheet(toolStyle);
-    m_passwordButton->setStyleSheet(toolStyle);
-    const QString labelStyle = QStringLiteral("QLabel { color: %1; background: transparent; }").arg(token.colorText.name(QColor::HexArgb));
+    // ToolButton colors via QPalette
+    for (auto* btn : {m_clearButton, m_passwordButton})
+    {
+        QPalette tbPalette = btn->palette();
+        tbPalette.setColor(QPalette::ButtonText, token.colorTextTertiary);
+        btn->setPalette(tbPalette);
+    }
+
+    // Addon label colors via QPalette
     if (m_addonBefore)
-        m_addonBefore->setStyleSheet(labelStyle);
+    {
+        QPalette abPalette = m_addonBefore->palette();
+        abPalette.setColor(QPalette::WindowText, token.colorText);
+        m_addonBefore->setPalette(abPalette);
+    }
     if (m_addonAfter)
-        m_addonAfter->setStyleSheet(labelStyle);
+    {
+        QPalette aaPalette = m_addonAfter->palette();
+        aaPalette.setColor(QPalette::WindowText, token.colorText);
+        m_addonAfter->setPalette(aaPalette);
+    }
 }
 
 QColor AntInput::borderColor() const

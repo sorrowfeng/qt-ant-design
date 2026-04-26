@@ -215,23 +215,20 @@ void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painte
         && cascader->variant() != Ant::Variant::Underlined)
     {
         const QColor outline = AntPalette::alpha(bColor, 0.16);
-        painter->setPen(QPen(outline, token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), metrics.radius + 1, metrics.radius + 1);
+        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
+            QPen(outline, token.controlOutlineWidth), Qt::NoBrush, metrics.radius + 1, metrics.radius + 1);
     }
 
     if (cascader->variant() != Ant::Variant::Borderless
         && cascader->variant() != Ant::Variant::Underlined)
     {
-        painter->setPen(QPen(bColor, token.lineWidth));
-        painter->setBrush(bgColor);
-        painter->drawRoundedRect(control.adjusted(0.5, 0.5, -0.5, -0.5), metrics.radius, metrics.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(), QPen(bColor, token.lineWidth),
+            bgColor, metrics.radius, metrics.radius);
     }
     else
     {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(bgColor);
-        painter->drawRoundedRect(control, metrics.radius, metrics.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(), Qt::NoPen,
+            bgColor, metrics.radius, metrics.radius);
         if (cascader->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(bColor, focused ? 2 : token.lineWidth));

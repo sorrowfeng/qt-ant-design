@@ -211,9 +211,8 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(trackColorFor(sw));
-    painter->drawRoundedRect(track, track.height() / 2.0, track.height() / 2.0);
+    AntStyleBase::drawCrispRoundedRect(painter, track.toRect(),
+        Qt::NoPen, trackColorFor(sw), track.height() / 2.0, track.height() / 2.0);
 
     const QString label = sw->isChecked() ? sw->checkedText() : sw->uncheckedText();
     if (!label.isEmpty() && sw->switchSize() == Ant::Size::Middle)
@@ -243,15 +242,12 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
         painter->drawText(textRect, Qt::AlignCenter, label);
     }
 
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(token.colorTextLightSolid);
-    painter->drawRoundedRect(handle, handle.height() / 2.0, handle.height() / 2.0);
+    AntStyleBase::drawCrispRoundedRect(painter, handle.toRect(),
+        Qt::NoPen, token.colorTextLightSolid, handle.height() / 2.0, handle.height() / 2.0);
 
-    painter->setPen(QPen(QColor(0, 35, 11, 50), 1));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRoundedRect(handle.adjusted(0.5, 0.5, -0.5, -0.5),
-                             handle.height() / 2.0,
-                             handle.height() / 2.0);
+    AntStyleBase::drawCrispRoundedRect(painter, handle.toRect(),
+        QPen(QColor(0, 35, 11, 50), 1), Qt::NoBrush,
+        handle.height() / 2.0, handle.height() / 2.0);
 
     if (sw->isLoading())
     {
@@ -262,9 +258,9 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
     if (focused && enabled && !sw->isLoading())
     {
         const QColor focus = AntPalette::alpha(token.colorPrimary, 0.22);
-        painter->setPen(QPen(focus, token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(track.adjusted(1, 1, -1, -1), track.height() / 2.0, track.height() / 2.0);
+        AntStyleBase::drawCrispRoundedRect(painter, track.toRect(),
+            QPen(focus, token.controlOutlineWidth), Qt::NoBrush,
+            track.height() / 2.0, track.height() / 2.0);
     }
 
     painter->restore();

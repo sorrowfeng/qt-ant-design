@@ -205,9 +205,9 @@ void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter,
 
     // Shadow and bubble
     antTheme->drawEffectShadow(painter, bubble, 12, token.borderRadiusLG, 0.55);
-    painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-    painter->setBrush(token.colorBgElevated);
-    painter->drawRoundedRect(bubble, token.borderRadiusLG, token.borderRadiusLG);
+    AntStyleBase::drawCrispRoundedRect(painter, bubble,
+        QPen(token.colorBorderSecondary, token.lineWidth),
+        token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
 
     // Arrow
     if (arrowVisible)

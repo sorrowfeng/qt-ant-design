@@ -199,9 +199,8 @@ void drawTag(QPainter* painter, const QRectF& rect, const QString& text, int fon
     const QColor tagText = disabled ? token.colorTextDisabled : token.colorText;
     const QColor tagBorder = disabled ? token.colorBorderDisabled : token.colorBorderSecondary;
 
-    painter->setPen(QPen(tagBorder, token.lineWidth));
-    painter->setBrush(tagBg);
-    painter->drawRoundedRect(rect, token.borderRadiusSM, token.borderRadiusSM);
+    AntStyleBase::drawCrispRoundedRect(painter, rect.toRect(), QPen(tagBorder, token.lineWidth),
+        tagBg, token.borderRadiusSM, token.borderRadiusSM);
 
     QFont f = painter->font();
     f.setPixelSize(fontSize);
@@ -305,23 +304,20 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
         && select->variant() != Ant::Variant::Underlined)
     {
         const QColor outline = AntPalette::alpha(borderColor, 0.16);
-        painter->setPen(QPen(outline, token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), metrics.radius + 1, metrics.radius + 1);
+        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
+            QPen(outline, token.controlOutlineWidth), Qt::NoBrush, metrics.radius + 1, metrics.radius + 1);
     }
 
     if (select->variant() != Ant::Variant::Borderless
         && select->variant() != Ant::Variant::Underlined)
     {
-        painter->setPen(QPen(borderColor, token.lineWidth));
-        painter->setBrush(backgroundColor);
-        painter->drawRoundedRect(control.adjusted(0.5, 0.5, -0.5, -0.5), metrics.radius, metrics.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(), QPen(borderColor, token.lineWidth),
+            backgroundColor, metrics.radius, metrics.radius);
     }
     else
     {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(backgroundColor);
-        painter->drawRoundedRect(control, metrics.radius, metrics.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(), Qt::NoPen,
+            backgroundColor, metrics.radius, metrics.radius);
         if (select->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(borderColor, focused ? 2 : token.lineWidth));

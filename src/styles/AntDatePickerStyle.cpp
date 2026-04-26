@@ -179,24 +179,23 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
         picker->variant() != Ant::Variant::Borderless &&
         picker->variant() != Ant::Variant::Underlined)
     {
-        painter->setPen(QPen(AntPalette::alpha(datePickerBorderColor(picker), 0.16), token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
+        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
+            QPen(AntPalette::alpha(datePickerBorderColor(picker), 0.16), token.controlOutlineWidth),
+            Qt::NoBrush, m.radius + 1, m.radius + 1);
     }
 
     // Border and background
     if (picker->variant() != Ant::Variant::Borderless &&
         picker->variant() != Ant::Variant::Underlined)
     {
-        painter->setPen(QPen(datePickerBorderColor(picker), token.lineWidth));
-        painter->setBrush(datePickerBackgroundColor(picker));
-        painter->drawRoundedRect(control.adjusted(0.5, 0.5, -0.5, -0.5), m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(),
+            QPen(datePickerBorderColor(picker), token.lineWidth),
+            datePickerBackgroundColor(picker), m.radius, m.radius);
     }
     else
     {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(datePickerBackgroundColor(picker));
-        painter->drawRoundedRect(control, m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(), Qt::NoPen,
+            datePickerBackgroundColor(picker), m.radius, m.radius);
         if (picker->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(datePickerBorderColor(picker), focused ? 2 : token.lineWidth));
@@ -233,11 +232,11 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
     }
     else
     {
-        painter->setPen(QPen(picker->isEnabled() ? token.colorTextTertiary : token.colorTextDisabled,
-                            1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        painter->setBrush(Qt::NoBrush);
         QRectF cal = icon.adjusted(7, 6, -7, -6);
-        painter->drawRoundedRect(cal, 2, 2);
+        AntStyleBase::drawCrispRoundedRect(painter, cal.toRect(),
+            QPen(picker->isEnabled() ? token.colorTextTertiary : token.colorTextDisabled,
+                 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin),
+            Qt::NoBrush, 2, 2);
         painter->drawLine(QPointF(cal.left(), cal.top() + 5), QPointF(cal.right(), cal.top() + 5));
         painter->drawLine(QPointF(cal.left() + 4, cal.top() - 2), QPointF(cal.left() + 4, cal.top() + 3));
         painter->drawLine(QPointF(cal.right() - 4, cal.top() - 2), QPointF(cal.right() - 4, cal.top() + 3));

@@ -179,24 +179,23 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
         picker->variant() != Ant::Variant::Borderless &&
         picker->variant() != Ant::Variant::Underlined)
     {
-        painter->setPen(QPen(AntPalette::alpha(timePickerBorderColor(picker), 0.16), token.controlOutlineWidth));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRoundedRect(control.adjusted(-1, -1, 1, 1), m.radius + 1, m.radius + 1);
+        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
+            QPen(AntPalette::alpha(timePickerBorderColor(picker), 0.16), token.controlOutlineWidth),
+            Qt::NoBrush, m.radius + 1, m.radius + 1);
     }
 
     // Border and background
     if (picker->variant() != Ant::Variant::Borderless &&
         picker->variant() != Ant::Variant::Underlined)
     {
-        painter->setPen(QPen(timePickerBorderColor(picker), token.lineWidth));
-        painter->setBrush(timePickerBackgroundColor(picker));
-        painter->drawRoundedRect(control.adjusted(0.5, 0.5, -0.5, -0.5), m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(),
+            QPen(timePickerBorderColor(picker), token.lineWidth),
+            timePickerBackgroundColor(picker), m.radius, m.radius);
     }
     else
     {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(timePickerBackgroundColor(picker));
-        painter->drawRoundedRect(control, m.radius, m.radius);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(), Qt::NoPen,
+            timePickerBackgroundColor(picker), m.radius, m.radius);
         if (picker->variant() == Ant::Variant::Underlined)
         {
             painter->setPen(QPen(timePickerBorderColor(picker), focused ? 2 : token.lineWidth));
