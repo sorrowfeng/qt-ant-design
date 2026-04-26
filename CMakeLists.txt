@@ -340,6 +340,21 @@ add_executable(qt-ant-design-example
     examples/main.cpp
     examples/ExampleWindow.h
     examples/ExampleWindow.cpp
+    examples/pages/Pages.h
+    examples/pages/PageCommon.h
+    examples/pages/PageCommon.cpp
+    examples/pages/PageRegistry.h
+    examples/pages/PageRegistry.cpp
+    examples/pages/ShowcasePage.cpp
+    examples/pages/GeneralPages.cpp
+    examples/pages/LayoutPages.cpp
+    examples/pages/NavigationPages.cpp
+    examples/pages/DataEntryPages.cpp
+    examples/pages/DataDisplayPagesA.cpp
+    examples/pages/DataDisplayPagesB.cpp
+    examples/pages/FeedbackPages.cpp
+    examples/pages/OtherPages.cpp
+    examples/pages/QtExtPages.cpp
 )
 
 target_link_libraries(qt-ant-design-example
