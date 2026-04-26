@@ -276,13 +276,15 @@ QSize AntTypography::sizeHint() const
     }
 
     const int textW = fm.horizontalAdvance(m_text) + copyBtnWidth;
-    const int textH = fm.boundingRect(m_text).height() + 4;
+    const int textH = fm.height() + 4;
     return QSize(qMax(60, textW), qMax(24, textH));
 }
 
 QSize AntTypography::minimumSizeHint() const
 {
-    return QSize(40, 20);
+    QFont f = createFont();
+    QFontMetrics fm(f);
+    return QSize(40, fm.height() + 4);
 }
 
 void AntTypography::paintEvent(QPaintEvent* event)
