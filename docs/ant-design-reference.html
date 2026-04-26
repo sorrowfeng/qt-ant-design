@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ant Design — Official Component Reference</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/antd@5.24.7/dist/reset.css"/>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/dayjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/antd@5.24.7/dist/antd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.10/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ant-design/icons@5.6.1/dist/index.umd.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body, #root { height:100%; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; }
+  .layout { display:flex; height:100vh; }
+  .sidebar { width:220px; background:#fff; border-right:1px solid #f0f0f0;
+             display:flex; flex-direction:column; flex-shrink:0; overflow:hidden; }
+  .sidebar-brand { padding:16px 20px; font-size:18px; font-weight:600; border-bottom:1px solid #f0f0f0; }
+  .sidebar-nav { flex:1; overflow-y:auto; padding:8px 0; }
+  .sidebar-nav::-webkit-scrollbar { width:6px; }
+  .sidebar-nav::-webkit-scrollbar-thumb { background:#d9d9d9; border-radius:3px; }
+  .cat-header { padding:8px 20px 4px; font-size:12px; color:#8c8c8c; font-weight:600;
+                text-transform:uppercase; letter-spacing:.5px; }
+  .nav-item { display:block; padding:6px 20px; cursor:pointer; color:#333;
+              font-size:14px; transition:all .15s; border-left:3px solid transparent; }
+  .nav-item:hover { background:#f5f5f5; }
+  .nav-item.active { color:#1677ff; background:#e6f4ff; border-left-color:#1677ff; }
+  .content { flex:1; overflow-y:auto; padding:24px 32px; background:#fafafa; }
+  .content::-webkit-scrollbar { width:8px; }
+  .content::-webkit-scrollbar-thumb { background:#d9d9d9; border-radius:4px; }
+  .page-title { font-size:28px; font-weight:600; margin-bottom:8px; }
+  .page-desc { color:#8c8c8c; margin-bottom:24px; font-size:14px; }
+  .section { background:#fff; border-radius:8px; padding:20px 24px; margin-bottom:16px;
+             border:1px solid #f0f0f0; }
+  .section-title { font-size:15px; font-weight:600; margin-bottom:14px; color:#333;
+                   padding-bottom:8px; border-bottom:1px solid #f0f0f0; }
+  .demo-row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:12px; }
+  .demo-row:last-child { margin-bottom:0; }
+  .demo-block { margin-bottom:16px; }
+  .demo-block:last-child { margin-bottom:0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const {
+  Button, ConfigProvider, Input, Select, Checkbox, Radio, Switch, Slider,
+  InputNumber, DatePicker, TimePicker, Rate, Upload, Transfer, TreeSelect,
+  Cascader, Mentions, ColorPicker, AutoComplete, Form,
+  Avatar, Badge, Card, Calendar, Carousel, Collapse, Descriptions, Empty,
+  Image, List, Popover, QRCode, Segmented, Statistic, Table, Tabs, Tag,
+  Timeline, Tooltip, Tree,
+  Alert, Drawer, Message, Modal, Notification, Popconfirm, Progress, Result,
+  Skeleton, Spin, Tour, Watermark,
+  App, FloatButton, Divider, Flex, Grid, Space, Layout, Splitter,
+  Breadcrumb, Dropdown, Menu, Pagination, Steps, Anchor, Affix,
+  Typography
+} = antd;
+const icons = window.icons || {};
+const {
+  SearchOutlined, EditOutlined, DeleteOutlined, EllipsisOutlined,
+  CheckCircleFilled, CloseCircleFilled, ExclamationCircleFilled,
+  InfoCircleFilled, PlusOutlined, MinusOutlined, LeftOutlined,
+  RightOutlined, UpOutlined, DownOutlined, HomeOutlined, UserOutlined,
+  MailOutlined, AppstoreOutlined, SettingOutlined, StarOutlined,
+  HeartOutlined, LikeOutlined, MessageOutlined, BellOutlined,
+  CalendarOutlined, ClockCircleOutlined, CheckOutlined, CloseOutlined,
+  LoadingOutlined, CloudUploadOutlined, InboxOutlined
+} = icons;
+
+const { Title, Text, Paragraph, Link } = Typography;
+const { TextArea } = Input;
+const { Row, Col } = Grid;
+const { SubMenu } = Menu;
+const { Panel } = Collapse;
+const { RangePicker } = DatePicker;
+const { RangePicker: TimeRangePicker } = TimePicker;
+const { Dragger } = Upload;
+
+/* ═══════════════════════════════════════════════════
+   Navigation registry — mirrors PageRegistry.cpp
+   ═══════════════════════════════════════════════════ */
+const registry = [
+  { cat:"General", pages:["Button","Icon","Typography"] },
+  { cat:"Layout", pages:["Divider","Flex","Grid","Layout","Space","Splitter"] },
+  { cat:"Navigation", pages:["Affix","Anchor","Breadcrumb","Dropdown","Menu","Pagination","Steps"] },
+  { cat:"Data Entry", pages:["AutoComplete","Cascader","Checkbox","ColorPicker","DatePicker","Form",
+    "Input","InputNumber","Mentions","Radio","Rate","Select","Slider","Switch","TimePicker",
+    "Transfer","TreeSelect","Upload"] },
+  { cat:"Data Display", pages:["Avatar","Badge","Calendar","Card","Carousel","Collapse","Descriptions",
+    "Empty","Image","List","Popover","QRCode","Segmented","Statistic","Table","Tabs","Tag",
+    "Timeline","Tooltip","Tree"] },
+  { cat:"Feedback", pages:["Alert","Drawer","Message","Modal","Notification","Popconfirm","Progress",
+    "Result","Skeleton","Spin","Tour","Watermark"] },
+  { cat:"Other", pages:["App","ConfigProvider","FloatButton"] },
+];
+
+/* ═══════════════════════════════════════════════════
+   Page components
+   ═══════════════════════════════════════════════════ */
+
+function ButtonPage(){
+  return(<>
+    <div className="section"><div className="section-title">Button Types</div>
+      <div className="demo-row">
+        <Button type="primary">Primary</Button>
+        <Button>Default</Button>
+        <Button type="dashed">Dashed</Button>
+        <Button type="text">Text</Button>
+        <Button type="link">Link</Button>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Danger &amp; Disabled</div>
+      <div className="demo-row">
+        <Button type="primary" danger>Primary Danger</Button>
+        <Button danger>Default Danger</Button>
+        <Button type="primary" disabled>Disabled</Button>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Sizes</div>
+      <div className="demo-row">
+        <Button type="primary" size="large">Large</Button>
+        <Button type="primary">Middle</Button>
+        <Button type="primary" size="small">Small</Button>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Shapes</div>
+      <div className="demo-row">
+        <Button type="primary" shape="round">Round</Button>
+        <Button type="primary" shape="circle" icon={<SearchOutlined/>}/>
+        <Button type="primary" ghost>Ghost</Button>
+        <Button type="primary" loading>Loading</Button>
+      </div>
+    </div>
+  </>);
+}
+
+function IconPage(){
+  const iconList = [
+    { name:"Home", icon: <HomeOutlined/> },{ name:"User", icon: <UserOutlined/> },
+    { name:"Search", icon: <SearchOutlined/> },{ name:"Setting", icon: <SettingOutlined/> },
+    { name:"Star", icon: <StarOutlined/> },{ name:"Heart", icon: <HeartOutlined/> },
+    { name:"Bell", icon: <BellOutlined/> },{ name:"Mail", icon: <MailOutlined/> },
+    { name:"Calendar", icon: <CalendarOutlined/> },{ name:"Clock", icon: <ClockCircleOutlined/> },
+    { name:"Check", icon: <CheckOutlined/> },{ name:"Close", icon: <CloseOutlined/> },
+    { name:"Plus", icon: <PlusOutlined/> },{ name:"Edit", icon: <EditOutlined/> },
+    { name:"Delete", icon: <DeleteOutlined/> },{ name:"Upload", icon: <CloudUploadOutlined/> },
+  ];
+  return(<>
+    <div className="section"><div className="section-title">Outlined Icons</div>
+      <div className="demo-row" style={{gap:20}}>
+        {iconList.map(i=>(
+          <div key={i.name} style={{textAlign:'center',width:72}}>
+            <div style={{fontSize:22,marginBottom:4}}>{i.icon}</div>
+            <div style={{fontSize:12,color:'#8c8c8c'}}>{i.name}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </>);
+}
+
+function TypographyPage(){
+  return(<>
+    <div className="section"><div className="section-title">Title Levels</div>
+      <Title level={1}>Ant Design Title Level 1</Title>
+      <Title level={2}>Ant Design Title Level 2</Title>
+      <Title level={3}>Ant Design Title Level 3</Title>
+      <Title level={4}>Ant Design Title Level 4</Title>
+      <Title level={5}>Ant Design Title Level 5</Title>
+    </div>
+    <div className="section"><div className="section-title">Text Types</div>
+      <div className="demo-row">
+        <Text>Primary Text</Text>
+        <Text type="secondary">Secondary Text</Text>
+        <Text type="success">Success Text</Text>
+        <Text type="warning">Warning Text</Text>
+        <Text type="danger">Danger Text</Text>
+        <Link href="https://ant.design" target="_blank">Link Text</Link>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Decorations</div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        <Text strong>Strong Text</Text>
+        <Text underline>Underline Text</Text>
+        <Text delete>Delete Text</Text>
+        <Text code>Code Text</Text>
+        <Text mark>Mark Text</Text>
+        <Text italic>Italic Text</Text>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Paragraph</div>
+      <Paragraph>Ant Design is a design system for enterprise-level products. Create an efficient and enjoyable work experience with the design language.</Paragraph>
+    </div>
+    <div className="section"><div className="section-title">Copyable</div>
+      <Paragraph copyable>This text is copyable. Click to copy!</Paragraph>
+    </div>
+  </>);
+}
+
+function DividerPage(){
+  return(<>
+    <div className="section"><div className="section-title">Horizontal</div>
+      <Paragraph>Top content</Paragraph><Divider/><Paragraph>Bottom content</Paragraph>
+    </div>
+    <div className="section"><div className="section-title">With Title</div>
+      <Divider orientation="left">Left Text</Divider>
+      <Divider orientation="center">Center Text</Divider>
+      <Divider orientation="right">Right Text</Divider>
+    </div>
+    <div className="section"><div className="section-title">Dashed &amp; Vertical</div>
+      <Paragraph>Text <Divider type="vertical"/> <Link>Link</Link> <Divider type="vertical"/> <Link>Link</Link></Paragraph>
+      <Divider dashed/>
+      <Paragraph>Dashed divider above</Paragraph>
+    </div>
+  </>);
+}
+
+function FlexPage(){
+  return(<>
+    <div className="section"><div className="section-title">Horizontal</div>
+      <Flex gap="middle"><Button type="primary">A</Button><Button type="primary">B</Button><Button type="primary">C</Button></Flex>
+    </div>
+    <div className="section"><div className="section-title">Vertical</div>
+      <Flex vertical gap="small"><Button>Top</Button><Button>Middle</Button><Button>Bottom</Button></Flex>
+    </div>
+    <div className="section"><div className="section-title">Wrap</div>
+      <Flex wrap="wrap" gap={8}>
+        {Array.from({length:12},(_,i)=><Button key={i} type="primary" style={{width:80}}>B{i+1}</Button>)}
+      </Flex>
+    </div>
+  </>);
+}
+
+function GridPage(){
+  return(<>
+    <div className="section"><div className="section-title">24-Column Grid</div>
+      <Row gutter={[8,8]}>
+        <Col span={6}><div style={{background:'#1677ff',color:'#fff',padding:12,borderRadius:4,textAlign:'center'}}>6</div></Col>
+        <Col span={6}><div style={{background:'#1677ffaa',padding:12,borderRadius:4,textAlign:'center'}}>6</div></Col>
+        <Col span={6}><div style={{background:'#1677ff',color:'#fff',padding:12,borderRadius:4,textAlign:'center'}}>6</div></Col>
+        <Col span={6}><div style={{background:'#1677ffaa',padding:12,borderRadius:4,textAlign:'center'}}>6</div></Col>
+      </Row>
+      <Row gutter={[8,8]} style={{marginTop:8}}>
+        <Col span={8}><div style={{background:'#52c41a',color:'#fff',padding:12,borderRadius:4,textAlign:'center'}}>8</div></Col>
+        <Col span={16}><div style={{background:'#52c41aaa',padding:12,borderRadius:4,textAlign:'center'}}>16</div></Col>
+      </Row>
+    </div>
+    <div className="section"><div className="section-title">Offset</div>
+      <Row gutter={8}>
+        <Col span={8}><div style={{background:'#fa8c16',color:'#fff',padding:12,borderRadius:4,textAlign:'center'}}>8</div></Col>
+        <Col span={8} offset={8}><div style={{background:'#fa8c16aa',padding:12,borderRadius:4,textAlign:'center'}}>8 offset 8</div></Col>
+      </Row>
+    </div>
+  </>);
+}
+
+function LayoutPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic Layout</div>
+      <Layout style={{borderRadius:8,overflow:'hidden'}}>
+        <Layout.Header style={{background:'#001529',color:'#fff',padding:'0 24px',lineHeight:'64px'}}>Header</Layout.Header>
+        <Layout.Content style={{background:'#fff',padding:24,minHeight:120}}>Content</Layout.Content>
+        <Layout.Footer style={{background:'#f0f2f5',textAlign:'center'}}>Footer</Layout.Footer>
+      </Layout>
+    </div>
+    <div className="section"><div className="section-title">With Sider</div>
+      <Layout style={{borderRadius:8,overflow:'hidden'}}>
+        <Layout.Sider width={160} style={{background:'#001529',color:'#fff',padding:'24px 0'}}>
+          <div style={{padding:'8px 24px',cursor:'pointer'}}>nav 1</div>
+          <div style={{padding:'8px 24px',cursor:'pointer'}}>nav 2</div>
+          <div style={{padding:'8px 24px',cursor:'pointer'}}>nav 3</div>
+        </Layout.Sider>
+        <Layout>
+          <Layout.Header style={{background:'#fff',padding:'0 24px',lineHeight:'64px',borderBottom:'1px solid #f0f0f0'}}>Header</Layout.Header>
+          <Layout.Content style={{background:'#fff',padding:24,minHeight:80}}>Content</Layout.Content>
+        </Layout>
+      </Layout>
+    </div>
+  </>);
+}
+
+function SpacePage(){
+  return(<>
+    <div className="section"><div className="section-title">Horizontal</div>
+      <Space><Button>A</Button><Button>B</Button><Button>C</Button></Space>
+    </div>
+    <div className="section"><div className="section-title">Vertical</div>
+      <Space direction="vertical"><Button>Top</Button><Button>Middle</Button><Button>Bottom</Button></Space>
+    </div>
+    <div className="section"><div className="section-title">Size</div>
+      <Space size="small"><Button>S</Button><Button>S</Button></Space><br/><br/>
+      <Space size="middle"><Button>M</Button><Button>M</Button></Space><br/><br/>
+      <Space size="large"><Button>L</Button><Button>L</Button></Space>
+    </div>
+  </>);
+}
+
+function SplitterPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic Splitter</div>
+      <div style={{height:200,border:'1px solid #d9d9d9',borderRadius:8,display:'flex',overflow:'hidden'}}>
+        <div style={{flex:'0 0 50%',background:'#f0f5ff',padding:16,display:'flex',alignItems:'center',justifyContent:'center'}}>Left Panel</div>
+        <div style={{width:4,background:'#d9d9d9',cursor:'col-resize'}}/>
+        <div style={{flex:1,background:'#fff6ff',padding:16,display:'flex',alignItems:'center',justifyContent:'center'}}>Right Panel</div>
+      </div>
+    </div>
+  </>);
+}
+
+function AffixPage(){
+  return(<>
+    <div className="section"><div className="section-title">Affix</div>
+      <Affix offsetTop={10}>
+        <Button type="primary">Affix Top 10px</Button>
+      </Affix>
+      <div style={{marginTop:16,color:'#8c8c8c'}}>Scroll the page to see the button stick to the top.</div>
+    </div>
+  </>);
+}
+
+function AnchorPage(){
+  return(<>
+    <div className="section"><div className="section-title">Anchor</div>
+      <Anchor
+        items={[
+          { key:'part1', href:'#part1', title:'Part 1' },
+          { key:'part2', href:'#part2', title:'Part 2' },
+          { key:'part3', href:'#part3', title:'Part 3' },
+        ]}
+      />
+      <div id="part1" style={{height:100,background:'#f0f5ff',padding:16,marginTop:12,borderRadius:4}}>Part 1 content</div>
+      <div id="part2" style={{height:100,background:'#f6ffed',padding:16,marginTop:12,borderRadius:4}}>Part 2 content</div>
+      <div id="part3" style={{height:100,background:'#fff7e6',padding:16,marginTop:12,borderRadius:4}}>Part 3 content</div>
+    </div>
+  </>);
+}
+
+function BreadcrumbPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Breadcrumb items={[
+        { title: 'Home' },{ title: 'Products' },{ title: 'Detail' }
+      ]}/>
+    </div>
+    <div className="section"><div className="section-title">With Separator</div>
+      <Breadcrumb separator=">">
+        <Breadcrumb.Item>Home</Breadcrumb.Item>
+        <Breadcrumb.Item>Application</Breadcrumb.Item>
+        <Breadcrumb.Item>List</Breadcrumb.Item>
+      </Breadcrumb>
+    </div>
+  </>);
+}
+
+function DropdownPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row">
+        <Dropdown menu={{items:[
+          {key:'1',label:'Menu Item 1'},{key:'2',label:'Menu Item 2'},
+          {type:'divider'},{key:'3',label:'Menu Item 3'},
+        ]}}>
+          <Button>Hover me <DownOutlined style={{fontSize:10}}/></Button>
+        </Dropdown>
+        <Dropdown menu={{items:[
+          {key:'1',label:'Action 1'},{key:'2',label:'Action 2'},{key:'3',label:'Action 3'},
+        ]}} trigger={['contextMenu']}>
+          <Button type="primary">Right Click</Button>
+        </Dropdown>
+      </div>
+    </div>
+  </>);
+}
+
+function MenuPage(){
+  return(<>
+    <div className="section"><div className="section-title">Horizontal</div>
+      <Menu mode="horizontal" defaultSelectedKeys={['mail']} items={[
+        {key:'mail',label:'Mail',icon:<MailOutlined/>},
+        {key:'app',label:'App',icon:<AppstoreOutlined/>},
+        {key:'sub',label:'Sub Menu',children:[{key:'s1',label:'Option 1'},{key:'s2',label:'Option 2'}]},
+      ]}/>
+    </div>
+    <div className="section"><div className="section-title">Vertical / Inline</div>
+      <div style={{width:200}}>
+        <Menu mode="inline" defaultSelectedKeys={['1']} items={[
+          {key:'1',label:'Option 1',icon:<HomeOutlined/>},
+          {key:'2',label:'Option 2',icon:<UserOutlined/>},
+          {key:'sub',label:'Navigation',icon:<SettingOutlined/>,
+           children:[{key:'s1',label:'Sub 1'},{key:'s2',label:'Sub 2'}]},
+        ]}/>
+      </div>
+    </div>
+  </>);
+}
+
+function PaginationPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Pagination defaultCurrent={1} total={50}/>
+    </div>
+    <div className="section"><div className="section-title">More Options</div>
+      <Pagination showSizeChanger showQuickJumper defaultCurrent={1} total={200} showTotal={total=>`Total ${total} items`}/>
+    </div>
+    <div className="section"><div className="section-title">Simple</div>
+      <Pagination simple defaultCurrent={1} total={50}/>
+    </div>
+  </>);
+}
+
+function StepsPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Steps current={1} items={[{title:'Finished'},{title:'In Progress'},{title:'Waiting'}]}/>
+    </div>
+    <div className="section"><div className="section-title">With Description</div>
+      <Steps current={1} direction="vertical" size="small" items={[
+        {title:'Finished',description:'This is a description.'},
+        {title:'In Progress',description:'This is a description.'},
+        {title:'Waiting',description:'This is a description.'},
+      ]}/>
+    </div>
+    <div className="section"><div className="section-title">Error</div>
+      <Steps current={1} status="error" items={[
+        {title:'Finished'},{title:'Error',description:'This is an error.'},{title:'Waiting'},
+      ]}/>
+    </div>
+  </>);
+}
+
+function AutoCompletePage(){
+  const [options,setOptions]=useState([]);
+  const onSearch=(v)=>setOptions(v?[{value:v},{value:v+v},{value:v+'!'}]:[]);
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <AutoComplete style={{width:280}} options={options} onSearch={onSearch} placeholder="Type to search..."/>
+    </div>
+  </>);
+}
+
+function CascaderPage(){
+  const options=[
+    {value:'zhejiang',label:'Zhejiang',children:[
+      {value:'hangzhou',label:'Hangzhou',children:[{value:'xihu',label:'West Lake'}]},
+    ]},
+    {value:'jiangsu',label:'Jiangsu',children:[
+      {value:'nanjing',label:'Nanjing',children:[{value:'zhonghua',label:'Zhonghua'}]},
+    ]},
+  ];
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Cascader options={options} placeholder="Please select" style={{width:280}}/>
+    </div>
+  </>);
+}
+
+function CheckboxPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row">
+        <Checkbox>Apple</Checkbox><Checkbox defaultChecked>Banana</Checkbox><Checkbox>Orange</Checkbox>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Group</div>
+      <Checkbox.Group options={['Apple','Banana','Orange']} defaultValue={['Apple']}/>
+    </div>
+  </>);
+}
+
+function ColorPickerPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row"><ColorPicker defaultValue="#1677ff"/><span style={{marginLeft:8}}>Pick a color</span></div>
+    </div>
+    <div className="section"><div className="section-title">With Text</div>
+      <ColorPicker showText defaultValue="#52c41a"/>
+    </div>
+  </>);
+}
+
+function DatePickerPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row"><DatePicker/><RangePicker style={{marginLeft:12}}/></div>
+    </div>
+    <div className="section"><div className="section-title">Sizes</div>
+      <div className="demo-row">
+        <DatePicker size="large" placeholder="Large"/>
+        <DatePicker placeholder="Middle"/>
+        <DatePicker size="small" placeholder="Small"/>
+      </div>
+    </div>
+  </>);
+}
+
+function FormPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic Form</div>
+      <Form layout="horizontal" style={{maxWidth:480}}
+        labelCol={{span:6}} wrapperCol={{span:18}}>
+        <Form.Item label="Username" name="username" rules={[{required:true}]}>
+          <Input placeholder="Enter username"/>
+        </Form.Item>
+        <Form.Item label="Password" name="password" rules={[{required:true}]}>
+          <Input.Password placeholder="Enter password"/>
+        </Form.Item>
+        <Form.Item label="Gender" name="gender">
+          <Select options={[{value:'male',label:'Male'},{value:'female',label:'Female'}]} placeholder="Select"/>
+        </Form.Item>
+        <Form.Item label="Remember" name="remember" valuePropName="checked">
+          <Checkbox>Remember me</Checkbox>
+        </Form.Item>
+        <Form.Item wrapperCol={{offset:6,span:18}}>
+          <Button type="primary" htmlType="submit">Submit</Button>
+        </Form.Item>
+      </Form>
+    </div>
+  </>);
+}
+
+function InputPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row"><Input placeholder="Basic input" style={{width:240}}/><Input placeholder="Disabled" disabled style={{width:240}}/></div>
+    </div>
+    <div className="section"><div className="section-title">Sizes</div>
+      <div className="demo-row">
+        <Input size="large" placeholder="Large" style={{width:180}}/>
+        <Input placeholder="Middle" style={{width:180}}/>
+        <Input size="small" placeholder="Small" style={{width:180}}/>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Search &amp; Password</div>
+      <div className="demo-row">
+        <Input.Search placeholder="Search" style={{width:280}} allowClear/>
+        <Input.Password placeholder="Password" style={{width:200}}/>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">TextArea</div>
+      <TextArea rows={3} placeholder="Enter text..." style={{width:400}}/>
+    </div>
+    <div className="section"><div className="section-title">With Addon</div>
+      <Input addonBefore="http://" addonAfter=".com" defaultValue="mysite" style={{width:300}}/>
+    </div>
+  </>);
+}
+
+function InputNumberPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row"><InputNumber defaultValue={3} min={1} max={10}/></div>
+    </div>
+    <div className="section"><div className="section-title">With Prefix/Suffix</div>
+      <div className="demo-row">
+        <InputNumber prefix="$" defaultValue={100} style={{width:160}}/>
+        <InputNumber addonAfter="%" defaultValue={50} style={{width:160}}/>
+      </div>
+    </div>
+  </>);
+}
+
+function MentionsPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Mentions style={{width:400}} rows={3} placeholder="Type @ to mention"
+        options={[{value:'afc163',label:'afc163'},{value:'zombieJ',label:'zombieJ'}]}/>
+    </div>
+  </>);
+}
+
+function RadioPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Radio.Group defaultValue="a">
+        <Radio value="a">A</Radio><Radio value="b">B</Radio><Radio value="c">C</Radio>
+      </Radio.Group>
+    </div>
+    <div className="section"><div className="section-title">Button Style</div>
+      <Radio.Group defaultValue="a" optionType="button" buttonStyle="solid">
+        <Radio.Button value="a">Daily</Radio.Button>
+        <Radio.Button value="b">Weekly</Radio.Button>
+        <Radio.Button value="c">Monthly</Radio.Button>
+      </Radio.Group>
+    </div>
+  </>);
+}
+
+function RatePage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Rate defaultValue={3}/>
+    </div>
+    <div className="section"><div className="section-title">Half &amp; Disabled</div>
+      <div className="demo-row"><Rate allowHalf defaultValue={2.5}/><Rate disabled defaultValue={3}/></div>
+    </div>
+  </>);
+}
+
+function SelectPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Select defaultValue="apple" style={{width:160}} options={[
+        {value:'apple',label:'Apple'},{value:'banana',label:'Banana'},{value:'orange',label:'Orange'},
+      ]}/>
+    </div>
+    <div className="section"><div className="section-title">Multiple</div>
+      <Select mode="multiple" defaultValue={['apple']} style={{width:280}} options={[
+        {value:'apple',label:'Apple'},{value:'banana',label:'Banana'},{value:'orange',label:'Orange'},
+      ]}/>
+    </div>
+    <div className="section"><div className="section-title">Sizes</div>
+      <div className="demo-row">
+        <Select size="large" defaultValue="a" style={{width:120}} options={[{value:'a',label:'Large'},{value:'b',label:'B'}]}/>
+        <Select defaultValue="a" style={{width:120}} options={[{value:'a',label:'Middle'},{value:'b',label:'B'}]}/>
+        <Select size="small" defaultValue="a" style={{width:120}} options={[{value:'a',label:'Small'},{value:'b',label:'B'}]}/>
+      </div>
+    </div>
+  </>);
+}
+
+function SliderPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Slider defaultValue={30} style={{width:400}}/>
+    </div>
+    <div className="section"><div className="section-title">Range</div>
+      <Slider range defaultValue={[20,60]} style={{width:400}}/>
+    </div>
+    <div className="section"><div className="section-title">With Step</div>
+      <Slider marks={{0:'A',25:'B',50:'C',75:'D',100:'E'}} step={null} defaultValue={50} style={{width:400}}/>
+    </div>
+  </>);
+}
+
+function SwitchPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row"><Switch defaultChecked/><Switch/></div>
+    </div>
+    <div className="section"><div className="section-title">With Text</div>
+      <div className="demo-row">
+        <Switch checkedChildren="ON" unCheckedChildren="OFF" defaultChecked/>
+        <Switch checkedChildren="1" unCheckedChildren="0"/>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Disabled</div>
+      <Switch disabled defaultChecked/>
+    </div>
+  </>);
+}
+
+function TimePickerPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row"><TimePicker/><TimeRangePicker style={{marginLeft:12}}/></div>
+    </div>
+  </>);
+}
+
+function TransferPage(){
+  const mockData=Array.from({length:10},(_,i)=>({key:String(i),title:`Item ${i}`}));
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Transfer dataSource={mockData} render={item=>item.title} targetKeys={[]} style={{marginBottom:16}}/>
+    </div>
+  </>);
+}
+
+function TreeSelectPage(){
+  const treeData=[{title:'Node 1',value:'1',children:[{title:'Child 1-1',value:'1-1'},{title:'Child 1-2',value:'1-2'}]},{title:'Node 2',value:'2'}];
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <TreeSelect treeData={treeData} placeholder="Please select" style={{width:240}}/>
+    </div>
+  </>);
+}
+
+function UploadPage(){
+  return(<>
+    <div className="section"><div className="section-title">Default</div>
+      <Upload>
+        <Button icon={<CloudUploadOutlined/>}>Click to Upload</Button>
+      </Upload>
+    </div>
+    <div className="section"><div className="section-title">Dragger</div>
+      <Dragger name="file" multiple style={{padding:16}}>
+        <p className="ant-upload-drag-icon"><InboxOutlined/></p>
+        <p>Click or drag file to this area to upload</p>
+      </Dragger>
+    </div>
+  </>);
+}
+
+function AvatarPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row">
+        <Avatar size={64} icon={<UserOutlined/>}/>
+        <Avatar size="large" icon={<UserOutlined/>}/>
+        <Avatar icon={<UserOutlined/>}/>
+        <Avatar size="small" icon={<UserOutlined/>}/>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Type</div>
+      <div className="demo-row">
+        <Avatar style={{background:'#1677ff'}}>U</Avatar>
+        <Avatar style={{background:'#87d068'}} icon={<UserOutlined/>}/>
+        <Avatar src="https://api.dicebear.com/7.x/miniavs/svg?seed=1"/>
+        <Avatar style={{background:'#f56a00'}}>K</Avatar>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Group</div>
+      <Avatar.Group maxCount={3}>
+        <Avatar style={{background:'#1677ff'}}>A</Avatar>
+        <Avatar style={{background:'#87d068'}}>B</Avatar>
+        <Avatar style={{background:'#f56a00'}}>C</Avatar>
+        <Avatar style={{background:'#1890ff'}}>D</Avatar>
+        <Avatar style={{background:'#87d068'}}>E</Avatar>
+      </Avatar.Group>
+    </div>
+  </>);
+}
+
+function BadgePage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row">
+        <Badge count={12}><Avatar shape="square" icon={<UserOutlined/>}/></Badge>
+        <Badge count={39}><Avatar shape="square" icon={<BellOutlined/>}/></Badge>
+        <Badge dot><Avatar icon={<UserOutlined/>}/></Badge>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Status</div>
+      <div className="demo-row">
+        <Badge status="success"/><Badge status="error"/><Badge status="default"/>
+        <Badge status="processing"/><Badge status="warning"/>
+      </div>
+    </div>
+  </>);
+}
+
+function CalendarPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Calendar fullscreen={false}/>
+    </div>
+  </>);
+}
+
+function CardPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Card title="Card Title" extra={<Link href="#">More</Link>} style={{width:340}}>
+        <p>Card content</p>
+      </Card>
+    </div>
+    <div className="section"><div className="section-title">With Cover &amp; Meta</div>
+      <Card hoverable style={{width:300}}
+        cover={<div style={{height:160,background:'linear-gradient(135deg,#1e3cb4,#643cc8,#c850a0,#f07860)',borderRadius:'8px 8px 0 0',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div style={{width:60,height:60,borderRadius:30,background:'rgba(255,255,255,0.9)'}}/>
+        </div>}
+        actions={[<EditOutlined/>,<DeleteOutlined/>,<EllipsisOutlined/>]}>
+        <Card.Meta title="ant design" description="description information"/>
+      </Card>
+    </div>
+  </>);
+}
+
+function CarouselPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Carousel autoplay style={{borderRadius:8,overflow:'hidden'}}>
+        <div style={{height:160,background:'linear-gradient(135deg,#1677ff,#36cfc9)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:24}}>Slide 1</div>
+        <div style={{height:160,background:'linear-gradient(135deg,#722ed1,#eb2f96)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:24}}>Slide 2</div>
+        <div style={{height:160,background:'linear-gradient(135deg,#fa8c16,#fadb14)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:24}}>Slide 3</div>
+      </Carousel>
+    </div>
+  </>);
+}
+
+function CollapsePage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Collapse defaultActiveKey={['1']} items={[
+        {key:'1',label:'Header 1',children:'Content 1'},
+        {key:'2',label:'Header 2',children:'Content 2'},
+        {key:'3',label:'Header 3',children:'Content 3'},
+      ]}/>
+    </div>
+    <div className="section"><div className="section-title">Accordion</div>
+      <Collapse accordion defaultActiveKey={['1']} items={[
+        {key:'1',label:'Panel 1',children:'Content 1'},
+        {key:'2',label:'Panel 2',children:'Content 2'},
+      ]}/>
+    </div>
+  </>);
+}
+
+function DescriptionsPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Descriptions bordered column={2} items={[
+        {label:'Name',children:'Cloud Database'},{label:'Status',children:<Badge status="processing" text="Running"/>},
+        {label:'Type',children:'PostgreSQL'},{label:'IP',children:'192.168.1.1'},
+      ]}/>
+    </div>
+  </>);
+}
+
+function EmptyPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div><Empty/></div>
+    <div className="section"><div className="section-title">Custom Description</div>
+      <Empty description="No Data Available"/>
+    </div>
+  </>);
+}
+
+function ImagePage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Image width={200} src="https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png" fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjYmZiZmJmIiBmb250LXNpemU9IjE0Ij5JbWFnZTwvdGV4dD48L3N2Zz4="/>
+    </div>
+  </>);
+}
+
+function ListPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <List bordered dataSource={['Item 1','Item 2','Item 3']} renderItem={item=><List.Item>{item}</List.Item>}/>
+    </div>
+    <div className="section"><div className="section-title">With Actions</div>
+      <List bordered dataSource={[
+        {title:'Ant Design Title 1',description:'Description 1'},
+        {title:'Ant Design Title 2',description:'Description 2'},
+      ]} renderItem={item=>(
+        <List.Item actions={[<Link key="edit">Edit</Link>,<Link key="more">More</Link>]}>
+          <List.Item.Meta title={item.title} description={item.description}/>
+        </List.Item>
+      )}/>
+    </div>
+  </>);
+}
+
+function PopoverPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row">
+        <Popover content="Popover content" title="Title"><Button>Hover me</Button></Popover>
+        <Popover content="Click content" title="Title" trigger="click"><Button>Click me</Button></Popover>
+      </div>
+    </div>
+  </>);
+}
+
+function QRCodePage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <QRCode value="https://ant.design"/>
+    </div>
+  </>);
+}
+
+function SegmentedPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Segmented options={['Daily','Weekly','Monthly']}/>
+    </div>
+    <div className="section"><div className="section-title">With Icons</div>
+      <Segmented options={[
+        {value:'list',label:'List',icon:<AppstoreOutlined/>},
+        {value:'kanban',label:'Kanban',icon:<SettingOutlined/>},
+      ]}/>
+    </div>
+  </>);
+}
+
+function StatisticPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row" style={{gap:40}}>
+        <Statistic title="Active Users" value={112893}/>
+        <Statistic title="Account Balance" value={112893} precision={2} prefix="$"/>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Countdown</div>
+      <Statistic.Countdown title="Countdown" value={Date.now()+1000*60*60*24*2}/>
+    </div>
+  </>);
+}
+
+function TablePage(){
+  const columns=[
+    {title:'Name',dataIndex:'name',key:'name'},
+    {title:'Age',dataIndex:'age',key:'age',sorter:(a,b)=>a.age-b.age},
+    {title:'Address',dataIndex:'address',key:'address'},
+  ];
+  const data=[
+    {key:'1',name:'John',age:28,address:'New York'},{key:'2',name:'Jane',age:32,address:'London'},
+    {key:'3',name:'Joe',age:24,address:'Sydney'},
+  ];
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Table columns={columns} dataSource={data} pagination={false}/>
+    </div>
+  </>);
+}
+
+function TabsPage(){
+  return(<>
+    <div className="section"><div className="section-title">Line</div>
+      <Tabs defaultActiveKey="1" items={[
+        {key:'1',label:'Tab 1',children:'Content 1'},{key:'2',label:'Tab 2',children:'Content 2'},{key:'3',label:'Tab 3',children:'Content 3'},
+      ]}/>
+    </div>
+    <div className="section"><div className="section-title">Card</div>
+      <Tabs defaultActiveKey="1" type="card" items={[
+        {key:'1',label:'Card A',children:'Content A'},{key:'2',label:'Card B',children:'Content B'},
+      ]}/>
+    </div>
+  </>);
+}
+
+function TagPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row">
+        <Tag color="blue">Blue</Tag><Tag color="green">Green</Tag><Tag color="orange">Orange</Tag>
+        <Tag color="red">Red</Tag><Tag color="purple">Purple</Tag>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Checkable &amp; Closable</div>
+      <div className="demo-row">
+        <Tag.CheckableTag checked>Checkable</Tag.CheckableTag>
+        <Tag closable onClose={()=>{}}>Closable</Tag>
+        <Tag color="processing">Processing</Tag>
+        <Tag color="success">Success</Tag>
+      </div>
+    </div>
+  </>);
+}
+
+function TimelinePage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Timeline items={[
+        {children:'Step 1 — Create services site 2024-01-01',color:'blue'},
+        {children:'Step 2 — Initial program coding 2024-01-02'},
+        {children:'Step 3 — Testing and verification 2024-01-03',color:'green'},
+        {children:'Step 4 — Network problems resolved 2024-01-04',color:'red'},
+      ]}/>
+    </div>
+  </>);
+}
+
+function TooltipPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row">
+        <Tooltip title="Prompt Text"><Button>Top</Button></Tooltip>
+        <Tooltip title="Prompt Text" placement="bottom"><Button>Bottom</Button></Tooltip>
+        <Tooltip title="Prompt Text" placement="left"><Button>Left</Button></Tooltip>
+        <Tooltip title="Prompt Text" placement="right"><Button>Right</Button></Tooltip>
+      </div>
+    </div>
+  </>);
+}
+
+function TreePage(){
+  const treeData=[{
+    title:'Parent 1',key:'0-0',children:[
+      {title:'Child 1-1',key:'0-0-0',children:[{title:'Leaf',key:'0-0-0-0'}]},
+      {title:'Child 1-2',key:'0-0-1'},
+    ]},
+  ];
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Tree defaultExpandAll treeData={treeData}/>
+    </div>
+  </>);
+}
+
+function AlertPage(){
+  return(<>
+    <div className="section"><div className="section-title">Types</div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        <Alert message="Success Text" type="success" showIcon closable/>
+        <Alert message="Info Text" type="info" showIcon closable/>
+        <Alert message="Warning Text" type="warning" showIcon closable/>
+        <Alert message="Error Text" type="error" showIcon closable/>
+      </div>
+    </div>
+    <div className="section"><div className="section-title">Banner</div>
+      <Alert message="Warning text" type="warning" banner closable/>
+    </div>
+  </>);
+}
+
+function DrawerPage(){
+  const [open,setOpen]=useState(false);
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Button type="primary" onClick={()=>setOpen(true)}>Open Drawer</Button>
+      <Drawer title="Basic Drawer" open={open} onClose={()=>setOpen(false)}>
+        <p>Drawer content here.</p>
+      </Drawer>
+    </div>
+  </>);
+}
+
+function MessagePage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row">
+        <Button onClick={()=>Message.success('Success!')}>Success</Button>
+        <Button onClick={()=>Message.info('Info!')}>Info</Button>
+        <Button onClick={()=>Message.warning('Warning!')}>Warning</Button>
+        <Button onClick={()=>Message.error('Error!')}>Error</Button>
+      </div>
+    </div>
+  </>);
+}
+
+function ModalPage(){
+  const [open,setOpen]=useState(false);
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Button type="primary" onClick={()=>setOpen(true)}>Open Modal</Button>
+      <Modal title="Basic Modal" open={open} onOk={()=>setOpen(false)} onCancel={()=>setOpen(false)}>
+        <p>Modal content here.</p>
+      </Modal>
+    </div>
+    <div className="section"><div className="section-title">Confirm</div>
+      <div className="demo-row">
+        <Button onClick={()=>Modal.info({title:'Info',content:'Info content'})}>Info</Button>
+        <Button onClick={()=>Modal.success({title:'Success',content:'Success content'})}>Success</Button>
+        <Button onClick={()=>Modal.warning({title:'Warning',content:'Warning content'})}>Warning</Button>
+        <Button onClick={()=>Modal.error({title:'Error',content:'Error content'})}>Error</Button>
+        <Button onClick={()=>Modal.confirm({title:'Confirm',content:'Are you sure?'})}>Confirm</Button>
+      </div>
+    </div>
+  </>);
+}
+
+function NotificationPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row">
+        <Button onClick={()=>Notification.open({message:'Notification Title',description:'Notification description.'})}>Open</Button>
+        <Button onClick={()=>Notification.success({message:'Success',description:'Success notification.'})}>Success</Button>
+      </div>
+    </div>
+  </>);
+}
+
+function PopconfirmPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Popconfirm title="Are you sure?" description="This action cannot be undone." okText="Yes" cancelText="No">
+        <Button danger>Delete</Button>
+      </Popconfirm>
+    </div>
+  </>);
+}
+
+function ProgressPage(){
+  return(<>
+    <div className="section"><div className="section-title">Line</div>
+      <Progress percent={80}/>
+      <Progress percent={60} status="active"/>
+      <Progress percent={100}/>
+      <Progress percent={50} status="exception"/>
+    </div>
+    <div className="section"><div className="section-title">Circle</div>
+      <div className="demo-row" style={{gap:24}}>
+        <Progress type="circle" percent={75}/>
+        <Progress type="circle" percent={100}/>
+        <Progress type="circle" percent={50} status="exception"/>
+      </div>
+    </div>
+  </>);
+}
+
+function ResultPage(){
+  return(<>
+    <div className="section"><div className="section-title">Success</div>
+      <Result status="success" title="Successfully" subTitle="Operation completed." extra={<Button type="primary">Go Home</Button>}/>
+    </div>
+    <div className="section"><div className="section-title">Error</div>
+      <Result status="error" title="Submission Failed" subTitle="Please check and modify."/>
+    </div>
+  </>);
+}
+
+function SkeletonPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Skeleton active/>
+    </div>
+    <div className="section"><div className="section-title">Avatar &amp; Title</div>
+      <Skeleton avatar active paragraph={{rows:2}}/>
+    </div>
+  </>);
+}
+
+function SpinPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div className="demo-row"><Spin/><Spin size="large"/></div>
+    </div>
+    <div className="section"><div className="section-title">With Content</div>
+      <Spin tip="Loading..."><div style={{padding:30,background:'#f5f5f5',borderRadius:8}}>Content</div></Spin>
+    </div>
+  </>);
+}
+
+function TourPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <div style={{color:'#8c8c8c'}}>Tour component requires step-by-step interaction. Click the buttons below to see the demo.</div>
+      <div style={{display:'flex',gap:12,marginTop:12}}>
+        <Button id="step1">Step 1</Button>
+        <Button id="step2">Step 2</Button>
+        <Button id="step3">Step 3</Button>
+      </div>
+    </div>
+  </>);
+}
+
+function WatermarkPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <Watermark content="Ant Design">
+        <div style={{height:200,display:'flex',alignItems:'center',justifyContent:'center',color:'#8c8c8c',border:'1px solid #f0f0f0',borderRadius:8}}>
+          Watermark content
+        </div>
+      </Watermark>
+    </div>
+  </>);
+}
+
+function AppPage(){
+  return(<>
+    <div className="section"><div className="section-title">App Component</div>
+      <p style={{color:'#8c8c8c'}}>App provides static methods like <Text code>App.useApp()</Text> for Message, Notification, and Modal.</p>
+    </div>
+  </>);
+}
+
+function ConfigProviderPage(){
+  return(<>
+    <div className="section"><div className="section-title">ConfigProvider</div>
+      <p style={{color:'#8c8c8c'}}>ConfigProvider provides global configuration for Ant Design components (theme, locale, etc.).</p>
+    </div>
+  </>);
+}
+
+function FloatButtonPage(){
+  return(<>
+    <div className="section"><div className="section-title">Basic</div>
+      <p style={{color:'#8c8c8c'}}>FloatButton appears in the bottom-right corner.</p>
+      <FloatButton icon={<HomeOutlined/>}/>
+    </div>
+  </>);
+}
+
+/* ═══════════════════════════════════════════════════
+   Page map
+   ═══════════════════════════════════════════════════ */
+const pageMap = {
+  Button:ButtonPage,Icon:IconPage,Typography:TypographyPage,
+  Divider:DividerPage,Flex:FlexPage,Grid:GridPage,Layout:LayoutPage,Space:SpacePage,Splitter:SplitterPage,
+  Affix:AffixPage,Anchor:AnchorPage,Breadcrumb:BreadcrumbPage,Dropdown:DropdownPage,Menu:MenuPage,
+  Pagination:PaginationPage,Steps:StepsPage,
+  AutoComplete:AutoCompletePage,Cascader:CascaderPage,Checkbox:CheckboxPage,ColorPicker:ColorPickerPage,
+  DatePicker:DatePickerPage,Form:FormPage,Input:InputPage,InputNumber:InputNumberPage,Mentions:MentionsPage,
+  Radio:RadioPage,Rate:RatePage,Select:SelectPage,Slider:SliderPage,Switch:SwitchPage,
+  TimePicker:TimePickerPage,Transfer:TransferPage,TreeSelect:TreeSelectPage,Upload:UploadPage,
+  Avatar:AvatarPage,Badge:BadgePage,Calendar:CalendarPage,Card:CardPage,Carousel:CarouselPage,
+  Collapse:CollapsePage,Descriptions:DescriptionsPage,Empty:EmptyPage,Image:ImagePage,List:ListPage,
+  Popover:PopoverPage,QRCode:QRCodePage,Segmented:SegmentedPage,Statistic:StatisticPage,Table:TablePage,
+  Tabs:TabsPage,Tag:TagPage,Timeline:TimelinePage,Tooltip:TooltipPage,Tree:TreePage,
+  Alert:AlertPage,Drawer:DrawerPage,Message:MessagePage,Modal:ModalPage,Notification:NotificationPage,
+  Popconfirm:PopconfirmPage,Progress:ProgressPage,Result:ResultPage,Skeleton:SkeletonPage,Spin:SpinPage,
+  Tour:TourPage,Watermark:WatermarkPage,
+  App:AppPage,ConfigProvider:ConfigProviderPage,FloatButton:FloatButtonPage,
+};
+
+/* ═══════════════════════════════════════════════════
+   Main App
+   ═══════════════════════════════════════════════════ */
+function AppLayout(){
+  const [active,setActive]=useState('Button');
+  const PageComp=pageMap[active]||(()=>(<div>Not found</div>));
+
+  return(
+    <ConfigProvider theme={{token:{colorPrimary:'#1677ff'}}}>
+      <div className="layout">
+        <div className="sidebar">
+          <div className="sidebar-brand">Ant Design 5.x</div>
+          <div className="sidebar-nav">
+            {registry.map(g=>(
+              <React.Fragment key={g.cat}>
+                <div className="cat-header">{g.cat}</div>
+                {g.pages.map(p=>(
+                  <div key={p} className={`nav-item${active===p?' active':''}`} onClick={()=>setActive(p)}>{p}</div>
+                ))}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+        <div className="content">
+          <div className="page-title">{active}</div>
+          <PageComp/>
+        </div>
+      </div>
+    </ConfigProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<AppLayout/>);
+</script>
+</body>
+</html>
