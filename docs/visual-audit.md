@@ -4,11 +4,43 @@ This file tracks the next phase: comparing each Qt widget page against the Ant D
 
 ## Workflow
 
-1. Open the Ant Design reference page and the Qt example page for the same component.
-2. Check both light and dark themes at the same viewport size.
-3. Compare default, hover, active, focus, disabled, error, warning, loading, and empty states where applicable.
-4. Record the result as `Pass`, `Needs visual QA`, `Needs fix`, or `Blocked`.
-5. Keep fixes scoped to the audited component and rerun `ctest -C Debug --output-on-failure`.
+Use this loop for one component at a time.
+
+1. Confirm the component row in the matrix and inspect the Ant Design source under `submodules/ant-design/components/<component>/`.
+2. Build the Qt example and target tests before taking screenshots:
+   ```powershell
+   cmake --build build --config Debug --target TestAntButton qt-ant-design-example -- /m:1
+   ```
+   Replace `TestAntButton` with the closest test target for the component under review.
+3. Capture the Ant Design reference page with Playwright:
+   ```powershell
+   npx playwright screenshot --wait-for-timeout=4000 --viewport-size "1280,900" "file:///D:/Project/GitProject/qt-ant-design/docs/ant-design-reference.html" build/<component>-reference-full.png
+   ```
+4. Capture the matching Qt example page to `build/<component>-qt.png`. Prefer a small temporary capture helper under `build/visual-capture/` so the screenshot contains only the audited page/content. Do not commit the capture helper or PNG outputs.
+5. Create a side-by-side image such as `build/<component>-compare-wide.png` and compare both screenshots at the same scale.
+6. Attribute each visible difference before editing:
+   - `Component`: button/control body, text/icon, state color, border, radius, shadow, size, padding.
+   - `Container`: card/body padding, page margins, section title, scroll area, sidebar, or surrounding layout.
+   - `Reference/demo gap`: a state exists in AntD but is missing from the Qt example page.
+7. Fix only component-owned differences in the audited component's widget/style/test files. Leave container differences for that component's own audit row.
+8. Rebuild and run tests:
+   ```powershell
+   cmake --build build --config Debug --target TestAntButton qt-ant-design-example -- /m:1
+   ctest -C Debug --output-on-failure
+   ```
+9. Update the matrix status and notes:
+   - `Pass`: screenshot compared and no component-owned mismatches remain.
+   - `Needs visual QA`: states are present, but screenshot review is still pending or inconclusive.
+   - `Needs fix`: component-owned mismatch remains.
+   - `Blocked`: cannot compare because reference/demo/capture is missing.
+
+### Capture Notes
+
+- Playwright expects Chromium headless shell at `%LOCALAPPDATA%\ms-playwright\chromium_headless_shell-1217\chrome-headless-shell-win64\chrome-headless-shell.exe`.
+- If Playwright cannot download the browser, manually download `chrome-headless-shell-win64.zip` for version `147.0.7727.15` and extract it to `%LOCALAPPDATA%\ms-playwright\chromium_headless_shell-1217\`.
+- Qt `offscreen` capture may render text as square glyphs on Windows. Use the native Windows platform for capture when this happens.
+- Temporary Qt capture programs may hit the known QProxyStyle destructor crash on process teardown. Save the PNG first, then exit the helper process immediately if needed.
+- Build artifacts and screenshots belong under `build/` and should remain untracked.
 
 ## Shared Criteria
 
@@ -33,7 +65,7 @@ This file tracks the next phase: comparing each Qt widget page against the Ant D
 
 | Category | Component | Reference Page | Qt Example Page | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| General | Button | ButtonPage | Button | Needs visual QA | Reference states are represented; compare shadows, loading spacing, and ghost contrast in screenshots. |
+| General | Button | ButtonPage | Button | Pass | Static screenshot compared against AntD reference; padding, transparent solid border, loading opacity/cursor, spinner arc, ghost, disabled, and subtle bottom shadow are aligned. Container card spacing differs and should be handled with Card. |
 | General | Icon | IconPage | Icon | Needs visual QA | Custom path, spin, and layered icon rendering fixed; compare glyph proportions and theme colors in screenshots. |
 | General | Typography | TypographyPage | Typography | Needs visual QA | LightSolid, link cursor, and mark background fixed; compare title spacing and copy affordance in screenshots. |
 | Layout | Divider | DividerPage | Divider | Not started | |

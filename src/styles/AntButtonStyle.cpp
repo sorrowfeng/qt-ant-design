@@ -35,16 +35,16 @@ ButtonMetrics metricsFor(const AntButton* button)
     case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
-        m.paddingX = token.padding;
+        m.paddingX = token.padding - token.lineWidth;
         m.radius = token.borderRadiusLG;
         m.iconSize = 16;
         break;
     case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSize;
-        m.paddingX = token.paddingXS;
+        m.paddingX = token.paddingXS - token.lineWidth;
         m.radius = token.borderRadiusSM;
-        m.iconSize = 12;
+        m.iconSize = 14;
         break;
     case Ant::Size::Middle:
         m.height = token.controlHeight;
@@ -86,7 +86,47 @@ void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setPen(QPen(color, 1.5, Qt::SolidLine, Qt::RoundCap));
     painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect, angle * 16, 108 * 16);
+    painter.drawArc(rect.adjusted(1, 1, -1, -1), angle * 16, 270 * 16);
+    painter.restore();
+}
+
+QColor loadingColor(const QColor& color)
+{
+    QColor result = color;
+    result.setAlphaF(result.alphaF() * 0.65);
+    return result;
+}
+
+QColor shadowColorFor(const AntButton* button)
+{
+    const auto& token = antTheme->tokens();
+    if (!button)
+    {
+        return QColor(Qt::transparent);
+    }
+    if (button->buttonType() == Ant::ButtonType::Primary)
+    {
+        return button->isDanger() ? token.colorErrorBg : token.colorPrimaryBg;
+    }
+    if (button->isDanger())
+    {
+        return token.colorErrorBg;
+    }
+    return token.colorFillQuaternary;
+}
+
+void drawButtonBottomShadow(QPainter& painter, const QRectF& outer, int radius, const QColor& color)
+{
+    if (color.alpha() == 0)
+    {
+        return;
+    }
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawRoundedRect(outer.adjusted(0, 2, 0, 2), radius, radius);
     painter.restore();
 }
 }
@@ -177,15 +217,15 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
     if (button->buttonType() == Ant::ButtonType::Primary)
     {
         colors.background = accent;
-        colors.border = accent;
+        colors.border = QColor(Qt::transparent);
         colors.text = token.colorTextLightSolid;
         if (hovered)
         {
-            colors.background = colors.border = antTheme->hoverColor(accent);
+            colors.background = antTheme->hoverColor(accent);
         }
         if (pressed)
         {
-            colors.background = colors.border = antTheme->activeColor(accent);
+            colors.background = antTheme->activeColor(accent);
         }
     }
     else if (button->buttonType() == Ant::ButtonType::Default || button->buttonType() == Ant::ButtonType::Dashed)
@@ -240,27 +280,12 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
 
     if (button->isLoading())
     {
-        if (button->buttonType() == Ant::ButtonType::Primary)
-        {
-            colors.background = colors.border = token.colorPrimaryLoading;
-            colors.text = token.colorTextLightSolid;
-            if (hovered)
-            {
-                colors.background = colors.border = token.colorPrimaryLoadingHover;
-            }
-            if (pressed)
-            {
-                colors.background = colors.border = token.colorPrimaryLoadingActive;
-            }
-        }
-        else
-        {
-            colors.background = plainType || button->isGhost() ? QColor(Qt::transparent) : token.colorBgContainerDisabled;
-            colors.border = plainType ? QColor(Qt::transparent) : token.colorBorderDisabled;
-            colors.text = token.colorTextDisabled;
-        }
+        colors.background = loadingColor(colors.background);
+        colors.border = loadingColor(colors.border);
+        colors.text = loadingColor(colors.text);
     }
-    else if (!enabled)
+
+    if (!enabled)
     {
         colors.background = plainType || button->isGhost() ? QColor(Qt::transparent) : token.colorBgContainerDisabled;
         colors.border = plainType ? QColor(Qt::transparent) : token.colorBorderDisabled;
@@ -272,7 +297,12 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
 
     if (!plainType && enabled && !button->isGhost() && !pressed)
     {
-        antTheme->drawEffectShadow(painter, option->rect, 4, radius, button->buttonType() == Ant::ButtonType::Primary ? 0.45 : 0.25);
+        QColor shadowColor = shadowColorFor(button);
+        if (button->isLoading())
+        {
+            shadowColor = loadingColor(shadowColor);
+        }
+        drawButtonBottomShadow(*painter, outer, radius, shadowColor);
     }
 
     AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),

@@ -11,7 +11,6 @@
 AntButton::AntButton(QWidget* parent)
     : QPushButton(parent)
 {
-    setCursor(Qt::PointingHandCursor);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setAttribute(Qt::WA_Hover, true);
@@ -29,6 +28,7 @@ AntButton::AntButton(QWidget* parent)
         update();
     });
 
+    updateCursorState();
     updateGeometryFromState();
 }
 
@@ -81,7 +81,7 @@ void AntButton::setLoading(bool loading)
     if (m_loading == loading)
         return;
     m_loading = loading;
-    setCursor(m_loading ? Qt::ArrowCursor : Qt::PointingHandCursor);
+    updateCursorState();
     m_loading ? m_spinnerTimer.start(16) : m_spinnerTimer.stop();
     updateGeometryFromState();
     update();
@@ -211,6 +211,10 @@ void AntButton::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange || event->type() == QEvent::FontChange)
     {
+        if (event->type() == QEvent::EnabledChange)
+        {
+            updateCursorState();
+        }
         updateGeometryFromState();
         update();
     }
@@ -226,16 +230,16 @@ AntButton::Metrics AntButton::metrics() const
     case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
-        m.paddingX = token.padding;
+        m.paddingX = token.padding - token.lineWidth;
         m.radius = token.borderRadiusLG;
         m.iconSize = 16;
         break;
     case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSize;
-        m.paddingX = token.paddingXS;
+        m.paddingX = token.paddingXS - token.lineWidth;
         m.radius = token.borderRadiusSM;
-        m.iconSize = 12;
+        m.iconSize = 14;
         break;
     case Ant::Size::Middle:
         m.height = token.controlHeight;
@@ -260,6 +264,17 @@ QRectF AntButton::contentRect(const Metrics& metrics) const
     if (m_buttonShape == Ant::ButtonShape::Circle)
         return rect();
     return rect().adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
+}
+
+void AntButton::updateCursorState()
+{
+    if (!isEnabled())
+    {
+        setCursor(Qt::ForbiddenCursor);
+        return;
+    }
+
+    setCursor(m_loading ? Qt::ArrowCursor : Qt::PointingHandCursor);
 }
 
 void AntButton::updateGeometryFromState()

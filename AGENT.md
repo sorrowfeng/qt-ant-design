@@ -323,6 +323,14 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 - 参考页面：`docs/ant-design-reference.html`
 - 审查顺序：先基础组件（Typography/Icon/Button/Tag/Badge），再输入、弹层反馈、数据展示、导航布局、复杂与 Qt 扩展组件
 - 每个控件需覆盖亮色/暗色、默认/hover/active/focus/disabled、状态色、尺寸、间距、圆角、阴影和弹层行为
+- 视觉对比按单控件闭环推进：先读 Ant Design 源码/token，再编译 Qt 示例，分别截图参考页和 Qt 页，生成 side-by-side 对比图，归因差异，修复控件自身问题，最后更新 `docs/visual-audit.md`
+- 参考页截图使用 Playwright，例如：
+  - `npx playwright screenshot --wait-for-timeout=4000 --viewport-size "1280,900" "file:///D:/Project/GitProject/qt-ant-design/docs/ant-design-reference.html" build/<component>-reference-full.png`
+- Qt 侧截图优先使用 `build/visual-capture/` 下的临时 helper 输出 `build/<component>-qt.png`；截图 helper、PNG、拼图都属于 `build/` 产物，不提交
+- Windows 下 Qt `offscreen` 平台可能把文字渲染成方块；遇到时使用原生 Windows 平台截图。若临时 helper 保存 PNG 后因 QProxyStyle 析构崩溃，可保存成功后立即退出进程
+- 差异必须先归因：控件本体问题在当前控件修；容器、页面边距、卡片留白等归到对应组件审查；参考示例缺状态则先补示例/记录 `Needs fix`
+- 状态含义：`Pass` 表示已截图对比且无控件本体差异；`Needs visual QA` 表示状态已覆盖但待截图确认；`Needs fix` 表示仍有控件差异；`Blocked` 表示无法截图或参考缺失
+- 当前 Button 已完成静态截图对比并标记 `Pass`，剩余明显差异是 `AntCard` 容器留白，应在 Card 审查时处理
 
 ## 构建与安装
 

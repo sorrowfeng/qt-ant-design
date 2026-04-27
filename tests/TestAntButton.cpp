@@ -1,6 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
 
+#include "core/AntTheme.h"
 #include "widgets/AntButton.h"
 
 class TestAntButton : public QObject
@@ -8,6 +9,7 @@ class TestAntButton : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void cursorAndSizeParity();
 };
 
 void TestAntButton::propertiesAndSignals()
@@ -64,6 +66,26 @@ void TestAntButton::propertiesAndSignals()
 
     auto* btn2 = new AntButton("Click Me");
     QCOMPARE(btn2->text(), "Click Me");
+}
+
+void TestAntButton::cursorAndSizeParity()
+{
+    auto* btn = new AntButton("Button");
+    QCOMPARE(btn->cursor().shape(), Qt::PointingHandCursor);
+
+    btn->setLoading(true);
+    QCOMPARE(btn->cursor().shape(), Qt::ArrowCursor);
+
+    btn->setEnabled(false);
+    QCOMPARE(btn->cursor().shape(), Qt::ForbiddenCursor);
+
+    auto* largeBtn = new AntButton("Large");
+    largeBtn->setButtonSize(Ant::Size::Large);
+    QCOMPARE(largeBtn->sizeHint().height(), antTheme->tokens().controlHeightLG);
+
+    auto* smallBtn = new AntButton("Small");
+    smallBtn->setButtonSize(Ant::Size::Small);
+    QCOMPARE(smallBtn->sizeHint().height(), antTheme->tokens().controlHeightSM);
 }
 
 QTEST_MAIN(TestAntButton)

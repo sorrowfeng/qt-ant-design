@@ -80,6 +80,7 @@ private:
     Metrics metrics() const;
     int cornerRadius(const Metrics& metrics) const;
     QRectF contentRect(const Metrics& metrics) const;
+    void updateCursorState();
     void updateGeometryFromState();
 
     Ant::ButtonType m_buttonType = Ant::ButtonType::Default;
