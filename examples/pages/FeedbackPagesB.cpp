@@ -4,15 +4,15 @@
 #include <QFont>
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QVBoxLayout>
 #include <QWidget>
 
-#include "widgets/AntCard.h"
+#include "PageCommon.h"
 #include "core/AntTheme.h"
 #include "core/AntTypes.h"
 #include "widgets/AntApp.h"
 #include "widgets/AntButton.h"
+#include "widgets/AntCard.h"
 #include "widgets/AntConfigProvider.h"
 #include "widgets/AntFloatButton.h"
 #include "widgets/AntMessage.h"
@@ -33,15 +33,14 @@ QWidget* createAppPage(QWidget* owner)
         auto* card = new AntCard(QStringLiteral("AntApp"));
         auto* cl = card->bodyLayout();
 
-        auto* desc = new QLabel(
+        auto* desc = makeParagraph(
             QStringLiteral("AntApp provides an application-level wrapper around message, modal and notification context. "
                            "In the current port the wrapper exists and tracks the root widget, while feedback calls are still minimal."),
             page);
-        desc->setWordWrap(true);
         cl->addWidget(desc);
 
         auto* app = new AntApp(page, page);
-        auto* status = new QLabel(QStringLiteral("Instance root: %1").arg(app->rootWidget() == page ? QStringLiteral("attached") : QStringLiteral("missing")));
+        auto* status = makeText(QStringLiteral("Instance root: %1").arg(app->rootWidget() == page ? QStringLiteral("attached") : QStringLiteral("missing")), page);
         cl->addWidget(status);
 
         auto* buttonRow = new QHBoxLayout();
@@ -95,7 +94,7 @@ QWidget* createConfigProviderPage(QWidget* owner)
         provider->setFontSize(14);
         provider->setBorderRadius(6);
 
-        auto* summary = new QLabel(page);
+        auto* summary = makeText(QString(), page);
         auto updateSummary = [summary, provider]() {
             summary->setText(QStringLiteral("theme=%1, primary=%2, fontSize=%3, radius=%4")
                                  .arg(provider->themeMode() == Ant::ThemeMode::Dark ? QStringLiteral("dark") : QStringLiteral("light"))
@@ -130,10 +129,9 @@ QWidget* createConfigProviderPage(QWidget* owner)
             AntMessage::success(QStringLiteral("ConfigProvider applied theme mode"), owner, 1400);
         });
 
-        auto* note = new QLabel(
+        auto* note = makeParagraph(
             QStringLiteral("This demo focuses on the current C++ API surface. The provider already stores theme, primary color, font size and radius settings; theme mode application is live."),
             page);
-        note->setWordWrap(true);
         cl->addWidget(note);
 
         layout->addWidget(card);

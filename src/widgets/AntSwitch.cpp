@@ -223,14 +223,18 @@ AntSwitch::Metrics AntSwitch::metrics() const
 {
     const auto& token = antTheme->tokens();
     Metrics m;
-    const qreal height = token.fontSize * token.lineHeight;
+    const int fontSize = token.fontSize > 0 ? token.fontSize : Ant::FontSize;
+    const int fontSizeSM = token.fontSizeSM > 0 ? token.fontSizeSM : Ant::FontSizeSmall;
+    const int controlHeight = token.controlHeight > 0 ? token.controlHeight : Ant::ControlHeight;
+    const qreal lineHeight = token.lineHeight > 0.0 ? token.lineHeight : 1.5715;
+    const qreal height = fontSize * lineHeight;
     if (m_switchSize == Ant::Size::Small)
     {
-        m.trackHeight = token.controlHeight / 2;
+        m.trackHeight = controlHeight / 2;
         m.trackPadding = 2;
         m.handleSize = m.trackHeight - m.trackPadding * 2;
         m.trackMinWidth = m.handleSize * 2 + m.trackPadding * 2;
-        m.fontSize = token.fontSizeSM;
+        m.fontSize = fontSizeSM;
         m.innerMinMargin = m.handleSize / 2;
         m.innerMaxMargin = m.handleSize + m.trackPadding * 3;
     }
@@ -240,7 +244,7 @@ AntSwitch::Metrics AntSwitch::metrics() const
         m.trackPadding = 2;
         m.handleSize = m.trackHeight - m.trackPadding * 2;
         m.trackMinWidth = m.handleSize * 2 + m.trackPadding * 4;
-        m.fontSize = token.fontSizeSM;
+        m.fontSize = fontSizeSM;
         m.innerMinMargin = m.handleSize / 2;
         m.innerMaxMargin = m.handleSize + m.trackPadding * 3;
     }

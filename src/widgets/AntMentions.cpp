@@ -90,7 +90,7 @@ AntMentions::AntMentions(QWidget* parent)
     layout->setContentsMargins(12, 0, 8, 0);
     layout->addWidget(m_lineEdit);
 
-    m_popup = new QFrame(nullptr, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    m_popup = new QFrame(this, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     m_popup->setAttribute(Qt::WA_TranslucentBackground);
     m_popup->setAttribute(Qt::WA_ShowWithoutActivating);
 

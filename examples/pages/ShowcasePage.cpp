@@ -1,12 +1,15 @@
 #include "Pages.h"
 
+#include <QColor>
+#include <QDate>
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
+#include <QPainter>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "PageCommon.h"
 #include "core/AntTypes.h"
 #include "widgets/AntAlert.h"
 #include "widgets/AntButton.h"
@@ -21,6 +24,32 @@
 #include "widgets/AntSteps.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTag.h"
+
+namespace
+{
+class ColorSwatch : public QFrame
+{
+public:
+    explicit ColorSwatch(const QColor& color, QWidget* parent = nullptr)
+        : QFrame(parent), m_color(color)
+    {
+        setFixedSize(20, 20);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(m_color);
+        painter.drawRoundedRect(rect(), 4, 4);
+    }
+
+private:
+    QColor m_color;
+};
+}
 
 namespace example::pages
 {
@@ -58,26 +87,16 @@ QWidget* createShowcasePage(QWidget* /*owner*/)
     auto* colorLayout = new QHBoxLayout(colorBox);
     colorLayout->setContentsMargins(10, 6, 10, 6);
     colorLayout->setSpacing(8);
-    auto* swatch = new QLabel(colorBox);
-    swatch->setFixedSize(20, 20);
-    colorLayout->addWidget(swatch);
-    colorLayout->addWidget(new QLabel(QStringLiteral("#1677FF"), colorBox));
+    colorLayout->addWidget(new ColorSwatch(QColor(QStringLiteral("#1677ff")), colorBox));
+    colorLayout->addWidget(makeText(QStringLiteral("#1677FF"), colorBox));
     row1->addWidget(colorBox);
 
-    auto* missingTags = new QFrame(surface);
-    auto* missingTagsLayout = new QHBoxLayout(missingTags);
-    missingTagsLayout->setContentsMargins(10, 6, 10, 6);
-    missingTagsLayout->setSpacing(6);
-    auto* appleTag = new AntTag(QStringLiteral("苹果"), missingTags);
-    appleTag->setClosable(true);
-    auto* bananaTag = new AntTag(QStringLiteral("香蕉"), missingTags);
-    bananaTag->setClosable(true);
-    missingTagsLayout->addWidget(appleTag);
-    missingTagsLayout->addWidget(bananaTag);
-    auto* missingSelectNote = new QLabel(QStringLiteral("缺 Select multiple/tags"), missingTags);
-    missingTagsLayout->addWidget(missingSelectNote);
-    missingTagsLayout->addStretch();
-    row1->addWidget(missingTags, 1);
+    auto* tagSelect = new AntSelect(surface);
+    tagSelect->setSelectMode(Ant::SelectMode::Tags);
+    tagSelect->addOptions({QStringLiteral("苹果"), QStringLiteral("香蕉"), QStringLiteral("橘子")});
+    tagSelect->addTag(QStringLiteral("苹果"));
+    tagSelect->addTag(QStringLiteral("香蕉"));
+    row1->addWidget(tagSelect, 1);
     surfaceLayout->addLayout(row1);
 
     auto* row2 = new QHBoxLayout();
@@ -87,20 +106,11 @@ QWidget* createShowcasePage(QWidget* /*owner*/)
     datePicker->setFixedWidth(140);
     row2->addWidget(datePicker);
 
-    auto* missingDate = new QFrame(surface);
-    auto* missingDateLayout = new QHBoxLayout(missingDate);
-    missingDateLayout->setContentsMargins(10, 6, 10, 6);
-    missingDateLayout->setSpacing(6);
-    auto* springTag = new AntTag(QStringLiteral("苹果"), missingDate);
-    springTag->setClosable(true);
-    auto* summerTag = new AntTag(QStringLiteral("香蕉"), missingDate);
-    summerTag->setClosable(true);
-    missingDateLayout->addWidget(springTag);
-    missingDateLayout->addWidget(summerTag);
-    auto* missingDateNote = new QLabel(QStringLiteral("缺标签化多选日期/复合输入"), missingDate);
-    missingDateLayout->addWidget(missingDateNote);
-    missingDateLayout->addStretch();
-    row2->addWidget(missingDate, 1);
+    auto* dateRange = new AntDatePicker(surface);
+    dateRange->setRangeMode(true);
+    dateRange->setStartDate(QDate::currentDate());
+    dateRange->setEndDate(QDate::currentDate().addDays(7));
+    row2->addWidget(dateRange, 1);
     surfaceLayout->addLayout(row2);
 
     auto* progress = new AntProgress(surface);

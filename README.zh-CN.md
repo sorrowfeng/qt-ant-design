@@ -1,6 +1,6 @@
 # qt-ant-design
 
-> ⚠️ **工作尚未完成，目前处于不可用状态。**
+> ⚠️ **实验性移植版本，API 与视觉细节仍在持续打磨。**
 
 [English](README.md) | 简体中文
 
@@ -12,15 +12,15 @@
 - 尽可能贴近 Ant Design 的交互与状态表现
 - 使用 `QPainter` / `QProxyStyle` 构建可维护的桌面绘制体系
 
-> 截图预留：后续会补充示例程序的亮色 / 暗色界面截图与组件画廊。
+> 截图预留：后续会在视觉审查阶段补充示例程序的亮色 / 暗色界面截图与组件画廊。
 
 ## 特性
 
 - 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
-- 当前已移植 `81` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `11` 个 Qt / 桌面扩展组件）
+- 当前已移植 `82` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `12` 个 Qt / 桌面扩展组件）
 - 全部 `~62` 个组件使用 `QProxyStyle` 架构绘制
-- 示例程序当前覆盖 `80 / 81` 个公开组件
+- 示例程序当前覆盖 `80 / 82` 个公开组件
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
 
 ## 安装与集成
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现公开组件总数：`81`
+当前已实现公开组件总数：`82`
 
 Ant Design 标准组件按 `submodules/ant-design/components` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
 
@@ -241,14 +241,13 @@ input->setInputSize(Ant::InputSize::Large);
 ### AntCard
 
 ```cpp
-#include <QLabel>
-
 #include "widgets/AntCard.h"
+#include "widgets/AntTypography.h"
 
 auto* card = new AntCard("User Profile");
 card->setExtra("More");
 card->setHoverable(true);
-card->bodyLayout()->addWidget(new QLabel("Card content"));
+card->bodyLayout()->addWidget(new AntTypography("Card content"));
 ```
 
 ### 主题切换
@@ -266,10 +265,12 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 项目使用 `AGENT.md` 作为 AI 协作规范与项目同步文档，记录：
 
 - 已移植组件清单
-- 待移植组件清单
+- 视觉审查清单
 - 当前架构约定
 - 示例覆盖情况
 - 构建与安装说明
+
+逐控件视觉审查清单位于 `docs/visual-audit.md`。
 
 添加新组件时，推荐遵循以下流程：
 

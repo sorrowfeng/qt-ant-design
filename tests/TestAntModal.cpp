@@ -8,7 +8,6 @@ class TestAntModal : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
-    void commandApi();
 };
 
 void TestAntModal::propertiesAndSignals()
@@ -69,10 +68,6 @@ void TestAntModal::propertiesAndSignals()
     modal->setShowCancel(false);
     QCOMPARE(modal->showCancel(), false);
     QCOMPARE(showCancelSpy.count(), 1);
-}
-
-void TestAntModal::commandApi()
-{
     auto* parent = new QWidget;
     auto* infoModal = AntModal::info("Info", "Info content", parent);
     QVERIFY(infoModal != nullptr);

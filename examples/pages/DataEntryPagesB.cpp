@@ -2,11 +2,11 @@
 
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QTime>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "PageCommon.h"
 #include "core/AntTypes.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntRadio.h"
@@ -595,7 +595,7 @@ QWidget* createTransferPage(QWidget* /*owner*/)
     transfer->setTargetItems({QStringLiteral("Users")});
     layout->addWidget(transfer);
 
-    auto* summary = new QLabel(page);
+    auto* summary = makeText(QString(), page);
     auto updateSummary = [summary, transfer]() {
         summary->setText(QStringLiteral("source=%1, target=%2")
                              .arg(transfer->sourceItems().join(QStringLiteral(", ")))

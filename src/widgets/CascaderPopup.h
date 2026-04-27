@@ -37,7 +37,7 @@ class CascaderPopup : public QFrame
 {
 public:
     explicit CascaderPopup(AntCascader* owner)
-        : QFrame(nullptr, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+        : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
           m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);

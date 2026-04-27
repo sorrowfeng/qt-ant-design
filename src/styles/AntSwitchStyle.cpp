@@ -27,23 +27,27 @@ SwitchMetrics metricsFor(const AntSwitch* sw)
 {
     const auto& token = antTheme->tokens();
     SwitchMetrics metrics;
-    const qreal defaultHeight = token.fontSize * token.lineHeight;
+    const int fontSize = token.fontSize > 0 ? token.fontSize : Ant::FontSize;
+    const int fontSizeSM = token.fontSizeSM > 0 ? token.fontSizeSM : Ant::FontSizeSmall;
+    const int controlHeight = token.controlHeight > 0 ? token.controlHeight : Ant::ControlHeight;
+    const qreal lineHeight = token.lineHeight > 0.0 ? token.lineHeight : 1.5715;
+    const qreal defaultHeight = fontSize * lineHeight;
     if (!sw || sw->switchSize() == Ant::Size::Middle)
     {
         metrics.trackHeight = static_cast<int>(std::round(defaultHeight));
         metrics.trackPadding = 2;
         metrics.handleSize = metrics.trackHeight - metrics.trackPadding * 2;
         metrics.trackMinWidth = metrics.handleSize * 2 + metrics.trackPadding * 4;
-        metrics.fontSize = token.fontSizeSM;
+        metrics.fontSize = fontSizeSM;
         metrics.innerMinMargin = metrics.handleSize / 2;
     }
     else
     {
-        metrics.trackHeight = token.controlHeight / 2;
+        metrics.trackHeight = controlHeight / 2;
         metrics.trackPadding = 2;
         metrics.handleSize = metrics.trackHeight - metrics.trackPadding * 2;
         metrics.trackMinWidth = metrics.handleSize * 2 + metrics.trackPadding * 2;
-        metrics.fontSize = token.fontSizeSM;
+        metrics.fontSize = fontSizeSM;
         metrics.innerMinMargin = metrics.handleSize / 2;
     }
 

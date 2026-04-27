@@ -17,4 +17,23 @@ QScrollArea* wrapPage(QWidget* page)
     scroll->setWidget(page);
     return scroll;
 }
+
+AntTypography* makeText(const QString& text, QWidget* parent, Ant::TypographyType type)
+{
+    auto* label = new AntTypography(text, parent);
+    label->setType(type);
+    return label;
+}
+
+AntTypography* makeSecondaryText(const QString& text, QWidget* parent)
+{
+    return makeText(text, parent, Ant::TypographyType::Secondary);
+}
+
+AntTypography* makeParagraph(const QString& text, QWidget* parent, Ant::TypographyType type)
+{
+    auto* paragraph = makeText(text, parent, type);
+    paragraph->setParagraph(true);
+    return paragraph;
+}
 }

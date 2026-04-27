@@ -16,7 +16,7 @@ class AntTreeSelect::TreeSelectPopup : public QFrame
 {
 public:
     TreeSelectPopup(AntTreeSelect* owner)
-        : QFrame(nullptr, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+        : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
         , m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);

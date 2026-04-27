@@ -45,10 +45,8 @@ AntCascader::AntCascader(QWidget* parent)
 
 AntCascader::~AntCascader()
 {
-    if (m_popup)
-    {
-        m_popup->deleteLater();
-    }
+    delete m_popup;
+    m_popup = nullptr;
 }
 
 QVector<AntCascaderOption> AntCascader::options() const

@@ -309,13 +309,20 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖 `80 / 81` 个公开组件，左侧导航与右侧页面一一对应。
+当前 `examples/ExampleWindow.cpp` 已覆盖 `80 / 82` 个公开组件，左侧导航与右侧页面一一对应。
 
 示例程序架构：
 - `ExampleWindow` 继承 `AntWindow`（无边框窗口，自定义标题栏）
 - 使用 `AntWidget` 作为侧边栏和内容区容器
 - 使用 `AntTypography` 替代 `QLabel`，通过 `setTitle()` / `setParagraph()` / `setType()` 实现主题感知
 - 使用 `AntScrollBar` 替代原生滚动条
+
+## 视觉审查
+
+- 审查入口：`docs/visual-audit.md`
+- 参考页面：`docs/ant-design-reference.html`
+- 审查顺序：先基础组件（Typography/Icon/Button/Tag/Badge），再输入、弹层反馈、数据展示、导航布局、复杂与 Qt 扩展组件
+- 每个控件需覆盖亮色/暗色、默认/hover/active/focus/disabled、状态色、尺寸、间距、圆角、阴影和弹层行为
 
 ## 构建与安装
 
@@ -340,7 +347,7 @@ cmake --install build --config Debug
 项目使用 QTest 框架进行单元测试，覆盖所有 82 个组件的属性、getter/setter 和信号验证。
 
 - **测试框架**：Qt6::Test（QTest + QSignalSpy）
-- **测试数量**：17 个测试可执行文件
+- **测试数量**：20 个测试可执行文件
 - **覆盖组件**：82 个组件全部覆盖
 - **运行方式**：`ctest -C Debug --output-on-failure`
 
@@ -354,6 +361,7 @@ tests/
 ├── TestAntIcon.cpp             # Icon 属性/信号
 ├── TestAntTypography.cpp       # Typography 属性/信号
 ├── TestAntFloatButton.cpp      # FloatButton 属性/信号
+├── TestAntBadge.cpp            # Badge 属性/信号
 ├── TestAntCheckbox.cpp         # Checkbox 属性/信号
 ├── TestAntSwitch.cpp           # Switch 属性/信号
 ├── TestAntSelect.cpp           # Select 单选/多选/标签
@@ -362,7 +370,9 @@ tests/
 ├── TestAntDataEntryB.cpp       # Cascader, DatePicker, TimePicker, Mentions, Transfer, TreeSelect, Upload
 ├── TestAntDataDisplayA.cpp     # Avatar, Card, Statistic, Calendar, Image, Empty
 ├── TestAntDataDisplayB.cpp     # List, Table, Tree, Timeline, Descriptions, QRCode, Watermark, Carousel, Collapse
+├── TestAntTag.cpp              # Tag 属性/信号
 ├── TestAntFeedback.cpp         # Alert, Drawer, Message, Notification, Popconfirm, Popover, Progress, Result, Skeleton, Spin, Tooltip, Tour
+├── TestAntModal.cpp            # Modal 属性/命令式 API
 ├── TestAntNavigation.cpp       # Breadcrumb, Dropdown, Menu, Pagination, Steps, Tabs, Anchor
 ├── TestAntLayout.cpp           # Divider, Flex, Grid, Space, Layout, Masonry, Affix
 └── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, NavItem, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker

@@ -2,7 +2,6 @@
 
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QList>
 #include <QPair>
 #include <QString>
@@ -10,6 +9,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "PageCommon.h"
 #include "core/AntTypes.h"
 #include "widgets/AntAlert.h"
 #include "widgets/AntButton.h"
@@ -423,7 +423,7 @@ QWidget* createTourPage(QWidget* /*owner*/)
         bodyLayout->addWidget(targetC);
         cl->addWidget(checklistCard);
 
-        auto* status = new QLabel(QStringLiteral("Tour not started"), page);
+        auto* status = makeText(QStringLiteral("Tour not started"), page);
         cl->addWidget(status);
 
         auto* tour = new AntTour(page);

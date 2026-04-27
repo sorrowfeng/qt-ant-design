@@ -6,13 +6,13 @@
 #include <QDoubleSpinBox>
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QTime>
 #include <QVariant>
 #include <QVBoxLayout>
 #include <QVector>
 #include <QWidget>
 
+#include "PageCommon.h"
 #include "core/AntTypes.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntAutoComplete.h"
@@ -198,7 +198,7 @@ QWidget* createColorPickerPage(QWidget* /*owner*/)
     openBtn->setButtonType(Ant::ButtonType::Primary);
     layout->addWidget(openBtn);
 
-    auto* colorLabel = new QLabel(QStringLiteral("Selected: none"));
+    auto* colorLabel = makeText(QStringLiteral("Selected: none"), page);
     layout->addWidget(colorLabel);
 
     QObject::connect(openBtn, &QPushButton::clicked, page, [page, colorLabel]() {
@@ -680,17 +680,16 @@ QWidget* createMentionsPage(QWidget* /*owner*/)
                               QStringLiteral("design-team"), QStringLiteral("frontend"), QStringLiteral("release-bot")});
     layout->addWidget(mentions);
 
-    auto* picked = new QLabel(QStringLiteral("Selected mention: none"), page);
+    auto* picked = makeText(QStringLiteral("Selected mention: none"), page);
     layout->addWidget(picked);
 
     QObject::connect(mentions, &AntMentions::mentionSelected, picked, [picked](const QString& text) {
         picked->setText(QStringLiteral("Selected mention: %1").arg(text));
     });
 
-    auto* help = new QLabel(
+    auto* help = makeParagraph(
         QStringLiteral("The popup filters suggestions after the prefix. Click one item to insert the mention and keep typing."),
         page);
-    help->setWordWrap(true);
     layout->addWidget(help);
     layout->addStretch();
     return page;

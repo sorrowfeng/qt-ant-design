@@ -20,7 +20,7 @@ class AntTimePickerPopup : public QFrame
 {
 public:
     explicit AntTimePickerPopup(AntTimePicker* owner)
-        : QFrame(nullptr, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+        : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
           m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
@@ -328,10 +328,8 @@ AntTimePicker::AntTimePicker(QWidget* parent)
 
 AntTimePicker::~AntTimePicker()
 {
-    if (m_popup)
-    {
-        m_popup->deleteLater();
-    }
+    delete m_popup;
+    m_popup = nullptr;
 }
 
 QTime AntTimePicker::selectedTime() const { return m_selectedTime; }

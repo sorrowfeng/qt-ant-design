@@ -2,7 +2,6 @@
 
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QList>
 #include <QPair>
 #include <QString>

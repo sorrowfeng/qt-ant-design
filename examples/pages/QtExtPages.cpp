@@ -2,7 +2,6 @@
 
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QList>
 #include <QMenu>
 #include <QPainter>
@@ -12,6 +11,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "PageCommon.h"
 #include "core/AntTypes.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntButton.h"
@@ -41,14 +41,13 @@ QWidget* createDockWidgetPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("AntDockWidget"));
         auto* cl = card->bodyLayout();
 
-        auto* infoLabel = new QLabel(QStringLiteral("Dock widgets can be created from QMainWindow.\nThis page shows the AntDockWidget API."));
-        infoLabel->setWordWrap(true);
+        auto* infoLabel = makeParagraph(QStringLiteral("Dock widgets can be created from QMainWindow.\nThis page shows the AntDockWidget API."), page);
         cl->addWidget(infoLabel);
 
         auto* dock = new AntDockWidget(QStringLiteral("My Dock"), page);
         auto* dockContent = new QWidget();
         auto* dockLayout = new QVBoxLayout(dockContent);
-        dockLayout->addWidget(new QLabel(QStringLiteral("Dock content area")));
+        dockLayout->addWidget(makeText(QStringLiteral("Dock content area"), dockContent));
         dockLayout->addStretch();
         dock->setWidget(dockContent);
         dock->setMinimumWidth(200);
@@ -123,8 +122,7 @@ QWidget* createMasonryPage(QWidget* /*owner*/)
         };
         for (int i = 0; i < heights.size(); ++i)
         {
-            auto* tile = new QLabel(QStringLiteral("Tile %1").arg(i + 1), masonry);
-            tile->setAlignment(Qt::AlignCenter);
+            auto* tile = makeText(QStringLiteral("Tile %1").arg(i + 1), masonry);
             tile->setMinimumHeight(heights[i]);
             masonry->addWidget(tile);
         }
@@ -217,7 +215,7 @@ QWidget* createScrollAreaPage(QWidget* /*owner*/)
         auto* contentLayout = new QVBoxLayout(content);
         for (int i = 0; i < 30; ++i)
         {
-            contentLayout->addWidget(new QLabel(QStringLiteral("Item %1 — Scroll to see the AntScrollBar").arg(i + 1)));
+            contentLayout->addWidget(makeText(QStringLiteral("Item %1 — Scroll to see the AntScrollBar").arg(i + 1), content));
         }
         contentLayout->addStretch();
         scroll->setWidget(content);

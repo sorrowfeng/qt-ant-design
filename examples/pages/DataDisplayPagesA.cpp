@@ -2,7 +2,6 @@
 
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QList>
 #include <QPair>
 #include <QPoint>
@@ -11,6 +10,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "PageCommon.h"
 #include "core/AntTypes.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntBadge.h"
@@ -282,7 +282,7 @@ QWidget* createCalendarPage(QWidget* /*owner*/)
         auto* cal = new AntCalendar(page);
         cl->addWidget(cal);
 
-        auto* dateLabel = new QLabel(QStringLiteral("Selected: ") + cal->selectedDate().toString(QStringLiteral("yyyy-MM-dd")));
+        auto* dateLabel = makeText(QStringLiteral("Selected: ") + cal->selectedDate().toString(QStringLiteral("yyyy-MM-dd")), page);
         QObject::connect(cal, &AntCalendar::clicked, dateLabel, [dateLabel, cal]() {
             dateLabel->setText(QStringLiteral("Selected: ") + cal->selectedDate().toString(QStringLiteral("yyyy-MM-dd")));
         });
@@ -402,16 +402,16 @@ QWidget* createCarouselPage(QWidget* /*owner*/)
             auto* slideCard = new QWidget();
             auto* cardLayout = new QVBoxLayout(slideCard);
             cardLayout->setContentsMargins(24, 24, 24, 24);
-            auto* heading = new QLabel(slideTitle, slideCard);
+            auto* heading = makeText(slideTitle, slideCard);
+            heading->setStrong(true);
             cardLayout->addWidget(heading);
-            auto* body = new QLabel(QStringLiteral("Click the left/right side of the carousel to switch slides. Dots stay in sync with the current page."), slideCard);
-            body->setWordWrap(true);
+            auto* body = makeParagraph(QStringLiteral("Click the left/right side of the carousel to switch slides. Dots stay in sync with the current page."), slideCard);
             cardLayout->addWidget(body);
             cardLayout->addStretch();
             carousel->addSlide(slideCard);
         }
 
-        auto* current = new QLabel(QStringLiteral("Current slide: 1 / %1").arg(carousel->count()), page);
+        auto* current = makeSecondaryText(QStringLiteral("Current slide: 1 / %1").arg(carousel->count()), page);
         QObject::connect(carousel, &AntCarousel::currentIndexChanged, current, [current, carousel](int index) {
             current->setText(QStringLiteral("Current slide: %1 / %2").arg(index + 1).arg(carousel->count()));
         });
@@ -421,10 +421,10 @@ QWidget* createCarouselPage(QWidget* /*owner*/)
         autoplay->setChecked(carousel->autoPlay());
         auto* dots = new AntSwitch();
         dots->setChecked(carousel->showDots());
-        controls->addWidget(new QLabel(QStringLiteral("Auto play")));
+        controls->addWidget(makeText(QStringLiteral("Auto play"), page));
         controls->addWidget(autoplay);
         controls->addSpacing(16);
-        controls->addWidget(new QLabel(QStringLiteral("Show dots")));
+        controls->addWidget(makeText(QStringLiteral("Show dots"), page));
         controls->addWidget(dots);
         controls->addStretch();
 
@@ -458,20 +458,20 @@ QWidget* createCollapsePage(QWidget* /*owner*/)
         auto* p1 = collapse->addPanel(QStringLiteral("Panel 1 — First Item"));
         auto* c1 = new QWidget();
         auto* l1 = new QVBoxLayout(c1);
-        l1->addWidget(new QLabel(QStringLiteral("Content for panel 1. This area expands and collapses.")));
+        l1->addWidget(makeParagraph(QStringLiteral("Content for panel 1. This area expands and collapses."), c1));
         p1->setContentWidget(c1);
 
         auto* p2 = collapse->addPanel(QStringLiteral("Panel 2 — Second Item"));
         auto* c2 = new QWidget();
         auto* l2 = new QVBoxLayout(c2);
-        l2->addWidget(new QLabel(QStringLiteral("Panel 2 content here.")));
+        l2->addWidget(makeParagraph(QStringLiteral("Panel 2 content here."), c2));
         p2->setContentWidget(c2);
 
         auto* p3 = collapse->addPanel(QStringLiteral("Panel 3 — Third Item (Disabled)"));
         p3->setDisabled(true);
         auto* c3 = new QWidget();
         auto* l3 = new QVBoxLayout(c3);
-        l3->addWidget(new QLabel(QStringLiteral("This panel is disabled.")));
+        l3->addWidget(makeParagraph(QStringLiteral("This panel is disabled."), c3));
         p3->setContentWidget(c3);
 
         cl->addWidget(collapse);
@@ -660,7 +660,7 @@ QWidget* createImagePage(QWidget* /*owner*/)
         img->setImgHeight(200);
         cl->addWidget(img);
 
-        auto* tip = new QLabel(QStringLiteral("Set src to load an image. Click to preview."));
+        auto* tip = makeSecondaryText(QStringLiteral("Set src to load an image. Click to preview."), page);
         cl->addWidget(tip);
 
         layout->addWidget(card);

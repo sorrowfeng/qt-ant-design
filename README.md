@@ -1,6 +1,6 @@
 # qt-ant-design
 
-> ⚠️ **Work in progress — currently not in a usable state.**
+> ⚠️ **Experimental port — APIs and visual details are still being refined.**
 
 English | [简体中文](README.zh-CN.md)
 
@@ -12,15 +12,15 @@ The project focuses on:
 - Faithful reproduction of Ant Design's interactions and state styles
 - A maintainable desktop rendering stack built on `QPainter` / `QProxyStyle`
 
-> Screenshots reserved: light / dark UI screenshots and a component gallery from the example app will be added later.
+> Screenshots reserved: light / dark UI screenshots and a component gallery from the example app will be added during visual audit.
 
 ## Features
 
 - Built on Qt 6 Widgets — lightweight, easy to embed, and consumable as a static library in existing projects
 - Built-in Design Token system with real-time light / dark theme switching
-- `81` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `11` Qt / desktop extension components)
+- `82` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `12` Qt / desktop extension components)
 - All `~62` style-driven components are rendered through a `QProxyStyle` architecture
-- The example app currently demos `80 / 81` public components
+- The example app currently demos `80 / 82` public components
 - Clean code structure — `core / styles / widgets / examples` layering keeps the project easy to extend
 
 ## Installation & Integration
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 
 ## Ported Components
 
-Total public components implemented: `81`
+Total public components implemented: `82`
 
 Ant Design standard components are counted by the top-level directories under `submodules/ant-design/components`, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
 
@@ -241,14 +241,13 @@ input->setInputSize(Ant::InputSize::Large);
 ### AntCard
 
 ```cpp
-#include <QLabel>
-
 #include "widgets/AntCard.h"
+#include "widgets/AntTypography.h"
 
 auto* card = new AntCard("User Profile");
 card->setExtra("More");
 card->setHoverable(true);
-card->bodyLayout()->addWidget(new QLabel("Card content"));
+card->bodyLayout()->addWidget(new AntTypography("Card content"));
 ```
 
 ### Theme switching
@@ -266,10 +265,12 @@ A theme switch currently triggers `polish / updateGeometry / update` on every `Q
 The project uses `AGENT.md` as the AI collaboration spec and project sync document, tracking:
 
 - Ported component list
-- Pending component list
+- Visual audit checklist
 - Current architectural conventions
 - Example coverage
 - Build and install instructions
+
+The per-component visual audit tracker lives in `docs/visual-audit.md`.
 
 When adding a new component, the recommended flow is:
 

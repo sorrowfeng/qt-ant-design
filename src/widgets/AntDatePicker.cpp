@@ -17,7 +17,7 @@ class AntDatePickerPopup : public QFrame
 {
 public:
     explicit AntDatePickerPopup(AntDatePicker* owner)
-        : QFrame(nullptr, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+        : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
           m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
@@ -292,10 +292,8 @@ AntDatePicker::AntDatePicker(QWidget* parent)
 
 AntDatePicker::~AntDatePicker()
 {
-    if (m_popup)
-    {
-        m_popup->deleteLater();
-    }
+    delete m_popup;
+    m_popup = nullptr;
 }
 
 QDate AntDatePicker::selectedDate() const { return m_selectedDate; }

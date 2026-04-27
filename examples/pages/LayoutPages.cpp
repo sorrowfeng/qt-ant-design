@@ -2,7 +2,6 @@
 
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -32,9 +31,11 @@ public:
         setMinimumHeight(h);
         auto* lay = new QHBoxLayout(this);
         lay->setContentsMargins(0, 0, 0, 0);
-        auto* lbl = new QLabel(text, this);
-        lbl->setAlignment(Qt::AlignCenter);
+        auto* lbl = new AntTypography(text, this);
+        lbl->setType(Ant::TypographyType::LightSolid);
+        lay->addStretch();
         lay->addWidget(lbl);
+        lay->addStretch();
     }
     QSize sizeHint() const override { return {0, m_h}; }
 protected:
