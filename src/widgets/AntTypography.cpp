@@ -46,6 +46,7 @@ void AntTypography::setType(Ant::TypographyType type)
         return;
     }
     m_type = type;
+    setCursor(m_type == Ant::TypographyType::Link ? Qt::PointingHandCursor : Qt::ArrowCursor);
     update();
     Q_EMIT typeChanged(m_type);
 }

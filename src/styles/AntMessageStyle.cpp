@@ -43,12 +43,12 @@ QString computeIconText(Ant::MessageType type)
     }
 }
 
-void drawLoadingIcon(QPainter& painter, const QRectF& rect, const QColor& color)
+void drawLoadingIcon(QPainter& painter, const QRectF& rect, const QColor& color, int angle)
 {
     painter.save();
     painter.setPen(QPen(color, 1.8, Qt::SolidLine, Qt::RoundCap));
     painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect.adjusted(1, 1, -1, -1), 0, 270 * 16);
+    painter.drawArc(rect.adjusted(1, 1, -1, -1), angle * 16, 270 * 16);
     painter.restore();
 }
 } // namespace
@@ -135,7 +135,7 @@ void AntMessageStyle::drawMessage(const QStyleOption* option, QPainter* painter,
     const QRectF iconRect(bubble.left() + token.paddingSM, bubble.center().y() - 8, 16, 16);
     if (messageType == Ant::MessageType::Loading)
     {
-        drawLoadingIcon(*painter, iconRect, accent);
+        drawLoadingIcon(*painter, iconRect, accent, message->loadingAngle());
     }
     else
     {

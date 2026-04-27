@@ -39,6 +39,10 @@ void TestAntTypography::propertiesAndSignals()
 
     w->setType(Ant::TypographyType::Link);
     QCOMPARE(w->type(), Ant::TypographyType::Link);
+    QCOMPARE(w->cursor().shape(), Qt::PointingHandCursor);
+
+    w->setType(Ant::TypographyType::Default);
+    QCOMPARE(w->cursor().shape(), Qt::ArrowCursor);
 
     QSignalSpy titleSpy(w, &AntTypography::titleChanged);
     w->setTitle(true);

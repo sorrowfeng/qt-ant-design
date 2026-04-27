@@ -15,6 +15,7 @@ AntPopconfirm::AntPopconfirm(QWidget* parent)
     m_popover = new AntPopover(this);
     m_popover->setTrigger(Ant::PopoverTrigger::Click);
     m_popover->setTitle(QString());
+    m_popover->setTitleIconType(Ant::IconType::ExclamationCircle);
     connect(m_popover, &AntPopover::openChanged, this, &AntPopconfirm::openChanged);
 
     rebuildActionWidget();
@@ -98,6 +99,11 @@ void AntPopconfirm::setDisabled(bool disabled)
     if (m_disabled)
     {
         m_popover->setOpen(false);
+        m_popover->setTarget(nullptr);
+    }
+    else
+    {
+        m_popover->setTarget(m_target.data());
     }
     Q_EMIT disabledChanged(m_disabled);
 }
@@ -119,12 +125,17 @@ void AntPopconfirm::setPlacement(Ant::TooltipPlacement placement)
 
 QWidget* AntPopconfirm::target() const
 {
-    return m_popover->target();
+    return m_target.data();
 }
 
 void AntPopconfirm::setTarget(QWidget* target)
 {
-    m_popover->setTarget(target);
+    if (m_target == target)
+    {
+        return;
+    }
+    m_target = target;
+    m_popover->setTarget(m_disabled ? nullptr : m_target.data());
 }
 
 bool AntPopconfirm::isOpen() const

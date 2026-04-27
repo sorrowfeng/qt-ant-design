@@ -45,15 +45,14 @@ QRectF computeCloseButtonRect(const QRectF& card)
     return QRectF(card.right() - token.paddingLG - size, card.top() + token.paddingMD - 4, size, size);
 }
 
-void drawTypeIcon(QPainter& painter, const QRectF& rect, Ant::MessageType type, const QColor& accentColor)
+void drawTypeIcon(QPainter& painter, const QRectF& rect, Ant::MessageType type, const QColor& accentColor, int spinnerAngle)
 {
     if (type == Ant::MessageType::Loading)
     {
-        // Spinner at angle 0
         painter.save();
         painter.setPen(QPen(accentColor, 2.0, Qt::SolidLine, Qt::RoundCap));
         painter.setBrush(Qt::NoBrush);
-        painter.drawArc(rect.adjusted(2, 2, -2, -2), 0, 270 * 16);
+        painter.drawArc(rect.adjusted(2, 2, -2, -2), spinnerAngle * 16, 270 * 16);
         painter.restore();
         return;
     }
@@ -215,7 +214,7 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
 
     // Type icon
     const QRectF iconRect(card.left() + token.paddingLG, card.top() + token.padding + 2, 22, 22);
-    drawTypeIcon(*painter, iconRect, notificationType, accent);
+    drawTypeIcon(*painter, iconRect, notificationType, accent, notification->spinnerAngle());
 
     // Close button
     if (closable)
@@ -267,7 +266,7 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
         painter->setBrush(token.colorFillQuaternary);
         painter->drawRect(track);
         painter->setBrush(accent);
-        painter->drawRect(QRectF(track.left(), track.top(), track.width(), track.height()));
+        painter->drawRect(QRectF(track.left(), track.top(), track.width() * notification->progressRatio(), track.height()));
     }
 
     painter->restore();

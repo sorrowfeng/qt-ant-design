@@ -94,8 +94,8 @@ private:
 
     QString m_title;
     Ant::DrawerPlacement m_placement = Ant::DrawerPlacement::Right;
-    int m_drawerWidth = 300;
-    int m_drawerHeight = 300;
+    int m_drawerWidth = 378;
+    int m_drawerHeight = 378;
     bool m_closable = true;
     bool m_maskClosable = true;
     bool m_open = false;

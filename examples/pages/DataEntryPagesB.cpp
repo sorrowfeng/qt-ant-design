@@ -498,9 +498,15 @@ QWidget* createTimePickerPage(QWidget* /*owner*/)
         customFormat->setSelectedTime(QTime(9, 15, 0));
         customFormat->setDisplayFormat(QStringLiteral("HH:mm"));
         customFormat->setSecondStep(10);
+        auto* range = new AntTimePicker();
+        range->setRangeMode(true);
+        range->setStartTime(QTime(9, 0, 0));
+        range->setEndTime(QTime(18, 0, 0));
+        range->setDisplayFormat(QStringLiteral("HH:mm"));
         basicRow->addWidget(basic);
         basicRow->addWidget(selected);
         basicRow->addWidget(customFormat);
+        basicRow->addWidget(range);
         basicRow->addStretch();
         cl->addLayout(basicRow);
         layout->addWidget(card);

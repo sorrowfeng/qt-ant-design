@@ -472,7 +472,17 @@ void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const
     const Ant::IconTheme iconTheme = icon->iconTheme();
     const bool enabled = icon->isEnabled();
 
-    IconPaths paths = builtinPaths(iconType, iconTheme);
+    IconPaths paths;
+    if (icon->hasCustomPath())
+    {
+        paths.primary = icon->customPrimaryPath();
+        paths.secondary = icon->customSecondaryPath();
+        paths.useStroke = iconTheme == Ant::IconTheme::Outlined;
+    }
+    else
+    {
+        paths = builtinPaths(iconType, iconTheme);
+    }
 
     if (paths.primary.isEmpty() && paths.secondary.isEmpty())
     {
@@ -481,7 +491,7 @@ void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const
     }
 
     painter->translate(widget->rect().center());
-    painter->rotate(icon->rotate());
+    painter->rotate(icon->rotate() + (icon->isSpin() ? icon->spinAngle() : 0));
     painter->translate(-widget->rect().center());
 
     QColor primaryColor = icon->color().isValid() ? icon->color() : token.colorText;
@@ -532,13 +542,13 @@ void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const
     else
     {
         painter->setPen(Qt::NoPen);
+        painter->setBrush(primaryColor);
+        painter->drawPath(primaryPath);
         if (!secondaryPath.isEmpty())
         {
             painter->setBrush(secondaryColor);
             painter->drawPath(secondaryPath);
         }
-        painter->setBrush(primaryColor);
-        painter->drawPath(primaryPath);
     }
 
     painter->restore();

@@ -23,6 +23,7 @@ void TestAntModal::propertiesAndSignals()
     QCOMPARE(modal->okText(), "OK");
     QCOMPARE(modal->cancelText(), "Cancel");
     QCOMPARE(modal->showCancel(), true);
+    QCOMPARE(modal->commandIconType(), Ant::IconType::None);
 
     QSignalSpy titleSpy(modal, &AntModal::titleChanged);
     modal->setTitle("Confirm");
@@ -68,23 +69,32 @@ void TestAntModal::propertiesAndSignals()
     modal->setShowCancel(false);
     QCOMPARE(modal->showCancel(), false);
     QCOMPARE(showCancelSpy.count(), 1);
+
+    modal->setCommandIconType(Ant::IconType::InfoCircle);
+    QCOMPARE(modal->commandIconType(), Ant::IconType::InfoCircle);
+
     auto* parent = new QWidget;
     auto* infoModal = AntModal::info("Info", "Info content", parent);
     QVERIFY(infoModal != nullptr);
     QCOMPARE(infoModal->title(), "Info");
     QCOMPARE(infoModal->content(), "Info content");
+    QCOMPARE(infoModal->commandIconType(), Ant::IconType::InfoCircle);
 
     auto* successModal = AntModal::success("Success", "Done", parent);
     QVERIFY(successModal != nullptr);
+    QCOMPARE(successModal->commandIconType(), Ant::IconType::CheckCircle);
 
     auto* warningModal = AntModal::warning("Warning", "Be careful", parent);
     QVERIFY(warningModal != nullptr);
+    QCOMPARE(warningModal->commandIconType(), Ant::IconType::ExclamationCircle);
 
     auto* errorModal = AntModal::error("Error", "Failed", parent);
     QVERIFY(errorModal != nullptr);
+    QCOMPARE(errorModal->commandIconType(), Ant::IconType::CloseCircle);
 
     auto* confirmModal = AntModal::confirm("Confirm", "Are you sure?", parent);
     QVERIFY(confirmModal != nullptr);
+    QCOMPARE(confirmModal->commandIconType(), Ant::IconType::ExclamationCircle);
 }
 
 QTEST_MAIN(TestAntModal)

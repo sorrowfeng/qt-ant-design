@@ -79,6 +79,7 @@ public:
     void setShowNow(bool show);
 
     QString timeString() const;
+    bool isHoveredState() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

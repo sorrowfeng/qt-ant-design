@@ -28,6 +28,7 @@ public:
 
     Ant::DropdownPlacement placement() const;
     void setPlacement(Ant::DropdownPlacement placement);
+    Ant::DropdownPlacement renderPlacement() const;
 
     Ant::DropdownTrigger trigger() const;
     void setTrigger(Ant::DropdownTrigger trigger);
@@ -72,6 +73,7 @@ private:
 
     QStringList m_itemLabels;
     Ant::DropdownPlacement m_placement = Ant::DropdownPlacement::BottomLeft;
+    Ant::DropdownPlacement m_renderPlacement = Ant::DropdownPlacement::BottomLeft;
     Ant::DropdownTrigger m_trigger = Ant::DropdownTrigger::Hover;
     bool m_arrowVisible = false;
     bool m_open = false;

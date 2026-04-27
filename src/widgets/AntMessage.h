@@ -48,6 +48,8 @@ public:
     bool pauseOnHover() const;
     void setPauseOnHover(bool pause);
 
+    int loadingAngle() const;
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 

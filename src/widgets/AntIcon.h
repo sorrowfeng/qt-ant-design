@@ -45,6 +45,10 @@ public:
 
     void setCustomPath(const QPainterPath& primaryPath, const QPainterPath& secondaryPath = QPainterPath());
     void clearCustomPath();
+    bool hasCustomPath() const;
+    QPainterPath customPrimaryPath() const;
+    QPainterPath customSecondaryPath() const;
+    int spinAngle() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

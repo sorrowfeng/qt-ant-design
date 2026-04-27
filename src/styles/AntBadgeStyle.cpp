@@ -218,10 +218,10 @@ void drawBadgeStatus(const QStyleOption* option, QPainter* painter, const AntBad
 
     if (badge->status() == Ant::BadgeStatus::Processing)
     {
-        // Static rendering: pulse at 0 (ring at full opacity, scale 1.0)
+        const qreal pulse = badge->processingPulseProgress();
         QColor ring = color;
-        ring.setAlphaF(0.45);
-        const qreal scale = 1.0;
+        ring.setAlphaF(std::max(0.0, 0.45 * (1.0 - pulse)));
+        const qreal scale = 1.0 + 1.4 * pulse;
         QRectF ringRect(dot.center().x() - dot.width() * scale / 2.0,
                         dot.center().y() - dot.height() * scale / 2.0,
                         dot.width() * scale,

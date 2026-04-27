@@ -42,6 +42,17 @@ void TestAntIcon::propertiesAndSignals()
     w->setRotate(90);
     QCOMPARE(w->rotate(), 90);
     QCOMPARE(rotateSpy.count(), 1);
+
+    QPainterPath primaryPath;
+    primaryPath.addRect(QRectF(0, 0, 32, 32));
+    QPainterPath secondaryPath;
+    secondaryPath.addEllipse(QRectF(8, 8, 16, 16));
+    w->setCustomPath(primaryPath, secondaryPath);
+    QVERIFY(w->hasCustomPath());
+    QVERIFY(!w->customPrimaryPath().isEmpty());
+    QVERIFY(!w->customSecondaryPath().isEmpty());
+    w->clearCustomPath();
+    QVERIFY(!w->hasCustomPath());
 }
 
 QTEST_MAIN(TestAntIcon)

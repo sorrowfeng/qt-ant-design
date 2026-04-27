@@ -260,6 +260,7 @@ void AntInput::changeEvent(QEvent* event)
     if (event->type() == QEvent::EnabledChange)
     {
         m_lineEdit->setEnabled(isEnabled());
+        updateButtonVisibility();
         updateVisualState();
         update();
     }

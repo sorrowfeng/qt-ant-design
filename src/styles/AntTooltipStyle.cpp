@@ -165,7 +165,7 @@ void AntTooltipStyle::drawTooltip(const QStyleOption* option, QPainter* painter,
 
     const auto& token = antTheme->tokens();
     const Metrics m;
-    const Ant::TooltipPlacement placement = tooltip->placement();
+    const Ant::TooltipPlacement placement = tooltip->renderPlacement();
     const bool arrowVisible = tooltip->arrowVisible();
 
     const QRect bubble = computeBubbleRect(option->rect, m, placement, arrowVisible);

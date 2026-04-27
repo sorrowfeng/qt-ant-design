@@ -80,8 +80,8 @@ void TestAntFeedback::drawer()
     auto* w = new AntDrawer;
     QCOMPARE(w->title(), QString());
     QCOMPARE(w->placement(), Ant::DrawerPlacement::Right);
-    QCOMPARE(w->drawerWidth(), 300);
-    QCOMPARE(w->drawerHeight(), 300);
+    QCOMPARE(w->drawerWidth(), 378);
+    QCOMPARE(w->drawerHeight(), 378);
     QCOMPARE(w->isClosable(), true);
     QCOMPARE(w->isMaskClosable(), true);
     QCOMPARE(w->isOpen(), false);
@@ -129,6 +129,7 @@ void TestAntFeedback::message()
     QCOMPARE(w->messageType(), Ant::MessageType::Info);
     QCOMPARE(w->duration(), 3000);
     QCOMPARE(w->pauseOnHover(), true);
+    QCOMPARE(w->loadingAngle(), 0);
 
     QSignalSpy textSpy(w, &AntMessage::textChanged);
     w->setText("Saved!");
@@ -162,6 +163,8 @@ void TestAntFeedback::notification()
     QCOMPARE(w->pauseOnHover(), true);
     QCOMPARE(w->showProgress(), false);
     QCOMPARE(w->isClosable(), true);
+    QCOMPARE(w->spinnerAngle(), 0);
+    QVERIFY(qFuzzyCompare(w->progressRatio(), 1.0));
 
     QSignalSpy titleSpy(w, &AntNotification::titleChanged);
     w->setTitle("Update");
@@ -235,18 +238,29 @@ void TestAntFeedback::popconfirm()
     QCOMPARE(w->showCancel(), false);
     QCOMPARE(showSpy.count(), 1);
 
+    auto* target = new QWidget;
+    target->resize(80, 32);
+    w->setTarget(target);
+    QCOMPARE(w->target(), target);
+
     QSignalSpy disSpy(w, &AntPopconfirm::disabledChanged);
     w->setDisabled(true);
     QCOMPARE(w->isDisabled(), true);
     QCOMPARE(disSpy.count(), 1);
+    w->setOpen(true);
+    QCOMPARE(w->isOpen(), false);
+    QTest::mouseClick(target, Qt::LeftButton);
+    QCOMPARE(w->isOpen(), false);
 }
 
 void TestAntFeedback::popover()
 {
     auto* w = new AntPopover;
     QCOMPARE(w->title(), QString());
+    QCOMPARE(w->titleIconType(), Ant::IconType::None);
     QCOMPARE(w->content(), QString());
     QCOMPARE(w->placement(), Ant::TooltipPlacement::Top);
+    QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Top);
     QCOMPARE(w->trigger(), Ant::PopoverTrigger::Hover);
     QCOMPARE(w->arrowVisible(), true);
     QCOMPARE(w->isOpen(), false);
@@ -256,6 +270,9 @@ void TestAntFeedback::popover()
     QCOMPARE(w->title(), "Popover Title");
     QCOMPARE(titleSpy.count(), 1);
 
+    w->setTitleIconType(Ant::IconType::ExclamationCircle);
+    QCOMPARE(w->titleIconType(), Ant::IconType::ExclamationCircle);
+
     QSignalSpy contentSpy(w, &AntPopover::contentChanged);
     w->setContent("Popover content");
     QCOMPARE(w->content(), "Popover content");
@@ -264,6 +281,7 @@ void TestAntFeedback::popover()
     QSignalSpy placeSpy(w, &AntPopover::placementChanged);
     w->setPlacement(Ant::TooltipPlacement::Bottom);
     QCOMPARE(w->placement(), Ant::TooltipPlacement::Bottom);
+    QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Bottom);
     QCOMPARE(placeSpy.count(), 1);
 
     QSignalSpy trigSpy(w, &AntPopover::triggerChanged);
@@ -436,6 +454,7 @@ void TestAntFeedback::tooltip()
     auto* w = new AntTooltip;
     QCOMPARE(w->title(), QString());
     QCOMPARE(w->placement(), Ant::TooltipPlacement::Top);
+    QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Top);
     QCOMPARE(w->arrowVisible(), true);
     QCOMPARE(w->openDelay(), 120);
 
@@ -447,6 +466,7 @@ void TestAntFeedback::tooltip()
     QSignalSpy placeSpy(w, &AntTooltip::placementChanged);
     w->setPlacement(Ant::TooltipPlacement::Bottom);
     QCOMPARE(w->placement(), Ant::TooltipPlacement::Bottom);
+    QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Bottom);
     QCOMPARE(placeSpy.count(), 1);
 
     QSignalSpy colorSpy(w, &AntTooltip::colorChanged);

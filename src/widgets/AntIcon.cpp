@@ -344,6 +344,14 @@ void AntIcon::clearCustomPath()
     update();
 }
 
+bool AntIcon::hasCustomPath() const { return m_hasCustomPath; }
+
+QPainterPath AntIcon::customPrimaryPath() const { return m_customPrimaryPath; }
+
+QPainterPath AntIcon::customSecondaryPath() const { return m_customSecondaryPath; }
+
+int AntIcon::spinAngle() const { return m_spinAngle; }
+
 QSize AntIcon::sizeHint() const
 {
     return QSize(m_iconSize, m_iconSize);

@@ -354,15 +354,41 @@ void AntTimePicker::setSelectedTime(const QTime& time)
     Q_EMIT timeStringChanged(timeString());
 }
 
-bool AntTimePicker::hasSelectedTime() const { return m_selectedTime.isValid(); }
+bool AntTimePicker::hasSelectedTime() const
+{
+    if (m_rangeMode)
+    {
+        return m_startTime.isValid() || m_endTime.isValid();
+    }
+    return m_selectedTime.isValid();
+}
 
 void AntTimePicker::clear()
 {
-    if (!m_selectedTime.isValid())
+    if (!hasSelectedTime())
     {
         return;
     }
-    setSelectedTime(QTime());
+    const bool hadSelectedTime = m_selectedTime.isValid();
+    m_selectedTime = QTime();
+    if (m_rangeMode)
+    {
+        m_startTime = QTime();
+        m_endTime = QTime();
+        m_pickingEnd = false;
+        Q_EMIT startTimeChanged(m_startTime);
+        Q_EMIT endTimeChanged(m_endTime);
+    }
+    if (hadSelectedTime)
+    {
+        Q_EMIT selectedTimeChanged(m_selectedTime);
+    }
+    update();
+    if (m_popup)
+    {
+        m_popup->update();
+    }
+    Q_EMIT timeStringChanged(timeString());
     Q_EMIT cleared();
 }
 
@@ -530,12 +556,24 @@ void AntTimePicker::setShowNow(bool show)
 
 QString AntTimePicker::timeString() const
 {
+    if (m_rangeMode)
+    {
+        const QString startText = m_startTime.isValid() ? m_startTime.toString(m_displayFormat) : QString();
+        const QString endText = m_endTime.isValid() ? m_endTime.toString(m_displayFormat) : QString();
+        if (startText.isEmpty() && endText.isEmpty())
+        {
+            return QString();
+        }
+        return QStringLiteral("%1 - %2").arg(startText, endText);
+    }
     return m_selectedTime.isValid() ? m_selectedTime.toString(m_displayFormat) : QString();
 }
 
+bool AntTimePicker::isHoveredState() const { return m_hovered; }
+
 QSize AntTimePicker::sizeHint() const
 {
-    return QSize(160, metrics().height);
+    return QSize(m_rangeMode ? 260 : 160, metrics().height);
 }
 
 QSize AntTimePicker::minimumSizeHint() const
@@ -753,8 +791,12 @@ void AntTimePicker::acceptPanelTime()
         if (!m_pickingEnd || !m_startTime.isValid())
         {
             m_startTime = m_panelTime;
+            m_endTime = QTime();
             m_pickingEnd = true;
+            update();
             Q_EMIT startTimeChanged(m_startTime);
+            Q_EMIT endTimeChanged(m_endTime);
+            Q_EMIT timeStringChanged(timeString());
         }
         else
         {
@@ -781,7 +823,10 @@ void AntTimePicker::setRangeMode(bool rangeMode)
     if (m_rangeMode == rangeMode) return;
     m_rangeMode = rangeMode;
     m_pickingEnd = false;
+    updateGeometry();
+    update();
     Q_EMIT rangeModeChanged(m_rangeMode);
+    Q_EMIT timeStringChanged(timeString());
 }
 
 QTime AntTimePicker::startTime() const { return m_startTime; }
@@ -789,7 +834,10 @@ void AntTimePicker::setStartTime(const QTime& time)
 {
     if (m_startTime == time) return;
     m_startTime = time;
+    updateGeometry();
+    update();
     Q_EMIT startTimeChanged(m_startTime);
+    Q_EMIT timeStringChanged(timeString());
 }
 
 QTime AntTimePicker::endTime() const { return m_endTime; }
@@ -797,7 +845,10 @@ void AntTimePicker::setEndTime(const QTime& time)
 {
     if (m_endTime == time) return;
     m_endTime = time;
+    updateGeometry();
+    update();
     Q_EMIT endTimeChanged(m_endTime);
+    Q_EMIT timeStringChanged(timeString());
 }
 
 void AntTimePicker::updateCursor()

@@ -85,7 +85,11 @@ void AntCheckboxStyle::drawControl(ControlElement element, const QStyleOption* o
             check.moveTo(box.left() + box.width() * 0.28, box.top() + box.height() * 0.52);
             check.lineTo(box.left() + box.width() * 0.43, box.top() + box.height() * 0.68);
             check.lineTo(box.left() + box.width() * 0.74, box.top() + box.height() * 0.32);
-            painter->setPen(QPen(token.colorTextLightSolid, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            painter->setPen(QPen(enabled ? token.colorTextLightSolid : token.colorTextDisabled,
+                                  2,
+                                  Qt::SolidLine,
+                                  Qt::RoundCap,
+                                  Qt::RoundJoin));
             painter->setBrush(Qt::NoBrush);
             painter->drawPath(check);
         }

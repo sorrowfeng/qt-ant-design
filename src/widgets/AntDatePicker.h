@@ -65,6 +65,7 @@ public:
     void setOpen(bool open);
 
     QString dateString() const;
+    bool isHoveredState() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

@@ -82,6 +82,9 @@ public:
     bool isClosable() const;
     void setClosable(bool closable);
 
+    qreal progressRatio() const;
+    int spinnerAngle() const;
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -113,7 +116,6 @@ private:
     QRectF noticeRect() const;
     QRectF closeButtonRect() const;
     QColor accentColor() const;
-    qreal progressRatio() const;
     void startCloseTimer();
     void pauseCloseTimer();
     void resumeCloseTimer();

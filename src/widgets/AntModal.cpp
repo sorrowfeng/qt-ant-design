@@ -136,6 +136,12 @@ AntModal::AntModal(QWidget* parent)
     headerLayout->setContentsMargins(0, 0, 0, 0);
     headerLayout->setSpacing(12);
 
+    m_commandIcon = new AntIcon(m_headerWidget);
+    m_commandIcon->setIconTheme(Ant::IconTheme::Filled);
+    m_commandIcon->setIconSize(22);
+    m_commandIcon->setVisible(false);
+    headerLayout->addWidget(m_commandIcon, 0, Qt::AlignTop);
+
     m_titleLabel = new QLabel(m_headerWidget);
     m_titleLabel->setWordWrap(true);
     headerLayout->addWidget(m_titleLabel, 1);
@@ -216,6 +222,7 @@ static AntModal* createCommandModal(const QString& title, const QString& content
     modal->setTitle(title);
     modal->setContent(content);
     modal->setShowCancel(showCancel);
+    modal->setCommandIconType(icon);
     modal->setOkText(showCancel ? QStringLiteral("OK") : QStringLiteral("OK"));
     modal->setOpen(true);
     return modal;
@@ -459,6 +466,19 @@ void AntModal::setShowCancel(bool show)
     Q_EMIT showCancelChanged(m_showCancel);
 }
 
+Ant::IconType AntModal::commandIconType() const { return m_commandIconType; }
+
+void AntModal::setCommandIconType(Ant::IconType iconType)
+{
+    if (m_commandIconType == iconType)
+    {
+        return;
+    }
+    m_commandIconType = iconType;
+    syncTheme();
+    updateDialogGeometry();
+}
+
 QWidget* AntModal::contentWidget() const
 {
     return m_customContentWidget;
@@ -668,6 +688,15 @@ void AntModal::syncTheme()
     m_titleLabel->setPalette(titlePalette);
     m_titleLabel->setText(m_title.isEmpty() ? QStringLiteral("Modal") : m_title);
 
+    if (m_commandIcon)
+    {
+        m_commandIcon->setIconType(m_commandIconType);
+        m_commandIcon->setIconTheme(Ant::IconTheme::Filled);
+        m_commandIcon->setIconSize(22);
+        m_commandIcon->setColor(commandIconColor());
+        m_commandIcon->setVisible(m_commandIconType != Ant::IconType::None);
+    }
+
     QFont contentFont = font();
     contentFont.setPixelSize(token.fontSize);
     contentFont.setWeight(QFont::Normal);
@@ -740,4 +769,23 @@ void AntModal::closeByCancel()
 {
     setOpen(false);
     Q_EMIT canceled();
+}
+
+QColor AntModal::commandIconColor() const
+{
+    const auto& token = antTheme->tokens();
+    switch (m_commandIconType)
+    {
+    case Ant::IconType::CheckCircle:
+        return token.colorSuccess;
+    case Ant::IconType::ExclamationCircle:
+        return token.colorWarning;
+    case Ant::IconType::CloseCircle:
+        return token.colorError;
+    case Ant::IconType::InfoCircle:
+        return token.colorPrimary;
+    case Ant::IconType::None:
+    default:
+        return token.colorText;
+    }
 }

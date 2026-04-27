@@ -6,6 +6,7 @@
 #include <QStyleOption>
 
 #include "styles/AntPalette.h"
+#include "widgets/AntIcon.h"
 #include "widgets/AntPopover.h"
 
 namespace
@@ -107,7 +108,7 @@ QPolygonF computeArrowPolygon(const QRect& bubble, const Metrics& m, Ant::Toolti
     }
 }
 
-QRect computeHeaderRect(const QRect& bubble, const Metrics& m, const QString& title, const QFont& baseFont)
+QRect computeHeaderRect(const QRect& bubble, const Metrics& m, const QString& title, Ant::IconType iconType, const QFont& baseFont)
 {
     QRect inner = bubble.adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY);
     int headerHeight = 0;
@@ -116,9 +117,49 @@ QRect computeHeaderRect(const QRect& bubble, const Metrics& m, const QString& ti
         QFont titleFont = baseFont;
         titleFont.setPixelSize(antTheme->tokens().fontSize);
         titleFont.setWeight(QFont::DemiBold);
-        headerHeight = QFontMetrics(titleFont).boundingRect(QRect(0, 0, inner.width(), 120), Qt::TextWordWrap, title).height();
+        const int iconExtra = iconType != Ant::IconType::None ? 26 : 0;
+        headerHeight = QFontMetrics(titleFont).boundingRect(QRect(0, 0, inner.width() - iconExtra, 120), Qt::TextWordWrap, title).height();
+        headerHeight = qMax(headerHeight, iconExtra > 0 ? 18 : 0);
     }
     return QRect(inner.left(), inner.top(), inner.width(), headerHeight);
+}
+
+QColor titleIconColor(Ant::IconType iconType)
+{
+    const auto& token = antTheme->tokens();
+    switch (iconType)
+    {
+    case Ant::IconType::CheckCircle:
+        return token.colorSuccess;
+    case Ant::IconType::ExclamationCircle:
+        return token.colorWarning;
+    case Ant::IconType::CloseCircle:
+        return token.colorError;
+    case Ant::IconType::InfoCircle:
+        return token.colorPrimary;
+    default:
+        return token.colorTextTertiary;
+    }
+}
+
+void drawTitleIcon(QPainter& painter, const QRectF& rect, Ant::IconType iconType)
+{
+    if (iconType == Ant::IconType::None)
+    {
+        return;
+    }
+
+    const AntIcon::IconPaths paths = AntIcon::builtinPaths(iconType, Ant::IconTheme::Filled);
+    painter.save();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(titleIconColor(iconType));
+    painter.drawPath(AntIcon::transformPath(paths.primary, rect));
+    if (!paths.secondary.isEmpty())
+    {
+        painter.setBrush(antTheme->tokens().colorTextLightSolid);
+        painter.drawPath(AntIcon::transformPath(paths.secondary, rect));
+    }
+    painter.restore();
 }
 
 QRect computeBodyRect(const QRect& bubble, const Metrics& m, const QRect& header, bool hasActionWidget)
@@ -194,7 +235,7 @@ void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter,
 
     const auto& token = antTheme->tokens();
     const Metrics m;
-    const Ant::TooltipPlacement placement = popover->placement();
+    const Ant::TooltipPlacement placement = popover->renderPlacement();
     const bool arrowVisible = popover->arrowVisible();
     const bool hasActionWidget = popover->actionWidget() != nullptr;
 
@@ -216,15 +257,23 @@ void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter,
     }
 
     // Header
-    const QRect header = computeHeaderRect(bubble, m, popover->title(), widget->font());
+    const bool hasTitleIcon = !popover->title().isEmpty() && popover->titleIconType() != Ant::IconType::None;
+    const QRect header = computeHeaderRect(bubble, m, popover->title(), popover->titleIconType(), widget->font());
     if (!popover->title().isEmpty())
     {
+        QRect titleRect = header;
+        if (hasTitleIcon)
+        {
+            const QRectF iconRect(header.left(), header.top() + qMax(0, (header.height() - 18) / 2), 18, 18);
+            drawTitleIcon(*painter, iconRect, popover->titleIconType());
+            titleRect.adjust(26, 0, 0, 0);
+        }
         QFont titleFont = painter->font();
         titleFont.setPixelSize(token.fontSize);
         titleFont.setWeight(QFont::DemiBold);
         painter->setFont(titleFont);
         painter->setPen(token.colorText);
-        painter->drawText(header, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, popover->title());
+        painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, popover->title());
     }
 
     // Body

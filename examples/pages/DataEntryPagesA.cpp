@@ -231,9 +231,14 @@ QWidget* createDatePickerPage(QWidget* /*owner*/)
         auto* customFormat = new AntDatePicker();
         customFormat->setSelectedDate(QDate::currentDate().addDays(7));
         customFormat->setDisplayFormat(QStringLiteral("MMM d, yyyy"));
+        auto* range = new AntDatePicker();
+        range->setRangeMode(true);
+        range->setStartDate(QDate::currentDate());
+        range->setEndDate(QDate::currentDate().addDays(7));
         basicRow->addWidget(basic);
         basicRow->addWidget(selected);
         basicRow->addWidget(customFormat);
+        basicRow->addWidget(range);
         basicRow->addStretch();
         cl->addLayout(basicRow);
         layout->addWidget(card);

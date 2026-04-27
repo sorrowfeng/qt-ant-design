@@ -30,6 +30,7 @@ public:
 
     Ant::TooltipPlacement placement() const;
     void setPlacement(Ant::TooltipPlacement placement);
+    Ant::TooltipPlacement renderPlacement() const;
 
     QColor color() const;
     void setColor(const QColor& color);
@@ -86,6 +87,7 @@ private:
 
     QString m_title;
     Ant::TooltipPlacement m_placement = Ant::TooltipPlacement::Top;
+    Ant::TooltipPlacement m_renderPlacement = Ant::TooltipPlacement::Top;
     QColor m_color;
     bool m_arrowVisible = true;
     int m_openDelay = 120;

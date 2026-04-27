@@ -136,6 +136,8 @@ void AntMessage::setPauseOnHover(bool pause)
     Q_EMIT pauseOnHoverChanged(m_pauseOnHover);
 }
 
+int AntMessage::loadingAngle() const { return m_loadingAngle; }
+
 QSize AntMessage::sizeHint() const
 {
     const auto& token = antTheme->tokens();
@@ -224,62 +226,60 @@ void AntMessage::relayoutMessages(QWidget* anchor)
         targetRect = QRect(0, 0, 800, 600);
     }
 
-    // Group messages by placement
-    QList<AntMessage*> topMsgs, bottomMsgs;
-    for (AntMessage* msg : activeMessages())
-    {
-        if (!msg)
-            continue;
-        const auto p = msg->m_placement;
-        if (p == Ant::Placement::Bottom || p == Ant::Placement::BottomLeft || p == Ant::Placement::BottomRight)
-            bottomMsgs.append(msg);
-        else
-            topMsgs.append(msg);
-    }
+    const auto isBottomPlacement = [](Ant::Placement placement) {
+        return placement == Ant::Placement::Bottom ||
+               placement == Ant::Placement::BottomLeft ||
+               placement == Ant::Placement::BottomRight;
+    };
 
-    // Layout top messages (stack downward)
-    int y = targetRect.top() + 24;
-    for (AntMessage* message : topMsgs)
-    {
-        message->adjustSize();
-        int x;
-        switch (message->m_placement)
+    const auto layoutPlacement = [&](Ant::Placement placement) {
+        int cursor = isBottomPlacement(placement) ? targetRect.bottom() - 24 : targetRect.top() + 24;
+        for (AntMessage* message : activeMessages())
         {
-        case Ant::Placement::TopLeft:
-            x = targetRect.left() + 24;
-            break;
-        case Ant::Placement::TopRight:
-            x = targetRect.right() - message->width() - 24;
-            break;
-        default: // Top (center)
-            x = targetRect.center().x() - message->width() / 2;
-            break;
-        }
-        message->move(x, y);
-        y += message->height() + 8;
-    }
+            if (!message || message->m_placement != placement)
+            {
+                continue;
+            }
 
-    // Layout bottom messages (stack upward)
-    int by = targetRect.bottom() - 24;
-    for (AntMessage* message : bottomMsgs)
-    {
-        message->adjustSize();
-        by -= message->height();
-        int x;
-        switch (message->m_placement)
-        {
-        case Ant::Placement::BottomLeft:
-            x = targetRect.left() + 24;
-            break;
-        case Ant::Placement::BottomRight:
-            x = targetRect.right() - message->width() - 24;
-            break;
-        default: // Bottom (center)
-            x = targetRect.center().x() - message->width() / 2;
-            break;
+            message->adjustSize();
+            int x = targetRect.center().x() - message->width() / 2;
+            switch (placement)
+            {
+            case Ant::Placement::TopLeft:
+            case Ant::Placement::BottomLeft:
+                x = targetRect.left() + 24;
+                break;
+            case Ant::Placement::TopRight:
+            case Ant::Placement::BottomRight:
+                x = targetRect.right() - message->width() - 24;
+                break;
+            default:
+                break;
+            }
+
+            if (isBottomPlacement(placement))
+            {
+                cursor -= message->height();
+                message->move(x, cursor);
+                cursor -= 8;
+            }
+            else
+            {
+                message->move(x, cursor);
+                cursor += message->height() + 8;
+            }
         }
-        message->move(x, by);
-        by -= 8;
+    };
+
+    for (Ant::Placement placement :
+         {Ant::Placement::Top,
+          Ant::Placement::TopLeft,
+          Ant::Placement::TopRight,
+          Ant::Placement::Bottom,
+          Ant::Placement::BottomLeft,
+          Ant::Placement::BottomRight})
+    {
+        layoutPlacement(placement);
     }
 }
 

@@ -244,7 +244,7 @@ QColor AntRadio::indicatorBackgroundColor() const
     }
     if (m_checked)
     {
-        return m_hovered || m_pressed ? token.colorPrimaryHover : token.colorPrimary;
+        return token.colorBgContainer;
     }
     return token.colorBgContainer;
 }

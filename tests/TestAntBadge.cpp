@@ -70,6 +70,7 @@ void TestAntBadge::propertiesAndSignals()
     QSignalSpy statusSpy(badge, &AntBadge::statusChanged);
     badge->setStatus(Ant::BadgeStatus::Processing);
     QCOMPARE(badge->status(), Ant::BadgeStatus::Processing);
+    QCOMPARE(badge->processingPulseProgress(), 0.0);
     QCOMPARE(statusSpy.count(), 1);
 
     QSignalSpy modeSpy(badge, &AntBadge::badgeModeChanged);

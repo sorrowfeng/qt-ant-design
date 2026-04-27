@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "styles/AntPalette.h"
 #include "widgets/AntTypography.h"
 
 namespace
@@ -86,12 +87,24 @@ QColor textColorForType(const AntTypography* typo)
         return token.colorWarning;
     case Ant::TypographyType::Danger:
         return token.colorError;
+    case Ant::TypographyType::LightSolid:
+        return token.colorTextLightSolid;
     case Ant::TypographyType::Link:
-        return token.colorPrimary;
+        return token.colorLink;
     case Ant::TypographyType::Default:
     default:
         return token.colorText;
     }
+}
+
+QColor markBackgroundColor()
+{
+    const auto& token = antTheme->tokens();
+    if (antTheme->themeMode() == Ant::ThemeMode::Dark)
+    {
+        return AntPalette::alpha(token.colorWarning, 0.28);
+    }
+    return AntPalette::tint(token.colorWarning, 0.55);
 }
 
 } // namespace
@@ -211,7 +224,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
         markRect.adjust(-2, -1, 2, 1);
 
         painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(255, 247, 200));
+        painter->setBrush(markBackgroundColor());
         painter->drawRect(markRect);
 
         painter->setFont(font);

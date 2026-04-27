@@ -253,6 +253,8 @@ void AntNotification::setClosable(bool closable)
     Q_EMIT closableChanged(m_closable);
 }
 
+int AntNotification::spinnerAngle() const { return m_spinnerAngle; }
+
 QSize AntNotification::sizeHint() const
 {
     const auto& token = antTheme->tokens();

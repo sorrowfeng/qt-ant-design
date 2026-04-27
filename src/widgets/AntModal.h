@@ -6,7 +6,9 @@
 #include "core/AntTypes.h"
 
 class AntButton;
+class AntIcon;
 class QAbstractButton;
+class QColor;
 class QEvent;
 class QKeyEvent;
 class QLabel;
@@ -70,6 +72,9 @@ public:
     bool showCancel() const;
     void setShowCancel(bool show);
 
+    Ant::IconType commandIconType() const;
+    void setCommandIconType(Ant::IconType iconType);
+
     QWidget* contentWidget() const;
     void setContentWidget(QWidget* widget);
 
@@ -115,6 +120,7 @@ private:
     void startOpenAnimation();
     void startCloseAnimation();
     void closeByCancel();
+    QColor commandIconColor() const;
 
     QString m_title;
     QString m_content;
@@ -126,6 +132,7 @@ private:
     QString m_okText = QStringLiteral("OK");
     QString m_cancelText = QStringLiteral("Cancel");
     bool m_showCancel = true;
+    Ant::IconType m_commandIconType = Ant::IconType::None;
     QPointer<QWidget> m_hostWidget;
     QWidget* m_dialog = nullptr;
     QWidget* m_headerWidget = nullptr;
@@ -136,6 +143,7 @@ private:
     QWidget* m_defaultFooterWidget = nullptr;
     QLabel* m_titleLabel = nullptr;
     QLabel* m_contentLabel = nullptr;
+    AntIcon* m_commandIcon = nullptr;
     QAbstractButton* m_closeButton = nullptr;
     AntButton* m_cancelButton = nullptr;
     AntButton* m_okButton = nullptr;

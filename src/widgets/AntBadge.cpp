@@ -250,6 +250,11 @@ void AntBadge::setRibbonColor(const QString& color)
 
 QWidget* AntBadge::contentWidget() const { return m_contentWidget; }
 
+qreal AntBadge::processingPulseProgress() const
+{
+    return std::clamp(m_pulse / 100.0, 0.0, 1.0);
+}
+
 void AntBadge::setContentWidget(QWidget* widget)
 {
     if (m_contentWidget == widget)

@@ -71,6 +71,7 @@ public:
 
     QWidget* contentWidget() const;
     void setContentWidget(QWidget* widget);
+    qreal processingPulseProgress() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

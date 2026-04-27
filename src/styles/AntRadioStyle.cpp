@@ -66,7 +66,8 @@ void AntRadioStyle::drawControl(ControlElement element, const QStyleOption* opti
         else if (radio->isChecked())
         {
             border = hovered ? token.colorPrimaryHover : token.colorPrimary;
-            background = (hovered || pressed) ? token.colorPrimaryHover : token.colorPrimary;
+            background = token.colorBgContainer;
+            Q_UNUSED(pressed)
         }
         else
         {
@@ -85,7 +86,7 @@ void AntRadioStyle::drawControl(ControlElement element, const QStyleOption* opti
             const qreal dotSize = RadioSize * DotRatio;
             const QRectF dot(circle.center().x() - dotSize / 2.0, circle.center().y() - dotSize / 2.0, dotSize, dotSize);
             painter->setPen(Qt::NoPen);
-            painter->setBrush(enabled ? token.colorTextLightSolid : token.colorTextDisabled);
+            painter->setBrush(enabled ? token.colorPrimary : token.colorTextDisabled);
             painter->drawEllipse(dot);
         }
 

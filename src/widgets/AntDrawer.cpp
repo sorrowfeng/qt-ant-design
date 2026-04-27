@@ -20,6 +20,8 @@
 
 namespace
 {
+constexpr int DrawerHeaderHeight = 56;
+
 class DrawerCloseButton : public QAbstractButton
 {
 public:
@@ -120,9 +122,8 @@ protected:
         // Draw title border bottom
         if (!m_owner->m_title.isEmpty() || m_owner->m_closable)
         {
-            const int headerHeight = 48;
             painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-            painter.drawLine(QPoint(0, headerHeight), QPoint(panelRect.width(), headerHeight));
+            painter.drawLine(QPoint(0, DrawerHeaderHeight), QPoint(panelRect.width(), DrawerHeaderHeight));
         }
     }
 
@@ -201,7 +202,7 @@ AntDrawer::AntDrawer(QWidget* parent)
     panelLayout->setSpacing(0);
 
     auto* headerLayout = new QHBoxLayout(m_headerWidget);
-    headerLayout->setContentsMargins(16, 0, 4, 0);
+    headerLayout->setContentsMargins(24, 0, 16, 0);
     headerLayout->setSpacing(8);
 
     m_titleLabel = new QLabel(m_headerWidget);
@@ -214,10 +215,10 @@ AntDrawer::AntDrawer(QWidget* parent)
     });
     headerLayout->addWidget(m_closeButton, 0, Qt::AlignRight | Qt::AlignVCenter);
 
-    m_headerWidget->setFixedHeight(48);
+    m_headerWidget->setFixedHeight(DrawerHeaderHeight);
 
     auto* bodyLayout = new QVBoxLayout(m_bodyWidget);
-    bodyLayout->setContentsMargins(16, 12, 16, 16);
+    bodyLayout->setContentsMargins(24, 24, 24, 24);
     bodyLayout->setSpacing(0);
 
     panelLayout->addWidget(m_headerWidget);

@@ -23,12 +23,15 @@ public:
 
     QString title() const;
     void setTitle(const QString& title);
+    Ant::IconType titleIconType() const;
+    void setTitleIconType(Ant::IconType iconType);
 
     QString content() const;
     void setContent(const QString& content);
 
     Ant::TooltipPlacement placement() const;
     void setPlacement(Ant::TooltipPlacement placement);
+    Ant::TooltipPlacement renderPlacement() const;
 
     Ant::PopoverTrigger trigger() const;
     void setTrigger(Ant::PopoverTrigger trigger);
@@ -89,8 +92,10 @@ private:
     QPoint popupTopLeft(const QRect& targetRect, const QSize& popupSize, Ant::TooltipPlacement placement) const;
 
     QString m_title;
+    Ant::IconType m_titleIconType = Ant::IconType::None;
     QString m_content;
     Ant::TooltipPlacement m_placement = Ant::TooltipPlacement::Top;
+    Ant::TooltipPlacement m_renderPlacement = Ant::TooltipPlacement::Top;
     Ant::PopoverTrigger m_trigger = Ant::PopoverTrigger::Hover;
     bool m_arrowVisible = true;
     bool m_open = false;

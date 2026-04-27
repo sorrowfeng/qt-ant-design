@@ -57,6 +57,7 @@ void TestAntDataEntryB::propertiesAndSignals()
     QCOMPARE(w2->allowClear(), true);
     QCOMPARE(w2->isOpen(), false);
     QCOMPARE(w2->hasSelectedDate(), false);
+    QCOMPARE(w2->isHoveredState(), false);
 
     QSignalSpy sizeSpy2(w2, &AntDatePicker::pickerSizeChanged);
     w2->setPickerSize(Ant::Size::Large);
@@ -82,6 +83,15 @@ void TestAntDataEntryB::propertiesAndSignals()
     w2->setDisplayFormat("yyyy-MM-dd");
     QCOMPARE(w2->displayFormat(), "yyyy-MM-dd");
 
+    auto* dateRange = new AntDatePicker;
+    dateRange->setRangeMode(true);
+    dateRange->setStartDate(QDate(2026, 4, 1));
+    dateRange->setEndDate(QDate(2026, 4, 8));
+    QCOMPARE(dateRange->hasSelectedDate(), true);
+    QCOMPARE(dateRange->dateString(), QStringLiteral("2026-04-01 - 2026-04-08"));
+    dateRange->clear();
+    QCOMPARE(dateRange->hasSelectedDate(), false);
+
     // AntTimePicker
     auto* w3 = new AntTimePicker;
     QCOMPARE(w3->pickerSize(), Ant::Size::Middle);
@@ -90,6 +100,7 @@ void TestAntDataEntryB::propertiesAndSignals()
     QCOMPARE(w3->allowClear(), true);
     QCOMPARE(w3->isOpen(), false);
     QCOMPARE(w3->hasSelectedTime(), false);
+    QCOMPARE(w3->isHoveredState(), false);
 
     QSignalSpy sizeSpy3(w3, &AntTimePicker::pickerSizeChanged);
     w3->setPickerSize(Ant::Size::Small);
@@ -111,6 +122,16 @@ void TestAntDataEntryB::propertiesAndSignals()
     w3->setMinuteStep(15);
     QCOMPARE(w3->minuteStep(), 15);
     QCOMPARE(minSpy.count(), 1);
+
+    auto* timeRange = new AntTimePicker;
+    timeRange->setRangeMode(true);
+    timeRange->setDisplayFormat(QStringLiteral("HH:mm"));
+    timeRange->setStartTime(QTime(9, 0));
+    timeRange->setEndTime(QTime(18, 30));
+    QCOMPARE(timeRange->hasSelectedTime(), true);
+    QCOMPARE(timeRange->timeString(), QStringLiteral("09:00 - 18:30"));
+    timeRange->clear();
+    QCOMPARE(timeRange->hasSelectedTime(), false);
 
     // AntMentions
     auto* w4 = new AntMentions;

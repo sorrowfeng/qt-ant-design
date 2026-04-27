@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QPointer>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -65,6 +66,7 @@ private:
     void syncPopoverContent();
 
     AntPopover* m_popover = nullptr;
+    QPointer<QWidget> m_target;
     QWidget* m_actionContainer = nullptr;
     AntButton* m_cancelButton = nullptr;
     AntButton* m_okButton = nullptr;

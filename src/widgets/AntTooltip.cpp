@@ -93,6 +93,11 @@ Ant::TooltipPlacement AntTooltip::placement() const
     return m_placement;
 }
 
+Ant::TooltipPlacement AntTooltip::renderPlacement() const
+{
+    return m_renderPlacement;
+}
+
 void AntTooltip::setPlacement(Ant::TooltipPlacement placement)
 {
     if (m_placement == placement)
@@ -100,6 +105,7 @@ void AntTooltip::setPlacement(Ant::TooltipPlacement placement)
         return;
     }
     m_placement = placement;
+    m_renderPlacement = placement;
     if (isVisible())
     {
         updatePosition();
@@ -281,15 +287,15 @@ QRect AntTooltip::bubbleRect() const
     {
         return rect();
     }
-    if (isTopPlacement(m_placement))
+    if (isTopPlacement(m_renderPlacement))
     {
         return rect().adjusted(0, 0, 0, -m.arrowSize);
     }
-    if (isBottomPlacement(m_placement))
+    if (isBottomPlacement(m_renderPlacement))
     {
         return rect().adjusted(0, m.arrowSize, 0, 0);
     }
-    if (m_placement == Ant::TooltipPlacement::Left)
+    if (m_renderPlacement == Ant::TooltipPlacement::Left)
     {
         return rect().adjusted(0, 0, -m.arrowSize, 0);
     }
@@ -305,7 +311,7 @@ QPolygonF AntTooltip::arrowPolygon() const
     }
 
     const QRect bubble = bubbleRect();
-    switch (m_placement)
+    switch (m_renderPlacement)
     {
     case Ant::TooltipPlacement::Top:
         return QPolygonF({QPointF(width() / 2.0 - m.arrowSize, bubble.bottom()),
@@ -439,7 +445,7 @@ void AntTooltip::updatePosition()
     const QRect targetRect(m_target->mapToGlobal(QPoint(0, 0)), m_target->size());
     const QRect screenRect = availableScreenGeometryFor(m_target);
     const Ant::TooltipPlacement placement = resolvedPlacement(targetRect, screenRect);
-    m_placement = placement;
+    m_renderPlacement = placement;
     QPoint topLeft = tooltipTopLeft(targetRect, sizeHint(), placement);
 
     topLeft.setX(qBound(screenRect.left() + 4, topLeft.x(), screenRect.right() - width() - 4));

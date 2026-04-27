@@ -118,15 +118,16 @@ QColor timePickerBorderColor(const AntTimePicker* picker)
         return token.colorBorderDisabled;
     }
     const bool focused = picker->hasFocus() || picker->isOpen();
+    const bool active = picker->isHoveredState() || focused;
     if (picker->status() == Ant::Status::Error)
     {
-        return focused ? token.colorErrorHover : token.colorError;
+        return active ? token.colorErrorHover : token.colorError;
     }
     if (picker->status() == Ant::Status::Warning)
     {
-        return focused ? token.colorWarningHover : token.colorWarning;
+        return active ? token.colorWarningHover : token.colorWarning;
     }
-    if (focused)
+    if (active)
     {
         return token.colorPrimaryHover;
     }
@@ -142,7 +143,7 @@ QColor timePickerBackgroundColor(const AntTimePicker* picker)
     }
     if (picker->variant() == Ant::Variant::Filled)
     {
-        return token.colorFillQuaternary;
+        return picker->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary;
     }
     if (picker->variant() == Ant::Variant::Borderless ||
         picker->variant() == Ant::Variant::Underlined)
@@ -154,7 +155,7 @@ QColor timePickerBackgroundColor(const AntTimePicker* picker)
 
 bool timePickerCanClear(const AntTimePicker* picker)
 {
-    return picker->isEnabled() && picker->allowClear() && picker->hasSelectedTime();
+    return picker->isEnabled() && picker->allowClear() && picker->isHoveredState() && picker->hasSelectedTime();
 }
 } // namespace
 

@@ -318,15 +318,41 @@ void AntDatePicker::setSelectedDate(const QDate& date)
     Q_EMIT dateStringChanged(dateString());
 }
 
-bool AntDatePicker::hasSelectedDate() const { return m_selectedDate.isValid(); }
+bool AntDatePicker::hasSelectedDate() const
+{
+    if (m_rangeMode)
+    {
+        return m_startDate.isValid() || m_endDate.isValid();
+    }
+    return m_selectedDate.isValid();
+}
 
 void AntDatePicker::clear()
 {
-    if (!m_selectedDate.isValid())
+    if (!hasSelectedDate())
     {
         return;
     }
-    setSelectedDate(QDate());
+    const bool hadSelectedDate = m_selectedDate.isValid();
+    m_selectedDate = QDate();
+    if (m_rangeMode)
+    {
+        m_startDate = QDate();
+        m_endDate = QDate();
+        m_pickingEnd = false;
+        Q_EMIT startDateChanged(m_startDate);
+        Q_EMIT endDateChanged(m_endDate);
+    }
+    if (hadSelectedDate)
+    {
+        Q_EMIT selectedDateChanged(m_selectedDate);
+    }
+    update();
+    if (m_popup)
+    {
+        m_popup->update();
+    }
+    Q_EMIT dateStringChanged(dateString());
     Q_EMIT cleared();
 }
 
@@ -439,12 +465,24 @@ void AntDatePicker::setOpen(bool open)
 
 QString AntDatePicker::dateString() const
 {
+    if (m_rangeMode)
+    {
+        const QString startText = m_startDate.isValid() ? m_startDate.toString(m_displayFormat) : QString();
+        const QString endText = m_endDate.isValid() ? m_endDate.toString(m_displayFormat) : QString();
+        if (startText.isEmpty() && endText.isEmpty())
+        {
+            return QString();
+        }
+        return QStringLiteral("%1 - %2").arg(startText, endText);
+    }
     return m_selectedDate.isValid() ? m_selectedDate.toString(m_displayFormat) : QString();
 }
 
+bool AntDatePicker::isHoveredState() const { return m_hovered; }
+
 QSize AntDatePicker::sizeHint() const
 {
-    return QSize(180, metrics().height);
+    return QSize(m_rangeMode ? 280 : 180, metrics().height);
 }
 
 QSize AntDatePicker::minimumSizeHint() const
@@ -661,8 +699,12 @@ void AntDatePicker::selectDateFromPopup(const QDate& date)
         if (!m_pickingEnd || !m_startDate.isValid())
         {
             m_startDate = date;
+            m_endDate = QDate();
             m_pickingEnd = true;
+            update();
             Q_EMIT startDateChanged(m_startDate);
+            Q_EMIT endDateChanged(m_endDate);
+            Q_EMIT dateStringChanged(dateString());
         }
         else
         {
@@ -688,7 +730,10 @@ void AntDatePicker::setRangeMode(bool rangeMode)
     if (m_rangeMode == rangeMode) return;
     m_rangeMode = rangeMode;
     m_pickingEnd = false;
+    updateGeometry();
+    update();
     Q_EMIT rangeModeChanged(m_rangeMode);
+    Q_EMIT dateStringChanged(dateString());
 }
 
 QDate AntDatePicker::startDate() const { return m_startDate; }
@@ -696,7 +741,10 @@ void AntDatePicker::setStartDate(const QDate& date)
 {
     if (m_startDate == date) return;
     m_startDate = date;
+    updateGeometry();
+    update();
     Q_EMIT startDateChanged(m_startDate);
+    Q_EMIT dateStringChanged(dateString());
 }
 
 QDate AntDatePicker::endDate() const { return m_endDate; }
@@ -704,7 +752,10 @@ void AntDatePicker::setEndDate(const QDate& date)
 {
     if (m_endDate == date) return;
     m_endDate = date;
+    updateGeometry();
+    update();
     Q_EMIT endDateChanged(m_endDate);
+    Q_EMIT dateStringChanged(dateString());
 }
 
 void AntDatePicker::updateCursor()
