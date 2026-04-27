@@ -12,6 +12,9 @@ struct AntThemeTokens
     QColor colorPrimaryActive;
     QColor colorPrimaryBg;
     QColor colorPrimaryBorder;
+    QColor colorPrimaryLoading;
+    QColor colorPrimaryLoadingHover;
+    QColor colorPrimaryLoadingActive;
 
     QColor colorSuccess;
     QColor colorSuccessHover;
@@ -44,6 +47,8 @@ struct AntThemeTokens
     QColor colorBgContainer;
     QColor colorBgElevated;
     QColor colorBgContainerDisabled;
+    QColor colorFill;
+    QColor colorFillSecondary;
     QColor colorFillTertiary;
     QColor colorFillQuaternary;
 

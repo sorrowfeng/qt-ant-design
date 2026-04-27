@@ -25,7 +25,7 @@ AntButton::AntButton(QWidget* parent)
         update();
     });
     connect(&m_spinnerTimer, &QTimer::timeout, this, [this]() {
-        m_spinnerAngle = (m_spinnerAngle + 30) % 360;
+        m_spinnerAngle = (m_spinnerAngle - 6 + 360) % 360;
         update();
     });
 
@@ -81,7 +81,8 @@ void AntButton::setLoading(bool loading)
     if (m_loading == loading)
         return;
     m_loading = loading;
-    m_loading ? m_spinnerTimer.start(80) : m_spinnerTimer.stop();
+    setCursor(m_loading ? Qt::ArrowCursor : Qt::PointingHandCursor);
+    m_loading ? m_spinnerTimer.start(16) : m_spinnerTimer.stop();
     updateGeometryFromState();
     update();
     Q_EMIT loadingChanged(m_loading);
@@ -121,6 +122,29 @@ void AntButton::setBlock(bool block)
     Q_EMIT blockChanged(m_block);
 }
 
+Ant::IconType AntButton::buttonIconType() const { return m_buttonIconType; }
+
+void AntButton::setButtonIconType(Ant::IconType iconType)
+{
+    if (m_buttonIconType == iconType)
+        return;
+    m_buttonIconType = iconType;
+    updateGeometryFromState();
+    update();
+    Q_EMIT buttonIconTypeChanged(m_buttonIconType);
+}
+
+QColor AntButton::buttonIconColor() const { return m_buttonIconColor; }
+
+void AntButton::setButtonIconColor(const QColor& color)
+{
+    if (m_buttonIconColor == color)
+        return;
+    m_buttonIconColor = color;
+    update();
+    Q_EMIT buttonIconColorChanged(m_buttonIconColor);
+}
+
 QSize AntButton::sizeHint() const
 {
     QStyleOptionButton option;
@@ -156,32 +180,27 @@ void AntButton::mousePressEvent(QMouseEvent* event)
     QPushButton::mousePressEvent(event);
 }
 
+void AntButton::keyPressEvent(QKeyEvent* event)
+{
+    QPushButton::keyPressEvent(event);
+}
+
+bool AntButton::hitButton(const QPoint& pos) const
+{
+    return QPushButton::hitButton(pos);
+}
+
 void AntButton::mouseReleaseEvent(QMouseEvent* event)
 {
     const bool wasPressed = m_pressed;
     m_pressed = false;
     update();
-    if (wasPressed && isEnabled() && !m_loading && rect().contains(event->pos()))
+    if (wasPressed && isEnabled() && !m_loading && rect().contains(event->pos())
+        && m_buttonType != Ant::ButtonType::Text
+        && m_buttonType != Ant::ButtonType::Link)
     {
-        // Pick wave tint matching the button's primary visual color.
         const auto& token = antTheme->tokens();
-        QColor tint;
-        if (m_danger)
-        {
-            tint = token.colorError;
-        }
-        else if (m_buttonType == Ant::ButtonType::Primary)
-        {
-            tint = token.colorPrimary;
-        }
-        else if (m_buttonType == Ant::ButtonType::Link || m_buttonType == Ant::ButtonType::Text)
-        {
-            tint = token.colorPrimary;
-        }
-        else
-        {
-            tint = token.colorPrimary;
-        }
+        const QColor tint = m_danger ? token.colorError : token.colorPrimary;
         const Metrics m = metrics();
         AntWave::trigger(this, tint, cornerRadius(m));
     }

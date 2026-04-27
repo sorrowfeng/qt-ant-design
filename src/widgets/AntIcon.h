@@ -49,6 +49,16 @@ public:
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
+    struct IconPaths
+    {
+        QPainterPath primary;
+        QPainterPath secondary;
+        bool useStroke = false;
+    };
+
+    static IconPaths builtinPaths(Ant::IconType type, Ant::IconTheme theme);
+    static QPainterPath transformPath(const QPainterPath& path, const QRectF& targetRect);
+
 Q_SIGNALS:
     void iconTypeChanged(Ant::IconType iconType);
     void iconThemeChanged(Ant::IconTheme iconTheme);
@@ -63,16 +73,6 @@ protected:
     void changeEvent(QEvent* event) override;
 
 private:
-    struct IconPaths
-    {
-        QPainterPath primary;
-        QPainterPath secondary;
-        bool useStroke = false;
-    };
-
-    static IconPaths builtinPaths(Ant::IconType type, Ant::IconTheme theme);
-    static QPainterPath transformPath(const QPainterPath& path, const QRectF& targetRect);
-
     QColor effectivePrimaryColor() const;
     QColor effectiveSecondaryColor() const;
     void updateTimerState();

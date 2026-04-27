@@ -4,6 +4,7 @@
 #include <QStyleOption>
 
 #include "widgets/AntButton.h"
+#include "widgets/AntIcon.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -83,9 +84,9 @@ void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(QPen(color, 2, Qt::SolidLine, Qt::RoundCap));
+    painter.setPen(QPen(color, 1.5, Qt::SolidLine, Qt::RoundCap));
     painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect, angle * 16, 270 * 16);
+    painter.drawArc(rect, angle * 16, 108 * 16);
     painter.restore();
 }
 }
@@ -136,7 +137,7 @@ QSize AntButtonStyle::sizeFromContents(ContentsType type, const QStyleOption* op
         QFont f = button->font();
         f.setPixelSize(m.fontSize);
         int width = QFontMetrics(f).horizontalAdvance(button->text()) + m.paddingX * 2;
-        if (button->isLoading())
+        if (button->isLoading() || button->buttonIconType() != Ant::IconType::None)
         {
             width += m.iconSize + 8;
         }
@@ -212,7 +213,7 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
         }
         if (pressed)
         {
-            colors.background = token.colorFillQuaternary;
+            colors.background = token.colorFill;
         }
     }
     else if (button->buttonType() == Ant::ButtonType::Link)
@@ -237,7 +238,29 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
         }
     }
 
-    if (!enabled)
+    if (button->isLoading())
+    {
+        if (button->buttonType() == Ant::ButtonType::Primary)
+        {
+            colors.background = colors.border = token.colorPrimaryLoading;
+            colors.text = token.colorTextLightSolid;
+            if (hovered)
+            {
+                colors.background = colors.border = token.colorPrimaryLoadingHover;
+            }
+            if (pressed)
+            {
+                colors.background = colors.border = token.colorPrimaryLoadingActive;
+            }
+        }
+        else
+        {
+            colors.background = plainType || button->isGhost() ? QColor(Qt::transparent) : token.colorBgContainerDisabled;
+            colors.border = plainType ? QColor(Qt::transparent) : token.colorBorderDisabled;
+            colors.text = token.colorTextDisabled;
+        }
+    }
+    else if (!enabled)
     {
         colors.background = plainType || button->isGhost() ? QColor(Qt::transparent) : token.colorBgContainerDisabled;
         colors.border = plainType ? QColor(Qt::transparent) : token.colorBorderDisabled;
@@ -256,7 +279,7 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
         colors.border.alpha() == 0 ? Qt::NoPen : QPen(colors.border, token.lineWidth, colors.borderStyle),
         colors.background, radius, radius);
 
-    if (focused && enabled)
+    if (focused && enabled && !plainType)
     {
         const QColor focus = AntPalette::alpha(button->isDanger() ? token.colorError : token.colorPrimary, 0.18);
         AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
@@ -271,6 +294,47 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
         QRectF spinnerRect(textRect.left(), textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
         drawSpinner(*painter, spinnerRect, colors.text, button->spinnerAngle());
         textRect.adjust(m.iconSize + 8, 0, 0, 0);
+    }
+    else if (button->buttonIconType() != Ant::IconType::None)
+    {
+        QRectF iconRect;
+        if (button->buttonShape() == Ant::ButtonShape::Circle && button->text().isEmpty())
+        {
+            iconRect = QRectF(outer.center().x() - m.iconSize / 2.0, outer.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
+        }
+        else
+        {
+            iconRect = QRectF(textRect.left(), textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
+            textRect.adjust(m.iconSize + 8, 0, 0, 0);
+        }
+
+        const AntIcon::IconPaths paths = AntIcon::builtinPaths(button->buttonIconType(), Ant::IconTheme::Outlined);
+        const QPainterPath primaryPath = AntIcon::transformPath(paths.primary, iconRect);
+        const QPainterPath secondaryPath = paths.secondary.isEmpty() ? QPainterPath() : AntIcon::transformPath(paths.secondary, iconRect);
+
+        QColor iconColor = button->buttonIconColor().isValid() ? button->buttonIconColor() : colors.text;
+        if (!enabled)
+            iconColor = token.colorTextDisabled;
+
+        painter->save();
+        if (paths.useStroke)
+        {
+            QPen pen(iconColor, qMax<qreal>(1.6, iconRect.width() * 0.1), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+            painter->setPen(pen);
+            painter->setBrush(Qt::NoBrush);
+            painter->drawPath(primaryPath);
+            if (!secondaryPath.isEmpty())
+                painter->drawPath(secondaryPath);
+        }
+        else
+        {
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(iconColor);
+            if (!secondaryPath.isEmpty())
+                painter->drawPath(secondaryPath);
+            painter->drawPath(primaryPath);
+        }
+        painter->restore();
     }
     painter->drawText(textRect, Qt::AlignCenter, button->text());
     painter->restore();

@@ -171,6 +171,9 @@ AntThemeTokens AntTheme::createTokens(Ant::ThemeMode mode)
     const QColor textBase = dark ? QColor("#ffffff") : QColor("#000000");
 
     t.colorBgBase = bgBase;
+    t.colorPrimaryLoading = AntPalette::mix(bgBase, t.colorPrimary, 0.65);
+    t.colorPrimaryLoadingHover = AntPalette::mix(bgBase, t.colorPrimary, 0.50);
+    t.colorPrimaryLoadingActive = AntPalette::shade(t.colorPrimaryLoading, 0.10);
     t.colorTextLightSolid = QColor("#ffffff");
     t.colorText = blendOnBackground(textBase, bgBase, dark ? 0.85 : 0.88);
     t.colorTextSecondary = blendOnBackground(textBase, bgBase, 0.65);
@@ -178,6 +181,8 @@ AntThemeTokens AntTheme::createTokens(Ant::ThemeMode mode)
     t.colorTextDisabled = blendOnBackground(textBase, bgBase, 0.25);
     t.colorTextPlaceholder = t.colorTextDisabled;
 
+    t.colorFill = blendOnBackground(textBase, bgBase, dark ? 0.30 : 0.15);
+    t.colorFillSecondary = blendOnBackground(textBase, bgBase, dark ? 0.12 : 0.06);
     t.colorFillTertiary = blendOnBackground(textBase, bgBase, dark ? 0.08 : 0.04);
     t.colorFillQuaternary = blendOnBackground(textBase, bgBase, dark ? 0.04 : 0.02);
 

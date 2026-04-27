@@ -104,9 +104,10 @@ QWidget* createButtonPage(QWidget* /*owner*/)
         auto* round = new AntButton(QStringLiteral("Round"));
         round->setButtonType(Ant::ButtonType::Primary);
         round->setButtonShape(Ant::ButtonShape::Round);
-        auto* circle = new AntButton(QStringLiteral("A"));
+        auto* circle = new AntButton();
         circle->setButtonType(Ant::ButtonType::Primary);
         circle->setButtonShape(Ant::ButtonShape::Circle);
+        circle->setButtonIconType(Ant::IconType::Search);
         auto* ghost = new AntButton(QStringLiteral("Ghost"));
         ghost->setButtonType(Ant::ButtonType::Primary);
         ghost->setGhost(true);
