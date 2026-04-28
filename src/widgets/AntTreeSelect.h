@@ -60,6 +60,9 @@ public:
     QString displayText() const;
     bool isHovered() const;
 
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
+
 Q_SIGNALS:
     void valueChanged(const QStringList& keys);
     void openChanged(bool open);

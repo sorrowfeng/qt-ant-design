@@ -276,6 +276,26 @@ bool AntTreeSelect::isHovered() const
     return m_hovered;
 }
 
+QSize AntTreeSelect::sizeHint() const
+{
+    const auto& token = antTheme->tokens();
+    int height = token.controlHeight;
+    if (m_selectSize == Ant::Size::Large)
+    {
+        height = token.controlHeightLG;
+    }
+    else if (m_selectSize == Ant::Size::Small)
+    {
+        height = token.controlHeightSM;
+    }
+    return QSize(220, height);
+}
+
+QSize AntTreeSelect::minimumSizeHint() const
+{
+    return QSize(80, sizeHint().height());
+}
+
 void AntTreeSelect::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)

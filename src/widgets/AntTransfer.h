@@ -4,6 +4,7 @@
 
 class QListWidget;
 class AntButton;
+class QPaintEvent;
 
 class AntTransfer : public QWidget
 {
@@ -20,10 +21,15 @@ public:
     void setSourceItems(const QStringList& items);
     void setTargetItems(const QStringList& items);
 
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
+
 Q_SIGNALS:
     void itemsChanged();
 
 private:
+    void paintEvent(QPaintEvent* event) override;
+
     void doTransfer(bool toTarget);
     void updateButtons();
 

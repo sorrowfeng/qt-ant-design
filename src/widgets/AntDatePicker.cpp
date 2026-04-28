@@ -482,7 +482,19 @@ bool AntDatePicker::isHoveredState() const { return m_hovered; }
 
 QSize AntDatePicker::sizeHint() const
 {
-    return QSize(m_rangeMode ? 280 : 180, metrics().height);
+    if (m_rangeMode)
+    {
+        return QSize(288, metrics().height);
+    }
+    if (m_pickerSize == Ant::Size::Large)
+    {
+        return QSize(164, metrics().height);
+    }
+    if (m_pickerSize == Ant::Size::Small)
+    {
+        return QSize(140, metrics().height);
+    }
+    return QSize(150, metrics().height);
 }
 
 QSize AntDatePicker::minimumSizeHint() const

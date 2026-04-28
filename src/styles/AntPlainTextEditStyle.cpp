@@ -132,13 +132,24 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
     }
 
     // Placeholder
-    if (te->document()->isEmpty() && !focused && !te->placeholderText().isEmpty())
+    if (te->document()->isEmpty() && !te->placeholderText().isEmpty())
     {
         QFont f = te->font();
         painter->setFont(f);
         painter->setPen(token.colorTextPlaceholder);
-        const QRectF textRect = r.adjusted(token.paddingSM, 0, -token.paddingSM, 0);
-        painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, te->placeholderText());
+        const QRectF textRect = r.adjusted(token.paddingSM, token.paddingXXS + 1,
+                                           -token.paddingSM, -token.paddingXXS);
+        painter->drawText(textRect, Qt::AlignLeft | Qt::AlignTop, te->placeholderText());
+    }
+
+    if (enabled && variant == Ant::Variant::Outlined)
+    {
+        QColor grip = token.colorTextDisabled;
+        grip.setAlphaF(0.55);
+        painter->setPen(QPen(grip, 1, Qt::SolidLine, Qt::RoundCap));
+        const QPointF bottomRight = r.bottomRight() - QPointF(4.5, 4.5);
+        painter->drawLine(bottomRight - QPointF(6, 0), bottomRight - QPointF(0, 6));
+        painter->drawLine(bottomRight - QPointF(3, 0), bottomRight - QPointF(0, 3));
     }
 
     painter->restore();

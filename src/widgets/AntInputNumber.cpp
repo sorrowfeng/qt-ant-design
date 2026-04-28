@@ -126,6 +126,23 @@ void AntInputNumber::setSuffixText(const QString& text)
     setSuffix(text);
 }
 
+QString AntInputNumber::addonAfterText() const
+{
+    return m_addonAfterText;
+}
+
+void AntInputNumber::setAddonAfterText(const QString& text)
+{
+    if (m_addonAfterText == text)
+    {
+        return;
+    }
+    m_addonAfterText = text;
+    updateEditStyle();
+    updateGeometry();
+    update();
+}
+
 void AntInputNumber::setPrecision(int decimals)
 {
     setDecimals(qMax(0, decimals));

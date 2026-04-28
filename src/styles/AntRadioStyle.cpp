@@ -2,7 +2,11 @@
 
 #include <QEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyleOptionButton>
+
+#include <algorithm>
+#include <utility>
 
 #include "widgets/AntRadio.h"
 #include "styles/AntPalette.h"
@@ -12,6 +16,58 @@ namespace
 constexpr int RadioSize = 16;
 constexpr int TextSpacing = 8;
 constexpr qreal DotRatio = 0.5;
+
+QPainterPath segmentPath(const QRectF& rect, qreal radius, bool roundLeft, bool roundRight)
+{
+    const qreal r = std::min(radius, rect.height() / 2.0);
+    QPainterPath path;
+    path.moveTo(rect.left() + (roundLeft ? r : 0), rect.top());
+    path.lineTo(rect.right() - (roundRight ? r : 0), rect.top());
+    if (roundRight)
+    {
+        path.quadTo(rect.right(), rect.top(), rect.right(), rect.top() + r);
+    }
+    path.lineTo(rect.right(), rect.bottom() - (roundRight ? r : 0));
+    if (roundRight)
+    {
+        path.quadTo(rect.right(), rect.bottom(), rect.right() - r, rect.bottom());
+    }
+    path.lineTo(rect.left() + (roundLeft ? r : 0), rect.bottom());
+    if (roundLeft)
+    {
+        path.quadTo(rect.left(), rect.bottom(), rect.left(), rect.bottom() - r);
+    }
+    path.lineTo(rect.left(), rect.top() + (roundLeft ? r : 0));
+    if (roundLeft)
+    {
+        path.quadTo(rect.left(), rect.top(), rect.left() + r, rect.top());
+    }
+    path.closeSubpath();
+    return path;
+}
+
+std::pair<bool, bool> roundedEdgesFor(const AntRadio* radio)
+{
+    if (!radio || !radio->parentWidget())
+    {
+        return {true, true};
+    }
+
+    auto radios = radio->parentWidget()->findChildren<AntRadio*>(QString(), Qt::FindDirectChildrenOnly);
+    radios.erase(std::remove_if(radios.begin(), radios.end(), [](const AntRadio* item) {
+                    return !item->isButtonStyle();
+                }),
+                 radios.end());
+    std::sort(radios.begin(), radios.end(), [](const AntRadio* a, const AntRadio* b) {
+        return a->geometry().left() < b->geometry().left();
+    });
+
+    if (radios.size() <= 1)
+    {
+        return {true, true};
+    }
+    return {radios.first() == radio, radios.last() == radio};
+}
 }
 
 AntRadioStyle::AntRadioStyle(QStyle* style)
@@ -54,6 +110,47 @@ void AntRadioStyle::drawControl(ControlElement element, const QStyleOption* opti
         const bool enabled = bopt->state.testFlag(QStyle::State_Enabled);
         const bool hovered = bopt->state.testFlag(QStyle::State_MouseOver);
         const bool pressed = bopt->state.testFlag(QStyle::State_Sunken);
+        if (radio->isButtonStyle())
+        {
+            const QRectF frame = QRectF(bopt->rect).adjusted(0.5, 0.5, -0.5, -0.5);
+            const auto [roundLeft, roundRight] = roundedEdgesFor(radio);
+            const QPainterPath path = segmentPath(frame, token.borderRadius, roundLeft, roundRight);
+            QColor border = token.colorBorder;
+            QColor bg = token.colorBgContainer;
+            QColor text = token.colorText;
+            if (!enabled)
+            {
+                border = token.colorBorderDisabled;
+                bg = token.colorBgContainerDisabled;
+                text = token.colorTextDisabled;
+            }
+            else if (radio->isChecked())
+            {
+                border = token.colorPrimary;
+                bg = pressed ? token.colorPrimaryActive : (hovered ? token.colorPrimaryHover : token.colorPrimary);
+                text = token.colorTextLightSolid;
+            }
+            else if (hovered)
+            {
+                border = token.colorPrimary;
+                text = token.colorPrimary;
+            }
+
+            painter->save();
+            painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+            painter->setPen(QPen(border, token.lineWidth));
+            painter->setBrush(bg);
+            painter->drawPath(path);
+
+            QFont f = painter->font();
+            f.setPixelSize(token.fontSize);
+            painter->setFont(f);
+            painter->setPen(text);
+            painter->drawText(frame, Qt::AlignCenter, radio->text());
+            painter->restore();
+            return;
+        }
+
         const QRectF circle(0.5, (bopt->rect.height() - RadioSize) / 2.0 + 0.5, RadioSize - 1, RadioSize - 1);
 
         QColor border;

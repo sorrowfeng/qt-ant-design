@@ -210,15 +210,36 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
     f.setPixelSize(m.fontSize);
     painter->setFont(f);
 
-    const QString text = picker->hasSelectedDate() ? picker->dateString() : picker->placeholderText();
-    QColor textColor = picker->hasSelectedDate() ? token.colorText : token.colorTextPlaceholder;
-    if (!picker->isEnabled())
+    const QRectF textArea = control.adjusted(m.paddingX, 0, -(m.iconWidth + m.paddingX), 0);
+    if (picker->isRangeMode() && !picker->hasSelectedDate())
     {
-        textColor = token.colorTextDisabled;
+        const QColor placeholderColor = picker->isEnabled() ? token.colorTextPlaceholder : token.colorTextDisabled;
+        const qreal arrowWidth = 24;
+        const qreal fieldWidth = (textArea.width() - arrowWidth) / 2.0;
+        const QRectF startRect(textArea.left(), textArea.top(), fieldWidth, textArea.height());
+        const QRectF arrowRect(startRect.right(), textArea.top(), arrowWidth, textArea.height());
+        const QRectF endRect(arrowRect.right(), textArea.top(), fieldWidth, textArea.height());
+
+        painter->setPen(placeholderColor);
+        painter->drawText(startRect, Qt::AlignVCenter | Qt::AlignLeft, QStringLiteral("Start date"));
+        painter->drawText(endRect, Qt::AlignVCenter | Qt::AlignLeft, QStringLiteral("End date"));
+        painter->setPen(picker->isEnabled() ? token.colorTextDisabled : token.colorTextDisabled);
+        const QPointF arrowCenter = arrowRect.center();
+        painter->drawLine(arrowCenter + QPointF(-5, 0), arrowCenter + QPointF(5, 0));
+        painter->drawLine(arrowCenter + QPointF(2, -3), arrowCenter + QPointF(5, 0));
+        painter->drawLine(arrowCenter + QPointF(2, 3), arrowCenter + QPointF(5, 0));
     }
-    painter->setPen(textColor);
-    painter->drawText(control.adjusted(m.paddingX, 0, -(m.iconWidth + m.paddingX), 0),
-                     Qt::AlignVCenter | Qt::AlignLeft, text);
+    else
+    {
+        const QString text = picker->hasSelectedDate() ? picker->dateString() : picker->placeholderText();
+        QColor textColor = picker->hasSelectedDate() ? token.colorText : token.colorTextPlaceholder;
+        if (!picker->isEnabled())
+        {
+            textColor = token.colorTextDisabled;
+        }
+        painter->setPen(textColor);
+        painter->drawText(textArea, Qt::AlignVCenter | Qt::AlignLeft, text);
+    }
 
     // Icon area
     const QRectF icon = datePickerIconRect(picker);
@@ -233,14 +254,17 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
     }
     else
     {
-        QRectF cal = icon.adjusted(7, 6, -7, -6);
-        AntStyleBase::drawCrispRoundedRect(painter, cal.toRect(),
-            QPen(picker->isEnabled() ? token.colorTextTertiary : token.colorTextDisabled,
-                 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin),
-            Qt::NoBrush, 2, 2);
+        const qreal iconSize = picker->pickerSize() == Ant::Size::Small ? 12.0 : 14.0;
+        const QRectF cal(icon.center().x() - iconSize / 2.0,
+                         icon.center().y() - iconSize / 2.0,
+                         iconSize,
+                         iconSize);
+        painter->setPen(QPen(token.colorTextDisabled, 1.2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(cal, 1.5, 1.5);
         painter->drawLine(QPointF(cal.left(), cal.top() + 5), QPointF(cal.right(), cal.top() + 5));
-        painter->drawLine(QPointF(cal.left() + 4, cal.top() - 2), QPointF(cal.left() + 4, cal.top() + 3));
-        painter->drawLine(QPointF(cal.right() - 4, cal.top() - 2), QPointF(cal.right() - 4, cal.top() + 3));
+        painter->drawLine(QPointF(cal.left() + 4, cal.top() - 1.5), QPointF(cal.left() + 4, cal.top() + 3));
+        painter->drawLine(QPointF(cal.right() - 4, cal.top() - 1.5), QPointF(cal.right() - 4, cal.top() + 3));
     }
 
     painter->restore();

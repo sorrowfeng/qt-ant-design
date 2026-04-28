@@ -9,7 +9,10 @@
 #include <QPainter>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 #include "../styles/AntAutoCompleteStyle.h"
+#include "core/AntStyleBase.h"
 #include "core/AntTheme.h"
 
 namespace
@@ -71,13 +74,18 @@ AntMentions::AntMentions(QWidget* parent)
     setStyle(s);
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    setFixedHeight(antTheme->tokens().controlHeight);
+    setFixedHeight(sizeHint().height());
 
     m_lineEdit = new QLineEdit(this);
     m_lineEdit->setFrame(false);
     {
+        QFont f = m_lineEdit->font();
+        f.setPixelSize(antTheme->tokens().fontSize);
+        m_lineEdit->setFont(f);
         QPalette p = m_lineEdit->palette();
         p.setColor(QPalette::Base, Qt::transparent);
+        p.setColor(QPalette::Text, antTheme->tokens().colorText);
+        p.setColor(QPalette::PlaceholderText, antTheme->tokens().colorTextPlaceholder);
         m_lineEdit->setPalette(p);
     }
 
@@ -87,14 +95,19 @@ AntMentions::AntMentions(QWidget* parent)
     });
 
     auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(12, 0, 8, 0);
+    layout->setContentsMargins(12, 4, 8, 0);
     layout->addWidget(m_lineEdit);
+    layout->setAlignment(m_lineEdit, Qt::AlignTop);
 
     m_popup = new QFrame(this, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     m_popup->setAttribute(Qt::WA_TranslucentBackground);
     m_popup->setAttribute(Qt::WA_ShowWithoutActivating);
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        setFixedHeight(sizeHint().height());
+        updateGeometry();
+        update();
+    });
 }
 
 QString AntMentions::placeholderText() const { return m_placeholderText; }
@@ -112,6 +125,21 @@ void AntMentions::setPrefix(const QString& prefix)
     Q_EMIT prefixChanged(prefix);
 }
 
+int AntMentions::rows() const { return m_rows; }
+void AntMentions::setRows(int rows)
+{
+    rows = std::max(1, rows);
+    if (m_rows == rows)
+    {
+        return;
+    }
+    m_rows = rows;
+    setFixedHeight(sizeHint().height());
+    updateGeometry();
+    update();
+    Q_EMIT rowsChanged(m_rows);
+}
+
 QString AntMentions::text() const { return m_lineEdit->text(); }
 
 void AntMentions::setSuggestions(const QStringList& items)
@@ -122,6 +150,28 @@ void AntMentions::setSuggestions(const QStringList& items)
 void AntMentions::addSuggestion(const QString& text)
 {
     m_suggestions.append(text);
+}
+
+QSize AntMentions::sizeHint() const
+{
+    const auto& token = antTheme->tokens();
+    if (m_rows <= 1)
+    {
+        return QSize(220, token.controlHeight);
+    }
+    return QSize(400, token.controlHeight + (m_rows - 1) * 23);
+}
+
+void AntMentions::paintEvent(QPaintEvent* event)
+{
+    Q_UNUSED(event)
+
+    const auto& token = antTheme->tokens();
+    QPainter painter(this);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+    const QRect frame = rect().adjusted(0, 0, -1, -1);
+    AntStyleBase::drawCrispRoundedRect(&painter, frame, QPen(token.colorBorder, token.lineWidth),
+        token.colorBgContainer, token.borderRadius, token.borderRadius);
 }
 
 void AntMentions::checkForPrefix()

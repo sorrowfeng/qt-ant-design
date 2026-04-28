@@ -44,17 +44,20 @@ QRectF grooveRectFor(const AntSlider* slider, const QRect& rect)
     }
 
     const qreal width = std::max<qreal>(0.0, rect.width() - halfHandle * 2.0);
-    return QRectF(halfHandle, (rect.height() - metrics.railSize) / 2.0, width, metrics.railSize);
+    const qreal y = slider && !slider->marks().isEmpty()
+        ? halfHandle - metrics.railSize / 2.0
+        : (rect.height() - metrics.railSize) / 2.0;
+    return QRectF(halfHandle, y, width, metrics.railSize);
 }
 
-qreal valueRatioFor(const AntSlider* slider)
+qreal valueRatioFor(const AntSlider* slider, int value)
 {
     if (!slider || slider->maximum() == slider->minimum())
     {
         return 0.0;
     }
 
-    qreal ratio = (slider->value() - slider->minimum())
+    qreal ratio = (value - slider->minimum())
         / static_cast<qreal>(slider->maximum() - slider->minimum());
     if (slider->isReverse())
     {
@@ -67,7 +70,22 @@ QRectF trackRectFor(const AntSlider* slider, const QRect& rect)
 {
     const SliderMetrics metrics = metricsFor(slider);
     const QRectF groove = grooveRectFor(slider, rect);
-    const qreal ratio = valueRatioFor(slider);
+    if (slider && slider->isRangeMode())
+    {
+        const qreal startRatio = valueRatioFor(slider, slider->rangeStart());
+        const qreal endRatio = valueRatioFor(slider, slider->rangeEnd());
+        if (slider->orientation() == Qt::Vertical)
+        {
+            const qreal top = groove.bottom() - groove.height() * std::max(startRatio, endRatio);
+            const qreal bottom = groove.bottom() - groove.height() * std::min(startRatio, endRatio);
+            return QRectF(groove.left(), top, groove.width(), bottom - top);
+        }
+        const qreal left = groove.left() + groove.width() * std::min(startRatio, endRatio);
+        const qreal right = groove.left() + groove.width() * std::max(startRatio, endRatio);
+        return QRectF(left, groove.top(), right - left, groove.height());
+    }
+
+    const qreal ratio = valueRatioFor(slider, slider ? slider->value() : 0);
 
     if (slider && slider->orientation() == Qt::Vertical)
     {
@@ -87,7 +105,7 @@ QRectF trackRectFor(const AntSlider* slider, const QRect& rect)
     return QRectF(groove.left(), groove.top(), handleX - groove.left(), groove.height());
 }
 
-QRectF handleRectFor(const AntSlider* slider, const QRect& rect)
+QRectF handleRectForValue(const AntSlider* slider, const QRect& rect, int value)
 {
     const SliderMetrics metrics = metricsFor(slider);
     const QRectF groove = grooveRectFor(slider, rect);
@@ -96,14 +114,19 @@ QRectF handleRectFor(const AntSlider* slider, const QRect& rect)
 
     if (slider && slider->orientation() == Qt::Vertical)
     {
-        center = QPointF(groove.center().x(), groove.bottom() - groove.height() * valueRatioFor(slider));
+        center = QPointF(groove.center().x(), groove.bottom() - groove.height() * valueRatioFor(slider, value));
     }
     else
     {
-        center = QPointF(groove.left() + groove.width() * valueRatioFor(slider), groove.center().y());
+        center = QPointF(groove.left() + groove.width() * valueRatioFor(slider, value), groove.center().y());
     }
 
     return QRectF(center.x() - size / 2.0, center.y() - size / 2.0, size, size);
+}
+
+QRectF handleRectFor(const AntSlider* slider, const QRect& rect)
+{
+    return handleRectForValue(slider, rect, slider ? slider->value() : 0);
 }
 
 void drawDots(QPainter& painter, const AntSlider* slider, const SliderMetrics& metrics, const QRectF& groove)
@@ -122,9 +145,7 @@ void drawDots(QPainter& painter, const AntSlider* slider, const SliderMetrics& m
 
     const QColor dotBorder = slider->isEnabled() ? token.colorBorderSecondary : token.colorBorderDisabled;
     const QColor activeBorder = slider->isEnabled() ? token.colorPrimaryBorder : token.colorTextDisabled;
-    const qreal ratio = slider->maximum() == slider->minimum()
-        ? 0.0
-        : (slider->value() - slider->minimum()) / static_cast<qreal>(slider->maximum() - slider->minimum());
+    const qreal ratio = valueRatioFor(slider, slider->value());
 
     painter.save();
     painter.setBrush(token.colorBgElevated);
@@ -147,6 +168,39 @@ void drawDots(QPainter& painter, const AntSlider* slider, const SliderMetrics& m
         painter.drawEllipse(center, metrics.dotSize / 2.0, metrics.dotSize / 2.0);
     }
     painter.restore();
+}
+
+void drawMarks(QPainter& painter, const AntSlider* slider, const SliderMetrics& metrics, const QRectF& groove)
+{
+    if (!slider || slider->marks().isEmpty() || slider->orientation() == Qt::Vertical)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    const auto marks = slider->marks();
+    QFont markFont = painter.font();
+    markFont.setPixelSize(token.fontSizeSM);
+    painter.setFont(markFont);
+    const QFontMetrics fm(markFont);
+
+    for (auto it = marks.constBegin(); it != marks.constEnd(); ++it)
+    {
+        const qreal ratio = valueRatioFor(slider, it.key());
+        const QPointF center(groove.left() + groove.width() * ratio, groove.center().y());
+        const bool active = slider->isRangeMode()
+            ? it.key() >= slider->rangeStart() && it.key() <= slider->rangeEnd()
+            : (slider->isReverse() ? it.key() >= slider->value() : it.key() <= slider->value());
+        painter.setPen(QPen(active ? token.colorPrimaryBorder : token.colorBorderSecondary, 1.5));
+        painter.setBrush(token.colorBgElevated);
+        painter.drawEllipse(center, metrics.dotSize / 2.0, metrics.dotSize / 2.0);
+
+        const QString text = it.value();
+        const int textWidth = fm.horizontalAdvance(text);
+        const QRectF textRect(center.x() - textWidth / 2.0, groove.bottom() + 12, textWidth, fm.height());
+        painter.setPen(token.colorTextTertiary);
+        painter.drawText(textRect, Qt::AlignCenter, text);
+    }
 }
 }
 
@@ -257,6 +311,7 @@ void AntSliderStyle::drawSlider(const QStyleOption* option, QPainter* painter, c
     {
         drawDots(*painter, slider, metrics, groove);
     }
+    drawMarks(*painter, slider, metrics, groove);
 
     if (slider->focusProgress() > 0.0 && interactive)
     {
@@ -266,9 +321,21 @@ void AntSliderStyle::drawSlider(const QStyleOption* option, QPainter* painter, c
         painter->drawEllipse(handle);
     }
 
-    painter->setPen(QPen(handleBorder, active ? 2.5 : 2.0));
-    painter->setBrush(token.colorBgElevated);
-    painter->drawEllipse(handle);
+    auto drawHandle = [&](const QRectF& handleRect) {
+        painter->setPen(QPen(handleBorder, active ? 2.5 : 2.0));
+        painter->setBrush(token.colorBgElevated);
+        painter->drawEllipse(handleRect);
+    };
+
+    if (slider->isRangeMode())
+    {
+        drawHandle(handleRectForValue(slider, option->rect, slider->rangeStart()));
+        drawHandle(handleRectForValue(slider, option->rect, slider->rangeEnd()));
+    }
+    else
+    {
+        drawHandle(handle);
+    }
 
     if (slider->isPressedState())
     {

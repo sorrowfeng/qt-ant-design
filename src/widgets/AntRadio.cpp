@@ -101,20 +101,38 @@ void AntRadio::setAutoExclusive(bool autoExclusive)
     Q_EMIT autoExclusiveChanged(m_autoExclusive);
 }
 
+bool AntRadio::isButtonStyle() const { return m_buttonStyle; }
+
+void AntRadio::setButtonStyle(bool buttonStyle)
+{
+    if (m_buttonStyle == buttonStyle)
+    {
+        return;
+    }
+    m_buttonStyle = buttonStyle;
+    updateGeometry();
+    update();
+    Q_EMIT buttonStyleChanged(m_buttonStyle);
+}
+
 QSize AntRadio::sizeHint() const
 {
-    constexpr int radioSize = 16;
-    constexpr int textSpacing = 8;
     QFont f = font();
     f.setPixelSize(antTheme->tokens().fontSize);
     QFontMetrics fm(f);
+    if (m_buttonStyle)
+    {
+        return QSize(fm.horizontalAdvance(m_text) + 30, antTheme->tokens().controlHeight);
+    }
+    constexpr int radioSize = 16;
+    constexpr int textSpacing = 8;
     const int textWidth = m_text.isEmpty() ? 0 : textSpacing + fm.horizontalAdvance(m_text);
     return QSize(radioSize + textWidth, std::max(radioSize, fm.height()));
 }
 
 QSize AntRadio::minimumSizeHint() const
 {
-    return QSize(16, 16);
+    return m_buttonStyle ? QSize(48, antTheme->tokens().controlHeight) : QSize(16, 16);
 }
 
 void AntRadio::enterEvent(QEnterEvent* event)
@@ -192,6 +210,10 @@ void AntRadio::keyPressEvent(QKeyEvent* event)
 
 QRectF AntRadio::indicatorRect() const
 {
+    if (m_buttonStyle)
+    {
+        return QRectF();
+    }
     return QRectF(0.5, (height() - RadioSize) / 2.0 + 0.5, RadioSize - 1, RadioSize - 1);
 }
 

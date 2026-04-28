@@ -3,9 +3,97 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPainter>
+#include <QPainterPath>
 
 #include "../styles/AntInputStyle.h"
 #include "core/AntTheme.h"
+
+namespace
+{
+class AntInputIconButton : public QToolButton
+{
+public:
+    enum class Kind
+    {
+        Password,
+        Search
+    };
+
+    explicit AntInputIconButton(Kind kind, QWidget* parent = nullptr)
+        : QToolButton(parent),
+          m_kind(kind)
+    {
+        setAutoRaise(true);
+        setFocusPolicy(Qt::NoFocus);
+        setFixedSize(22, 22);
+    }
+
+    void setActive(bool active)
+    {
+        if (m_active == active)
+        {
+            return;
+        }
+        m_active = active;
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event);
+
+        QColor iconColor = palette().color(QPalette::ButtonText);
+        if (!isEnabled())
+        {
+            iconColor.setAlphaF(0.35);
+        }
+        else if (isDown())
+        {
+            iconColor = antTheme->tokens().colorTextSecondary;
+        }
+
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+        painter.setPen(QPen(iconColor, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(Qt::NoBrush);
+
+        QRectF iconRect(0, 0, 16, 16);
+        iconRect.moveCenter(rect().center());
+
+        if (m_kind == Kind::Search)
+        {
+            const QPointF center = iconRect.center() - QPointF(1.2, 1.2);
+            painter.drawEllipse(center, 4.8, 4.8);
+            painter.drawLine(center + QPointF(3.6, 3.6), center + QPointF(7.0, 7.0));
+            return;
+        }
+
+        QPainterPath eye;
+        const QPointF center = iconRect.center();
+        eye.moveTo(iconRect.left() + 1.2, center.y());
+        eye.cubicTo(iconRect.left() + 4.0, iconRect.top() + 3.6,
+                    iconRect.right() - 4.0, iconRect.top() + 3.6,
+                    iconRect.right() - 1.2, center.y());
+        eye.cubicTo(iconRect.right() - 4.0, iconRect.bottom() - 3.6,
+                    iconRect.left() + 4.0, iconRect.bottom() - 3.6,
+                    iconRect.left() + 1.2, center.y());
+        painter.drawPath(eye);
+        painter.drawEllipse(center, 2.0, 2.0);
+
+        if (!m_active)
+        {
+            painter.drawLine(iconRect.topRight() + QPointF(-1.5, 1.5),
+                             iconRect.bottomLeft() + QPointF(1.5, -1.5));
+        }
+    }
+
+private:
+    Kind m_kind;
+    bool m_active = false;
+};
+}
 
 AntInput::AntInput(QWidget* parent)
     : QWidget(parent)
@@ -33,21 +121,15 @@ AntInput::AntInput(QWidget* parent)
     m_clearButton->setFocusPolicy(Qt::NoFocus);
     connect(m_clearButton, &QToolButton::clicked, m_lineEdit, &QLineEdit::clear);
 
-    m_passwordButton = new QToolButton(this);
-    m_passwordButton->setText(QStringLiteral("..."));
-    m_passwordButton->setAutoRaise(true);
-    m_passwordButton->setFocusPolicy(Qt::NoFocus);
+    m_passwordButton = new AntInputIconButton(AntInputIconButton::Kind::Password, this);
     m_passwordButton->hide();
     connect(m_passwordButton, &QToolButton::clicked, this, [this]() {
         m_passwordVisible = !m_passwordVisible;
         m_lineEdit->setEchoMode(m_passwordVisible ? QLineEdit::Normal : QLineEdit::Password);
-        m_passwordButton->setText(m_passwordVisible ? QStringLiteral("hide") : QStringLiteral("..."));
+        static_cast<AntInputIconButton*>(m_passwordButton)->setActive(m_passwordVisible);
     });
 
-    m_searchButton = new QToolButton(this);
-    m_searchButton->setText(QStringLiteral("⌕"));
-    m_searchButton->setAutoRaise(true);
-    m_searchButton->setFocusPolicy(Qt::NoFocus);
+    m_searchButton = new AntInputIconButton(AntInputIconButton::Kind::Search, this);
     m_searchButton->hide();
     connect(m_searchButton, &QToolButton::clicked, this, [this]() {
         Q_EMIT searchTriggered(m_lineEdit->text());
@@ -129,6 +211,7 @@ void AntInput::setPasswordMode(bool passwordMode)
     m_passwordMode = passwordMode;
     m_passwordVisible = false;
     m_lineEdit->setEchoMode(passwordMode ? QLineEdit::Password : QLineEdit::Normal);
+    static_cast<AntInputIconButton*>(m_passwordButton)->setActive(false);
     updateButtonVisibility();
     Q_EMIT passwordModeChanged(m_passwordMode);
 }
@@ -138,7 +221,9 @@ void AntInput::setSearchMode(bool searchMode)
 {
     if (m_searchMode == searchMode) return;
     m_searchMode = searchMode;
-    updateButtonVisibility();
+    rebuildLayout();
+    updateGeometry();
+    update();
 }
 
 void AntInput::setAddonBefore(const QString& text)
@@ -312,6 +397,7 @@ void AntInput::rebuildLayout()
     };
     setupLabel(m_addonBefore);
     setupLabel(m_addonAfter);
+    m_searchButton->setFixedSize(m.height, m.height);
 
     if (m_addonBefore)
         m_layout->addWidget(m_addonBefore);
@@ -340,7 +426,10 @@ void AntInput::rebuildLayout()
     m_layout->addWidget(m_clearButton);
     m_layout->addWidget(m_passwordButton);
     m_layout->addWidget(m_searchButton);
-    m_layout->addSpacing(m.paddingX);
+    if (!m_searchMode)
+    {
+        m_layout->addSpacing(m.paddingX);
+    }
     if (m_addonAfter)
         m_layout->addWidget(m_addonAfter);
 
@@ -370,12 +459,13 @@ void AntInput::updateVisualState()
     QPalette lePalette = m_lineEdit->palette();
     lePalette.setColor(QPalette::Base, Qt::transparent);
     lePalette.setColor(QPalette::Text, isEnabled() ? token.colorText : token.colorTextDisabled);
+    lePalette.setColor(QPalette::PlaceholderText, isEnabled() ? token.colorTextPlaceholder : token.colorTextDisabled);
     lePalette.setColor(QPalette::Highlight, token.colorPrimary);
     lePalette.setColor(QPalette::HighlightedText, Qt::white);
     m_lineEdit->setPalette(lePalette);
 
     // ToolButton colors via QPalette
-    for (auto* btn : {m_clearButton, m_passwordButton})
+    for (auto* btn : {m_clearButton, m_passwordButton, m_searchButton})
     {
         QPalette tbPalette = btn->palette();
         tbPalette.setColor(QPalette::ButtonText, token.colorTextTertiary);
@@ -431,4 +521,9 @@ QRect AntInput::addonBeforeRect() const
 QRect AntInput::addonAfterRect() const
 {
     return m_addonAfter && m_addonAfter->isVisible() ? m_addonAfter->geometry() : QRect();
+}
+
+QRect AntInput::searchButtonRect() const
+{
+    return m_searchMode && m_searchButton && m_searchButton->isVisible() ? m_searchButton->geometry() : QRect();
 }

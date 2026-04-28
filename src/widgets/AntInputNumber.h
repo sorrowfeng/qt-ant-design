@@ -34,6 +34,8 @@ public:
 
     void setPrefixText(const QString& text);
     void setSuffixText(const QString& text);
+    QString addonAfterText() const;
+    void setAddonAfterText(const QString& text);
     void setPrecision(int decimals);
 
     QSize sizeHint() const override;
@@ -80,4 +82,5 @@ private:
     bool m_hovered = false;
     bool m_stepPressed = false;
     QStyle::SubControl m_activeSubControl = QStyle::SC_None;
+    QString m_addonAfterText;
 };

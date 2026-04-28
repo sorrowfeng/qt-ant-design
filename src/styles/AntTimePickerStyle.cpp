@@ -209,15 +209,53 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
     QFont f = painter->font();
     f.setPixelSize(m.fontSize);
     painter->setFont(f);
-    const QString text = picker->hasSelectedTime() ? picker->timeString() : picker->placeholderText();
-    QColor textColor = picker->hasSelectedTime() ? token.colorText : token.colorTextPlaceholder;
-    if (!picker->isEnabled())
+
+    if (picker->isRangeMode())
     {
-        textColor = token.colorTextDisabled;
+        const QRectF textArea = control.adjusted(m.paddingX, 0, -(m.iconWidth + m.paddingX), 0);
+        const qreal arrowWidth = 24;
+        const qreal fieldWidth = (textArea.width() - arrowWidth) / 2.0;
+        const QRectF startRect(textArea.left(), textArea.top(), fieldWidth, textArea.height());
+        const QRectF arrowRect(startRect.right(), textArea.top(), arrowWidth, textArea.height());
+        const QRectF endRect(arrowRect.right(), textArea.top(), fieldWidth, textArea.height());
+        const QString startText = picker->startTime().isValid()
+            ? picker->startTime().toString(picker->displayFormat())
+            : QStringLiteral("Start time");
+        const QString endText = picker->endTime().isValid()
+            ? picker->endTime().toString(picker->displayFormat())
+            : QStringLiteral("End time");
+        QColor startColor = picker->startTime().isValid() ? token.colorText : token.colorTextPlaceholder;
+        QColor endColor = picker->endTime().isValid() ? token.colorText : token.colorTextPlaceholder;
+        if (!picker->isEnabled())
+        {
+            startColor = token.colorTextDisabled;
+            endColor = token.colorTextDisabled;
+        }
+
+        painter->setPen(startColor);
+        painter->drawText(startRect, Qt::AlignVCenter | Qt::AlignLeft, startText);
+
+        painter->setPen(token.colorTextTertiary);
+        const QPointF arrowCenter = arrowRect.center();
+        painter->drawLine(arrowCenter + QPointF(-5, 0), arrowCenter + QPointF(5, 0));
+        painter->drawLine(arrowCenter + QPointF(1, -4), arrowCenter + QPointF(5, 0));
+        painter->drawLine(arrowCenter + QPointF(1, 4), arrowCenter + QPointF(5, 0));
+
+        painter->setPen(endColor);
+        painter->drawText(endRect, Qt::AlignVCenter | Qt::AlignLeft, endText);
     }
-    painter->setPen(textColor);
-    painter->drawText(control.adjusted(m.paddingX, 0, -(m.iconWidth + m.paddingX), 0),
-                     Qt::AlignVCenter | Qt::AlignLeft, text);
+    else
+    {
+        const QString text = picker->hasSelectedTime() ? picker->timeString() : picker->placeholderText();
+        QColor textColor = picker->hasSelectedTime() ? token.colorText : token.colorTextPlaceholder;
+        if (!picker->isEnabled())
+        {
+            textColor = token.colorTextDisabled;
+        }
+        painter->setPen(textColor);
+        painter->drawText(control.adjusted(m.paddingX, 0, -(m.iconWidth + m.paddingX), 0),
+                         Qt::AlignVCenter | Qt::AlignLeft, text);
+    }
 
     // Icon area
     const QRectF icon = timePickerIconRect(picker);

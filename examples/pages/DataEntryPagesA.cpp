@@ -23,6 +23,7 @@
 #include "widgets/AntInput.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntMentions.h"
+#include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTypography.h"
@@ -198,23 +199,13 @@ QWidget* createDatePickerPage(QWidget* /*owner*/)
     {
         auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
-        basicRow->setSpacing(16);
+        basicRow->setSpacing(24);
         auto* basic = new AntDatePicker();
-        basic->setPlaceholderText(QStringLiteral("Select date"));
-        auto* selected = new AntDatePicker();
-        selected->setSelectedDate(QDate::currentDate());
-        selected->setAllowClear(true);
-        auto* customFormat = new AntDatePicker();
-        customFormat->setSelectedDate(QDate::currentDate().addDays(7));
-        customFormat->setDisplayFormat(QStringLiteral("MMM d, yyyy"));
         auto* range = new AntDatePicker();
         range->setRangeMode(true);
-        range->setStartDate(QDate::currentDate());
-        range->setEndDate(QDate::currentDate().addDays(7));
         basicRow->addWidget(basic);
-        basicRow->addWidget(selected);
-        basicRow->addWidget(customFormat);
         basicRow->addWidget(range);
         basicRow->addStretch();
         cl->addLayout(basicRow);
@@ -222,66 +213,24 @@ QWidget* createDatePickerPage(QWidget* /*owner*/)
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Size"));
+        auto* card = new AntCard(QStringLiteral("Sizes"));
         auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
         auto* sizeRow = new QHBoxLayout();
-        sizeRow->setSpacing(16);
+        sizeRow->setSpacing(12);
         auto* large = new AntDatePicker();
         large->setPickerSize(Ant::Size::Large);
-        large->setSelectedDate(QDate::currentDate());
+        large->setPlaceholderText(QStringLiteral("Large"));
         auto* middle = new AntDatePicker();
-        middle->setSelectedDate(QDate::currentDate());
+        middle->setPlaceholderText(QStringLiteral("Middle"));
         auto* small = new AntDatePicker();
         small->setPickerSize(Ant::Size::Small);
-        small->setSelectedDate(QDate::currentDate());
+        small->setPlaceholderText(QStringLiteral("Small"));
         sizeRow->addWidget(large);
         sizeRow->addWidget(middle);
         sizeRow->addWidget(small);
         sizeRow->addStretch();
         cl->addLayout(sizeRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Status and Variant"));
-        auto* cl = card->bodyLayout();
-        auto* variantRow = new QHBoxLayout();
-        variantRow->setSpacing(16);
-        auto* error = new AntDatePicker();
-        error->setStatus(Ant::Status::Error);
-        error->setPlaceholderText(QStringLiteral("Error"));
-        auto* warning = new AntDatePicker();
-        warning->setStatus(Ant::Status::Warning);
-        warning->setPlaceholderText(QStringLiteral("Warning"));
-        auto* filled = new AntDatePicker();
-        filled->setVariant(Ant::Variant::Filled);
-        filled->setSelectedDate(QDate::currentDate());
-        auto* underlined = new AntDatePicker();
-        underlined->setVariant(Ant::Variant::Underlined);
-        underlined->setSelectedDate(QDate::currentDate());
-        variantRow->addWidget(error);
-        variantRow->addWidget(warning);
-        variantRow->addWidget(filled);
-        variantRow->addWidget(underlined);
-        variantRow->addStretch();
-        cl->addLayout(variantRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Disabled"));
-        auto* cl = card->bodyLayout();
-        auto* stateRow = new QHBoxLayout();
-        stateRow->setSpacing(16);
-        auto* disabledEmpty = new AntDatePicker();
-        disabledEmpty->setEnabled(false);
-        auto* disabledValue = new AntDatePicker();
-        disabledValue->setSelectedDate(QDate::currentDate());
-        disabledValue->setEnabled(false);
-        stateRow->addWidget(disabledEmpty);
-        stateRow->addWidget(disabledValue);
-        stateRow->addStretch();
-        cl->addLayout(stateRow);
         layout->addWidget(card);
     }
 
@@ -294,148 +243,42 @@ QWidget* createFormPage(QWidget* /*owner*/)
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
     layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(28);
+    layout->setSpacing(16);
 
-    {
-        auto* card = new AntCard(QStringLiteral("Horizontal"));
-        auto* cl = card->bodyLayout();
-        auto* horizontalForm = new AntForm(page);
-        horizontalForm->setLabelWidth(112);
+    auto* card = new AntCard(QStringLiteral("Basic Form"));
+    auto* cl = card->bodyLayout();
+    cl->setAlignment(Qt::AlignTop);
 
-        auto* username = new AntInput(horizontalForm);
-        username->setPlaceholderText(QStringLiteral("Enter workspace name"));
-        auto* userItem = horizontalForm->addItem(QStringLiteral("Workspace"), username, true);
-        userItem->setExtra(QStringLiteral("This name will be visible to your collaborators."));
+    auto* form = new AntForm(card);
+    form->setFixedWidth(480);
+    form->setLabelWidth(112);
+    form->setItemSpacing(24);
 
-        auto* role = new AntSelect(horizontalForm);
-        role->setPlaceholderText(QStringLiteral("Select owner role"));
-        role->addOptions({QStringLiteral("Designer"), QStringLiteral("Engineer"), QStringLiteral("Reviewer")});
-        role->setCurrentIndex(1);
-        horizontalForm->addItem(QStringLiteral("Owner Role"), role, true);
+    auto* username = new AntInput(form);
+    username->setPlaceholderText(QStringLiteral("Enter username"));
+    form->addItem(QStringLiteral("Username"), username, true);
 
-        auto* notify = new AntSwitch(horizontalForm);
-        notify->setChecked(true);
-        notify->setCheckedText(QStringLiteral("On"));
-        notify->setUncheckedText(QStringLiteral("Off"));
-        auto* notifyItem = horizontalForm->addItem(QStringLiteral("Notifications"), notify);
-        notifyItem->setExtra(QStringLiteral("Send summary updates to the project channel."));
+    auto* password = new AntInput(form);
+    password->setPasswordMode(true);
+    password->setPlaceholderText(QStringLiteral("Enter password"));
+    form->addItem(QStringLiteral("Password"), password, true);
 
-        cl->addWidget(horizontalForm);
-        layout->addWidget(card);
-    }
+    auto* gender = new AntSelect(form);
+    gender->setPlaceholderText(QStringLiteral("Select"));
+    gender->addOptions({QStringLiteral("Male"), QStringLiteral("Female")});
+    form->addItem(QStringLiteral("Gender"), gender);
 
-    {
-        auto* card = new AntCard(QStringLiteral("Validation"));
-        auto* cl = card->bodyLayout();
-        auto* validationForm = new AntForm(page);
-        validationForm->setLabelWidth(112);
+    auto* remember = new AntCheckbox(QStringLiteral("Remember me"), form);
+    form->addItem(QStringLiteral("Remember"), remember);
 
-        auto* email = new AntInput(validationForm);
-        email->setPlaceholderText(QStringLiteral("name@example.com"));
-        email->setStatus(Ant::Status::Error);
-        auto* emailItem = validationForm->addItem(QStringLiteral("Email"), email, true);
-        emailItem->setValidateStatus(Ant::Status::Error);
-        emailItem->setHelpText(QStringLiteral("Please enter a valid email address."));
+    auto* submit = new AntButton(QStringLiteral("Submit"), form);
+    submit->setButtonType(Ant::ButtonType::Primary);
+    submit->setFixedWidth(submit->sizeHint().width());
+    auto* submitItem = form->addItem(QStringLiteral(" "), submit);
+    submitItem->setColon(false);
 
-        auto* apiKey = new AntInput(validationForm);
-        apiKey->setPasswordMode(true);
-        apiKey->setText(QStringLiteral("temporary-token"));
-        apiKey->setStatus(Ant::Status::Warning);
-        auto* keyItem = validationForm->addItem(QStringLiteral("API Key"), apiKey, true);
-        keyItem->setValidateStatus(Ant::Status::Warning);
-        keyItem->setHelpText(QStringLiteral("This token will expire in 3 days. Rotate it soon."));
-
-        auto* agreement = new AntCheckbox(QStringLiteral("I understand this token can access production data"), validationForm);
-        auto* agreementItem = validationForm->addItem(QStringLiteral("Agreement"), agreement, true);
-        agreementItem->setExtra(QStringLiteral("Store the key in your team's secret manager."));
-
-        cl->addWidget(validationForm);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Vertical and Inline"));
-        auto* cl = card->bodyLayout();
-        auto* bottomRow = new QHBoxLayout();
-        bottomRow->setSpacing(28);
-
-        auto* verticalForm = new AntForm(page);
-        verticalForm->setFormLayout(Ant::FormLayout::Vertical);
-        verticalForm->setLabelAlign(Ant::FormLabelAlign::Left);
-
-        auto* project = new AntInput(verticalForm);
-        project->setPlaceholderText(QStringLiteral("Release dashboard"));
-        verticalForm->addItem(QStringLiteral("Project Name"), project, true);
-
-        auto* summary = new AntInput(verticalForm);
-        summary->setPlaceholderText(QStringLiteral("Short summary for teammates"));
-        auto* summaryItem = verticalForm->addItem(QStringLiteral("Summary"), summary);
-        summaryItem->setExtra(QStringLiteral("Keep it concise so it fits well in list views."));
-
-        auto* publishButton = new AntButton(QStringLiteral("Create Project"), verticalForm);
-        publishButton->setButtonType(Ant::ButtonType::Primary);
-        auto* actionItem = verticalForm->addItem(QString(), publishButton);
-        actionItem->setColon(false);
-
-        bottomRow->addWidget(verticalForm, 1);
-
-        auto* inlineWrap = new QWidget(page);
-        auto* inlineWrapLayout = new QVBoxLayout(inlineWrap);
-        inlineWrapLayout->setContentsMargins(0, 0, 0, 0);
-        inlineWrapLayout->setSpacing(12);
-
-        auto* inlineHint = new AntTypography(QStringLiteral("Inline layout is handy for compact filters and toolbar forms."), inlineWrap);
-        inlineHint->setParagraph(true);
-        inlineWrapLayout->addWidget(inlineHint);
-
-        auto* inlineForm = new AntForm(inlineWrap);
-        inlineForm->setFormLayout(Ant::FormLayout::Inline);
-        inlineForm->setLabelAlign(Ant::FormLabelAlign::Left);
-        inlineForm->setLabelWidth(72);
-
-        auto* search = new AntInput(inlineForm);
-        search->setPlaceholderText(QStringLiteral("Search issues"));
-        inlineForm->addItem(QStringLiteral("Keyword"), search);
-
-        auto* status = new AntSelect(inlineForm);
-        status->addOptions({QStringLiteral("Open"), QStringLiteral("In Progress"), QStringLiteral("Done")});
-        status->setCurrentIndex(0);
-        inlineForm->addItem(QStringLiteral("Status"), status);
-
-        auto* apply = new AntButton(QStringLiteral("Apply"), inlineForm);
-        apply->setButtonType(Ant::ButtonType::Primary);
-        auto* applyItem = inlineForm->addItem(QString(), apply);
-        applyItem->setColon(false);
-
-        inlineWrapLayout->addWidget(inlineForm);
-        inlineWrapLayout->addStretch();
-
-        bottomRow->addWidget(inlineWrap, 1);
-        cl->addLayout(bottomRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Form List"));
-        auto* cl = card->bodyLayout();
-        auto* formList = new AntFormList(page);
-        formList->setMinCount(1);
-        formList->setMaxCount(5);
-        formList->setItemFactory([](int index) -> QWidget* {
-            auto* item = new AntForm();
-            item->setLabelWidth(80);
-            auto* nameInput = new AntInput(item);
-            nameInput->setPlaceholderText(QStringLiteral("Name #%1").arg(index + 1));
-            nameInput->setText(QStringLiteral("Item %1").arg(index + 1));
-            item->addItem(QStringLiteral("Name"), nameInput);
-            auto* valueInput = new AntInput(item);
-            valueInput->setPlaceholderText(QStringLiteral("Value"));
-            item->addItem(QStringLiteral("Value"), valueInput);
-            return item;
-        });
-        cl->addWidget(formList);
-        layout->addWidget(card);
-    }
+    cl->addWidget(form, 0, Qt::AlignLeft);
+    layout->addWidget(card);
 
     layout->addStretch();
     return page;
@@ -446,97 +289,23 @@ QWidget* createInputPage(QWidget* /*owner*/)
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
     layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(18);
-
-    {
-        auto* card = new AntCard(QStringLiteral("Basic"));
-        auto* cl = card->bodyLayout();
-        auto* large = new AntInput();
-        large->setPlaceholderText(QStringLiteral("Large input"));
-        large->setInputSize(Ant::Size::Large);
-        auto* middle = new AntInput();
-        middle->setPlaceholderText(QStringLiteral("Middle input with clear"));
-        middle->setAllowClear(true);
-        auto* small = new AntInput();
-        small->setPlaceholderText(QStringLiteral("Small input"));
-        small->setInputSize(Ant::Size::Small);
-        cl->addWidget(large);
-        cl->addWidget(middle);
-        cl->addWidget(small);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Addon and Status"));
-        auto* cl = card->bodyLayout();
-        auto* addon = new AntInput();
-        addon->setAddonBefore(QStringLiteral("https://"));
-        addon->setAddonAfter(QStringLiteral(".com"));
-        addon->setText(QStringLiteral("ant.design"));
-        auto* password = new AntInput();
-        password->setPlaceholderText(QStringLiteral("Password"));
-        password->setPasswordMode(true);
-        auto* error = new AntInput();
-        error->setText(QStringLiteral("Invalid value"));
-        error->setStatus(Ant::Status::Error);
-        auto* disabled = new AntInput();
-        disabled->setText(QStringLiteral("Disabled"));
-        disabled->setEnabled(false);
-        cl->addWidget(addon);
-        cl->addWidget(password);
-        cl->addWidget(error);
-        cl->addWidget(disabled);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Variants"));
-        auto* cl = card->bodyLayout();
-        auto* outlined = new AntInput();
-        outlined->setPlaceholderText(QStringLiteral("Outlined (default)"));
-        outlined->setVariant(Ant::Variant::Outlined);
-        auto* filled = new AntInput();
-        filled->setPlaceholderText(QStringLiteral("Filled"));
-        filled->setVariant(Ant::Variant::Filled);
-        auto* borderless = new AntInput();
-        borderless->setPlaceholderText(QStringLiteral("Borderless"));
-        borderless->setVariant(Ant::Variant::Borderless);
-        auto* underlined = new AntInput();
-        underlined->setPlaceholderText(QStringLiteral("Underlined"));
-        underlined->setVariant(Ant::Variant::Underlined);
-        cl->addWidget(outlined);
-        cl->addWidget(filled);
-        cl->addWidget(borderless);
-        cl->addWidget(underlined);
-        layout->addWidget(card);
-    }
-
-    layout->addStretch();
-    return page;
-}
-
-QWidget* createInputNumberPage(QWidget* owner)
-{
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
     layout->setSpacing(16);
 
     {
         auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
-        basicRow->setSpacing(16);
-        auto* basic = new AntInputNumber();
-        basic->setValue(3);
-        auto* placeholder = new AntInputNumber();
-        placeholder->setPlaceholderText(QStringLiteral("Enter number"));
-        auto* noControls = new AntInputNumber();
-        noControls->setControlsVisible(false);
-        noControls->setValue(42);
+        basicRow->setSpacing(12);
+        auto* basic = new AntInput();
+        basic->setPlaceholderText(QStringLiteral("Basic input"));
+        basic->setFixedWidth(240);
+        auto* disabled = new AntInput();
+        disabled->setPlaceholderText(QStringLiteral("Disabled"));
+        disabled->setFixedWidth(240);
+        disabled->setEnabled(false);
         basicRow->addWidget(basic);
-        basicRow->addWidget(placeholder);
-        basicRow->addWidget(noControls);
+        basicRow->addWidget(disabled);
         basicRow->addStretch();
         cl->addLayout(basicRow);
         layout->addWidget(card);
@@ -545,16 +314,20 @@ QWidget* createInputNumberPage(QWidget* owner)
     {
         auto* card = new AntCard(QStringLiteral("Sizes"));
         auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
         auto* sizeRow = new QHBoxLayout();
-        sizeRow->setSpacing(16);
-        auto* large = new AntInputNumber();
+        sizeRow->setSpacing(12);
+        auto* large = new AntInput();
+        large->setPlaceholderText(QStringLiteral("Large"));
         large->setInputSize(Ant::Size::Large);
-        large->setValue(100);
-        auto* middle = new AntInputNumber();
-        middle->setValue(100);
-        auto* small = new AntInputNumber();
+        large->setFixedWidth(180);
+        auto* middle = new AntInput();
+        middle->setPlaceholderText(QStringLiteral("Middle"));
+        middle->setFixedWidth(180);
+        auto* small = new AntInput();
+        small->setPlaceholderText(QStringLiteral("Small"));
         small->setInputSize(Ant::Size::Small);
-        small->setValue(100);
+        small->setFixedWidth(180);
         sizeRow->addWidget(large);
         sizeRow->addWidget(middle);
         sizeRow->addWidget(small);
@@ -564,82 +337,100 @@ QWidget* createInputNumberPage(QWidget* owner)
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Status and Variant"));
+        auto* card = new AntCard(QStringLiteral("Search & Password"));
         auto* cl = card->bodyLayout();
-        auto* statusRow = new QHBoxLayout();
-        statusRow->setSpacing(16);
-        auto* error = new AntInputNumber();
-        error->setStatus(Ant::Status::Error);
-        error->setValue(12);
-        auto* warning = new AntInputNumber();
-        warning->setStatus(Ant::Status::Warning);
-        warning->setValue(64);
-        auto* filled = new AntInputNumber();
-        filled->setVariant(Ant::Variant::Filled);
-        filled->setValue(128);
-        auto* underlined = new AntInputNumber();
-        underlined->setVariant(Ant::Variant::Underlined);
-        underlined->setValue(256);
-        statusRow->addWidget(error);
-        statusRow->addWidget(warning);
-        statusRow->addWidget(filled);
-        statusRow->addWidget(underlined);
-        statusRow->addStretch();
-        cl->addLayout(statusRow);
+        cl->setAlignment(Qt::AlignTop);
+        auto* searchRow = new QHBoxLayout();
+        searchRow->setSpacing(12);
+        auto* search = new AntInput();
+        search->setPlaceholderText(QStringLiteral("Search"));
+        search->setSearchMode(true);
+        search->setAllowClear(true);
+        search->setFixedWidth(280);
+        auto* password = new AntInput();
+        password->setPlaceholderText(QStringLiteral("Password"));
+        password->setPasswordMode(true);
+        password->setFixedWidth(200);
+        searchRow->addWidget(search);
+        searchRow->addWidget(password);
+        searchRow->addStretch();
+        cl->addLayout(searchRow);
         layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Precision and Prefix"));
+        auto* card = new AntCard(QStringLiteral("TextArea"));
         auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* textArea = new AntPlainTextEdit(card);
+        textArea->setPlaceholderText(QStringLiteral("Enter text..."));
+        textArea->setFixedSize(400, 78);
+        textArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        textArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        cl->addWidget(textArea, 0, Qt::AlignLeft);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("With Addon"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* addon = new AntInput();
+        addon->setAddonBefore(QStringLiteral("http://"));
+        addon->setAddonAfter(QStringLiteral(".com"));
+        addon->setText(QStringLiteral("mysite"));
+        addon->setFixedWidth(300);
+        cl->addWidget(addon, 0, Qt::AlignLeft);
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* createInputNumberPage(QWidget* owner)
+{
+    Q_UNUSED(owner)
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    {
+        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* basic = new AntInputNumber();
+        basic->setRange(1, 10);
+        basic->setControlsVisible(false);
+        basic->setValue(3);
+        basic->setFixedWidth(90);
+        cl->addWidget(basic, 0, Qt::AlignLeft);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("With Prefix/Suffix"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
         auto* formatRow = new QHBoxLayout();
-        formatRow->setSpacing(16);
-        auto* percent = new AntInputNumber();
-        percent->setRange(0, 100);
-        percent->setSuffixText(QStringLiteral("%"));
-        percent->setValue(85);
+        formatRow->setSpacing(12);
         auto* currency = new AntInputNumber();
         currency->setPrefixText(QStringLiteral("$ "));
         currency->setRange(0, 100000);
-        currency->setValue(2999);
-        auto* decimal = new AntInputNumber();
-        decimal->setPrecision(2);
-        decimal->setSingleStep(0.25);
-        decimal->setValue(1.50);
-        formatRow->addWidget(percent);
+        currency->setControlsVisible(false);
+        currency->setValue(100);
+        currency->setFixedWidth(160);
+        auto* percent = new AntInputNumber();
+        percent->setRange(0, 100);
+        percent->setAddonAfterText(QStringLiteral("%"));
+        percent->setControlsVisible(false);
+        percent->setValue(50);
+        percent->setFixedWidth(160);
         formatRow->addWidget(currency);
-        formatRow->addWidget(decimal);
+        formatRow->addWidget(percent);
         formatRow->addStretch();
         cl->addLayout(formatRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Controlled and Disabled"));
-        auto* cl = card->bodyLayout();
-        auto* controlledRow = new QHBoxLayout();
-        controlledRow->setSpacing(16);
-        auto* quantity = new AntInputNumber();
-        quantity->setRange(1, 20);
-        quantity->setValue(2);
-        auto* summary = new AntTypography(QStringLiteral("Quantity: 2"), page);
-        summary->setMinimumWidth(120);
-        QObject::connect(quantity, qOverload<double>(&QDoubleSpinBox::valueChanged), owner, [summary](double value) {
-            summary->setText(QStringLiteral("Quantity: %1").arg(value, 0, 'f', 0));
-        });
-        auto* disabled = new AntInputNumber();
-        disabled->setValue(10);
-        disabled->setEnabled(false);
-        auto* borderless = new AntInputNumber();
-        borderless->setVariant(Ant::Variant::Borderless);
-        borderless->setValue(77);
-        controlledRow->addWidget(quantity);
-        controlledRow->addWidget(summary);
-        controlledRow->addSpacing(12);
-        controlledRow->addWidget(disabled);
-        controlledRow->addWidget(borderless);
-        controlledRow->addStretch();
-        cl->addLayout(controlledRow);
         layout->addWidget(card);
     }
 
@@ -651,28 +442,21 @@ QWidget* createMentionsPage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
-    auto* title = new AntTypography(QStringLiteral("AntMentions"));
-    title->setTitle(true);
-    title->setTitleLevel(Ant::TypographyTitleLevel::H3);
-    layout->addWidget(title);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
 
-    auto* mentions = new AntMentions(page);
-    mentions->setPlaceholderText(QStringLiteral("Type @ to mention teammates"));
-    mentions->setSuggestions({QStringLiteral("alice"), QStringLiteral("bob"), QStringLiteral("charlie"),
-                              QStringLiteral("design-team"), QStringLiteral("frontend"), QStringLiteral("release-bot")});
-    layout->addWidget(mentions);
+    auto* card = new AntCard(QStringLiteral("Basic"));
+    auto* cl = card->bodyLayout();
+    cl->setAlignment(Qt::AlignTop);
 
-    auto* picked = makeText(QStringLiteral("Selected mention: none"), page);
-    layout->addWidget(picked);
+    auto* mentions = new AntMentions(card);
+    mentions->setPlaceholderText(QStringLiteral("Type @ to mention"));
+    mentions->setSuggestions({QStringLiteral("afc163"), QStringLiteral("zombieJ")});
+    mentions->setRows(3);
+    mentions->setFixedWidth(400);
+    cl->addWidget(mentions, 0, Qt::AlignLeft);
+    layout->addWidget(card);
 
-    QObject::connect(mentions, &AntMentions::mentionSelected, picked, [picked](const QString& text) {
-        picked->setText(QStringLiteral("Selected mention: %1").arg(text));
-    });
-
-    auto* help = makeParagraph(
-        QStringLiteral("The popup filters suggestions after the prefix. Click one item to insert the mention and keep typing."),
-        page);
-    layout->addWidget(help);
     layout->addStretch();
     return page;
 }

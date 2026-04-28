@@ -2,6 +2,7 @@
 
 #include <QFocusEvent>
 #include <QKeyEvent>
+#include <QLineF>
 #include <QMouseEvent>
 
 #include <algorithm>
@@ -72,6 +73,7 @@ void AntSlider::setRange(int minimum, int maximum)
     m_minimum = minimum;
     m_maximum = maximum;
     setValue(normalizeValue(m_value));
+    setRangeValues(m_rangeStart, m_rangeEnd);
     update();
     Q_EMIT rangeChanged(m_minimum, m_maximum);
 }
@@ -177,6 +179,56 @@ void AntSlider::setKeyboard(bool enabled)
     Q_EMIT keyboardChanged(m_keyboard);
 }
 
+bool AntSlider::isRangeMode() const { return m_rangeMode; }
+
+void AntSlider::setRangeMode(bool rangeMode)
+{
+    if (m_rangeMode == rangeMode)
+    {
+        return;
+    }
+    m_rangeMode = rangeMode;
+    setRangeValues(m_rangeStart, m_rangeEnd);
+    update();
+    Q_EMIT rangeModeChanged(m_rangeMode);
+}
+
+int AntSlider::rangeStart() const { return m_rangeStart; }
+
+int AntSlider::rangeEnd() const { return m_rangeEnd; }
+
+void AntSlider::setRangeValues(int start, int end)
+{
+    start = normalizeValue(start);
+    end = normalizeValue(end);
+    if (start > end)
+    {
+        std::swap(start, end);
+    }
+    if (m_rangeStart == start && m_rangeEnd == end)
+    {
+        return;
+    }
+    m_rangeStart = start;
+    m_rangeEnd = end;
+    update();
+    Q_EMIT rangeValuesChanged(m_rangeStart, m_rangeEnd);
+}
+
+QMap<int, QString> AntSlider::marks() const { return m_marks; }
+
+void AntSlider::setMarks(const QMap<int, QString>& marks)
+{
+    if (m_marks == marks)
+    {
+        return;
+    }
+    m_marks = marks;
+    updateGeometry();
+    update();
+    Q_EMIT marksChanged();
+}
+
 qreal AntSlider::handleScale() const { return m_handleScale; }
 
 void AntSlider::setHandleScale(qreal scale)
@@ -204,7 +256,7 @@ QSize AntSlider::sizeHint() const
     {
         return QSize(m.controlSize * 3, 180);
     }
-    return QSize(180, m.controlSize * 3);
+    return QSize(180, m_marks.isEmpty() ? m.controlSize * 3 : 46);
 }
 
 QSize AntSlider::minimumSizeHint() const
@@ -246,6 +298,13 @@ void AntSlider::mousePressEvent(QMouseEvent* event)
         m_pressed = true;
         setFocus(Qt::MouseFocusReason);
         animateHandle(1.2);
+        if (m_rangeMode)
+        {
+            const Metrics m = metrics();
+            const qreal startDistance = QLineF(event->position(), handleRectForValue(m, m_rangeStart).center()).length();
+            const qreal endDistance = QLineF(event->position(), handleRectForValue(m, m_rangeEnd).center()).length();
+            m_activeRangeHandle = startDistance <= endDistance ? 0 : 1;
+        }
         setValueFromUser(valueFromPosition(event->position()), false);
         Q_EMIT sliderPressed();
         event->accept();
@@ -393,6 +452,21 @@ QRectF AntSlider::grooveRect(const Metrics& metrics) const
 QRectF AntSlider::trackRect(const Metrics& metrics) const
 {
     const QRectF groove = grooveRect(metrics);
+    if (m_rangeMode)
+    {
+        const qreal startRatio = ratioForValue(m_rangeStart);
+        const qreal endRatio = ratioForValue(m_rangeEnd);
+        if (m_orientation == Qt::Vertical)
+        {
+            const qreal top = groove.bottom() - groove.height() * std::max(startRatio, endRatio);
+            const qreal bottom = groove.bottom() - groove.height() * std::min(startRatio, endRatio);
+            return QRectF(groove.left(), top, groove.width(), bottom - top);
+        }
+        const qreal left = groove.left() + groove.width() * std::min(startRatio, endRatio);
+        const qreal right = groove.left() + groove.width() * std::max(startRatio, endRatio);
+        return QRectF(left, groove.top(), right - left, groove.height());
+    }
+
     const qreal ratio = valueRatio();
 
     if (m_orientation == Qt::Vertical)
@@ -415,17 +489,22 @@ QRectF AntSlider::trackRect(const Metrics& metrics) const
 
 QRectF AntSlider::handleRect(const Metrics& metrics) const
 {
+    return handleRectForValue(metrics, m_value);
+}
+
+QRectF AntSlider::handleRectForValue(const Metrics& metrics, int value) const
+{
     const QRectF groove = grooveRect(metrics);
     const qreal size = metrics.handleSize * m_handleScale;
     QPointF center;
 
     if (m_orientation == Qt::Vertical)
     {
-        center = QPointF(groove.center().x(), groove.bottom() - groove.height() * valueRatio());
+        center = QPointF(groove.center().x(), groove.bottom() - groove.height() * ratioForValue(value));
     }
     else
     {
-        center = QPointF(groove.left() + groove.width() * valueRatio(), groove.center().y());
+        center = QPointF(groove.left() + groove.width() * ratioForValue(value), groove.center().y());
     }
 
     return QRectF(center.x() - size / 2.0, center.y() - size / 2.0, size, size);
@@ -433,12 +512,17 @@ QRectF AntSlider::handleRect(const Metrics& metrics) const
 
 qreal AntSlider::valueRatio() const
 {
+    return ratioForValue(m_value);
+}
+
+qreal AntSlider::ratioForValue(int value) const
+{
     if (m_maximum == m_minimum)
     {
         return 0.0;
     }
 
-    qreal ratio = (m_value - m_minimum) / static_cast<qreal>(m_maximum - m_minimum);
+    qreal ratio = (value - m_minimum) / static_cast<qreal>(m_maximum - m_minimum);
     if (m_reverse)
     {
         ratio = 1.0 - ratio;
@@ -490,6 +574,30 @@ int AntSlider::steppedValue(int value) const
 
 void AntSlider::setValueFromUser(int value, bool finalChange)
 {
+    if (m_rangeMode)
+    {
+        const int oldStart = m_rangeStart;
+        const int oldEnd = m_rangeEnd;
+        if (m_activeRangeHandle == 0)
+        {
+            setRangeValues(std::min(value, m_rangeEnd), m_rangeEnd);
+        }
+        else
+        {
+            setRangeValues(m_rangeStart, std::max(value, m_rangeStart));
+        }
+        const int current = m_activeRangeHandle == 0 ? m_rangeStart : m_rangeEnd;
+        if (oldStart != m_rangeStart || oldEnd != m_rangeEnd)
+        {
+            Q_EMIT sliderMoved(current);
+        }
+        if (finalChange)
+        {
+            Q_EMIT changeComplete(current);
+        }
+        return;
+    }
+
     const int oldValue = m_value;
     setValue(value);
     if (oldValue != m_value)

@@ -123,10 +123,10 @@ void AntUploadStyle::drawUpload(const QStyleOption* option, QPainter* painter, c
     }
     else
     {
-        const QRect triggerR = QRect(0, 0, option->rect.width(), TriggerHeight);
-        drawTriggerArea(painter, triggerR, upload->m_triggerHovered, disabled);
+        const QRect triggerR = upload->triggerRect();
+        drawTriggerArea(painter, triggerR, upload->m_triggerHovered || upload->m_dragOver, disabled, upload->isDraggerMode());
 
-        int y = TriggerHeight + 8;
+        int y = triggerR.bottom() + 9;
         for (int i = 0; i < files.size(); ++i)
         {
             const int itemH = listType == Ant::UploadListType::Picture ? PictureItemHeight : FileItemHeight;
@@ -159,7 +159,7 @@ void AntUploadStyle::drawUpload(const QStyleOption* option, QPainter* painter, c
     painter->restore();
 }
 
-void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool hovered, bool disabled) const
+void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool hovered, bool disabled, bool dragger) const
 {
     const auto& token = antTheme->tokens();
 
@@ -176,9 +176,28 @@ void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool 
 
     const QColor borderColor = disabled ? token.colorBorderDisabled
                                         : (hovered ? token.colorPrimary : token.colorBorder);
-    drawDashedBorder(painter, rect, token.borderRadiusSM, borderColor);
 
-    const QColor iconColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
+    if (dragger)
+    {
+        AntStyleBase::drawCrispRoundedRect(painter, rect, QPen(borderColor, token.lineWidth, Qt::DashLine),
+            hovered ? token.colorPrimaryBg : token.colorFillQuaternary, token.borderRadius, token.borderRadius);
+
+        drawUploadIcon(painter, QPoint(rect.center().x(), rect.top() + 38), 30,
+                       disabled ? token.colorTextDisabled : token.colorPrimary);
+
+        QFont titleFont = painter->font();
+        titleFont.setPixelSize(token.fontSize);
+        painter->setFont(titleFont);
+        painter->setPen(disabled ? token.colorTextDisabled : token.colorText);
+        painter->drawText(QRect(rect.left() + 16, rect.top() + 72, rect.width() - 32, 22),
+                          Qt::AlignCenter, QStringLiteral("Click or drag file to this area to upload"));
+        return;
+    }
+
+    AntStyleBase::drawCrispRoundedRect(painter, rect, QPen(borderColor, token.lineWidth),
+        disabled ? token.colorBgContainerDisabled : token.colorBgContainer, token.borderRadius, token.borderRadius);
+
+    const QColor iconColor = disabled ? token.colorTextDisabled : token.colorText;
     const int iconSize = 14;
     const int textGap = 8;
     const QString text = QStringLiteral("Click to Upload");
@@ -191,7 +210,7 @@ void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool 
     const int totalWidth = iconSize + textGap + textWidth;
     const int startX = rect.left() + (rect.width() - totalWidth) / 2;
 
-    drawPlusIcon(painter, QPoint(startX + iconSize / 2, rect.center().y()), iconSize, iconColor);
+    drawUploadIcon(painter, QPoint(startX + iconSize / 2, rect.center().y()), iconSize, iconColor);
 
     painter->setPen(iconColor);
     painter->drawText(QRect(startX + iconSize + textGap, rect.top(), textWidth, rect.height()),
@@ -489,6 +508,20 @@ void AntUploadStyle::drawPlusIcon(QPainter* painter, const QPoint& center, int s
     const int half = size / 2;
     painter->drawLine(center.x() - half, center.y(), center.x() + half, center.y());
     painter->drawLine(center.x(), center.y() - half, center.x(), center.y() + half);
+}
+
+void AntUploadStyle::drawUploadIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const
+{
+    painter->setPen(QPen(color, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+    const int half = size / 2;
+    const int trayY = center.y() + half / 3;
+    painter->drawLine(center.x() - half + 3, trayY, center.x() + half - 3, trayY);
+    painter->drawLine(center.x() - half + 3, trayY, center.x() - half + 3, trayY - half / 3);
+    painter->drawLine(center.x() + half - 3, trayY, center.x() + half - 3, trayY - half / 3);
+    painter->drawLine(center.x(), center.y() + half / 3, center.x(), center.y() - half + 3);
+    painter->drawLine(center.x(), center.y() - half + 3, center.x() - 5, center.y() - half + 8);
+    painter->drawLine(center.x(), center.y() - half + 3, center.x() + 5, center.y() - half + 8);
 }
 
 void AntUploadStyle::drawFileIcon(QPainter* painter, const QRect& rect, const QColor& color) const

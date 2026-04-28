@@ -19,7 +19,24 @@ AntPlainTextEdit::AntPlainTextEdit(QWidget* parent)
     setHorizontalScrollBar(new AntScrollBar(Qt::Horizontal, this));
     setFrameShape(QFrame::NoFrame);
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+    auto applyVisualState = [this]() {
+        const auto& token = antTheme->tokens();
+        QFont f = font();
+        f.setPixelSize(token.fontSize);
+        setFont(f);
+
+        QPalette pal = palette();
+        pal.setColor(QPalette::Base, Qt::transparent);
+        pal.setColor(QPalette::Text, token.colorText);
+        pal.setColor(QPalette::PlaceholderText, token.colorTextPlaceholder);
+        setPalette(pal);
+        viewport()->setAutoFillBackground(false);
+        viewport()->setPalette(pal);
+    };
+    applyVisualState();
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this, applyVisualState]() {
+        applyVisualState();
         update();
     });
 }

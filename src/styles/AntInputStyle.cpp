@@ -2,6 +2,7 @@
 
 #include <QEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyleOption>
 
 #include "widgets/AntInput.h"
@@ -223,20 +224,59 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
     }
     }
 
-    // Addons only make sense on outlined; on other variants they'd look wrong
+    // Addons and Input.Search suffix button only make sense on outlined; on other variants they'd look wrong
     if (variant == Ant::Variant::Outlined)
     {
-        auto drawAddon = [&](const QRect& rect) {
-            if (!rect.isValid() || rect.isEmpty())
+        const QRect beforeRect = input->addonBeforeRect();
+        const QRect afterRect = input->addonAfterRect();
+        const QRect searchRect = input->searchButtonRect();
+        const bool hasSegments = (beforeRect.isValid() && !beforeRect.isEmpty())
+            || (afterRect.isValid() && !afterRect.isEmpty())
+            || (searchRect.isValid() && !searchRect.isEmpty());
+
+        if (hasSegments)
+        {
+            QPainterPath clip;
+            clip.addRoundedRect(frame, m.radius, m.radius);
+            painter->save();
+            painter->setClipPath(clip);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(enabled ? token.colorFillQuaternary : token.colorBgContainerDisabled);
+            if (beforeRect.isValid() && !beforeRect.isEmpty())
             {
-                return;
+                painter->drawRect(beforeRect.adjusted(0, 1, 0, -1));
             }
+            if (afterRect.isValid() && !afterRect.isEmpty())
+            {
+                painter->drawRect(afterRect.adjusted(0, 1, 0, -1));
+            }
+            if (searchRect.isValid() && !searchRect.isEmpty())
+            {
+                painter->setBrush(enabled ? token.colorBgContainer : token.colorBgContainerDisabled);
+                painter->drawRect(searchRect.adjusted(0, 1, 0, -1));
+            }
+            painter->restore();
+
             painter->setPen(QPen(border, token.lineWidth));
-            painter->setBrush(token.colorFillQuaternary);
-            painter->drawRect(rect.adjusted(0, 0, -1, -1));
-        };
-        drawAddon(input->addonBeforeRect());
-        drawAddon(input->addonAfterRect());
+            auto drawDivider = [&](qreal x) {
+                painter->drawLine(QPointF(x, frame.top()), QPointF(x, frame.bottom()));
+            };
+            if (beforeRect.isValid() && !beforeRect.isEmpty())
+            {
+                drawDivider(beforeRect.right() + 0.5);
+            }
+            if (afterRect.isValid() && !afterRect.isEmpty())
+            {
+                drawDivider(afterRect.left() - 0.5);
+            }
+            if (searchRect.isValid() && !searchRect.isEmpty())
+            {
+                drawDivider(searchRect.left() - 0.5);
+            }
+
+            AntStyleBase::drawCrispRoundedRect(painter, frame.toRect(), QPen(border, token.lineWidth),
+                Qt::NoBrush, m.radius, m.radius);
+        }
     }
 
     painter->restore();

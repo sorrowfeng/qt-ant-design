@@ -219,6 +219,11 @@ QSize AntUpload::sizeHint() const
 {
     const int contentWidth = qMax(320, width());
 
+    if (m_draggerMode)
+    {
+        return QSize(contentWidth, 150);
+    }
+
     if (m_listType == Ant::UploadListType::PictureCard)
     {
         const int cols = GridColumns;
@@ -358,6 +363,11 @@ void AntUpload::leaveEvent(QEvent* event)
 
 QRect AntUpload::triggerRect() const
 {
+    if (m_draggerMode)
+    {
+        return rect();
+    }
+
     if (m_listType == Ant::UploadListType::PictureCard)
     {
         const int cols = GridColumns;

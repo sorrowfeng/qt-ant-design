@@ -15,6 +15,7 @@ class AntRadio : public QWidget
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
     Q_PROPERTY(QVariant value READ value WRITE setValue NOTIFY valueChanged)
     Q_PROPERTY(bool autoExclusive READ autoExclusive WRITE setAutoExclusive NOTIFY autoExclusiveChanged)
+    Q_PROPERTY(bool buttonStyle READ isButtonStyle WRITE setButtonStyle NOTIFY buttonStyleChanged)
 
 public:
     explicit AntRadio(QWidget* parent = nullptr);
@@ -31,6 +32,8 @@ public:
 
     bool autoExclusive() const;
     void setAutoExclusive(bool autoExclusive);
+    bool isButtonStyle() const;
+    void setButtonStyle(bool buttonStyle);
     bool isHoveredState() const;
     bool isPressedState() const;
 
@@ -42,6 +45,7 @@ Q_SIGNALS:
     void textChanged(const QString& text);
     void valueChanged(const QVariant& value);
     void autoExclusiveChanged(bool autoExclusive);
+    void buttonStyleChanged(bool buttonStyle);
     void toggled(bool checked);
     void clicked(bool checked);
 
@@ -62,6 +66,7 @@ private:
 
     bool m_checked = false;
     bool m_autoExclusive = true;
+    bool m_buttonStyle = false;
     bool m_hovered = false;
     bool m_pressed = false;
     QString m_text;

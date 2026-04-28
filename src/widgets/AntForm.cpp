@@ -235,7 +235,7 @@ void AntFormItem::rebuildLayout()
     {
         m_rootLayout = new QHBoxLayout(this);
         m_rootLayout->setContentsMargins(0, 0, 0, 0);
-        m_rootLayout->setSpacing(token.margin);
+        m_rootLayout->setSpacing(token.marginXS);
     }
     else
     {

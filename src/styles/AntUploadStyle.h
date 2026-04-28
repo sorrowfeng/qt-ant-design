@@ -21,7 +21,7 @@ public:
 private:
     void drawUpload(const QStyleOption* option, QPainter* painter, const QWidget* widget) const;
 
-    void drawTriggerArea(QPainter* painter, const QRect& rect, bool hovered, bool disabled) const;
+    void drawTriggerArea(QPainter* painter, const QRect& rect, bool hovered, bool disabled, bool dragger = false) const;
     void drawTextFileItem(QPainter* painter, const QRect& itemRect, const AntUploadFile& file,
                           bool hovered, bool removeHovered) const;
     void drawPictureFileItem(QPainter* painter, const QRect& itemRect, const AntUploadFile& file,
@@ -34,6 +34,7 @@ private:
     void drawErrorIcon(QPainter* painter, const QPoint& center, int size) const;
     void drawCloseIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
     void drawPlusIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
+    void drawUploadIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
     void drawFileIcon(QPainter* painter, const QRect& rect, const QColor& color) const;
     void drawEyeIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
     void drawDeleteIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;

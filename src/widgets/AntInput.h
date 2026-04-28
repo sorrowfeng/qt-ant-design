@@ -57,6 +57,7 @@ public:
     bool isInputHovered() const;
     QRect addonBeforeRect() const;
     QRect addonAfterRect() const;
+    QRect searchButtonRect() const;
 
 Q_SIGNALS:
     void textChanged(const QString& text);

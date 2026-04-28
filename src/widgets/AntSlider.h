@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QPropertyAnimation>
+#include <QMap>
 #include <QWidget>
 
 class QEnterEvent;
@@ -23,6 +24,7 @@ class AntSlider : public QWidget
     Q_PROPERTY(bool dots READ dots WRITE setDots NOTIFY dotsChanged)
     Q_PROPERTY(bool included READ included WRITE setIncluded NOTIFY includedChanged)
     Q_PROPERTY(bool keyboard READ keyboard WRITE setKeyboard NOTIFY keyboardChanged)
+    Q_PROPERTY(bool range READ isRangeMode WRITE setRangeMode NOTIFY rangeModeChanged)
     Q_PROPERTY(qreal handleScale READ handleScale WRITE setHandleScale)
     Q_PROPERTY(qreal focusProgress READ focusProgress WRITE setFocusProgress)
 
@@ -59,6 +61,15 @@ public:
     bool keyboard() const;
     void setKeyboard(bool enabled);
 
+    bool isRangeMode() const;
+    void setRangeMode(bool rangeMode);
+    int rangeStart() const;
+    int rangeEnd() const;
+    void setRangeValues(int start, int end);
+
+    QMap<int, QString> marks() const;
+    void setMarks(const QMap<int, QString>& marks);
+
     qreal handleScale() const;
     void setHandleScale(qreal scale);
 
@@ -83,6 +94,9 @@ Q_SIGNALS:
     void dotsChanged(bool dots);
     void includedChanged(bool included);
     void keyboardChanged(bool enabled);
+    void rangeModeChanged(bool rangeMode);
+    void rangeValuesChanged(int start, int end);
+    void marksChanged();
 
 protected:
     void enterEvent(QEnterEvent* event) override;
@@ -110,7 +124,9 @@ private:
     QRectF grooveRect(const Metrics& metrics) const;
     QRectF trackRect(const Metrics& metrics) const;
     QRectF handleRect(const Metrics& metrics) const;
+    QRectF handleRectForValue(const Metrics& metrics, int value) const;
     qreal valueRatio() const;
+    qreal ratioForValue(int value) const;
     int valueFromPosition(const QPointF& pos) const;
     int normalizeValue(int value) const;
     int steppedValue(int value) const;
@@ -122,14 +138,19 @@ private:
     int m_minimum = 0;
     int m_maximum = 100;
     int m_value = 0;
+    int m_rangeStart = 0;
+    int m_rangeEnd = 100;
     int m_singleStep = 1;
     Qt::Orientation m_orientation = Qt::Horizontal;
     bool m_reverse = false;
     bool m_dots = false;
     bool m_included = true;
     bool m_keyboard = true;
+    bool m_rangeMode = false;
     bool m_hovered = false;
     bool m_pressed = false;
+    int m_activeRangeHandle = 1;
+    QMap<int, QString> m_marks;
     qreal m_handleScale = 1.0;
     qreal m_focusProgress = 0.0;
     QPropertyAnimation* m_handleAnimation = nullptr;

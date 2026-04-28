@@ -1,6 +1,7 @@
 #include "AntInputNumberStyle.h"
 
 #include <QEvent>
+#include <QFontMetrics>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOptionSpinBox>
@@ -107,6 +108,17 @@ QColor backgroundColorFor(const AntInputNumber* input)
         return token.colorBgContainer;
     }
 }
+
+int addonAfterWidthFor(const AntInputNumber* input, const InputNumberMetrics& metrics)
+{
+    if (!input || input->addonAfterText().isEmpty())
+    {
+        return 0;
+    }
+    QFont font = input->font();
+    font.setPixelSize(metrics.fontSize);
+    return QFontMetrics(font).horizontalAdvance(input->addonAfterText()) + metrics.paddingX * 2;
+}
 }
 
 AntInputNumberStyle::AntInputNumberStyle(QStyle* style)
@@ -159,12 +171,13 @@ QRect AntInputNumberStyle::subControlRect(ComplexControl control,
         const InputNumberMetrics metrics = metricsFor(input);
         const QRectF controlRect = controlRectFor(input, option ? option->rect : QRect());
         const int handlerWidth = input && input->controlsVisible() ? metrics.handlerWidth : 0;
+        const int addonAfterWidth = addonAfterWidthFor(input, metrics);
 
         if (subControl == SC_SpinBoxEditField)
         {
             return controlRect.adjusted(metrics.paddingX,
                                         0,
-                                        -(metrics.paddingX + handlerWidth),
+                                        -(metrics.paddingX + handlerWidth + addonAfterWidth),
                                         0).toRect();
         }
         if (subControl == SC_SpinBoxUp)
@@ -263,6 +276,7 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
     const QRect frameRect = subControlRect(CC_SpinBox, option, SC_SpinBoxFrame, widget);
     const QRect upRect = subControlRect(CC_SpinBox, option, SC_SpinBoxUp, widget);
     const QRect downRect = subControlRect(CC_SpinBox, option, SC_SpinBoxDown, widget);
+    const int addonAfterWidth = addonAfterWidthFor(input, metrics);
     const QColor borderColor = borderColorFor(input);
     const QColor backgroundColor = backgroundColorFor(input);
     const bool focused = option->state.testFlag(State_HasFocus);
@@ -336,6 +350,28 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
         minus.moveTo(downRect.center().x() - 4, downRect.center().y());
         minus.lineTo(downRect.center().x() + 4, downRect.center().y());
         painter->drawPath(minus);
+    }
+
+    if (addonAfterWidth > 0)
+    {
+        const QRectF addonRect(control.right() - addonAfterWidth, control.top(), addonAfterWidth, control.height());
+        QPainterPath clip;
+        clip.addRoundedRect(control, metrics.radius, metrics.radius);
+        painter->save();
+        painter->setClipPath(clip);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(disabled ? token.colorBgContainerDisabled : token.colorFillQuaternary);
+        painter->drawRect(addonRect.adjusted(0, 1, 0, -1));
+        painter->restore();
+
+        painter->setPen(QPen(disabled ? token.colorBorderDisabled : token.colorSplit, token.lineWidth));
+        painter->drawLine(QPointF(addonRect.left(), control.top()), QPointF(addonRect.left(), control.bottom()));
+
+        QFont addonFont = painter->font();
+        addonFont.setPixelSize(metrics.fontSize);
+        painter->setFont(addonFont);
+        painter->setPen(disabled ? token.colorTextDisabled : token.colorText);
+        painter->drawText(addonRect, Qt::AlignCenter, input->addonAfterText());
     }
 
     Q_UNUSED(frameRect)
