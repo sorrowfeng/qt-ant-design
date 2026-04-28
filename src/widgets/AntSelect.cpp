@@ -144,6 +144,8 @@ AntSelect::AntSelect(QWidget* parent)
     : QWidget(parent)
 {
     setAttribute(Qt::WA_Hover, true);
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
@@ -267,6 +269,8 @@ void AntSelect::setEditable(bool editable)
                 ep.setColor(QPalette::Base, Qt::transparent);
                 m_editField->setPalette(ep);
             }
+            m_editField->setAttribute(Qt::WA_TranslucentBackground, true);
+            m_editField->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
             m_editField->setVisible(false);
             connect(m_editField, &QLineEdit::textChanged, this, [this]() {
                 if (!m_open) setOpen(true);

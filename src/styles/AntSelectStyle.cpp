@@ -105,7 +105,8 @@ QColor backgroundColorFor(const AntSelect* select)
     }
     if (select->variant() == Ant::Variant::Filled)
     {
-        return select->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary;
+        return (select->hasFocus() || select->isOpen()) ? token.colorBgContainer
+                                                        : (select->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary);
     }
     if (select->variant() == Ant::Variant::Borderless
         || select->variant() == Ant::Variant::Underlined)
@@ -158,7 +159,7 @@ QList<TagLayout> layoutTags(const AntSelect* select, const QRectF& textArea, int
             continue;
         const QString text = select->optionAt(idx).label;
         const int textW = fm.horizontalAdvance(text);
-        const int tagW = textW + tagHPad * 2;
+        const int tagW = textW + tagHPad * 2 + 16;
 
         if (x + tagW > maxX && x > textArea.left())
         {
@@ -176,7 +177,7 @@ QList<TagLayout> layoutTags(const AntSelect* select, const QRectF& textArea, int
     // Overflow tag
     if (maxCount > 0 && total > maxCount)
     {
-        const QString overflowText = QStringLiteral("+ %1").arg(total - maxCount);
+        const QString overflowText = QStringLiteral("+ %1 ...").arg(total - maxCount);
         const int overW = fm.horizontalAdvance(overflowText) + tagHPad * 2;
         if (x + overW > maxX && x > textArea.left())
         {
@@ -192,14 +193,13 @@ QList<TagLayout> layoutTags(const AntSelect* select, const QRectF& textArea, int
     return tags;
 }
 
-void drawTag(QPainter* painter, const QRectF& rect, const QString& text, int fontSize, bool disabled)
+void drawTag(QPainter* painter, const QRectF& rect, const QString& text, int fontSize, bool disabled, bool closable)
 {
     const auto& token = antTheme->tokens();
     const QColor tagBg = disabled ? token.colorBgContainerDisabled : token.colorFillTertiary;
     const QColor tagText = disabled ? token.colorTextDisabled : token.colorText;
-    const QColor tagBorder = disabled ? token.colorBorderDisabled : token.colorBorderSecondary;
 
-    AntStyleBase::drawCrispRoundedRect(painter, rect.toRect(), QPen(tagBorder, token.lineWidth),
+    AntStyleBase::drawCrispRoundedRect(painter, rect.toRect(), Qt::NoPen,
         tagBg, token.borderRadiusSM, token.borderRadiusSM);
 
     QFont f = painter->font();
@@ -207,8 +207,19 @@ void drawTag(QPainter* painter, const QRectF& rect, const QString& text, int fon
     f.setWeight(QFont::Normal);
     painter->setFont(f);
     painter->setPen(tagText);
-    const QRectF textRect = rect.adjusted(6, 0, -6, 0);
-    painter->drawText(textRect, Qt::AlignCenter, text);
+    const QRectF textRect = rect.adjusted(6, 0, closable ? -18 : -6, 0);
+    painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, text);
+
+    if (closable)
+    {
+        const QPointF center(rect.right() - 9, rect.center().y());
+        painter->setPen(QPen(disabled ? token.colorTextDisabled : token.colorTextTertiary,
+                             1.2,
+                             Qt::SolidLine,
+                             Qt::RoundCap));
+        painter->drawLine(center + QPointF(-3, -3), center + QPointF(3, 3));
+        painter->drawLine(center + QPointF(3, -3), center + QPointF(-3, 3));
+    }
 }
 }
 
@@ -311,7 +322,9 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
     if (select->variant() != Ant::Variant::Borderless
         && select->variant() != Ant::Variant::Underlined)
     {
-        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(), QPen(borderColor, token.lineWidth),
+        const bool filled = select->variant() == Ant::Variant::Filled;
+        const QPen pen = filled && !focused ? Qt::NoPen : QPen(borderColor, token.lineWidth);
+        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(), pen,
             backgroundColor, metrics.radius, metrics.radius);
     }
     else
@@ -337,7 +350,7 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
         const QList<TagLayout> tags = layoutTags(select, textArea, tagFontSize, tagHeight, 6, 2, gap, select->maxTagCount());
         for (const auto& tag : tags)
         {
-            drawTag(painter, tag.rect, tag.text, tagFontSize, disabled);
+            drawTag(painter, tag.rect, tag.text, tagFontSize, disabled, tag.index >= 0);
         }
     }
     else if (multiMode && select->selectedIndices().isEmpty())
@@ -380,12 +393,13 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
     }
     else if (canClear(select))
     {
+        const QPointF center = clearRect.center();
         painter->setPen(Qt::NoPen);
-        painter->setBrush(token.colorBgBase);
-        painter->drawEllipse(clearRect.adjusted(1, 1, -1, -1));
-        painter->setPen(QPen(token.colorTextTertiary, 1.5, Qt::SolidLine, Qt::RoundCap));
-        painter->drawLine(clearRect.center() + QPointF(-4, -4), clearRect.center() + QPointF(4, 4));
-        painter->drawLine(clearRect.center() + QPointF(4, -4), clearRect.center() + QPointF(-4, 4));
+        painter->setBrush(token.colorTextTertiary);
+        painter->drawEllipse(center, 5, 5);
+        painter->setPen(QPen(token.colorBgContainer, 1.3, Qt::SolidLine, Qt::RoundCap));
+        painter->drawLine(center + QPointF(-2.2, -2.2), center + QPointF(2.2, 2.2));
+        painter->drawLine(center + QPointF(2.2, -2.2), center + QPointF(-2.2, 2.2));
     }
     else
     {
