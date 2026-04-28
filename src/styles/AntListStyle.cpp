@@ -78,21 +78,27 @@ struct ListMetrics
 ListMetrics listMetrics(const AntList* list)
 {
     ListMetrics m;
+    const auto& token = antTheme->tokens();
     switch (list->listSize())
     {
     case AntList::Small:
-        m.itemPaddingV = 8;
-        m.fontSize = 14;
+        m.itemPaddingV = token.paddingXS;
+        m.fontSize = token.fontSize;
         break;
     case AntList::Large:
-        m.itemPaddingV = 16;
-        m.fontSize = 16;
+        m.itemPaddingV = token.padding;
+        m.fontSize = token.fontSizeLG;
         break;
     default:
-        m.itemPaddingV = 12;
-        m.fontSize = 14;
+        m.itemPaddingV = token.paddingSM;
+        m.fontSize = token.fontSize;
         break;
     }
+    m.padding = list->isBordered() ? 1 : 0;
+    m.itemPaddingH = list->isBordered() ? token.paddingLG : 0;
+    m.headerHeight = qRound(token.fontSize * token.lineHeight) + token.paddingSM * 2;
+    m.footerHeight = m.headerHeight;
+    m.radius = token.borderRadiusLG;
     return m;
 }
 
@@ -103,7 +109,7 @@ QRect listHeaderRect(const AntList* list, const ListMetrics& m)
     {
         return {};
     }
-    return QRect(1, 1, list->width() - 2, m.headerHeight);
+    return QRect(m.padding, m.padding, list->width() - m.padding * 2, m.headerHeight);
 }
 
 QRect listFooterRect(const AntList* list, const ListMetrics& m)
@@ -113,7 +119,7 @@ QRect listFooterRect(const AntList* list, const ListMetrics& m)
     {
         return {};
     }
-    return QRect(1, list->height() - m.footerHeight - 1, list->width() - 2, m.footerHeight);
+    return QRect(m.padding, list->height() - m.footerHeight - m.padding, list->width() - m.padding * 2, m.footerHeight);
 }
 
 QRect listContentRect(const AntList* list, const ListMetrics& m)
@@ -124,7 +130,7 @@ QRect listContentRect(const AntList* list, const ListMetrics& m)
     QWidget* footer = list->footerWidget();
     if (header)
     {
-        top = listHeaderRect(list, m).bottom() + 1;
+        top = listHeaderRect(list, m).bottom();
     }
     if (footer)
     {
@@ -151,7 +157,7 @@ void AntListStyle::drawList(const QStyleOption* option, QPainter* painter, const
     // Border
     if (list->isBordered())
     {
-        AntStyleBase::drawCrispRoundedRect(painter, option->rect,
+        AntStyleBase::drawCrispRoundedRect(painter, option->rect.adjusted(0, 0, -1, -1),
             QPen(token.colorBorder, token.lineWidth), Qt::NoBrush, m.radius, m.radius);
     }
 
@@ -159,17 +165,6 @@ void AntListStyle::drawList(const QStyleOption* option, QPainter* painter, const
     if (list->headerWidget())
     {
         const QRect hr = listHeaderRect(list, m);
-        if (list->isBordered())
-        {
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(token.colorFillQuaternary);
-            painter->drawRect(hr);
-        }
-        else
-        {
-            AntStyleBase::drawCrispRoundedRect(painter, hr, Qt::NoPen,
-                token.colorFillQuaternary, m.radius, m.radius);
-        }
         painter->setPen(QPen(token.colorBorder, token.lineWidth));
         painter->drawLine(hr.bottomLeft(), hr.bottomRight());
     }
@@ -186,8 +181,7 @@ void AntListStyle::drawList(const QStyleOption* option, QPainter* painter, const
             if (item)
             {
                 y += item->sizeHint().height();
-                painter->drawLine(cr.left() + m.itemPaddingH, y, cr.right() - m.itemPaddingH, y);
-                y += 1;
+                painter->drawLine(cr.left(), y, cr.right(), y);
             }
         }
     }

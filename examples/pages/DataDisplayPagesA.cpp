@@ -639,15 +639,12 @@ QWidget* createListPage(QWidget* /*owner*/)
         auto* cl = card->bodyLayout();
         auto* basicList = new AntList(page);
         basicList->setBordered(true);
-        basicList->setFixedWidth(480);
 
-        for (int i = 1; i <= 4; ++i)
+        for (int i = 1; i <= 3; ++i)
         {
             auto* item = new AntListItem(basicList);
-            auto* meta = new AntListItemMeta(item);
-            meta->setTitle(QStringLiteral("Ant Design List Item %1").arg(i));
-            meta->setDescription(QStringLiteral("Description for item %1").arg(i));
-            item->setMeta(meta);
+            auto* text = new AntTypography(QStringLiteral("Item %1").arg(i), item);
+            item->setContentWidget(text);
             basicList->addItem(item);
         }
 
@@ -656,86 +653,31 @@ QWidget* createListPage(QWidget* /*owner*/)
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Header and Footer"));
+        auto* card = new AntCard(QStringLiteral("With Actions"));
         auto* cl = card->bodyLayout();
-        auto* headerList = new AntList(page);
-        headerList->setBordered(true);
-        headerList->setFixedWidth(480);
+        auto* actionList = new AntList(page);
+        actionList->setBordered(true);
 
-        auto* header = new AntTypography(QStringLiteral("Header"), headerList);
-        header->setTitle(true);
-        header->setTitleLevel(Ant::TypographyTitleLevel::H5);
-        header->setFixedHeight(40);
-        headerList->setHeaderWidget(header);
-
-        auto* footer = new AntTypography(QStringLiteral("Footer"), headerList);
-        footer->setType(Ant::TypographyType::Secondary);
-        footer->setFixedHeight(40);
-        headerList->setFooterWidget(footer);
-
-        for (int i = 1; i <= 3; ++i)
+        for (int i = 1; i <= 2; ++i)
         {
-            auto* item = new AntListItem(headerList);
+            auto* item = new AntListItem(actionList);
             auto* meta = new AntListItemMeta(item);
-            meta->setTitle(QStringLiteral("Item %1").arg(i));
+            meta->setTitle(QStringLiteral("Ant Design Title %1").arg(i));
+            meta->setDescription(QStringLiteral("Description %1").arg(i));
             item->setMeta(meta);
-            headerList->addItem(item);
+
+            auto* edit = new AntTypography(QStringLiteral("Edit"), item);
+            edit->setType(Ant::TypographyType::Link);
+            edit->setHref(QStringLiteral("#"));
+            item->addActionWidget(edit);
+            auto* more = new AntTypography(QStringLiteral("More"), item);
+            more->setType(Ant::TypographyType::Link);
+            more->setHref(QStringLiteral("#"));
+            item->addActionWidget(more);
+            actionList->addItem(item);
         }
 
-        cl->addWidget(headerList);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Split and Size"));
-        auto* cl = card->bodyLayout();
-        auto* splitRow = new QHBoxLayout();
-        splitRow->setSpacing(28);
-
-        auto* noSplit = new AntList(page);
-        noSplit->setBordered(true);
-        noSplit->setSplit(false);
-        noSplit->setFixedWidth(240);
-        for (int i = 1; i <= 3; ++i)
-        {
-            auto* item = new AntListItem(noSplit);
-            auto* meta = new AntListItemMeta(item);
-            meta->setTitle(QStringLiteral("No Split %1").arg(i));
-            item->setMeta(meta);
-            noSplit->addItem(item);
-        }
-
-        auto* smallList = new AntList(page);
-        smallList->setBordered(true);
-        smallList->setListSize(AntList::Small);
-        smallList->setFixedWidth(240);
-        for (int i = 1; i <= 3; ++i)
-        {
-            auto* item = new AntListItem(smallList);
-            auto* meta = new AntListItemMeta(item);
-            meta->setTitle(QStringLiteral("Small Item %1").arg(i));
-            item->setMeta(meta);
-            smallList->addItem(item);
-        }
-
-        auto* largeList = new AntList(page);
-        largeList->setBordered(true);
-        largeList->setListSize(AntList::Large);
-        largeList->setFixedWidth(240);
-        for (int i = 1; i <= 3; ++i)
-        {
-            auto* item = new AntListItem(largeList);
-            auto* meta = new AntListItemMeta(item);
-            meta->setTitle(QStringLiteral("Large Item %1").arg(i));
-            item->setMeta(meta);
-            largeList->addItem(item);
-        }
-
-        splitRow->addWidget(noSplit);
-        splitRow->addWidget(smallList);
-        splitRow->addWidget(largeList);
-        splitRow->addStretch();
-        cl->addLayout(splitRow);
+        cl->addWidget(actionList);
         layout->addWidget(card);
     }
 

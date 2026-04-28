@@ -8,6 +8,43 @@
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
+namespace
+{
+const AntList* parentListForItem(const QWidget* widget)
+{
+    return widget ? qobject_cast<const AntList*>(widget->parentWidget()) : nullptr;
+}
+
+int listItemPaddingV(const AntList* list)
+{
+    const auto& token = antTheme->tokens();
+    if (list)
+    {
+        switch (list->listSize())
+        {
+        case AntList::Small:
+            return token.paddingXS;
+        case AntList::Large:
+            return token.padding;
+        default:
+            break;
+        }
+    }
+    return token.paddingSM;
+}
+
+int listItemPaddingH(const AntList* list)
+{
+    const auto& token = antTheme->tokens();
+    return list && list->isBordered() ? token.paddingLG : 0;
+}
+
+int tokenLineHeight(int fontSize)
+{
+    return qRound(fontSize * antTheme->tokens().lineHeight);
+}
+} // namespace
+
 // ─── AntListItemMeta ───
 
 AntListItemMeta::AntListItemMeta(QWidget* parent)
@@ -71,7 +108,7 @@ QString AntListItemMeta::description() const { return m_description; }
 QSize AntListItemMeta::sizeHint() const
 {
     const auto& token = antTheme->tokens();
-    const int avatarSpace = m_avatar ? m_avatar->sizeHint().width() + 12 : 0;
+    const int avatarSpace = m_avatar ? m_avatar->sizeHint().width() + token.padding : 0;
 
     QFont titleFont = font();
     titleFont.setPixelSize(token.fontSize);
@@ -79,13 +116,13 @@ QSize AntListItemMeta::sizeHint() const
     QFontMetrics titleFm(titleFont);
 
     QFont descFont = font();
-    descFont.setPixelSize(token.fontSizeSM);
+    descFont.setPixelSize(token.fontSize);
     QFontMetrics descFm(descFont);
 
-    int height = titleFm.height();
+    int height = tokenLineHeight(token.fontSize);
     if (!m_description.isEmpty())
     {
-        height += 4 + descFm.height();
+        height += token.paddingXXS + tokenLineHeight(token.fontSize);
     }
 
     int width = avatarSpace;
@@ -113,19 +150,22 @@ void AntListItemMeta::paintEvent(QPaintEvent* event)
     painter.setPen(token.colorText);
 
     QFontMetrics titleFm(titleFont);
-    const int titleHeight = titleFm.height();
-    painter.drawText(tr.left(), tr.top() + titleFm.ascent(), m_title);
+    const int titleLineHeight = tokenLineHeight(token.fontSize);
+    const int titleBaseline = tr.top() + (titleLineHeight - titleFm.height()) / 2 + titleFm.ascent();
+    painter.drawText(tr.left(), titleBaseline, m_title);
 
     if (!m_description.isEmpty())
     {
         QFont descFont = painter.font();
-        descFont.setPixelSize(token.fontSizeSM);
+        descFont.setPixelSize(token.fontSize);
         descFont.setWeight(QFont::Normal);
         painter.setFont(descFont);
         painter.setPen(token.colorTextSecondary);
 
         QFontMetrics descFm(descFont);
-        painter.drawText(tr.left(), tr.top() + titleHeight + 4 + descFm.ascent(), m_description);
+        const int descTop = tr.top() + titleLineHeight + token.paddingXXS;
+        const int descBaseline = descTop + (tokenLineHeight(token.fontSize) - descFm.height()) / 2 + descFm.ascent();
+        painter.drawText(tr.left(), descBaseline, m_description);
     }
 }
 
@@ -147,7 +187,7 @@ QRect AntListItemMeta::avatarRect() const
 
 QRect AntListItemMeta::textRect() const
 {
-    const int left = m_avatar ? avatarRect().right() + 12 : 0;
+    const int left = m_avatar ? avatarRect().right() + antTheme->tokens().padding : 0;
     return QRect(left, 0, width() - left, height());
 }
 
@@ -270,10 +310,9 @@ QWidget* AntListItem::contentWidget() const { return m_content.data(); }
 QSize AntListItem::sizeHint() const
 {
     const auto& token = antTheme->tokens();
-    const int paddingV = token.paddingSM;
-    const int paddingH = token.padding;
+    const int paddingV = listItemPaddingV(parentListForItem(this));
 
-    int contentHeight = 0;
+    int contentHeight = tokenLineHeight(token.fontSize);
     if (m_meta)
     {
         contentHeight = m_meta->sizeHint().height();
@@ -293,7 +332,6 @@ QSize AntListItem::sizeHint() const
             contentHeight = qMax(contentHeight, a->sizeHint().height());
         }
     }
-    contentHeight = qMax(contentHeight, token.fontSize + 4);
 
     return QSize(200, contentHeight + paddingV * 2);
 }
@@ -301,6 +339,32 @@ QSize AntListItem::sizeHint() const
 void AntListItem::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
+
+    if (m_actions.size() <= 1)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(QPen(token.colorSplit, token.lineWidth));
+
+    const QRect ar = actionsRect();
+    int x = ar.left();
+    for (int i = 0; i < m_actions.size() - 1; ++i)
+    {
+        const auto& action = m_actions.at(i);
+        if (!action)
+        {
+            continue;
+        }
+        x += action->sizeHint().width() + token.paddingXS;
+        const int lineHeight = qMax(1, tokenLineHeight(token.fontSize) - token.paddingXS);
+        const int lineTop = ar.center().y() - lineHeight / 2;
+        painter.drawLine(QPoint(x, lineTop), QPoint(x, lineTop + lineHeight));
+        x += token.paddingXS;
+    }
 }
 
 void AntListItem::resizeEvent(QResizeEvent* event)
@@ -316,10 +380,20 @@ QRect AntListItem::metaRect() const
         return {};
     }
     const auto& token = antTheme->tokens();
-    const int paddingV = token.paddingSM;
+    const auto* list = parentListForItem(this);
+    const int paddingV = listItemPaddingV(list);
+    const int paddingH = listItemPaddingH(list);
     const QSize sz = m_meta->sizeHint();
-    const int extraRight = m_extra ? extraRect().left() - 12 : width();
-    return QRect(token.padding, paddingV, qMin(sz.width(), extraRight - token.padding), height() - paddingV * 2);
+    int right = width() - paddingH;
+    if (m_extra)
+    {
+        right = extraRect().left() - token.padding;
+    }
+    if (!m_actions.isEmpty())
+    {
+        right = qMin(right, actionsRect().left() - token.paddingXL);
+    }
+    return QRect(paddingH, paddingV, qMax(0, qMin(sz.width(), right - paddingH)), height() - paddingV * 2);
 }
 
 QRect AntListItem::extraRect() const
@@ -329,9 +403,11 @@ QRect AntListItem::extraRect() const
         return {};
     }
     const auto& token = antTheme->tokens();
-    const int paddingV = token.paddingSM;
+    const auto* list = parentListForItem(this);
+    const int paddingV = listItemPaddingV(list);
+    const int paddingH = listItemPaddingH(list);
     const QSize sz = m_extra->sizeHint();
-    return QRect(width() - token.padding - sz.width(), paddingV, sz.width(), height() - paddingV * 2);
+    return QRect(width() - paddingH - sz.width(), paddingV, sz.width(), height() - paddingV * 2);
 }
 
 QRect AntListItem::actionsRect() const
@@ -341,7 +417,32 @@ QRect AntListItem::actionsRect() const
         return {};
     }
     const auto& token = antTheme->tokens();
-    return QRect(token.padding, height() - token.paddingSM - 24, width() - token.padding * 2, 24);
+    const auto* list = parentListForItem(this);
+    const int paddingH = listItemPaddingH(list);
+    const int h = tokenLineHeight(token.fontSize);
+    const int w = actionsWidth();
+    return QRect(width() - paddingH - w, (height() - h) / 2, w, h);
+}
+
+int AntListItem::actionsWidth() const
+{
+    const auto& token = antTheme->tokens();
+    int width = 0;
+    int count = 0;
+    for (const auto& action : m_actions)
+    {
+        if (!action)
+        {
+            continue;
+        }
+        width += action->sizeHint().width();
+        ++count;
+    }
+    if (count > 1)
+    {
+        width += (count - 1) * token.padding;
+    }
+    return width;
 }
 
 void AntListItem::syncLayout()
@@ -358,9 +459,18 @@ void AntListItem::syncLayout()
     }
     if (m_content)
     {
+        const auto* list = parentListForItem(this);
+        const int paddingV = listItemPaddingV(list);
+        const int paddingH = listItemPaddingH(list);
         const QRect mr = metaRect();
         const QRect er = m_extra ? extraRect() : QRect(width(), 0, 0, 0);
-        m_content->setGeometry(QRect(mr.right() + 12, mr.top(), er.left() - mr.right() - 24, mr.height()));
+        const int left = m_meta ? mr.right() + antTheme->tokens().padding : paddingH;
+        int right = er.left() - antTheme->tokens().padding;
+        if (!m_actions.isEmpty())
+        {
+            right = qMin(right, actionsRect().left() - antTheme->tokens().paddingXL);
+        }
+        m_content->setGeometry(QRect(left, paddingV, qMax(0, right - left), height() - paddingV * 2));
         m_content->show();
     }
 
@@ -375,7 +485,7 @@ void AntListItem::syncLayout()
                 const QSize sz = a->sizeHint();
                 a->setGeometry(x, ar.top(), sz.width(), ar.height());
                 a->show();
-                x += sz.width() + 8;
+                x += sz.width() + antTheme->tokens().padding;
             }
         }
     }
@@ -387,6 +497,7 @@ AntList::AntList(QWidget* parent)
     : QWidget(parent)
 {
     setStyle(new AntListStyle(style()));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 
 bool AntList::isBordered() const { return m_bordered; }
@@ -529,7 +640,8 @@ AntListItem* AntList::itemAt(int index) const
 QSize AntList::sizeHint() const
 {
     const Metrics m = metrics();
-    int height = m.padding;
+    const int edge = m_bordered ? 2 : 0;
+    int height = edge;
     if (m_header)
     {
         height += m.headerHeight;
@@ -539,17 +651,12 @@ QSize AntList::sizeHint() const
         if (item)
         {
             height += item->sizeHint().height();
-            if (m_split && item != m_items.last())
-            {
-                height += 1;
-            }
         }
     }
     if (m_footer)
     {
         height += m.footerHeight;
     }
-    height += m.padding;
 
     return QSize(360, height);
 }
@@ -576,18 +683,23 @@ AntList::Metrics AntList::metrics() const
     switch (m_listSize)
     {
     case Small:
-        m.itemPaddingV = 8;
+        m.itemPaddingV = antTheme->tokens().paddingXS;
         m.fontSize = 14;
         break;
     case Large:
-        m.itemPaddingV = 16;
+        m.itemPaddingV = antTheme->tokens().padding;
         m.fontSize = 16;
         break;
     default:
-        m.itemPaddingV = 12;
+        m.itemPaddingV = antTheme->tokens().paddingSM;
         m.fontSize = 14;
         break;
     }
+    m.padding = m_bordered ? 1 : 0;
+    m.itemPaddingH = m_bordered ? antTheme->tokens().paddingLG : 0;
+    m.headerHeight = tokenLineHeight(antTheme->tokens().fontSize) + antTheme->tokens().paddingSM * 2;
+    m.footerHeight = m.headerHeight;
+    m.radius = antTheme->tokens().borderRadiusLG;
     return m;
 }
 
@@ -598,7 +710,7 @@ QRect AntList::headerRect() const
         return {};
     }
     const Metrics m = metrics();
-    return QRect(1, 1, width() - 2, m.headerHeight);
+    return QRect(m.padding, m.padding, width() - m.padding * 2, m.headerHeight);
 }
 
 QRect AntList::footerRect() const
@@ -608,7 +720,7 @@ QRect AntList::footerRect() const
         return {};
     }
     const Metrics m = metrics();
-    return QRect(1, height() - m.footerHeight - 1, width() - 2, m.footerHeight);
+    return QRect(m.padding, height() - m.footerHeight - m.padding, width() - m.padding * 2, m.footerHeight);
 }
 
 QRect AntList::contentRect() const
@@ -618,7 +730,7 @@ QRect AntList::contentRect() const
     int bottom = height() - m.padding;
     if (m_header)
     {
-        top = headerRect().bottom() + 1;
+        top = headerRect().bottom();
     }
     if (m_footer)
     {
@@ -651,10 +763,6 @@ void AntList::syncLayout()
             item->setGeometry(cr.left(), y, cr.width(), h);
             item->show();
             y += h;
-            if (m_split && item != m_items.last())
-            {
-                y += 1;
-            }
         }
     }
 }

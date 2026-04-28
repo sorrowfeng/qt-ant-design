@@ -71,6 +71,7 @@ private:
     QRect metaRect() const;
     QRect extraRect() const;
     QRect actionsRect() const;
+    int actionsWidth() const;
     void syncLayout();
 
     QPointer<AntListItemMeta> m_meta;
