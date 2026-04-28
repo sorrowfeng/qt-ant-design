@@ -8,6 +8,7 @@
 class QTableView;
 class QAbstractTableModel;
 class QStyledItemDelegate;
+class QResizeEvent;
 
 class AntCalendar : public QWidget
 {
@@ -41,9 +42,13 @@ Q_SIGNALS:
     void maximumDateChanged(QDate date);
     void calendarModeChanged(Ant::CalendarMode mode);
 
+protected:
+    void resizeEvent(QResizeEvent* event) override;
+
 private:
     void rebuildModel();
     void updateHeaderText();
+    void updateViewMetrics();
     void navigateToMonth(int year, int month);
     void handleDayClick(int dayIndex);
     void handleMonthClick(int monthIndex);
@@ -53,9 +58,10 @@ private:
     QAbstractTableModel* m_model = nullptr;
     QStyledItemDelegate* m_delegate = nullptr;
     QWidget* m_header = nullptr;
-    class AntButton* m_prevBtn = nullptr;
-    class AntButton* m_nextBtn = nullptr;
-    class AntButton* m_titleBtn = nullptr;
+    class AntButton* m_yearBtn = nullptr;
+    class AntButton* m_monthBtn = nullptr;
+    class AntButton* m_monthModeBtn = nullptr;
+    class AntButton* m_yearModeBtn = nullptr;
     QWidget* m_weekdayRow = nullptr;
 
     Ant::CalendarMode m_mode = Ant::CalendarMode::Day;

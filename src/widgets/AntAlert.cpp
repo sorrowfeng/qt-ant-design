@@ -4,6 +4,7 @@
 #include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QSizePolicy>
 
 #include "AntButton.h"
 #include "AntIcon.h"
@@ -17,6 +18,7 @@ AntAlert::AntAlert(QWidget* parent)
     setStyle(new AntAlertStyle(style()));
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 
 AntAlert::AntAlert(const QString& title, QWidget* parent)
@@ -243,7 +245,7 @@ AntAlert::Metrics AntAlert::metrics() const
     const auto& token = antTheme->tokens();
     Metrics m;
     m.minHeight = m_description.isEmpty() ? token.controlHeightLG : 72;
-    m.radius = token.borderRadiusLG;
+    m.radius = m_banner ? 0 : token.borderRadiusLG;
     m.paddingX = m_banner ? token.paddingLG : token.padding;
     m.paddingY = m_description.isEmpty() ? token.paddingXS : token.paddingSM;
     m.iconSize = m_description.isEmpty() ? 16 : 18;

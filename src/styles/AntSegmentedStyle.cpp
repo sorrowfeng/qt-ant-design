@@ -5,6 +5,8 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include <cmath>
+
 #include "widgets/AntSegmented.h"
 
 namespace
@@ -85,6 +87,45 @@ QRectF segmentedThumbRect(const AntSegmented* seg, const QRect& widgetRect)
     const int r = segmentedRadius(seg);
     QRectF thumb = rects[idx];
     return thumb.adjusted(1, 1, -1, -1);
+}
+
+void drawSegmentedIcon(QPainter* painter, const QString& icon, const QRectF& rect, const QColor& color)
+{
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing);
+    painter->setPen(QPen(color, 1.3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+
+    if (icon == QStringLiteral("appstore"))
+    {
+        const qreal size = 4.0;
+        const qreal gap = 2.0;
+        const QPointF start(rect.left() + 1.0, rect.top() + 1.0);
+        for (int row = 0; row < 2; ++row)
+        {
+            for (int col = 0; col < 2; ++col)
+            {
+                const QRectF square(start.x() + col * (size + gap), start.y() + row * (size + gap), size, size);
+                painter->drawRoundedRect(square, 0.8, 0.8);
+            }
+        }
+    }
+    else if (icon == QStringLiteral("setting"))
+    {
+        const QPointF c = rect.center();
+        const qreal inner = 2.4;
+        const qreal outer = 5.4;
+        painter->drawEllipse(c, inner, inner);
+        for (int i = 0; i < 8; ++i)
+        {
+            const qreal angle = (45.0 * i) * 3.14159265358979323846 / 180.0;
+            const QPointF a(c.x() + std::cos(angle) * (outer - 1.4), c.y() + std::sin(angle) * (outer - 1.4));
+            const QPointF b(c.x() + std::cos(angle) * outer, c.y() + std::sin(angle) * outer);
+            painter->drawLine(a, b);
+        }
+    }
+
+    painter->restore();
 }
 
 } // namespace
@@ -234,14 +275,24 @@ void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* pain
                 Qt::NoPen, hoverBg, r - 1, r - 1);
         }
 
-        // Draw icon + label
         painter->setPen(textCol);
-        QString label = options[i].label;
         if (!options[i].icon.isEmpty())
         {
-            label = options[i].icon + QStringLiteral(" ") + label;
+            const QFontMetrics fm(f);
+            const int iconSize = 14;
+            const int iconGap = 6;
+            const int textWidth = fm.horizontalAdvance(options[i].label);
+            const int totalWidth = iconSize + iconGap + textWidth;
+            const qreal left = r0.center().x() - totalWidth / 2.0;
+            const QRectF iconRect(left, r0.center().y() - iconSize / 2.0, iconSize, iconSize);
+            drawSegmentedIcon(painter, options[i].icon, iconRect, textCol);
+            const QRectF textRect(left + iconSize + iconGap, r0.top(), textWidth + 2, r0.height());
+            painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, options[i].label);
         }
-        painter->drawText(r0, Qt::AlignCenter, label);
+        else
+        {
+            painter->drawText(r0, Qt::AlignCenter, options[i].label);
+        }
     }
 
     painter->restore();

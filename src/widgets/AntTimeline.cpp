@@ -1,6 +1,7 @@
 #include "AntTimeline.h"
 
 #include <QMouseEvent>
+#include <QSizePolicy>
 
 #include "../styles/AntTimelineStyle.h"
 #include "core/AntTheme.h"
@@ -9,6 +10,7 @@ AntTimeline::AntTimeline(QWidget* parent)
     : QWidget(parent)
 {
     setStyle(new AntTimelineStyle(style()));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 
 Ant::TimelineMode AntTimeline::mode() const { return m_mode; }
@@ -121,8 +123,13 @@ QSize AntTimeline::sizeHint() const
 {
     if (m_orientation == Ant::TimelineOrientation::Vertical)
     {
-        const int itemHeight = 80;
-        return QSize(320, qMax(80, m_items.size() * itemHeight));
+        const auto& token = antTheme->tokens();
+        int totalHeight = token.padding;
+        for (const auto& item : m_items)
+        {
+            totalHeight += item.content.isEmpty() ? 30 : 56;
+        }
+        return QSize(320, qMax(80, totalHeight));
     }
     const int itemWidth = 120;
     return QSize(qMax(240, m_items.size() * itemWidth), 160);

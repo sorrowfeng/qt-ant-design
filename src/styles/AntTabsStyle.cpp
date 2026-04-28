@@ -20,17 +20,12 @@ void AntTabsStyle::polish(QWidget* widget)
     QProxyStyle::polish(widget);
     if (qobject_cast<AntTabs*>(widget))
     {
-        widget->installEventFilter(this);
         widget->setAttribute(Qt::WA_Hover);
     }
 }
 
 void AntTabsStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTabs*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
     QProxyStyle::unpolish(widget);
 }
 
@@ -51,16 +46,6 @@ QSize AntTabsStyle::sizeFromContents(ContentsType type, const QStyleOption* opti
 
 bool AntTabsStyle::eventFilter(QObject* watched, QEvent* event)
 {
-    auto* tabs = qobject_cast<AntTabs*>(watched);
-    if (tabs && event->type() == QEvent::Paint)
-    {
-        QStyleOption option;
-        option.initFrom(tabs);
-        option.rect = tabs->rect();
-        QPainter painter(tabs);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, tabs);
-        return true;
-    }
     return QProxyStyle::eventFilter(watched, event);
 }
 
@@ -76,13 +61,7 @@ void AntTabsStyle::drawTabs(const QStyleOption* option, QPainter* painter, const
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    // Background
     painter->fillRect(option->rect, token.colorBgContainer);
-
-    // Note: AntTabs's tab items (m_tabs) are private with no public accessor.
-    // Tab items, tab rects, and individual tab drawing cannot be performed
-    // from the style class. The background is drawn here; tab bar rendering
-    // requires a public tabs API or friend access.
 
     painter->restore();
 }

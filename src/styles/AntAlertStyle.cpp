@@ -30,7 +30,7 @@ Metrics computeMetrics(const AntAlert* alert)
     const auto& token = antTheme->tokens();
     Metrics m;
     m.minHeight = alert->description().isEmpty() ? token.controlHeightLG : 72;
-    m.radius = token.borderRadiusLG;
+    m.radius = alert->isBanner() ? 0 : token.borderRadiusLG;
     m.paddingX = alert->isBanner() ? token.paddingLG : token.padding;
     m.paddingY = alert->description().isEmpty() ? token.paddingXS : token.paddingSM;
     m.iconSize = alert->description().isEmpty() ? 16 : 18;
@@ -228,7 +228,7 @@ void AntAlertStyle::drawAlert(const QStyleOption* option, QPainter* painter, con
 
     // Background and border
     AntStyleBase::drawCrispRoundedRect(painter, body,
-        QPen(computeBorderColor(alertType), token.lineWidth),
+        alert->isBanner() ? Qt::NoPen : QPen(computeBorderColor(alertType), token.lineWidth),
         computeBackgroundColor(alertType), m.radius, m.radius);
 
     // Icon

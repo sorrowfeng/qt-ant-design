@@ -232,6 +232,23 @@ int AntTable::totalPages() const
     return qMax(1, (m_rows.size() + m_pageSize - 1) / m_pageSize);
 }
 
+QSize AntTable::sizeHint() const
+{
+    const TableMetrics m = metrics();
+    const int selectionWidth = (m_rowSelection != Ant::TableSelectionMode::None) ? m.selectionColWidth : 0;
+    const int tableWidth = qMax(520, selectionWidth + totalColumnsWidth());
+    const int visibleRows = m_rows.isEmpty() ? 3 : qMin(m_rows.size(), m_pageSize);
+    const int bodyH = m_rows.isEmpty() ? 180 : visibleRows * m.rowHeight;
+    const int paginationH = (m_rows.size() > m_pageSize) ? 48 : 0;
+    return QSize(tableWidth, m.headerHeight + bodyH + paginationH);
+}
+
+QSize AntTable::minimumSizeHint() const
+{
+    const TableMetrics m = metrics();
+    return QSize(320, m.headerHeight + m.rowHeight);
+}
+
 // ─── Layout accessors ───
 
 int AntTable::scrollY() const { return m_scrollY; }
@@ -410,8 +427,8 @@ AntTable::TableMetrics AntTable::metrics() const
     switch (m_tableSize)
     {
     case Ant::Size::Large:
-        m.headerHeight = 48;
-        m.rowHeight = 54;
+        m.headerHeight = 64;
+        m.rowHeight = 64;
         m.cellVPadding = 16;
         m.fontSize = token.fontSizeLG;
         m.fontSizeSM = token.fontSize;
@@ -424,9 +441,9 @@ AntTable::TableMetrics AntTable::metrics() const
         m.fontSizeSM = token.fontSizeSM;
         break;
     default: // Middle
-        m.headerHeight = 40;
-        m.rowHeight = 48;
-        m.cellVPadding = 12;
+        m.headerHeight = 56;
+        m.rowHeight = 56;
+        m.cellVPadding = 16;
         m.fontSize = token.fontSize;
         m.fontSizeSM = token.fontSizeSM;
         break;

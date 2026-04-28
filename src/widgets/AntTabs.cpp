@@ -243,17 +243,52 @@ void AntTabs::setTabEnabled(const QString& key, bool enabled)
 
 QSize AntTabs::sizeHint() const
 {
-    return QSize(520, 260);
+    return QSize(520, tabBarExtent() + 64);
 }
 
 QSize AntTabs::minimumSizeHint() const
 {
-    return QSize(240, tabBarExtent() + 80);
+    return QSize(240, tabBarExtent() + 48);
 }
 
 void AntTabs::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
+    QPainter painter(this);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+
+    const auto& token = antTheme->tokens();
+    painter.fillRect(rect(), token.colorBgContainer);
+
+    const QRect bar = tabBarRect();
+    painter.save();
+    painter.setPen(QPen(token.colorSplit, token.lineWidth));
+    if (isHorizontal())
+    {
+        const int y = m_tabPlacement == Ant::TabsPlacement::Top ? bar.bottom() : bar.top();
+        painter.drawLine(QPoint(bar.left(), y), QPoint(bar.right(), y));
+    }
+    else
+    {
+        const int x = m_tabPlacement == Ant::TabsPlacement::Left ? bar.right() : bar.left();
+        painter.drawLine(QPoint(x, bar.top()), QPoint(x, bar.bottom()));
+    }
+    painter.restore();
+
+    painter.save();
+    painter.setClipRect(bar.adjusted(-2, -2, 2, 2));
+    const auto rects = tabRects();
+    const int active = activeIndex();
+    for (int i = 0; i < m_tabs.size(); ++i)
+    {
+        drawTab(painter, m_tabs.at(i), rects.at(i), i == active, i == m_hoveredIndex);
+    }
+    const QRect addRect = addButtonRect();
+    if (!addRect.isNull())
+    {
+        drawAddButton(painter, addRect);
+    }
+    painter.restore();
 }
 
 void AntTabs::resizeEvent(QResizeEvent* event)

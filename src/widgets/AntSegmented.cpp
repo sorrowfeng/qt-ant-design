@@ -3,6 +3,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QResizeEvent>
+#include <QSizePolicy>
 #include <QVariantAnimation>
 
 #include "core/AntTheme.h"
@@ -14,6 +15,7 @@ AntSegmented::AntSegmented(QWidget* parent)
     setStyle(new AntSegmentedStyle(style()));
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
 void AntSegmented::setOptions(const QVector<AntSegmentedOption>& options)
@@ -72,6 +74,7 @@ void AntSegmented::setBlock(bool block)
 {
     if (m_block == block) return;
     m_block = block;
+    setSizePolicy(m_block ? QSizePolicy::Expanding : QSizePolicy::Fixed, QSizePolicy::Fixed);
     updateGeometry();
     update();
     Q_EMIT blockChanged(m_block);
@@ -143,7 +146,8 @@ QSize AntSegmented::sizeHint() const
         int totalWidth = 0;
         for (const auto& opt : m_options)
         {
-            totalWidth += fm.horizontalAdvance(opt.label) + token.paddingSM * 2;
+            const int iconWidth = opt.icon.isEmpty() ? 0 : 24;
+            totalWidth += fm.horizontalAdvance(opt.label) + iconWidth + token.paddingSM * 2;
         }
         return QSize(totalWidth, h);
     }

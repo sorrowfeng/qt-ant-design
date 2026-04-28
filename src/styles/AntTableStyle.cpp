@@ -3,6 +3,7 @@
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyleOption>
 
 #include "core/AntStyleBase.h"
@@ -83,8 +84,8 @@ TableMetrics tableMetrics(Ant::Size size)
     switch (size)
     {
     case Ant::Size::Large:
-        m.headerHeight = 48;
-        m.rowHeight = 54;
+        m.headerHeight = 64;
+        m.rowHeight = 64;
         m.cellVPadding = 16;
         m.fontSize = token.fontSizeLG;
         m.fontSizeSM = token.fontSize;
@@ -97,9 +98,9 @@ TableMetrics tableMetrics(Ant::Size size)
         m.fontSizeSM = token.fontSizeSM;
         break;
     default: // Middle
-        m.headerHeight = 40;
-        m.rowHeight = 48;
-        m.cellVPadding = 12;
+        m.headerHeight = 56;
+        m.rowHeight = 56;
+        m.cellVPadding = 16;
         m.fontSize = token.fontSize;
         m.fontSizeSM = token.fontSizeSM;
         break;
@@ -325,23 +326,20 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
             const int arrowGap = 4;
             const int titleTextW = headerFm.horizontalAdvance(col.title);
             int titleStartX;
-            int arrowX;
+            const int arrowX = colX + colW - m.cellHPadding - arrowW;
 
             if (hAlign == Qt::AlignRight)
             {
-                arrowX = colX + colW - m.cellHPadding - arrowW;
                 titleStartX = arrowX - arrowGap - titleTextW;
             }
             else if (hAlign == Qt::AlignHCenter)
             {
                 const int totalW = titleTextW + arrowGap + arrowW;
                 titleStartX = colX + (colW - totalW) / 2;
-                arrowX = titleStartX + titleTextW + arrowGap;
             }
             else
             {
                 titleStartX = colX + m.cellHPadding;
-                arrowX = titleStartX + titleTextW + arrowGap;
             }
 
             // Title text
@@ -357,19 +355,29 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
             {
                 const QRect upRect(arrowX, arrowTop, arrowW, arrowH / 2);
                 const bool upActive = (activeOrder == Ant::TableSortOrder::Ascending);
-                painter->setPen(upActive ? token.colorPrimary : token.colorTextTertiary);
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(upActive ? token.colorPrimary : token.colorTextTertiary);
                 const int cx = upRect.center().x();
-                painter->drawLine(cx, upRect.top(), cx - 3, upRect.bottom());
-                painter->drawLine(cx, upRect.top(), cx + 3, upRect.bottom());
+                QPainterPath path;
+                path.moveTo(cx, upRect.top());
+                path.lineTo(cx - 3, upRect.bottom());
+                path.lineTo(cx + 3, upRect.bottom());
+                path.closeSubpath();
+                painter->drawPath(path);
             }
             // Down arrow
             {
                 const QRect downRect(arrowX, arrowTop + arrowH / 2, arrowW, arrowH / 2);
                 const bool downActive = (activeOrder == Ant::TableSortOrder::Descending);
-                painter->setPen(downActive ? token.colorPrimary : token.colorTextTertiary);
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(downActive ? token.colorPrimary : token.colorTextTertiary);
                 const int cx = downRect.center().x();
-                painter->drawLine(cx, downRect.bottom(), cx - 3, downRect.top());
-                painter->drawLine(cx, downRect.bottom(), cx + 3, downRect.top());
+                QPainterPath path;
+                path.moveTo(cx, downRect.bottom());
+                path.lineTo(cx - 3, downRect.top());
+                path.lineTo(cx + 3, downRect.top());
+                path.closeSubpath();
+                painter->drawPath(path);
             }
         }
         else

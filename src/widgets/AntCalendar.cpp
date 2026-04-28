@@ -4,6 +4,8 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QPainter>
+#include <QResizeEvent>
+#include <QSizePolicy>
 #include <QStyledItemDelegate>
 #include <QStyleOptionViewItem>
 #include <QTableView>
@@ -89,7 +91,7 @@ public:
         {
             QDate d(year, m, 15);
             Item item;
-            item.text = QLocale().monthName(m, QLocale::ShortFormat);
+            item.text = QLocale(QLocale::English).monthName(m, QLocale::ShortFormat);
             item.date = d;
             item.isToday = (today.year() == year && today.month() == m);
             item.isAdjacent = false;
@@ -156,21 +158,22 @@ public:
         bool isSelected = option.state.testFlag(QStyle::State_Selected);
 
         QRectF r = option.rect.adjusted(2, 2, -2, -2);
-        const qreal cellSz = std::min(r.width(), r.height());
-        QRectF circle(r.center().x() - cellSz / 2, r.center().y() - cellSz / 2, cellSz, cellSz);
+        const qreal dateBoxSize = qMin<qreal>(24.0, qMin(r.width(), r.height()));
+        QRectF dateBox(r.center().x() - dateBoxSize / 2, r.center().y() - dateBoxSize / 2,
+                       dateBoxSize, dateBoxSize);
 
         // Background fill for selected/today
         if (isSelected)
         {
             painter->setPen(Qt::NoPen);
             painter->setBrush(token.colorPrimary);
-            painter->drawEllipse(circle);
+            painter->drawRoundedRect(dateBox, token.borderRadiusSM, token.borderRadiusSM);
         }
         else if (option.state.testFlag(QStyle::State_MouseOver))
         {
             painter->setPen(Qt::NoPen);
             painter->setBrush(token.colorFillQuaternary);
-            painter->drawEllipse(circle);
+            painter->drawRoundedRect(dateBox, token.borderRadiusSM, token.borderRadiusSM);
         }
 
         // Today ring
@@ -178,7 +181,7 @@ public:
         {
             painter->setPen(QPen(token.colorPrimary, token.lineWidth + 1));
             painter->setBrush(Qt::NoBrush);
-            painter->drawEllipse(circle);
+            painter->drawRoundedRect(dateBox, token.borderRadiusSM, token.borderRadiusSM);
         }
 
         // Text
@@ -214,30 +217,35 @@ AntCalendar::AntCalendar(QWidget* parent)
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(8, 8, 8, 8);
-    mainLayout->setSpacing(4);
+    mainLayout->setSpacing(8);
 
     // Header
     m_header = new QWidget(this);
     auto* headerLayout = new QHBoxLayout(m_header);
     headerLayout->setContentsMargins(0, 0, 0, 0);
+    headerLayout->setSpacing(8);
 
-    m_prevBtn = new AntButton(QStringLiteral("<"), m_header);
-    m_prevBtn->setButtonType(Ant::ButtonType::Text);
-    m_prevBtn->setButtonSize(Ant::Size::Small);
-    m_prevBtn->setFixedSize(28, 28);
+    m_yearBtn = new AntButton(m_header);
+    m_yearBtn->setButtonSize(Ant::Size::Small);
+    m_yearBtn->setFixedWidth(80);
 
-    m_titleBtn = new AntButton(m_header);
-    m_titleBtn->setButtonType(Ant::ButtonType::Text);
-    m_titleBtn->setFixedHeight(28);
+    m_monthBtn = new AntButton(m_header);
+    m_monthBtn->setButtonSize(Ant::Size::Small);
+    m_monthBtn->setFixedWidth(72);
 
-    m_nextBtn = new AntButton(QStringLiteral(">"), m_header);
-    m_nextBtn->setButtonType(Ant::ButtonType::Text);
-    m_nextBtn->setButtonSize(Ant::Size::Small);
-    m_nextBtn->setFixedSize(28, 28);
+    m_monthModeBtn = new AntButton(QStringLiteral("Month"), m_header);
+    m_monthModeBtn->setButtonSize(Ant::Size::Small);
+    m_monthModeBtn->setFixedWidth(58);
 
-    headerLayout->addWidget(m_prevBtn);
-    headerLayout->addWidget(m_titleBtn, 1);
-    headerLayout->addWidget(m_nextBtn);
+    m_yearModeBtn = new AntButton(QStringLiteral("Year"), m_header);
+    m_yearModeBtn->setButtonSize(Ant::Size::Small);
+    m_yearModeBtn->setFixedWidth(48);
+
+    headerLayout->addStretch();
+    headerLayout->addWidget(m_yearBtn);
+    headerLayout->addWidget(m_monthBtn);
+    headerLayout->addWidget(m_monthModeBtn);
+    headerLayout->addWidget(m_yearModeBtn);
     mainLayout->addWidget(m_header);
 
     // Weekday labels
@@ -277,9 +285,12 @@ AntCalendar::AntCalendar(QWidget* parent)
     m_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_view->setFrameShape(QFrame::NoFrame);
     m_view->setFocusPolicy(Qt::NoFocus);
+    m_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_view->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     mainLayout->addWidget(m_view, 1);
 
-    setFixedSize(312, 340);
+    setMinimumSize(312, 340);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         if (m_weekdayRow)
@@ -298,55 +309,17 @@ AntCalendar::AntCalendar(QWidget* parent)
         update();
     });
 
-    // Header button connections
-    connect(qobject_cast<QPushButton*>(m_prevBtn), &QPushButton::clicked, this, [this]() {
-        switch (m_mode)
-        {
-        case Ant::CalendarMode::Day:
-            if (m_navMonth == 1) { --m_navYear; m_navMonth = 12; }
-            else --m_navMonth;
-            break;
-        case Ant::CalendarMode::Month:
-            --m_navYear;
-            break;
-        case Ant::CalendarMode::Year:
-            m_decadeStart -= 12;
-            break;
-        }
-        rebuildModel();
+    connect(qobject_cast<QPushButton*>(m_yearBtn), &QPushButton::clicked, this, [this]() {
+        setCalendarMode(Ant::CalendarMode::Year);
     });
-
-    connect(qobject_cast<QPushButton*>(m_nextBtn), &QPushButton::clicked, this, [this]() {
-        switch (m_mode)
-        {
-        case Ant::CalendarMode::Day:
-            if (m_navMonth == 12) { ++m_navYear; m_navMonth = 1; }
-            else ++m_navMonth;
-            break;
-        case Ant::CalendarMode::Month:
-            ++m_navYear;
-            break;
-        case Ant::CalendarMode::Year:
-            m_decadeStart += 12;
-            break;
-        }
-        rebuildModel();
+    connect(qobject_cast<QPushButton*>(m_monthBtn), &QPushButton::clicked, this, [this]() {
+        setCalendarMode(Ant::CalendarMode::Month);
     });
-
-    connect(qobject_cast<QPushButton*>(m_titleBtn), &QPushButton::clicked, this, [this]() {
-        switch (m_mode)
-        {
-        case Ant::CalendarMode::Day:
-            setCalendarMode(Ant::CalendarMode::Month);
-            break;
-        case Ant::CalendarMode::Month:
-            m_decadeStart = (m_navYear / 12) * 12;
-            setCalendarMode(Ant::CalendarMode::Year);
-            break;
-        case Ant::CalendarMode::Year:
-            // Select year -> go back to Month mode
-            break;
-        }
+    connect(qobject_cast<QPushButton*>(m_monthModeBtn), &QPushButton::clicked, this, [this]() {
+        setCalendarMode(Ant::CalendarMode::Day);
+    });
+    connect(qobject_cast<QPushButton*>(m_yearModeBtn), &QPushButton::clicked, this, [this]() {
+        setCalendarMode(Ant::CalendarMode::Year);
     });
 
     // View click handler
@@ -426,6 +399,12 @@ void AntCalendar::setCalendarMode(Ant::CalendarMode mode)
 
 QSize AntCalendar::sizeHint() const { return QSize(312, 340); }
 
+void AntCalendar::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    updateViewMetrics();
+}
+
 void AntCalendar::rebuildModel()
 {
     auto* calModel = static_cast<CalendarModel*>(m_model);
@@ -437,9 +416,6 @@ void AntCalendar::rebuildModel()
     {
         int cols = 7;
         calModel->buildDayMode(m_navYear, m_navMonth, m_selectedDate, today, m_minimumDate, m_maximumDate);
-        for (int c = 0; c < cols; ++c) m_view->setColumnWidth(c, 40);
-        for (int r = 0; r < 6; ++r) m_view->setRowHeight(r, 40);
-
         int selRow = -1, selCol = -1;
         if (m_selectedDate.year() == m_navYear && m_selectedDate.month() == m_navMonth)
         {
@@ -456,40 +432,58 @@ void AntCalendar::rebuildModel()
     }
     case Ant::CalendarMode::Month:
         calModel->buildMonthMode(m_navYear, m_selectedDate, today);
-        for (int c = 0; c < 4; ++c) m_view->setColumnWidth(c, 70);
-        for (int r = 0; r < 3; ++r) m_view->setRowHeight(r, 72);
         m_view->clearSelection();
         break;
     case Ant::CalendarMode::Year:
         calModel->buildYearMode(m_decadeStart, m_selectedDate, today);
-        for (int c = 0; c < 4; ++c) m_view->setColumnWidth(c, 70);
-        for (int r = 0; r < 3; ++r) m_view->setRowHeight(r, 72);
         m_view->clearSelection();
         break;
     }
 
+    updateViewMetrics();
     updateHeaderText();
 }
 
 void AntCalendar::updateHeaderText()
 {
-    QString title;
-    switch (m_mode)
+    const QString yearText = QStringLiteral("%1  v").arg(m_navYear);
+    const QString monthText = QStringLiteral("%1  v").arg(QLocale(QLocale::English).monthName(m_navMonth, QLocale::ShortFormat));
+
+    if (m_yearBtn)
     {
-    case Ant::CalendarMode::Day:
-        title = QStringLiteral("%1 %2").arg(QLocale().monthName(m_navMonth), QString::number(m_navYear));
-        break;
-    case Ant::CalendarMode::Month:
-        title = QString::number(m_navYear);
-        break;
-    case Ant::CalendarMode::Year:
-        title = QStringLiteral("%1 - %2").arg(QString::number(m_decadeStart), QString::number(m_decadeStart + 11));
-        break;
+        m_yearBtn->setText(yearText);
     }
-    if (auto* btn = qobject_cast<AntButton*>(m_titleBtn))
-        btn->setText(title);
-    else
-        qobject_cast<QPushButton*>(m_titleBtn)->setText(title);
+    if (m_monthBtn)
+    {
+        m_monthBtn->setText(monthText);
+    }
+
+    const bool monthModeActive = m_mode != Ant::CalendarMode::Year;
+    m_monthModeBtn->setButtonType(monthModeActive ? Ant::ButtonType::Primary : Ant::ButtonType::Default);
+    m_monthModeBtn->setGhost(monthModeActive);
+    m_yearModeBtn->setButtonType(monthModeActive ? Ant::ButtonType::Default : Ant::ButtonType::Primary);
+    m_yearModeBtn->setGhost(!monthModeActive);
+}
+
+void AntCalendar::updateViewMetrics()
+{
+    if (!m_model || !m_view)
+    {
+        return;
+    }
+
+    const int cols = m_model->columnCount();
+    const int rows = m_model->rowCount();
+    if (cols <= 0 || rows <= 0)
+    {
+        return;
+    }
+
+    const int rowHeight = (m_mode == Ant::CalendarMode::Day) ? 40 : 64;
+    for (int r = 0; r < rows; ++r)
+    {
+        m_view->setRowHeight(r, rowHeight);
+    }
 }
 
 void AntCalendar::handleDayClick(int dayIndex)

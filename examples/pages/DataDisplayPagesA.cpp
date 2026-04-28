@@ -305,17 +305,11 @@ QWidget* createCalendarPage(QWidget* /*owner*/)
     layout->setSpacing(16);
 
     {
-        auto* card = new AntCard(QStringLiteral("AntCalendar"));
+        auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* cal = new AntCalendar(page);
         cl->addWidget(cal);
-
-        auto* dateLabel = makeText(QStringLiteral("Selected: ") + cal->selectedDate().toString(QStringLiteral("yyyy-MM-dd")), page);
-        QObject::connect(cal, &AntCalendar::clicked, dateLabel, [dateLabel, cal]() {
-            dateLabel->setText(QStringLiteral("Selected: ") + cal->selectedDate().toString(QStringLiteral("yyyy-MM-dd")));
-        });
-        cl->addWidget(dateLabel);
 
         layout->addWidget(card);
     }

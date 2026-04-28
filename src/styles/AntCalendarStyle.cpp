@@ -65,8 +65,6 @@ void AntCalendarStyle::drawFrame(const QStyleOption* option, QPainter* painter) 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
-    antTheme->drawEffectShadow(painter, option->rect, 6, 8, 0.12);
-
     AntStyleBase::drawCrispRoundedRect(painter, option->rect,
         QPen(token.colorBorderSecondary, token.lineWidth),
         token.colorBgElevated, 8, 8);

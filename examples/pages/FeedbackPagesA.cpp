@@ -30,7 +30,7 @@
 
 namespace example::pages
 {
-QWidget* createAlertPage(QWidget* owner)
+QWidget* createAlertPage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
@@ -38,69 +38,43 @@ QWidget* createAlertPage(QWidget* owner)
     layout->setSpacing(16);
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = new AntCard(QStringLiteral("Types"));
         auto* cl = card->bodyLayout();
-        auto* info = new AntAlert(QStringLiteral("Informational Notes"));
-        info->setAlertType(Ant::AlertType::Info);
-        auto* success = new AntAlert(QStringLiteral("Success Tips"));
+        cl->setAlignment(Qt::AlignTop);
+
+        auto* success = new AntAlert(QStringLiteral("Success Text"));
         success->setAlertType(Ant::AlertType::Success);
-        auto* warning = new AntAlert(QStringLiteral("Warning"));
+        success->setShowIcon(true);
+        success->setClosable(true);
+
+        auto* info = new AntAlert(QStringLiteral("Info Text"));
+        info->setAlertType(Ant::AlertType::Info);
+        info->setShowIcon(true);
+        info->setClosable(true);
+
+        auto* warning = new AntAlert(QStringLiteral("Warning Text"));
         warning->setAlertType(Ant::AlertType::Warning);
-        auto* error = new AntAlert(QStringLiteral("Error"));
+        warning->setShowIcon(true);
+        warning->setClosable(true);
+
+        auto* error = new AntAlert(QStringLiteral("Error Text"));
         error->setAlertType(Ant::AlertType::Error);
-        cl->addWidget(info);
+        error->setShowIcon(true);
+        error->setClosable(true);
+
         cl->addWidget(success);
+        cl->addWidget(info);
         cl->addWidget(warning);
         cl->addWidget(error);
         layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Description and Icon"));
-        auto* cl = card->bodyLayout();
-        auto* described = new AntAlert(QStringLiteral("Data sync in progress"));
-        described->setDescription(QStringLiteral("Background synchronization is running. You can keep working while we update the latest records from the server."));
-        described->setAlertType(Ant::AlertType::Info);
-        described->setShowIcon(true);
-        cl->addWidget(described);
-        auto* withDescription = new AntAlert(QStringLiteral("Deployment failed"));
-        withDescription->setDescription(QStringLiteral("The production deployment stopped because environment variables are incomplete. Please review the release configuration and try again."));
-        withDescription->setAlertType(Ant::AlertType::Error);
-        withDescription->setShowIcon(true);
-        cl->addWidget(withDescription);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Closable and Action"));
-        auto* cl = card->bodyLayout();
-        auto* closable = new AntAlert(QStringLiteral("Update available"));
-        closable->setDescription(QStringLiteral("A new desktop package is ready. You can update now or postpone until after your current task."));
-        closable->setAlertType(Ant::AlertType::Warning);
-        closable->setShowIcon(true);
-        closable->setClosable(true);
-        QObject::connect(closable, &AntAlert::closeRequested, owner, [owner]() {
-            AntMessage::info(QStringLiteral("Alert closed"), owner, 1500);
-        });
-        cl->addWidget(closable);
-        auto* actionAlert = new AntAlert(QStringLiteral("Backup completed"));
-        actionAlert->setDescription(QStringLiteral("Cloud backup finished successfully. Open the latest snapshot or continue editing."));
-        actionAlert->setAlertType(Ant::AlertType::Success);
-        actionAlert->setShowIcon(true);
-        auto* actionButton = new AntButton(QStringLiteral("Open"));
-        actionButton->setButtonType(Ant::ButtonType::Link);
-        QObject::connect(actionButton, &AntButton::clicked, owner, [owner]() {
-            AntMessage::success(QStringLiteral("Opening backup snapshot"), owner, 1500);
-        });
-        actionAlert->setActionWidget(actionButton);
-        cl->addWidget(actionAlert);
-        layout->addWidget(card);
-    }
-
-    {
         auto* card = new AntCard(QStringLiteral("Banner"));
         auto* cl = card->bodyLayout();
-        auto* banner = new AntAlert(QStringLiteral("Scheduled maintenance tonight from 01:00 to 03:00."));
+        cl->setAlignment(Qt::AlignTop);
+        auto* banner = new AntAlert(QStringLiteral("Warning text"));
+        banner->setAlertType(Ant::AlertType::Warning);
         banner->setBanner(true);
         banner->setClosable(true);
         cl->addWidget(banner);

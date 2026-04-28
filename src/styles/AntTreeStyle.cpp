@@ -12,7 +12,7 @@
 
 namespace
 {
-constexpr int RowHeight = 32;
+constexpr int RowHeight = 28;
 constexpr int IndentWidth = 24;
 constexpr int ArrowSize = 8;
 constexpr int CheckboxSize = 16;
@@ -151,22 +151,24 @@ void AntTreeStyle::drawTree(const QStyleOption* option, QPainter* painter, const
             const QRectF arrowRect(x + (ArrowZoneWidth - ArrowSize) / 2.0,
                                    y + (RowHeight - ArrowSize) / 2.0,
                                    ArrowSize, ArrowSize);
-            painter->save();
-            painter->translate(arrowRect.center());
+            const QPointF c = arrowRect.center();
+            QPainterPath arrow;
             if (node->expanded)
             {
-                painter->rotate(90);
+                arrow.moveTo(c.x() - 4, c.y() - 2);
+                arrow.lineTo(c.x() + 4, c.y() - 2);
+                arrow.lineTo(c.x(), c.y() + 3);
             }
-            painter->translate(-arrowRect.center());
-
-            painter->setPen(QPen(token.colorTextSecondary, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-            painter->setBrush(Qt::NoBrush);
-            QPainterPath arrow;
-            arrow.moveTo(arrowRect.left() + 2, arrowRect.top());
-            arrow.lineTo(arrowRect.right() - 2, arrowRect.center().y());
-            arrow.lineTo(arrowRect.left() + 2, arrowRect.bottom());
+            else
+            {
+                arrow.moveTo(c.x() - 2, c.y() - 4);
+                arrow.lineTo(c.x() - 2, c.y() + 4);
+                arrow.lineTo(c.x() + 3, c.y());
+            }
+            arrow.closeSubpath();
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(token.colorTextSecondary);
             painter->drawPath(arrow);
-            painter->restore();
         }
         x += ArrowZoneWidth;
 

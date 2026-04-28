@@ -12,7 +12,7 @@
 
 namespace
 {
-constexpr int RowHeight = 32;
+constexpr int RowHeight = 28;
 constexpr int IndentWidth = 24;
 constexpr int ArrowSize = 8;
 constexpr int CheckboxSize = 16;

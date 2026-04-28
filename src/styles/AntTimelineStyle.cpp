@@ -166,7 +166,7 @@ int itemHeightForVertical(const AntTimelineItem& item, const TimelineMetrics& m,
 {
     QFont titleFont;
     titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(QFont::DemiBold);
+    titleFont.setWeight(QFont::Normal);
     const QFontMetrics titleFm(titleFont);
     int totalHeight = titleFm.height() + 4;
 
@@ -280,7 +280,7 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
             // Draw title
             QFont titleFont;
             titleFont.setPixelSize(m.titleFontSize);
-            titleFont.setWeight(QFont::DemiBold);
+            titleFont.setWeight(QFont::Normal);
             painter->setFont(titleFont);
             painter->setPen(token.colorText);
             const QRect titleRect(textX, dotTopY, textW, m.titleFontSize + 4);
@@ -389,7 +389,7 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
             // Draw title
             QFont titleFont;
             titleFont.setPixelSize(m.titleFontSize);
-            titleFont.setWeight(QFont::DemiBold);
+            titleFont.setWeight(QFont::Normal);
             painter->setFont(titleFont);
             painter->setPen(token.colorText);
             const QRect titleRect(dotX, textY, itemWidth, m.titleFontSize + 4);

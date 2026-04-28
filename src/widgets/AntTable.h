@@ -90,6 +90,9 @@ public:
     // Selection helpers
     QStringList selectedRowKeys() const;
 
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
+
     // Layout accessors (for style drawing)
     int scrollY() const;
     int hoveredRow() const;
