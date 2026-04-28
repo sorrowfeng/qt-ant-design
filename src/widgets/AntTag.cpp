@@ -154,28 +154,47 @@ void AntTag::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        if (m_closable && closeRect().contains(event->pos()))
-        {
-            Q_EMIT closeRequested();
-            hide();
-            event->accept();
-            return;
-        }
-        if (m_checkable)
-        {
-            setChecked(!m_checked);
-        }
-        Q_EMIT clicked();
+        m_pressed = true;
+        update();
         event->accept();
         return;
     }
     QWidget::mousePressEvent(event);
 }
 
+void AntTag::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton && m_pressed)
+    {
+        m_pressed = false;
+        const bool inside = rect().contains(event->pos());
+        if (inside && m_closable && closeRect().contains(event->pos()))
+        {
+            Q_EMIT closeRequested();
+            hide();
+            event->accept();
+            return;
+        }
+        if (inside)
+        {
+            if (m_checkable)
+            {
+                setChecked(!m_checked);
+            }
+            Q_EMIT clicked();
+        }
+        update();
+        event->accept();
+        return;
+    }
+    QWidget::mouseReleaseEvent(event);
+}
+
 void AntTag::leaveEvent(QEvent* event)
 {
     m_hovered = false;
     m_closeHovered = false;
+    m_pressed = false;
     update();
     QWidget::leaveEvent(event);
 }
@@ -183,6 +202,16 @@ void AntTag::leaveEvent(QEvent* event)
 QRect AntTag::closeRect() const
 {
     return QRect(width() - 19, height() / 2 - 8, 16, 16);
+}
+
+bool AntTag::isPressedState() const
+{
+    return m_pressed;
+}
+
+bool AntTag::isCloseHoveredState() const
+{
+    return m_closeHovered;
 }
 
 QColor AntTag::baseColor() const

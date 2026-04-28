@@ -60,6 +60,7 @@ After the first static pass, audit interactive states with a compact state matri
 | Component | Status | Evidence | Notes |
 | --- | --- | --- | --- |
 | Button | Pass | `build/button-state-compare-light.png`, `build/button-state-compare-dark.png` | Compared primary/default hover, active, focus-visible, danger hover, text hover, disabled, and loading states. Ant theme primary/status tokens now match AntD 5.24.7 light/dark values, and `AntButtonStyle` uses explicit token hover/active/focus colors instead of approximate palette generation. |
+| Tag | Pass | `build/tag-state-compare-light.png`, `build/tag-state-compare-dark.png` | Compared default, closable/close-hover, preset/status color tags, checkable unchecked/hover/active/checked/checked-hover, disabled unchecked/checked, and processing states. `AntTag` now has a pressed state, defers click/toggle to release, uses AntD checkable hover/active fills, disabled checked fill, and independent close-icon normal/hover colors. |
 
 ## Priority Order
 

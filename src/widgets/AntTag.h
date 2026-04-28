@@ -62,10 +62,14 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
 
 private:
+    friend class AntTagStyle;
     QRect closeRect() const;
+    bool isPressedState() const;
+    bool isCloseHoveredState() const;
     QColor baseColor() const;
     QColor backgroundColor() const;
     QColor borderColor() const;
@@ -80,5 +84,6 @@ private:
     bool m_checked = false;
     bool m_hovered = false;
     bool m_closeHovered = false;
+    bool m_pressed = false;
     Ant::TagVariant m_variant = Ant::TagVariant::Filled;
 };

@@ -114,19 +114,32 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
     const bool enabled = option->state & QStyle::State_Enabled;
     const bool checkable = tag->isCheckable();
     const bool checked = tag->isChecked();
+    const bool pressed = tag->isPressedState();
+    const bool closeHovered = tag->isCloseHoveredState();
     const auto variant = tag->variant();
 
     // Replicate backgroundColor()
     QColor bg;
-    if (checkable)
+    if (!enabled)
     {
-        if (checked)
+        if (checkable)
         {
-            bg = hovered ? token.colorPrimaryHover : token.colorPrimary;
+            bg = checked ? token.colorBgContainerDisabled : QColor(Qt::transparent);
         }
         else
         {
-            bg = hovered ? token.colorFillTertiary : Qt::transparent;
+            bg = token.colorBgContainerDisabled;
+        }
+    }
+    else if (checkable)
+    {
+        if (checked)
+        {
+            bg = pressed ? token.colorPrimaryActive : hovered ? token.colorPrimaryHover : token.colorPrimary;
+        }
+        else
+        {
+            bg = pressed ? token.colorPrimaryActive : hovered ? token.colorFillSecondary : QColor(Qt::transparent);
         }
     }
     else if (!hasCustom)
@@ -146,7 +159,11 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
     QColor border;
     if (checkable)
     {
-        border = Qt::transparent;
+        border = QColor(Qt::transparent);
+    }
+    else if (!enabled)
+    {
+        border = token.colorBorderDisabled;
     }
     else if (!hasCustom)
     {
@@ -169,7 +186,7 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
     }
     else if (checkable)
     {
-        textCol = hovered ? token.colorPrimary : token.colorText;
+        textCol = pressed ? token.colorTextLightSolid : hovered ? token.colorPrimary : token.colorText;
     }
     else if (hasCustom)
     {
@@ -205,7 +222,12 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
         const QRect close(option->rect.width() - 19, option->rect.height() / 2 - 8, 16, 16);
         AntStyleBase::drawCrispRoundedRect(painter, close, Qt::NoPen, Qt::transparent,
             token.borderRadiusXS, token.borderRadiusXS);
-        painter->setPen(QPen(textCol, 1.3, Qt::SolidLine, Qt::RoundCap));
+        QColor closeColor = enabled ? token.colorTextTertiary : token.colorTextDisabled;
+        if (enabled && closeHovered)
+        {
+            closeColor = token.colorText;
+        }
+        painter->setPen(QPen(closeColor, 1.3, Qt::SolidLine, Qt::RoundCap));
         const QPoint c = close.center();
         painter->drawLine(QPoint(c.x() - 3, c.y() - 3), QPoint(c.x() + 3, c.y() + 3));
         painter->drawLine(QPoint(c.x() + 3, c.y() - 3), QPoint(c.x() - 3, c.y() + 3));
