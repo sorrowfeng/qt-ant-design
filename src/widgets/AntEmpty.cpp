@@ -11,6 +11,7 @@ AntEmpty::AntEmpty(QWidget* parent)
     : QWidget(parent)
 {
     setStyle(new AntEmptyStyle(style()));
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 
 QString AntEmpty::description() const { return m_description; }
@@ -105,7 +106,7 @@ QSize AntEmpty::sizeHint() const
     if (m_imageVisible)
     {
         height += image.height();
-        height += token.marginSM;
+        height += token.marginXS;
     }
 
     QFont descFont = font();
@@ -152,8 +153,8 @@ QRect AntEmpty::imageRect() const
 QRect AntEmpty::descriptionRect() const
 {
     const auto& token = antTheme->tokens();
-    const int top = m_imageVisible ? imageRect().bottom() + token.marginSM : token.padding;
-    const int bottom = m_extraWidget ? extraRect().top() - token.marginSM : height() - token.padding;
+    const int top = m_imageVisible ? imageRect().bottom() + token.marginXS : token.padding;
+    const int bottom = m_extraWidget ? extraRect().top() - token.margin : height() - token.padding;
     return QRect(token.paddingSM, top, qMax(40, width() - token.paddingSM * 2), qMax(token.fontSize + 4, bottom - top));
 }
 
@@ -186,5 +187,5 @@ QSize AntEmpty::effectiveImageSize() const
     {
         return m_imageSize;
     }
-    return m_simple ? QSize(96, 56) : QSize(128, 80);
+    return m_simple ? QSize(96, 56) : QSize(121, 100);
 }

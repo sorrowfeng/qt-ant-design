@@ -583,85 +583,19 @@ QWidget* createEmptyPage(QWidget* /*owner*/)
     {
         auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
-        auto* basicRow = new QHBoxLayout();
-        basicRow->setSpacing(28);
-
         auto* basic = new AntEmpty(page);
-        basic->setFixedWidth(260);
-
-        auto* customText = new AntEmpty(page);
-        customText->setFixedWidth(320);
-        customText->setDescription(QStringLiteral("No matching issues found. Try adjusting the filters and search terms."));
-
-        auto* simple = new AntEmpty(page);
-        simple->setFixedWidth(220);
-        simple->setSimple(true);
-        simple->setDescription(QStringLiteral("No notifications"));
-
-        basicRow->addWidget(basic);
-        basicRow->addWidget(customText);
-        basicRow->addWidget(simple);
-        basicRow->addStretch();
-        cl->addLayout(basicRow);
+        cl->addWidget(basic, 0, Qt::AlignHCenter | Qt::AlignTop);
+        cl->addStretch();
         layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Action"));
+        auto* card = new AntCard(QStringLiteral("Custom Description"));
         auto* cl = card->bodyLayout();
-        auto* actionRow = new QHBoxLayout();
-        actionRow->setSpacing(28);
-
-        auto* createProject = new AntEmpty(page);
-        createProject->setFixedWidth(360);
-        createProject->setDescription(QStringLiteral("You have not created any projects yet."));
-        auto* createButton = new AntButton(QStringLiteral("Create Project"), createProject);
-        createButton->setButtonType(Ant::ButtonType::Primary);
-        createProject->setExtraWidget(createButton);
-
-        auto* importData = new AntEmpty(page);
-        importData->setFixedWidth(360);
-        importData->setImageSize(QSize(148, 92));
-        importData->setDescription(QStringLiteral("Import data from CSV or connect a remote source to get started."));
-        auto* importButton = new AntButton(QStringLiteral("Import Data"), importData);
-        importButton->setButtonType(Ant::ButtonType::Default);
-        importData->setExtraWidget(importButton);
-
-        actionRow->addWidget(createProject);
-        actionRow->addWidget(importData);
-        actionRow->addStretch();
-        cl->addLayout(actionRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Embedded in Card"));
-        auto* cl = card->bodyLayout();
-        auto* cardRow = new QHBoxLayout();
-        cardRow->setSpacing(24);
-
-        auto* emptyCard = new AntCard(QStringLiteral("Recent Activity"), page);
-        emptyCard->setFixedWidth(420);
-        emptyCard->setExtra(QStringLiteral("0 items"));
-        auto* cardEmpty = new AntEmpty(emptyCard);
-        cardEmpty->setDescription(QStringLiteral("There is no activity in this workspace yet."));
-        auto* inviteButton = new AntButton(QStringLiteral("Invite Collaborators"), cardEmpty);
-        inviteButton->setButtonType(Ant::ButtonType::Primary);
-        cardEmpty->setExtraWidget(inviteButton);
-        emptyCard->bodyLayout()->addWidget(cardEmpty);
-
-        auto* placeholderCard = new AntCard(QStringLiteral("Archived Reports"), page);
-        placeholderCard->setFixedWidth(420);
-        auto* archiveEmpty = new AntEmpty(placeholderCard);
-        archiveEmpty->setSimple(true);
-        archiveEmpty->setImageVisible(false);
-        archiveEmpty->setDescription(QStringLiteral("Archived reports will appear here."));
-        placeholderCard->bodyLayout()->addWidget(archiveEmpty);
-
-        cardRow->addWidget(emptyCard);
-        cardRow->addWidget(placeholderCard);
-        cardRow->addStretch();
-        cl->addLayout(cardRow);
+        auto* custom = new AntEmpty(page);
+        custom->setDescription(QStringLiteral("No Data Available"));
+        cl->addWidget(custom, 0, Qt::AlignHCenter | Qt::AlignTop);
+        cl->addStretch();
         layout->addWidget(card);
     }
 

@@ -228,7 +228,7 @@ void TestAntDataDisplayA::propertiesAndSignals()
 
     // AntEmpty
     auto* e = new AntEmpty;
-    QCOMPARE(e->description(), QStringLiteral("No Data"));
+    QCOMPARE(e->description(), QStringLiteral("No data"));
     QCOMPARE(e->imageVisible(), true);
     QCOMPARE(e->isSimple(), false);
 

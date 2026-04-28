@@ -49,7 +49,7 @@ private:
     void syncExtraGeometry();
     QSize effectiveImageSize() const;
 
-    QString m_description = QStringLiteral("No Data");
+    QString m_description = QStringLiteral("No data");
     bool m_imageVisible = true;
     bool m_simple = false;
     QSize m_imageSize;
