@@ -1,6 +1,11 @@
 #include <QSignalSpy>
+#include <QImage>
+#include <QPainter>
+#include <QStyleOption>
 #include <QTest>
 
+#include "core/AntTheme.h"
+#include "styles/AntPalette.h"
 #include "widgets/AntBadge.h"
 
 class TestAntBadge : public QObject
@@ -8,7 +13,31 @@ class TestAntBadge : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void presetColorsPreferAntDesignPalette();
+    void hoverKeepsIndicatorColor();
 };
+
+namespace
+{
+QImage renderBadge(AntBadge& badge, bool hovered = false)
+{
+    badge.ensurePolished();
+    badge.resize(badge.sizeHint());
+    QImage image(badge.size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+    QStyleOption option;
+    option.initFrom(&badge);
+    option.rect = QRect(QPoint(0, 0), badge.size());
+    if (hovered)
+    {
+        option.state |= QStyle::State_MouseOver;
+    }
+    badge.style()->drawPrimitive(QStyle::PE_Widget, &option, &painter, &badge);
+    return image;
+}
+}
 
 void TestAntBadge::propertiesAndSignals()
 {
@@ -90,6 +119,31 @@ void TestAntBadge::propertiesAndSignals()
 
     auto* countBadge = new AntBadge(42);
     QCOMPARE(countBadge->count(), 42);
+}
+
+void TestAntBadge::presetColorsPreferAntDesignPalette()
+{
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntBadge badge;
+    badge.setDot(true);
+    badge.setColor("green");
+
+    const QImage image = renderBadge(badge);
+    const QColor center = image.pixelColor(image.width() / 2, image.height() / 2);
+    QCOMPARE(center.name(), AntPalette::presetColor("green").name());
+}
+
+void TestAntBadge::hoverKeepsIndicatorColor()
+{
+    AntBadge badge;
+    badge.setDot(true);
+    badge.setColor("red");
+
+    const QImage normal = renderBadge(badge, false);
+    const QImage hovered = renderBadge(badge, true);
+    const QPoint center(normal.width() / 2, normal.height() / 2);
+    QCOMPARE(hovered.pixelColor(center), normal.pixelColor(center));
 }
 
 QTEST_MAIN(TestAntBadge)

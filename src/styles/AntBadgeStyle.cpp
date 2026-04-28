@@ -9,6 +9,7 @@
 #include <algorithm>
 
 #include "core/AntStyleBase.h"
+#include "styles/AntPalette.h"
 #include "widgets/AntBadge.h"
 
 namespace
@@ -129,11 +130,9 @@ QRectF badgeStandaloneStatusDotRect(const QRect& widgetRect)
 QColor badgeColor(const AntBadge* badge)
 {
     const QString color = badge->color();
-    const QColor custom(color);
-    if (custom.isValid())
-    {
-        return custom;
-    }
+    const QColor preset = AntPalette::presetColor(color);
+    if (preset.isValid())
+        return preset;
     if (color.compare(QStringLiteral("success"), Qt::CaseInsensitive) == 0)
     {
         return antTheme->tokens().colorSuccess;
@@ -147,18 +146,26 @@ QColor badgeColor(const AntBadge* badge)
     {
         return antTheme->tokens().colorPrimary;
     }
+    const QColor custom(color);
+    if (custom.isValid())
+    {
+        return custom;
+    }
     return antTheme->tokens().colorError;
 }
 
 QColor badgeStatusColor(const AntBadge* badge)
 {
     const QString color = badge->color();
+    const QColor preset = AntPalette::presetColor(color);
+    if (preset.isValid())
+        return preset;
+    const auto& token = antTheme->tokens();
     const QColor custom(color);
     if (custom.isValid())
     {
         return custom;
     }
-    const auto& token = antTheme->tokens();
     switch (badge->status())
     {
     case Ant::BadgeStatus::Success:
@@ -184,10 +191,7 @@ void drawBadgeIndicator(const QStyleOption* option, QPainter* painter, const Ant
     const bool hovered = option->state & QStyle::State_MouseOver;
     const bool enabled = option->state & QStyle::State_Enabled;
     QColor fill = enabled ? badgeColor(badge) : token.colorTextDisabled;
-    if (hovered)
-    {
-        fill = antTheme->hoverColor(fill);
-    }
+    Q_UNUSED(hovered)
 
     painter->setPen(QPen(token.colorBgContainer, token.lineWidth));
     painter->setBrush(fill);
@@ -272,15 +276,17 @@ void drawBadgeRibbon(const QStyleOption* option, QPainter* painter, const AntBad
     // Resolve ribbon color
     QColor color;
     const QString rc = badge->ribbonColor();
-    const QColor custom(rc);
-    if (custom.isValid())
-        color = custom;
+    const QColor preset = AntPalette::presetColor(rc);
+    if (preset.isValid())
+        color = preset;
     else if (rc.compare(QStringLiteral("success"), Qt::CaseInsensitive) == 0)
         color = token.colorSuccess;
     else if (rc.compare(QStringLiteral("warning"), Qt::CaseInsensitive) == 0)
         color = token.colorWarning;
     else if (rc.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0)
         color = token.colorPrimary;
+    else if (const QColor custom(rc); custom.isValid())
+        color = custom;
     else
         color = token.colorError;
 

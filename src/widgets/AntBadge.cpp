@@ -12,6 +12,7 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
+#include "styles/AntPalette.h"
 #include "styles/AntBadgeStyle.h"
 
 namespace
@@ -477,11 +478,9 @@ QRectF AntBadge::standaloneStatusDotRect() const
 
 QColor AntBadge::badgeColor() const
 {
-    const QColor custom(m_color);
-    if (custom.isValid())
-    {
-        return custom;
-    }
+    const QColor preset = AntPalette::presetColor(m_color);
+    if (preset.isValid())
+        return preset;
     if (m_color.compare(QStringLiteral("success"), Qt::CaseInsensitive) == 0)
     {
         return antTheme->tokens().colorSuccess;
@@ -494,17 +493,25 @@ QColor AntBadge::badgeColor() const
     {
         return antTheme->tokens().colorPrimary;
     }
-    return antTheme->tokens().colorError;
-}
-
-QColor AntBadge::statusColor() const
-{
     const QColor custom(m_color);
     if (custom.isValid())
     {
         return custom;
     }
+    return antTheme->tokens().colorError;
+}
+
+QColor AntBadge::statusColor() const
+{
+    const QColor preset = AntPalette::presetColor(m_color);
+    if (preset.isValid())
+        return preset;
     const auto& token = antTheme->tokens();
+    const QColor custom(m_color);
+    if (custom.isValid())
+    {
+        return custom;
+    }
     switch (m_status)
     {
     case Ant::BadgeStatus::Success:
@@ -568,10 +575,6 @@ void AntBadge::drawIndicator(QPainter& painter)
     const auto& token = antTheme->tokens();
     const QRectF r = indicatorRect();
     QColor fill = isEnabled() ? badgeColor() : token.colorTextDisabled;
-    if (m_hovered)
-    {
-        fill = antTheme->hoverColor(fill);
-    }
 
     painter.setPen(QPen(token.colorBgContainer, token.lineWidth));
     painter.setBrush(fill);
