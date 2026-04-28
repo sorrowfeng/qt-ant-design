@@ -14,7 +14,6 @@
 #include "core/AntTypes.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
-#include "widgets/AntMessage.h"
 #include "widgets/AntPopover.h"
 #include "widgets/AntQRCode.h"
 #include "widgets/AntSegmented.h"
@@ -30,7 +29,7 @@
 
 namespace example::pages
 {
-QWidget* createPopoverPage(QWidget* owner)
+QWidget* createPopoverPage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
@@ -43,92 +42,23 @@ QWidget* createPopoverPage(QWidget* owner)
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(16);
 
-        auto* hoverButton = new AntButton(QStringLiteral("Hover Popover"));
+        auto* hoverButton = new AntButton(QStringLiteral("Hover me"));
         auto* hoverPopover = new AntPopover(page);
         hoverPopover->setTarget(hoverButton);
-        hoverPopover->setTitle(QStringLiteral("Profile Card"));
-        hoverPopover->setContent(QStringLiteral("View quick details, recent activity and common shortcuts from this floating panel."));
+        hoverPopover->setTitle(QStringLiteral("Title"));
+        hoverPopover->setContent(QStringLiteral("Popover content"));
 
-        auto* clickButton = new AntButton(QStringLiteral("Click Popover"));
-        clickButton->setButtonType(Ant::ButtonType::Primary);
+        auto* clickButton = new AntButton(QStringLiteral("Click me"));
         auto* clickPopover = new AntPopover(page);
         clickPopover->setTrigger(Ant::PopoverTrigger::Click);
         clickPopover->setTarget(clickButton);
-        clickPopover->setTitle(QStringLiteral("Publish Changes"));
-        clickPopover->setContent(QStringLiteral("Review your draft, run checks and publish when everything looks correct."));
-        auto* publishAction = new AntButton(QStringLiteral("Run Checks"));
-        publishAction->setButtonType(Ant::ButtonType::Link);
-        QObject::connect(publishAction, &AntButton::clicked, owner, [owner]() {
-            AntMessage::info(QStringLiteral("Running checks..."), owner, 1400);
-        });
-        clickPopover->setActionWidget(publishAction);
+        clickPopover->setTitle(QStringLiteral("Title"));
+        clickPopover->setContent(QStringLiteral("Click content"));
 
         basicRow->addWidget(hoverButton);
         basicRow->addWidget(clickButton);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Placement"));
-        auto* cl = card->bodyLayout();
-        auto* placementRow = new QHBoxLayout();
-        placementRow->setSpacing(16);
-
-        auto* topButton = new AntButton(QStringLiteral("Top"));
-        auto* topPopover = new AntPopover(page);
-        topPopover->setTarget(topButton);
-        topPopover->setPlacement(Ant::TooltipPlacement::Top);
-        topPopover->setTitle(QStringLiteral("Top Placement"));
-        topPopover->setContent(QStringLiteral("Popover appears above the trigger target."));
-
-        auto* rightButton = new AntButton(QStringLiteral("Right"));
-        auto* rightPopover = new AntPopover(page);
-        rightPopover->setTarget(rightButton);
-        rightPopover->setPlacement(Ant::TooltipPlacement::Right);
-        rightPopover->setTitle(QStringLiteral("Right Placement"));
-        rightPopover->setContent(QStringLiteral("Useful when horizontal space is available."));
-
-        auto* bottomLeftButton = new AntButton(QStringLiteral("BottomLeft"));
-        auto* bottomLeftPopover = new AntPopover(page);
-        bottomLeftPopover->setTarget(bottomLeftButton);
-        bottomLeftPopover->setPlacement(Ant::TooltipPlacement::BottomLeft);
-        bottomLeftPopover->setTitle(QStringLiteral("Bottom Left"));
-        bottomLeftPopover->setContent(QStringLiteral("Aligned to the left edge of the trigger."));
-
-        placementRow->addWidget(topButton);
-        placementRow->addWidget(rightButton);
-        placementRow->addWidget(bottomLeftButton);
-        placementRow->addStretch();
-        cl->addLayout(placementRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Arrow and Content"));
-        auto* cl = card->bodyLayout();
-        auto* customRow = new QHBoxLayout();
-        customRow->setSpacing(16);
-
-        auto* noArrowButton = new AntButton(QStringLiteral("No Arrow"));
-        auto* noArrowPopover = new AntPopover(page);
-        noArrowPopover->setTarget(noArrowButton);
-        noArrowPopover->setArrowVisible(false);
-        noArrowPopover->setTitle(QStringLiteral("Minimal Card"));
-        noArrowPopover->setContent(QStringLiteral("Use this when you want a cleaner floating panel without a directional arrow."));
-
-        auto* longTextButton = new AntButton(QStringLiteral("Long Content"));
-        auto* longTextPopover = new AntPopover(page);
-        longTextPopover->setTrigger(Ant::PopoverTrigger::Click);
-        longTextPopover->setTarget(longTextButton);
-        longTextPopover->setTitle(QStringLiteral("Release Notes"));
-        longTextPopover->setContent(QStringLiteral("This build includes a refreshed icon set, improved input number styling, and new overlay components including alert, tooltip, dropdown and popover."));
-
-        customRow->addWidget(noArrowButton);
-        customRow->addWidget(longTextButton);
-        customRow->addStretch();
-        cl->addLayout(customRow);
         layout->addWidget(card);
     }
 

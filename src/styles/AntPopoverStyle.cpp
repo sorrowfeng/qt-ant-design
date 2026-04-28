@@ -3,6 +3,7 @@
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyleOption>
 
 #include "styles/AntPalette.h"
@@ -27,11 +28,14 @@ bool isBottomPlacement(Ant::TooltipPlacement placement)
 
 struct Metrics
 {
-    int paddingX = 16;
+    int shadowMargin = 8;
+    int paddingX = 12;
     int paddingY = 12;
     int radius = 8;
     int arrowSize = 8;
-    int gap = 10;
+    int gap = 0;
+    int titleBodyGap = 8;
+    int titleMinWidth = 177;
     int maxWidth = 320;
 };
 
@@ -39,21 +43,21 @@ QRect computeBubbleRect(const QRect& rect, const Metrics& m, Ant::TooltipPlaceme
 {
     if (!arrowVisible)
     {
-        return rect.adjusted(8, 8, -8, -8);
+        return rect.adjusted(m.shadowMargin, m.shadowMargin, -m.shadowMargin, -m.shadowMargin);
     }
     if (isTopPlacement(placement))
     {
-        return rect.adjusted(8, 8, -8, -(8 + m.arrowSize));
+        return rect.adjusted(m.shadowMargin, m.shadowMargin, -m.shadowMargin, -(m.shadowMargin + m.arrowSize));
     }
     if (isBottomPlacement(placement))
     {
-        return rect.adjusted(8, 8 + m.arrowSize, -8, -8);
+        return rect.adjusted(m.shadowMargin, m.shadowMargin + m.arrowSize, -m.shadowMargin, -m.shadowMargin);
     }
     if (placement == Ant::TooltipPlacement::Left)
     {
-        return rect.adjusted(8, 8, -(8 + m.arrowSize), -8);
+        return rect.adjusted(m.shadowMargin, m.shadowMargin, -(m.shadowMargin + m.arrowSize), -m.shadowMargin);
     }
-    return rect.adjusted(8 + m.arrowSize, 8, -8, -8);
+    return rect.adjusted(m.shadowMargin + m.arrowSize, m.shadowMargin, -m.shadowMargin, -m.shadowMargin);
 }
 
 QPolygonF computeArrowPolygon(const QRect& bubble, const Metrics& m, Ant::TooltipPlacement placement, bool arrowVisible)
@@ -142,6 +146,37 @@ QColor titleIconColor(Ant::IconType iconType)
     }
 }
 
+QPainterPath popoverSurfacePath(const QRect& bubble, const QPolygonF& arrow, int radius)
+{
+    QPainterPath path;
+    path.setFillRule(Qt::WindingFill);
+    path.addRoundedRect(QRectF(bubble), radius, radius);
+    if (!arrow.isEmpty())
+    {
+        path.addPolygon(arrow);
+    }
+    return path;
+}
+
+void drawPopoverShadow(QPainter* painter, const QPainterPath& surface)
+{
+    if (!painter)
+    {
+        return;
+    }
+
+    const QColor shadowBase = antTheme->tokens().colorShadow;
+    painter->setPen(Qt::NoPen);
+    for (int i = 12; i >= 1; --i)
+    {
+        const qreal progress = static_cast<qreal>(i) / 12.0;
+        QColor shadow = shadowBase;
+        shadow.setAlphaF(0.018 * (1.0 - progress) + 0.004);
+        painter->setBrush(shadow);
+        painter->drawPath(surface.translated(0, i * 0.55));
+    }
+}
+
 void drawTitleIcon(QPainter& painter, const QRectF& rect, Ant::IconType iconType)
 {
     if (iconType == Ant::IconType::None)
@@ -165,7 +200,7 @@ void drawTitleIcon(QPainter& painter, const QRectF& rect, Ant::IconType iconType
 QRect computeBodyRect(const QRect& bubble, const Metrics& m, const QRect& header, bool hasActionWidget)
 {
     QRect inner = bubble.adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY);
-    int top = header.isNull() ? inner.top() : header.bottom() + 8;
+    int top = header.height() <= 0 ? inner.top() : header.top() + header.height() + m.titleBodyGap;
     int bottom = hasActionWidget ? inner.bottom() - 38 : inner.bottom();
     return QRect(inner.left(), top, inner.width(), qMax(24, bottom - top));
 }
@@ -240,21 +275,23 @@ void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter,
     const bool hasActionWidget = popover->actionWidget() != nullptr;
 
     const QRect bubble = computeBubbleRect(option->rect, m, placement, arrowVisible);
+    const QPolygonF arrow = computeArrowPolygon(bubble, m, placement, arrowVisible);
+    const QPainterPath surface = popoverSurfacePath(bubble, arrow, token.borderRadiusLG);
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
     // Shadow and bubble
-    antTheme->drawEffectShadow(painter, bubble, 12, token.borderRadiusLG, 0.55);
-    AntStyleBase::drawCrispRoundedRect(painter, bubble,
-        QPen(token.colorBorderSecondary, token.lineWidth),
-        token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
+    drawPopoverShadow(painter, surface);
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(token.colorBgElevated);
+    painter->drawPath(surface);
 
-    // Arrow
-    if (arrowVisible)
-    {
-        painter->drawPolygon(computeArrowPolygon(bubble, m, placement, arrowVisible));
-    }
+    QColor edge = token.colorShadow;
+    edge.setAlphaF(0.08);
+    painter->setPen(QPen(edge, token.lineWidth));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPath(surface);
 
     // Header
     const bool hasTitleIcon = !popover->title().isEmpty() && popover->titleIconType() != Ant::IconType::None;
@@ -278,10 +315,10 @@ void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter,
 
     // Body
     QFont bodyFont = painter->font();
-    bodyFont.setPixelSize(token.fontSizeSM);
+    bodyFont.setPixelSize(token.fontSize);
     bodyFont.setWeight(QFont::Normal);
     painter->setFont(bodyFont);
-    painter->setPen(token.colorTextSecondary);
+    painter->setPen(token.colorText);
     const QRect body = computeBodyRect(bubble, m, header, hasActionWidget);
     painter->drawText(body, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, popover->content());
 

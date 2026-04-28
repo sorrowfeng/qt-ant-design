@@ -70,11 +70,14 @@ protected:
 private:
     struct Metrics
     {
-        int paddingX = 16;
+        int shadowMargin = 8;
+        int paddingX = 12;
         int paddingY = 12;
         int radius = 8;
         int arrowSize = 8;
-        int gap = 10;
+        int gap = 0;
+        int titleBodyGap = 8;
+        int titleMinWidth = 177;
         int maxWidth = 320;
     };
 
