@@ -52,7 +52,10 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override
     {
         m_hoveredDate = dateAt(event->position());
-        const bool overButton = previousRect().contains(event->position()) || nextRect().contains(event->position());
+        const bool overButton = previousYearRect().contains(event->position())
+            || previousRect().contains(event->position())
+            || nextRect().contains(event->position())
+            || nextYearRect().contains(event->position());
         setCursor((m_hoveredDate.isValid() || overButton) ? Qt::PointingHandCursor : Qt::ArrowCursor);
         update();
         QFrame::mouseMoveEvent(event);
@@ -73,6 +76,12 @@ protected:
             return;
         }
 
+        if (previousYearRect().contains(event->position()))
+        {
+            m_owner->setPanelDate(m_owner->m_panelDate.addYears(-1));
+            event->accept();
+            return;
+        }
         if (previousRect().contains(event->position()))
         {
             m_owner->setPanelDate(m_owner->m_panelDate.addMonths(-1));
@@ -82,6 +91,12 @@ protected:
         if (nextRect().contains(event->position()))
         {
             m_owner->setPanelDate(m_owner->m_panelDate.addMonths(1));
+            event->accept();
+            return;
+        }
+        if (nextYearRect().contains(event->position()))
+        {
+            m_owner->setPanelDate(m_owner->m_panelDate.addYears(1));
             event->accept();
             return;
         }
@@ -115,10 +130,22 @@ private:
     QRectF previousRect() const
     {
         const QRectF panel = panelRect();
+        return QRectF(panel.left() + 36, panel.top() + 12, 28, 28);
+    }
+
+    QRectF previousYearRect() const
+    {
+        const QRectF panel = panelRect();
         return QRectF(panel.left() + 12, panel.top() + 12, 28, 28);
     }
 
     QRectF nextRect() const
+    {
+        const QRectF panel = panelRect();
+        return QRectF(panel.right() - 64, panel.top() + 12, 28, 28);
+    }
+
+    QRectF nextYearRect() const
     {
         const QRectF panel = panelRect();
         return QRectF(panel.right() - 40, panel.top() + 12, 28, 28);
@@ -163,13 +190,15 @@ private:
         font.setWeight(QFont::DemiBold);
         painter.setFont(font);
         painter.setPen(token.colorText);
-        painter.drawText(QRectF(panel.left() + 48, panel.top() + 10, panel.width() - 96, 32),
+        painter.drawText(QRectF(panel.left() + 72, panel.top() + 10, panel.width() - 144, 32),
                          Qt::AlignCenter,
-                         m_owner->m_panelDate.toString(QStringLiteral("MMMM yyyy")));
+                         m_owner->m_panelDate.toString(QStringLiteral("MMM yyyy")));
 
         painter.setPen(QPen(token.colorTextSecondary, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        drawDoubleChevron(painter, previousYearRect(), true);
         drawChevron(painter, previousRect(), true);
         drawChevron(painter, nextRect(), false);
+        drawDoubleChevron(painter, nextYearRect(), false);
 
         painter.setPen(QPen(token.colorSplit, token.lineWidth));
         painter.drawLine(QPointF(panel.left(), panel.top() + 54), QPointF(panel.right(), panel.top() + 54));
@@ -272,6 +301,16 @@ private:
         painter.drawPath(path);
     }
 
+    void drawDoubleChevron(QPainter& painter, const QRectF& rect, bool left) const
+    {
+        painter.save();
+        painter.translate(left ? -4 : 4, 0);
+        drawChevron(painter, rect, left);
+        painter.translate(left ? 8 : -8, 0);
+        drawChevron(painter, rect, left);
+        painter.restore();
+    }
+
     AntDatePicker* m_owner = nullptr;
     QDate m_hoveredDate;
 };
@@ -281,6 +320,8 @@ AntDatePicker::AntDatePicker(QWidget* parent)
 {
     setStyle(new AntDatePickerStyle(style()));
     setAttribute(Qt::WA_Hover, true);
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
@@ -639,19 +680,24 @@ QRectF AntDatePicker::iconRect(const Metrics& metrics) const
 QColor AntDatePicker::borderColor() const
 {
     const auto& token = antTheme->tokens();
+    const bool focused = hasFocus() || m_open;
     if (!isEnabled())
     {
         return token.colorBorderDisabled;
     }
     if (m_status == Ant::Status::Error)
     {
-        return (m_hovered || hasFocus() || m_open) ? token.colorErrorHover : token.colorError;
+        return focused ? token.colorError : (m_hovered ? token.colorErrorHover : token.colorError);
     }
     if (m_status == Ant::Status::Warning)
     {
-        return (m_hovered || hasFocus() || m_open) ? token.colorWarningHover : token.colorWarning;
+        return focused ? token.colorWarning : (m_hovered ? token.colorWarningHover : token.colorWarning);
     }
-    if (m_hovered || hasFocus() || m_open)
+    if (focused)
+    {
+        return token.colorPrimary;
+    }
+    if (m_hovered)
     {
         return token.colorPrimaryHover;
     }
@@ -667,7 +713,9 @@ QColor AntDatePicker::backgroundColor() const
     }
     if (m_variant == Ant::Variant::Filled)
     {
-        return m_hovered ? token.colorFillTertiary : token.colorFillQuaternary;
+        return (hasFocus() || m_open)
+            ? token.colorBgContainer
+            : (m_hovered ? token.colorFillSecondary : token.colorFillTertiary);
     }
     if (m_variant == Ant::Variant::Borderless || m_variant == Ant::Variant::Underlined)
     {
