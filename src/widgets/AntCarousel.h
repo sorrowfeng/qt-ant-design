@@ -3,6 +3,7 @@
 #include <QWidget>
 
 class QTimer;
+class QResizeEvent;
 
 class AntCarousel : public QWidget
 {
@@ -41,12 +42,15 @@ Q_SIGNALS:
 protected:
     void paintEvent(QPaintEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     void updateSlideVisibility();
+    void updateDotsOverlay();
 
     QList<QWidget*> m_slides;
     QTimer* m_timer = nullptr;
+    QWidget* m_dotsOverlay = nullptr;
     bool m_autoPlay = true;
     int m_interval = 3000;
     bool m_showDots = true;

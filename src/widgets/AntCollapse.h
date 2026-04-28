@@ -70,10 +70,13 @@ Q_SIGNALS:
     void accordionChanged(bool accordion);
     void borderedChanged(bool bordered);
 
+protected:
+    void paintEvent(QPaintEvent*) override;
+
 private:
     void onPanelExpanded(AntCollapsePanel* panel, bool expanded);
 
-    bool m_accordion = true;
+    bool m_accordion = false;
     bool m_bordered = true;
     QVBoxLayout* m_layout = nullptr;
     QList<AntCollapsePanel*> m_panels;

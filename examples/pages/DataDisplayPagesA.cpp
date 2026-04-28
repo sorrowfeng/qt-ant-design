@@ -1,6 +1,7 @@
 #include "Pages.h"
 
 #include <QFrame>
+#include <QFont>
 #include <QHBoxLayout>
 #include <QLinearGradient>
 #include <QList>
@@ -10,6 +11,7 @@
 #include <QPair>
 #include <QPoint>
 #include <QSize>
+#include <QSizePolicy>
 #include <QString>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -29,7 +31,6 @@
 #include "widgets/AntIcon.h"
 #include "widgets/AntImage.h"
 #include "widgets/AntList.h"
-#include "widgets/AntSwitch.h"
 #include "widgets/AntTag.h"
 #include "widgets/AntTypography.h"
 
@@ -78,6 +79,50 @@ protected:
     }
 };
 
+class CarouselSlidePreview : public QWidget
+{
+public:
+    CarouselSlidePreview(const QString& text, const QColor& from, const QColor& to, QWidget* parent = nullptr)
+        : QWidget(parent)
+        , m_text(text)
+        , m_from(from)
+        , m_to(to)
+    {
+        setMinimumHeight(160);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        setAttribute(Qt::WA_TranslucentBackground);
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event)
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        const QRectF r = rect();
+        QPainterPath path;
+        path.addRoundedRect(r, 8.0, 8.0);
+
+        QLinearGradient gradient(r.topLeft(), r.bottomRight());
+        gradient.setColorAt(0.0, m_from);
+        gradient.setColorAt(1.0, m_to);
+        painter.fillPath(path, gradient);
+
+        QFont labelFont = painter.font();
+        labelFont.setPixelSize(24);
+        labelFont.setWeight(QFont::Medium);
+        painter.setFont(labelFont);
+        painter.setPen(Qt::white);
+        painter.drawText(rect(), Qt::AlignCenter, m_text);
+    }
+
+private:
+    QString m_text;
+    QColor m_from;
+    QColor m_to;
+};
+
 AntIcon* makeCardActionIcon(Ant::IconType type)
 {
     auto* icon = new AntIcon(type);
@@ -98,6 +143,16 @@ AntIcon* makeEllipsisActionIcon()
     dots.addEllipse(QRectF(21, 14, 4, 4));
     icon->setCustomPath(dots);
     return icon;
+}
+
+QWidget* makeCollapseContent(const QString& text, QWidget* parent)
+{
+    auto* content = new QWidget(parent);
+    auto* layout = new QVBoxLayout(content);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(example::pages::makeText(text, content));
+    return content;
 }
 }
 
@@ -418,56 +473,17 @@ QWidget* createCarouselPage(QWidget* /*owner*/)
     layout->setSpacing(16);
 
     {
-        auto* card = new AntCard(QStringLiteral("AntCarousel"));
+        auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* carousel = new AntCarousel(page);
-        carousel->setMinimumHeight(220);
-        carousel->setInterval(2200);
-
-        const QStringList slideTitles = {
-            QStringLiteral("Release Status"),
-            QStringLiteral("Design Tokens"),
-            QStringLiteral("Gallery Coverage"),
-        };
-
-        for (const auto& slideTitle : slideTitles)
-        {
-            auto* slideCard = new QWidget();
-            auto* cardLayout = new QVBoxLayout(slideCard);
-            cardLayout->setContentsMargins(24, 24, 24, 24);
-            auto* heading = makeText(slideTitle, slideCard);
-            heading->setStrong(true);
-            cardLayout->addWidget(heading);
-            auto* body = makeParagraph(QStringLiteral("Click the left/right side of the carousel to switch slides. Dots stay in sync with the current page."), slideCard);
-            cardLayout->addWidget(body);
-            cardLayout->addStretch();
-            carousel->addSlide(slideCard);
-        }
-
-        auto* current = makeSecondaryText(QStringLiteral("Current slide: 1 / %1").arg(carousel->count()), page);
-        QObject::connect(carousel, &AntCarousel::currentIndexChanged, current, [current, carousel](int index) {
-            current->setText(QStringLiteral("Current slide: %1 / %2").arg(index + 1).arg(carousel->count()));
-        });
-
-        auto* controls = new QHBoxLayout();
-        auto* autoplay = new AntSwitch();
-        autoplay->setChecked(carousel->autoPlay());
-        auto* dots = new AntSwitch();
-        dots->setChecked(carousel->showDots());
-        controls->addWidget(makeText(QStringLiteral("Auto play"), page));
-        controls->addWidget(autoplay);
-        controls->addSpacing(16);
-        controls->addWidget(makeText(QStringLiteral("Show dots"), page));
-        controls->addWidget(dots);
-        controls->addStretch();
-
-        QObject::connect(autoplay, &AntSwitch::checkedChanged, carousel, &AntCarousel::setAutoPlay);
-        QObject::connect(dots, &AntSwitch::checkedChanged, carousel, &AntCarousel::setShowDots);
+        carousel->setFixedHeight(160);
+        carousel->addSlide(new CarouselSlidePreview(QStringLiteral("Slide 1"), QColor(QStringLiteral("#1677ff")), QColor(QStringLiteral("#36cfc9")), carousel));
+        carousel->addSlide(new CarouselSlidePreview(QStringLiteral("Slide 2"), QColor(QStringLiteral("#722ed1")), QColor(QStringLiteral("#eb2f96")), carousel));
+        carousel->addSlide(new CarouselSlidePreview(QStringLiteral("Slide 3"), QColor(QStringLiteral("#fa8c16")), QColor(QStringLiteral("#fadb14")), carousel));
 
         cl->addWidget(carousel);
-        cl->addWidget(current);
-        cl->addLayout(controls);
+        cl->addStretch();
         layout->addWidget(card);
     }
 
@@ -483,30 +499,38 @@ QWidget* createCollapsePage(QWidget* /*owner*/)
     layout->setSpacing(16);
 
     {
-        auto* card = new AntCard(QStringLiteral("AntCollapse"));
+        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* cl = card->bodyLayout();
+
+        auto* collapse = new AntCollapse(page);
+
+        auto* p1 = collapse->addPanel(QStringLiteral("Header 1"));
+        p1->setContentWidget(makeCollapseContent(QStringLiteral("Content 1"), collapse));
+        p1->setExpanded(true);
+
+        auto* p2 = collapse->addPanel(QStringLiteral("Header 2"));
+        p2->setContentWidget(makeCollapseContent(QStringLiteral("Content 2"), collapse));
+
+        auto* p3 = collapse->addPanel(QStringLiteral("Header 3"));
+        p3->setContentWidget(makeCollapseContent(QStringLiteral("Content 3"), collapse));
+
+        cl->addWidget(collapse);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("Accordion"));
         auto* cl = card->bodyLayout();
 
         auto* collapse = new AntCollapse(page);
         collapse->setAccordion(true);
 
-        auto* p1 = collapse->addPanel(QStringLiteral("Panel 1 — First Item"));
-        auto* c1 = new QWidget();
-        auto* l1 = new QVBoxLayout(c1);
-        l1->addWidget(makeParagraph(QStringLiteral("Content for panel 1. This area expands and collapses."), c1));
-        p1->setContentWidget(c1);
+        auto* p1 = collapse->addPanel(QStringLiteral("Panel 1"));
+        p1->setContentWidget(makeCollapseContent(QStringLiteral("Content 1"), collapse));
+        p1->setExpanded(true);
 
-        auto* p2 = collapse->addPanel(QStringLiteral("Panel 2 — Second Item"));
-        auto* c2 = new QWidget();
-        auto* l2 = new QVBoxLayout(c2);
-        l2->addWidget(makeParagraph(QStringLiteral("Panel 2 content here."), c2));
-        p2->setContentWidget(c2);
-
-        auto* p3 = collapse->addPanel(QStringLiteral("Panel 3 — Third Item (Disabled)"));
-        p3->setDisabled(true);
-        auto* c3 = new QWidget();
-        auto* l3 = new QVBoxLayout(c3);
-        l3->addWidget(makeParagraph(QStringLiteral("This panel is disabled."), c3));
-        p3->setContentWidget(c3);
+        auto* p2 = collapse->addPanel(QStringLiteral("Panel 2"));
+        p2->setContentWidget(makeCollapseContent(QStringLiteral("Content 2"), collapse));
 
         cl->addWidget(collapse);
         layout->addWidget(card);

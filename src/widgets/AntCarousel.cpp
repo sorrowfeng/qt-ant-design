@@ -2,9 +2,65 @@
 
 #include <QMouseEvent>
 #include <QPainter>
+#include <QResizeEvent>
 #include <QTimer>
 
 #include "core/AntTheme.h"
+
+namespace
+{
+class CarouselDotsOverlay : public QWidget
+{
+public:
+    explicit CarouselDotsOverlay(AntCarousel* carousel)
+        : QWidget(carousel)
+        , m_carousel(carousel)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_NoSystemBackground);
+        setAttribute(Qt::WA_TranslucentBackground);
+        setAutoFillBackground(false);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        if (!m_carousel || !m_carousel->showDots() || m_carousel->count() <= 1)
+            return;
+
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(Qt::NoPen);
+
+        constexpr qreal dotWidth = 16.0;
+        constexpr qreal dotActiveWidth = 24.0;
+        constexpr qreal dotHeight = 3.0;
+        constexpr qreal dotGap = 8.0;
+        constexpr qreal dotOffset = 12.0;
+
+        const int count = m_carousel->count();
+        const int active = m_carousel->currentIndex();
+        const qreal totalWidth = dotActiveWidth + (count - 1) * dotWidth + (count - 1) * dotGap;
+        qreal x = (width() - totalWidth) / 2.0;
+        const qreal y = height() - dotOffset - dotHeight;
+
+        for (int i = 0; i < count; ++i)
+        {
+            const bool isActive = i == active;
+            const qreal w = isActive ? dotActiveWidth : dotWidth;
+            QColor color = token.colorBgContainer;
+            color.setAlphaF(isActive ? 1.0 : 0.2);
+            painter.setBrush(color);
+            painter.drawRoundedRect(QRectF(x, y, w, dotHeight), dotHeight / 2.0, dotHeight / 2.0);
+            x += w + dotGap;
+        }
+    }
+
+private:
+    AntCarousel* m_carousel = nullptr;
+};
+}
 
 AntCarousel::AntCarousel(QWidget* parent)
     : QWidget(parent)
@@ -20,7 +76,13 @@ AntCarousel::AntCarousel(QWidget* parent)
     });
     if (m_autoPlay) m_timer->start();
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+    m_dotsOverlay = new CarouselDotsOverlay(this);
+    m_dotsOverlay->hide();
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        update();
+        updateDotsOverlay();
+    });
 }
 
 bool AntCarousel::autoPlay() const { return m_autoPlay; }
@@ -46,7 +108,7 @@ void AntCarousel::setShowDots(bool show)
 {
     if (m_showDots == show) return;
     m_showDots = show;
-    update();
+    updateDotsOverlay();
     Q_EMIT showDotsChanged(m_showDots);
 }
 
@@ -86,6 +148,8 @@ void AntCarousel::clearSlides()
     for (auto* w : m_slides) w->deleteLater();
     m_slides.clear();
     m_currentIndex = 0;
+    updateDotsOverlay();
+    update();
 }
 
 void AntCarousel::updateSlideVisibility()
@@ -103,6 +167,7 @@ void AntCarousel::updateSlideVisibility()
             m_slides[i]->hide();
         }
     }
+    updateDotsOverlay();
 }
 
 void AntCarousel::paintEvent(QPaintEvent*)
@@ -116,23 +181,6 @@ void AntCarousel::paintEvent(QPaintEvent*)
         p.drawText(rect(), Qt::AlignCenter, QStringLiteral("No slides"));
         return;
     }
-
-    if (m_showDots && m_slides.size() > 1)
-    {
-        const qreal dotSz = 8;
-        const qreal spacing = 12;
-        const qreal totalW = m_slides.size() * (dotSz + spacing) - spacing;
-        const qreal startX = (width() - totalW) / 2.0;
-        const qreal y = height() - 24;
-
-        for (int i = 0; i < m_slides.size(); ++i)
-        {
-            QRectF dotR(startX + i * (dotSz + spacing), y, dotSz, dotSz);
-            p.setPen(Qt::NoPen);
-            p.setBrush(i == m_currentIndex ? token.colorPrimary : token.colorBorderSecondary);
-            p.drawEllipse(dotR);
-        }
-    }
 }
 
 void AntCarousel::mousePressEvent(QMouseEvent* e)
@@ -142,4 +190,21 @@ void AntCarousel::mousePressEvent(QMouseEvent* e)
     else if (e->x() > width() * 2 / 3)
         setCurrentIndex(m_currentIndex + 1);
     QWidget::mousePressEvent(e);
+}
+
+void AntCarousel::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    updateSlideVisibility();
+}
+
+void AntCarousel::updateDotsOverlay()
+{
+    if (!m_dotsOverlay)
+        return;
+
+    m_dotsOverlay->setGeometry(rect());
+    m_dotsOverlay->setVisible(m_showDots && m_slides.size() > 1);
+    m_dotsOverlay->raise();
+    m_dotsOverlay->update();
 }

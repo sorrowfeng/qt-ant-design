@@ -308,12 +308,12 @@ void TestAntDataDisplayB::propertiesAndSignals()
 
     // AntCollapse
     auto* col = new AntCollapse;
-    QCOMPARE(col->accordion(), true);
+    QCOMPARE(col->accordion(), false);
     QCOMPARE(col->bordered(), true);
 
     QSignalSpy accSpy(col, &AntCollapse::accordionChanged);
-    col->setAccordion(false);
-    QCOMPARE(col->accordion(), false);
+    col->setAccordion(true);
+    QCOMPARE(col->accordion(), true);
     QCOMPARE(accSpy.count(), 1);
 
     QSignalSpy cbSpy(col, &AntCollapse::borderedChanged);

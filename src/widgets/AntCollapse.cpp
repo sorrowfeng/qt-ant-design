@@ -2,10 +2,18 @@
 
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
+
+namespace
+{
+constexpr int kCollapseHeaderHeight = 46;
+constexpr int kCollapseContentPadding = 16;
+constexpr int kCollapseIconX = 22;
+}
 
 // ---- AntCollapsePanel ----
 
@@ -16,7 +24,7 @@ AntCollapsePanel::AntCollapsePanel(const QString& title, QWidget* parent)
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     m_layout = new QVBoxLayout(this);
-    m_layout->setContentsMargins(16, 44, 16, 0);
+    m_layout->setContentsMargins(16, kCollapseHeaderHeight, 16, 0);
     m_layout->setSpacing(0);
 
     m_animation = new QVariantAnimation(this);
@@ -74,7 +82,9 @@ QSize AntCollapsePanel::sizeHint() const
     int contentH = (m_content && m_expanded && m_animation->state() != QAbstractAnimation::Running)
                        ? m_content->sizeHint().height()
                        : m_contentHeight;
-    return QSize(300, 44 + contentH);
+    if (contentH > 0)
+        contentH += kCollapseContentPadding * 2;
+    return QSize(300, kCollapseHeaderHeight + contentH);
 }
 
 void AntCollapsePanel::applyExpanded(bool expanded, bool animate)
@@ -82,6 +92,10 @@ void AntCollapsePanel::applyExpanded(bool expanded, bool animate)
     if (m_expanded == expanded && m_animation->state() == QAbstractAnimation::Stopped)
         return;
     m_expanded = expanded;
+    m_layout->setContentsMargins(16,
+        kCollapseHeaderHeight + (expanded ? kCollapseContentPadding : 0),
+        16,
+        expanded ? kCollapseContentPadding : 0);
 
     int targetH = 0;
     if (expanded && m_content)
@@ -113,27 +127,24 @@ void AntCollapsePanel::paintEvent(QPaintEvent*)
     QPainter p(this);
     p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    const QRectF headerR = QRectF(0, 0, width(), 44);
+    const QRectF headerR = QRectF(0, 0, width(), kCollapseHeaderHeight);
 
     // Header background
-    if (m_hovered)
-    {
-        p.fillRect(headerR, token.colorFillQuaternary);
-    }
+    p.fillRect(headerR, m_hovered ? token.colorFillTertiary : token.colorFillQuaternary);
 
     // Bottom border
-    p.setPen(QPen(token.colorSplit, token.lineWidth));
+    p.setPen(QPen(token.colorBorder, token.lineWidth));
     p.drawLine(QPointF(0, headerR.bottom()), QPointF(width(), headerR.bottom()));
 
     // Expand arrow
-    const qreal arrowX = 16;
+    const qreal arrowX = kCollapseIconX;
     const qreal arrowY = headerR.center().y();
     const qreal sz = 4;
-    p.setPen(QPen(token.colorTextSecondary, 2));
+    p.setPen(QPen(isEnabled() ? token.colorText : token.colorTextDisabled, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     if (m_expanded)
     {
-        p.drawLine(QPointF(arrowX - sz, arrowY + sz * 0.5), QPointF(arrowX, arrowY - sz * 0.8));
-        p.drawLine(QPointF(arrowX, arrowY - sz * 0.8), QPointF(arrowX + sz, arrowY + sz * 0.5));
+        p.drawLine(QPointF(arrowX - sz, arrowY - sz * 0.5), QPointF(arrowX, arrowY + sz * 0.7));
+        p.drawLine(QPointF(arrowX, arrowY + sz * 0.7), QPointF(arrowX + sz, arrowY - sz * 0.5));
     }
     else
     {
@@ -146,19 +157,21 @@ void AntCollapsePanel::paintEvent(QPaintEvent*)
     f.setPixelSize(token.fontSize);
     p.setFont(f);
     p.setPen(isEnabled() ? token.colorText : token.colorTextDisabled);
-    p.drawText(QRectF(36, 0, width() - 52, 44), Qt::AlignLeft | Qt::AlignVCenter, m_title);
+    p.drawText(QRectF(40, 0, width() - 56, kCollapseHeaderHeight), Qt::AlignLeft | Qt::AlignVCenter, m_title);
 
     // Content area background
     if (m_contentHeight > 0 && m_content)
     {
-        const QRectF contentR(0, 44, width(), m_contentHeight);
+        const QRectF contentR(0, kCollapseHeaderHeight, width(), m_contentHeight + kCollapseContentPadding * 2);
         p.fillRect(contentR, token.colorBgContainer);
+        p.setPen(QPen(token.colorBorder, token.lineWidth));
+        p.drawLine(QPointF(0, height() - 1), QPointF(width(), height() - 1));
     }
 }
 
 void AntCollapsePanel::mousePressEvent(QMouseEvent* e)
 {
-    if (e->button() == Qt::LeftButton && e->pos().y() < 44 && isEnabled())
+    if (e->button() == Qt::LeftButton && e->pos().y() < kCollapseHeaderHeight && isEnabled())
         applyExpanded(!m_expanded, true);
     QWidget::mousePressEvent(e);
 }
@@ -181,9 +194,10 @@ AntCollapse::AntCollapse(QWidget* parent)
     : QWidget(parent)
 {
     m_layout = new QVBoxLayout(this);
-    m_layout->setContentsMargins(0, 0, 0, 0);
+    m_layout->setContentsMargins(1, 1, 1, 1);
     m_layout->setSpacing(0);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    setAttribute(Qt::WA_StyledBackground, false);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
 }
@@ -240,4 +254,23 @@ QSize AntCollapse::sizeHint() const
     for (auto* p : m_panels)
         h += p->sizeHint().height();
     return QSize(300, h + (m_bordered ? 2 : 0));
+}
+
+void AntCollapse::paintEvent(QPaintEvent*)
+{
+    const auto& token = antTheme->tokens();
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    const QRectF r = rect().adjusted(0.5, 0.5, -0.5, -0.5);
+    QPainterPath path;
+    path.addRoundedRect(r, token.borderRadiusLG, token.borderRadiusLG);
+    painter.fillPath(path, token.colorFillQuaternary);
+
+    if (m_bordered)
+    {
+        painter.setPen(QPen(token.colorBorder, token.lineWidth));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawPath(path);
+    }
 }
