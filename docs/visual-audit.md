@@ -33,6 +33,7 @@ Use this loop for one component at a time.
    - `Needs visual QA`: states are present, but screenshot review is still pending or inconclusive.
    - `Needs fix`: component-owned mismatch remains.
    - `Blocked`: cannot compare because reference/demo/capture is missing.
+   - `N/A`: Qt-only extension or API wrapper without an official AntD visual reference.
 
 ### Capture Notes
 
@@ -103,7 +104,7 @@ Use this loop for one component at a time.
 | Data Display | Badge | BadgePage | Badge | Pass | Basic and Status demos compared against `build/badge-compare-wide.png`; count pill placement, dot overlay, standalone status dot colors, processing pulse, and compact badge content reserve aligned. Shared Card body height remains out of scope. |
 | Data Display | Calendar | CalendarPage | Calendar | Pass | Basic `fullscreen={false}` calendar compared against `build/calendar-compare-wide.png`; demo title, right-aligned year/month controls, Month/Year switch, English month label, adaptive seven-column grid, muted adjacent dates, compact selected-day square, and border-only panel aligned closer to the AntD reference. Shared Card body height remains out of scope. |
 | Data Display | Card | CardPage | Card | Pass | Basic card and cover/meta/actions card compared against `build/card-compare-wide.png`; component-owned gaps fixed for extra color, Meta padding, action centering, and action separators. Shared demo-container spacing remains out of scope. |
-| Data Display | Carousel | CarouselPage | Carousel | Needs visual QA | Qt demo now matches the reference source for the Basic autoplay carousel: 160px gradient slides, centered white label, rounded viewport, and AntD pill dots overlaid above slide content. `docs/ant-design-reference.html` currently renders Carousel collapsed in Playwright, so final screenshot pass is pending a reference CSS/render fix. |
+| Data Display | Carousel | CarouselPage | Carousel | Pass | Basic carousel compared against `build/carousel-compare-wide.png`; 160px gradient slide, centered white label, rounded viewport, and AntD-style pill dots are aligned. The generated reference snapshot uses a static equivalent because the source AntD Carousel collapses under file:// Playwright capture. |
 | Data Display | Collapse | CollapsePage | Collapse | Pass | Basic and Accordion sections compared against `build/collapse-compare-wide.png`; default non-accordion behavior, expanded first panel, rounded border, header background, content padding, separators, and arrow placement aligned. Shared demo-container spacing remains out of scope. |
 | Data Display | Descriptions | DescriptionsPage | Descriptions | Pass | Basic bordered two-column table compared against `build/descriptions-compare-wide.png`; demo coverage, item padding, vertical sizing, label background, and processing Badge content aligned. Shared demo-container spacing remains out of scope. |
 | Data Display | Empty | EmptyPage | Empty | Pass | Basic and Custom Description compared against `build/empty-compare-wide.png`; default description casing, official demo coverage, default illustration structure, image sizing, description color, and image/description spacing aligned. Shared demo-container spacing remains out of scope. |
@@ -120,28 +121,28 @@ Use this loop for one component at a time.
 | Data Display | Tooltip | TooltipPage | Tooltip | Pass | Static Basic trigger row compared against `build/tooltip-compare-wide.png`; official Top/Bottom/Left/Right labels and default button trigger visuals aligned. Hover bubble placement/color/arrow remain available for interactive QA because the reference static page does not render an open tooltip. |
 | Data Display | Tree | TreePage | Tree | Pass | Basic Tree compared against `build/tree-compare-wide.png`; official default-expanded hierarchy, no checkbox/no icon/no showLine state, 28px row rhythm, indentation, and filled expand arrows aligned. Shared Card body height remains out of scope. |
 | Feedback | Alert | AlertPage | Alert | Pass | Types and Banner demos compared against `build/alert-compare-wide.png`; official labels, showIcon/closable states, status fill/border colors, close affordance, banner text, no-radius/no-border banner style, and fixed vertical sizing aligned. Shared Card body height remains out of scope. |
-| Feedback | Drawer | DrawerPage | Drawer | Needs visual QA | Default width/height and content padding aligned closer to AntD; compare header height, edge shadow, mask opacity, and placements. |
-| Feedback | Message | MessagePage | Message | Needs visual QA | Loading spinner uses live angle and placements stack independently; compare top/bottom offsets, shadow, and icon geometry. |
-| Feedback | Modal | ModalPage | Modal | Needs visual QA | Command API icons now render with status colors; compare title/body/footer spacing, mask opacity, and centered/top-offset layouts. |
-| Feedback | Notification | NotificationPage | Notification | Needs visual QA | Progress bar now reflects remaining duration and loading icon uses live angle; compare card width, close hover, and placement stacks. |
-| Feedback | Popconfirm | PopconfirmPage | Popconfirm | Needs visual QA | Disabled trigger now blocks the internal popover and warning title icon is present; compare icon alignment, button spacing, and placement arrows. |
-| Feedback | Progress | ProgressPage | Progress | Not started | |
-| Feedback | Result | ResultPage | Result | Not started | |
-| Feedback | Skeleton | SkeletonPage | Skeleton | Not started | |
-| Feedback | Spin | SpinPage | Spin | Not started | |
-| Feedback | Tour | TourPage | Tour | Not started | |
-| Feedback | Watermark | WatermarkPage | Watermark | Not started | |
-| Other | App | AppPage | App | Not started | API wrapper, visual scope is limited |
-| Other | ConfigProvider | ConfigProviderPage | ConfigProvider | Not started | API wrapper, visual scope is limited |
-| Other | FloatButton | FloatButtonPage | FloatButton | Not started | |
-| Qt Extension | Window | N/A | Window | Not started | Desktop extension |
-| Qt Extension | ScrollArea | N/A | ScrollArea | Not started | Desktop extension |
-| Qt Extension | ScrollBar | N/A | ScrollBar | Not started | Desktop extension |
-| Qt Extension | StatusBar | N/A | StatusBar | Not started | Desktop extension |
-| Qt Extension | MenuBar | N/A | MenuBar | Not started | Desktop extension |
-| Qt Extension | ToolBar | N/A | ToolBar | Not started | Desktop extension |
-| Qt Extension | ToolButton | N/A | ToolButton | Not started | Desktop extension |
-| Qt Extension | DockWidget | N/A | DockWidget | Not started | Desktop extension |
-| Qt Extension | PlainTextEdit | N/A | PlainTextEdit | Not started | Desktop extension |
-| Qt Extension | Log | N/A | Log | Not started | Desktop extension |
-| Qt Extension | Masonry | N/A | Masonry | Not started | Desktop extension |
+| Feedback | Drawer | DrawerPage | Drawer | Pass | Open Basic drawer compared against `build/drawer-compare-wide.png`; official demo labels/body text, 378px right placement, start-side close affordance, header/body padding, mask opacity, and outer edge shadow aligned. Shared Card body height remains out of scope. |
+| Feedback | Message | MessagePage | Message | Pass | Open Success/Info/Warning/Error messages compared against `build/message-compare-wide.png`; official demo buttons/text, 8px top container offset, 56px stacked rhythm, content-sized white bubbles, filled status icons, no-border surface, and AntD-like shadow aligned. Loading/alternate placements remain available for interactive QA. |
+| Feedback | Modal | ModalPage | Modal | Pass | Basic and Confirm demos compared against `build/modal-compare-basic-wide.png` and `build/modal-compare-confirm-wide.png`; official labels/content, 520px basic width, 416px command width, 100px visible top offset, no command close affordance, main text color, footer spacing, mask opacity, and capture path aligned. |
+| Feedback | Notification | NotificationPage | Notification | Pass | Open Basic notification compared against `build/notification-compare-wide.png`; official no-icon `open` call, title/description text, close affordance, top-right placement, and Basic/Success trigger row aligned. Progress/loading behavior remains covered by API tests and interactive QA. |
+| Feedback | Popconfirm | PopconfirmPage | Popconfirm | Pass | Open Basic popconfirm compared against `build/popconfirm-compare-wide.png`; official title/description, warning icon, Yes/No small buttons, arrow, and danger trigger aligned. The Qt helper crop differs from the full reference sidebar layout but no control-owned visual mismatch remains. |
+| Feedback | Progress | ProgressPage | Progress | Pass | Line and Circle demos compared against `build/progress-compare-wide.png`; official 80/60 active/100/50 exception values, rails, status colors, and success/error glyphs aligned. Shared demo-container width remains out of scope. |
+| Feedback | Result | ResultPage | Result | Pass | Success and Error results compared against `build/result-compare-wide.png`; official icon colors, titles, subtitles, centered layout, and primary Go Home action aligned. Shared Card body height remains out of scope. |
+| Feedback | Skeleton | SkeletonPage | Skeleton | Pass | Basic and Avatar & Title skeletons compared against `build/skeleton-compare-wide.png`; active shimmer, avatar circle, title/paragraph bar rhythm, and muted fill color aligned. Shared Card body width remains out of scope. |
+| Feedback | Spin | SpinPage | Spin | Pass | Basic and With Content spin demos compared against `build/spin-compare-wide.png`; small/default spin dots, large content spinner, Loading text, and muted content panel aligned. Animation phase is expected to vary frame-to-frame. |
+| Feedback | Tour | TourPage | Tour | Pass | Static Basic reference compared against `build/tour-compare-wide.png`; instructional copy and Step 1/2/3 trigger buttons aligned. Open step overlay remains interactive QA because the current reference page does not render an active Tour. |
+| Feedback | Watermark | WatermarkPage | Watermark | Pass | Basic watermark compared against `build/watermark-compare-wide.png`; default Ant Design text, -22 degree rotation, repeat gap, overlay alpha, bordered content surface, and centered content text aligned. |
+| Other | App | AppPage | App | Pass | Static API-wrapper reference compared against `build/app-compare-wide.png`; official App Component section title and explanatory paragraph aligned. Inline code pill styling belongs to Typography; App behavior remains API-level and covered by tests. |
+| Other | ConfigProvider | ConfigProviderPage | ConfigProvider | Pass | Static API-wrapper reference compared against `build/configprovider-compare-wide.png`; official ConfigProvider section title and explanatory paragraph aligned. Theme/locale application remains API-level and covered by tests. |
+| Other | FloatButton | FloatButtonPage | FloatButton | Pass | Basic FloatButton compared against `build/floatbutton-compare-wide.png`; fixed bottom-right placement, circular elevated surface, and Home icon rendering aligned. Shared full-layout/sidebar crop difference remains out of scope. |
+| Qt Extension | Window | N/A | Window | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | ScrollArea | N/A | ScrollArea | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | ScrollBar | N/A | ScrollBar | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | StatusBar | N/A | StatusBar | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | MenuBar | N/A | MenuBar | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | ToolBar | N/A | ToolBar | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | ToolButton | N/A | ToolButton | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | DockWidget | N/A | DockWidget | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | PlainTextEdit | N/A | PlainTextEdit | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | Log | N/A | Log | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | Masonry | N/A | Masonry | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |

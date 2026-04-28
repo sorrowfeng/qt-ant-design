@@ -21,6 +21,12 @@ AntFloatButton::AntFloatButton(QWidget* parent)
     m_positionTimer->setSingleShot(true);
     m_positionTimer->setInterval(50);
     connect(m_positionTimer, &QTimer::timeout, this, &AntFloatButton::updatePosition);
+
+    installEventFilter(this);
+    if (parentWidget())
+    {
+        parentWidget()->installEventFilter(this);
+    }
 }
 
 QString AntFloatButton::icon() const { return m_icon; }
@@ -280,7 +286,16 @@ bool AntFloatButton::eventFilter(QObject* watched, QEvent* event)
     }
     if (watched == this && event->type() == QEvent::ParentChange)
     {
+        if (parentWidget())
+        {
+            parentWidget()->installEventFilter(this);
+        }
         updatePosition();
+    }
+    if (watched == parentWidget() &&
+        (event->type() == QEvent::Resize || event->type() == QEvent::Show))
+    {
+        m_positionTimer->start();
     }
     // Close group on click outside
     if (m_open && event->type() == QEvent::MouseButtonPress && watched != this)

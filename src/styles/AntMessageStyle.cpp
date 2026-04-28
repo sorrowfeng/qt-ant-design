@@ -27,28 +27,67 @@ QColor computeAccentColor(Ant::MessageType type)
     }
 }
 
-QString computeIconText(Ant::MessageType type)
-{
-    switch (type)
-    {
-    case Ant::MessageType::Success:
-        return QStringLiteral("✓");
-    case Ant::MessageType::Warning:
-        return QStringLiteral("!");
-    case Ant::MessageType::Error:
-        return QStringLiteral("×");
-    case Ant::MessageType::Info:
-    default:
-        return QStringLiteral("i");
-    }
-}
-
 void drawLoadingIcon(QPainter& painter, const QRectF& rect, const QColor& color, int angle)
 {
     painter.save();
     painter.setPen(QPen(color, 1.8, Qt::SolidLine, Qt::RoundCap));
     painter.setBrush(Qt::NoBrush);
     painter.drawArc(rect.adjusted(1, 1, -1, -1), angle * 16, 270 * 16);
+    painter.restore();
+}
+
+void drawMessageShadow(QPainter& painter, const QRectF& bubble, qreal radius)
+{
+    painter.save();
+    painter.setPen(Qt::NoPen);
+
+    for (int i = 12; i >= 1; --i)
+    {
+        const qreal progress = static_cast<qreal>(i) / 12.0;
+        const qreal alpha = 0.003 + 0.008 * (1.0 - progress);
+        const QRectF layer = bubble.adjusted(-i * 0.42, i * 0.12, i * 0.42, i * 0.62 + 2.0);
+        painter.setBrush(AntPalette::alpha(Qt::black, alpha));
+        painter.drawRoundedRect(layer, radius + i * 0.25, radius + i * 0.25);
+    }
+
+    painter.restore();
+}
+
+void drawStatusIcon(QPainter& painter, const QRectF& rect, const QColor& color, Ant::MessageType type)
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawEllipse(rect.adjusted(1, 1, -1, -1));
+
+    const QPointF center = rect.center();
+    painter.setPen(QPen(Qt::white, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+
+    switch (type)
+    {
+    case Ant::MessageType::Success:
+        painter.drawLine(QPointF(center.x() - 4.2, center.y() + 0.1), QPointF(center.x() - 1.2, center.y() + 3.1));
+        painter.drawLine(QPointF(center.x() - 1.2, center.y() + 3.1), QPointF(center.x() + 4.6, center.y() - 4.0));
+        break;
+    case Ant::MessageType::Error:
+        painter.drawLine(QPointF(center.x() - 3.4, center.y() - 3.4), QPointF(center.x() + 3.4, center.y() + 3.4));
+        painter.drawLine(QPointF(center.x() + 3.4, center.y() - 3.4), QPointF(center.x() - 3.4, center.y() + 3.4));
+        break;
+    case Ant::MessageType::Warning:
+    case Ant::MessageType::Info:
+    default:
+    {
+        QFont iconFont = painter.font();
+        iconFont.setPixelSize(type == Ant::MessageType::Info ? 11 : 12);
+        iconFont.setWeight(QFont::DemiBold);
+        painter.setFont(iconFont);
+        painter.setPen(Qt::white);
+        painter.drawText(rect, Qt::AlignCenter, type == Ant::MessageType::Info ? QStringLiteral("i") : QStringLiteral("!"));
+        break;
+    }
+    }
+
     painter.restore();
 }
 } // namespace
@@ -124,11 +163,11 @@ void AntMessageStyle::drawMessage(const QStyleOption* option, QPainter* painter,
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
     // Shadow
-    antTheme->drawEffectShadow(painter, bubble.toRect(), 10, token.borderRadiusLG, 0.55);
+    drawMessageShadow(*painter, bubble, token.borderRadiusLG);
 
     // Bubble
     AntStyleBase::drawCrispRoundedRect(painter, bubble.toRect(),
-        QPen(token.colorBorderSecondary, token.lineWidth),
+        Qt::NoPen,
         token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
 
     // Icon
@@ -139,12 +178,7 @@ void AntMessageStyle::drawMessage(const QStyleOption* option, QPainter* painter,
     }
     else
     {
-        QFont iconFont = painter->font();
-        iconFont.setPixelSize(14);
-        iconFont.setWeight(QFont::DemiBold);
-        painter->setFont(iconFont);
-        painter->setPen(accent);
-        painter->drawText(iconRect, Qt::AlignCenter, computeIconText(messageType));
+        drawStatusIcon(*painter, iconRect, accent, messageType);
     }
 
     // Text

@@ -64,16 +64,37 @@ AntNotification::AntNotification(QWidget* parent)
 
 AntNotification* AntNotification::open(const QString& title,
                                        const QString& description,
+                                       QWidget* anchor,
+                                       int durationMs,
+                                       Ant::Placement placement)
+{
+    return create(title, description, Ant::MessageType::Info, false, anchor, durationMs, placement);
+}
+
+AntNotification* AntNotification::open(const QString& title,
+                                       const QString& description,
                                        Ant::MessageType type,
                                        QWidget* anchor,
                                        int durationMs,
                                        Ant::Placement placement)
+{
+    return create(title, description, type, true, anchor, durationMs, placement);
+}
+
+AntNotification* AntNotification::create(const QString& title,
+                                         const QString& description,
+                                         Ant::MessageType type,
+                                         bool iconVisible,
+                                         QWidget* anchor,
+                                         int durationMs,
+                                         Ant::Placement placement)
 {
     auto* notification = new AntNotification();
     notification->m_anchor = anchor;
     notification->setTitle(title);
     notification->setDescription(description);
     notification->setNotificationType(type);
+    notification->setIconVisible(iconVisible);
     notification->setPlacement(placement);
     notification->setDuration(durationMs);
     notification->adjustSize();
@@ -253,12 +274,28 @@ void AntNotification::setClosable(bool closable)
     Q_EMIT closableChanged(m_closable);
 }
 
+bool AntNotification::iconVisible() const { return m_iconVisible; }
+
+void AntNotification::setIconVisible(bool visible)
+{
+    if (m_iconVisible == visible)
+    {
+        return;
+    }
+    m_iconVisible = visible;
+    updateSpinnerState();
+    updateGeometry();
+    update();
+    Q_EMIT iconVisibleChanged(m_iconVisible);
+}
+
 int AntNotification::spinnerAngle() const { return m_spinnerAngle; }
 
 QSize AntNotification::sizeHint() const
 {
     const auto& token = antTheme->tokens();
-    const int contentWidth = NoticeWidth - token.paddingLG * 2 - 30 - token.marginSM - (m_closable ? 28 : 0);
+    const int iconWidth = m_iconVisible ? 22 + token.marginSM : 0;
+    const int contentWidth = NoticeWidth - token.paddingLG * 2 - iconWidth - (m_closable ? 28 : 0);
 
     QFont titleFont = font();
     titleFont.setPixelSize(token.fontSizeLG);
@@ -506,7 +543,7 @@ void AntNotification::resumeCloseTimer()
 
 void AntNotification::updateSpinnerState()
 {
-    if (m_notificationType == Ant::MessageType::Loading && isVisible())
+    if (m_iconVisible && m_notificationType == Ant::MessageType::Loading && isVisible())
     {
         m_spinnerTimer->start(80);
     }

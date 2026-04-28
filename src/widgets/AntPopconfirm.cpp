@@ -157,7 +157,7 @@ void AntPopconfirm::rebuildActionWidget()
 {
     if (m_actionContainer)
     {
-        m_actionContainer->deleteLater();
+        m_popover->setActionWidget(nullptr);
         m_actionContainer = nullptr;
         m_cancelButton = nullptr;
         m_okButton = nullptr;

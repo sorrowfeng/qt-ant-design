@@ -196,6 +196,7 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     const auto& token = antTheme->tokens();
     const Ant::MessageType notificationType = notification->notificationType();
     const bool closable = notification->isClosable();
+    const bool iconVisible = notification->iconVisible();
     const bool showProgress = notification->showProgress();
     const bool closeHovered = notification->property("antStyle_closeHover").toBool();
     const QColor accent = computeAccentColor(notificationType);
@@ -212,9 +213,11 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     AntStyleBase::drawCrispRoundedRect(painter, card.toRect(),
         Qt::NoPen, token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
 
-    // Type icon
     const QRectF iconRect(card.left() + token.paddingLG, card.top() + token.padding + 2, 22, 22);
-    drawTypeIcon(*painter, iconRect, notificationType, accent, notification->spinnerAngle());
+    if (iconVisible)
+    {
+        drawTypeIcon(*painter, iconRect, notificationType, accent, notification->spinnerAngle());
+    }
 
     // Close button
     if (closable)
@@ -231,7 +234,7 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     }
 
     // Title
-    const qreal textLeft = iconRect.right() + token.marginSM;
+    const qreal textLeft = iconVisible ? iconRect.right() + token.marginSM : card.left() + token.paddingLG;
     const qreal textRight = card.right() - token.paddingLG - (closable ? 28 : 0);
     QRectF titleRect(textLeft, card.top() + token.padding - 1, textRight - textLeft, token.controlHeightSM);
 

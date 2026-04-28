@@ -4,6 +4,8 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include <algorithm>
+
 #include "styles/AntPalette.h"
 #include "widgets/AntProgress.h"
 
@@ -41,9 +43,57 @@ QString computeInfoText(const AntProgress* progress)
     }
     if (progress->status() == Ant::ProgressStatus::Exception)
     {
-        return QStringLiteral("!");
+        return QStringLiteral("×");
     }
     return QStringLiteral("%1%").arg(progress->percent());
+}
+
+QColor computeInfoColor(const AntProgress* progress)
+{
+    const auto& token = antTheme->tokens();
+    if (progress->status() == Ant::ProgressStatus::Success || progress->percent() >= 100)
+    {
+        return token.colorSuccess;
+    }
+    if (progress->status() == Ant::ProgressStatus::Exception)
+    {
+        return token.colorError;
+    }
+    return token.colorTextSecondary;
+}
+
+bool hasStatusIcon(const AntProgress* progress)
+{
+    return progress->status() == Ant::ProgressStatus::Success ||
+           progress->status() == Ant::ProgressStatus::Exception ||
+           progress->percent() >= 100;
+}
+
+void drawStatusIcon(QPainter* painter, const QRectF& rect, const AntProgress* progress)
+{
+    const QColor color = computeInfoColor(progress);
+    const QPointF c = rect.center();
+    const qreal side = std::min(rect.width(), rect.height());
+    const qreal stroke = std::max<qreal>(1.6, side / 8.0);
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setPen(QPen(color, stroke, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    if (progress->status() == Ant::ProgressStatus::Exception)
+    {
+        painter->drawLine(QPointF(c.x() - side * 0.24, c.y() - side * 0.24),
+                          QPointF(c.x() + side * 0.24, c.y() + side * 0.24));
+        painter->drawLine(QPointF(c.x() + side * 0.24, c.y() - side * 0.24),
+                          QPointF(c.x() - side * 0.24, c.y() + side * 0.24));
+    }
+    else
+    {
+        painter->drawLine(QPointF(c.x() - side * 0.28, c.y() + side * 0.02),
+                          QPointF(c.x() - side * 0.08, c.y() + side * 0.22));
+        painter->drawLine(QPointF(c.x() - side * 0.08, c.y() + side * 0.22),
+                          QPointF(c.x() + side * 0.30, c.y() - side * 0.26));
+    }
+    painter->restore();
 }
 } // namespace
 
@@ -150,12 +200,26 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
 
         if (showInfo)
         {
-            QFont f = painter->font();
-            f.setPixelSize(token.fontSizeSM);
-            f.setWeight((progress->status() == Ant::ProgressStatus::Success || progress->status() == Ant::ProgressStatus::Exception) ? QFont::DemiBold : QFont::Normal);
-            painter->setFont(f);
-            painter->setPen(progress->status() == Ant::ProgressStatus::Exception ? token.colorError : token.colorTextSecondary);
-            painter->drawText(QRectF(w - infoWidth, 0, infoWidth, h), Qt::AlignCenter, computeInfoText(progress));
+            const QRectF infoRect(w - infoWidth, 0, infoWidth, h);
+            if (hasStatusIcon(progress))
+            {
+                const qreal mark = 12.0;
+                drawStatusIcon(painter,
+                               QRectF(infoRect.center().x() - mark / 2.0,
+                                      infoRect.center().y() - mark / 2.0,
+                                      mark,
+                                      mark),
+                               progress);
+            }
+            else
+            {
+                QFont f = painter->font();
+                f.setPixelSize(token.fontSizeSM);
+                f.setWeight(QFont::Normal);
+                painter->setFont(f);
+                painter->setPen(computeInfoColor(progress));
+                painter->drawText(infoRect, Qt::AlignCenter, computeInfoText(progress));
+            }
         }
     }
     else
@@ -182,12 +246,21 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
 
         if (showInfo)
         {
-            QFont f = painter->font();
-            f.setPixelSize(std::max(12, static_cast<int>(size / 7)));
-            f.setWeight(QFont::DemiBold);
-            painter->setFont(f);
-            painter->setPen(progress->status() == Ant::ProgressStatus::Exception ? token.colorError : token.colorText);
-            painter->drawText(option->rect, Qt::AlignCenter, computeInfoText(progress));
+            if (hasStatusIcon(progress))
+            {
+                const qreal mark = std::max<qreal>(18.0, size / 3.6);
+                const QPointF c = QRectF(option->rect).center();
+                drawStatusIcon(painter, QRectF(c.x() - mark / 2.0, c.y() - mark / 2.0, mark, mark), progress);
+            }
+            else
+            {
+                QFont f = painter->font();
+                f.setPixelSize(std::max(12, static_cast<int>(size / 7)));
+                f.setWeight(QFont::DemiBold);
+                painter->setFont(f);
+                painter->setPen(token.colorText);
+                painter->drawText(option->rect, Qt::AlignCenter, computeInfoText(progress));
+            }
         }
     }
 

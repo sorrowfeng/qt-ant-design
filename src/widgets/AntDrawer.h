@@ -2,6 +2,7 @@
 
 #include <QPointer>
 #include <QPropertyAnimation>
+#include <QRect>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -59,6 +60,7 @@ public:
     // 0 when panel is fully offscreen, 1 when fully onscreen. Read by style
     // to fade the mask alongside the slide animation.
     qreal maskProgress() const;
+    QRect currentPanelGeometry() const;
 
 Q_SIGNALS:
     void titleChanged(const QString& title);

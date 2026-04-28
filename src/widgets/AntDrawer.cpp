@@ -202,18 +202,18 @@ AntDrawer::AntDrawer(QWidget* parent)
     panelLayout->setSpacing(0);
 
     auto* headerLayout = new QHBoxLayout(m_headerWidget);
-    headerLayout->setContentsMargins(24, 0, 16, 0);
-    headerLayout->setSpacing(8);
-
-    m_titleLabel = new QLabel(m_headerWidget);
-    m_titleLabel->setWordWrap(false);
-    headerLayout->addWidget(m_titleLabel, 1);
+    headerLayout->setContentsMargins(24, 0, 24, 0);
+    headerLayout->setSpacing(4);
 
     m_closeButton = new DrawerCloseButton(m_headerWidget);
     connect(m_closeButton, &QAbstractButton::clicked, this, [this]() {
         close();
     });
-    headerLayout->addWidget(m_closeButton, 0, Qt::AlignRight | Qt::AlignVCenter);
+    headerLayout->addWidget(m_closeButton, 0, Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_titleLabel = new QLabel(m_headerWidget);
+    m_titleLabel->setWordWrap(false);
+    headerLayout->addWidget(m_titleLabel, 1);
 
     m_headerWidget->setFixedHeight(DrawerHeaderHeight);
 
@@ -665,4 +665,9 @@ qreal AntDrawer::maskProgress() const
         return m_open ? 1.0 : 0.0;
     }
     return qBound(0.0, travelled / denom, 1.0);
+}
+
+QRect AntDrawer::currentPanelGeometry() const
+{
+    return m_panel ? m_panel->geometry() : QRect();
 }

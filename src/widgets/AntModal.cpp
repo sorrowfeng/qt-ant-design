@@ -43,7 +43,7 @@ protected:
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
         antTheme->drawEffectShadow(&painter, card, 18, token.borderRadiusLG, 0.75);
-        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        painter.setPen(Qt::NoPen);
         painter.setBrush(token.colorBgElevated);
         painter.drawRoundedRect(card, token.borderRadiusLG, token.borderRadiusLG);
     }
@@ -162,7 +162,7 @@ AntModal::AntModal(QWidget* parent)
     m_defaultFooterWidget = new QWidget(m_footerWidgetHost);
     auto* defaultFooterLayout = new QHBoxLayout(m_defaultFooterWidget);
     defaultFooterLayout->setContentsMargins(0, 0, 0, 0);
-    defaultFooterLayout->setSpacing(12);
+    defaultFooterLayout->setSpacing(8);
     defaultFooterLayout->addStretch();
 
     m_cancelButton = new AntButton(QStringLiteral("Cancel"), m_defaultFooterWidget);
@@ -223,6 +223,10 @@ static AntModal* createCommandModal(const QString& title, const QString& content
     modal->setContent(content);
     modal->setShowCancel(showCancel);
     modal->setCommandIconType(icon);
+    modal->setDialogWidth(416);
+    modal->setClosable(false);
+    modal->setMaskClosable(false);
+    modal->setCentered(false);
     modal->setOkText(showCancel ? QStringLiteral("OK") : QStringLiteral("OK"));
     modal->setOpen(true);
     return modal;
@@ -616,7 +620,12 @@ void AntModal::showEvent(QShowEvent* event)
 
 void AntModal::ensureHostWidget()
 {
-    QWidget* host = parentWidget() ? parentWidget()->window() : nullptr;
+    QWidget* parent = parentWidget();
+    QWidget* host = parent ? parent->window() : nullptr;
+    if ((!host || host->size().isEmpty()) && parent && !parent->size().isEmpty())
+    {
+        host = parent;
+    }
     if (!host)
     {
         return;
@@ -675,7 +684,7 @@ void AntModal::syncTheme()
 
     if (auto* dialogLayout = qobject_cast<QVBoxLayout*>(m_dialog->layout()))
     {
-        dialogLayout->setContentsMargins(token.paddingLG + 12, token.paddingMD + 12, token.paddingLG + 12, token.paddingLG + 12);
+        dialogLayout->setContentsMargins(token.paddingLG + 12, token.paddingMD + 12, token.paddingLG + 12, token.paddingMD + 12);
         dialogLayout->setSpacing(token.marginSM);
     }
 
@@ -702,7 +711,7 @@ void AntModal::syncTheme()
     contentFont.setWeight(QFont::Normal);
     m_contentLabel->setFont(contentFont);
     QPalette contentPalette = m_contentLabel->palette();
-    contentPalette.setColor(QPalette::WindowText, token.colorTextSecondary);
+    contentPalette.setColor(QPalette::WindowText, token.colorText);
     m_contentLabel->setPalette(contentPalette);
 
     m_closeButton->setVisible(m_closable);
@@ -722,7 +731,7 @@ void AntModal::updateOverlayGeometry()
 {
     if (m_hostWidget)
     {
-        setGeometry(m_hostWidget->rect());
+        setGeometry(QRect(QPoint(0, 0), m_hostWidget->size()));
     }
     else
     {
@@ -760,7 +769,8 @@ void AntModal::updateDialogGeometry()
     }
     else
     {
-        y = qMax(48, height() / 7);
+        // The dialog widget keeps a 12px transparent shadow margin, so 88px yields a 100px visible panel top.
+        y = qMin(88, qMax(16, height() - m_dialog->height() - 16));
     }
     m_dialog->move(qMax(16, x), qMax(16, y));
 }

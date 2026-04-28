@@ -26,13 +26,19 @@ class AntNotification : public QWidget
     Q_PROPERTY(bool pauseOnHover READ pauseOnHover WRITE setPauseOnHover NOTIFY pauseOnHoverChanged)
     Q_PROPERTY(bool showProgress READ showProgress WRITE setShowProgress NOTIFY showProgressChanged)
     Q_PROPERTY(bool closable READ isClosable WRITE setClosable NOTIFY closableChanged)
+    Q_PROPERTY(bool iconVisible READ iconVisible WRITE setIconVisible NOTIFY iconVisibleChanged)
 
 public:
     explicit AntNotification(QWidget* parent = nullptr);
 
     static AntNotification* open(const QString& title,
                                  const QString& description,
-                                 Ant::MessageType type = Ant::MessageType::Info,
+                                 QWidget* anchor = nullptr,
+                                 int durationMs = 4500,
+                                 Ant::Placement placement = Ant::Placement::TopRight);
+    static AntNotification* open(const QString& title,
+                                 const QString& description,
+                                 Ant::MessageType type,
                                  QWidget* anchor = nullptr,
                                  int durationMs = 4500,
                                  Ant::Placement placement = Ant::Placement::TopRight);
@@ -82,6 +88,9 @@ public:
     bool isClosable() const;
     void setClosable(bool closable);
 
+    bool iconVisible() const;
+    void setIconVisible(bool visible);
+
     qreal progressRatio() const;
     int spinnerAngle() const;
 
@@ -97,6 +106,7 @@ Q_SIGNALS:
     void pauseOnHoverChanged(bool pause);
     void showProgressChanged(bool show);
     void closableChanged(bool closable);
+    void iconVisibleChanged(bool visible);
     void clicked();
     void closed();
 
@@ -112,6 +122,13 @@ protected:
 private:
     static QList<AntNotification*>& activeNotifications();
     static void relayoutNotifications(QWidget* anchor = nullptr);
+    static AntNotification* create(const QString& title,
+                                   const QString& description,
+                                   Ant::MessageType type,
+                                   bool iconVisible,
+                                   QWidget* anchor,
+                                   int durationMs,
+                                   Ant::Placement placement);
 
     QRectF noticeRect() const;
     QRectF closeButtonRect() const;
@@ -132,6 +149,7 @@ private:
     bool m_pauseOnHover = true;
     bool m_showProgress = false;
     bool m_closable = true;
+    bool m_iconVisible = true;
     bool m_hovered = false;
     bool m_closeHovered = false;
     int m_spinnerAngle = 0;

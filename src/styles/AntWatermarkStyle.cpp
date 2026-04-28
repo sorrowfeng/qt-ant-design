@@ -51,8 +51,8 @@ void drawWatermarkPattern(QPainter* painter, const QPointF& center, const AntWat
     if (!textColor.isValid())
     {
         const auto& token = antTheme->tokens();
-        textColor = token.colorTextDisabled;
-        textColor.setAlphaF(0.20);
+        textColor = token.colorText;
+        textColor.setAlphaF(0.18);
     }
     painter->setPen(textColor);
 
@@ -160,9 +160,9 @@ void AntWatermarkStyle::drawWatermark(const QStyleOption* option, QPainter* pain
     const qreal endX = r.right() + margin;
     const qreal endY = r.bottom() + margin;
 
-    for (qreal ty = startY; ty < endY; ty += expandedH)
+    for (qreal ty = startY; ty < endY; ty += tileH)
     {
-        for (qreal tx = startX; tx < endX; tx += expandedW)
+        for (qreal tx = startX; tx < endX; tx += tileW)
         {
             painter->save();
             const QPointF tileCenter(tx + tileW / 2.0 + offset.x(),

@@ -163,6 +163,7 @@ void TestAntFeedback::notification()
     QCOMPARE(w->pauseOnHover(), true);
     QCOMPARE(w->showProgress(), false);
     QCOMPARE(w->isClosable(), true);
+    QCOMPARE(w->iconVisible(), true);
     QCOMPARE(w->spinnerAngle(), 0);
     QVERIFY(qFuzzyCompare(w->progressRatio(), 1.0));
 
@@ -180,6 +181,11 @@ void TestAntFeedback::notification()
     w->setNotificationType(Ant::MessageType::Warning);
     QCOMPARE(w->notificationType(), Ant::MessageType::Warning);
     QCOMPARE(typeSpy.count(), 1);
+
+    QSignalSpy iconSpy(w, &AntNotification::iconVisibleChanged);
+    w->setIconVisible(false);
+    QCOMPARE(w->iconVisible(), false);
+    QCOMPARE(iconSpy.count(), 1);
 
     QSignalSpy placeSpy(w, &AntNotification::placementChanged);
     w->setPlacement(Ant::Placement::BottomLeft);

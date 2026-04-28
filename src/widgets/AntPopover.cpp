@@ -201,6 +201,7 @@ void AntPopover::setActionWidget(QWidget* widget)
     }
     if (m_actionWidget && m_actionWidget->parent() == this)
     {
+        m_actionWidget->hide();
         m_actionWidget->deleteLater();
     }
     m_actionWidget = widget;

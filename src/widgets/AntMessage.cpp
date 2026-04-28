@@ -144,8 +144,8 @@ QSize AntMessage::sizeHint() const
     QFont f = font();
     f.setPixelSize(token.fontSize);
     QFontMetrics fm(f);
-    const int textWidth = std::min(420, std::max(80, fm.horizontalAdvance(m_text)));
-    return QSize(textWidth + token.padding * 2 + 26, token.controlHeightLG + 12);
+    const int textWidth = std::min(420, fm.horizontalAdvance(m_text));
+    return QSize(textWidth + 64, token.controlHeightLG + 12);
 }
 
 QSize AntMessage::minimumSizeHint() const
@@ -233,7 +233,7 @@ void AntMessage::relayoutMessages(QWidget* anchor)
     };
 
     const auto layoutPlacement = [&](Ant::Placement placement) {
-        int cursor = isBottomPlacement(placement) ? targetRect.bottom() - 24 : targetRect.top() + 24;
+        int cursor = isBottomPlacement(placement) ? targetRect.bottom() - 12 : targetRect.top() + 12;
         for (AntMessage* message : activeMessages())
         {
             if (!message || message->m_placement != placement)
@@ -261,12 +261,12 @@ void AntMessage::relayoutMessages(QWidget* anchor)
             {
                 cursor -= message->height();
                 message->move(x, cursor);
-                cursor -= 8;
+                cursor -= 4;
             }
             else
             {
                 message->move(x, cursor);
-                cursor += message->height() + 8;
+                cursor += message->height() + 4;
             }
         }
     };
