@@ -208,6 +208,8 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
     const bool focused = option->state.testFlag(QStyle::State_HasFocus);
     const bool plainType = button->buttonType() == Ant::ButtonType::Text || button->buttonType() == Ant::ButtonType::Link;
     const QColor accent = semanticColorFor(button);
+    const QColor accentHover = button->isDanger() ? token.colorErrorHover : token.colorPrimaryHover;
+    const QColor accentActive = button->isDanger() ? token.colorErrorActive : token.colorPrimaryActive;
 
     ButtonColors colors;
     colors.background = plainType || button->isGhost() ? QColor(Qt::transparent) : token.colorBgContainer;
@@ -221,11 +223,11 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
         colors.text = token.colorTextLightSolid;
         if (hovered)
         {
-            colors.background = antTheme->hoverColor(accent);
+            colors.background = accentHover;
         }
         if (pressed)
         {
-            colors.background = antTheme->activeColor(accent);
+            colors.background = accentActive;
         }
     }
     else if (button->buttonType() == Ant::ButtonType::Default || button->buttonType() == Ant::ButtonType::Dashed)
@@ -275,6 +277,14 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
         if (button->buttonType() == Ant::ButtonType::Primary)
         {
             colors.text = colors.border = accent;
+            if (hovered)
+            {
+                colors.text = colors.border = accentHover;
+            }
+            if (pressed)
+            {
+                colors.text = colors.border = accentActive;
+            }
         }
     }
 
@@ -295,13 +305,9 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    if (!plainType && enabled && !button->isGhost() && !pressed)
+    if (!plainType && enabled && !button->isGhost() && !pressed && !button->isLoading())
     {
         QColor shadowColor = shadowColorFor(button);
-        if (button->isLoading())
-        {
-            shadowColor = loadingColor(shadowColor);
-        }
         drawButtonBottomShadow(*painter, outer, radius, shadowColor);
     }
 
@@ -311,9 +317,10 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
 
     if (focused && enabled && !plainType)
     {
-        const QColor focus = AntPalette::alpha(button->isDanger() ? token.colorError : token.colorPrimary, 0.18);
-        AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
-            QPen(focus, token.controlOutlineWidth), Qt::NoBrush, radius, radius);
+        const QColor focus = button->isDanger() ? token.colorErrorHover : token.colorPrimaryBorder;
+        const QRect focusRect = outer.toRect().adjusted(2, 2, -2, -2);
+        AntStyleBase::drawCrispRoundedRect(painter, focusRect,
+            QPen(focus, token.lineWidthFocus), Qt::NoBrush, radius, radius);
     }
 
     QRectF textRect = contentRectFor(button, m, option->rect);

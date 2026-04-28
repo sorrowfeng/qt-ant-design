@@ -53,6 +53,14 @@ Use this loop for one component at a time.
 | Theme | Light/dark parity, contrast, inherited text colors, transparent surfaces |
 | Example | Uses Ant components for visible text, no stale "missing" notes, no stylesheet-only styling |
 
+## Second-Pass State Audit
+
+After the first static pass, audit interactive states with a compact state matrix for one component at a time. Capture both light and dark mode where the component has token-driven state colors.
+
+| Component | Status | Evidence | Notes |
+| --- | --- | --- | --- |
+| Button | Pass | `build/button-state-compare-light.png`, `build/button-state-compare-dark.png` | Compared primary/default hover, active, focus-visible, danger hover, text hover, disabled, and loading states. Ant theme primary/status tokens now match AntD 5.24.7 light/dark values, and `AntButtonStyle` uses explicit token hover/active/focus colors instead of approximate palette generation. |
+
 ## Priority Order
 
 1. Foundations: Typography, Icon, Button, Tag, Badge

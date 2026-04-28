@@ -132,36 +132,52 @@ AntThemeTokens AntTheme::createTokens(Ant::ThemeMode mode)
     AntThemeTokens t;
     const bool dark = mode == Ant::ThemeMode::Dark;
 
-    const QColor primary("#1677ff");
-    const QColor success("#52c41a");
-    const QColor warning("#faad14");
-    const QColor error("#ff4d4f");
+    if (dark)
+    {
+        t.colorPrimaryBg = QColor("#111a2c");
+        t.colorPrimaryBorder = QColor("#15325b");
+        t.colorPrimaryHover = QColor("#3c89e8");
+        t.colorPrimary = QColor("#1668dc");
+        t.colorPrimaryActive = QColor("#1554ad");
 
-    const auto primaryPalette = AntPalette::generate(primary, mode);
-    const auto successPalette = AntPalette::generate(success, mode);
-    const auto warningPalette = AntPalette::generate(warning, mode);
-    const auto errorPalette = AntPalette::generate(error, mode);
+        t.colorSuccessBg = QColor("#162312");
+        t.colorSuccessHover = QColor("#306317");
+        t.colorSuccess = QColor("#49aa19");
+        t.colorSuccessActive = QColor("#3c8618");
 
-    t.colorPrimaryBg = primaryPalette[0];
-    t.colorPrimaryBorder = primaryPalette[2];
-    t.colorPrimaryHover = primaryPalette[4];
-    t.colorPrimary = primaryPalette[5];
-    t.colorPrimaryActive = primaryPalette[6];
+        t.colorWarningBg = QColor("#2b2111");
+        t.colorWarningHover = QColor("#7c5914");
+        t.colorWarning = QColor("#d89614");
+        t.colorWarningActive = QColor("#aa7714");
 
-    t.colorSuccessBg = successPalette[0];
-    t.colorSuccessHover = successPalette[3];
-    t.colorSuccess = successPalette[5];
-    t.colorSuccessActive = successPalette[6];
+        t.colorErrorBg = QColor("#2c1618");
+        t.colorErrorHover = QColor("#e86e6b");
+        t.colorError = QColor("#dc4446");
+        t.colorErrorActive = QColor("#ad393a");
+    }
+    else
+    {
+        t.colorPrimaryBg = QColor("#e6f4ff");
+        t.colorPrimaryBorder = QColor("#91caff");
+        t.colorPrimaryHover = QColor("#4096ff");
+        t.colorPrimary = QColor("#1677ff");
+        t.colorPrimaryActive = QColor("#0958d9");
 
-    t.colorWarningBg = warningPalette[0];
-    t.colorWarningHover = warningPalette[3];
-    t.colorWarning = warningPalette[5];
-    t.colorWarningActive = warningPalette[6];
+        t.colorSuccessBg = QColor("#f6ffed");
+        t.colorSuccessHover = QColor("#95de64");
+        t.colorSuccess = QColor("#52c41a");
+        t.colorSuccessActive = QColor("#389e0d");
 
-    t.colorErrorBg = errorPalette[0];
-    t.colorErrorHover = errorPalette[4];
-    t.colorError = errorPalette[5];
-    t.colorErrorActive = errorPalette[6];
+        t.colorWarningBg = QColor("#fffbe6");
+        t.colorWarningHover = QColor("#ffd666");
+        t.colorWarning = QColor("#faad14");
+        t.colorWarningActive = QColor("#d48806");
+
+        t.colorErrorBg = QColor("#fff2f0");
+        t.colorErrorHover = QColor("#ff7875");
+        t.colorError = QColor("#ff4d4f");
+        t.colorErrorActive = QColor("#d9363e");
+    }
 
     t.colorLink = t.colorPrimary;
     t.colorLinkHover = t.colorPrimaryHover;
@@ -172,8 +188,8 @@ AntThemeTokens AntTheme::createTokens(Ant::ThemeMode mode)
 
     t.colorBgBase = bgBase;
     t.colorPrimaryLoading = AntPalette::mix(bgBase, t.colorPrimary, 0.65);
-    t.colorPrimaryLoadingHover = AntPalette::mix(bgBase, t.colorPrimary, 0.50);
-    t.colorPrimaryLoadingActive = AntPalette::shade(t.colorPrimaryLoading, 0.10);
+    t.colorPrimaryLoadingHover = AntPalette::mix(bgBase, t.colorPrimaryHover, 0.65);
+    t.colorPrimaryLoadingActive = AntPalette::mix(bgBase, t.colorPrimaryActive, 0.65);
     t.colorTextLightSolid = QColor("#ffffff");
     t.colorText = blendOnBackground(textBase, bgBase, dark ? 0.85 : 0.88);
     t.colorTextSecondary = blendOnBackground(textBase, bgBase, 0.65);
@@ -181,17 +197,18 @@ AntThemeTokens AntTheme::createTokens(Ant::ThemeMode mode)
     t.colorTextDisabled = blendOnBackground(textBase, bgBase, 0.25);
     t.colorTextPlaceholder = t.colorTextDisabled;
 
-    t.colorFill = blendOnBackground(textBase, bgBase, dark ? 0.30 : 0.15);
-    t.colorFillSecondary = blendOnBackground(textBase, bgBase, dark ? 0.12 : 0.06);
-    t.colorFillTertiary = blendOnBackground(textBase, bgBase, dark ? 0.08 : 0.04);
-    t.colorFillQuaternary = blendOnBackground(textBase, bgBase, dark ? 0.04 : 0.02);
+    const QColor fillBase = dark ? QColor("#141414") : bgBase;
+    t.colorFill = blendOnBackground(textBase, fillBase, dark ? 0.18 : 0.15);
+    t.colorFillSecondary = blendOnBackground(textBase, fillBase, dark ? 0.12 : 0.06);
+    t.colorFillTertiary = blendOnBackground(textBase, fillBase, dark ? 0.08 : 0.04);
+    t.colorFillQuaternary = blendOnBackground(textBase, fillBase, dark ? 0.04 : 0.02);
 
     if (dark)
     {
         t.colorBgLayout = QColor("#000000");
         t.colorBgContainer = QColor("#141414");
         t.colorBgElevated = QColor("#1f1f1f");
-        t.colorBgContainerDisabled = QColor("#2a2a2a");
+        t.colorBgContainerDisabled = QColor("#262626");
         t.colorBorder = QColor("#424242");
         t.colorBorderSecondary = QColor("#303030");
         t.colorBorderDisabled = QColor("#424242");

@@ -89,6 +89,7 @@ struct AntThemeTokens
     int controlHeightSM = Ant::ControlHeightSmall;
     int controlHeightLG = Ant::ControlHeightLarge;
     int controlOutlineWidth = 2;
+    int lineWidthFocus = 3;
 };
 
 class QPainter;

@@ -324,6 +324,7 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 - 审查顺序：先基础组件（Typography/Icon/Button/Tag/Badge），再输入、弹层反馈、数据展示、导航布局、复杂与 Qt 扩展组件
 - 每个控件需覆盖亮色/暗色、默认/hover/active/focus/disabled、状态色、尺寸、间距、圆角、阴影和弹层行为
 - 视觉对比按单控件闭环推进：先读 Ant Design 源码/token，再编译 Qt 示例，分别截图参考页和 Qt 页，生成 side-by-side 对比图，归因差异，修复控件自身问题，最后更新 `docs/visual-audit.md`
+- 第一轮静态对比完成后，进入二轮状态态审计：为单控件生成 light/dark 状态矩阵，覆盖 hover/active/focus-visible/disabled/loading/status 等真实视觉态，证据记录在 `docs/visual-audit.md` 的 `Second-Pass State Audit`
 - 参考页截图使用 Playwright，例如：
   - `npx playwright screenshot --wait-for-timeout=4000 --viewport-size "1280,900" "file:///D:/Project/GitProject/qt-ant-design/docs/ant-design-reference.html" build/<component>-reference-full.png`
 - Qt 侧截图优先使用 `build/visual-capture/` 下的临时 helper 输出 `build/<component>-qt.png`；截图 helper、PNG、拼图都属于 `build/` 产物，不提交
