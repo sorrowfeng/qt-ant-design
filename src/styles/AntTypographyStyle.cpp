@@ -3,6 +3,7 @@
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyleOption>
 
 #include "styles/AntPalette.h"
@@ -43,7 +44,7 @@ QFont buildFont(const AntTypography* typo, const QFont& baseFont)
     else if (typo->isCode())
     {
         f.setFamily(QStringLiteral("Consolas, Courier New, monospace"));
-        f.setPixelSize(token.fontSize);
+        f.setPixelSize(qMax(1, qRound(token.fontSize * 0.85)));
     }
     else
     {
@@ -65,7 +66,7 @@ QFont buildFont(const AntTypography* typo, const QFont& baseFont)
     return f;
 }
 
-QColor textColorForType(const AntTypography* typo)
+QColor textColorForType(const AntTypography* typo, const QStyleOption* option)
 {
     const auto& token = antTheme->tokens();
     if (typo->isDisabled())
@@ -75,16 +76,35 @@ QColor textColorForType(const AntTypography* typo)
     switch (typo->type())
     {
     case Ant::TypographyType::Secondary:
-        return token.colorTextSecondary;
+        return token.colorTextTertiary;
     case Ant::TypographyType::Success:
         return token.colorSuccess;
     case Ant::TypographyType::Warning:
         return token.colorWarning;
     case Ant::TypographyType::Danger:
+        if (!typo->href().isEmpty())
+        {
+            if (typo->isPressed() || (option->state & QStyle::State_Sunken))
+            {
+                return token.colorErrorActive;
+            }
+            if (option->state & (QStyle::State_MouseOver | QStyle::State_HasFocus))
+            {
+                return token.colorErrorHover;
+            }
+        }
         return token.colorError;
     case Ant::TypographyType::LightSolid:
         return token.colorTextLightSolid;
     case Ant::TypographyType::Link:
+        if (typo->isPressed() || (option->state & QStyle::State_Sunken))
+        {
+            return token.colorLinkActive;
+        }
+        if (option->state & (QStyle::State_MouseOver | QStyle::State_HasFocus))
+        {
+            return token.colorLinkHover;
+        }
         return token.colorLink;
     case Ant::TypographyType::Default:
     default:
@@ -94,12 +114,7 @@ QColor textColorForType(const AntTypography* typo)
 
 QColor markBackgroundColor()
 {
-    const auto& token = antTheme->tokens();
-    if (antTheme->themeMode() == Ant::ThemeMode::Dark)
-    {
-        return AntPalette::alpha(token.colorWarning, 0.28);
-    }
-    return AntPalette::tint(token.colorWarning, 0.55);
+    return QColor("#fff1b8");
 }
 
 void drawCopyIcon(QPainter* painter, const QRect& rect, const QColor& color)
@@ -129,6 +144,28 @@ void drawCopyIcon(QPainter* painter, const QRect& rect, const QColor& color)
     painter->drawRoundedRect(front, 1.5, 1.5);
 }
 
+void drawCheckIcon(QPainter* painter, const QRect& rect, const QColor& color)
+{
+    if (!painter || rect.isEmpty())
+    {
+        return;
+    }
+
+    const int iconSize = qMin(rect.width(), rect.height());
+    const QRectF iconRect(rect.left() + (rect.width() - iconSize) / 2.0,
+                          rect.top() + (rect.height() - iconSize) / 2.0,
+                          iconSize,
+                          iconSize);
+    QPainterPath check;
+    check.moveTo(iconRect.left() + iconSize * 0.18, iconRect.top() + iconSize * 0.54);
+    check.lineTo(iconRect.left() + iconSize * 0.42, iconRect.top() + iconSize * 0.76);
+    check.lineTo(iconRect.left() + iconSize * 0.82, iconRect.top() + iconSize * 0.28);
+
+    painter->setPen(QPen(color, qMax<qreal>(1.4, iconSize * 0.10), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPath(check);
+}
+
 QRect copyIconRect(const QRect& optionRect, const QFontMetrics& fm, const QString& text, int reservedWidth)
 {
     const auto& token = antTheme->tokens();
@@ -155,7 +192,10 @@ void AntTypographyStyle::polish(QWidget* widget)
     {
         widget->installEventFilter(this);
         widget->setAttribute(Qt::WA_Hover);
-        widget->setCursor(typo->type() == Ant::TypographyType::Link
+        widget->setMouseTracking(true);
+        widget->setCursor(typo->isDisabled()
+                              ? Qt::ForbiddenCursor
+                              : typo->type() == Ant::TypographyType::Link
                               ? Qt::PointingHandCursor
                               : Qt::ArrowCursor);
     }
@@ -222,7 +262,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
 
     QFont font = buildFont(typo, widgetFont);
     QFontMetrics fm(font);
-    const QColor color = textColorForType(typo);
+    const QColor color = textColorForType(typo, option);
 
     const bool hasCopyBtn = typo->isCopyable();
     const int copyBtnWidth = hasCopyBtn ? token.fontSize + token.paddingXXS * 2 : 0;
@@ -236,18 +276,23 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
     // Code mode: draw rounded rect background with monospace font
     if (typo->isCode())
     {
-        const int codePad = token.paddingXXS;
+        const int codePadX = qMax(1, qRound(font.pixelSize() * 0.4));
+        const int codePadTop = qMax(1, qRound(font.pixelSize() * 0.2));
+        const int codePadBottom = qMax(1, qRound(font.pixelSize() * 0.1));
         QRect codeRect(textRect.left(), textRect.top(),
-                       fm.horizontalAdvance(text) + codePad * 2,
-                       fm.height() + codePad * 2);
+                       fm.horizontalAdvance(text) + codePadX * 2 + token.lineWidth * 2,
+                       fm.height() + codePadTop + codePadBottom + token.lineWidth * 2);
 
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(token.colorFillQuaternary);
-        painter->drawRoundedRect(codeRect, token.borderRadiusXS, token.borderRadiusXS);
+        painter->setPen(QPen(AntPalette::alpha(QColor(100, 100, 100), 0.2), token.lineWidth));
+        painter->setBrush(AntPalette::alpha(QColor(150, 150, 150), 0.1));
+        painter->drawRoundedRect(QRectF(codeRect).adjusted(0.5, 0.5, -0.5, -0.5), 3, 3);
 
         painter->setFont(font);
         painter->setPen(color);
-        QRect innerRect = codeRect.adjusted(codePad, codePad, -codePad, -codePad);
+        QRect innerRect = codeRect.adjusted(codePadX + token.lineWidth,
+                                            codePadTop + token.lineWidth,
+                                            -(codePadX + token.lineWidth),
+                                            -(codePadBottom + token.lineWidth));
         painter->drawText(innerRect, Qt::AlignLeft | Qt::AlignVCenter, text);
     }
     // Mark mode: draw yellow highlight background
@@ -261,7 +306,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
         painter->drawRect(markRect);
 
         painter->setFont(font);
-        painter->setPen(color);
+        painter->setPen(QColor("#000000"));
         painter->drawText(textRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, text);
     }
     // Paragraph or ellipsis modes: word wrap
@@ -335,7 +380,33 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
     // Draw copy icon
     if (hasCopyBtn)
     {
-        drawCopyIcon(painter, copyIconRect(option->rect, fm, text, copyBtnWidth), token.colorPrimary);
+        QColor copyColor = token.colorLink;
+        if (typo->isDisabled())
+        {
+            copyColor = token.colorTextDisabled;
+        }
+        else if (typo->isCopied())
+        {
+            copyColor = token.colorSuccess;
+        }
+        else if (typo->isCopyPressed())
+        {
+            copyColor = token.colorLinkActive;
+        }
+        else if (typo->isCopyHovered())
+        {
+            copyColor = token.colorLinkHover;
+        }
+
+        const QRect iconRect = copyIconRect(option->rect, fm, text, copyBtnWidth);
+        if (typo->isCopied())
+        {
+            drawCheckIcon(painter, iconRect, copyColor);
+        }
+        else
+        {
+            drawCopyIcon(painter, iconRect, copyColor);
+        }
     }
 
     painter->restore();

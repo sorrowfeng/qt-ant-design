@@ -1,4 +1,5 @@
 #include <QSignalSpy>
+#include <QMouseEvent>
 #include <QTest>
 #include "widgets/AntTypography.h"
 
@@ -7,6 +8,7 @@ class TestAntTypography : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void copyInteractionState();
 };
 
 void TestAntTypography::propertiesAndSignals()
@@ -98,6 +100,30 @@ void TestAntTypography::propertiesAndSignals()
     w->setHref("https://example.com");
     QCOMPARE(w->href(), "https://example.com");
     QCOMPARE(hrefSpy.count(), 1);
+}
+
+void TestAntTypography::copyInteractionState()
+{
+    AntTypography w("Copyable Text");
+    w.setCopyable(true);
+    w.resize(w.sizeHint());
+
+    QSignalSpy copiedSpy(&w, &AntTypography::copied);
+    const QPoint copyPoint(qMax(1, w.width() - 8), qMax(1, w.height() / 2));
+
+    QMouseEvent move(QEvent::MouseMove, QPointF(copyPoint), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QApplication::sendEvent(&w, &move);
+    QVERIFY(w.isCopyHovered());
+
+    QMouseEvent press(QEvent::MouseButtonPress, QPointF(copyPoint), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(&w, &press);
+    QVERIFY(w.isCopyPressed());
+
+    QMouseEvent release(QEvent::MouseButtonRelease, QPointF(copyPoint), Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    QApplication::sendEvent(&w, &release);
+    QCOMPARE(copiedSpy.count(), 1);
+    QVERIFY(!w.isCopyPressed());
+    QVERIFY(w.isCopied());
 }
 
 QTEST_MAIN(TestAntTypography)

@@ -71,6 +71,11 @@ public:
     QString href() const;
     void setHref(const QString& href);
 
+    bool isPressed() const;
+    bool isCopyHovered() const;
+    bool isCopyPressed() const;
+    bool isCopied() const;
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -97,6 +102,9 @@ Q_SIGNALS:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void leaveEvent(QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
 private:
@@ -122,5 +130,8 @@ private:
     bool m_ellipsis = false;
     int m_ellipsisRows = 1;
     bool m_copyHovered = false;
+    bool m_copyPressed = false;
+    bool m_copied = false;
+    bool m_pressed = false;
     QString m_href;
 };
