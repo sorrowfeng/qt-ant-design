@@ -1,5 +1,6 @@
 #include "AntInputNumberStyle.h"
 
+#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
@@ -63,6 +64,20 @@ QRectF controlRectFor(const AntInputNumber* input, const QRect& rect)
     return QRectF(1, (rect.height() - metrics.height) / 2.0, rect.width() - 2, metrics.height);
 }
 
+bool focusedFor(const AntInputNumber* input)
+{
+    if (!input)
+    {
+        return false;
+    }
+    if (input->hasFocus())
+    {
+        return true;
+    }
+    const QWidget* focusWidget = QApplication::focusWidget();
+    return focusWidget && input->isAncestorOf(focusWidget);
+}
+
 QColor borderColorFor(const AntInputNumber* input)
 {
     const auto& token = antTheme->tokens();
@@ -72,13 +87,13 @@ QColor borderColorFor(const AntInputNumber* input)
     }
     if (input->status() == Ant::Status::Error)
     {
-        return (input->isHoveredState() || input->hasFocus()) ? token.colorErrorHover : token.colorError;
+        return (input->isHoveredState() || focusedFor(input)) ? token.colorErrorHover : token.colorError;
     }
     if (input->status() == Ant::Status::Warning)
     {
-        return (input->isHoveredState() || input->hasFocus()) ? token.colorWarningHover : token.colorWarning;
+        return (input->isHoveredState() || focusedFor(input)) ? token.colorWarningHover : token.colorWarning;
     }
-    if (input->hasFocus())
+    if (focusedFor(input))
     {
         return token.colorPrimary;
     }
@@ -107,6 +122,11 @@ QColor backgroundColorFor(const AntInputNumber* input)
     default:
         return token.colorBgContainer;
     }
+}
+
+bool handlersVisibleFor(const AntInputNumber* input)
+{
+    return input && input->controlsVisible() && input->isEnabled() && (input->isHoveredState() || focusedFor(input));
 }
 
 int addonAfterWidthFor(const AntInputNumber* input, const InputNumberMetrics& metrics)
@@ -170,7 +190,7 @@ QRect AntInputNumberStyle::subControlRect(ComplexControl control,
         const auto* input = qobject_cast<const AntInputNumber*>(widget);
         const InputNumberMetrics metrics = metricsFor(input);
         const QRectF controlRect = controlRectFor(input, option ? option->rect : QRect());
-        const int handlerWidth = input && input->controlsVisible() ? metrics.handlerWidth : 0;
+        const int handlerWidth = handlersVisibleFor(input) ? metrics.handlerWidth : 0;
         const int addonAfterWidth = addonAfterWidthFor(input, metrics);
 
         if (subControl == SC_SpinBoxEditField)
@@ -180,14 +200,14 @@ QRect AntInputNumberStyle::subControlRect(ComplexControl control,
                                         -(metrics.paddingX + handlerWidth + addonAfterWidth),
                                         0).toRect();
         }
-        if (subControl == SC_SpinBoxUp)
+        if (subControl == SC_SpinBoxUp && handlerWidth > 0)
         {
             return QRect(controlRect.right() - handlerWidth + 1,
                          controlRect.top() + 1,
                          handlerWidth,
                          controlRect.height() / 2);
         }
-        if (subControl == SC_SpinBoxDown)
+        if (subControl == SC_SpinBoxDown && handlerWidth > 0)
         {
             return QRect(controlRect.right() - handlerWidth + 1,
                          controlRect.center().y(),
@@ -235,7 +255,7 @@ bool AntInputNumberStyle::eventFilter(QObject* watched, QEvent* event)
         {
             option.state |= State_MouseOver;
         }
-        if (input->hasFocus())
+        if (focusedFor(input))
         {
             option.state |= State_HasFocus;
         }
@@ -279,7 +299,7 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
     const int addonAfterWidth = addonAfterWidthFor(input, metrics);
     const QColor borderColor = borderColorFor(input);
     const QColor backgroundColor = backgroundColorFor(input);
-    const bool focused = option->state.testFlag(State_HasFocus);
+    const bool focused = focusedFor(input);
     const bool disabled = !option->state.testFlag(State_Enabled);
 
     painter->save();
@@ -312,7 +332,7 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
         }
     }
 
-    if (input->controlsVisible())
+    if (handlersVisibleFor(input))
     {
         const QColor splitColor = disabled ? token.colorBorderDisabled : token.colorSplit;
         const QColor hoverColor = token.colorFillTertiary;
@@ -339,17 +359,17 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
         }
 
         painter->setPen(QPen(iconColor, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        QPainterPath plus;
-        plus.moveTo(upRect.center().x() - 4, upRect.center().y());
-        plus.lineTo(upRect.center().x() + 4, upRect.center().y());
-        plus.moveTo(upRect.center().x(), upRect.center().y() - 4);
-        plus.lineTo(upRect.center().x(), upRect.center().y() + 4);
-        painter->drawPath(plus);
+        QPainterPath upArrow;
+        upArrow.moveTo(upRect.center().x() - 3, upRect.center().y() + 1);
+        upArrow.lineTo(upRect.center().x(), upRect.center().y() - 2);
+        upArrow.lineTo(upRect.center().x() + 3, upRect.center().y() + 1);
+        painter->drawPath(upArrow);
 
-        QPainterPath minus;
-        minus.moveTo(downRect.center().x() - 4, downRect.center().y());
-        minus.lineTo(downRect.center().x() + 4, downRect.center().y());
-        painter->drawPath(minus);
+        QPainterPath downArrow;
+        downArrow.moveTo(downRect.center().x() - 3, downRect.center().y() - 1);
+        downArrow.lineTo(downRect.center().x(), downRect.center().y() + 2);
+        downArrow.lineTo(downRect.center().x() + 3, downRect.center().y() - 1);
+        painter->drawPath(downArrow);
     }
 
     if (addonAfterWidth > 0)

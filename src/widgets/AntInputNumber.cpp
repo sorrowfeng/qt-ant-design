@@ -10,6 +10,8 @@
 AntInputNumber::AntInputNumber(QWidget* parent)
     : QDoubleSpinBox(parent)
 {
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAutoFillBackground(false);
     setButtonSymbols(QAbstractSpinBox::UpDownArrows);
     setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     setFrame(false);
@@ -292,6 +294,8 @@ void AntInputNumber::updateEditStyle()
     lePalette.setColor(QPalette::Highlight, token.colorPrimary);
     lePalette.setColor(QPalette::HighlightedText, token.colorTextLightSolid);
     lineEdit()->setPalette(lePalette);
+    lineEdit()->setAttribute(Qt::WA_TranslucentBackground, true);
+    lineEdit()->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
 
     setMinimumHeight(m.height);
     setMaximumHeight(m.height);
