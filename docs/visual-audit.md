@@ -105,7 +105,7 @@ Use this loop for one component at a time.
 | Data Display | Card | CardPage | Card | Pass | Basic card and cover/meta/actions card compared against `build/card-compare-wide.png`; component-owned gaps fixed for extra color, Meta padding, action centering, and action separators. Shared demo-container spacing remains out of scope. |
 | Data Display | Carousel | CarouselPage | Carousel | Needs visual QA | Qt demo now matches the reference source for the Basic autoplay carousel: 160px gradient slides, centered white label, rounded viewport, and AntD pill dots overlaid above slide content. `docs/ant-design-reference.html` currently renders Carousel collapsed in Playwright, so final screenshot pass is pending a reference CSS/render fix. |
 | Data Display | Collapse | CollapsePage | Collapse | Pass | Basic and Accordion sections compared against `build/collapse-compare-wide.png`; default non-accordion behavior, expanded first panel, rounded border, header background, content padding, separators, and arrow placement aligned. Shared demo-container spacing remains out of scope. |
-| Data Display | Descriptions | DescriptionsPage | Descriptions | Not started | |
+| Data Display | Descriptions | DescriptionsPage | Descriptions | Pass | Basic bordered two-column table compared against `build/descriptions-compare-wide.png`; demo coverage, item padding, vertical sizing, label background, and processing Badge content aligned. Shared demo-container spacing remains out of scope. |
 | Data Display | Empty | EmptyPage | Empty | Not started | |
 | Data Display | Image | ImagePage | Image | Not started | |
 | Data Display | List | ListPage | List | Not started | |

@@ -551,53 +551,21 @@ QWidget* createDescriptionsPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basic = new AntDescriptions(page);
-        basic->setTitle(QStringLiteral("User Info"));
-        basic->setColumnCount(3);
-        basic->addItem(QStringLiteral("Name"), QStringLiteral("Liam Parker"));
-        basic->addItem(QStringLiteral("Status"), QStringLiteral("Active"));
-        basic->addItem(QStringLiteral("Region"), QStringLiteral("Singapore"));
-        basic->addItem(QStringLiteral("Address"), QStringLiteral("88 Market Street, Floor 12"), 2);
-        basic->addItem(QStringLiteral("Remarks"), QStringLiteral("Owns release workflow and deployment sign-off."));
+        basic->setBordered(true);
+        basic->setColumnCount(2);
+        basic->addItem(QStringLiteral("Name"), QStringLiteral("Cloud Database"));
+
+        auto* statusItem = new AntDescriptionsItem(QStringLiteral("Status"), QString(), basic);
+        auto* status = new AntBadge(statusItem);
+        status->setStatus(Ant::BadgeStatus::Processing);
+        status->setText(QStringLiteral("Running"));
+        statusItem->setContentWidget(status);
+        basic->addItem(statusItem);
+
+        basic->addItem(QStringLiteral("Type"), QStringLiteral("PostgreSQL"));
+        basic->addItem(QStringLiteral("IP"), QStringLiteral("192.168.1.1"));
         cl->addWidget(basic);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Bordered"));
-        auto* cl = card->bodyLayout();
-        auto* bordered = new AntDescriptions(page);
-        bordered->setTitle(QStringLiteral("Order Summary"));
-        bordered->setExtra(QStringLiteral("Processing"));
-        bordered->setBordered(true);
-        bordered->setColumnCount(2);
-        bordered->addItem(QStringLiteral("Order No."), QStringLiteral("#SO-2048"));
-        bordered->addItem(QStringLiteral("Placed At"), QStringLiteral("2026-04-24 14:30"));
-        bordered->addItem(QStringLiteral("Amount"), QStringLiteral("$ 2,499.00"));
-        auto* tagItem = new AntDescriptionsItem(QStringLiteral("Priority"), QString(), bordered);
-        auto* priority = new AntTag(QStringLiteral("High"), bordered);
-        priority->setColor(QStringLiteral("#fa541c"));
-        priority->setVariant(Ant::TagVariant::Solid);
-        tagItem->setContentWidget(priority);
-        bordered->addItem(tagItem);
-        bordered->addItem(QStringLiteral("Notes"), QStringLiteral("Customer requested expedited shipping and proactive status updates."), 2);
-        cl->addWidget(bordered);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Vertical"));
-        auto* cl = card->bodyLayout();
-        auto* vertical = new AntDescriptions(page);
-        vertical->setTitle(QStringLiteral("Deployment Details"));
-        vertical->setVertical(true);
-        vertical->setBordered(true);
-        vertical->setColumnCount(3);
-        vertical->addItem(QStringLiteral("Environment"), QStringLiteral("Production"));
-        vertical->addItem(QStringLiteral("Version"), QStringLiteral("v2.8.1"));
-        vertical->addItem(QStringLiteral("Triggered By"), QStringLiteral("CI Pipeline"));
-        vertical->addItem(QStringLiteral("Rollback Plan"), QStringLiteral("Automatic rollback after 5 minutes of elevated error rate."), 2);
-        vertical->addItem(QStringLiteral("Approval"), QStringLiteral("Ready"));
-        cl->addWidget(vertical);
+        cl->addStretch();
         layout->addWidget(card);
     }
 

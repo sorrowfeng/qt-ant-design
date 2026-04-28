@@ -89,6 +89,7 @@ AntDescriptions::AntDescriptions(QWidget* parent)
     : QWidget(parent)
 {
     setStyle(new AntDescriptionsStyle(style()));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_root = new QVBoxLayout(this);
     m_root->setContentsMargins(0, 0, 0, 0);
     m_root->setSpacing(16);
@@ -104,6 +105,7 @@ AntDescriptions::AntDescriptions(QWidget* parent)
     headerLayout->addWidget(m_extraLabel);
 
     m_body = new QWidget(this);
+    m_body->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_grid = new QGridLayout(m_body);
     m_grid->setContentsMargins(0, 0, 0, 0);
     m_grid->setHorizontalSpacing(0);
@@ -200,6 +202,19 @@ void AntDescriptions::clearItems()
     }
     m_items.clear();
     rebuildGrid();
+}
+
+QSize AntDescriptions::sizeHint() const
+{
+    const QSize bodyHint = m_body ? m_body->sizeHint() : QSize();
+    const QSize headerHint = (m_header && m_header->isVisible()) ? m_header->sizeHint() : QSize();
+    const int spacing = headerHint.isValid() && bodyHint.isValid() ? m_root->spacing() : 0;
+    return QSize(qMax(bodyHint.width(), headerHint.width()), bodyHint.height() + headerHint.height() + spacing);
+}
+
+QSize AntDescriptions::minimumSizeHint() const
+{
+    return sizeHint();
 }
 
 void AntDescriptions::paintEvent(QPaintEvent* event) { Q_UNUSED(event) }
@@ -300,7 +315,7 @@ QWidget* AntDescriptions::buildLabelCell(const QString& text)
         ? new BorderedCell(m_body, token.colorFillQuaternary, token.colorSplit)
         : new QWidget(m_body);
     auto* layout = new QVBoxLayout(cell);
-    layout->setContentsMargins(token.paddingSM, token.paddingSM, token.paddingSM, token.paddingSM);
+    layout->setContentsMargins(token.paddingLG, token.padding, token.paddingLG, token.padding);
     layout->setSpacing(0);
     auto* label = new QLabel(text, cell);
     label->setWordWrap(true);
@@ -310,7 +325,7 @@ QWidget* AntDescriptions::buildLabelCell(const QString& text)
     QPalette p = label->palette();
     p.setColor(QPalette::WindowText, token.colorTextSecondary);
     label->setPalette(p);
-    layout->addWidget(label);
+    layout->addWidget(label, 0, Qt::AlignVCenter);
     return cell;
 }
 
@@ -321,12 +336,12 @@ QWidget* AntDescriptions::buildContentCell(AntDescriptionsItem* item)
         ? new BorderedCell(m_body, token.colorBgContainer, token.colorSplit)
         : new QWidget(m_body);
     auto* layout = new QVBoxLayout(cell);
-    layout->setContentsMargins(token.paddingSM, token.paddingSM, token.paddingSM, token.paddingSM);
+    layout->setContentsMargins(token.paddingLG, token.padding, token.paddingLG, token.padding);
     layout->setSpacing(0);
     if (item->contentWidget())
     {
         item->contentWidget()->setParent(cell);
-        layout->addWidget(item->contentWidget());
+        layout->addWidget(item->contentWidget(), 0, Qt::AlignVCenter);
         item->contentWidget()->show();
     }
     else
@@ -339,7 +354,7 @@ QWidget* AntDescriptions::buildContentCell(AntDescriptionsItem* item)
         QPalette p = label->palette();
         p.setColor(QPalette::WindowText, token.colorText);
         label->setPalette(p);
-        layout->addWidget(label);
+        layout->addWidget(label, 0, Qt::AlignVCenter);
     }
     return cell;
 }

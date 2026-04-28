@@ -74,6 +74,9 @@ public:
     AntDescriptionsItem* addItem(const QString& label, const QString& content, int span = 1);
     void clearItems();
 
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
+
 Q_SIGNALS:
     void titleChanged(const QString& title);
     void extraChanged(const QString& extra);
