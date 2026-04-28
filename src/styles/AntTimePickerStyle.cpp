@@ -113,21 +113,26 @@ QRectF timePickerIconRect(const AntTimePicker* picker)
 QColor timePickerBorderColor(const AntTimePicker* picker)
 {
     const auto& token = antTheme->tokens();
+    const bool focused = picker->hasFocus() || picker->isOpen();
     if (!picker->isEnabled())
     {
         return token.colorBorderDisabled;
     }
-    const bool focused = picker->hasFocus() || picker->isOpen();
-    const bool active = picker->isHoveredState() || focused;
     if (picker->status() == Ant::Status::Error)
     {
-        return active ? token.colorErrorHover : token.colorError;
+        return focused ? token.colorError : (picker->isHoveredState() ? token.colorErrorHover
+                                                                       : token.colorError);
     }
     if (picker->status() == Ant::Status::Warning)
     {
-        return active ? token.colorWarningHover : token.colorWarning;
+        return focused ? token.colorWarning : (picker->isHoveredState() ? token.colorWarningHover
+                                                                        : token.colorWarning);
     }
-    if (active)
+    if (focused)
+    {
+        return token.colorPrimary;
+    }
+    if (picker->isHoveredState())
     {
         return token.colorPrimaryHover;
     }
@@ -143,7 +148,9 @@ QColor timePickerBackgroundColor(const AntTimePicker* picker)
     }
     if (picker->variant() == Ant::Variant::Filled)
     {
-        return picker->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary;
+        return (picker->hasFocus() || picker->isOpen())
+            ? token.colorBgContainer
+            : (picker->isHoveredState() ? token.colorFillSecondary : token.colorFillTertiary);
     }
     if (picker->variant() == Ant::Variant::Borderless ||
         picker->variant() == Ant::Variant::Underlined)
@@ -189,8 +196,12 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
     if (picker->variant() != Ant::Variant::Borderless &&
         picker->variant() != Ant::Variant::Underlined)
     {
+        const bool filled = picker->variant() == Ant::Variant::Filled;
+        const QPen framePen = filled && !focused
+            ? Qt::NoPen
+            : QPen(timePickerBorderColor(picker), token.lineWidth);
         AntStyleBase::drawCrispRoundedRect(painter, control.toRect(),
-            QPen(timePickerBorderColor(picker), token.lineWidth),
+            framePen,
             timePickerBackgroundColor(picker), m.radius, m.radius);
     }
     else
@@ -261,22 +272,32 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
     const QRectF icon = timePickerIconRect(picker);
     if (timePickerCanClear(picker))
     {
+        const QPointF center = icon.center();
         painter->setPen(Qt::NoPen);
-        painter->setBrush(token.colorBgBase);
-        painter->drawEllipse(icon.adjusted(5, 5, -5, -5));
-        painter->setPen(QPen(token.colorTextTertiary, 1.5, Qt::SolidLine, Qt::RoundCap));
-        painter->drawLine(icon.center() + QPointF(-4, -4), icon.center() + QPointF(4, 4));
-        painter->drawLine(icon.center() + QPointF(4, -4), icon.center() + QPointF(-4, 4));
+        painter->setBrush(token.colorTextTertiary);
+        painter->drawEllipse(center, 5, 5);
+        painter->setPen(QPen(token.colorBgContainer, 1.3, Qt::SolidLine, Qt::RoundCap));
+        painter->drawLine(center + QPointF(-2.2, -2.2), center + QPointF(2.2, 2.2));
+        painter->drawLine(center + QPointF(2.2, -2.2), center + QPointF(-2.2, 2.2));
     }
     else
     {
-        painter->setPen(QPen(picker->isEnabled() ? token.colorTextTertiary : token.colorTextDisabled,
-                            1.4, Qt::SolidLine, Qt::RoundCap));
+        QColor iconColor = token.colorTextDisabled;
+        if (picker->isEnabled() && picker->status() == Ant::Status::Error)
+        {
+            iconColor = token.colorError;
+        }
+        else if (picker->isEnabled() && picker->status() == Ant::Status::Warning)
+        {
+            iconColor = token.colorWarning;
+        }
+        const qreal iconSize = picker->pickerSize() == Ant::Size::Small ? 12.0 : 14.0;
+        painter->setPen(QPen(iconColor, 1.2, Qt::SolidLine, Qt::RoundCap));
         painter->setBrush(Qt::NoBrush);
         const QPointF center = icon.center();
-        painter->drawEllipse(center, 8, 8);
-        painter->drawLine(center, center + QPointF(0, -5));
-        painter->drawLine(center, center + QPointF(5, 2));
+        painter->drawEllipse(center, iconSize / 2.0, iconSize / 2.0);
+        painter->drawLine(center, center + QPointF(0, -iconSize * 0.32));
+        painter->drawLine(center, center + QPointF(iconSize * 0.32, iconSize * 0.18));
     }
 
     painter->restore();

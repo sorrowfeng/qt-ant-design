@@ -25,7 +25,7 @@ public:
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
         setMouseTracking(true);
-        resize(248, 286);
+        resize(184, 286);
     }
 
 protected:
@@ -55,7 +55,9 @@ protected:
     {
         m_hoveredColumn = columnAt(event->position());
         m_hoveredRow = rowAt(event->position());
-        const bool clickable = (m_hoveredColumn >= 0 && m_hoveredRow >= 0) || nowRect().contains(event->position()) || okRect().contains(event->position());
+        const bool clickable = (m_hoveredColumn >= 0 && m_hoveredRow >= 0)
+            || nowRect().contains(event->position())
+            || okRect().contains(event->position());
         setCursor(clickable ? Qt::PointingHandCursor : Qt::ArrowCursor);
         update();
         QFrame::mouseMoveEvent(event);
@@ -170,7 +172,7 @@ private:
     QRectF columnsRect() const
     {
         const QRectF panel = panelRect();
-        return QRectF(panel.left() + 10, panel.top() + 12, panel.width() - 20, 7 * 28);
+        return QRectF(panel.left(), panel.top() + 8, panel.width(), 8 * 28);
     }
 
     QRectF footerRect() const
@@ -182,13 +184,13 @@ private:
     QRectF nowRect() const
     {
         const QRectF footer = footerRect();
-        return QRectF(footer.left() + 12, footer.top() + 9, 64, 30);
+        return QRectF(footer.left() + 12, footer.top() + 8, 64, 30);
     }
 
     QRectF okRect() const
     {
         const QRectF footer = footerRect();
-        return QRectF(footer.right() - 70, footer.top() + 9, 56, 30);
+        return QRectF(footer.right() - 70, footer.top() + 8, 56, 30);
     }
 
     int columnAt(const QPointF& pos) const
@@ -210,7 +212,7 @@ private:
             return -1;
         }
         const int row = static_cast<int>((pos.y() - columns.top()) / 28.0);
-        return row >= 0 && row < 7 ? row : -1;
+        return row >= 0 && row < 8 ? row : -1;
     }
 
     int valueForRow(int column, int row) const
@@ -219,7 +221,7 @@ private:
         const int center = column == 0 ? time.hour() : (column == 1 ? time.minute() : time.second());
         const int step = column == 0 ? m_owner->m_hourStep : (column == 1 ? m_owner->m_minuteStep : m_owner->m_secondStep);
         const int max = column == 0 ? 24 : 60;
-        int value = center + (row - 3) * step;
+        int value = center + row * step;
         while (value < 0)
         {
             value += max;
@@ -234,34 +236,23 @@ private:
         const QRectF columns = columnsRect();
         const qreal colW = columns.width() / 3.0;
 
-        QFont headerFont = painter.font();
-        headerFont.setPixelSize(token.fontSizeSM);
-        headerFont.setWeight(QFont::DemiBold);
-        painter.setFont(headerFont);
-        painter.setPen(token.colorTextSecondary);
-        const QStringList headers = {QStringLiteral("Hour"), QStringLiteral("Minute"), QStringLiteral("Second")};
-        for (int c = 0; c < 3; ++c)
-        {
-            painter.drawText(QRectF(columns.left() + c * colW, columns.top() - 2, colW, 20), Qt::AlignCenter, headers.at(c));
-        }
-
         QFont valueFont = painter.font();
         valueFont.setPixelSize(token.fontSize);
         painter.setFont(valueFont);
 
         for (int c = 0; c < 3; ++c)
         {
-            const QRectF colRect(columns.left() + c * colW, columns.top() + 20, colW, columns.height() - 20);
+            const QRectF colRect(columns.left() + c * colW, columns.top(), colW, columns.height());
             if (c > 0)
             {
                 painter.setPen(QPen(token.colorSplit, token.lineWidth));
                 painter.drawLine(QPointF(colRect.left(), colRect.top()), QPointF(colRect.left(), colRect.bottom()));
             }
 
-            for (int r = 0; r < 7; ++r)
+            for (int r = 0; r < 8; ++r)
             {
-                const QRectF rowRect(colRect.left() + 5, colRect.top() + r * 24, colRect.width() - 10, 22);
-                const bool selected = r == 3;
+                const QRectF rowRect(colRect.left() + 4, colRect.top() + r * 28, colRect.width() - 8, 24);
+                const bool selected = r == 0;
                 const bool hovered = c == m_hoveredColumn && r == m_hoveredRow;
                 if (selected)
                 {
@@ -317,6 +308,8 @@ AntTimePicker::AntTimePicker(QWidget* parent)
 {
     setStyle(new AntTimePickerStyle(style()));
     setAttribute(Qt::WA_Hover, true);
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
@@ -716,19 +709,24 @@ QRectF AntTimePicker::iconRect(const Metrics& metrics) const
 QColor AntTimePicker::borderColor() const
 {
     const auto& token = antTheme->tokens();
+    const bool focused = hasFocus() || m_open;
     if (!isEnabled())
     {
         return token.colorBorderDisabled;
     }
     if (m_status == Ant::Status::Error)
     {
-        return (m_hovered || hasFocus() || m_open) ? token.colorErrorHover : token.colorError;
+        return focused ? token.colorError : (m_hovered ? token.colorErrorHover : token.colorError);
     }
     if (m_status == Ant::Status::Warning)
     {
-        return (m_hovered || hasFocus() || m_open) ? token.colorWarningHover : token.colorWarning;
+        return focused ? token.colorWarning : (m_hovered ? token.colorWarningHover : token.colorWarning);
     }
-    if (m_hovered || hasFocus() || m_open)
+    if (focused)
+    {
+        return token.colorPrimary;
+    }
+    if (m_hovered)
     {
         return token.colorPrimaryHover;
     }
@@ -744,7 +742,9 @@ QColor AntTimePicker::backgroundColor() const
     }
     if (m_variant == Ant::Variant::Filled)
     {
-        return m_hovered ? token.colorFillTertiary : token.colorFillQuaternary;
+        return (hasFocus() || m_open)
+            ? token.colorBgContainer
+            : (m_hovered ? token.colorFillSecondary : token.colorFillTertiary);
     }
     if (m_variant == Ant::Variant::Borderless || m_variant == Ant::Variant::Underlined)
     {
