@@ -192,7 +192,7 @@ Ant Design standard components are counted by the top-level directories under `s
 - `AntCalendar`: calendar panel with Day / Month / Year mode switching and date selection
 - `AntCarousel`: carousel with autoplay, dot indicators, and click-to-page
 - `AntCollapse`: collapse panel / accordion with InOutCubic expand animation and accordion exclusivity
-- `AntColorPicker`: color picker with HS field + value slider + RGB / HSV inputs, preset and custom colors
+- `AntColorPicker`: inline color trigger with optional text, plus popup HS field + value slider + RGB / HSV inputs, preset and custom colors
 - `AntImage`: image display with placeholder fallback and click-to-fullscreen preview
 - `AntTransfer`: transfer component with two lists for batch movement
 - `AntTour`: masked step-by-step guide with target highlighting and Prev / Next / Finish

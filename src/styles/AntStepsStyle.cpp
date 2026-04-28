@@ -184,7 +184,7 @@ QString stepsIconText(Ant::StepStatus status, int index)
     case Ant::StepStatus::Finish:
         return QStringLiteral("✓");
     case Ant::StepStatus::Error:
-        return QStringLiteral("!");
+        return QStringLiteral("×");
     case Ant::StepStatus::Process:
     case Ant::StepStatus::Wait:
     default:
@@ -253,16 +253,18 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         }
         else if (status == Ant::StepStatus::Finish)
         {
-            fill = token.colorBgContainer;
+            fill = token.colorPrimaryBg;
+            border = token.colorPrimaryBg;
         }
         else if (status == Ant::StepStatus::Error)
         {
-            fill = token.colorBgContainer;
+            fill = token.colorError;
             border = token.colorError;
-            numberColor = token.colorError;
+            numberColor = token.colorTextLightSolid;
         }
         else
         {
+            fill = token.colorFillQuaternary;
             border = disabled ? token.colorBorderDisabled : token.colorBorder;
             numberColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
         }
@@ -284,7 +286,7 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         titleFont.setPixelSize(m.titleFontSize);
         titleFont.setWeight(status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
         painter->setFont(titleFont);
-        painter->setPen(disabled ? token.colorTextDisabled : (status == Ant::StepStatus::Wait ? token.colorTextSecondary : token.colorText));
+        painter->setPen(disabled ? token.colorTextDisabled : (status == Ant::StepStatus::Error ? token.colorError : (status == Ant::StepStatus::Wait ? token.colorTextSecondary : token.colorText)));
         QRect titleRect = textArea;
         titleRect.setHeight(m.titleFontSize + 8);
         painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignTop, step.title);
@@ -309,7 +311,7 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
             descFont.setPixelSize(m.descFontSize);
             descFont.setWeight(QFont::Normal);
             painter->setFont(descFont);
-            painter->setPen(disabled ? token.colorTextDisabled : token.colorTextSecondary);
+            painter->setPen(disabled ? token.colorTextDisabled : (status == Ant::StepStatus::Error ? token.colorError : token.colorTextSecondary));
             QRect descRect = textArea;
             descRect.setTop(titleRect.bottom() + (step.subTitle.isEmpty() ? 6 : 22));
             painter->drawText(descRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, step.description);

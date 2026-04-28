@@ -388,11 +388,17 @@ void TestAntQtExtensions::colorPicker()
 {
     auto* w = new AntColorPicker;
     QCOMPARE(w->currentColor(), QColor(Qt::white));
+    QCOMPARE(w->showText(), false);
 
     QSignalSpy colorSpy(w, &AntColorPicker::currentColorChanged);
     w->setCurrentColor(Qt::red);
     QCOMPARE(w->currentColor(), QColor(Qt::red));
     QCOMPARE(colorSpy.count(), 1);
+
+    QSignalSpy textSpy(w, &AntColorPicker::showTextChanged);
+    w->setShowText(true);
+    QCOMPARE(w->showText(), true);
+    QCOMPARE(textSpy.count(), 1);
 
     auto* w2 = new AntColorPicker(Qt::blue);
     QCOMPARE(w2->currentColor(), QColor(Qt::blue));

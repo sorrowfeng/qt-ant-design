@@ -159,7 +159,7 @@ void AntBreadcrumbStyle::drawBreadcrumb(const QStyleOption* option, QPainter* pa
             const AntBreadcrumbItem next = breadcrumb->itemAt(i + 1);
             if (!next.separatorOnly)
             {
-                const QRect sepRect(x + token.marginXS, 0, 20, h);
+                const QRect sepRect(x, 0, separatorWidth, h);
                 painter->setPen(token.colorTextTertiary);
                 painter->drawText(sepRect, Qt::AlignCenter, separator);
                 x += separatorWidth;

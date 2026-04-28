@@ -328,9 +328,15 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
     else if (button->buttonIconType() != Ant::IconType::None)
     {
         QRectF iconRect;
+        const bool trailingIcon = button->buttonIconType() == Ant::IconType::Down && !button->text().isEmpty();
         if (button->buttonShape() == Ant::ButtonShape::Circle && button->text().isEmpty())
         {
             iconRect = QRectF(outer.center().x() - m.iconSize / 2.0, outer.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
+        }
+        else if (trailingIcon)
+        {
+            iconRect = QRectF(textRect.right() - m.iconSize, textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
+            textRect.adjust(0, 0, -(m.iconSize + 8), 0);
         }
         else
         {

@@ -45,7 +45,7 @@
 - `AntDockWidget` — QDockWidget，自定义标题栏，Win32 resize
 - `AntAutoComplete` — QWidget 组合，弹出建议，键盘导航
 - `AntCalendar` — QTableView + Model/View，Day/Month/Year 三态
-- `AntColorPicker` — QDialog，HS field，RGB/HSV，预设/自定义颜色
+- `AntColorPicker` — inline trigger + 弹窗编辑器，showText，HS field，RGB/HSV，预设/自定义颜色
 
 ### 第二批：数据展示与布局（4 个）
 - `AntImage` — 图片展示 + 全屏预览
@@ -126,7 +126,7 @@
 | `AntAutoComplete` | `auto-complete` | `QProxyStyle` | 是 | 建议弹出、键盘导航 |
 | `AntCascader` | `cascader` | `QProxyStyle` | 是 | 多列弹出面板、点击/悬停展开 |
 | `AntCheckbox` | `checkbox` | `QProxyStyle` | 是 | |
-| `AntColorPicker` | `color-picker` | 自绘 | 是 | HS field、RGB/HSV、预设、static getColor() |
+| `AntColorPicker` | `color-picker` | 自绘 | 是 | inline trigger/showText、HS field、RGB/HSV、预设、static getColor() |
 | `AntDatePicker` | `date-picker` | `QProxyStyle` | 是 | 自绘日期弹层、RangePicker |
 | `AntDescriptions` | `descriptions` | `QProxyStyle` | 是 | 标题、extra、bordered、vertical |
 | `AntForm` | `form` | `QProxyStyle` | 是 | 横向/纵向/行内布局、校验提示、Provider、List |
@@ -235,7 +235,7 @@
   - `install/include/qt-ant-design/styles/`
 - 已迁移到 `QProxyStyle` 的组件，应在构造函数中安装独立 Style，并在主题切换时触发：
   - `polish` → `updateGeometry` → `update`
-- 纯容器/对话框组件（如 AntScrollArea、AntColorPicker）可不含独立 Style 类
+- 纯容器/自绘非 QProxyStyle 组件（如 AntScrollArea、AntColorPicker）可不含独立 Style 类
 - 主题切换统一监听：
   - `AntTheme::themeChanged`
   - 或 `AntTheme::themeModeChanged`

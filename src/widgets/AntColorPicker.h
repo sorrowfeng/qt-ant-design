@@ -1,18 +1,22 @@
 #pragma once
 
-#include <QDialog>
 #include <QColor>
-#include <QComboBox>
-#include <QLabel>
-#include <QLineEdit>
-#include <QSpinBox>
+#include <QRect>
+#include <QWidget>
 
 #include "core/AntTypes.h"
 
-class AntColorPicker : public QDialog
+class QEnterEvent;
+class QEvent;
+class QKeyEvent;
+class QMouseEvent;
+class QPaintEvent;
+
+class AntColorPicker : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QColor currentColor READ currentColor WRITE setCurrentColor NOTIFY currentColorChanged)
+    Q_PROPERTY(bool showText READ showText WRITE setShowText NOTIFY showTextChanged)
 
 public:
     explicit AntColorPicker(QWidget* parent = nullptr);
@@ -21,42 +25,33 @@ public:
     QColor currentColor() const;
     void setCurrentColor(const QColor& color);
 
+    bool showText() const;
+    void setShowText(bool showText);
+
     static QColor getColor(const QColor& initial = Qt::white, QWidget* parent = nullptr,
                            const QString& title = QString());
+
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
 
 Q_SIGNALS:
     void colorSelected(const QColor& color);
     void currentColorChanged(const QColor& color);
+    void showTextChanged(bool showText);
 
 private:
-    void setupUi();
-    void updateFromColor(const QColor& color);
-    void updateSlidersFromColor();
-    void updateEditFieldsFromColor();
-    void updatePreviewFromColor();
-    void syncColor();
+    void paintEvent(QPaintEvent* event) override;
+    void enterEvent(QEnterEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
+    void openEditor();
+    QRect colorBlockRect() const;
+
+    bool m_showText = false;
+    bool m_hovered = false;
+    bool m_pressed = false;
     QColor m_currentColor = Qt::white;
-    QColor m_previousColor = Qt::white;
-    bool m_updating = false;
-
-    // Sub-widgets
-    QWidget* m_hsField = nullptr;
-    QWidget* m_valueSlider = nullptr;
-    QLineEdit* m_hexEdit = nullptr;
-    QComboBox* m_modeCombo = nullptr;
-    QSpinBox* m_rEdit = nullptr;
-    QSpinBox* m_gEdit = nullptr;
-    QSpinBox* m_bEdit = nullptr;
-    QLabel* m_rLabel = nullptr;
-    QLabel* m_gLabel = nullptr;
-    QLabel* m_bLabel = nullptr;
-    QWidget* m_previewOld = nullptr;
-    QWidget* m_previewNew = nullptr;
-    QWidget* m_presetGrid = nullptr;
-    QWidget* m_customGrid = nullptr;
-    QPushButton* m_addCustomBtn = nullptr;
-    QPushButton* m_removeCustomBtn = nullptr;
-
-    QList<QColor> m_customColors;
 };

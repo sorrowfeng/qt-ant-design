@@ -9,6 +9,7 @@
 #include <algorithm>
 
 #include "../styles/AntMenuStyle.h"
+#include "AntIcon.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -18,6 +19,47 @@ QColor withAlpha(QColor color, int alpha)
 {
     color.setAlpha(alpha);
     return color;
+}
+
+bool hasIcon(const AntMenuItem& item)
+{
+    return item.iconType != Ant::IconType::None || !item.iconText.isEmpty();
+}
+
+void drawMenuIcon(QPainter& painter, const AntMenuItem& item, const QRectF& rect, const QColor& color)
+{
+    if (item.iconType == Ant::IconType::None)
+    {
+        painter.drawText(rect.toRect(), Qt::AlignCenter, item.iconText.left(2));
+        return;
+    }
+
+    const AntIcon::IconPaths paths = AntIcon::builtinPaths(item.iconType, Ant::IconTheme::Outlined);
+    const QPainterPath primaryPath = AntIcon::transformPath(paths.primary, rect);
+    const QPainterPath secondaryPath = paths.secondary.isEmpty() ? QPainterPath() : AntIcon::transformPath(paths.secondary, rect);
+
+    painter.save();
+    if (paths.useStroke)
+    {
+        painter.setPen(QPen(color, qMax<qreal>(1.4, rect.width() * 0.09), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawPath(primaryPath);
+        if (!secondaryPath.isEmpty())
+        {
+            painter.drawPath(secondaryPath);
+        }
+    }
+    else
+    {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(color);
+        if (!secondaryPath.isEmpty())
+        {
+            painter.drawPath(secondaryPath);
+        }
+        painter.drawPath(primaryPath);
+    }
+    painter.restore();
 }
 } // namespace
 
@@ -146,12 +188,49 @@ void AntMenu::addItem(const QString& key,
     update();
 }
 
+void AntMenu::addItem(const QString& key,
+                      const QString& label,
+                      Ant::IconType iconType,
+                      const QString& extra,
+                      bool disabled,
+                      bool danger)
+{
+    AntMenuItem item;
+    item.key = key;
+    item.label = label;
+    item.iconType = iconType;
+    item.extra = extra;
+    item.disabled = disabled;
+    item.danger = danger;
+    m_items.append(item);
+    updateMenuGeometry();
+    update();
+}
+
 void AntMenu::addSubMenu(const QString& key, const QString& label, const QString& iconText, bool disabled)
 {
     AntMenuItem item;
     item.key = key;
     item.label = label;
     item.iconText = iconText;
+    item.disabled = disabled;
+    item.subMenu = true;
+    m_items.append(item);
+    if (!m_openKeys.contains(key))
+    {
+        m_openKeys.append(key);
+        Q_EMIT openKeysChanged(m_openKeys);
+    }
+    updateMenuGeometry();
+    update();
+}
+
+void AntMenu::addSubMenu(const QString& key, const QString& label, Ant::IconType iconType, bool disabled)
+{
+    AntMenuItem item;
+    item.key = key;
+    item.label = label;
+    item.iconType = iconType;
     item.disabled = disabled;
     item.subMenu = true;
     m_items.append(item);
@@ -176,6 +255,28 @@ void AntMenu::addSubItem(const QString& parentKey,
     item.key = key;
     item.label = label;
     item.iconText = iconText;
+    item.extra = extra;
+    item.parentKey = parentKey;
+    item.level = 1;
+    item.disabled = disabled;
+    item.danger = danger;
+    m_items.append(item);
+    updateMenuGeometry();
+    update();
+}
+
+void AntMenu::addSubItem(const QString& parentKey,
+                         const QString& key,
+                         const QString& label,
+                         Ant::IconType iconType,
+                         const QString& extra,
+                         bool disabled,
+                         bool danger)
+{
+    AntMenuItem item;
+    item.key = key;
+    item.label = label;
+    item.iconType = iconType;
     item.extra = extra;
     item.parentKey = parentKey;
     item.level = 1;
@@ -476,7 +577,7 @@ int AntMenu::horizontalItemWidth(const AntMenuItem& item) const
     QFont f = font();
     f.setPixelSize(token.fontSize);
     const int textWidth = QFontMetrics(f).horizontalAdvance(item.label);
-    const int iconWidth = item.iconText.isEmpty() ? 0 : 22;
+    const int iconWidth = hasIcon(item) ? 22 : 0;
     const int arrowWidth = item.subMenu ? 18 : 0;
     return std::max(72, textWidth + iconWidth + arrowWidth + token.paddingLG * 2);
 }
@@ -543,6 +644,10 @@ QColor AntMenu::itemBackgroundColor(const AntMenuItem& item, bool selected, bool
     {
         return Qt::transparent;
     }
+    if (m_mode == Ant::MenuMode::Horizontal)
+    {
+        return hovered ? token.colorFillTertiary : Qt::transparent;
+    }
     if (m_menuTheme == Ant::MenuTheme::Dark)
     {
         if (selected)
@@ -592,9 +697,16 @@ void AntMenu::drawItem(QPainter& painter, const AntMenuItem& item, const QRect& 
 
     int x = content.left() + token.paddingXS;
     const int iconSize = 20;
-    if (!item.iconText.isEmpty())
+    if (hasIcon(item))
     {
-        painter.drawText(QRect(x, content.top(), iconSize, content.height()), Qt::AlignCenter, item.iconText.left(2));
+        if (m_inlineCollapsed)
+        {
+            const QRectF centeredIcon(content.center().x() - 8, content.center().y() - 8, 16, 16);
+            drawMenuIcon(painter, item, centeredIcon, itemTextColor(item, selected, hovered));
+            return;
+        }
+        const QRectF iconRect(x + 2, content.center().y() - 8, 16, 16);
+        drawMenuIcon(painter, item, iconRect, itemTextColor(item, selected, hovered));
         x += iconSize + token.marginXS;
     }
     else if (m_inlineCollapsed)

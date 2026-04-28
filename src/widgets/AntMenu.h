@@ -18,6 +18,7 @@ struct AntMenuItem
     QString key;
     QString label;
     QString iconText;
+    Ant::IconType iconType = Ant::IconType::None;
     QString extra;
     QString parentKey;
     int level = 0;
@@ -68,14 +69,31 @@ public:
                  const QString& extra = QString(),
                  bool disabled = false,
                  bool danger = false);
+    void addItem(const QString& key,
+                 const QString& label,
+                 Ant::IconType iconType,
+                 const QString& extra = QString(),
+                 bool disabled = false,
+                 bool danger = false);
     void addSubMenu(const QString& key,
                     const QString& label,
                     const QString& iconText = QString(),
+                    bool disabled = false);
+    void addSubMenu(const QString& key,
+                    const QString& label,
+                    Ant::IconType iconType,
                     bool disabled = false);
     void addSubItem(const QString& parentKey,
                     const QString& key,
                     const QString& label,
                     const QString& iconText = QString(),
+                    const QString& extra = QString(),
+                    bool disabled = false,
+                    bool danger = false);
+    void addSubItem(const QString& parentKey,
+                    const QString& key,
+                    const QString& label,
+                    Ant::IconType iconType,
                     const QString& extra = QString(),
                     bool disabled = false,
                     bool danger = false);

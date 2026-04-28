@@ -266,7 +266,7 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
 
     if (m_showTotal)
     {
-        const QString totalText = QStringLiteral("%1-%2 of %3").arg(rangeStart()).arg(rangeEnd()).arg(m_total);
+        const QString totalText = QStringLiteral("Total %1 items").arg(m_total);
         QFont f = font();
         f.setPixelSize(fontSize());
         append(ItemKind::Text, 0, totalText, false, false, QFontMetrics(f).horizontalAdvance(totalText) + token.paddingSM);
@@ -275,8 +275,13 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
     append(ItemKind::Prev, m_current - 1, QStringLiteral("<"), m_current > 1);
     if (m_simple)
     {
-        const QString text = QStringLiteral("%1 / %2").arg(m_current).arg(pageCount());
-        append(ItemKind::Text, 0, text, false, false, itemSize() * 3);
+        QFont f = font();
+        f.setPixelSize(fontSize());
+        const int separatorWidth = QFontMetrics(f).horizontalAdvance(QStringLiteral("/")) + token.paddingXS;
+        const int totalWidth = QFontMetrics(f).horizontalAdvance(QString::number(pageCount())) + token.paddingXS;
+        append(ItemKind::QuickJumper, m_current, QString::number(m_current), true, false, itemSize() * 2);
+        append(ItemKind::Text, 0, QStringLiteral("/"), false, false, separatorWidth);
+        append(ItemKind::Text, 0, QString::number(pageCount()), false, false, totalWidth);
     }
     else
     {
@@ -314,7 +319,13 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
     }
     if (m_showQuickJumper)
     {
-        append(ItemKind::QuickJumper, pageCount(), QStringLiteral("Go %1").arg(pageCount()), true, false, itemSize() * 2);
+        QFont f = font();
+        f.setPixelSize(fontSize());
+        const int goToWidth = QFontMetrics(f).horizontalAdvance(QStringLiteral("Go to")) + token.paddingXS;
+        const int pageWidth = QFontMetrics(f).horizontalAdvance(QStringLiteral("Page")) + token.paddingXS;
+        append(ItemKind::Text, 0, QStringLiteral("Go to"), false, false, goToWidth);
+        append(ItemKind::QuickJumper, pageCount(), QString(), true, false, itemSize() + token.paddingLG);
+        append(ItemKind::Text, 0, QStringLiteral("Page"), false, false, pageWidth);
     }
     return items;
 }
@@ -426,6 +437,10 @@ void AntPagination::activateItem(const PageItem& item)
     {
         const int next = m_pageSize == 10 ? 20 : (m_pageSize == 20 ? 50 : 10);
         setPageSize(next);
+        return;
+    }
+    if (item.kind == ItemKind::QuickJumper && item.text.isEmpty())
+    {
         return;
     }
     setCurrent(item.page);

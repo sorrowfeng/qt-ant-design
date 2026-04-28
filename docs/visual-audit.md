@@ -74,17 +74,17 @@ Use this loop for one component at a time.
 | Layout | Layout | LayoutPage | Layout | Pass | Basic Layout and With Sider demos compared against `build/layout-compare-wide.png`; official dark header/sider colors, 64px header, 160px sider, footer/content backgrounds, nav padding, and nested header/content structure aligned. Shared Card body spacing and rounded clipping remain out of scope. |
 | Layout | Space | SpacePage | Space | Pass | Horizontal, Vertical, and Size demos compared against `build/space-compare-wide.png`; official demo labels, default/small/middle/large gaps, vertical direction, and intrinsic inline child sizing aligned. Shared Card body spacing remains out of scope. |
 | Layout | Splitter | SplitterPage | Splitter | Pass | Basic Splitter compared against `build/splitter-compare-wide.png`; official demo title, 200px split area, 50/50 panels, panel tints, centered labels, 4px divider, and border-color handle aligned. Shared Card body vertical spacing remains out of scope. |
-| Navigation | Affix | AffixPage | Affix | Not started | |
-| Navigation | Anchor | AnchorPage | Anchor | Not started | |
-| Navigation | Breadcrumb | BreadcrumbPage | Breadcrumb | Not started | |
-| Navigation | Dropdown | DropdownPage | Dropdown | Needs visual QA | Resolved placement now drives popup arrow/body direction; compare menu density, arrow alignment, hover/click/context behavior. |
-| Navigation | Menu | MenuPage | Menu | Not started | |
-| Navigation | Pagination | PaginationPage | Pagination | Not started | |
-| Navigation | Steps | StepsPage | Steps | Not started | |
-| Data Entry | AutoComplete | AutoCompletePage | AutoComplete | Not started | |
-| Data Entry | Cascader | CascaderPage | Cascader | Not started | |
-| Data Entry | Checkbox | CheckboxPage | Checkbox | Needs visual QA | Disabled checked mark adjusted; compare basic, group spacing, checked, indeterminate, and disabled states. |
-| Data Entry | ColorPicker | ColorPickerPage | ColorPicker | Not started | |
+| Navigation | Affix | AffixPage | Affix | Pass | Static Affix demo compared against `build/affix-compare-wide.png`; official demo title, primary child button label, offsetTop=10 binding, and secondary instruction text aligned. Shared Card body vertical spacing remains out of scope. |
+| Navigation | Anchor | AnchorPage | Anchor | Pass | Basic Anchor compared against `build/anchor-compare-wide.png`; official Part 1/2/3 links, default text color, left split rail, and three 100px tinted content blocks aligned. Shared Card body vertical spacing remains out of scope. |
+| Navigation | Breadcrumb | BreadcrumbPage | Breadcrumb | Pass | Basic and With Separator demos compared against `build/breadcrumb-compare-wide.png`; official item labels, custom `>` separator, muted link color, current text color, and separator spacing aligned. Shared Card body height remains out of scope. |
+| Navigation | Dropdown | DropdownPage | Dropdown | Pass | Basic trigger row compared against `build/dropdown-compare-wide.png`; official trigger labels, primary context-menu button, trailing down chevron, and target ordering aligned. Popup menu density still uses shared AntMenu rendering. |
+| Navigation | Menu | MenuPage | Menu | Pass | Horizontal and Vertical / Inline demos compared against `build/menu-compare-wide.png`; official item labels, selected keys, open inline submenu, vector icons where available, horizontal underline without selected fill, and inline selected indicator aligned. |
+| Navigation | Pagination | PaginationPage | Pagination | Pass | Basic, More Options, and Simple demos compared against `build/pagination-compare-wide.png`; official totals text, quick jumper input shape, size changer placement, simple current-page input, and page item sequence aligned. |
+| Navigation | Steps | StepsPage | Steps | Pass | Basic, With Description, and Error demos compared against `build/steps-compare-wide.png`; official labels, descriptions, finish/process/wait/error colors, check/error glyphs, and horizontal/vertical states aligned. Vertical small-size compactness remains out of scope. |
+| Data Entry | AutoComplete | AutoCompletePage | AutoComplete | Pass | Basic AutoComplete compared against `build/autocomplete-compare-wide.png`; official demo title, 280px input width, placeholder text, default border/radius, and closed empty state aligned. Popup suggestion filtering remains for interactive QA. |
+| Data Entry | Cascader | CascaderPage | Cascader | Pass | Basic Cascader compared against `build/cascader-compare-wide.png`; official demo title, 280px width, placeholder, default border/radius, arrow position, and option tree data aligned. Popup column interaction remains for interactive QA. |
+| Data Entry | Checkbox | CheckboxPage | Checkbox | Pass | Example aligned to official Basic and Group demos; checked/unchecked box geometry, label spacing, primary check mark, and group spacing verified against `build/checkbox-compare-wide.png`. |
+| Data Entry | ColorPicker | ColorPickerPage | ColorPicker | Pass | Inline trigger added and example aligned to official Basic and With Text demos; 32px trigger, 22px swatch, `#52C41A` showText label, colors, and spacing verified against `build/colorpicker-compare-wide.png`. Popup editor remains available via click/static `getColor()`. |
 | Data Entry | DatePicker | DatePickerPage | DatePicker | Needs visual QA | Range display, hover border, filled hover, and clear visibility fixed; compare popup grid and range interaction. |
 | Data Entry | Form | FormPage | Form | Not started | |
 | Data Entry | Input | InputPage | Input | Needs fix | Disabled clear visibility fixed; TextArea remains missing from the Qt Input page/API coverage. |

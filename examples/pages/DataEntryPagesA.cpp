@@ -2,12 +2,10 @@
 
 #include <QColor>
 #include <QDate>
-#include <QDebug>
 #include <QDoubleSpinBox>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QTime>
-#include <QVariant>
 #include <QVBoxLayout>
 #include <QVector>
 #include <QWidget>
@@ -35,28 +33,21 @@ QWidget* createAutoCompletePage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
-    auto* title = new AntTypography(QStringLiteral("AntAutoComplete"));
-    title->setTitle(true);
-    title->setTitleLevel(Ant::TypographyTitleLevel::H3);
-    layout->addWidget(title);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
 
-    auto* ac = new AntAutoComplete(page);
-    ac->setPlaceholderText(QStringLiteral("Type a color..."));
-    ac->addSuggestion(QStringLiteral("Red"));
-    ac->addSuggestion(QStringLiteral("Blue"));
-    ac->addSuggestion(QStringLiteral("Green"));
-    ac->addSuggestion(QStringLiteral("Yellow"));
-    ac->addSuggestion(QStringLiteral("Orange"));
-    ac->addSuggestion(QStringLiteral("Purple"));
-    ac->addSuggestion(QStringLiteral("Pink"));
-    ac->addSuggestion(QStringLiteral("Cyan"));
-    ac->addSuggestion(QStringLiteral("Magenta"));
-    ac->addSuggestion(QStringLiteral("Teal"));
-    layout->addWidget(ac);
+    auto* card = new AntCard(QStringLiteral("Basic"));
+    auto* cl = card->bodyLayout();
+    cl->setAlignment(Qt::AlignTop);
 
-    QObject::connect(ac, &AntAutoComplete::suggestionClicked, page, [](const QString& text, const QVariant&) {
-        qDebug() << "Selected:" << text;
-    });
+    auto* ac = new AntAutoComplete(card);
+    ac->setFixedWidth(280);
+    ac->setPlaceholderText(QStringLiteral("Type to search..."));
+    ac->addSuggestion(QStringLiteral("a"));
+    ac->addSuggestion(QStringLiteral("aa"));
+    ac->addSuggestion(QStringLiteral("a!"));
+    cl->addWidget(ac, 0, Qt::AlignLeft);
+    layout->addWidget(card);
 
     layout->addStretch();
     return page;
@@ -66,14 +57,16 @@ QWidget* createCascaderPage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(24, 16, 24, 16);
+    layout->setContentsMargins(32, 24, 32, 24);
     layout->setSpacing(16);
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic Cascader"));
+        auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
 
-        auto* cascader = new AntCascader(page);
+        auto* cascader = new AntCascader(card);
+        cascader->setFixedWidth(280);
         cascader->setPlaceholder(QStringLiteral("Please select"));
 
         QVector<AntCascaderOption> options;
@@ -86,7 +79,6 @@ QWidget* createCascaderPage(QWidget* /*owner*/)
         hangzhou.label = QStringLiteral("Hangzhou");
         hangzhou.isLeaf = false;
         hangzhou.children.push_back({QStringLiteral("xihu"), QStringLiteral("West Lake")});
-        hangzhou.children.push_back({QStringLiteral("xiasha"), QStringLiteral("Xia Sha")});
         zhejiang.children.push_back(hangzhou);
         options.push_back(zhejiang);
 
@@ -94,11 +86,16 @@ QWidget* createCascaderPage(QWidget* /*owner*/)
         jiangsu.value = QStringLiteral("jiangsu");
         jiangsu.label = QStringLiteral("Jiangsu");
         jiangsu.isLeaf = false;
-        jiangsu.children.push_back({QStringLiteral("nanjing"), QStringLiteral("Nanjing")});
+        AntCascaderOption nanjing;
+        nanjing.value = QStringLiteral("nanjing");
+        nanjing.label = QStringLiteral("Nanjing");
+        nanjing.isLeaf = false;
+        nanjing.children.push_back({QStringLiteral("zhonghua"), QStringLiteral("Zhonghua")});
+        jiangsu.children.push_back(nanjing);
         options.push_back(jiangsu);
 
         cascader->setOptions(options);
-        cl->addWidget(cascader);
+        cl->addWidget(cascader, 0, Qt::AlignLeft);
 
         layout->addWidget(card);
     }
@@ -107,7 +104,7 @@ QWidget* createCascaderPage(QWidget* /*owner*/)
     return page;
 }
 
-QWidget* createCheckboxPage(QWidget* owner)
+QWidget* createCheckboxPage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
@@ -117,67 +114,36 @@ QWidget* createCheckboxPage(QWidget* owner)
     {
         auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
-        basicRow->setSpacing(24);
-        auto* unchecked = new AntCheckbox(QStringLiteral("Checkbox"));
-        auto* checked = new AntCheckbox(QStringLiteral("Checked"));
-        checked->setChecked(true);
-        auto* indeterminate = new AntCheckbox(QStringLiteral("Indeterminate"));
-        indeterminate->setIndeterminate(true);
-        basicRow->addWidget(unchecked);
-        basicRow->addWidget(checked);
-        basicRow->addWidget(indeterminate);
+        basicRow->setSpacing(16);
+        auto* apple = new AntCheckbox(QStringLiteral("Apple"));
+        auto* banana = new AntCheckbox(QStringLiteral("Banana"));
+        banana->setChecked(true);
+        auto* orange = new AntCheckbox(QStringLiteral("Orange"));
+        basicRow->addWidget(apple);
+        basicRow->addWidget(banana);
+        basicRow->addWidget(orange);
         basicRow->addStretch();
         cl->addLayout(basicRow);
         layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Disabled"));
+        auto* card = new AntCard(QStringLiteral("Group"));
         auto* cl = card->bodyLayout();
-        auto* disabledRow = new QHBoxLayout();
-        disabledRow->setSpacing(24);
-        auto* disabled = new AntCheckbox(QStringLiteral("Disabled"));
-        disabled->setEnabled(false);
-        auto* disabledChecked = new AntCheckbox(QStringLiteral("Disabled checked"));
-        disabledChecked->setChecked(true);
-        disabledChecked->setEnabled(false);
-        auto* disabledIndeterminate = new AntCheckbox(QStringLiteral("Disabled indeterminate"));
-        disabledIndeterminate->setIndeterminate(true);
-        disabledIndeterminate->setEnabled(false);
-        disabledRow->addWidget(disabled);
-        disabledRow->addWidget(disabledChecked);
-        disabledRow->addWidget(disabledIndeterminate);
-        disabledRow->addStretch();
-        cl->addLayout(disabledRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Controlled"));
-        auto* cl = card->bodyLayout();
-        auto* controlledRow = new QHBoxLayout();
-        controlledRow->setSpacing(18);
-        auto* controller = new AntCheckbox(QStringLiteral("Check all"));
-        auto* optionA = new AntCheckbox(QStringLiteral("Apple"));
-        auto* optionB = new AntCheckbox(QStringLiteral("Pear"));
-        auto updateController = [controller, optionA, optionB]() {
-            const int checkedCount = (optionA->isChecked() ? 1 : 0) + (optionB->isChecked() ? 1 : 0);
-            controller->setIndeterminate(checkedCount == 1);
-            controller->setChecked(checkedCount == 2);
-        };
-        QObject::connect(controller, &AntCheckbox::clicked, owner, [controller, optionA, optionB]() {
-            optionA->setChecked(controller->isChecked());
-            optionB->setChecked(controller->isChecked());
-        });
-        QObject::connect(optionA, &AntCheckbox::checkedChanged, owner, updateController);
-        QObject::connect(optionB, &AntCheckbox::checkedChanged, owner, updateController);
-        controlledRow->addWidget(controller);
-        controlledRow->addSpacing(12);
-        controlledRow->addWidget(optionA);
-        controlledRow->addWidget(optionB);
-        controlledRow->addStretch();
-        cl->addLayout(controlledRow);
+        cl->setAlignment(Qt::AlignTop);
+        auto* groupRow = new QHBoxLayout();
+        groupRow->setSpacing(16);
+        auto* apple = new AntCheckbox(QStringLiteral("Apple"));
+        apple->setChecked(true);
+        auto* banana = new AntCheckbox(QStringLiteral("Banana"));
+        auto* orange = new AntCheckbox(QStringLiteral("Orange"));
+        groupRow->addWidget(apple);
+        groupRow->addWidget(banana);
+        groupRow->addWidget(orange);
+        groupRow->addStretch();
+        cl->addLayout(groupRow);
         layout->addWidget(card);
     }
 
@@ -189,23 +155,34 @@ QWidget* createColorPickerPage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
-    auto* title = new AntTypography(QStringLiteral("AntColorPicker"));
-    title->setTitle(true);
-    title->setTitleLevel(Ant::TypographyTitleLevel::H3);
-    layout->addWidget(title);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
 
-    auto* openBtn = new AntButton(QStringLiteral("Open Color Picker"));
-    openBtn->setButtonType(Ant::ButtonType::Primary);
-    layout->addWidget(openBtn);
+    {
+        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
 
-    auto* colorLabel = makeText(QStringLiteral("Selected: none"), page);
-    layout->addWidget(colorLabel);
+        auto* row = new QHBoxLayout();
+        row->setSpacing(20);
+        auto* picker = new AntColorPicker(QColor(QStringLiteral("#1677ff")), card);
+        row->addWidget(picker);
+        row->addWidget(makeText(QStringLiteral("Pick a color"), card));
+        row->addStretch();
+        cl->addLayout(row);
+        layout->addWidget(card);
+    }
 
-    QObject::connect(openBtn, &QPushButton::clicked, page, [page, colorLabel]() {
-        QColor c = AntColorPicker::getColor(Qt::white, page->window(), QStringLiteral("Pick a Color"));
-        if (c.isValid())
-            colorLabel->setText(QStringLiteral("Selected: ") + c.name());
-    });
+    {
+        auto* card = new AntCard(QStringLiteral("With Text"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+
+        auto* picker = new AntColorPicker(QColor(QStringLiteral("#52c41a")), card);
+        picker->setShowText(true);
+        cl->addWidget(picker, 0, Qt::AlignLeft);
+        layout->addWidget(card);
+    }
 
     layout->addStretch();
     return page;

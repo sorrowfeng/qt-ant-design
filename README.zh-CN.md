@@ -192,7 +192,7 @@ Ant Design 标准组件按 `submodules/ant-design/components` 顶层目录统计
 - `AntCalendar`：日历面板，Day/Month/Year 三态切换，日期选择
 - `AntCarousel`：轮播图，自动播放，圆点指示器，点击翻页
 - `AntCollapse`：折叠面板/手风琴，InOutCubic 展开动画，accordion 互斥模式
-- `AntColorPicker`：颜色选择器，HS field + value slider + RGB/HSV 输入，预设/自定义颜色
+- `AntColorPicker`：内联颜色触发器，可显示文本，弹窗内提供 HS field + value slider + RGB/HSV 输入、预设/自定义颜色
 - `AntImage`：图片展示，placeholder fallback，点击全屏预览
 - `AntTransfer`：穿梭框，双列表批量转移
 - `AntTour`：遮罩式分步引导，目标高亮，Prev/Next/Finish

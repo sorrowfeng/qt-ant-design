@@ -283,7 +283,7 @@ QString AntSteps::iconText(Ant::StepStatus status, int index) const
     case Ant::StepStatus::Finish:
         return QStringLiteral("✓");
     case Ant::StepStatus::Error:
-        return QStringLiteral("!");
+        return QStringLiteral("×");
     case Ant::StepStatus::Process:
     case Ant::StepStatus::Wait:
     default:

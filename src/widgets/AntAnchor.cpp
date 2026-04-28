@@ -14,7 +14,7 @@ AntAnchor::AntAnchor(QWidget* parent)
 {
     m_layout = new QVBoxLayout(this);
     m_layout->setContentsMargins(0, 0, 0, 0);
-    m_layout->setSpacing(2);
+    m_layout->setSpacing(0);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
 }
@@ -58,7 +58,7 @@ void AntAnchor::addLink(const QString& title, int targetY)
     label->installEventFilter(this);
 
     QFont f = label->font();
-    f.setPixelSize(antTheme->tokens().fontSizeSM);
+    f.setPixelSize(antTheme->tokens().fontSize);
     label->setFont(f);
 
     m_layout->addWidget(label);
@@ -90,6 +90,7 @@ void AntAnchor::paintEvent(QPaintEvent*)
     const auto& token = antTheme->tokens();
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
+    p.fillRect(QRect(0, 0, 2, height()), token.colorSplit);
 
     for (int i = 0; i < m_layout->count(); ++i)
     {
@@ -97,7 +98,7 @@ void AntAnchor::paintEvent(QPaintEvent*)
         {
             // Update label text color via QPalette
             QPalette lp = label->palette();
-            lp.setColor(QPalette::WindowText, (i == m_activeIndex) ? token.colorPrimary : token.colorTextSecondary);
+            lp.setColor(QPalette::WindowText, (i == m_activeIndex) ? token.colorPrimary : token.colorText);
             label->setPalette(lp);
 
             // Draw 2px active indicator on the left edge

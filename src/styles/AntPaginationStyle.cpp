@@ -160,7 +160,7 @@ QVector<PageItem> buildPageItems(const AntPagination* p)
 
     if (showTotal)
     {
-        const QString totalText = QStringLiteral("%1-%2 of %3").arg(paginationRangeStart(p)).arg(paginationRangeEnd(p)).arg(total);
+        const QString totalText = QStringLiteral("Total %1 items").arg(total);
         QFont f = p->font();
         f.setPixelSize(paginationFontSize(p));
         append(PageItemKind::Text, 0, totalText, false, false, QFontMetrics(f).horizontalAdvance(totalText) + token.paddingSM);
@@ -169,8 +169,13 @@ QVector<PageItem> buildPageItems(const AntPagination* p)
     append(PageItemKind::Prev, current - 1, QStringLiteral("<"), current > 1);
     if (simple)
     {
-        const QString text = QStringLiteral("%1 / %2").arg(current).arg(pageCount);
-        append(PageItemKind::Text, 0, text, false, false, size * 3);
+        QFont f = p->font();
+        f.setPixelSize(paginationFontSize(p));
+        const int separatorWidth = QFontMetrics(f).horizontalAdvance(QStringLiteral("/")) + token.paddingXS;
+        const int totalWidth = QFontMetrics(f).horizontalAdvance(QString::number(pageCount)) + token.paddingXS;
+        append(PageItemKind::QuickJumper, current, QString::number(current), true, false, size * 2);
+        append(PageItemKind::Text, 0, QStringLiteral("/"), false, false, separatorWidth);
+        append(PageItemKind::Text, 0, QString::number(pageCount), false, false, totalWidth);
     }
     else
     {
@@ -207,7 +212,13 @@ QVector<PageItem> buildPageItems(const AntPagination* p)
     }
     if (showQuickJumper)
     {
-        append(PageItemKind::QuickJumper, pageCount, QStringLiteral("Go %1").arg(pageCount), true, false, size * 2);
+        QFont f = p->font();
+        f.setPixelSize(paginationFontSize(p));
+        const int goToWidth = QFontMetrics(f).horizontalAdvance(QStringLiteral("Go to")) + token.paddingXS;
+        const int pageWidth = QFontMetrics(f).horizontalAdvance(QStringLiteral("Page")) + token.paddingXS;
+        append(PageItemKind::Text, 0, QStringLiteral("Go to"), false, false, goToWidth);
+        append(PageItemKind::QuickJumper, pageCount, QString(), true, false, size + token.paddingLG);
+        append(PageItemKind::Text, 0, QStringLiteral("Page"), false, false, pageWidth);
     }
     return items;
 }
