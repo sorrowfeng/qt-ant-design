@@ -62,6 +62,19 @@ void AntAvatar::setImagePath(const QString& imagePath)
     Q_EMIT imagePathChanged(m_imagePath);
 }
 
+QColor AntAvatar::backgroundColor() const { return m_backgroundColor; }
+
+void AntAvatar::setBackgroundColor(const QColor& color)
+{
+    if (m_backgroundColor == color)
+    {
+        return;
+    }
+    m_backgroundColor = color;
+    update();
+    Q_EMIT backgroundColorChanged(m_backgroundColor);
+}
+
 int AntAvatar::gap() const { return m_gap; }
 
 void AntAvatar::setGap(int gap)
@@ -292,7 +305,13 @@ void AntAvatarGroup::relayout()
 {
     const int total = m_avatars.size();
     if (total == 0)
+    {
+        if (m_overflowAvatar)
+        {
+            m_overflowAvatar->hide();
+        }
         return;
+    }
 
     const int sz = m_avatars.first()->sizeHint().width();
     const int overlap = sz * 2 / 5;
@@ -317,6 +336,24 @@ void AntAvatarGroup::relayout()
         m_avatars[i]->move(i * step, 0);
         m_avatars[i]->show();
         m_avatars[i]->raise();
+    }
+
+    if (showOverflow)
+    {
+        if (!m_overflowAvatar)
+        {
+            m_overflowAvatar = new AntAvatar(this);
+        }
+        m_overflowAvatar->setAvatarSize(m_avatarSize);
+        m_overflowAvatar->setText(QStringLiteral("+%1").arg(total - visibleCount));
+        m_overflowAvatar->setFixedSize(sz, sz);
+        m_overflowAvatar->move(visibleCount * step, 0);
+        m_overflowAvatar->show();
+        m_overflowAvatar->raise();
+    }
+    else if (m_overflowAvatar)
+    {
+        m_overflowAvatar->hide();
     }
 
     updateGeometry();

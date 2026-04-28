@@ -9,7 +9,6 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPair>
-#include <QPoint>
 #include <QSize>
 #include <QSizePolicy>
 #include <QString>
@@ -21,7 +20,6 @@
 #include "core/AntTypes.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntBadge.h"
-#include "widgets/AntButton.h"
 #include "widgets/AntCalendar.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntCarousel.h"
@@ -169,75 +167,39 @@ QWidget* createAvatarPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
-        basicRow->setSpacing(12);
-        basicRow->addWidget(new AntAvatar(QStringLiteral("U")));
-        auto* icon = new AntAvatar();
-        icon->setIconText(QStringLiteral("@"));
-        basicRow->addWidget(icon);
-        auto* square = new AntAvatar(QStringLiteral("AD"));
-        square->setShape(Ant::AvatarShape::Square);
-        basicRow->addWidget(square);
-        auto* custom = new AntAvatar(QStringLiteral("Qt"));
-        custom->setCustomSize(48);
-        basicRow->addWidget(custom);
+        basicRow->setSpacing(16);
+        for (const int size : {64, 40, 32, 24})
+        {
+            auto* avatar = new AntAvatar();
+            avatar->setIconText(QStringLiteral("user"));
+            avatar->setCustomSize(size);
+            basicRow->addWidget(avatar);
+        }
         basicRow->addStretch();
         cl->addLayout(basicRow);
         layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Size"));
+        auto* card = new AntCard(QStringLiteral("Type"));
         auto* cl = card->bodyLayout();
-        auto* sizeRow = new QHBoxLayout();
-        sizeRow->setSpacing(12);
-        auto* large = new AntAvatar(QStringLiteral("L"));
-        large->setAvatarSize(Ant::Size::Large);
-        auto* middle = new AntAvatar(QStringLiteral("M"));
-        middle->setAvatarSize(Ant::Size::Middle);
-        auto* small = new AntAvatar(QStringLiteral("S"));
-        small->setAvatarSize(Ant::Size::Small);
-        sizeRow->addWidget(large);
-        sizeRow->addWidget(middle);
-        sizeRow->addWidget(small);
-        sizeRow->addStretch();
-        cl->addLayout(sizeRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Autoset Font Size"));
-        auto* cl = card->bodyLayout();
-        auto* textRow = new QHBoxLayout();
-        textRow->setSpacing(12);
-        textRow->addWidget(new AntAvatar(QStringLiteral("USER")));
-        auto* longName = new AntAvatar(QStringLiteral("DESIGN"));
-        longName->setCustomSize(56);
-        longName->setGap(6);
-        textRow->addWidget(longName);
-        auto* tinyGap = new AntAvatar(QStringLiteral("ANTD"));
-        tinyGap->setGap(2);
-        textRow->addWidget(tinyGap);
-        textRow->addStretch();
-        cl->addLayout(textRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("With Badge"));
-        auto* cl = card->bodyLayout();
-        auto* badgeRow = new QHBoxLayout();
-        badgeRow->setSpacing(28);
-        auto* countBadge = new AntBadge(3);
-        countBadge->setContentWidget(new AntAvatar(QStringLiteral("A")));
-        badgeRow->addWidget(countBadge);
-        auto* dotBadge = new AntBadge();
-        dotBadge->setDot(true);
-        auto* dotAvatar = new AntAvatar(QStringLiteral("B"));
-        dotAvatar->setShape(Ant::AvatarShape::Square);
-        dotBadge->setContentWidget(dotAvatar);
-        badgeRow->addWidget(dotBadge);
-        badgeRow->addStretch();
-        cl->addLayout(badgeRow);
+        auto* typeRow = new QHBoxLayout();
+        typeRow->setSpacing(16);
+        auto* user = new AntAvatar(QStringLiteral("U"));
+        user->setBackgroundColor(QColor(QStringLiteral("#1677ff")));
+        typeRow->addWidget(user);
+        auto* green = new AntAvatar();
+        green->setIconText(QStringLiteral("user"));
+        green->setBackgroundColor(QColor(QStringLiteral("#87d068")));
+        typeRow->addWidget(green);
+        auto* image = new AntAvatar();
+        image->setImagePath(QStringLiteral(":/qt-ant-design/images/image-basic.png"));
+        typeRow->addWidget(image);
+        auto* orange = new AntAvatar(QStringLiteral("K"));
+        orange->setBackgroundColor(QColor(QStringLiteral("#f56a00")));
+        typeRow->addWidget(orange);
+        typeRow->addStretch();
+        cl->addLayout(typeRow);
         layout->addWidget(card);
     }
 
@@ -249,23 +211,18 @@ QWidget* createAvatarPage(QWidget* /*owner*/)
 
         auto* group1 = new AntAvatarGroup(page);
         group1->setMaxCount(3);
-        group1->addAvatar(new AntAvatar(QStringLiteral("A")));
-        group1->addAvatar(new AntAvatar(QStringLiteral("B")));
-        group1->addAvatar(new AntAvatar(QStringLiteral("C")));
+        auto* avatarA = new AntAvatar(QStringLiteral("A"));
+        avatarA->setBackgroundColor(QColor(QStringLiteral("#1677ff")));
+        group1->addAvatar(avatarA);
+        auto* avatarB = new AntAvatar(QStringLiteral("B"));
+        avatarB->setBackgroundColor(QColor(QStringLiteral("#87d068")));
+        group1->addAvatar(avatarB);
+        auto* avatarC = new AntAvatar(QStringLiteral("C"));
+        avatarC->setBackgroundColor(QColor(QStringLiteral("#f56a00")));
+        group1->addAvatar(avatarC);
         group1->addAvatar(new AntAvatar(QStringLiteral("D")));
         group1->addAvatar(new AntAvatar(QStringLiteral("E")));
         groupRow->addWidget(group1);
-
-        auto* group2 = new AntAvatarGroup(page);
-        group2->setMaxCount(4);
-        group2->setAvatarSize(Ant::Size::Small);
-        for (const QString& name : {QStringLiteral("X"), QStringLiteral("Y"), QStringLiteral("Z"), QStringLiteral("W"), QStringLiteral("V"), QStringLiteral("U")})
-        {
-            auto* av = new AntAvatar(name);
-            av->setShape(Ant::AvatarShape::Square);
-            group2->addAvatar(av);
-        }
-        groupRow->addWidget(group2);
         groupRow->addStretch();
         cl->addLayout(groupRow);
         layout->addWidget(card);
@@ -282,114 +239,57 @@ QWidget* createBadgePage(QWidget* /*owner*/)
     layout->setContentsMargins(32, 24, 32, 24);
     layout->setSpacing(16);
 
-    auto makeAnchor = [](const QString& text) {
-        auto* button = new AntButton(text);
-        button->setButtonType(Ant::ButtonType::Default);
-        button->setFixedSize(86, 40);
-        return button;
+    auto makeAvatar = [](const QString& iconText, Ant::AvatarShape shape = Ant::AvatarShape::Square) {
+        auto* avatar = new AntAvatar();
+        avatar->setShape(shape);
+        avatar->setIconText(iconText);
+        return avatar;
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("Count"));
+        auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
-        auto* countRow = new QHBoxLayout();
-        countRow->setSpacing(28);
+        auto* basicRow = new QHBoxLayout();
+        basicRow->setSpacing(8);
 
-        auto* basic = new AntBadge(5);
-        basic->setContentWidget(makeAnchor(QStringLiteral("Inbox")));
-        countRow->addWidget(basic);
+        auto* count12 = new AntBadge(12);
+        count12->setContentWidget(makeAvatar(QStringLiteral("user")));
+        basicRow->addWidget(count12);
 
-        auto* zero = new AntBadge(0);
-        zero->setShowZero(true);
-        zero->setContentWidget(makeAnchor(QStringLiteral("Zero")));
-        countRow->addWidget(zero);
-
-        auto* overflow = new AntBadge(120);
-        overflow->setOverflowCount(99);
-        overflow->setContentWidget(makeAnchor(QStringLiteral("Tasks")));
-        countRow->addWidget(overflow);
-        countRow->addStretch();
-        cl->addLayout(countRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Dot and Size"));
-        auto* cl = card->bodyLayout();
-        auto* dotRow = new QHBoxLayout();
-        dotRow->setSpacing(28);
+        auto* count39 = new AntBadge(39);
+        count39->setContentWidget(makeAvatar(QStringLiteral("bell")));
+        basicRow->addWidget(count39);
 
         auto* dot = new AntBadge();
         dot->setDot(true);
-        dot->setContentWidget(makeAnchor(QStringLiteral("Notice")));
-        dotRow->addWidget(dot);
-
-        auto* small = new AntBadge(8);
-        small->setBadgeSize(Ant::Size::Small);
-        small->setContentWidget(makeAnchor(QStringLiteral("Small")));
-        dotRow->addWidget(small);
-
-        auto* color = new AntBadge(3);
-        color->setColor(QStringLiteral("success"));
-        color->setOffset(QPoint(-8, 6));
-        color->setContentWidget(makeAnchor(QStringLiteral("Offset")));
-        dotRow->addWidget(color);
-        dotRow->addStretch();
-        cl->addLayout(dotRow);
+        dot->setContentWidget(makeAvatar(QStringLiteral("user"), Ant::AvatarShape::Circle));
+        basicRow->addWidget(dot);
+        basicRow->addStretch();
+        cl->addLayout(basicRow);
         layout->addWidget(card);
     }
 
     {
         auto* card = new AntCard(QStringLiteral("Status"));
         auto* cl = card->bodyLayout();
-        auto* statusCol = new QVBoxLayout();
-        statusCol->setSpacing(10);
+        auto* statusRow = new QHBoxLayout();
+        statusRow->setSpacing(14);
         const QList<QPair<QString, Ant::BadgeStatus>> statuses = {
-            {QStringLiteral("Success"), Ant::BadgeStatus::Success},
-            {QStringLiteral("Processing"), Ant::BadgeStatus::Processing},
-            {QStringLiteral("Default"), Ant::BadgeStatus::Default},
-            {QStringLiteral("Error"), Ant::BadgeStatus::Error},
-            {QStringLiteral("Warning"), Ant::BadgeStatus::Warning},
+            {QString(), Ant::BadgeStatus::Success},
+            {QString(), Ant::BadgeStatus::Error},
+            {QString(), Ant::BadgeStatus::Default},
+            {QString(), Ant::BadgeStatus::Processing},
+            {QString(), Ant::BadgeStatus::Warning},
         };
         for (const auto& item : statuses)
         {
             auto* badge = new AntBadge();
             badge->setStatus(item.second);
             badge->setText(item.first);
-            statusCol->addWidget(badge);
+            statusRow->addWidget(badge);
         }
-        cl->addLayout(statusCol);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Ribbon"));
-        auto* cl = card->bodyLayout();
-        auto* ribbonRow = new QHBoxLayout();
-        ribbonRow->setSpacing(28);
-
-        auto* ribbonCard1 = new AntCard(QStringLiteral("Pushes Open"), page);
-        ribbonCard1->setFixedWidth(280);
-        ribbonCard1->setMinimumHeight(120);
-        ribbonCard1->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card with a default ribbon badge in the corner.")));
-        auto* ribbon1 = new AntBadge();
-        ribbon1->setBadgeMode(Ant::BadgeMode::Ribbon);
-        ribbon1->setRibbonText(QStringLiteral("Ribbon"));
-        ribbon1->setContentWidget(ribbonCard1);
-        ribbonRow->addWidget(ribbon1);
-
-        auto* ribbonCard2 = new AntCard(QStringLiteral("Pushes Open"), page);
-        ribbonCard2->setFixedWidth(280);
-        ribbonCard2->setMinimumHeight(120);
-        ribbonCard2->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card with a colored ribbon badge.")));
-        auto* ribbon2 = new AntBadge();
-        ribbon2->setBadgeMode(Ant::BadgeMode::Ribbon);
-        ribbon2->setRibbonText(QStringLiteral("Success"));
-        ribbon2->setRibbonColor(QStringLiteral("success"));
-        ribbon2->setContentWidget(ribbonCard2);
-        ribbonRow->addWidget(ribbon2);
-        ribbonRow->addStretch();
-        cl->addLayout(ribbonRow);
+        statusRow->addStretch();
+        cl->addLayout(statusRow);
         layout->addWidget(card);
     }
 

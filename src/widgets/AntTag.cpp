@@ -14,6 +14,7 @@ AntTag::AntTag(QWidget* parent)
     setStyle(new AntTagStyle(style()));
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
 AntTag::AntTag(const QString& text, QWidget* parent)
@@ -231,7 +232,7 @@ QColor AntTag::backgroundColor() const
     {
         return base;
     }
-    return AntPalette::tint(base, 0.88);
+    return AntPalette::backgroundColor(base, antTheme->themeMode());
 }
 
 QColor AntTag::borderColor() const
@@ -244,11 +245,9 @@ QColor AntTag::borderColor() const
     {
         return antTheme->tokens().colorBorder;
     }
-    if (m_variant == Ant::TagVariant::Filled)
-    {
-        return Qt::transparent;
-    }
-    return m_variant == Ant::TagVariant::Solid ? baseColor() : AntPalette::tint(baseColor(), 0.65);
+    return m_variant == Ant::TagVariant::Solid
+        ? baseColor()
+        : AntPalette::borderColor(baseColor(), antTheme->themeMode());
 }
 
 QColor AntTag::textColor() const

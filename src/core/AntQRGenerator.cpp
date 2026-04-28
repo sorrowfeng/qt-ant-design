@@ -178,19 +178,17 @@ void AntQRGenerator::placeFinderPatterns(QVector<QVector<int>>& matrix)
                 int rr = row + r, cc = col + c;
                 if (rr >= 0 && rr < dim && cc >= 0 && cc < dim)
                 {
-                    bool isBorder = (r == -1 || r == 7 || c == -1 || c == 7);
-                    bool isInner = (r >= 0 && r <= 6 && c >= 0 && c <= 6 &&
-                                    (r == 0 || r == 6 || c == 0 || c == 6));
-                    bool isCore = (r >= 1 && r <= 5 && c >= 1 && c <= 5 &&
-                                   !(r >= 2 && r <= 4 && c >= 2 && c <= 4));
-                    matrix[rr][cc] = (isBorder || isInner || isCore) ? 2 : 0;
+                    const bool dark = r >= 0 && r <= 6 && c >= 0 && c <= 6 &&
+                        (r == 0 || r == 6 || c == 0 || c == 6 ||
+                         (r >= 2 && r <= 4 && c >= 2 && c <= 4));
+                    matrix[rr][cc] = dark ? 1 : 0;
                 }
             }
         }
     };
-    place(3, 3);
-    place(3, dim - 4);
-    place(dim - 4, 3);
+    place(0, 0);
+    place(0, dim - 7);
+    place(dim - 7, 0);
 }
 
 void AntQRGenerator::placeTimingPatterns(QVector<QVector<int>>& matrix)
@@ -199,8 +197,8 @@ void AntQRGenerator::placeTimingPatterns(QVector<QVector<int>>& matrix)
     for (int i = 8; i < dim - 8; ++i)
     {
         int v = (i % 2 == 0) ? 2 : 0;
-        if (matrix[6][i] == 0) matrix[6][i] = v;
-        if (matrix[i][6] == 0) matrix[i][6] = v;
+        if (matrix[6][i] == -1) matrix[6][i] = v;
+        if (matrix[i][6] == -1) matrix[i][6] = v;
     }
 }
 
@@ -242,11 +240,10 @@ void AntQRGenerator::placeAlignmentPatterns(QVector<QVector<int>>& matrix)
                 for (int c = -2; c <= 2; ++c)
                 {
                     int rr = row + r, cc = col + c;
-                    if (rr >= 0 && rr < dim && cc >= 0 && cc < dim && matrix[rr][cc] == 0)
+                    if (rr >= 0 && rr < dim && cc >= 0 && cc < dim && matrix[rr][cc] == -1)
                     {
-                        bool isBorder = (r == -2 || r == 2 || c == -2 || c == 2);
-                        bool isCore = (r == -1 || r == 0 || r == 1) && (c == -1 || c == 0 || c == 1);
-                        matrix[rr][cc] = (isBorder || isCore) ? 2 : 0;
+                        const bool dark = (r == -2 || r == 2 || c == -2 || c == 2) || (r == 0 && c == 0);
+                        matrix[rr][cc] = dark ? 1 : 0;
                     }
                 }
             }
@@ -260,17 +257,17 @@ void AntQRGenerator::placeReservedAreas(QVector<QVector<int>>& matrix)
     // Format info areas (mark as reserved = 3)
     for (int i = 0; i < 9; ++i)
     {
-        if (matrix[i][8] == 0) matrix[i][8] = 3;
-        if (matrix[8][i] == 0) matrix[8][i] = 3;
+        if (matrix[i][8] == -1) matrix[i][8] = 0;
+        if (matrix[8][i] == -1) matrix[8][i] = 0;
     }
-    matrix[8][8] = 3;
+    matrix[8][8] = 0;
     for (int i = 0; i < 8; ++i)
     {
-        if (matrix[dim - 1 - i][8] == 0) matrix[dim - 1 - i][8] = 3;
+        if (matrix[dim - 1 - i][8] == -1) matrix[dim - 1 - i][8] = 0;
     }
     for (int i = 0; i < 8; ++i)
     {
-        if (matrix[8][dim - 1 - i] == 0) matrix[8][dim - 1 - i] = 3;
+        if (matrix[8][dim - 1 - i] == -1) matrix[8][dim - 1 - i] = 0;
     }
 
     // Version info areas (versions 7+)
@@ -280,8 +277,8 @@ void AntQRGenerator::placeReservedAreas(QVector<QVector<int>>& matrix)
         {
             for (int j = 0; j < 3; ++j)
             {
-                if (matrix[i][dim - 11 + j] == 0) matrix[i][dim - 11 + j] = 3;
-                if (matrix[dim - 11 + j][i] == 0) matrix[dim - 11 + j][i] = 3;
+                if (matrix[i][dim - 11 + j] == -1) matrix[i][dim - 11 + j] = 0;
+                if (matrix[dim - 11 + j][i] == -1) matrix[dim - 11 + j][i] = 0;
             }
         }
     }
@@ -303,7 +300,7 @@ void AntQRGenerator::placeData(QVector<QVector<int>>& matrix, const QVector<int>
             for (int c = 0; c < 2; ++c)
             {
                 int cc = col - c;
-                if (matrix[row][cc] == 0)
+                if (matrix[row][cc] == -1)
                 {
                     int bit = 0;
                     if (bitIndex < codewords.size() * 8)
@@ -311,7 +308,7 @@ void AntQRGenerator::placeData(QVector<QVector<int>>& matrix, const QVector<int>
                         bit = (codewords[bitIndex / 8] >> (7 - (bitIndex % 8))) & 1;
                         ++bitIndex;
                     }
-                    matrix[row][cc] = bit | 1; // Mark as data (non-zero)
+                    matrix[row][cc] = bit ? 3 : 2; // Data module; 2=light, 3=dark.
                 }
             }
         }
@@ -355,7 +352,7 @@ void AntQRGenerator::applyMask(QVector<QVector<int>>& matrix, int maskPattern)
     {
         for (int c = 0; c < dim; ++c)
         {
-            if (matrix[r][c] <= 1) continue; // Skip functional modules
+            if (matrix[r][c] < 2) continue; // Skip functional modules
             bool invert = false;
             switch (maskPattern)
             {
@@ -368,8 +365,8 @@ void AntQRGenerator::applyMask(QVector<QVector<int>>& matrix, int maskPattern)
             case 6: invert = (((r * c) % 2) + ((r * c) % 3)) % 2 == 0; break;
             case 7: invert = (((r + c) % 2) + ((r * c) % 3)) % 2 == 0; break;
             }
-            int val = (matrix[r][c] & 1);
-            matrix[r][c] = (val ^ (invert ? 1 : 0)) | 1;
+            int val = matrix[r][c] == 3 ? 1 : 0;
+            matrix[r][c] = (val ^ (invert ? 1 : 0)) ? 3 : 2;
         }
     }
 }
@@ -386,7 +383,7 @@ int AntQRGenerator::evaluatePenalty(const QVector<QVector<int>>& matrix)
         int last = -1;
         for (int c = 0; c < dim; ++c)
         {
-            int v = matrix[r][c] & 1;
+            int v = (matrix[r][c] == 1 || matrix[r][c] == 3) ? 1 : 0;
             if (v == last) { ++run; }
             else { if (run >= 5) penalty += 3 + (run - 5); run = 1; last = v; }
         }
@@ -399,7 +396,7 @@ int AntQRGenerator::evaluatePenalty(const QVector<QVector<int>>& matrix)
         int last = -1;
         for (int r = 0; r < dim; ++r)
         {
-            int v = matrix[r][c] & 1;
+            int v = (matrix[r][c] == 1 || matrix[r][c] == 3) ? 1 : 0;
             if (v == last) { ++run; }
             else { if (run >= 5) penalty += 3 + (run - 5); run = 1; last = v; }
         }
@@ -409,9 +406,12 @@ int AntQRGenerator::evaluatePenalty(const QVector<QVector<int>>& matrix)
     // Condition 2: 2x2 blocks of same color
     for (int r = 0; r < dim - 1; ++r)
         for (int c = 0; c < dim - 1; ++c)
-            if ((matrix[r][c] & 1) == (matrix[r+1][c] & 1) &&
-                (matrix[r][c] & 1) == (matrix[r][c+1] & 1) &&
-                (matrix[r][c] & 1) == (matrix[r+1][c+1] & 1))
+            if (((matrix[r][c] == 1 || matrix[r][c] == 3) ? 1 : 0) ==
+                    ((matrix[r+1][c] == 1 || matrix[r+1][c] == 3) ? 1 : 0) &&
+                ((matrix[r][c] == 1 || matrix[r][c] == 3) ? 1 : 0) ==
+                    ((matrix[r][c+1] == 1 || matrix[r][c+1] == 3) ? 1 : 0) &&
+                ((matrix[r][c] == 1 || matrix[r][c] == 3) ? 1 : 0) ==
+                    ((matrix[r+1][c+1] == 1 || matrix[r+1][c+1] == 3) ? 1 : 0))
                 penalty += 3;
 
     // Condition 3: Finder-like patterns (dark-light-dark-dark-dark-light-dark)
@@ -421,7 +421,7 @@ int AntQRGenerator::evaluatePenalty(const QVector<QVector<int>>& matrix)
         {
             bool match = true;
             for (int k = 0; k < 7; ++k)
-                if ((matrix[r][c+k] & 1) != pattern[k]) { match = false; break; }
+                if (((matrix[r][c+k] == 1 || matrix[r][c+k] == 3) ? 1 : 0) != pattern[k]) { match = false; break; }
             if (match) penalty += 40;
         }
     for (int c = 0; c < dim; ++c)
@@ -429,7 +429,7 @@ int AntQRGenerator::evaluatePenalty(const QVector<QVector<int>>& matrix)
         {
             bool match = true;
             for (int k = 0; k < 7; ++k)
-                if ((matrix[r+k][c] & 1) != pattern[k]) { match = false; break; }
+                if (((matrix[r+k][c] == 1 || matrix[r+k][c] == 3) ? 1 : 0) != pattern[k]) { match = false; break; }
             if (match) penalty += 40;
         }
 
@@ -437,7 +437,7 @@ int AntQRGenerator::evaluatePenalty(const QVector<QVector<int>>& matrix)
     int darkCount = 0;
     for (int r = 0; r < dim; ++r)
         for (int c = 0; c < dim; ++c)
-            if (matrix[r][c] & 1) ++darkCount;
+            if (matrix[r][c] == 1 || matrix[r][c] == 3) ++darkCount;
     double ratio = static_cast<double>(darkCount) / (dim * dim);
     int deviation = static_cast<int>(qAbs(ratio * 100 - 50) / 5);
     penalty += deviation * 10;
@@ -571,7 +571,7 @@ QVector<QVector<bool>> AntQRGenerator::generate(const QString& data, QRCodeError
     QVector<int> allCodewords = interleavedData + interleavedEC;
 
     // Build matrix
-    QVector<QVector<int>> matrix(dim, QVector<int>(dim, 0));
+    QVector<QVector<int>> matrix(dim, QVector<int>(dim, -1));
 
     placeFinderPatterns(matrix);
     placeTimingPatterns(matrix);
@@ -589,7 +589,7 @@ QVector<QVector<bool>> AntQRGenerator::generate(const QString& data, QRCodeError
     QVector<QVector<bool>> result(dim, QVector<bool>(dim, false));
     for (int r = 0; r < dim; ++r)
         for (int c = 0; c < dim; ++c)
-            result[r][c] = (matrix[r][c] & 1) != 0;
+            result[r][c] = matrix[r][c] == 1 || matrix[r][c] == 3;
 
     return result;
 }

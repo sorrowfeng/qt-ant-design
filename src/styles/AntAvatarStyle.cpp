@@ -84,6 +84,46 @@ QRectF avatarImageSourceRect(const QPixmap& pixmap, const QSizeF& targetSize)
     return QRectF(0, (source.height() - height) / 2.0, source.width(), height);
 }
 
+void drawAvatarUserIcon(QPainter* painter, const QRectF& rect, const QColor& color)
+{
+    const qreal size = qMin(rect.width(), rect.height()) * 0.72;
+    const QPointF center = rect.center();
+    painter->save();
+    painter->setPen(QPen(color, qMax<qreal>(1.7, size / 16.0), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawEllipse(QRectF(center.x() - size * 0.16, center.y() - size * 0.30, size * 0.32, size * 0.32));
+
+    QPainterPath shoulders;
+    shoulders.moveTo(center.x() - size * 0.28, center.y() + size * 0.24);
+    shoulders.cubicTo(center.x() - size * 0.24, center.y() + size * 0.02,
+                      center.x() + size * 0.24, center.y() + size * 0.02,
+                      center.x() + size * 0.28, center.y() + size * 0.24);
+    painter->drawPath(shoulders);
+    painter->restore();
+}
+
+void drawAvatarBellIcon(QPainter* painter, const QRectF& rect, const QColor& color)
+{
+    const qreal size = qMin(rect.width(), rect.height()) * 0.72;
+    const QPointF center = rect.center();
+    painter->save();
+    painter->setPen(QPen(color, qMax<qreal>(1.5, size / 18.0), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+    QPainterPath bell;
+    bell.moveTo(center.x() - size * 0.26, center.y() + size * 0.12);
+    bell.lineTo(center.x() + size * 0.26, center.y() + size * 0.12);
+    bell.cubicTo(center.x() + size * 0.18, center.y() - size * 0.02,
+                 center.x() + size * 0.20, center.y() - size * 0.28,
+                 center.x(), center.y() - size * 0.28);
+    bell.cubicTo(center.x() - size * 0.20, center.y() - size * 0.28,
+                 center.x() - size * 0.18, center.y() - size * 0.02,
+                 center.x() - size * 0.26, center.y() + size * 0.12);
+    painter->drawPath(bell);
+    painter->drawLine(QPointF(center.x() - size * 0.10, center.y() + size * 0.22),
+                      QPointF(center.x() + size * 0.10, center.y() + size * 0.22));
+    painter->restore();
+}
+
 } // namespace
 
 AntAvatarStyle::AntAvatarStyle(QStyle* style)
@@ -176,8 +216,13 @@ void AntAvatarStyle::drawAvatar(const QStyleOption* option, QPainter* painter, c
     }
 
     const bool enabled = option->state & QStyle::State_Enabled;
+    QColor avatarBg = avatar->backgroundColor();
+    if (!avatarBg.isValid())
+    {
+        avatarBg = token.colorTextPlaceholder;
+    }
     painter->setPen(Qt::NoPen);
-    painter->setBrush(enabled ? token.colorTextPlaceholder : token.colorBgContainerDisabled);
+    painter->setBrush(enabled ? avatarBg : token.colorBgContainerDisabled);
     painter->drawPath(path);
 
     const QString iconText = avatar->iconText();
@@ -206,6 +251,18 @@ void AntAvatarStyle::drawAvatar(const QStyleOption* option, QPainter* painter, c
 
     painter->setFont(f);
     painter->setPen(enabled ? token.colorTextLightSolid : token.colorTextDisabled);
+    if (!iconText.isEmpty() && iconText.compare(QStringLiteral("user"), Qt::CaseInsensitive) == 0)
+    {
+        drawAvatarUserIcon(painter, avatarRect, enabled ? token.colorTextLightSolid : token.colorTextDisabled);
+        painter->restore();
+        return;
+    }
+    if (!iconText.isEmpty() && iconText.compare(QStringLiteral("bell"), Qt::CaseInsensitive) == 0)
+    {
+        drawAvatarBellIcon(painter, avatarRect, enabled ? token.colorTextLightSolid : token.colorTextDisabled);
+        painter->restore();
+        return;
+    }
     painter->drawText(avatarRect, Qt::AlignCenter, content.left(4));
 
     painter->restore();

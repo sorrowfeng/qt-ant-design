@@ -13,6 +13,7 @@ AntStatistic::AntStatistic(QWidget* parent)
     : QWidget(parent)
 {
     setStyle(new AntStatisticStyle(style()));
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 
 AntStatistic::AntStatistic(const QString& title, QWidget* parent)
@@ -240,7 +241,11 @@ void AntStatistic::resizeEvent(QResizeEvent* event)
 
 AntStatistic::Metrics AntStatistic::metrics() const
 {
-    return {};
+    Metrics m;
+    m.padding = 0;
+    m.prefixFontSize = m.valueFontSize;
+    m.suffixFontSize = m.valueFontSize;
+    return m;
 }
 
 QRect AntStatistic::titleRect() const
@@ -284,7 +289,8 @@ QString AntStatistic::formattedValue() const
         const int totalSecs = static_cast<int>(remaining);
 
         const int days = totalSecs / 86400;
-        const int hours = (totalSecs % 86400) / 3600;
+        const bool hasDayToken = m_countdownFormat.contains(QStringLiteral("DD"));
+        const int hours = hasDayToken ? (totalSecs % 86400) / 3600 : totalSecs / 3600;
         const int minutes = (totalSecs % 3600) / 60;
         const int seconds = totalSecs % 60;
 

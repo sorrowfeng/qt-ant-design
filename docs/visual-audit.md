@@ -99,8 +99,8 @@ Use this loop for one component at a time.
 | Data Entry | Transfer | TransferPage | Transfer | Pass | Basic Transfer compared against `build/transfer-compare-wide.png`; official item set, two-panel layout, header checkbox/count, item checkboxes, disabled arrow buttons, empty target text, and scrollbar aligned. |
 | Data Entry | TreeSelect | TreeSelectPage | TreeSelect | Pass | Basic TreeSelect compared against `build/treeselect-compare-wide.png`; 240px trigger, placeholder, border/radius, arrow placement, and option tree data aligned. Popup tree interaction remains interactive QA. |
 | Data Entry | Upload | UploadPage | Upload | Pass | Default and Dragger demos compared against `build/upload-compare-wide.png`; default upload button, trigger text, dragger border/fill, upload icon, and dragger instruction aligned. File list states remain interactive QA. |
-| Data Display | Avatar | AvatarPage | Avatar | Not started | |
-| Data Display | Badge | BadgePage | Badge | Needs visual QA | Processing pulse animation fixed; compare overlay position, count pill, dot, and status text in screenshots. |
+| Data Display | Avatar | AvatarPage | Avatar | Pass | Basic, Type, and Group demos compared against `build/avatar-compare-wide.png`; official size sequence, custom background colors, user/bell-style avatar icons, image avatar, and `Avatar.Group` overflow `+N` aligned. Shared Card body height remains out of scope. |
+| Data Display | Badge | BadgePage | Badge | Pass | Basic and Status demos compared against `build/badge-compare-wide.png`; count pill placement, dot overlay, standalone status dot colors, processing pulse, and compact badge content reserve aligned. Shared Card body height remains out of scope. |
 | Data Display | Calendar | CalendarPage | Calendar | Not started | |
 | Data Display | Card | CardPage | Card | Pass | Basic card and cover/meta/actions card compared against `build/card-compare-wide.png`; component-owned gaps fixed for extra color, Meta padding, action centering, and action separators. Shared demo-container spacing remains out of scope. |
 | Data Display | Carousel | CarouselPage | Carousel | Needs visual QA | Qt demo now matches the reference source for the Basic autoplay carousel: 160px gradient slides, centered white label, rounded viewport, and AntD pill dots overlaid above slide content. `docs/ant-design-reference.html` currently renders Carousel collapsed in Playwright, so final screenshot pass is pending a reference CSS/render fix. |
@@ -110,12 +110,12 @@ Use this loop for one component at a time.
 | Data Display | Image | ImagePage | Image | Pass | Basic image compared against `build/image-compare-wide.png`; demo now uses the official sample image, loaded images render without placeholder chrome, width-only sizing preserves aspect ratio, and hover preview mask uses an AntD-like eye/text treatment. Shared demo-container spacing remains out of scope. |
 | Data Display | List | ListPage | List | Pass | Basic and With Actions compared against `build/list-compare-wide.png`; demo coverage, bordered row padding, row height, split lines, meta typography, description sizing, and inline action placement aligned. Shared Card body spacing remains out of scope. |
 | Data Display | Popover | PopoverPage | Popover | Pass | Basic hover/click trigger demo and opened click popover compared against `build/popover-compare-wide.png`; demo labels, title/body typography, min width, padding, shadow, arrow gap, and placement aligned. Shared Card body height remains out of scope. |
-| Data Display | QRCode | QRCodePage | QRCode | Not started | |
+| Data Display | QRCode | QRCodePage | QRCode | Pass | Basic QRCode compared against `build/qrcode-compare-wide.png`; matrix generation now preserves finder/timing modules, modules render as solid cells without grid gaps, and bordered 160px QR surface aligns visually. Exact data mask may differ from AntD's renderer. Shared Card body height remains out of scope. |
 | Data Display | Segmented | SegmentedPage | Segmented | Not started | |
-| Data Display | Statistic | StatisticPage | Statistic | Not started | |
+| Data Display | Statistic | StatisticPage | Statistic | Pass | Basic and Countdown demos compared against `build/statistic-compare-wide.png`; official title/value labels, prefix/precision formatting, normal 24px value weight, and total-hour countdown format aligned. Shared Card body height remains out of scope. |
 | Data Display | Table | TablePage | Table | Not started | |
 | Data Display | Tabs | TabsPage | Tabs | Not started | |
-| Data Display | Tag | TagPage | Tag | Needs visual QA | Reference variants are represented; compare preset tint/border and closable hover in screenshots. |
+| Data Display | Tag | TagPage | Tag | Pass | Basic and Checkable & Closable demos compared against `build/tag-compare-wide.png`; preset tint/border colors, checked tag fill, closable affordance, processing/success tags, and fixed tag height aligned. Shared Card body height remains out of scope. |
 | Data Display | Timeline | TimelinePage | Timeline | Not started | |
 | Data Display | Tooltip | TooltipPage | Tooltip | Needs visual QA | Resolved placement is separated from requested placement; compare dark bubble color, arrow alignment, custom color contrast, and delay. |
 | Data Display | Tree | TreePage | Tree | Not started | |

@@ -53,7 +53,7 @@ void drawQRMatrix(QPainter* painter, const AntQRCode* qr, const QRect& contentRe
                 QRectF moduleRect(contentRect.x() + c * moduleSize,
                                   contentRect.y() + r * moduleSize,
                                   moduleSize, moduleSize);
-                painter->fillRect(moduleRect.adjusted(0.5, 0.5, -0.5, -0.5), fg);
+                painter->fillRect(moduleRect, fg);
             }
         }
     }
@@ -251,8 +251,7 @@ void AntQRCodeStyle::drawQRCode(const QStyleOption* option, QPainter* painter, c
     // Border
     if (qr->isBordered())
     {
-        int borderPad = (qr->qrSize() - contentRect.width()) / 2 - 2;
-        AntStyleBase::drawCrispRoundedRect(painter, r.adjusted(borderPad, borderPad, -borderPad, -borderPad).toRect(),
+        AntStyleBase::drawCrispRoundedRect(painter, r.adjusted(0.5, 0.5, -0.5, -0.5).toRect(),
             QPen(token.colorBorder, 1), Qt::NoBrush, 4, 4);
     }
 

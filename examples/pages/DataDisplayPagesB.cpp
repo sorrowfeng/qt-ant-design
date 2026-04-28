@@ -83,66 +83,6 @@ QWidget* createQRCodePage(QWidget* /*owner*/)
         layout->addWidget(card);
     }
 
-    {
-        auto* card = new AntCard(QStringLiteral("Color"));
-        auto* cl = card->bodyLayout();
-        auto* colorRow = new QHBoxLayout();
-        colorRow->setSpacing(24);
-        auto* qrDefault = new AntQRCode();
-        qrDefault->setValue(QStringLiteral("https://ant.design"));
-        qrDefault->setFixedSize(120, 120);
-        auto* qrRed = new AntQRCode();
-        qrRed->setValue(QStringLiteral("https://ant.design"));
-        qrRed->setColor(QColor(QStringLiteral("#ff4d4f")));
-        qrRed->setFixedSize(120, 120);
-        auto* qrBlue = new AntQRCode();
-        qrBlue->setValue(QStringLiteral("https://ant.design"));
-        qrBlue->setColor(QColor(QStringLiteral("#1677ff")));
-        qrBlue->setFixedSize(120, 120);
-        colorRow->addWidget(qrDefault);
-        colorRow->addWidget(qrRed);
-        colorRow->addWidget(qrBlue);
-        colorRow->addStretch();
-        cl->addLayout(colorRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("No Border"));
-        auto* cl = card->bodyLayout();
-        auto* qrNoBorder = new AntQRCode();
-        qrNoBorder->setValue(QStringLiteral("https://ant.design"));
-        qrNoBorder->setBordered(false);
-        qrNoBorder->setFixedSize(120, 120);
-        cl->addWidget(qrNoBorder);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Status Overlay"));
-        auto* cl = card->bodyLayout();
-        auto* statusRow = new QHBoxLayout();
-        statusRow->setSpacing(12);
-        auto* qrExpired = new AntQRCode();
-        qrExpired->setValue(QStringLiteral("https://ant.design"));
-        qrExpired->setStatus(Ant::QRCodeStatus::Expired);
-        qrExpired->setFixedSize(120, 120);
-        auto* qrLoading = new AntQRCode();
-        qrLoading->setValue(QStringLiteral("https://ant.design"));
-        qrLoading->setStatus(Ant::QRCodeStatus::Loading);
-        qrLoading->setFixedSize(120, 120);
-        auto* qrScanned = new AntQRCode();
-        qrScanned->setValue(QStringLiteral("https://ant.design"));
-        qrScanned->setStatus(Ant::QRCodeStatus::Scanned);
-        qrScanned->setFixedSize(120, 120);
-        statusRow->addWidget(qrExpired);
-        statusRow->addWidget(qrLoading);
-        statusRow->addWidget(qrScanned);
-        statusRow->addStretch();
-        cl->addLayout(statusRow);
-        layout->addWidget(card);
-    }
-
     layout->addStretch();
     return page;
 }
@@ -252,131 +192,37 @@ QWidget* createStatisticPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
-        basicRow->setSpacing(48);
+        basicRow->setSpacing(40);
 
         auto* users = new AntStatistic(page);
         users->setTitle(QStringLiteral("Active Users"));
         users->setValue(112893);
-        users->setFixedWidth(160);
+        users->setFixedWidth(120);
 
         auto* balance = new AntStatistic(page);
-        balance->setTitle(QStringLiteral("Account Balance (CNY)"));
-        balance->setValue(112893.56);
+        balance->setTitle(QStringLiteral("Account Balance"));
+        balance->setValue(112893);
         balance->setPrecision(2);
-        balance->setPrefix(QStringLiteral("¥"));
-        balance->setFixedWidth(200);
-
-        auto* items = new AntStatistic(page);
-        items->setTitle(QStringLiteral("Total Items"));
-        items->setValue(28);
-        items->setSuffix(QStringLiteral(" items"));
-        items->setFixedWidth(160);
+        balance->setPrefix(QStringLiteral("$"));
+        balance->setFixedWidth(180);
 
         basicRow->addWidget(users);
         basicRow->addWidget(balance);
-        basicRow->addWidget(items);
         basicRow->addStretch();
         cl->addLayout(basicRow);
         layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Prefix and Suffix"));
-        auto* cl = card->bodyLayout();
-        auto* prefixRow = new QHBoxLayout();
-        prefixRow->setSpacing(48);
-
-        auto* feedback = new AntStatistic(page);
-        feedback->setTitle(QStringLiteral("Feedback"));
-        feedback->setValue(93);
-        feedback->setSuffix(QStringLiteral("%"));
-        feedback->setFixedWidth(140);
-
-        auto* price = new AntStatistic(page);
-        price->setTitle(QStringLiteral("Price"));
-        price->setValue(12680.0);
-        price->setPrecision(2);
-        price->setPrefix(QStringLiteral("$"));
-        price->setFixedWidth(180);
-
-        auto* speed = new AntStatistic(page);
-        speed->setTitle(QStringLiteral("Speed"));
-        speed->setValue(3.5);
-        speed->setPrecision(1);
-        speed->setSuffix(QStringLiteral(" MB/s"));
-        speed->setFixedWidth(160);
-
-        prefixRow->addWidget(feedback);
-        prefixRow->addWidget(price);
-        prefixRow->addWidget(speed);
-        prefixRow->addStretch();
-        cl->addLayout(prefixRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Card Style"));
-        auto* cl = card->bodyLayout();
-        auto* cardRow = new QHBoxLayout();
-        cardRow->setSpacing(24);
-
-        auto* card1 = new AntCard(QStringLiteral("Revenue"), page);
-        card1->setFixedWidth(220);
-        auto* stat1 = new AntStatistic(card1);
-        stat1->setTitle(QStringLiteral("This Week"));
-        stat1->setValue(58320);
-        stat1->setPrefix(QStringLiteral("¥"));
-        card1->bodyLayout()->addWidget(stat1);
-
-        auto* card2 = new AntCard(QStringLiteral("Orders"), page);
-        card2->setFixedWidth(220);
-        auto* stat2 = new AntStatistic(card2);
-        stat2->setTitle(QStringLiteral("This Month"));
-        stat2->setValue(1284);
-        stat2->setSuffix(QStringLiteral(" orders"));
-        card2->bodyLayout()->addWidget(stat2);
-
-        auto* card3 = new AntCard(QStringLiteral("Growth"), page);
-        card3->setFixedWidth(220);
-        auto* stat3 = new AntStatistic(card3);
-        stat3->setTitle(QStringLiteral("Year over Year"));
-        stat3->setValue(23.5);
-        stat3->setPrecision(1);
-        stat3->setSuffix(QStringLiteral("%"));
-        card3->bodyLayout()->addWidget(stat3);
-
-        cardRow->addWidget(card1);
-        cardRow->addWidget(card2);
-        cardRow->addWidget(card3);
-        cardRow->addStretch();
-        cl->addLayout(cardRow);
-        layout->addWidget(card);
-    }
-
-    {
         auto* card = new AntCard(QStringLiteral("Countdown"));
         auto* cl = card->bodyLayout();
-        auto* countdownRow = new QHBoxLayout();
-        countdownRow->setSpacing(48);
-
         auto* countdown = new AntStatistic(page);
         countdown->setTitle(QStringLiteral("Countdown"));
         countdown->setCountdownMode(true);
         countdown->setCountdownFormat(QStringLiteral("HH:mm:ss"));
-        countdown->setValue(QDateTime::currentDateTime().addSecs(3661).toMSecsSinceEpoch() / 1000.0);
+        countdown->setValue(QDateTime::currentDateTime().addDays(2).toMSecsSinceEpoch() / 1000.0);
         countdown->setFixedWidth(180);
-
-        auto* countdown2 = new AntStatistic(page);
-        countdown2->setTitle(QStringLiteral("Days Left"));
-        countdown2->setCountdownMode(true);
-        countdown2->setCountdownFormat(QStringLiteral("DD HH:mm:ss"));
-        countdown2->setValue(QDateTime::currentDateTime().addDays(2).addSecs(7200).toMSecsSinceEpoch() / 1000.0);
-        countdown2->setFixedWidth(220);
-
-        countdownRow->addWidget(countdown);
-        countdownRow->addWidget(countdown2);
-        countdownRow->addStretch();
-        cl->addLayout(countdownRow);
+        cl->addWidget(countdown);
         layout->addWidget(card);
     }
 
@@ -553,112 +399,44 @@ QWidget* createTagPage(QWidget* /*owner*/)
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(10);
-        basicRow->addWidget(new AntTag(QStringLiteral("Tag")));
-        auto* closable = new AntTag(QStringLiteral("Closable"));
-        closable->setClosable(true);
-        auto* icon = new AntTag(QStringLiteral("Icon"));
-        icon->setIconText(QStringLiteral("I"));
-        basicRow->addWidget(closable);
-        basicRow->addWidget(icon);
+        for (const auto& item : {QPair<QString, QString>{QStringLiteral("Blue"), QStringLiteral("blue")},
+                                  QPair<QString, QString>{QStringLiteral("Green"), QStringLiteral("green")},
+                                  QPair<QString, QString>{QStringLiteral("Orange"), QStringLiteral("orange")},
+                                  QPair<QString, QString>{QStringLiteral("Red"), QStringLiteral("red")},
+                                  QPair<QString, QString>{QStringLiteral("Purple"), QStringLiteral("purple")}})
+        {
+            auto* tag = new AntTag(item.first);
+            tag->setColor(item.second);
+            basicRow->addWidget(tag);
+        }
         basicRow->addStretch();
         cl->addLayout(basicRow);
         layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Status Colors"));
-        auto* cl = card->bodyLayout();
-        auto* statusRow = new QHBoxLayout();
-        statusRow->setSpacing(10);
-        const QList<QPair<QString, QString>> statusColors = {
-            {QStringLiteral("Success"), QStringLiteral("success")},
-            {QStringLiteral("Processing"), QStringLiteral("processing")},
-            {QStringLiteral("Warning"), QStringLiteral("warning")},
-            {QStringLiteral("Error"), QStringLiteral("error")},
-        };
-        for (const auto& item : statusColors)
-        {
-            auto* tag = new AntTag(item.first);
-            tag->setColor(item.second);
-            statusRow->addWidget(tag);
-        }
-        statusRow->addStretch();
-        cl->addLayout(statusRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Preset Colors"));
-        auto* cl = card->bodyLayout();
-        auto* presetRow1 = new QHBoxLayout();
-        presetRow1->setSpacing(10);
-        for (const QString& name : {QStringLiteral("magenta"), QStringLiteral("red"), QStringLiteral("volcano"),
-                                     QStringLiteral("orange"), QStringLiteral("gold"), QStringLiteral("lime"),
-                                     QStringLiteral("green")})
-        {
-            auto* tag = new AntTag(name);
-            tag->setColor(name);
-            presetRow1->addWidget(tag);
-        }
-        presetRow1->addStretch();
-        cl->addLayout(presetRow1);
-
-        auto* presetRow2 = new QHBoxLayout();
-        presetRow2->setSpacing(10);
-        for (const QString& name : {QStringLiteral("cyan"), QStringLiteral("blue"), QStringLiteral("geekblue"),
-                                     QStringLiteral("purple"), QStringLiteral("pink"), QStringLiteral("yellow")})
-        {
-            auto* tag = new AntTag(name);
-            tag->setColor(name);
-            presetRow2->addWidget(tag);
-        }
-        presetRow2->addStretch();
-        cl->addLayout(presetRow2);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Variant"));
-        auto* cl = card->bodyLayout();
-        auto* variantRow = new QHBoxLayout();
-        variantRow->setSpacing(10);
-        const QList<QPair<QString, QString>> statusColors = {
-            {QStringLiteral("Success"), QStringLiteral("success")},
-            {QStringLiteral("Processing"), QStringLiteral("processing")},
-            {QStringLiteral("Warning"), QStringLiteral("warning")},
-            {QStringLiteral("Error"), QStringLiteral("error")},
-        };
-        for (const auto& item : statusColors)
-        {
-            auto* tag = new AntTag(QStringLiteral("Solid ") + item.first);
-            tag->setColor(item.second);
-            tag->setVariant(Ant::TagVariant::Solid);
-            variantRow->addWidget(tag);
-        }
-        for (const auto& item : statusColors)
-        {
-            auto* tag = new AntTag(QStringLiteral("Outlined ") + item.first);
-            tag->setColor(item.second);
-            tag->setVariant(Ant::TagVariant::Outlined);
-            variantRow->addWidget(tag);
-        }
-        variantRow->addStretch();
-        cl->addLayout(variantRow);
-        layout->addWidget(card);
-    }
-
-    {
-        auto* card = new AntCard(QStringLiteral("Checkable"));
+        auto* card = new AntCard(QStringLiteral("Checkable & Closable"));
         auto* cl = card->bodyLayout();
         auto* checkRow = new QHBoxLayout();
         checkRow->setSpacing(10);
-        for (const QString& text : {QStringLiteral("Design"), QStringLiteral("Code"), QStringLiteral("Review")})
-        {
-            auto* tag = new AntTag(text);
-            tag->setCheckable(true);
-            tag->setChecked(text == QStringLiteral("Code"));
-            checkRow->addWidget(tag);
-        }
+
+        auto* checkable = new AntTag(QStringLiteral("Checkable"));
+        checkable->setCheckable(true);
+        checkable->setChecked(true);
+        checkRow->addWidget(checkable);
+
+        auto* closable = new AntTag(QStringLiteral("Closable"));
+        closable->setClosable(true);
+        checkRow->addWidget(closable);
+
+        auto* processing = new AntTag(QStringLiteral("Processing"));
+        processing->setColor(QStringLiteral("processing"));
+        checkRow->addWidget(processing);
+
+        auto* success = new AntTag(QStringLiteral("Success"));
+        success->setColor(QStringLiteral("success"));
+        checkRow->addWidget(success);
+
         checkRow->addStretch();
         cl->addLayout(checkRow);
         layout->addWidget(card);

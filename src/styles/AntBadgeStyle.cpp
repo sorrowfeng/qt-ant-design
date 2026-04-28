@@ -71,7 +71,7 @@ bool badgeShouldShowIndicator(const AntBadge* badge)
 
 int badgeContentTopReserve(const AntBadge* badge)
 {
-    constexpr int kShadowMargin = 8;
+    constexpr int kShadowMargin = 2;
     if (!badgeShouldShowIndicator(badge))
     {
         return kShadowMargin;
@@ -82,7 +82,7 @@ int badgeContentTopReserve(const AntBadge* badge)
 
 int badgeContentRightReserve(const AntBadge* badge)
 {
-    constexpr int kShadowMargin = 8;
+    constexpr int kShadowMargin = 2;
     if (!badgeShouldShowIndicator(badge))
     {
         return kShadowMargin;
@@ -100,8 +100,8 @@ QRect badgeContentRect(const AntBadge* badge, const QRect& widgetRect)
     }
     const QSize hint = cw->sizeHint().expandedTo(cw->minimumSizeHint());
     const int topReserve = badgeContentTopReserve(badge);
-    // Must match AntBadge::contentRect (kShadowMargin = 8 from AntBadge.cpp).
-    constexpr int kShadowMargin = 8;
+    // Must match AntBadge::contentRect (kShadowMargin = 2 from AntBadge.cpp).
+    constexpr int kShadowMargin = 2;
     return QRect(kShadowMargin, topReserve, hint.width(), hint.height());
 }
 

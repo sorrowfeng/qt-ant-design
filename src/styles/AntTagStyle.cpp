@@ -139,7 +139,7 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
     }
     else
     {
-        bg = AntPalette::tint(base, 0.88);
+        bg = AntPalette::backgroundColor(base, antTheme->themeMode());
     }
 
     // Replicate borderColor()
@@ -152,13 +152,9 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
     {
         border = token.colorBorder;
     }
-    else if (variant == Ant::TagVariant::Filled)
-    {
-        border = Qt::transparent;
-    }
     else
     {
-        border = variant == Ant::TagVariant::Solid ? base : AntPalette::tint(base, 0.65);
+        border = variant == Ant::TagVariant::Solid ? base : AntPalette::borderColor(base, antTheme->themeMode());
     }
 
     // Replicate textColor()

@@ -16,10 +16,9 @@
 
 namespace
 {
-// Space reserved around the content widget to let its drop shadow bleed
-// outside its own rect without getting clipped by the AntBadge boundary.
-// AntButton's shadow radius is ~4px but we pad a bit extra for safety.
-constexpr int kShadowMargin = 8;
+// Small anti-clip guard around the content widget for the badge outline and
+// any subtle child shadow without making avatar badges look loosely spaced.
+constexpr int kShadowMargin = 2;
 
 // Transparent overlay painted on top of the content widget to host the
 // indicator. Needed because AntBadge's own paintEvent runs BEFORE child

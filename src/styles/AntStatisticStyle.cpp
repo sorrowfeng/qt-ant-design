@@ -1,5 +1,6 @@
 #include "AntStatisticStyle.h"
 
+#include <QDateTime>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
@@ -22,7 +23,11 @@ struct Metrics
 
 Metrics statisticMetrics()
 {
-    return {};
+    Metrics m;
+    m.padding = 0;
+    m.prefixFontSize = m.valueFontSize;
+    m.suffixFontSize = m.valueFontSize;
+    return m;
 }
 
 QRect statisticTitleRect(const AntStatistic* stat, const QRect& widgetRect, const QFont& widgetFont)
@@ -55,6 +60,26 @@ QRect statisticValueRect(const AntStatistic* stat, const QRect& widgetRect, cons
 
 QString statisticFormattedValue(const AntStatistic* stat)
 {
+    if (stat->isCountdownMode())
+    {
+        const double now = QDateTime::currentMSecsSinceEpoch() / 1000.0;
+        const double remaining = qMax(0.0, stat->value() - now);
+        const int totalSecs = static_cast<int>(remaining);
+        const int days = totalSecs / 86400;
+        const QString format = stat->countdownFormat();
+        const bool hasDayToken = format.contains(QStringLiteral("DD"));
+        const int hours = hasDayToken ? (totalSecs % 86400) / 3600 : totalSecs / 3600;
+        const int minutes = (totalSecs % 3600) / 60;
+        const int seconds = totalSecs % 60;
+
+        QString result = format;
+        result.replace(QStringLiteral("DD"), QString::number(days));
+        result.replace(QStringLiteral("HH"), QString::number(hours).rightJustified(2, QChar('0')));
+        result.replace(QStringLiteral("mm"), QString::number(minutes).rightJustified(2, QChar('0')));
+        result.replace(QStringLiteral("ss"), QString::number(seconds).rightJustified(2, QChar('0')));
+        return result;
+    }
+
     const double value = stat->value();
     const int precision = stat->precision();
     const QString separator = stat->groupSeparator();
@@ -186,7 +211,7 @@ void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* pain
 
     QFont valueFont = widgetFont;
     valueFont.setPixelSize(m.valueFontSize);
-    valueFont.setWeight(QFont::DemiBold);
+    valueFont.setWeight(QFont::Normal);
     QFontMetrics valueFm(valueFont);
 
     const QString formatted = statisticFormattedValue(stat);
@@ -196,7 +221,7 @@ void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* pain
     {
         QFont prefixFont = widgetFont;
         prefixFont.setPixelSize(m.prefixFontSize);
-        prefixFont.setWeight(QFont::DemiBold);
+        prefixFont.setWeight(QFont::Normal);
         QFontMetrics prefixFm(prefixFont);
         contentWidth += prefixFm.horizontalAdvance(prefix) + m.spacing;
     }
@@ -216,7 +241,7 @@ void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* pain
     {
         QFont prefixFont = widgetFont;
         prefixFont.setPixelSize(m.prefixFontSize);
-        prefixFont.setWeight(QFont::DemiBold);
+        prefixFont.setWeight(QFont::Normal);
         painter->setFont(prefixFont);
         painter->setPen(token.colorText);
         QFontMetrics prefixFm(prefixFont);

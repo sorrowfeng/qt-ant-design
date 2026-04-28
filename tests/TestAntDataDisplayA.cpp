@@ -21,6 +21,7 @@ void TestAntDataDisplayA::propertiesAndSignals()
     QCOMPARE(a->text(), QString());
     QCOMPARE(a->iconText(), QString());
     QCOMPARE(a->imagePath(), QString());
+    QCOMPARE(a->backgroundColor(), QColor());
     QCOMPARE(a->gap(), 4);
     QCOMPARE(a->customSize(), 0);
     QCOMPARE(a->shape(), Ant::AvatarShape::Circle);
@@ -40,6 +41,11 @@ void TestAntDataDisplayA::propertiesAndSignals()
     a->setShape(Ant::AvatarShape::Square);
     QCOMPARE(a->shape(), Ant::AvatarShape::Square);
     QCOMPARE(shapeSpy.count(), 1);
+
+    QSignalSpy bgSpy(a, &AntAvatar::backgroundColorChanged);
+    a->setBackgroundColor(QColor("#1677ff"));
+    QCOMPARE(a->backgroundColor(), QColor("#1677ff"));
+    QCOMPARE(bgSpy.count(), 1);
 
     QSignalSpy sizeSpy(a, &AntAvatar::avatarSizeChanged);
     a->setAvatarSize(Ant::Size::Large);
