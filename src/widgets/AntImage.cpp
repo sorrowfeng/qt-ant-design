@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QScreen>
 #include <QVBoxLayout>
 #include <QWindow>
@@ -16,6 +17,29 @@
 
 namespace
 {
+
+QSize imageTargetSize(const QPixmap& pixmap, int requestedWidth, int requestedHeight)
+{
+    const QSize natural = pixmap.isNull() ? QSize(200, 200) : pixmap.size();
+
+    if (requestedWidth > 0 && requestedHeight > 0)
+    {
+        return QSize(requestedWidth, requestedHeight);
+    }
+    if (requestedWidth > 0)
+    {
+        const int height = natural.width() > 0 ? qRound(static_cast<qreal>(requestedWidth) * natural.height() / natural.width())
+                                               : requestedWidth;
+        return QSize(requestedWidth, qMax(1, height));
+    }
+    if (requestedHeight > 0)
+    {
+        const int width = natural.height() > 0 ? qRound(static_cast<qreal>(requestedHeight) * natural.width() / natural.height())
+                                               : requestedHeight;
+        return QSize(qMax(1, width), requestedHeight);
+    }
+    return natural;
+}
 
 class ImagePreviewDialog : public QDialog
 {
@@ -125,12 +149,18 @@ protected:
 
 } // namespace
 
+static void initAntImageResources()
+{
+    Q_INIT_RESOURCE(qt_ant_design);
+}
+
 AntImage::AntImage(QWidget* parent)
     : QWidget(parent)
 {
+    initAntImageResources();
     setMouseTracking(true);
     setCursor(Qt::PointingHandCursor);
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
 }
@@ -186,11 +216,7 @@ void AntImage::setImgHeight(int h)
 
 QSize AntImage::sizeHint() const
 {
-    if (m_loaded && m_imgWidth == 0 && m_imgHeight == 0)
-        return m_pixmap.size();
-    int w = m_imgWidth > 0 ? m_imgWidth : (m_loaded ? m_pixmap.width() : 200);
-    int h = m_imgHeight > 0 ? m_imgHeight : (m_loaded ? m_pixmap.height() : 200);
-    return QSize(w, h);
+    return imageTargetSize(m_pixmap, m_imgWidth, m_imgHeight);
 }
 
 void AntImage::paintEvent(QPaintEvent*)
@@ -200,17 +226,23 @@ void AntImage::paintEvent(QPaintEvent*)
     p.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
 
     const QRectF r = rect();
-    p.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-    p.setBrush(token.colorFillQuaternary);
-    p.drawRoundedRect(r, token.borderRadius, token.borderRadius);
 
     if (m_loaded)
     {
-        QRectF imgRect = r.adjusted(4, 4, -4, -4);
-        p.drawPixmap(imgRect.toRect(), m_pixmap.scaled(imgRect.size().toSize(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        const bool hasExplicitBox = m_imgWidth > 0 && m_imgHeight > 0;
+        const QPixmap scaled = m_pixmap.scaled(r.size().toSize(),
+                                               hasExplicitBox ? Qt::IgnoreAspectRatio : Qt::KeepAspectRatio,
+                                               Qt::SmoothTransformation);
+        const QPointF topLeft(r.x() + (r.width() - scaled.width()) / 2.0,
+                              r.y() + (r.height() - scaled.height()) / 2.0);
+        p.drawPixmap(topLeft, scaled);
     }
     else
     {
+        p.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        p.setBrush(token.colorFillQuaternary);
+        p.drawRoundedRect(r.adjusted(0.5, 0.5, -0.5, -0.5), token.borderRadius, token.borderRadius);
+
         QFont f = p.font();
         f.setPixelSize(token.fontSizeSM);
         p.setFont(f);
@@ -221,9 +253,27 @@ void AntImage::paintEvent(QPaintEvent*)
     // Preview overlay on hover
     if (m_hovered && m_preview && m_loaded)
     {
-        p.fillRect(r, QColor(0, 0, 0, 30));
+        p.fillRect(r, QColor(0, 0, 0, 115));
+
+        const QPointF center = r.center();
+        QPainterPath eye;
+        eye.moveTo(center.x() - 17.0, center.y() - 10.0);
+        eye.cubicTo(center.x() - 8.0, center.y() - 20.0, center.x() + 8.0, center.y() - 20.0,
+                    center.x() + 17.0, center.y() - 10.0);
+        eye.cubicTo(center.x() + 8.0, center.y(), center.x() - 8.0, center.y(), center.x() - 17.0,
+                    center.y() - 10.0);
+
         p.setPen(token.colorTextLightSolid);
-        p.drawText(r, Qt::AlignCenter, QStringLiteral("⿡\nPreview"));
+        p.setBrush(Qt::NoBrush);
+        p.drawPath(eye);
+        p.setBrush(token.colorTextLightSolid);
+        p.drawEllipse(QRectF(center.x() - 3.5, center.y() - 13.5, 7.0, 7.0));
+
+        QFont f = p.font();
+        f.setPixelSize(token.fontSize);
+        p.setFont(f);
+        p.drawText(QRectF(r.left(), center.y() + 4.0, r.width(), 22.0), Qt::AlignCenter,
+                   QStringLiteral("Preview"));
     }
 }
 

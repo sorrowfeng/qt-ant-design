@@ -611,17 +611,14 @@ QWidget* createImagePage(QWidget* /*owner*/)
     layout->setSpacing(16);
 
     {
-        auto* card = new AntCard(QStringLiteral("AntImage"));
+        auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* img = new AntImage(page);
-        img->setAlt(QStringLiteral("No image loaded"));
+        img->setSrc(QStringLiteral(":/qt-ant-design/images/image-basic.png"));
         img->setImgWidth(200);
-        img->setImgHeight(200);
-        cl->addWidget(img);
-
-        auto* tip = makeSecondaryText(QStringLiteral("Set src to load an image. Click to preview."), page);
-        cl->addWidget(tip);
+        cl->addWidget(img, 0, Qt::AlignLeft | Qt::AlignTop);
+        cl->addStretch();
 
         layout->addWidget(card);
     }

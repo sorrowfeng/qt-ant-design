@@ -226,6 +226,11 @@ void TestAntDataDisplayA::propertiesAndSignals()
     QCOMPARE(img->imgHeight(), 150);
     QCOMPARE(imgHSpy.count(), 1);
 
+    auto* loadedImg = new AntImage;
+    loadedImg->setSrc(QStringLiteral(":/qt-ant-design/images/image-basic.png"));
+    loadedImg->setImgWidth(100);
+    QCOMPARE(loadedImg->sizeHint(), QSize(100, 98));
+
     // AntEmpty
     auto* e = new AntEmpty;
     QCOMPARE(e->description(), QStringLiteral("No data"));

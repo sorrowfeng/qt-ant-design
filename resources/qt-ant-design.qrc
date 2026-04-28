@@ -1,4 +1,5 @@
 <RCC>
     <qresource prefix="/qt-ant-design">
+        <file>images/image-basic.png</file>
     </qresource>
 </RCC>
