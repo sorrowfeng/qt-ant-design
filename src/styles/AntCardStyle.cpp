@@ -91,12 +91,28 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
         token.colorBgContainer, radius, radius);
 
     // Header separator line
-    QWidget* headerWidget = card->findChild<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    QWidget* headerWidget = card->findChild<QWidget*>(QStringLiteral("ant-card-header"), Qt::FindDirectChildrenOnly);
     if (headerWidget && headerWidget->isVisible())
     {
         painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
         painter->drawLine(cardRect.left() + 1, headerWidget->geometry().bottom(),
                          cardRect.right() - 1, headerWidget->geometry().bottom());
+    }
+
+    QWidget* actionsWidget = card->findChild<QWidget*>(QStringLiteral("ant-card-actions"), Qt::FindDirectChildrenOnly);
+    if (actionsWidget && actionsWidget->isVisible())
+    {
+        painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        const QRect actionsRect = actionsWidget->geometry();
+        painter->drawLine(cardRect.left() + 1, actionsRect.top(),
+                          cardRect.right() - 1, actionsRect.top());
+
+        const QList<QWidget*> actionItems = actionsWidget->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
+        for (int i = 1; i < actionItems.size(); ++i)
+        {
+            const int x = actionsRect.left() + actionsRect.width() * i / actionItems.size();
+            painter->drawLine(x, actionsRect.top() + 12, x, actionsRect.bottom() - 12);
+        }
     }
 
     // Loading overlay

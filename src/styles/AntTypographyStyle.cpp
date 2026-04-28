@@ -62,11 +62,6 @@ QFont buildFont(const AntTypography* typo, const QFont& baseFont)
     {
         f.setUnderline(true);
     }
-    if (typo->type() == Ant::TypographyType::Link)
-    {
-        f.setUnderline(true);
-    }
-
     return f;
 }
 
@@ -105,6 +100,44 @@ QColor markBackgroundColor()
         return AntPalette::alpha(token.colorWarning, 0.28);
     }
     return AntPalette::tint(token.colorWarning, 0.55);
+}
+
+void drawCopyIcon(QPainter* painter, const QRect& rect, const QColor& color)
+{
+    if (!painter || rect.isEmpty())
+    {
+        return;
+    }
+
+    const int iconSize = qMin(rect.width(), rect.height());
+    const QRect iconRect(rect.left() + (rect.width() - iconSize) / 2,
+                         rect.top() + (rect.height() - iconSize) / 2,
+                         iconSize,
+                         iconSize);
+    QRectF back(iconRect.left() + iconSize * 0.18,
+                iconRect.top() + iconSize * 0.08,
+                iconSize * 0.52,
+                iconSize * 0.62);
+    QRectF front(iconRect.left() + iconSize * 0.32,
+                 iconRect.top() + iconSize * 0.25,
+                 iconSize * 0.52,
+                 iconSize * 0.62);
+
+    painter->setPen(QPen(color, qMax<qreal>(1.2, iconSize * 0.09), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(back, 1.5, 1.5);
+    painter->drawRoundedRect(front, 1.5, 1.5);
+}
+
+QRect copyIconRect(const QRect& optionRect, const QFontMetrics& fm, const QString& text, int reservedWidth)
+{
+    const auto& token = antTheme->tokens();
+    const int iconSize = token.fontSize;
+    const int gap = token.paddingXXS;
+    const int textW = qMin(fm.horizontalAdvance(text), qMax(0, optionRect.width() - reservedWidth));
+    const int x = qMin(optionRect.left() + textW + gap, optionRect.right() - reservedWidth + 1);
+    const int y = optionRect.top() + qMax(0, (fm.height() - iconSize) / 2);
+    return QRect(x, y, iconSize + gap, iconSize + gap);
 }
 
 } // namespace
@@ -192,7 +225,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
     const QColor color = textColorForType(typo);
 
     const bool hasCopyBtn = typo->isCopyable();
-    const int copyBtnWidth = hasCopyBtn ? fm.horizontalAdvance(QStringLiteral("Copy")) + token.paddingXS * 2 : 0;
+    const int copyBtnWidth = hasCopyBtn ? token.fontSize + token.paddingXXS * 2 : 0;
 
     QRect textRect = option->rect;
     if (hasCopyBtn)
@@ -299,15 +332,10 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
         }
     }
 
-    // Draw copy button
+    // Draw copy icon
     if (hasCopyBtn)
     {
-        QRect btnRect = option->rect;
-        btnRect.setLeft(btnRect.right() - copyBtnWidth);
-
-        painter->setFont(widgetFont);
-        painter->setPen(token.colorPrimary);
-        painter->drawText(btnRect, Qt::AlignCenter, QStringLiteral("Copy"));
+        drawCopyIcon(painter, copyIconRect(option->rect, fm, text, copyBtnWidth), token.colorPrimary);
     }
 
     painter->restore();

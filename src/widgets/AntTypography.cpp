@@ -253,7 +253,7 @@ QSize AntTypography::sizeHint() const
     QFont f = createFont();
     QFontMetrics fm(f);
 
-    const int copyBtnWidth = m_copyable ? fm.horizontalAdvance(QStringLiteral("Copy")) + token.paddingXS * 2 : 0;
+    const int copyBtnWidth = m_copyable ? token.fontSize + token.paddingXXS * 2 : 0;
 
     if (m_code)
     {
@@ -401,7 +401,7 @@ QColor AntTypography::textColor() const
 QRect AntTypography::textDrawRect() const
 {
     const auto& token = antTheme->tokens();
-    const int copyBtnW = m_copyable ? 60 : 0;
+    const int copyBtnW = m_copyable ? antTheme->tokens().fontSize + antTheme->tokens().paddingXXS * 2 : 0;
     const int pad = m_code ? token.paddingXXS : 0;
     return QRect(pad, pad, width() - pad * 2 - copyBtnW, height() - pad * 2);
 }
@@ -415,7 +415,11 @@ QRect AntTypography::copyButtonRect() const
     const auto& token = antTheme->tokens();
     QFont f = createFont();
     QFontMetrics fm(f);
-    const int btnW = fm.horizontalAdvance(QStringLiteral("Copy")) + token.paddingXS;
-    const int btnH = fm.height() + token.paddingXXS;
-    return QRect(width() - btnW - token.paddingXXS, (height() - btnH) / 2, btnW, btnH);
+    const int iconSize = token.fontSize;
+    const int gap = token.paddingXXS;
+    const int btnW = iconSize + gap * 2;
+    const int textW = qMin(fm.horizontalAdvance(m_text), qMax(0, width() - btnW));
+    const int x = qMin(textW + gap, qMax(0, width() - btnW));
+    const int y = qMax(0, (fm.height() - iconSize) / 2);
+    return QRect(x, y, btnW, iconSize + gap);
 }

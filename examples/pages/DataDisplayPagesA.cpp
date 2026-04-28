@@ -2,7 +2,11 @@
 
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QLinearGradient>
 #include <QList>
+#include <QPaintEvent>
+#include <QPainter>
+#include <QPainterPath>
 #include <QPair>
 #include <QPoint>
 #include <QSize>
@@ -11,6 +15,7 @@
 #include <QWidget>
 
 #include "PageCommon.h"
+#include "core/AntTheme.h"
 #include "core/AntTypes.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntBadge.h"
@@ -21,11 +26,80 @@
 #include "widgets/AntCollapse.h"
 #include "widgets/AntDescriptions.h"
 #include "widgets/AntEmpty.h"
+#include "widgets/AntIcon.h"
 #include "widgets/AntImage.h"
 #include "widgets/AntList.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTag.h"
 #include "widgets/AntTypography.h"
+
+namespace
+{
+class CardCoverPreview : public QWidget
+{
+public:
+    explicit CardCoverPreview(QWidget* parent = nullptr)
+        : QWidget(parent)
+    {
+        setFixedSize(300, 160);
+        setAttribute(Qt::WA_TranslucentBackground);
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event)
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        QPainterPath coverPath;
+        const qreal radius = 8.0;
+        const QRectF r = rect();
+        coverPath.moveTo(r.left(), r.bottom());
+        coverPath.lineTo(r.left(), r.top() + radius);
+        coverPath.quadTo(r.left(), r.top(), r.left() + radius, r.top());
+        coverPath.lineTo(r.right() - radius, r.top());
+        coverPath.quadTo(r.right(), r.top(), r.right(), r.top() + radius);
+        coverPath.lineTo(r.right(), r.bottom());
+        coverPath.closeSubpath();
+
+        QLinearGradient gradient(r.topLeft(), r.bottomRight());
+        gradient.setColorAt(0.0, QColor(QStringLiteral("#1e3cb4")));
+        gradient.setColorAt(0.35, QColor(QStringLiteral("#643cc8")));
+        gradient.setColorAt(0.7, QColor(QStringLiteral("#c850a0")));
+        gradient.setColorAt(1.0, QColor(QStringLiteral("#f07860")));
+        painter.fillPath(coverPath, gradient);
+
+        QColor circle(QStringLiteral("#ffffff"));
+        circle.setAlphaF(0.9);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(circle);
+        painter.drawEllipse(QRectF(width() / 2.0 - 30.0, height() / 2.0 - 30.0, 60.0, 60.0));
+    }
+};
+
+AntIcon* makeCardActionIcon(Ant::IconType type)
+{
+    auto* icon = new AntIcon(type);
+    icon->setIconSize(16);
+    icon->setColor(antTheme->tokens().colorTextTertiary);
+    return icon;
+}
+
+AntIcon* makeEllipsisActionIcon()
+{
+    auto* icon = new AntIcon();
+    icon->setIconSize(16);
+    icon->setIconTheme(Ant::IconTheme::Filled);
+    icon->setColor(antTheme->tokens().colorTextTertiary);
+    QPainterPath dots;
+    dots.addEllipse(QRectF(7, 14, 4, 4));
+    dots.addEllipse(QRectF(14, 14, 4, 4));
+    dots.addEllipse(QRectF(21, 14, 4, 4));
+    icon->setCustomPath(dots);
+    return icon;
+}
+}
 
 namespace example::pages
 {
@@ -302,73 +376,33 @@ QWidget* createCardPage(QWidget* /*owner*/)
     layout->setContentsMargins(32, 24, 32, 24);
     layout->setSpacing(16);
 
-    auto* row = new QHBoxLayout();
-    row->setSpacing(16);
-    auto* basic = new AntCard(QStringLiteral("Default card"));
-    basic->setExtra(QStringLiteral("More"));
-    basic->setMinimumSize(280, 180);
-    basic->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card content\nCard content\nCard content")));
-
-    auto* hoverable = new AntCard(QStringLiteral("Hoverable"));
-    hoverable->setHoverable(true);
-    hoverable->setMinimumSize(280, 180);
-    hoverable->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Move the mouse over this card.")));
-
-    auto* loading = new AntCard(QStringLiteral("Loading"));
-    loading->setLoading(true);
-    loading->setMinimumSize(280, 180);
-    loading->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Loading mask and spinner")));
-    row->addWidget(basic);
-    row->addWidget(hoverable);
-    row->addWidget(loading);
-    layout->addLayout(row);
-
-    auto* actionCard = new AntCard(QStringLiteral("Actions"));
-    actionCard->setMinimumHeight(180);
-    actionCard->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card with action slots.")));
-    actionCard->addActionWidget(new AntTypography(QStringLiteral("Edit")));
-    actionCard->addActionWidget(new AntTypography(QStringLiteral("Share")));
-    actionCard->addActionWidget(new AntTypography(QStringLiteral("Delete")));
-    layout->addWidget(actionCard);
-
     {
-        auto* card = new AntCard(QStringLiteral("Meta"));
+        auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
-        auto* metaRow = new QHBoxLayout();
-        metaRow->setSpacing(16);
 
-        auto* metaCard = new AntCard(QStringLiteral("Project Card"), page);
-        metaCard->setFixedWidth(320);
-        metaCard->setMetaTitle(QStringLiteral("Ant Design"));
-        metaCard->setMetaDescription(QStringLiteral("A design system for enterprise-level products."));
-        metaCard->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card body content goes here.")));
-        metaRow->addWidget(metaCard);
-
-        auto* metaCard2 = new AntCard(QStringLiteral("With Avatar"), page);
-        metaCard2->setFixedWidth(320);
-        auto* metaAvatar = new AntAvatar(QStringLiteral("AD"));
-        metaAvatar->setAvatarSize(Ant::Size::Small);
-        metaCard2->setMetaAvatar(metaAvatar);
-        metaCard2->setMetaTitle(QStringLiteral("Design Team"));
-        metaCard2->setMetaDescription(QStringLiteral("Shared component library and design tokens."));
-        metaRow->addWidget(metaCard2);
-        metaRow->addStretch();
-        cl->addLayout(metaRow);
+        auto* basic = new AntCard(QStringLiteral("Card Title"), page);
+        basic->setExtra(QStringLiteral("More"));
+        basic->setFixedSize(340, 140);
+        basic->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card content"), basic));
+        cl->addWidget(basic, 0, Qt::AlignLeft);
         layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Grid"));
+        auto* card = new AntCard(QStringLiteral("With Cover & Meta"));
         auto* cl = card->bodyLayout();
-        auto* gridCard = new AntCard(QStringLiteral("Grid Layout"), page);
-        gridCard->setMinimumHeight(200);
-        gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 1")));
-        gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 2")));
-        gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 3")));
-        gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 4")));
-        gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 5")));
-        gridCard->addGridItem(new AntTypography(QStringLiteral("Grid Item 6")));
-        cl->addWidget(gridCard);
+
+        auto* meta = new AntCard(page);
+        meta->setFixedWidth(300);
+        meta->setHoverable(true);
+        meta->setCoverWidget(new CardCoverPreview(meta));
+        meta->setMetaTitle(QStringLiteral("ant design"));
+        meta->setMetaDescription(QStringLiteral("description information"));
+        meta->bodyWidget()->hide();
+        meta->addActionWidget(makeCardActionIcon(Ant::IconType::Edit));
+        meta->addActionWidget(makeCardActionIcon(Ant::IconType::Delete));
+        meta->addActionWidget(makeEllipsisActionIcon());
+        cl->addWidget(meta, 0, Qt::AlignLeft);
         layout->addWidget(card);
     }
 

@@ -23,6 +23,7 @@ AntCard::AntCard(QWidget* parent)
     m_rootLayout->setContentsMargins(1, 1, 1, 1);
 
     m_header = new QWidget(this);
+    m_header->setObjectName(QStringLiteral("ant-card-header"));
     auto* headerLayout = new QHBoxLayout(m_header);
     headerLayout->setContentsMargins(0, 0, 0, 0);
     headerLayout->setSpacing(12);
@@ -33,10 +34,12 @@ AntCard::AntCard(QWidget* parent)
     headerLayout->addWidget(m_extraLabel);
 
     m_body = new QWidget(this);
+    m_body->setObjectName(QStringLiteral("ant-card-body"));
     m_bodyLayout = new QVBoxLayout(m_body);
     m_bodyLayout->setSpacing(8);
 
     m_meta = new QWidget(this);
+    m_meta->setObjectName(QStringLiteral("ant-card-meta"));
     m_metaLayout = new QHBoxLayout(m_meta);
     m_metaLayout->setContentsMargins(0, 0, 0, 0);
     m_metaLayout->setSpacing(12);
@@ -44,7 +47,7 @@ AntCard::AntCard(QWidget* parent)
     m_metaAvatarContainer->setFixedSize(0, 0);
     m_metaAvatarContainer->hide();
     m_metaTextLayout = new QVBoxLayout();
-    m_metaTextLayout->setSpacing(2);
+    m_metaTextLayout->setSpacing(8);
     m_metaTextLayout->setContentsMargins(0, 0, 0, 0);
     m_metaTitleLabel = new QLabel(m_meta);
     m_metaDescLabel = new QLabel(m_meta);
@@ -55,6 +58,7 @@ AntCard::AntCard(QWidget* parent)
     m_meta->hide();
 
     m_actions = new QWidget(this);
+    m_actions->setObjectName(QStringLiteral("ant-card-actions"));
     m_actionsLayout = new QHBoxLayout(m_actions);
     m_actionsLayout->setContentsMargins(0, 0, 0, 0);
     m_actionsLayout->setSpacing(0);
@@ -189,7 +193,7 @@ void AntCard::addActionWidget(QWidget* widget)
     if (!widget)
         return;
     widget->setParent(m_actions);
-    m_actionsLayout->addWidget(widget, 1);
+    m_actionsLayout->addWidget(widget, 1, Qt::AlignCenter);
     rebuildChrome();
 }
 
@@ -237,6 +241,7 @@ void AntCard::setMetaAvatar(QWidget* avatar)
         m_metaAvatarContainer->hide();
     }
     m_meta->setVisible(!m_metaTitleLabel->text().isEmpty() || !m_metaDescLabel->text().isEmpty() || avatar != nullptr);
+    rebuildChrome();
 }
 
 void AntCard::setMetaTitle(const QString& title)
@@ -245,6 +250,7 @@ void AntCard::setMetaTitle(const QString& title)
     m_metaTitleLabel->setVisible(!title.isEmpty());
     updateTheme();
     m_meta->setVisible(!title.isEmpty() || !m_metaDescLabel->text().isEmpty());
+    rebuildChrome();
 }
 
 void AntCard::setMetaDescription(const QString& description)
@@ -252,6 +258,7 @@ void AntCard::setMetaDescription(const QString& description)
     m_metaDescLabel->setText(description);
     m_metaDescLabel->setVisible(!description.isEmpty());
     m_meta->setVisible(!m_metaTitleLabel->text().isEmpty() || !description.isEmpty());
+    rebuildChrome();
 }
 
 void AntCard::addGridItem(QWidget* item)
@@ -318,8 +325,7 @@ void AntCard::rebuildChrome()
 
     if (auto* layout = qobject_cast<QHBoxLayout*>(m_header->layout()))
         layout->setContentsMargins(headerPadding, 0, headerPadding, 0);
-    if (m_meta->isVisible())
-        m_metaLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, 0);
+    m_metaLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, bodyPadding);
     if (m_bodyLayout)
         m_bodyLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, bodyPadding);
     else if (m_gridLayout)
@@ -344,7 +350,7 @@ void AntCard::updateTheme()
     extraFont.setPixelSize(token.fontSize);
     m_extraLabel->setFont(extraFont);
     QPalette extraPal = m_extraLabel->palette();
-    extraPal.setColor(QPalette::WindowText, token.colorTextSecondary);
+    extraPal.setColor(QPalette::WindowText, token.colorPrimary);
     m_extraLabel->setPalette(extraPal);
 
     // Meta labels

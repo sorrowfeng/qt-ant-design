@@ -371,6 +371,7 @@ QWidget* createTypographyPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("Copyable"));
         auto* cl = card->bodyLayout();
         auto* copyable = new AntTypography(QStringLiteral("This text is copyable. Click to copy!"));
+        copyable->setParagraph(true);
         copyable->setCopyable(true);
         cl->addWidget(copyable);
         layout->addWidget(card);

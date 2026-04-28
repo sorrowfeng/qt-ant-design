@@ -67,7 +67,7 @@ Use this loop for one component at a time.
 | --- | --- | --- | --- | --- | --- |
 | General | Button | ButtonPage | Button | Pass | Static screenshot compared against AntD reference; padding, transparent solid border, loading opacity/cursor, spinner arc, ghost, disabled, and subtle bottom shadow are aligned. Container card spacing differs and should be handled with Card. |
 | General | Icon | IconPage | Icon | Pass | Static screenshot compared against AntD reference; IconPage now covers the 16 official outlined icons, and AntIcon renders those glyphs from the official SVG paths via QtSvg. Extra theme/spin/custom examples remain Qt-only coverage below the reference section; container card spacing belongs to Card. |
-| General | Typography | TypographyPage | Typography | Needs visual QA | LightSolid, link cursor, and mark background fixed; compare title spacing and copy affordance in screenshots. |
+| General | Typography | TypographyPage | Typography | Pass | Static screenshot compared against AntD reference; title levels, text types, decorations, paragraph text, default link styling, mark/code backgrounds, and copyable icon affordance are aligned. Container card spacing belongs to Card. |
 | Layout | Divider | DividerPage | Divider | Not started | |
 | Layout | Flex | FlexPage | Flex | Not started | |
 | Layout | Grid | GridPage | Grid | Not started | |
@@ -102,7 +102,7 @@ Use this loop for one component at a time.
 | Data Display | Avatar | AvatarPage | Avatar | Not started | |
 | Data Display | Badge | BadgePage | Badge | Needs visual QA | Processing pulse animation fixed; compare overlay position, count pill, dot, and status text in screenshots. |
 | Data Display | Calendar | CalendarPage | Calendar | Not started | |
-| Data Display | Card | CardPage | Card | Not started | |
+| Data Display | Card | CardPage | Card | Pass | Basic card and cover/meta/actions card compared against `build/card-compare-wide.png`; component-owned gaps fixed for extra color, Meta padding, action centering, and action separators. Shared demo-container spacing remains out of scope. |
 | Data Display | Carousel | CarouselPage | Carousel | Not started | |
 | Data Display | Collapse | CollapsePage | Collapse | Not started | |
 | Data Display | Descriptions | DescriptionsPage | Descriptions | Not started | |
