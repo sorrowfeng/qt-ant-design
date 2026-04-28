@@ -22,6 +22,7 @@ target_link_libraries(qt-ant-design
     PUBLIC
         Qt6::Core
         Qt6::Widgets
+        Qt6::Svg
 )
 
 # Install headers preserving directory structure

@@ -325,6 +325,13 @@ enum class IconType
     User,
     Home,
     Star,
+    Setting,
+    Heart,
+    Bell,
+    Mail,
+    Edit,
+    Delete,
+    CloudUpload,
 };
 Q_ENUM_NS(IconType)
 

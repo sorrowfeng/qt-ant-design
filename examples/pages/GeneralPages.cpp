@@ -1,6 +1,7 @@
 #include "Pages.h"
 
 #include <QFrame>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QList>
 #include <QPainterPath>
@@ -136,36 +137,50 @@ QWidget* createIconPage(QWidget* /*owner*/)
 
     auto createIconBlock = [](const QString& title, AntIcon* icon) {
         auto* block = new QWidget();
+        block->setFixedWidth(72);
         auto* blockLayout = new QVBoxLayout(block);
         blockLayout->setContentsMargins(0, 0, 0, 0);
-        blockLayout->setSpacing(8);
+        blockLayout->setSpacing(4);
         blockLayout->addWidget(icon, 0, Qt::AlignHCenter);
         auto* label = new AntTypography(title, block);
+        label->setType(Ant::TypographyType::Secondary);
         blockLayout->addWidget(label, 0, Qt::AlignHCenter);
         return block;
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = new AntCard(QStringLiteral("Outlined Icons"));
         auto* cl = card->bodyLayout();
-        auto* row = new QHBoxLayout();
-        row->setSpacing(24);
+        auto* grid = new QGridLayout();
+        grid->setContentsMargins(0, 0, 0, 0);
+        grid->setHorizontalSpacing(20);
+        grid->setVerticalSpacing(16);
         const QList<QPair<QString, Ant::IconType>> basics = {
-            {QStringLiteral("Search"), Ant::IconType::Search},
             {QStringLiteral("Home"), Ant::IconType::Home},
             {QStringLiteral("User"), Ant::IconType::User},
+            {QStringLiteral("Search"), Ant::IconType::Search},
+            {QStringLiteral("Setting"), Ant::IconType::Setting},
+            {QStringLiteral("Star"), Ant::IconType::Star},
+            {QStringLiteral("Heart"), Ant::IconType::Heart},
+            {QStringLiteral("Bell"), Ant::IconType::Bell},
+            {QStringLiteral("Mail"), Ant::IconType::Mail},
             {QStringLiteral("Calendar"), Ant::IconType::Calendar},
             {QStringLiteral("Clock"), Ant::IconType::ClockCircle},
-            {QStringLiteral("Star"), Ant::IconType::Star},
+            {QStringLiteral("Check"), Ant::IconType::Check},
+            {QStringLiteral("Close"), Ant::IconType::Close},
+            {QStringLiteral("Plus"), Ant::IconType::Plus},
+            {QStringLiteral("Edit"), Ant::IconType::Edit},
+            {QStringLiteral("Delete"), Ant::IconType::Delete},
+            {QStringLiteral("Upload"), Ant::IconType::CloudUpload},
         };
-        for (const auto& item : basics)
+        for (int i = 0; i < basics.size(); ++i)
         {
+            const auto& item = basics.at(i);
             auto* icon = new AntIcon(item.second);
-            icon->setIconSize(24);
-            row->addWidget(createIconBlock(item.first, icon));
+            icon->setIconSize(22);
+            grid->addWidget(createIconBlock(item.first, icon), i / 10, i % 10);
         }
-        row->addStretch();
-        cl->addLayout(row);
+        cl->addLayout(grid);
         layout->addWidget(card);
     }
 

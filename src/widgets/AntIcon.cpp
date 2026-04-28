@@ -107,6 +107,125 @@ QPainterPath createStarPath()
     return path;
 }
 
+QPainterPath createSettingPath()
+{
+    QPainterPath path;
+    path.addEllipse(QRectF(12, 12, 8, 8));
+    path.moveTo(16, 4);
+    path.lineTo(16, 8);
+    path.moveTo(16, 24);
+    path.lineTo(16, 28);
+    path.moveTo(4, 16);
+    path.lineTo(8, 16);
+    path.moveTo(24, 16);
+    path.lineTo(28, 16);
+    path.moveTo(7.5, 7.5);
+    path.lineTo(10.5, 10.5);
+    path.moveTo(21.5, 21.5);
+    path.lineTo(24.5, 24.5);
+    path.moveTo(24.5, 7.5);
+    path.lineTo(21.5, 10.5);
+    path.moveTo(10.5, 21.5);
+    path.lineTo(7.5, 24.5);
+    path.addRoundedRect(QRectF(8, 8, 16, 16), 8, 8);
+    return path;
+}
+
+QPainterPath createHeartPath()
+{
+    QPainterPath path;
+    path.moveTo(16, 27);
+    path.cubicTo(9.2, 22.8, 4.5, 18.2, 4.5, 12.5);
+    path.cubicTo(4.5, 8.4, 7.5, 5.5, 11.2, 5.5);
+    path.cubicTo(13.2, 5.5, 15.0, 6.5, 16, 8.1);
+    path.cubicTo(17.0, 6.5, 18.8, 5.5, 20.8, 5.5);
+    path.cubicTo(24.5, 5.5, 27.5, 8.4, 27.5, 12.5);
+    path.cubicTo(27.5, 18.2, 22.8, 22.8, 16, 27);
+    path.closeSubpath();
+    return path;
+}
+
+QPainterPath createBellPath()
+{
+    QPainterPath path;
+    path.moveTo(8, 23);
+    path.lineTo(24, 23);
+    path.moveTo(10, 23);
+    path.cubicTo(11.2, 20.5, 11.5, 17.8, 11.5, 14);
+    path.cubicTo(11.5, 10.3, 13.4, 7.5, 16, 7.5);
+    path.cubicTo(18.6, 7.5, 20.5, 10.3, 20.5, 14);
+    path.cubicTo(20.5, 17.8, 20.8, 20.5, 22, 23);
+    path.moveTo(13.5, 25);
+    path.cubicTo(14.1, 26.6, 15, 27.5, 16, 27.5);
+    path.cubicTo(17, 27.5, 17.9, 26.6, 18.5, 25);
+    return path;
+}
+
+QPainterPath createMailPath()
+{
+    QPainterPath path;
+    path.addRoundedRect(QRectF(5, 8, 22, 16), 2, 2);
+    path.moveTo(6.5, 10);
+    path.lineTo(16, 17);
+    path.lineTo(25.5, 10);
+    path.moveTo(13.5, 15.2);
+    path.lineTo(6.5, 22);
+    path.moveTo(18.5, 15.2);
+    path.lineTo(25.5, 22);
+    return path;
+}
+
+QPainterPath createEditPath()
+{
+    QPainterPath path;
+    path.addRoundedRect(QRectF(6, 22, 20, 3), 1, 1);
+    path.moveTo(9, 20);
+    path.lineTo(10.5, 15);
+    path.lineTo(21.5, 4);
+    path.lineTo(26, 8.5);
+    path.lineTo(15, 19.5);
+    path.lineTo(9, 20);
+    path.moveTo(19.5, 6);
+    path.lineTo(24, 10.5);
+    return path;
+}
+
+QPainterPath createDeletePath()
+{
+    QPainterPath path;
+    path.moveTo(7, 10);
+    path.lineTo(25, 10);
+    path.moveTo(13, 7);
+    path.lineTo(19, 7);
+    path.moveTo(10, 10);
+    path.lineTo(11.5, 27);
+    path.lineTo(20.5, 27);
+    path.lineTo(22, 10);
+    path.moveTo(13.5, 14);
+    path.lineTo(14.2, 23);
+    path.moveTo(18.5, 14);
+    path.lineTo(17.8, 23);
+    return path;
+}
+
+QPainterPath createCloudUploadPath()
+{
+    QPainterPath path;
+    path.moveTo(10, 23);
+    path.cubicTo(6.8, 23, 4.5, 20.7, 4.5, 17.8);
+    path.cubicTo(4.5, 15.2, 6.4, 13.1, 8.9, 12.7);
+    path.cubicTo(10.2, 8.3, 13.7, 6, 17.5, 6);
+    path.cubicTo(21.8, 6, 25.4, 9.4, 25.7, 13.7);
+    path.cubicTo(27.8, 14.4, 29.5, 16.2, 29.5, 18.4);
+    path.cubicTo(29.5, 21.0, 27.4, 23, 24.5, 23);
+    path.moveTo(16, 25);
+    path.lineTo(16, 14);
+    path.moveTo(11.5, 18.5);
+    path.lineTo(16, 14);
+    path.lineTo(20.5, 18.5);
+    return path;
+}
+
 QPainterPath createHomePath()
 {
     QPainterPath path;
@@ -422,6 +541,34 @@ AntIcon::IconPaths AntIcon::builtinPaths(Ant::IconType type, Ant::IconTheme them
         result.primary = createStarPath();
         result.useStroke = theme == Ant::IconTheme::Outlined;
         break;
+    case Ant::IconType::Setting:
+        result.primary = createSettingPath();
+        result.useStroke = true;
+        break;
+    case Ant::IconType::Heart:
+        result.primary = createHeartPath();
+        result.useStroke = theme == Ant::IconTheme::Outlined;
+        break;
+    case Ant::IconType::Bell:
+        result.primary = createBellPath();
+        result.useStroke = true;
+        break;
+    case Ant::IconType::Mail:
+        result.primary = createMailPath();
+        result.useStroke = true;
+        break;
+    case Ant::IconType::Edit:
+        result.primary = createEditPath();
+        result.useStroke = true;
+        break;
+    case Ant::IconType::Delete:
+        result.primary = createDeletePath();
+        result.useStroke = true;
+        break;
+    case Ant::IconType::CloudUpload:
+        result.primary = createCloudUploadPath();
+        result.useStroke = true;
+        break;
     case Ant::IconType::Calendar:
         if (theme == Ant::IconTheme::Outlined)
         {
@@ -532,6 +679,12 @@ AntIcon::IconPaths AntIcon::builtinPaths(Ant::IconType type, Ant::IconTheme them
         case Ant::IconType::Up:
         case Ant::IconType::Left:
         case Ant::IconType::Right:
+        case Ant::IconType::Setting:
+        case Ant::IconType::Bell:
+        case Ant::IconType::Mail:
+        case Ant::IconType::Edit:
+        case Ant::IconType::Delete:
+        case Ant::IconType::CloudUpload:
             result.primary = stroker.createStroke(result.primary);
             break;
         default:

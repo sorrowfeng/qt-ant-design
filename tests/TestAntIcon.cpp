@@ -1,5 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QList>
+
 #include "widgets/AntIcon.h"
 
 class TestAntIcon : public QObject
@@ -53,6 +55,29 @@ void TestAntIcon::propertiesAndSignals()
     QVERIFY(!w->customSecondaryPath().isEmpty());
     w->clearCustomPath();
     QVERIFY(!w->hasCustomPath());
+
+    const QList<Ant::IconType> outlinedReferenceIcons = {
+        Ant::IconType::Home,
+        Ant::IconType::User,
+        Ant::IconType::Search,
+        Ant::IconType::Setting,
+        Ant::IconType::Star,
+        Ant::IconType::Heart,
+        Ant::IconType::Bell,
+        Ant::IconType::Mail,
+        Ant::IconType::Calendar,
+        Ant::IconType::ClockCircle,
+        Ant::IconType::Check,
+        Ant::IconType::Close,
+        Ant::IconType::Plus,
+        Ant::IconType::Edit,
+        Ant::IconType::Delete,
+        Ant::IconType::CloudUpload,
+    };
+    for (const Ant::IconType iconType : outlinedReferenceIcons)
+    {
+        QVERIFY(!AntIcon::builtinPaths(iconType, Ant::IconTheme::Outlined).primary.isEmpty());
+    }
 }
 
 QTEST_MAIN(TestAntIcon)

@@ -66,7 +66,7 @@ Use this loop for one component at a time.
 | Category | Component | Reference Page | Qt Example Page | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
 | General | Button | ButtonPage | Button | Pass | Static screenshot compared against AntD reference; padding, transparent solid border, loading opacity/cursor, spinner arc, ghost, disabled, and subtle bottom shadow are aligned. Container card spacing differs and should be handled with Card. |
-| General | Icon | IconPage | Icon | Needs visual QA | Custom path, spin, and layered icon rendering fixed; compare glyph proportions and theme colors in screenshots. |
+| General | Icon | IconPage | Icon | Pass | Static screenshot compared against AntD reference; IconPage now covers the 16 official outlined icons, and AntIcon renders those glyphs from the official SVG paths via QtSvg. Extra theme/spin/custom examples remain Qt-only coverage below the reference section; container card spacing belongs to Card. |
 | General | Typography | TypographyPage | Typography | Needs visual QA | LightSolid, link cursor, and mark background fixed; compare title spacing and copy affordance in screenshots. |
 | Layout | Divider | DividerPage | Divider | Not started | |
 | Layout | Flex | FlexPage | Flex | Not started | |
