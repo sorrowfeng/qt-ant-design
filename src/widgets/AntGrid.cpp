@@ -7,7 +7,7 @@
 AntCol::AntCol(int span, QWidget* parent)
     : QWidget(parent), m_span(span)
 {
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 
 int AntCol::span() const { return m_span; }
@@ -33,6 +33,7 @@ void AntCol::setOffset(int offset)
 AntRow::AntRow(QWidget* parent)
     : QWidget(parent)
 {
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_grid = new QGridLayout(this);
     m_grid->setContentsMargins(0, 0, 0, 0);
     m_grid->setSpacing(0);

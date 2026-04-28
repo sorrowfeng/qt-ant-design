@@ -61,7 +61,7 @@ private:
     void drawVertical(QPainter& painter);
 
     QString m_text;
-    bool m_plain = true;
+    bool m_plain = false;
     Ant::Orientation m_orientation = Ant::Orientation::Horizontal;
     Ant::DividerTitlePlacement m_titlePlacement = Ant::DividerTitlePlacement::Center;
     Ant::DividerVariant m_variant = Ant::DividerVariant::Solid;

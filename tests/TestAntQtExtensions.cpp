@@ -263,6 +263,8 @@ void TestAntQtExtensions::splitter()
 {
     auto* w = new AntSplitter;
     QCOMPARE(w->orientation(), Qt::Horizontal);
+    QCOMPARE(w->childrenCollapsible(), false);
+    QCOMPARE(w->handleWidth(), 4);
 
     auto* w2 = new AntSplitter(Qt::Vertical);
     QCOMPARE(w2->orientation(), Qt::Vertical);

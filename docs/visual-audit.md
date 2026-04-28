@@ -68,12 +68,12 @@ Use this loop for one component at a time.
 | General | Button | ButtonPage | Button | Pass | Static screenshot compared against AntD reference; padding, transparent solid border, loading opacity/cursor, spinner arc, ghost, disabled, and subtle bottom shadow are aligned. Container card spacing differs and should be handled with Card. |
 | General | Icon | IconPage | Icon | Pass | Static screenshot compared against AntD reference; IconPage now covers the 16 official outlined icons, and AntIcon renders those glyphs from the official SVG paths via QtSvg. Extra theme/spin/custom examples remain Qt-only coverage below the reference section; container card spacing belongs to Card. |
 | General | Typography | TypographyPage | Typography | Pass | Static screenshot compared against AntD reference; title levels, text types, decorations, paragraph text, default link styling, mark/code backgrounds, and copyable icon affordance are aligned. Container card spacing belongs to Card. |
-| Layout | Divider | DividerPage | Divider | Not started | |
-| Layout | Flex | FlexPage | Flex | Not started | |
-| Layout | Grid | GridPage | Grid | Not started | |
-| Layout | Layout | LayoutPage | Layout | Not started | |
-| Layout | Space | SpacePage | Space | Not started | |
-| Layout | Splitter | SplitterPage | Splitter | Not started | |
+| Layout | Divider | DividerPage | Divider | Pass | Horizontal, With Title, and Dashed & Vertical demos compared against `build/divider-compare-wide.png`; official demo labels, 1px split line, dashed/vertical variants, title typography, orientation rails, and title spacing aligned. Shared Card chrome remains out of scope. |
+| Layout | Flex | FlexPage | Flex | Pass | Horizontal, Vertical, and Wrap demos compared against `build/flex-compare-wide.png`; official demo labels, middle/small/custom gaps, horizontal intrinsic child sizing, vertical cross-axis stretch, and wrapping row flow aligned. Shared Card chrome remains out of scope. |
+| Layout | Grid | GridPage | Grid | Pass | 24-Column Grid and Offset demos compared against `build/grid-compare-wide.png`; official reference now uses `antd.Row`/`antd.Col`, demo labels/colors, 8px gutter, 6/8/16 spans, and 8-column offset aligned. Shared Card body height remains out of scope. |
+| Layout | Layout | LayoutPage | Layout | Pass | Basic Layout and With Sider demos compared against `build/layout-compare-wide.png`; official dark header/sider colors, 64px header, 160px sider, footer/content backgrounds, nav padding, and nested header/content structure aligned. Shared Card body spacing and rounded clipping remain out of scope. |
+| Layout | Space | SpacePage | Space | Pass | Horizontal, Vertical, and Size demos compared against `build/space-compare-wide.png`; official demo labels, default/small/middle/large gaps, vertical direction, and intrinsic inline child sizing aligned. Shared Card body spacing remains out of scope. |
+| Layout | Splitter | SplitterPage | Splitter | Pass | Basic Splitter compared against `build/splitter-compare-wide.png`; official demo title, 200px split area, 50/50 panels, panel tints, centered labels, 4px divider, and border-color handle aligned. Shared Card body vertical spacing remains out of scope. |
 | Navigation | Affix | AffixPage | Affix | Not started | |
 | Navigation | Anchor | AnchorPage | Anchor | Not started | |
 | Navigation | Breadcrumb | BreadcrumbPage | Breadcrumb | Not started | |

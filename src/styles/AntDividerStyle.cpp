@@ -75,8 +75,8 @@ void AntDividerStyle::drawDivider(const QStyleOption* option, QPainter* painter,
 
     const bool horizontal = divider->orientation() == Ant::Orientation::Horizontal;
     const bool hasTitle = !divider->text().isEmpty();
-    const QColor lineColor = token.colorBorder;
-    const QColor textColor = token.colorTextSecondary;
+    const QColor lineColor = token.colorSplit;
+    const QColor textColor = token.colorText;
 
     Qt::PenStyle penStyle = Qt::SolidLine;
     if (divider->variant() == Ant::DividerVariant::Dashed)
@@ -88,19 +88,7 @@ void AntDividerStyle::drawDivider(const QStyleOption* option, QPainter* painter,
         penStyle = Qt::DotLine;
     }
 
-    int lineWidth = 1;
-    switch (divider->dividerSize())
-    {
-    case Ant::Size::Small:
-        lineWidth = 1;
-        break;
-    case Ant::Size::Large:
-        lineWidth = 3;
-        break;
-    default:
-        lineWidth = 2;
-        break;
-    }
+    const int lineWidth = token.lineWidth;
 
     if (horizontal)
     {
@@ -114,41 +102,46 @@ void AntDividerStyle::drawDivider(const QStyleOption* option, QPainter* painter,
         else
         {
             QFont titleFont = divider->font();
-            titleFont.setPixelSize(token.fontSize);
+            titleFont.setPixelSize(divider->isPlain() ? token.fontSize : token.fontSizeLG);
+            titleFont.setWeight(divider->isPlain() ? QFont::Normal : QFont::Medium);
             QFontMetrics fm(titleFont);
             const int textWidth = fm.horizontalAdvance(divider->text());
-            const int gap = 12;
-            const int totalTextWidth = textWidth + gap * 2;
+            const int textPadding = titleFont.pixelSize();
+            const int totalTextWidth = textWidth + textPadding * 2;
 
-            int textX;
+            int blockX;
             switch (divider->titlePlacement())
             {
             case Ant::DividerTitlePlacement::Start:
-                textX = option->rect.left() + 16;
+                blockX = option->rect.left() + qRound(option->rect.width() * 0.05);
                 break;
             case Ant::DividerTitlePlacement::End:
-                textX = option->rect.right() - totalTextWidth - 16;
+                blockX = option->rect.right() - qRound(option->rect.width() * 0.05) - totalTextWidth;
                 break;
             default:
-                textX = (option->rect.width() - totalTextWidth) / 2;
+                blockX = option->rect.left() + (option->rect.width() - totalTextWidth) / 2;
                 break;
             }
+            blockX = qBound(option->rect.left(), blockX, option->rect.right() - totalTextWidth);
 
             painter->setPen(QPen(lineColor, lineWidth, penStyle));
-            painter->drawLine(option->rect.left(), y, textX - gap, y);
-            painter->drawLine(textX + textWidth + gap, y, option->rect.right(), y);
+            painter->drawLine(option->rect.left(), y, blockX, y);
+            painter->drawLine(blockX + totalTextWidth, y, option->rect.right(), y);
 
             painter->setPen(textColor);
             painter->setFont(titleFont);
-            painter->drawText(QRect(textX, y - fm.height() / 2 - 1, textWidth, fm.height()),
+            painter->drawText(QRect(blockX + textPadding, y - fm.height() / 2 - 1, textWidth, fm.height()),
                               Qt::AlignCenter, divider->text());
         }
     }
     else
     {
         const int x = option->rect.width() / 2;
+        const int lineHeight = qRound(token.fontSize * 0.9);
+        const int y1 = option->rect.top() + (option->rect.height() - lineHeight) / 2;
+        const int y2 = y1 + lineHeight;
         painter->setPen(QPen(lineColor, lineWidth, penStyle));
-        painter->drawLine(x, option->rect.top(), x, option->rect.bottom());
+        painter->drawLine(x, y1, x, y2);
     }
 
     painter->restore();

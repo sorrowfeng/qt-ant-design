@@ -1,4 +1,5 @@
 #include <QSignalSpy>
+#include <QSizePolicy>
 #include <QTest>
 #include "widgets/AntDivider.h"
 #include "widgets/AntFlex.h"
@@ -26,7 +27,7 @@ void TestAntLayout::divider()
 {
     auto* w = new AntDivider;
     QCOMPARE(w->text(), QString());
-    QCOMPARE(w->isPlain(), true);
+    QCOMPARE(w->isPlain(), false);
     QCOMPARE(w->orientation(), Ant::Orientation::Horizontal);
     QCOMPARE(w->titlePlacement(), Ant::DividerTitlePlacement::Center);
     QCOMPARE(w->variant(), Ant::DividerVariant::Solid);
@@ -38,8 +39,8 @@ void TestAntLayout::divider()
     QCOMPARE(textSpy.count(), 1);
 
     QSignalSpy plainSpy(w, &AntDivider::plainChanged);
-    w->setPlain(false);
-    QCOMPARE(w->isPlain(), false);
+    w->setPlain(true);
+    QCOMPARE(w->isPlain(), true);
     QCOMPARE(plainSpy.count(), 1);
 
     QSignalSpy orientSpy(w, &AntDivider::orientationChanged);
@@ -132,6 +133,8 @@ void TestAntLayout::space()
     QCOMPARE(w->size(), Ant::Size::Small);
     QCOMPARE(w->isWrap(), false);
     QCOMPARE(w->itemCount(), 0);
+    QCOMPARE(w->sizePolicy().horizontalPolicy(), QSizePolicy::Fixed);
+    QCOMPARE(w->sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
 
     QSignalSpy orientSpy(w, &AntSpace::orientationChanged);
     w->setOrientation(Ant::Orientation::Vertical);

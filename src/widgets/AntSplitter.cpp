@@ -10,7 +10,7 @@ AntSplitter::AntSplitter(QWidget* parent)
     : QSplitter(parent)
 {
     setChildrenCollapsible(false);
-    setHandleWidth(6);
+    setHandleWidth(4);
     connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
 }
 
@@ -18,7 +18,7 @@ AntSplitter::AntSplitter(Qt::Orientation orientation, QWidget* parent)
     : QSplitter(orientation, parent)
 {
     setChildrenCollapsible(false);
-    setHandleWidth(6);
+    setHandleWidth(4);
     connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
 }
 
@@ -42,7 +42,7 @@ void AntSplitterHandle::paintEvent(QPaintEvent*)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
-    QColor color = m_hovered ? token.colorPrimary : token.colorSplit;
+    QColor color = m_hovered ? token.colorPrimary : token.colorBorder;
     p.fillRect(rect(), color);
 }
 

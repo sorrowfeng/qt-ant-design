@@ -2,6 +2,7 @@
 
 #include <QBoxLayout>
 #include <QResizeEvent>
+#include <QSizePolicy>
 
 #include "../styles/AntSpaceStyle.h"
 #include "core/AntTheme.h"
@@ -10,6 +11,7 @@ AntSpace::AntSpace(QWidget* parent)
     : QWidget(parent)
 {
     setStyle(new AntSpaceStyle(style()));
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
     m_layout = new QHBoxLayout(this);
     m_layout->setContentsMargins(0, 0, 0, 0);
@@ -222,6 +224,11 @@ void AntSpace::rebuildLayout()
         m_layout = vLayout;
     }
 
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    const Qt::Alignment childAlignment = m_alignment
+        ? m_alignment
+        : (m_orientation == Ant::Orientation::Horizontal ? Qt::AlignLeft | Qt::AlignVCenter : Qt::AlignLeft);
+
     for (int i = 0; i < m_items.size(); ++i)
     {
         QWidget* item = m_items.at(i).data();
@@ -234,10 +241,10 @@ void AntSpace::rebuildLayout()
         {
             auto* sepCopy = new QWidget(this);
             sepCopy->setFixedSize(m_separator->sizeHint());
-            m_layout->addWidget(sepCopy);
+            m_layout->addWidget(sepCopy, 0, childAlignment);
         }
 
-        m_layout->addWidget(item);
+        m_layout->addWidget(item, 0, childAlignment);
     }
 
     updateGeometry();

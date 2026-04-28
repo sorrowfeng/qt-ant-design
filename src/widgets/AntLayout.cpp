@@ -33,7 +33,7 @@ void AntLayoutHeader::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
     QPainter painter(this);
-    painter.fillRect(rect(), antTheme->tokens().colorPrimary);
+    painter.fillRect(rect(), QColor(QStringLiteral("#001529")));
 }
 
 // ─── AntLayoutFooter ───
@@ -49,19 +49,19 @@ AntLayoutFooter::AntLayoutFooter(QWidget* parent)
 
 QSize AntLayoutFooter::sizeHint() const
 {
-    return QSize(0, 48);
+    return QSize(0, 70);
 }
 
 QSize AntLayoutFooter::minimumSizeHint() const
 {
-    return QSize(0, 48);
+    return QSize(0, 70);
 }
 
 void AntLayoutFooter::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
     QPainter painter(this);
-    painter.fillRect(rect(), antTheme->tokens().colorBgLayout);
+    painter.fillRect(rect(), QColor(QStringLiteral("#f0f2f5")));
 }
 
 // ─── AntLayoutContent ───
@@ -218,7 +218,7 @@ void AntLayoutSider::paintEvent(QPaintEvent* event)
     Q_UNUSED(event)
     QPainter painter(this);
     QColor bg = (m_siderTheme == Ant::LayoutSiderTheme::Dark)
-                    ? antTheme->tokens().colorBgLayout
+                    ? QColor(QStringLiteral("#001529"))
                     : antTheme->tokens().colorBgContainer;
     painter.fillRect(rect(), bg);
 }

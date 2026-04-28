@@ -106,13 +106,18 @@ void AntDivider::setDividerSize(Ant::Size size)
 
 QSize AntDivider::sizeHint() const
 {
+    const auto& token = antTheme->tokens();
     if (m_orientation == Ant::Orientation::Vertical)
     {
-        return QSize(antTheme->tokens().marginLG, antTheme->tokens().fontSizeLG + 4);
+        return QSize(token.marginXS * 2 + token.lineWidth, qRound(token.fontSize * 0.9));
     }
     const int margin = horizontalMargin();
-    const int textHeight = m_text.isEmpty() ? 0 : textFontSize() + 8;
-    return QSize(160, std::max(1, margin * 2 + std::max(textHeight, antTheme->tokens().lineWidth)));
+    const int lineHeight = qRound(textFontSize() * token.lineHeight);
+    const int textHeight = m_text.isEmpty() ? 0 : lineHeight;
+    const int height = m_text.isEmpty()
+        ? margin * 2 + token.lineWidth
+        : margin + std::max(textHeight, token.lineWidth);
+    return QSize(160, std::max(1, height));
 }
 
 QSize AntDivider::minimumSizeHint() const
@@ -128,6 +133,10 @@ void AntDivider::paintEvent(QPaintEvent* event)
 int AntDivider::horizontalMargin() const
 {
     const auto& token = antTheme->tokens();
+    if (!m_text.isEmpty())
+    {
+        return token.margin;
+    }
     switch (m_dividerSize)
     {
     case Ant::Size::Small:
@@ -174,13 +183,13 @@ void AntDivider::drawHorizontal(QPainter& painter)
 
     QFont f = painter.font();
     f.setPixelSize(textFontSize());
-    f.setWeight(m_plain ? QFont::Normal : QFont::DemiBold);
+    f.setWeight(m_plain ? QFont::Normal : QFont::Medium);
     painter.setFont(f);
 
     const int padding = textFontSize();
     const int textWidth = QFontMetrics(f).horizontalAdvance(m_text);
     const int blockWidth = textWidth + padding * 2;
-    const int edge = static_cast<int>(width() * 0.05);
+    const int edge = qRound(width() * 0.05);
     int textX = (width() - blockWidth) / 2;
     if (m_titlePlacement == Ant::DividerTitlePlacement::Start)
     {
@@ -192,11 +201,10 @@ void AntDivider::drawHorizontal(QPainter& painter)
     }
     textX = std::clamp(textX, 0, std::max(0, width() - blockWidth));
 
-    const int lineGap = token.paddingXXS;
-    painter.drawLine(QPointF(0, y), QPointF(std::max(0, textX - lineGap), y));
-    painter.drawLine(QPointF(std::min(width(), textX + blockWidth + lineGap), y), QPointF(width(), y));
+    painter.drawLine(QPointF(0, y), QPointF(std::max(0, textX), y));
+    painter.drawLine(QPointF(std::min(width(), textX + blockWidth), y), QPointF(width(), y));
 
-    painter.setPen(m_plain ? token.colorText : token.colorText);
+    painter.setPen(token.colorText);
     painter.drawText(QRectF(textX + padding, 0, textWidth, height()), Qt::AlignCenter, m_text);
 }
 
@@ -204,7 +212,8 @@ void AntDivider::drawVertical(QPainter& painter)
 {
     painter.setPen(dividerPen());
     const qreal x = width() / 2.0;
-    const qreal top = height() * 0.05;
-    const qreal bottom = height() * 0.95;
+    const qreal lineHeight = antTheme->tokens().fontSize * 0.9;
+    const qreal top = (height() - lineHeight) / 2.0;
+    const qreal bottom = top + lineHeight;
     painter.drawLine(QPointF(x, top), QPointF(x, bottom));
 }
