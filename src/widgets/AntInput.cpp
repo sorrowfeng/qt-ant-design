@@ -16,6 +16,7 @@ class AntInputIconButton : public QToolButton
 public:
     enum class Kind
     {
+        Clear,
         Password,
         Search
     };
@@ -62,9 +63,26 @@ protected:
         QRectF iconRect(0, 0, 16, 16);
         iconRect.moveCenter(rect().center());
 
+        if (m_kind == Kind::Clear)
+        {
+            const QPointF center = iconRect.center();
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(iconColor);
+            painter.drawEllipse(center, 5.0, 5.0);
+
+            painter.setPen(QPen(antTheme->tokens().colorBgContainer, 1.3, Qt::SolidLine, Qt::RoundCap));
+            painter.drawLine(center + QPointF(-2.2, -2.2), center + QPointF(2.2, 2.2));
+            painter.drawLine(center + QPointF(2.2, -2.2), center + QPointF(-2.2, 2.2));
+            return;
+        }
+
         if (m_kind == Kind::Search)
         {
+            painter.setPen(QPen(antTheme->tokens().colorBorder, 1));
+            painter.drawLine(QPointF(0.5, 0), QPointF(0.5, height()));
+
             const QPointF center = iconRect.center() - QPointF(1.2, 1.2);
+            painter.setPen(QPen(iconColor, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
             painter.drawEllipse(center, 4.8, 4.8);
             painter.drawLine(center + QPointF(3.6, 3.6), center + QPointF(7.0, 7.0));
             return;
@@ -99,6 +117,8 @@ AntInput::AntInput(QWidget* parent)
     : QWidget(parent)
 {
     setAttribute(Qt::WA_Hover, true);
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
@@ -115,10 +135,7 @@ AntInput::AntInput(QWidget* parent)
     m_lineEdit->setClearButtonEnabled(false);
     m_lineEdit->installEventFilter(this);
 
-    m_clearButton = new QToolButton(this);
-    m_clearButton->setText(QStringLiteral("x"));
-    m_clearButton->setAutoRaise(true);
-    m_clearButton->setFocusPolicy(Qt::NoFocus);
+    m_clearButton = new AntInputIconButton(AntInputIconButton::Kind::Clear, this);
     connect(m_clearButton, &QToolButton::clicked, m_lineEdit, &QLineEdit::clear);
 
     m_passwordButton = new AntInputIconButton(AntInputIconButton::Kind::Password, this);
@@ -463,6 +480,8 @@ void AntInput::updateVisualState()
     lePalette.setColor(QPalette::Highlight, token.colorPrimary);
     lePalette.setColor(QPalette::HighlightedText, Qt::white);
     m_lineEdit->setPalette(lePalette);
+    m_lineEdit->setAttribute(Qt::WA_TranslucentBackground, true);
+    m_lineEdit->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
 
     // ToolButton colors via QPalette
     for (auto* btn : {m_clearButton, m_passwordButton, m_searchButton})
