@@ -1,6 +1,7 @@
 #include <QPalette>
 #include <QSignalSpy>
 #include <QTest>
+#include <QToolButton>
 #include "core/AntTheme.h"
 #include "widgets/AntApp.h"
 #include "widgets/AntConfigProvider.h"
@@ -358,6 +359,11 @@ void TestAntQtExtensions::toolBar()
 {
     auto* w = new AntToolBar;
     QVERIFY(w != nullptr);
+    auto* action = w->addAction("New");
+    auto* button = qobject_cast<QToolButton*>(w->widgetForAction(action));
+    QVERIFY(button != nullptr);
+    QVERIFY(button->property("antToolBarButton").toBool());
+    QCOMPARE(button->style(), w->style());
 
     auto* w2 = new AntToolBar("My Toolbar");
     QVERIFY(w2 != nullptr);

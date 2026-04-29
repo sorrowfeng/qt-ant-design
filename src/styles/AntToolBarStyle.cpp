@@ -1,9 +1,39 @@
 #include "AntToolBarStyle.h"
 
+#include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOption>
+#include <QStyleOptionToolButton>
+#include <QToolButton>
 
 #include "widgets/AntToolBar.h"
+
+namespace
+{
+struct ToolBarButtonMetrics
+{
+    int height = 32;
+    int paddingX = 10;
+    int iconSize = 16;
+    int radius = 4;
+};
+
+bool isToolBarButton(const QWidget* widget)
+{
+    const auto* button = qobject_cast<const QToolButton*>(widget);
+    return button && button->property("antToolBarButton").toBool();
+}
+
+QRect centeredButtonRect(const QRect& rect, const ToolBarButtonMetrics& metrics)
+{
+    if (rect.height() <= metrics.height)
+    {
+        return rect;
+    }
+    const int top = rect.top() + (rect.height() - metrics.height) / 2;
+    return QRect(rect.left(), top, rect.width(), metrics.height);
+}
+} // namespace
 
 AntToolBarStyle::AntToolBarStyle(QStyle* style)
     : AntStyleBase(style)
@@ -44,6 +74,39 @@ void AntToolBarStyle::drawControl(ControlElement element, const QStyleOption* op
         return;
     }
     QProxyStyle::drawControl(element, option, painter, widget);
+}
+
+void AntToolBarStyle::drawComplexControl(ComplexControl control, const QStyleOptionComplex* option,
+                                         QPainter* painter, const QWidget* widget) const
+{
+    if (control == QStyle::CC_ToolButton && isToolBarButton(widget))
+    {
+        drawToolBarButton(option, painter, widget);
+        return;
+    }
+    QProxyStyle::drawComplexControl(control, option, painter, widget);
+}
+
+QSize AntToolBarStyle::sizeFromContents(ContentsType type, const QStyleOption* option,
+                                        const QSize& size, const QWidget* widget) const
+{
+    if (type == QStyle::CT_ToolButton && isToolBarButton(widget))
+    {
+        const auto& token = antTheme->tokens();
+        const auto* button = qobject_cast<const QToolButton*>(widget);
+        ToolBarButtonMetrics metrics;
+
+        QFont font = button ? button->font() : QFont();
+        font.setPixelSize(token.fontSize);
+        int width = button ? QFontMetrics(font).horizontalAdvance(button->text()) : size.width();
+        if (button && !button->icon().isNull())
+        {
+            width += metrics.iconSize + 6;
+        }
+        width += metrics.paddingX * 2;
+        return QSize(qMax(width, metrics.height), metrics.height);
+    }
+    return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
 void AntToolBarStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option,
@@ -105,4 +168,61 @@ int AntToolBarStyle::pixelMetric(PixelMetric metric, const QStyleOption* option,
         if (metric == QStyle::PM_ToolBarHandleExtent) return 8;
     }
     return QProxyStyle::pixelMetric(metric, option, widget);
+}
+
+void AntToolBarStyle::drawToolBarButton(const QStyleOptionComplex* option, QPainter* painter,
+                                        const QWidget* widget) const
+{
+    const auto* button = qobject_cast<const QToolButton*>(widget);
+    const auto* toolOption = qstyleoption_cast<const QStyleOptionToolButton*>(option);
+    if (!button || !toolOption || !painter)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    const ToolBarButtonMetrics metrics;
+    const QRect outer = centeredButtonRect(toolOption->rect, metrics);
+    const bool enabled = toolOption->state.testFlag(QStyle::State_Enabled);
+    const bool hovered = enabled && toolOption->state.testFlag(QStyle::State_MouseOver);
+    const bool pressed = enabled && (toolOption->state.testFlag(QStyle::State_Sunken) || button->isDown());
+
+    QColor bg = QColor(Qt::transparent);
+    QColor text = enabled ? token.colorText : token.colorTextDisabled;
+    if (hovered)
+    {
+        bg = token.colorFillTertiary;
+    }
+    if (pressed)
+    {
+        bg = token.colorFillSecondary;
+    }
+
+    painter->save();
+    painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+    AntStyleBase::drawCrispRoundedRect(painter, outer, Qt::NoPen, bg, metrics.radius, metrics.radius);
+
+    QFont font = button->font();
+    font.setPixelSize(token.fontSize);
+    painter->setFont(font);
+    painter->setPen(text);
+
+    const QString label = button->text();
+    const QFontMetrics fm(font);
+    const int textWidth = fm.horizontalAdvance(label);
+    const bool hasIcon = !button->icon().isNull();
+    const int contentWidth = textWidth + (hasIcon ? metrics.iconSize + 6 : 0);
+    int cursorX = outer.left() + qMax(metrics.paddingX, (outer.width() - contentWidth) / 2);
+
+    if (hasIcon)
+    {
+        const QRect iconRect(cursorX, outer.center().y() - metrics.iconSize / 2, metrics.iconSize, metrics.iconSize);
+        button->icon().paint(painter, iconRect, Qt::AlignCenter, enabled ? QIcon::Normal : QIcon::Disabled);
+        cursorX += metrics.iconSize + 6;
+    }
+
+    const QRect textRect(cursorX, outer.top(), qMax(0, outer.right() - cursorX - metrics.paddingX + 1), outer.height());
+    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine, label);
+
+    painter->restore();
 }
