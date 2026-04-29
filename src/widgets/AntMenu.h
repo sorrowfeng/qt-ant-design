@@ -54,6 +54,9 @@ public:
     bool isSelectable() const;
     void setSelectable(bool selectable);
 
+    bool isCompact() const;
+    void setCompact(bool compact);
+
     QString selectedKey() const;
     void setSelectedKey(const QString& key);
 
@@ -149,6 +152,7 @@ private:
     Ant::MenuTheme m_menuTheme = Ant::MenuTheme::Light;
     bool m_inlineCollapsed = false;
     bool m_selectable = true;
+    bool m_compact = false;
     QString m_selectedKey;
     QStringList m_openKeys;
     int m_inlineIndent = 24;

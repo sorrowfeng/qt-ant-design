@@ -4,6 +4,7 @@
 #include <QCursor>
 #include <QEvent>
 #include <QFrame>
+#include <QFontMetrics>
 #include <QGuiApplication>
 #include <QHideEvent>
 #include <QMouseEvent>
@@ -147,13 +148,14 @@ AntDropdown::AntDropdown(QWidget* parent)
     setStyle(new AntDropdownStyle(style()));
     m_popup = new PopupFrame(this);
     auto* layout = new QVBoxLayout(m_popup);
-    layout->setContentsMargins(12, 18, 12, 18);
+    layout->setContentsMargins(12, 12, 12, 12);
     layout->setSpacing(0);
 
     m_menu = new AntMenu(m_popup);
     m_menu->setMenuTheme(Ant::MenuTheme::Light);
     m_menu->setMode(Ant::MenuMode::Vertical);
     m_menu->setSelectable(false);
+    m_menu->setCompact(true);
     layout->addWidget(m_menu);
 
     connect(m_menu, &AntMenu::itemClicked, this, [this](const QString& key) {
@@ -227,11 +229,10 @@ void AntDropdown::setItemLabels(const QStringList& labels)
     {
         return;
     }
-    m_itemLabels = labels;
     clearItems();
-    for (int i = 0; i < m_itemLabels.size(); ++i)
+    for (int i = 0; i < labels.size(); ++i)
     {
-        addItem(QStringLiteral("item-%1").arg(i), m_itemLabels.at(i));
+        addItem(QStringLiteral("item-%1").arg(i), labels.at(i));
     }
     Q_EMIT itemLabelsChanged(m_itemLabels);
 }
@@ -354,11 +355,13 @@ AntMenu* AntDropdown::menu() const
 
 void AntDropdown::clearItems()
 {
+    m_itemLabels.clear();
     m_menu->clearItems();
 }
 
 void AntDropdown::addItem(const QString& key, const QString& label, const QString& iconText, bool disabled)
 {
+    m_itemLabels.append(label);
     m_menu->addItem(key, label, iconText, QString(), disabled, false);
 }
 
@@ -503,6 +506,20 @@ Ant::DropdownPlacement AntDropdown::resolvedPlacement(const QRect& targetRect,
     return m_placement;
 }
 
+int AntDropdown::popupContentWidth() const
+{
+    const auto& token = antTheme->tokens();
+    QFont f = m_menu ? m_menu->font() : font();
+    f.setPixelSize(token.fontSize);
+    const QFontMetrics fm(f);
+    int textWidth = 0;
+    for (const QString& label : m_itemLabels)
+    {
+        textWidth = qMax(textWidth, fm.horizontalAdvance(label));
+    }
+    return qBound(96, textWidth + token.paddingSM * 2 + token.paddingXS, 260);
+}
+
 void AntDropdown::updatePopupGeometry(const QPoint& contextPos)
 {
     if (!m_target)
@@ -510,8 +527,19 @@ void AntDropdown::updatePopupGeometry(const QPoint& contextPos)
         return;
     }
 
+    const bool topPlacement = m_placement == Ant::DropdownPlacement::Top ||
+                              m_placement == Ant::DropdownPlacement::TopLeft ||
+                              m_placement == Ant::DropdownPlacement::TopRight;
+    const int topMargin = m_arrowVisible && !topPlacement ? 14 : 8;
+    const int bottomMargin = m_arrowVisible && topPlacement ? 14 : 8;
+    if (auto* box = qobject_cast<QVBoxLayout*>(m_popup->layout()))
+    {
+        box->setContentsMargins(12, topMargin + 4, 12, bottomMargin + 4);
+    }
+    m_menu->setFixedWidth(popupContentWidth());
     m_popup->adjustSize();
-    const QSize popupSize = m_popup->sizeHint().expandedTo(QSize(160, m_menu->sizeHint().height() + 30));
+    const QSize popupSize = m_popup->sizeHint().expandedTo(
+        QSize(m_menu->width() + 24, m_menu->sizeHint().height() + topMargin + bottomMargin + 8));
     QRect targetRect(m_target->mapToGlobal(QPoint(0, 0)), m_target->size());
     if (m_trigger == Ant::DropdownTrigger::ContextMenu && !contextPos.isNull())
     {

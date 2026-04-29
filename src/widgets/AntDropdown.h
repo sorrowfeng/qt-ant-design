@@ -63,6 +63,7 @@ private:
 
     QRect popupGeometry(const QRect& targetRect, const QSize& popupSize, Ant::DropdownPlacement placement) const;
     Ant::DropdownPlacement resolvedPlacement(const QRect& targetRect, const QSize& popupSize, const QRect& screenRect) const;
+    int popupContentWidth() const;
     void updatePopupGeometry(const QPoint& contextPos = QPoint());
     void installTarget(QWidget* target);
     void uninstallTarget();

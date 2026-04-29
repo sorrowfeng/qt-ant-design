@@ -11,7 +11,6 @@
 
 #include "core/AntTheme.h"
 #include "styles/AntTooltipStyle.h"
-#include "styles/AntPalette.h"
 
 namespace
 {
@@ -351,8 +350,11 @@ QPolygonF AntTooltip::arrowPolygon() const
 
 QColor AntTooltip::bubbleColor() const
 {
-    const auto& token = antTheme->tokens();
-    return m_color.isValid() ? m_color : AntPalette::alpha(token.colorText, antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.92 : 0.88);
+    if (m_color.isValid())
+    {
+        return m_color;
+    }
+    return antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626");
 }
 
 QColor AntTooltip::textColor() const

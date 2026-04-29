@@ -177,7 +177,7 @@ void AntTooltipStyle::drawTooltip(const QStyleOption* option, QPainter* painter,
     const QColor customColor = tooltip->color();
     const QColor bgColor = customColor.isValid()
         ? customColor
-        : AntPalette::alpha(token.colorText, antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.92 : 0.88);
+        : (antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626"));
     const QColor txtColor = customColor.isValid()
         ? (customColor.lightnessF() > 0.6 ? QColor(Qt::black) : QColor(Qt::white))
         : QColor(Qt::white);

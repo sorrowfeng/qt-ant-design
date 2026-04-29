@@ -127,6 +127,19 @@ void AntMenu::setSelectable(bool selectable)
     Q_EMIT selectableChanged(m_selectable);
 }
 
+bool AntMenu::isCompact() const { return m_compact; }
+
+void AntMenu::setCompact(bool compact)
+{
+    if (m_compact == compact)
+    {
+        return;
+    }
+    m_compact = compact;
+    updateMenuGeometry();
+    update();
+}
+
 QString AntMenu::selectedKey() const { return m_selectedKey; }
 
 void AntMenu::setSelectedKey(const QString& key)
@@ -322,9 +335,20 @@ QSize AntMenu::sizeHint() const
         return QSize(std::max(width, 240), 48);
     }
 
-    const int width = m_inlineCollapsed ? 80 : 240;
-    const int rows = visibleItems().count();
-    return QSize(width, std::max(itemHeight(), rows * itemHeight() + token.paddingXS * 2));
+    const int width = m_inlineCollapsed ? 80 : (m_compact ? 120 : 240);
+    const int verticalPadding = m_compact ? token.paddingXXS : token.paddingXS;
+    const auto visible = visibleItems();
+    const int rows = visible.count();
+    int dividerCount = 0;
+    for (const auto& item : visible)
+    {
+        if (m_items.at(item.index).divider)
+        {
+            ++dividerCount;
+        }
+    }
+    const int dividerAdjustment = dividerCount * ((m_compact ? 8 : 12) - itemHeight());
+    return QSize(width, std::max(itemHeight(), rows * itemHeight() + dividerAdjustment + verticalPadding * 2));
 }
 
 QSize AntMenu::minimumSizeHint() const
@@ -458,7 +482,7 @@ QList<AntMenu::VisibleItem> AntMenu::visibleItems() const
         return visible;
     }
 
-    int y = token.paddingXS;
+    int y = m_compact ? token.paddingXXS : token.paddingXS;
     const int w = width() > 0 ? width() : sizeHint().width();
     for (int i = 0; i < m_items.size(); ++i)
     {
@@ -467,7 +491,7 @@ QList<AntMenu::VisibleItem> AntMenu::visibleItems() const
         {
             continue;
         }
-        const int h = item.divider ? 12 : itemHeight();
+        const int h = item.divider ? (m_compact ? 8 : 12) : itemHeight();
         visible.append({i, QRect(0, y, w, h)});
         y += h;
     }
@@ -568,7 +592,11 @@ void AntMenu::activateItem(int itemIndex)
 
 int AntMenu::itemHeight() const
 {
-    return m_mode == Ant::MenuMode::Horizontal ? 48 : 40;
+    if (m_mode == Ant::MenuMode::Horizontal)
+    {
+        return 48;
+    }
+    return m_compact ? 32 : 40;
 }
 
 int AntMenu::horizontalItemWidth(const AntMenuItem& item) const
@@ -589,8 +617,10 @@ QRect AntMenu::itemContentRect(const QRect& rect, const AntMenuItem& item) const
     {
         return rect.adjusted(token.paddingSM, 6, -token.paddingSM, -6);
     }
-    const int left = m_inlineCollapsed ? token.paddingSM : token.paddingSM + item.level * m_inlineIndent;
-    return rect.adjusted(left, 4, -token.paddingSM, -4);
+    const int left = m_inlineCollapsed ? token.paddingSM
+        : (m_compact ? token.paddingXXS : token.paddingSM) + item.level * m_inlineIndent;
+    const int verticalInset = m_compact ? 3 : 4;
+    return rect.adjusted(left, verticalInset, -token.paddingSM, -verticalInset);
 }
 
 QColor AntMenu::menuBackgroundColor() const
