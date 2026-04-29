@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPainter>
+#include <QPalette>
 
 #include "AntButton.h"
 #include "core/AntTheme.h"
@@ -55,15 +56,35 @@ public:
         connect(closeBtn, &QPushButton::clicked, dock, &QDockWidget::close);
         layout->addWidget(closeBtn);
 
-        connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+        connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+            updateTheme();
+            update();
+        });
 
         updateFromDock();
+        updateTheme();
     }
 
     void updateFromDock()
     {
         m_titleLabel->setText(m_dock->windowTitle());
         m_iconLabel->setPixmap(m_dock->windowIcon().pixmap(16, 16));
+    }
+
+    void updateTheme()
+    {
+        const auto& token = antTheme->tokens();
+        QPalette pal = palette();
+        pal.setColor(QPalette::WindowText, token.colorText);
+        pal.setColor(QPalette::ButtonText, token.colorText);
+        pal.setColor(QPalette::Text, token.colorText);
+        setPalette(pal);
+
+        QPalette titlePalette = m_titleLabel->palette();
+        titlePalette.setColor(QPalette::WindowText, token.colorText);
+        titlePalette.setColor(QPalette::Text, token.colorText);
+        m_titleLabel->setPalette(titlePalette);
+        m_iconLabel->setPalette(titlePalette);
     }
 
 protected:
@@ -90,8 +111,14 @@ AntDockWidget::AntDockWidget(QWidget* parent, Qt::WindowFlags flags)
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable |
                 QDockWidget::DockWidgetFloatable);
     setupTitleBar();
+    updateTheme();
 
     connect(this, &QDockWidget::topLevelChanged, this, [this](bool) {
+        update();
+    });
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updateTheme();
         update();
     });
 }
@@ -109,6 +136,33 @@ void AntDockWidget::setupTitleBar()
 
     connect(this, &QDockWidget::windowTitleChanged, bar, &DockTitleBar::updateFromDock);
     connect(this, &QDockWidget::windowIconChanged, bar, [bar](const QIcon&) { bar->updateFromDock(); });
+}
+
+void AntDockWidget::setWidget(QWidget* widget)
+{
+    QDockWidget::setWidget(widget);
+    updateTheme();
+}
+
+void AntDockWidget::updateTheme()
+{
+    const auto& token = antTheme->tokens();
+    QPalette pal = palette();
+    pal.setColor(QPalette::Window, token.colorBgContainer);
+    pal.setColor(QPalette::Base, token.colorBgContainer);
+    pal.setColor(QPalette::WindowText, token.colorText);
+    pal.setColor(QPalette::Text, token.colorText);
+    setPalette(pal);
+
+    if (QWidget* content = widget())
+    {
+        QPalette contentPalette = content->palette();
+        contentPalette.setColor(QPalette::Window, token.colorBgContainer);
+        contentPalette.setColor(QPalette::Base, token.colorBgContainer);
+        contentPalette.setColor(QPalette::WindowText, token.colorText);
+        contentPalette.setColor(QPalette::Text, token.colorText);
+        content->setPalette(contentPalette);
+    }
 }
 
 #if defined(Q_OS_WIN)

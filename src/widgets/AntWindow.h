@@ -9,6 +9,7 @@ class QMouseEvent;
 class QPaintEvent;
 class QResizeEvent;
 class QShowEvent;
+class QWidget;
 
 class AntWindow : public QMainWindow
 {
@@ -62,6 +63,7 @@ private:
     QRect closeButtonRect() const;
     void handleButtonClicked(TitleBarButton button);
     void syncTheme();
+    void applyContentPalette(QWidget* widget);
 
     bool m_dragging = false;
     QPoint m_dragStartPosition;

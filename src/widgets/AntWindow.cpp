@@ -59,6 +59,7 @@ void AntWindow::setCentralWidget(QWidget* widget)
 
     if (widget)
     {
+        applyContentPalette(widget);
         layout->addWidget(widget);
     }
 }
@@ -433,5 +434,39 @@ void AntWindow::syncTheme()
     const auto& token = antTheme->tokens();
     QPalette pal = palette();
     pal.setColor(QPalette::Window, token.colorBgContainer);
+    pal.setColor(QPalette::Base, token.colorBgContainer);
+    pal.setColor(QPalette::WindowText, token.colorText);
+    pal.setColor(QPalette::Text, token.colorText);
     setPalette(pal);
+
+    if (m_contentWidget)
+    {
+        m_contentWidget->setPalette(pal);
+        if (QLayout* layout = m_contentWidget->layout())
+        {
+            for (int i = 0; i < layout->count(); ++i)
+            {
+                if (QWidget* widget = layout->itemAt(i)->widget())
+                {
+                    applyContentPalette(widget);
+                }
+            }
+        }
+    }
+}
+
+void AntWindow::applyContentPalette(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    QPalette pal = widget->palette();
+    pal.setColor(QPalette::Window, token.colorBgContainer);
+    pal.setColor(QPalette::Base, token.colorBgContainer);
+    pal.setColor(QPalette::WindowText, token.colorText);
+    pal.setColor(QPalette::Text, token.colorText);
+    widget->setPalette(pal);
 }

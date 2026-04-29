@@ -381,11 +381,21 @@ void TestAntQtExtensions::menuBar()
 
 void TestAntQtExtensions::dockWidget()
 {
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
     auto* w = new AntDockWidget;
     QCOMPARE(w->windowTitle(), QString());
 
     auto* w2 = new AntDockWidget("Properties");
     QCOMPARE(w2->windowTitle(), "Properties");
+
+    auto* content = new QWidget;
+    w2->setWidget(content);
+    QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCOMPARE(w2->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+    QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
 }
 
 void TestAntQtExtensions::widget()
@@ -397,10 +407,19 @@ void TestAntQtExtensions::widget()
 
 void TestAntQtExtensions::window()
 {
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
     auto* w = new AntWindow;
     QCOMPARE(w->isMaximized(), false);
     QCOMPARE(w->TitleBarHeight, 40);
     QCOMPARE(w->TitleBarButtonWidth, 46);
+
+    auto* content = new QWidget;
+    w->setCentralWidget(content);
+    QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
 }
 
 void TestAntQtExtensions::colorPicker()
