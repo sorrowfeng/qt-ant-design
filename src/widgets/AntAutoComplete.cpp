@@ -4,6 +4,7 @@
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QResizeEvent>
 #include <QScrollBar>
 #include <QVBoxLayout>
@@ -13,6 +14,34 @@
 
 namespace
 {
+constexpr int kPopupShadowMargin = 8;
+constexpr int kPopupInnerPadding = 4;
+constexpr int kOptionHeight = 32;
+
+class SuggestionPopupFrame : public QFrame
+{
+public:
+    explicit SuggestionPopupFrame(QWidget* parent = nullptr, Qt::WindowFlags flags = {})
+        : QFrame(parent, flags)
+    {
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+
+        const QRect panelRect = rect().adjusted(kPopupShadowMargin, kPopupShadowMargin,
+                                                -kPopupShadowMargin, -kPopupShadowMargin);
+        antTheme->drawEffectShadow(&painter, panelRect, 10, token.borderRadiusLG, 0.45);
+        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        painter.setBrush(token.colorBgElevated);
+        painter.drawRoundedRect(QRectF(panelRect).adjusted(0.5, 0.5, -0.5, -0.5),
+                                token.borderRadiusLG, token.borderRadiusLG);
+    }
+};
 
 class SuggestionItem : public QWidget
 {
@@ -22,7 +51,7 @@ public:
     {
         setAttribute(Qt::WA_Hover);
         setMouseTracking(true);
-        setFixedHeight(36);
+        setFixedHeight(kOptionHeight);
         setCursor(Qt::PointingHandCursor);
     }
 
@@ -106,7 +135,7 @@ AntAutoComplete::AntAutoComplete(QWidget* parent)
     });
 
     // Popup — ToolTip avoids stealing keyboard focus from the lineEdit
-    m_popup = new QFrame(nullptr, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    m_popup = new SuggestionPopupFrame(nullptr, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     m_popup->setAttribute(Qt::WA_TranslucentBackground);
     m_popup->setAttribute(Qt::WA_ShowWithoutActivating);
     m_popup->setMouseTracking(true);
@@ -115,7 +144,10 @@ AntAutoComplete::AntAutoComplete(QWidget* parent)
     // Close popup when clicking outside
     qApp->installEventFilter(this);
     m_popupLayout = new QVBoxLayout(m_popup);
-    m_popupLayout->setContentsMargins(4, 4, 4, 4);
+    m_popupLayout->setContentsMargins(kPopupShadowMargin + kPopupInnerPadding,
+                                      kPopupShadowMargin + kPopupInnerPadding,
+                                      kPopupShadowMargin + kPopupInnerPadding,
+                                      kPopupShadowMargin + kPopupInnerPadding);
     m_popupLayout->setSpacing(0);
 
     // Layout
@@ -124,6 +156,16 @@ AntAutoComplete::AntAutoComplete(QWidget* parent)
     mainLayout->addWidget(m_lineEdit);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+}
+
+AntAutoComplete::~AntAutoComplete()
+{
+    if (qApp)
+    {
+        qApp->removeEventFilter(this);
+    }
+    delete m_popup;
+    m_popup = nullptr;
 }
 
 QString AntAutoComplete::placeholderText() const { return m_lineEdit->placeholderText(); }
@@ -199,14 +241,14 @@ void AntAutoComplete::filterSuggestions()
 
 void AntAutoComplete::showPopup()
 {
-    if (m_open) return;
+    const bool wasOpen = m_open;
     m_open = true;
 
     // Rebuild items
     while (m_popupLayout->count() > 0)
     {
         auto* item = m_popupLayout->takeAt(0);
-        if (item->widget()) item->widget()->deleteLater();
+        if (item->widget()) delete item->widget();
         delete item;
     }
 
@@ -224,7 +266,14 @@ void AntAutoComplete::showPopup()
     m_popupLayout->addStretch();
 
     updatePopupGeometry();
-    m_popup->show();
+    if (!wasOpen)
+    {
+        m_popup->show();
+    }
+    else
+    {
+        m_popup->update();
+    }
     m_popup->raise();
 }
 
@@ -239,9 +288,9 @@ void AntAutoComplete::hidePopup()
 void AntAutoComplete::updatePopupGeometry()
 {
     int count = std::min(static_cast<int>(m_filtered.size()), m_maxVisibleItems);
-    int h = count * 36 + 8; // item height + padding
-    QPoint pos = mapToGlobal(QPoint(0, height()));
-    m_popup->setGeometry(pos.x(), pos.y(), width(), h);
+    const int h = count * kOptionHeight + kPopupInnerPadding * 2 + kPopupShadowMargin * 2;
+    const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4));
+    m_popup->setGeometry(pos.x(), pos.y(), width() + kPopupShadowMargin * 2, h);
 }
 
 void AntAutoComplete::selectHighlighted()

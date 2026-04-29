@@ -9,8 +9,31 @@
 #include <QVBoxLayout>
 #include <QLineEdit>
 
+#include <algorithm>
+
 #include "core/AntTheme.h"
 #include "../styles/AntTreeSelectStyle.h"
+
+namespace
+{
+constexpr int kPopupShadowMargin = 8;
+constexpr int kPopupInnerPadding = 4;
+constexpr int kTreeRowHeight = 28;
+
+int visibleTreeRows(const QVector<AntTreeNode>& nodes)
+{
+    int rows = 0;
+    for (const auto& node : nodes)
+    {
+        ++rows;
+        if (node.expanded)
+        {
+            rows += visibleTreeRows(node.children);
+        }
+    }
+    return rows;
+}
+} // namespace
 
 class AntTreeSelect::TreeSelectPopup : public QFrame
 {
@@ -20,10 +43,12 @@ public:
         , m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
-        setFixedSize(300, 320);
 
         auto* layout = new QVBoxLayout(this);
-        layout->setContentsMargins(4, 4, 4, 4);
+        layout->setContentsMargins(kPopupShadowMargin + kPopupInnerPadding,
+                                   kPopupShadowMargin + kPopupInnerPadding,
+                                   kPopupShadowMargin + kPopupInnerPadding,
+                                   kPopupShadowMargin + kPopupInnerPadding);
         layout->setSpacing(0);
 
         if (m_owner->m_showSearch)
@@ -36,9 +61,11 @@ public:
 
         m_treeWidget = new AntTree(this);
         m_treeWidget->setCheckable(m_owner->m_treeCheckable);
-        m_treeWidget->setShowLine(true);
+        m_treeWidget->setShowLine(false);
+        m_treeWidget->setShowIcon(false);
         m_treeWidget->setTreeData(m_owner->m_treeData);
-        layout->addWidget(m_treeWidget, 1);
+        layout->addWidget(m_treeWidget);
+        refreshSize();
 
         connect(m_treeWidget, &AntTree::nodeSelected, this, [this](const QString& key) {
             if (!m_owner->m_multiple)
@@ -60,6 +87,24 @@ public:
         });
     }
 
+    void refreshSize()
+    {
+        const int panelWidth = std::max(240, m_owner ? m_owner->width() : 240);
+        const int rows = std::max(1, visibleTreeRows(m_owner ? m_owner->m_treeData : QVector<AntTreeNode>{}));
+        int panelHeight = rows * kTreeRowHeight + kPopupInnerPadding * 2;
+        if (m_searchEdit)
+        {
+            panelHeight += 32 + kPopupInnerPadding;
+        }
+        setFixedSize(panelWidth + kPopupShadowMargin * 2, panelHeight + kPopupShadowMargin * 2);
+        if (m_treeWidget)
+        {
+            m_treeWidget->setCheckable(m_owner->m_treeCheckable);
+            m_treeWidget->setTreeData(m_owner->m_treeData);
+            m_treeWidget->setFixedHeight(rows * kTreeRowHeight);
+        }
+    }
+
 protected:
     void paintEvent(QPaintEvent* event) override
     {
@@ -70,7 +115,11 @@ protected:
         const auto& token = antTheme->tokens();
 
         QPainterPath path;
-        path.addRoundedRect(rect().adjusted(1, 1, -1, -1), token.borderRadius, token.borderRadius);
+        const QRect panelRect = rect().adjusted(kPopupShadowMargin, kPopupShadowMargin,
+                                                -kPopupShadowMargin, -kPopupShadowMargin);
+        antTheme->drawEffectShadow(&painter, panelRect, 10, token.borderRadiusLG, 0.45);
+        path.addRoundedRect(QRectF(panelRect).adjusted(0.5, 0.5, -0.5, -0.5),
+                            token.borderRadiusLG, token.borderRadiusLG);
 
         painter.setPen(Qt::NoPen);
         painter.setBrush(token.colorBgElevated);
@@ -371,7 +420,8 @@ void AntTreeSelect::showPopup()
         m_popup = new TreeSelectPopup(this);
     }
 
-    const QPoint pos = mapToGlobal(QPoint(0, height()));
+    m_popup->refreshSize();
+    const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4));
     m_popup->move(pos);
     m_popup->show();
     m_open = true;

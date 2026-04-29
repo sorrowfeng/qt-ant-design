@@ -16,14 +16,14 @@
 
 namespace
 {
-constexpr int kColumnWidth = 180;
+constexpr int kColumnWidth = 112;
 constexpr int kMaxVisibleItems = 8;
-constexpr int kPopupHPadding = 8;
+constexpr int kPopupHPadding = 4;
 constexpr int kPopupVPadding = 4;
 constexpr int kPopupShadowMargin = 8;
+constexpr int kMinPopupPanelHeight = 180;
 constexpr int kOptionHPadding = 12;
 constexpr int kArrowSize = 16;
-constexpr int kCheckSize = 14;
 
 struct ColumnState
 {
@@ -116,8 +116,8 @@ public:
         }
 
         int popupWidth = columnCount * kColumnWidth + kPopupHPadding * 2 + kPopupShadowMargin * 2;
-        int popupHeight = maxItemsInAnyCol * optionHeight + kPopupVPadding * 2 + kPopupShadowMargin * 2;
-        popupHeight = std::max(popupHeight, optionHeight + kPopupVPadding * 2 + kPopupShadowMargin * 2);
+        int popupHeight = std::max(kMinPopupPanelHeight, maxItemsInAnyCol * optionHeight + kPopupVPadding * 2)
+            + kPopupShadowMargin * 2;
 
         QPoint globalPos = m_owner->mapToGlobal(QPoint(0, m_owner->height() + 4));
 
@@ -254,10 +254,6 @@ protected:
                 {
                     rightPad = kArrowSize + kOptionHPadding;
                 }
-                else if (isSelected)
-                {
-                    rightPad = kCheckSize + kOptionHPadding;
-                }
 
                 QRect textRect = itemRect.adjusted(kOptionHPadding, 0, -rightPad, 0);
                 painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft | Qt::TextSingleLine, opt.label);
@@ -273,19 +269,6 @@ protected:
                     arrow.lineTo(cx + 3, cy);
                     arrow.lineTo(cx - 3, cy + 4);
                     painter.drawPath(arrow);
-                }
-                else if (isSelected)
-                {
-                    QPen checkPen(isDisabled ? token.colorTextDisabled : token.colorPrimary,
-                                  2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-                    painter.setPen(checkPen);
-                    qreal cx = itemRect.right() - kOptionHPadding - kCheckSize / 2.0;
-                    qreal cy = itemRect.center().y();
-                    QPainterPath check;
-                    check.moveTo(cx - 6, cy);
-                    check.lineTo(cx - 2, cy + 4);
-                    check.lineTo(cx + 7, cy - 6);
-                    painter.drawPath(check);
                 }
             }
 

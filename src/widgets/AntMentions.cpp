@@ -17,6 +17,34 @@
 
 namespace
 {
+constexpr int kPopupShadowMargin = 8;
+constexpr int kPopupInnerPadding = 4;
+constexpr int kOptionHeight = 32;
+
+class SuggestionPopupFrame : public QFrame
+{
+public:
+    explicit SuggestionPopupFrame(QWidget* parent = nullptr, Qt::WindowFlags flags = {})
+        : QFrame(parent, flags)
+    {
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+
+        const QRect panelRect = rect().adjusted(kPopupShadowMargin, kPopupShadowMargin,
+                                                -kPopupShadowMargin, -kPopupShadowMargin);
+        antTheme->drawEffectShadow(&painter, panelRect, 10, token.borderRadiusLG, 0.45);
+        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        painter.setBrush(token.colorBgElevated);
+        painter.drawRoundedRect(QRectF(panelRect).adjusted(0.5, 0.5, -0.5, -0.5),
+                                token.borderRadiusLG, token.borderRadiusLG);
+    }
+};
 
 class MentionItem : public QWidget
 {
@@ -24,7 +52,7 @@ public:
     MentionItem(const QString& text, QWidget* parent)
         : QWidget(parent), m_text(text)
     {
-        setFixedHeight(32);
+        setFixedHeight(kOptionHeight);
         setCursor(Qt::PointingHandCursor);
     }
 
@@ -99,7 +127,7 @@ AntMentions::AntMentions(QWidget* parent)
     layout->addWidget(m_lineEdit);
     layout->setAlignment(m_lineEdit, Qt::AlignTop);
 
-    m_popup = new QFrame(this, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    m_popup = new SuggestionPopupFrame(this, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     m_popup->setAttribute(Qt::WA_TranslucentBackground);
     m_popup->setAttribute(Qt::WA_ShowWithoutActivating);
 
@@ -195,12 +223,15 @@ void AntMentions::checkForPrefix()
             // Rebuild popup
             while (QLayoutItem* item = m_popup->layout() ? m_popup->layout()->takeAt(0) : nullptr)
             {
-                if (item->widget()) item->widget()->deleteLater();
+                if (item->widget()) delete item->widget();
                 delete item;
             }
             delete m_popup->layout();
             auto* lay = new QVBoxLayout(m_popup);
-            lay->setContentsMargins(4, 4, 4, 4);
+            lay->setContentsMargins(kPopupShadowMargin + kPopupInnerPadding,
+                                    kPopupShadowMargin + kPopupInnerPadding,
+                                    kPopupShadowMargin + kPopupInnerPadding,
+                                    kPopupShadowMargin + kPopupInnerPadding);
             lay->setSpacing(0);
 
             int count = std::min(static_cast<int>(matched.size()), 6);
@@ -218,8 +249,9 @@ void AntMentions::checkForPrefix()
                 lay->addWidget(item);
             }
 
-            QPoint pos = mapToGlobal(QPoint(0, height()));
-            m_popup->setGeometry(pos.x(), pos.y(), width(), count * 32 + 8);
+            const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4));
+            m_popup->setGeometry(pos.x(), pos.y(), width() + kPopupShadowMargin * 2,
+                                 count * kOptionHeight + kPopupInnerPadding * 2 + kPopupShadowMargin * 2);
             m_popup->show();
             m_open = true;
             return;

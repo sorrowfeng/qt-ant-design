@@ -16,6 +16,7 @@ class AntAutoComplete : public QWidget
 
 public:
     explicit AntAutoComplete(QWidget* parent = nullptr);
+    ~AntAutoComplete() override;
 
     QString placeholderText() const;
     void setPlaceholderText(const QString& text);
