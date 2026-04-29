@@ -35,6 +35,9 @@ private:
     void drawCloseIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
     void drawPlusIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
     void drawUploadIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
+    void drawInboxIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
+    void drawPaperClipIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
+    void drawLoadingIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
     void drawFileIcon(QPainter* painter, const QRect& rect, const QColor& color) const;
     void drawEyeIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;
     void drawDeleteIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const;

@@ -4,6 +4,7 @@
 
 class QListWidget;
 class AntButton;
+class QMouseEvent;
 class QPaintEvent;
 
 class AntTransfer : public QWidget
@@ -29,12 +30,17 @@ Q_SIGNALS:
 
 private:
     void paintEvent(QPaintEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
 
     void doTransfer(bool toTarget);
     void updateButtons();
+    int rowAt(const QPoint& pos, bool sourcePanel) const;
+    QRect panelRect(bool sourcePanel) const;
 
     QListWidget* m_sourceList = nullptr;
     QListWidget* m_targetList = nullptr;
     AntButton* m_toTargetBtn = nullptr;
     AntButton* m_toSourceBtn = nullptr;
+    QStringList m_selectedSourceItems;
+    QStringList m_selectedTargetItems;
 };

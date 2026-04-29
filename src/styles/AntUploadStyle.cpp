@@ -14,7 +14,7 @@ namespace
 {
 constexpr int TriggerHeight = 32;
 constexpr int TriggerMinWidth = 160;
-constexpr int FileItemHeight = 44;
+constexpr int FileItemHeight = 28;
 constexpr int PictureItemHeight = 48;
 constexpr int CardSize = 100;
 constexpr int CardGap = 8;
@@ -182,8 +182,8 @@ void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool 
         AntStyleBase::drawCrispRoundedRect(painter, rect, QPen(borderColor, token.lineWidth, Qt::DashLine),
             hovered ? token.colorPrimaryBg : token.colorFillQuaternary, token.borderRadius, token.borderRadius);
 
-        drawUploadIcon(painter, QPoint(rect.center().x(), rect.top() + 38), 30,
-                       disabled ? token.colorTextDisabled : token.colorPrimary);
+        drawInboxIcon(painter, QPoint(rect.center().x(), rect.top() + 38), 30,
+                      disabled ? token.colorTextDisabled : token.colorPrimary);
 
         QFont titleFont = painter->font();
         titleFont.setPixelSize(token.fontSize);
@@ -197,7 +197,7 @@ void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool 
     AntStyleBase::drawCrispRoundedRect(painter, rect, QPen(borderColor, token.lineWidth),
         disabled ? token.colorBgContainerDisabled : token.colorBgContainer, token.borderRadius, token.borderRadius);
 
-    const QColor iconColor = disabled ? token.colorTextDisabled : token.colorText;
+    const QColor iconColor = disabled ? token.colorTextDisabled : (hovered ? token.colorPrimary : token.colorText);
     const int iconSize = 14;
     const int textGap = 8;
     const QString text = QStringLiteral("Click to Upload");
@@ -229,13 +229,21 @@ void AntUploadStyle::drawTextFileItem(QPainter* painter, const QRect& itemRect, 
         painter->drawRect(itemRect);
     }
 
-    const int iconSize = 28;
-    const int iconLeft = 4;
-    const int iconTop = itemRect.top() + (itemRect.height() - iconSize) / 2;
-    drawFileIcon(painter, QRect(iconLeft, iconTop, iconSize, iconSize), token.colorPrimary);
+    const int iconSize = 14;
+    const int iconLeft = 8;
+    const QPoint iconCenter(iconLeft + iconSize / 2, itemRect.center().y());
+    const QColor stateColor = file.status == Ant::UploadFileStatus::Error ? token.colorError : token.colorPrimary;
+    if (file.status == Ant::UploadFileStatus::Uploading)
+    {
+        drawLoadingIcon(painter, iconCenter, iconSize, token.colorTextTertiary);
+    }
+    else
+    {
+        drawPaperClipIcon(painter, iconCenter, iconSize, stateColor);
+    }
 
     const int textLeft = iconLeft + iconSize + 8;
-    const int rightReserved = 60;
+    const int rightReserved = 56;
     const int textWidth = itemRect.width() - textLeft - rightReserved;
 
     QFont nameFont = painter->font();
@@ -244,28 +252,18 @@ void AntUploadStyle::drawTextFileItem(QPainter* painter, const QRect& itemRect, 
     const QFontMetrics nameFm(nameFont);
 
     const QString displayName = truncatedName(file.name, textWidth, nameFm);
-    painter->setPen(token.colorText);
-    painter->drawText(QRect(textLeft, itemRect.top(), textWidth, itemRect.height() / 2),
-                      Qt::AlignLeft | Qt::AlignBottom, displayName);
+    const QColor nameColor = file.status == Ant::UploadFileStatus::Error
+        ? token.colorError
+        : (file.status == Ant::UploadFileStatus::Done ? token.colorPrimary : token.colorText);
+    painter->setPen(nameColor);
+    painter->drawText(QRect(textLeft, itemRect.top(), textWidth, itemRect.height()),
+                      Qt::AlignLeft | Qt::AlignVCenter, displayName);
 
     if (file.status == Ant::UploadFileStatus::Uploading)
     {
-        const int barY = itemRect.top() + itemRect.height() / 2 + 2;
-        const int barH = 4;
+        const int barY = itemRect.bottom() - 4;
+        const int barH = 2;
         drawProgressBar(painter, QRect(textLeft, barY, textWidth, barH), file.percent);
-    }
-    else
-    {
-        const QString sizeText = file.size > 0 ? QString::number(file.size / 1024) + QStringLiteral(" KB") : QString();
-        if (!sizeText.isEmpty())
-        {
-            QFont sizeFont = painter->font();
-            sizeFont.setPixelSize(token.fontSizeSM);
-            painter->setFont(sizeFont);
-            painter->setPen(token.colorTextTertiary);
-            painter->drawText(QRect(textLeft, itemRect.top() + itemRect.height() / 2, textWidth, itemRect.height() / 2),
-                              Qt::AlignLeft | Qt::AlignTop, sizeText);
-        }
     }
 
     const int statusIconSize = 14;
@@ -522,6 +520,57 @@ void AntUploadStyle::drawUploadIcon(QPainter* painter, const QPoint& center, int
     painter->drawLine(center.x(), center.y() + half / 3, center.x(), center.y() - half + 3);
     painter->drawLine(center.x(), center.y() - half + 3, center.x() - 5, center.y() - half + 8);
     painter->drawLine(center.x(), center.y() - half + 3, center.x() + 5, center.y() - half + 8);
+}
+
+void AntUploadStyle::drawInboxIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const
+{
+    painter->setPen(QPen(color, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+
+    const int half = size / 2;
+    QPainterPath path;
+    path.moveTo(center.x() - half + 4, center.y() + half - 5);
+    path.lineTo(center.x() - half + 8, center.y() - 2);
+    path.lineTo(center.x() - 5, center.y() - 2);
+    path.lineTo(center.x() - 2, center.y() + 4);
+    path.lineTo(center.x() + 2, center.y() + 4);
+    path.lineTo(center.x() + 5, center.y() - 2);
+    path.lineTo(center.x() + half - 8, center.y() - 2);
+    path.lineTo(center.x() + half - 4, center.y() + half - 5);
+    path.lineTo(center.x() + half - 5, center.y() + half - 2);
+    path.lineTo(center.x() - half + 5, center.y() + half - 2);
+    path.closeSubpath();
+    painter->drawPath(path);
+}
+
+void AntUploadStyle::drawPaperClipIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const
+{
+    painter->setPen(QPen(color, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+
+    const qreal half = size / 2.0;
+    QPainterPath path;
+    path.moveTo(center.x() - half * 0.25, center.y() + half * 0.55);
+    path.lineTo(center.x() + half * 0.42, center.y() - half * 0.12);
+    path.quadTo(center.x() + half * 0.72, center.y() - half * 0.42,
+                center.x() + half * 0.42, center.y() - half * 0.72);
+    path.quadTo(center.x() + half * 0.12, center.y() - half * 1.02,
+                center.x() - half * 0.18, center.y() - half * 0.72);
+    path.lineTo(center.x() - half * 0.76, center.y() - half * 0.14);
+    path.quadTo(center.x() - half * 1.04, center.y() + half * 0.14,
+                center.x() - half * 0.76, center.y() + half * 0.42);
+    path.quadTo(center.x() - half * 0.48, center.y() + half * 0.70,
+                center.x() - half * 0.20, center.y() + half * 0.42);
+    path.lineTo(center.x() + half * 0.34, center.y() - half * 0.12);
+    painter->drawPath(path);
+}
+
+void AntUploadStyle::drawLoadingIcon(QPainter* painter, const QPoint& center, int size, const QColor& color) const
+{
+    painter->setPen(QPen(color, 1.5, Qt::SolidLine, Qt::RoundCap));
+    painter->setBrush(Qt::NoBrush);
+    const QRectF arcRect(center.x() - size / 2.0, center.y() - size / 2.0, size, size);
+    painter->drawArc(arcRect, 30 * 16, 270 * 16);
 }
 
 void AntUploadStyle::drawFileIcon(QPainter* painter, const QRect& rect, const QColor& color) const

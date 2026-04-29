@@ -15,6 +15,7 @@ AntRate::AntRate(QWidget* parent)
     : QWidget(parent)
 {
     setAttribute(Qt::WA_Hover, true);
+    setAttribute(Qt::WA_TranslucentBackground, true);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);

@@ -587,6 +587,8 @@ AntColorPicker::AntColorPicker(QWidget* parent)
     : QWidget(parent)
 {
     setAttribute(Qt::WA_Hover, true);
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);
@@ -677,7 +679,7 @@ void AntColorPicker::paintEvent(QPaintEvent* /*event*/)
     QColor border = enabled ? token.colorBorder : token.colorBorderSecondary;
     if (enabled && (m_hovered || hasFocus()))
     {
-        border = token.colorPrimary;
+        border = m_hovered ? token.colorPrimaryHover : token.colorPrimary;
     }
 
     QColor background = enabled ? token.colorBgContainer : token.colorBgContainerDisabled;

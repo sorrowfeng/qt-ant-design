@@ -152,7 +152,7 @@ bool AntRateStyle::eventFilter(QObject* watched, QEvent* event)
 
         QPainter painter(rate);
         drawPrimitive(QStyle::PE_Widget, &option, &painter, rate);
-        return false;
+        return true;
     }
     return QProxyStyle::eventFilter(watched, event);
 }

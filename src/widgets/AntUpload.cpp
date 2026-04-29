@@ -15,7 +15,7 @@ namespace
 {
 constexpr int TriggerHeight = 32;
 constexpr int TriggerMinWidth = 160;
-constexpr int FileItemHeight = 44;
+constexpr int FileItemHeight = 28;
 constexpr int PictureItemHeight = 48;
 constexpr int CardSize = 100;
 constexpr int CardGap = 8;
@@ -27,6 +27,8 @@ AntUpload::AntUpload(QWidget* parent)
     : QWidget(parent)
 {
     setStyle(new AntUploadStyle(style()));
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 }
@@ -381,7 +383,7 @@ QRect AntUpload::triggerRect() const
         return QRect(col * (CardSize + CardGap), row * (CardSize + CardGap), CardSize, CardSize);
     }
 
-    return QRect(0, 0, width(), TriggerHeight);
+    return QRect(0, 0, qMin(width(), TriggerMinWidth), TriggerHeight);
 }
 
 QRect AntUpload::fileItemRect(int index) const
