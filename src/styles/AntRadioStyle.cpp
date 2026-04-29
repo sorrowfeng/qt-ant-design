@@ -59,7 +59,11 @@ std::pair<bool, bool> roundedEdgesFor(const AntRadio* radio)
                 }),
                  radios.end());
     std::sort(radios.begin(), radios.end(), [](const AntRadio* a, const AntRadio* b) {
-        return a->geometry().left() < b->geometry().left();
+        if (a->geometry().top() == b->geometry().top())
+        {
+            return a->geometry().left() < b->geometry().left();
+        }
+        return a->geometry().top() < b->geometry().top();
     });
 
     if (radios.size() <= 1)
@@ -189,7 +193,7 @@ void AntRadioStyle::drawControl(ControlElement element, const QStyleOption* opti
 
         if (bopt->state.testFlag(QStyle::State_HasFocus) && enabled)
         {
-            const QColor focus = AntPalette::alpha(token.colorPrimary, 0.22);
+            const QColor focus = AntPalette::alpha(token.colorPrimary, 0.10);
             painter->setPen(QPen(focus, token.controlOutlineWidth));
             painter->setBrush(Qt::NoBrush);
             painter->drawEllipse(circle.adjusted(-2, -2, 2, 2));

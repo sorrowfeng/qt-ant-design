@@ -102,7 +102,7 @@ void AntCheckboxStyle::drawControl(ControlElement element, const QStyleOption* o
 
         if (bopt->state.testFlag(QStyle::State_HasFocus) && enabled)
         {
-            const QColor focus = AntPalette::alpha(token.colorPrimary, 0.22);
+            const QColor focus = AntPalette::alpha(token.colorPrimary, 0.10);
             AntStyleBase::drawCrispRoundedRect(painter, box.toRect(),
                 QPen(focus, token.controlOutlineWidth), Qt::NoBrush,
                 token.borderRadiusSM + 2, token.borderRadiusSM + 2);

@@ -261,7 +261,7 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
 
     if (focused && enabled && !sw->isLoading())
     {
-        const QColor focus = AntPalette::alpha(token.colorPrimary, 0.22);
+        const QColor focus = AntPalette::alpha(token.colorPrimary, 0.10);
         AntStyleBase::drawCrispRoundedRect(painter, track.toRect(),
             QPen(focus, token.controlOutlineWidth), Qt::NoBrush,
             track.height() / 2.0, track.height() / 2.0);
