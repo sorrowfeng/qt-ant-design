@@ -12,16 +12,25 @@
 - 尽可能贴近 Ant Design 的交互与状态表现
 - 使用 `QPainter` / `QProxyStyle` 构建可维护的桌面绘制体系
 
-> 截图预留：后续会在视觉审查阶段补充示例程序的亮色 / 暗色界面截图与组件画廊。
+> 当前实现与视觉审计状态记录在 [docs/project-status.md](docs/project-status.md) 和 [docs/visual-audit.md](docs/visual-audit.md)。
 
 ## 特性
 
 - 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
 - 当前已移植 `82` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `12` 个 Qt / 桌面扩展组件）
-- 全部 `~62` 个组件使用 `QProxyStyle` 架构绘制
-- 示例程序当前覆盖 `80 / 82` 个公开组件
+- 当前 `62` 个组件使用 `QProxyStyle` 架构绘制
+- 示例程序当前覆盖 `80 / 82` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
+- `AntIcon` 已内置 `831` 个来自 `@ant-design/icons-svg@4.4.2` 的官方 SVG 资源
+- 可对比的标准组件已在视觉审计矩阵中标记为 `Pass`，Qt-only 桌面扩展标记为 `Local Pass`
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
+
+## 当前状态
+
+- 状态总览：[docs/project-status.md](docs/project-status.md)
+- 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
+- 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
+- 最近一次 Debug 全量验证：`20 / 20` 个 CTest 目标通过（`2026-04-30`）
 
 ## 安装与集成
 
@@ -131,6 +140,8 @@ int main(int argc, char* argv[])
 
 当前已实现公开组件总数：`82`
 
+`src/widgets` 当前包含 `83` 个 `Ant*.h` 头文件，其中 `AntSelectPopup` 是内部弹层 helper，不计入公开组件。
+
 Ant Design 标准组件按 `submodules/ant-design/components` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
 
 | 分类 | 组件 | 当前绘制方式 |
@@ -146,7 +157,7 @@ Ant Design 标准组件按 `submodules/ant-design/components` 顶层目录统计
 ### 组件概览
 
 - `AntButton`：五种类型、三种尺寸、三种形状、`loading / danger / ghost / block`
-- `AntIcon`：`Outlined / Filled / TwoTone`、旋转、spin、自定义路径
+- `AntIcon`：`831` 个官方 SVG 图标、字符串名称 API、`Outlined / Filled / TwoTone`、旋转、spin、自定义路径
 - `AntInput`：尺寸、状态、`addonBefore / addonAfter / allowClear / password`
 - `AntInputNumber`：尺寸、状态、变体、前后缀、精度、小步进、显隐控制按钮
 - `AntDescriptions`：标题、extra、列数、bordered、vertical、自定义值控件

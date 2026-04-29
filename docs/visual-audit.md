@@ -2,6 +2,8 @@
 
 This file tracks the next phase: comparing each Qt widget page against the Ant Design reference page in `docs/ant-design-reference.html`.
 
+Current project status is summarized in `docs/project-status.md`. As of `2026-04-30`, comparable Ant Design standard components are marked `Pass`, Qt-only desktop extensions are marked `Local Pass`, and future visual work should be driven by specific mismatches found during review.
+
 ## Workflow
 
 Use this loop for one component at a time.

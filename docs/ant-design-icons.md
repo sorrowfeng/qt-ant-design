@@ -11,6 +11,8 @@ Generated from `@ant-design/icons-svg@4.4.2`, the SVG source package used by Ant
 
 Use these names with `AntIcon(QStringLiteral("IconNameOutlined"))`, `AntIcon(QStringLiteral("IconNameFilled"))`, or `AntIcon(QStringLiteral("IconNameTwoTone"))`.
 
+Implementation status: all listed SVG files are bundled under `resources/icons/antd/`, included by `resources/qt-ant-design.qrc`, and rendered by `AntIcon` through the string-name API while the original enum API remains available.
+
 ## Outlined Icons (447)
 
 - `AccountBookOutlined`, `AimOutlined`, `AlertOutlined`, `AlibabaOutlined`, `AlignCenterOutlined`, `AlignLeftOutlined`

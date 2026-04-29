@@ -12,16 +12,25 @@ The project focuses on:
 - Faithful reproduction of Ant Design's interactions and state styles
 - A maintainable desktop rendering stack built on `QPainter` / `QProxyStyle`
 
-> Screenshots reserved: light / dark UI screenshots and a component gallery from the example app will be added during visual audit.
+> Current implementation and visual-audit status are tracked in [docs/project-status.md](docs/project-status.md) and [docs/visual-audit.md](docs/visual-audit.md).
 
 ## Features
 
 - Built on Qt 6 Widgets — lightweight, easy to embed, and consumable as a static library in existing projects
 - Built-in Design Token system with real-time light / dark theme switching
 - `82` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `12` Qt / desktop extension components)
-- All `~62` style-driven components are rendered through a `QProxyStyle` architecture
-- The example app currently demos `80 / 82` public components
+- `62` style-driven components are rendered through a `QProxyStyle` architecture
+- The example app currently demos `80 / 82` public components, plus a standalone Ant Design homepage-style `Showcase`
+- `AntIcon` bundles `831` official SVG resources from `@ant-design/icons-svg@4.4.2`
+- Comparable standard components are tracked as visual-audit `Pass`; Qt-only desktop extensions are tracked as `Local Pass`
 - Clean code structure — `core / styles / widgets / examples` layering keeps the project easy to extend
+
+## Current Status
+
+- Status snapshot: [docs/project-status.md](docs/project-status.md)
+- Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
+- Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
+- Latest full Debug verification: `20 / 20` CTest targets passed on `2026-04-30`
 
 ## Installation & Integration
 
@@ -131,6 +140,8 @@ int main(int argc, char* argv[])
 
 Total public components implemented: `82`
 
+`src/widgets` currently contains `83` `Ant*.h` headers; `AntSelectPopup` is an internal popup helper and is not counted as a public component.
+
 Ant Design standard components are counted by the top-level directories under `submodules/ant-design/components`, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
 
 | Category | Components | Rendering |
@@ -146,7 +157,7 @@ Ant Design standard components are counted by the top-level directories under `s
 ### Component Highlights
 
 - `AntButton`: five types, three sizes, three shapes, `loading / danger / ghost / block`
-- `AntIcon`: `Outlined / Filled / TwoTone`, rotation, spin, custom paths
+- `AntIcon`: `831` official SVG icons, string-name API, `Outlined / Filled / TwoTone`, rotation, spin, custom paths
 - `AntInput`: sizes, states, `addonBefore / addonAfter / allowClear / password`
 - `AntInputNumber`: sizes, states, variants, prefix/suffix, precision, fine-grained step, optional control buttons
 - `AntDescriptions`: title, extra, columns, bordered, vertical, custom value widgets

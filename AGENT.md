@@ -24,15 +24,19 @@
 
 ## 项目状态
 
-- 同步日期：`2026-04-26`
-- 已实现公开组件总数：`82`
+- 同步日期：`2026-04-30`
+- 状态总览：`docs/project-status.md`
+- 已实现公开组件总数：`82`（`src/widgets` 有 83 个 `Ant*.h`，其中 `AntSelectPopup` 是内部弹层 helper，不计入公开组件）
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
 - 子组件/变体完整度：`15 / 15`（100%）
 - Qt / 桌面扩展组件：`12`（AntWindow、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntPlainTextEdit、AntDockWidget、AntLog、AntNavItem）
-- 已迁移至 `QProxyStyle` 的组件数：`~62`
+- 已迁移至 `QProxyStyle` 的组件数：`62` 个 `Ant*Style` 类
 - 不依赖独立 Style 类的组件：`AntAffix`、`AntAnchor`、`AntApp`、`AntCarousel`、`AntCollapse`、`AntColorPicker`、`AntConfigProvider`、`AntDockWidget`、`AntFlex`、`AntGrid`、`AntImage`、`AntLog`、`AntMasonry`、`AntMentions`、`AntNavItem`、`AntScrollArea`、`AntSplitter`、`AntTour`、`AntTransfer`、`AntWidget`
-- 示例程序覆盖：`80 / 82`；当前未单独提供示例页的组件：`AntWidget`、`AntNavItem`（NavItem 用于示例程序自身导航）
+- 示例程序覆盖：`80 / 82` 个公开组件，另有独立 `Showcase` 页面；当前未单独提供示例页的组件：`AntWidget`、`AntNavItem`（NavItem 用于示例程序自身导航）
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
+- 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
+- Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
+- 测试状态：`20 / 20` CTest 目标在 Debug 下通过（最近一次全量验证：`2026-04-30`）
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -73,7 +77,7 @@
 - AntButtonStyle：修复 `adjusted(0,0,-1,-1)` 导致右/下边框 1px 缺失
 - AntAutoComplete：修复 Qt::Popup 抢占焦点问题
 
-## 子组件/变体完整度（2026-04-26）
+## 子组件/变体完整度（完成于 2026-04-26，状态复核 2026-04-30）
 
 ### Phase 1: 简单变体（6 项）
 - `Typography.Link` — `TypographyType::Link`、`href` 属性、`linkActivated` 信号、自动下划线 + 手型光标
@@ -309,7 +313,7 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖 `80 / 82` 个公开组件，左侧导航与右侧页面一一对应。
+当前 `examples/ExampleWindow.cpp` 已覆盖 `80 / 82` 个公开组件，另有 `Showcase` 页面用于首页展示控件对标。左侧导航与右侧页面一一对应。
 
 示例程序架构：
 - `ExampleWindow` 继承 `AntWindow`（无边框窗口，自定义标题栏）
@@ -331,7 +335,7 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 - Windows 下 Qt `offscreen` 平台可能把文字渲染成方块；遇到时使用原生 Windows 平台截图。若临时 helper 保存 PNG 后因 QProxyStyle 析构崩溃，可保存成功后立即退出进程
 - 差异必须先归因：控件本体问题在当前控件修；容器、页面边距、卡片留白等归到对应组件审查；参考示例缺状态则先补示例/记录 `Needs fix`
 - 状态含义：`Pass` 表示已截图对比且无控件本体差异；`Needs visual QA` 表示状态已覆盖但待截图确认；`Needs fix` 表示仍有控件差异；`Blocked` 表示无法截图或参考缺失
-- 当前 Button 已完成静态截图对比并标记 `Pass`，剩余明显差异是 `AntCard` 容器留白，应在 Card 审查时处理
+- 当前矩阵状态：可对比的 Ant Design 标准组件为 `Pass`，Qt 桌面扩展为 `Local Pass`。后续视觉工作按用户发现的问题逐项复核，不再从“待审计队列”推进。
 
 ## 构建与安装
 
@@ -353,12 +357,13 @@ cmake --install build --config Debug
 
 ### 概述
 
-项目使用 QTest 框架进行单元测试，覆盖所有 82 个组件的属性、getter/setter 和信号验证。
+项目使用 QTest 框架进行单元测试，覆盖所有 82 个公开组件的属性、getter/setter 和信号验证。
 
 - **测试框架**：Qt6::Test（QTest + QSignalSpy）
 - **测试数量**：20 个测试可执行文件
-- **覆盖组件**：82 个组件全部覆盖
+- **覆盖组件**：82 个公开组件全部覆盖，内部 helper 随宿主组件测试
 - **运行方式**：`ctest -C Debug --output-on-failure`
+- **最近全量结果**：`20 / 20` 通过（Debug，2026-04-30）
 
 ### 测试文件结构
 

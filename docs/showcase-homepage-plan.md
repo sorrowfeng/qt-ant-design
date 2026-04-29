@@ -1,8 +1,27 @@
 # Showcase 首页对标整改计划
 
-## 结论
+## 状态更新（2026-04-30）
 
-当前 `ExampleWindow::createShowcasePage()` 只能算“把大类控件摆到了差不多的位置”，离目标图还有明显距离，不能视为完成对标。
+本文件保留为 Showcase 首页对标的历史整改计划。当前计划中的主要收尾项已经完成，并已进入状态文档：
+
+- 当前项目总览：`docs/project-status.md`
+- Showcase 审计结论：`docs/visual-audit.md` 的 `Homepage Showcase Audit`
+- 当前参考页面：`docs/ant-design-reference.html`
+- Qt 示例页面：`examples/pages/ShowcasePage.cpp`
+
+已完成事项：
+
+- 官方 `https://ant.design/index-cn` 首页展示区已检查；捕获时存在 React hydration 和资源错误，因此可重复审计改用本地 HTML 参考。
+- HTML 和 Qt Showcase 均已改成只显示控件，不包含左侧主题栏、官网背景或营销页面壳层。
+- Qt Showcase 使用已移植 Ant 组件承载可见控件，支持主题信号联动。
+- `AntColorPicker` 已从模态编辑器改为 AntD-like 下拉浮层。
+- `AntWindow` 已补非最大化外框，避免与同色桌面背景融合。
+
+后续 Showcase 工作不再按本计划从头推进，而是按用户实际发现的差异逐项回到 `docs/visual-audit.md` 的单控件截图对比流程。
+
+## 历史结论（整改前）
+
+整改前的 `ExampleWindow::createShowcasePage()` 只能算“把大类控件摆到了差不多的位置”，离目标图还有明显距离，不能视为完成对标。
 
 这不是一个单点问题，而是三层问题叠加：
 
