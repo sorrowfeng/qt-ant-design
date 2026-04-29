@@ -13,6 +13,8 @@ class AntScrollArea : public QScrollArea
 public:
     explicit AntScrollArea(QWidget* parent = nullptr);
 
+    void setWidget(QWidget* widget);
+
     bool autoHideScrollBar() const;
     void setAutoHideScrollBar(bool autoHide);
 
@@ -24,6 +26,8 @@ Q_SIGNALS:
     void enableGestureChanged(bool enable);
 
 private:
+    void updateTheme();
+
     AntScrollBar* m_vScrollBar = nullptr;
     AntScrollBar* m_hScrollBar = nullptr;
     bool m_autoHideScrollBar = true;

@@ -1,8 +1,10 @@
 #include "AntScrollArea.h"
 
+#include <QPalette>
 #include <QScroller>
 
 #include "AntScrollBar.h"
+#include "core/AntTheme.h"
 
 AntScrollArea::AntScrollArea(QWidget* parent)
     : QScrollArea(parent)
@@ -21,6 +23,16 @@ AntScrollArea::AntScrollArea(QWidget* parent)
     setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
+    updateTheme();
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updateTheme();
+        update();
+        if (viewport())
+        {
+            viewport()->update();
+        }
+    });
+
     QScroller::grabGesture(this, QScroller::LeftMouseButtonGesture);
     QScrollerProperties sp = QScroller::scroller(this)->scrollerProperties();
     sp.setScrollMetric(QScrollerProperties::MousePressEventDelay, 0.5);
@@ -28,6 +40,12 @@ AntScrollArea::AntScrollArea(QWidget* parent)
     sp.setScrollMetric(QScrollerProperties::OvershootScrollTime, 0.5);
     sp.setScrollMetric(QScrollerProperties::FrameRate, QScrollerProperties::Fps60);
     QScroller::scroller(this)->setScrollerProperties(sp);
+}
+
+void AntScrollArea::setWidget(QWidget* widget)
+{
+    QScrollArea::setWidget(widget);
+    updateTheme();
 }
 
 bool AntScrollArea::autoHideScrollBar() const { return m_autoHideScrollBar; }
@@ -52,4 +70,32 @@ void AntScrollArea::setEnableGesture(bool enable)
     else
         QScroller::ungrabGesture(this);
     Q_EMIT enableGestureChanged(m_enableGesture);
+}
+
+void AntScrollArea::updateTheme()
+{
+    const auto& token = antTheme->tokens();
+    QPalette pal = palette();
+    pal.setColor(QPalette::Window, token.colorBgContainer);
+    pal.setColor(QPalette::Base, token.colorBgContainer);
+    pal.setColor(QPalette::Text, token.colorText);
+    pal.setColor(QPalette::WindowText, token.colorText);
+    setPalette(pal);
+    setAutoFillBackground(false);
+
+    if (viewport())
+    {
+        viewport()->setAutoFillBackground(true);
+        viewport()->setPalette(pal);
+    }
+
+    if (QWidget* content = widget())
+    {
+        QPalette contentPalette = content->palette();
+        contentPalette.setColor(QPalette::Window, token.colorBgContainer);
+        contentPalette.setColor(QPalette::Base, token.colorBgContainer);
+        contentPalette.setColor(QPalette::Text, token.colorText);
+        contentPalette.setColor(QPalette::WindowText, token.colorText);
+        content->setPalette(contentPalette);
+    }
 }

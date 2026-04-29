@@ -1,5 +1,7 @@
+#include <QPalette>
 #include <QSignalSpy>
 #include <QTest>
+#include "core/AntTheme.h"
 #include "widgets/AntApp.h"
 #include "widgets/AntConfigProvider.h"
 #include "widgets/AntForm.h"
@@ -230,6 +232,7 @@ void TestAntQtExtensions::plainTextEdit()
 
 void TestAntQtExtensions::scrollArea()
 {
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
     auto* w = new AntScrollArea;
     QCOMPARE(w->autoHideScrollBar(), true);
     QCOMPARE(w->isGestureEnabled(), true);
@@ -243,6 +246,16 @@ void TestAntQtExtensions::scrollArea()
     w->setEnableGesture(false);
     QCOMPARE(w->isGestureEnabled(), false);
     QCOMPARE(gestureSpy.count(), 1);
+
+    auto* content = new QWidget;
+    w->setWidget(content);
+    QCOMPARE(w->viewport()->palette().color(QPalette::Base), antTheme->tokens().colorBgContainer);
+    QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCOMPARE(w->viewport()->palette().color(QPalette::Base), antTheme->tokens().colorBgContainer);
+    QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
 }
 
 void TestAntQtExtensions::scrollBar()

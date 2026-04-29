@@ -34,6 +34,7 @@ Use this loop for one component at a time.
    - `Needs fix`: component-owned mismatch remains.
    - `Blocked`: cannot compare because reference/demo/capture is missing.
    - `N/A`: Qt-only extension or API wrapper without an official AntD visual reference.
+   - `Local Pass`: Qt-only extension has no official AntD reference, but local light/dark consistency was captured and reviewed.
 
 ### Capture Notes
 
@@ -89,6 +90,15 @@ After the first static pass, audit interactive states with a compact state matri
 | Message | Pass | `build/feedback-interactive-state-compare-light.png`, `build/feedback-interactive-state-compare-dark.png` | Compared loading toast against the official feedback matrix. `AntMessage` loading uses the elevated message bubble, compact spinner, text rhythm, and dark-mode surface expected by AntD. |
 | Notification | Pass | `build/feedback-interactive-state-compare-light.png`, `build/feedback-interactive-state-compare-dark.png` | Compared progress and loading notification cards. `AntNotification` progress bars, loading spinner card, close affordance, elevated surface, and dark-mode colors align with the official open-state matrix. |
 | Tour | Pass | `build/feedback-interactive-state-compare-light.png`, `build/feedback-interactive-state-compare-dark.png` | Compared an active Tour step. `AntTour` now renders an AntD-like mask, target spotlight, tooltip bubble, arrow, close affordance, and primary step action instead of the previous unstyled overlay controls. |
+
+## Qt Extension Local Consistency Audit
+
+Qt extension widgets have no official AntD component reference. Audit them against the project token system, light/dark parity, visible example coverage, and interaction states that the Qt widget exposes.
+
+| Component | Status | Evidence | Notes |
+| --- | --- | --- | --- |
+| ScrollArea | Local Pass | `build/qt-extension-scroll-local-light.png`, `build/qt-extension-scroll-local-dark.png` | Checked transparent frame composition, viewport/content token background inheritance, visible paired `AntScrollBar` usage, and dark-mode contrast. `AntScrollArea` now applies token palettes to the viewport and default content after `setWidget()`, avoiding system-white surfaces in dark mode. The example pins scrollbar visibility so the control can be inspected directly. |
+| ScrollBar | Local Pass | `build/qt-extension-scroll-local-light.png`, `build/qt-extension-scroll-local-dark.png` | Checked vertical and horizontal auto-idle, auto-hover, auto-pressed, always-visible, always-visible-hover, and disabled states. `AntScrollBarStyle` now honors widget-level hover/press state when Qt style state is absent, uses token border color for visible idle handles, and keeps disabled handles muted. |
 
 ## Priority Order
 
@@ -173,8 +183,8 @@ After the first static pass, audit interactive states with a compact state matri
 | Other | ConfigProvider | ConfigProviderPage | ConfigProvider | Pass | Static API-wrapper reference compared against `build/configprovider-compare-wide.png`; official ConfigProvider section title and explanatory paragraph aligned. Theme/locale application remains API-level and covered by tests. |
 | Other | FloatButton | FloatButtonPage | FloatButton | Pass | Basic FloatButton compared against `build/floatbutton-compare-wide.png`; fixed bottom-right placement, circular elevated surface, and Home icon rendering aligned. Shared full-layout/sidebar crop difference remains out of scope. |
 | Qt Extension | Window | N/A | Window | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
-| Qt Extension | ScrollArea | N/A | ScrollArea | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
-| Qt Extension | ScrollBar | N/A | ScrollBar | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
+| Qt Extension | ScrollArea | N/A | ScrollArea | Local Pass | Qt-only desktop extension; local consistency audited against `build/qt-extension-scroll-local-light.png` and `build/qt-extension-scroll-local-dark.png`. Token background inheritance, visible scrollbar pair, and dark-mode viewport/content surfaces are aligned; no official AntD visual reference exists. |
+| Qt Extension | ScrollBar | N/A | ScrollBar | Local Pass | Qt-only desktop extension; local consistency audited against `build/qt-extension-scroll-local-light.png` and `build/qt-extension-scroll-local-dark.png`. Auto-hide, hover, pressed, always-visible, disabled, vertical, and horizontal states are aligned to project tokens; no official AntD visual reference exists. |
 | Qt Extension | StatusBar | N/A | StatusBar | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
 | Qt Extension | MenuBar | N/A | MenuBar | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |
 | Qt Extension | ToolBar | N/A | ToolBar | N/A | Qt-only desktop extension; no official AntD visual reference. Keep covered by local example and `TestAntQtExtensions`. |

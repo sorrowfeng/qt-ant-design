@@ -37,6 +37,12 @@ bool isHovered(const QWidget* widget)
     return scrollBar && scrollBar->isHoveredState();
 }
 
+bool isPressed(const QWidget* widget)
+{
+    const auto* scrollBar = qobject_cast<const AntScrollBar*>(widget);
+    return scrollBar && scrollBar->isPressedState();
+}
+
 bool isAutoHide(const QWidget* widget)
 {
     const auto* scrollBar = qobject_cast<const AntScrollBar*>(widget);
@@ -46,24 +52,32 @@ bool isAutoHide(const QWidget* widget)
 QColor handleColorFor(const QWidget* widget, const QStyle::State& state)
 {
     const auto& token = antTheme->tokens();
-    if (state.testFlag(QStyle::State_Sunken))
+    if (!state.testFlag(QStyle::State_Enabled))
+    {
+        return token.colorTextDisabled;
+    }
+    if (state.testFlag(QStyle::State_Sunken) || isPressed(widget))
     {
         return token.colorTextSecondary;
     }
-    if (state.testFlag(QStyle::State_MouseOver))
+    if (state.testFlag(QStyle::State_MouseOver) || isHovered(widget))
     {
         return token.colorTextTertiary;
     }
-    return token.colorBorderSecondary;
+    return token.colorBorder;
 }
 
 qreal handleAlphaFor(const QWidget* widget, const QStyle::State& state)
 {
+    if (!state.testFlag(QStyle::State_Enabled))
+    {
+        return isAutoHide(widget) ? 0.0 : 0.45;
+    }
     if (!isAutoHide(widget))
     {
         return 1.0;
     }
-    if (state.testFlag(QStyle::State_Sunken))
+    if (state.testFlag(QStyle::State_Sunken) || isPressed(widget))
     {
         return 1.0;
     }

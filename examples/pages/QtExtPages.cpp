@@ -211,6 +211,8 @@ QWidget* createScrollAreaPage(QWidget* /*owner*/)
         auto* cl = card->bodyLayout();
 
         auto* scroll = new AntScrollArea(page);
+        scroll->setAutoHideScrollBar(false);
+        scroll->setMinimumHeight(260);
         auto* content = new QWidget();
         auto* contentLayout = new QVBoxLayout(content);
         for (int i = 0; i < 30; ++i)
@@ -246,8 +248,12 @@ QWidget* createScrollBarPage(QWidget* /*owner*/)
 
         auto* scrollArea = new QScrollArea(page);
         scrollArea->setWidgetResizable(true);
-        scrollArea->setVerticalScrollBar(new AntScrollBar(Qt::Vertical));
-        scrollArea->setHorizontalScrollBar(new AntScrollBar(Qt::Horizontal));
+        auto* verticalBar = new AntScrollBar(Qt::Vertical);
+        verticalBar->setAutoHide(false);
+        scrollArea->setVerticalScrollBar(verticalBar);
+        auto* horizontalBar = new AntScrollBar(Qt::Horizontal);
+        horizontalBar->setAutoHide(false);
+        scrollArea->setHorizontalScrollBar(horizontalBar);
 
         auto* scrollContent = new QWidget();
         auto* scrollLayout = new QVBoxLayout(scrollContent);
