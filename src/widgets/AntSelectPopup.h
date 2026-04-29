@@ -35,7 +35,7 @@ protected:
         painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
         antTheme->drawEffectShadow(&painter, rect().adjusted(2, 2, -2, -2), 10, token.borderRadiusLG, 0.55);
 
-        QRectF panel = rect().adjusted(8, 4, -8, -8);
+        QRectF panel = rect().adjusted(4, 4, -4, -4);
         painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
         painter.setBrush(token.colorBgElevated);
         painter.drawRoundedRect(panel, token.borderRadiusLG, token.borderRadiusLG);

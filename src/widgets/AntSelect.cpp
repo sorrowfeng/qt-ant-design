@@ -40,44 +40,17 @@ void AntSelectOptionWidget::paintEvent(QPaintEvent* event)
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
     QRectF bg = rect().adjusted(4, 2, -4, -2);
-    if (highlighted && !disabled)
+    if (selected && !disabled)
+    {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(token.colorPrimaryBg);
+        painter.drawRoundedRect(bg, token.borderRadiusSM, token.borderRadiusSM);
+    }
+    else if (highlighted && !disabled)
     {
         painter.setPen(Qt::NoPen);
         painter.setBrush(token.colorFillQuaternary);
         painter.drawRoundedRect(bg, token.borderRadiusSM, token.borderRadiusSM);
-    }
-
-    const int checkSize = 14;
-    const int leftPad = multiMode ? checkSize + 18 : 14;
-
-    if (multiMode)
-    {
-        // Draw checkbox
-        const qreal cx = 12 + checkSize / 2.0;
-        const qreal cy = height() / 2.0;
-        QRectF checkRect(cx - checkSize / 2.0, cy - checkSize / 2.0, checkSize, checkSize);
-
-        if (selected)
-        {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(disabled ? token.colorTextDisabled : token.colorPrimary);
-            painter.drawRoundedRect(checkRect, 3, 3);
-
-            // Checkmark
-            QPen checkPen(token.colorTextLightSolid, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-            painter.setPen(checkPen);
-            QPainterPath check;
-            check.moveTo(cx - 4, cy);
-            check.lineTo(cx - 1, cy + 3);
-            check.lineTo(cx + 5, cy - 4);
-            painter.drawPath(check);
-        }
-        else
-        {
-            painter.setPen(QPen(disabled ? token.colorBorderDisabled : token.colorBorder, token.lineWidth));
-            painter.setBrush(Qt::NoBrush);
-            painter.drawRoundedRect(checkRect, 3, 3);
-        }
     }
 
     QFont f = painter.font();
@@ -86,13 +59,17 @@ void AntSelectOptionWidget::paintEvent(QPaintEvent* event)
     painter.setFont(f);
     painter.setPen(disabled ? token.colorTextDisabled : token.colorText);
 
-    const int rightPad = (!multiMode && selected) ? 34 : 14;
+    const int leftPad = 12;
+    const int rightPad = (multiMode && selected) ? 34 : 12;
     QRect textRect = rect().adjusted(leftPad, 0, -rightPad, 0);
     painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, option.label);
 
-    if (!multiMode && selected)
+    if (multiMode && selected)
     {
-        QPen checkPen(disabled ? token.colorTextDisabled : token.colorPrimary, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        const QColor checkColor = antTheme->themeMode() == Ant::ThemeMode::Dark
+            ? token.colorPrimaryHover
+            : token.colorPrimary;
+        QPen checkPen(disabled ? token.colorTextDisabled : checkColor, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
         painter.setPen(checkPen);
         const qreal cx = width() - 20;
         const qreal cy = height() / 2.0;
@@ -151,7 +128,7 @@ AntSelect::AntSelect(QWidget* parent)
 
     m_popup = new AntSelectPopup(this);
     m_popupLayout = new QVBoxLayout(m_popup);
-    m_popupLayout->setContentsMargins(12, 8, 12, 12);
+    m_popupLayout->setContentsMargins(8, 8, 8, 8);
     m_popupLayout->setSpacing(0);
 
     m_arrowAnimation = new QPropertyAnimation(this, "arrowRotation", this);
@@ -724,7 +701,7 @@ void AntSelect::updatePopupGeometry()
     const int optionCount = static_cast<int>(m_options.size());
     const int visibleCount = std::min(std::max(1, optionCount), m_maxVisibleItems);
     const int popupWidth = width();
-    const int popupHeight = visibleCount * m.optionHeight + 20;
+    const int popupHeight = visibleCount * m.optionHeight + 16;
     const QPoint globalPos = mapToGlobal(QPoint(0, height() + 4));
     m_popup->setGeometry(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
 }
