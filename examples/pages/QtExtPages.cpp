@@ -12,6 +12,7 @@
 #include <QWidget>
 
 #include "PageCommon.h"
+#include "core/AntTheme.h"
 #include "core/AntTypes.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntButton.h"
@@ -30,6 +31,45 @@
 
 namespace example::pages
 {
+namespace
+{
+class MasonryTile : public QWidget
+{
+public:
+    MasonryTile(const QString& text, const QColor& color, QWidget* parent = nullptr)
+        : QWidget(parent), m_text(text), m_color(color)
+    {
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+        QColor fill = m_color;
+        fill.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.28 : 0.16);
+        painter.setPen(QPen(m_color, token.lineWidth));
+        painter.setBrush(fill);
+        painter.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5),
+                                token.borderRadius, token.borderRadius);
+
+        QFont font = painter.font();
+        font.setPixelSize(token.fontSize);
+        font.setWeight(QFont::DemiBold);
+        painter.setFont(font);
+        painter.setPen(token.colorText);
+        painter.drawText(rect().adjusted(12, 10, -12, -10),
+                         Qt::AlignLeft | Qt::AlignTop, m_text);
+    }
+
+private:
+    QString m_text;
+    QColor m_color;
+};
+} // namespace
+
 QWidget* createDockWidgetPage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
@@ -122,7 +162,7 @@ QWidget* createMasonryPage(QWidget* /*owner*/)
         };
         for (int i = 0; i < heights.size(); ++i)
         {
-            auto* tile = makeText(QStringLiteral("Tile %1").arg(i + 1), masonry);
+            auto* tile = new MasonryTile(QStringLiteral("Tile %1").arg(i + 1), QColor(colors[i]), masonry);
             tile->setMinimumHeight(heights[i]);
             masonry->addWidget(tile);
         }

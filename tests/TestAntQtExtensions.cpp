@@ -1,4 +1,5 @@
 #include <QPalette>
+#include <QPlainTextEdit>
 #include <QSignalSpy>
 #include <QTest>
 #include <QToolButton>
@@ -7,6 +8,7 @@
 #include "widgets/AntConfigProvider.h"
 #include "widgets/AntForm.h"
 #include "widgets/AntLog.h"
+#include "widgets/AntMasonry.h"
 #include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntScrollArea.h"
 #include "widgets/AntScrollBar.h"
@@ -30,6 +32,7 @@ private slots:
     void form();
     void formList();
     void log();
+    void masonry();
     void plainTextEdit();
     void scrollArea();
     void scrollBar();
@@ -192,9 +195,13 @@ void TestAntQtExtensions::formList()
 
 void TestAntQtExtensions::log()
 {
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
     auto* w = new AntLog;
     QCOMPARE(w->maxEntries(), 5000);
     QCOMPARE(w->autoScroll(), true);
+    auto* view = w->findChild<QPlainTextEdit*>();
+    QVERIFY(view != nullptr);
+    QCOMPARE(view->palette().color(QPalette::Base), antTheme->tokens().colorFillQuaternary);
 
     QSignalSpy maxSpy(w, &AntLog::maxEntriesChanged);
     w->setMaxEntries(1000);
@@ -209,11 +216,54 @@ void TestAntQtExtensions::log()
     w->info("test message");
     w->warning("warning message");
     w->error("error message");
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCOMPARE(view->palette().color(QPalette::Base), antTheme->tokens().colorFillQuaternary);
+
     w->clear();
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+}
+
+void TestAntQtExtensions::masonry()
+{
+    auto* w = new AntMasonry;
+    QCOMPARE(w->columns(), 3);
+    QCOMPARE(w->spacing(), 8);
+
+    QSignalSpy columnsSpy(w, &AntMasonry::columnsChanged);
+    w->setColumns(2);
+    QCOMPARE(w->columns(), 2);
+    QCOMPARE(columnsSpy.count(), 1);
+
+    QSignalSpy spacingSpy(w, &AntMasonry::spacingChanged);
+    w->setSpacing(12);
+    QCOMPARE(w->spacing(), 12);
+    QCOMPARE(spacingSpy.count(), 1);
+
+    w->resize(212, 200);
+    auto* first = new QWidget;
+    first->setMinimumHeight(120);
+    auto* second = new QWidget;
+    second->setMinimumHeight(60);
+    auto* third = new QWidget;
+    third->setMinimumHeight(80);
+
+    w->addWidget(first);
+    w->addWidget(second);
+    w->addWidget(third);
+
+    QCOMPARE(first->geometry(), QRect(0, 0, 100, 120));
+    QCOMPARE(second->geometry(), QRect(112, 0, 100, 60));
+    QCOMPARE(third->geometry(), QRect(112, 72, 100, 80));
+    QCOMPARE(w->minimumHeight(), 152);
+
+    w->clear();
+    QCOMPARE(w->minimumHeight(), 0);
 }
 
 void TestAntQtExtensions::plainTextEdit()
 {
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
     auto* w = new AntPlainTextEdit;
     QCOMPARE(w->variant(), Ant::Variant::Outlined);
 
@@ -226,6 +276,9 @@ void TestAntQtExtensions::plainTextEdit()
     w->setPlaceholderText("Type here...");
     QCOMPARE(w->placeholderText(), "Type here...");
     QCOMPARE(phSpy.count(), 1);
+
+    w->setEnabled(false);
+    QCOMPARE(w->palette().color(QPalette::Disabled, QPalette::Text), antTheme->tokens().colorTextDisabled);
 
     auto* w2 = new AntPlainTextEdit("Initial text");
     QCOMPARE(w2->toPlainText(), "Initial text");

@@ -29,6 +29,7 @@ protected:
 
 private:
     void relayout();
+    void updateTheme();
 
     int m_columns = 3;
     int m_spacing = 8;

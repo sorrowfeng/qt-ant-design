@@ -29,6 +29,8 @@ AntPlainTextEdit::AntPlainTextEdit(QWidget* parent)
         pal.setColor(QPalette::Base, Qt::transparent);
         pal.setColor(QPalette::Text, token.colorText);
         pal.setColor(QPalette::PlaceholderText, token.colorTextPlaceholder);
+        pal.setColor(QPalette::Disabled, QPalette::Text, token.colorTextDisabled);
+        pal.setColor(QPalette::Disabled, QPalette::PlaceholderText, token.colorTextDisabled);
         setPalette(pal);
         viewport()->setAutoFillBackground(false);
         viewport()->setPalette(pal);

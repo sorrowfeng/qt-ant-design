@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QVector>
 #include <QWidget>
 
 class QPlainTextEdit;
@@ -35,10 +36,21 @@ Q_SIGNALS:
     void autoScrollChanged(bool enabled);
 
 private:
+    struct Entry
+    {
+        QString timestamp;
+        Level level = Info;
+        QString message;
+    };
+
     void appendEntry(Level level, const QString& message);
     void trimEntries();
+    void updateTheme();
+    void rebuildDocument();
+    void insertEntry(const Entry& entry);
 
     QPlainTextEdit* m_view = nullptr;
+    QVector<Entry> m_entries;
     int m_maxEntries = 5000;
     bool m_autoScroll = true;
 };

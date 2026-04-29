@@ -118,8 +118,9 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
         QColor border = token.colorBorder;
         if (focused) border = token.colorPrimary;
         if (!enabled) border = token.colorBorderDisabled;
+        const QColor bg = enabled ? token.colorBgContainer : token.colorBgContainerDisabled;
         AntStyleBase::drawCrispRoundedRect(painter, r.toRect(),
-            QPen(border, m.lineWidth), token.colorBgContainer, m.radius, m.radius);
+            QPen(border, m.lineWidth), bg, m.radius, m.radius);
     }
     // Borderless: no frame
 

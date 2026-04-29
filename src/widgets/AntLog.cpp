@@ -1,10 +1,15 @@
 #include "AntLog.h"
 
 #include <QFont>
+#include <QPalette>
 #include <QPlainTextEdit>
 #include <QScrollBar>
+#include <QTextCharFormat>
+#include <QTextCursor>
 #include <QTime>
 #include <QVBoxLayout>
+
+#include <utility>
 
 #include "AntScrollBar.h"
 #include "core/AntTheme.h"
@@ -64,14 +69,23 @@ AntLog::AntLog(QWidget* parent)
     m_view->document()->setMaximumBlockCount(m_maxEntries);
 
     layout->addWidget(m_view);
+
+    updateTheme();
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updateTheme();
+        rebuildDocument();
+    });
 }
 
 int AntLog::maxEntries() const { return m_maxEntries; }
 void AntLog::setMaxEntries(int n)
 {
+    n = qMax(1, n);
     if (m_maxEntries == n) return;
     m_maxEntries = n;
     m_view->document()->setMaximumBlockCount(m_maxEntries);
+    trimEntries();
+    rebuildDocument();
     Q_EMIT maxEntriesChanged(m_maxEntries);
 }
 
@@ -96,23 +110,81 @@ void AntLog::log(Level level, const QString& message)
 
 void AntLog::clear()
 {
+    m_entries.clear();
     m_view->clear();
 }
 
 void AntLog::appendEntry(Level level, const QString& message)
 {
-    const QString timestamp = QTime::currentTime().toString(QStringLiteral("hh:mm:ss.zzz"));
-    const QString line = QStringLiteral("[%1] [%2] %3").arg(timestamp, levelTag(level), message);
-    const QColor color = levelColor(level);
-
-    m_view->moveCursor(QTextCursor::End);
-    QTextCharFormat fmt;
-    fmt.setForeground(color);
-    m_view->textCursor().insertText(line + QStringLiteral("\n"), fmt);
+    Entry entry;
+    entry.timestamp = QTime::currentTime().toString(QStringLiteral("hh:mm:ss.zzz"));
+    entry.level = level;
+    entry.message = message;
+    m_entries.append(entry);
+    trimEntries();
+    insertEntry(entry);
 
     if (m_autoScroll)
     {
         auto* sb = m_view->verticalScrollBar();
         sb->setValue(sb->maximum());
     }
+}
+
+void AntLog::trimEntries()
+{
+    const int maxEntries = qMax(1, m_maxEntries);
+    while (m_entries.size() > maxEntries)
+    {
+        m_entries.removeFirst();
+    }
+}
+
+void AntLog::updateTheme()
+{
+    const auto& token = antTheme->tokens();
+    const QColor background = token.colorFillQuaternary;
+    QPalette pal = m_view->palette();
+    pal.setColor(QPalette::Base, background);
+    pal.setColor(QPalette::Window, background);
+    pal.setColor(QPalette::Text, token.colorText);
+    pal.setColor(QPalette::WindowText, token.colorText);
+    pal.setColor(QPalette::PlaceholderText, token.colorTextPlaceholder);
+    pal.setColor(QPalette::Inactive, QPalette::Base, background);
+    pal.setColor(QPalette::Inactive, QPalette::Window, background);
+    pal.setColor(QPalette::Disabled, QPalette::Base, background);
+    pal.setColor(QPalette::Disabled, QPalette::Window, background);
+    pal.setColor(QPalette::Disabled, QPalette::Text, token.colorTextDisabled);
+    m_view->setPalette(pal);
+    m_view->viewport()->setAutoFillBackground(true);
+    m_view->viewport()->setPalette(pal);
+    m_view->setStyleSheet(QStringLiteral("QPlainTextEdit { background-color: %1; border: none; }")
+                              .arg(background.name()));
+}
+
+void AntLog::rebuildDocument()
+{
+    const bool shouldScroll = m_autoScroll;
+    m_view->clear();
+    for (const Entry& entry : std::as_const(m_entries))
+    {
+        insertEntry(entry);
+    }
+    if (shouldScroll)
+    {
+        auto* sb = m_view->verticalScrollBar();
+        sb->setValue(sb->maximum());
+    }
+}
+
+void AntLog::insertEntry(const Entry& entry)
+{
+    const QString line = QStringLiteral("[%1] [%2] %3").arg(entry.timestamp, levelTag(entry.level), entry.message);
+    QTextCharFormat fmt;
+    fmt.setForeground(levelColor(entry.level));
+
+    QTextCursor cursor = m_view->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText(line + QStringLiteral("\n"), fmt);
+    m_view->setTextCursor(cursor);
 }
