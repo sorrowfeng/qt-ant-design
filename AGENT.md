@@ -104,7 +104,7 @@
 | --- | --- | --- | --- | --- |
 | `AntButton` | `button` | `QProxyStyle` | 是 | 五种类型、三种尺寸、三种形状 |
 | `AntFloatButton` | `float-button` | `QProxyStyle` | 是 | 圆形/方形、Group/BackTop、Badge |
-| `AntIcon` | `icon` | `QProxyStyle` | 是 | Outlined/Filled/TwoTone、旋转、spin |
+| `AntIcon` | `icon` | `QProxyStyle` | 是 | 831 个官方 SVG 图标资源、字符串名称 API、Outlined/Filled/TwoTone、旋转、spin |
 | `AntTypography` | `typography` | `QProxyStyle` | 是 | Title(H1-H5)/Text/Paragraph/Link |
 
 ### 导航

@@ -2,6 +2,8 @@
 
 #include <QColor>
 #include <QPainterPath>
+#include <QString>
+#include <QStringList>
 #include <QTimer>
 #include <QWidget>
 
@@ -11,6 +13,7 @@ class AntIcon : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(Ant::IconType iconType READ iconType WRITE setIconType NOTIFY iconTypeChanged)
+    Q_PROPERTY(QString iconName READ iconName WRITE setIconName NOTIFY iconNameChanged)
     Q_PROPERTY(Ant::IconTheme iconTheme READ iconTheme WRITE setIconTheme NOTIFY iconThemeChanged)
     Q_PROPERTY(int iconSize READ iconSize WRITE setIconSize NOTIFY iconSizeChanged)
     Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged)
@@ -21,9 +24,14 @@ class AntIcon : public QWidget
 public:
     explicit AntIcon(QWidget* parent = nullptr);
     explicit AntIcon(Ant::IconType iconType, QWidget* parent = nullptr);
+    explicit AntIcon(const QString& iconName, QWidget* parent = nullptr);
 
     Ant::IconType iconType() const;
     void setIconType(Ant::IconType iconType);
+
+    QString iconName() const;
+    void setIconName(const QString& iconName);
+    QString resolvedIconName() const;
 
     Ant::IconTheme iconTheme() const;
     void setIconTheme(Ant::IconTheme iconTheme);
@@ -61,10 +69,13 @@ public:
     };
 
     static IconPaths builtinPaths(Ant::IconType type, Ant::IconTheme theme);
+    static QString iconNameForType(Ant::IconType type);
+    static QStringList builtinIconNames();
     static QPainterPath transformPath(const QPainterPath& path, const QRectF& targetRect);
 
 Q_SIGNALS:
     void iconTypeChanged(Ant::IconType iconType);
+    void iconNameChanged(const QString& iconName);
     void iconThemeChanged(Ant::IconTheme iconTheme);
     void iconSizeChanged(int iconSize);
     void colorChanged(const QColor& color);
@@ -82,6 +93,7 @@ private:
     void updateTimerState();
 
     Ant::IconType m_iconType = Ant::IconType::None;
+    QString m_iconName;
     Ant::IconTheme m_iconTheme = Ant::IconTheme::Outlined;
     int m_iconSize = 14;
     QColor m_color;

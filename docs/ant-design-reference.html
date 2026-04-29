@@ -16,6 +16,7 @@
   html, body, #root { height:100%; }
   body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; }
   .layout { display:flex; height:100vh; }
+  .layout.layout-showcase { display:block; }
   .sidebar { width:220px; background:#fff; border-right:1px solid #f0f0f0;
              display:flex; flex-direction:column; flex-shrink:0; overflow:hidden; }
   .sidebar-brand { padding:16px 20px; font-size:18px; font-weight:600; border-bottom:1px solid #f0f0f0; }
@@ -41,6 +42,34 @@
   .demo-row:last-child { margin-bottom:0; }
   .demo-block { margin-bottom:16px; }
   .demo-block:last-child { margin-bottom:0; }
+  .content.content-showcase { height:100vh; padding:40px; background:#fff; }
+  .showcase-page { min-height:0; padding:0; position:relative; overflow:visible; background:transparent; }
+  .showcase-board { width:484px; margin:0 auto; }
+  .showcase-modal-root { position:static; }
+  .showcase-modal-root .ant-modal-mask { display:none; }
+  .showcase-modal-root .ant-modal-wrap { position:static; overflow:visible; }
+  .showcase-modal-root .ant-modal { top:0; margin:0 auto; padding-bottom:0; max-width:none; }
+  .showcase-modal-root .ant-modal.ant-zoom,
+  .showcase-modal-root .ant-modal.ant-zoom-appear,
+  .showcase-modal-root .ant-modal.ant-zoom-appear-prepare { opacity:1!important; transform:none!important; }
+  .showcase-modal-root .ant-modal-content { box-shadow:0 8px 28px rgba(0,0,0,.10); }
+  .showcase-modal-root .ant-modal-body { line-height:1.65; }
+  .showcase-control-stack { margin-top:16px; display:flex; flex-direction:column; gap:12px; }
+  .showcase-row { display:flex; align-items:center; gap:12px; }
+  .showcase-row > .ant-select,
+  .showcase-row > .ant-picker,
+  .showcase-row > .showcase-color-input { flex:1; min-width:0; }
+  .showcase-row .showcase-select-menu { flex:0 0 120px; }
+  .showcase-row .showcase-picker { flex:0 0 148px; }
+  .showcase-row .showcase-color-input { flex:0 0 104px; }
+  .showcase-page .ant-progress-line { margin:0; }
+  .showcase-page .ant-steps { margin:0 0 2px; }
+  .showcase-page .ant-slider { margin:6px 6px 8px; }
+  .showcase-button-row { gap:16px; }
+  .showcase-button-row .ant-btn { min-width:96px; }
+  .showcase-check-row { gap:12px; }
+  .showcase-check-row .ant-switch { margin-right:2px; }
+  .showcase-segment-row { gap:18px; }
 </style>
 </head>
 <body>
@@ -85,6 +114,7 @@ const { Dragger } = Upload;
    Navigation registry — mirrors PageRegistry.cpp
    ═══════════════════════════════════════════════════ */
 const registry = [
+  { cat:"Showcase", pages:["Showcase"] },
   { cat:"General", pages:["Button","Icon","Typography"] },
   { cat:"Layout", pages:["Divider","Flex","Grid","Layout","Space","Splitter"] },
   { cat:"Navigation", pages:["Affix","Anchor","Breadcrumb","Dropdown","Menu","Pagination","Steps"] },
@@ -102,6 +132,76 @@ const registry = [
 /* ═══════════════════════════════════════════════════
    Page components
    ═══════════════════════════════════════════════════ */
+
+function ShowcasePage(){
+  const selectOptions = [
+    { value:"apple", label:"苹果" },
+    { value:"banana", label:"香蕉" },
+    { value:"orange", label:"橘子" },
+  ];
+  return(
+    <div className="showcase-page">
+      <div className="showcase-board">
+        <Modal
+          open
+          title="Ant Design"
+          width={484}
+          mask={false}
+          getContainer={false}
+          rootClassName="showcase-modal-root"
+          footer={[
+            <Button key="cancel">取消</Button>,
+            <Button key="ok" type="primary">确定</Button>,
+          ]}
+        >
+          Ant Design 使用 CSS-in-JS 技术以提供动态与混合主题的能力。与此同时，我们使用组件级别的 CSS-in-JS 解决方案，让你的应用获得更好的性能。
+        </Modal>
+        <div className="showcase-control-stack">
+          <Alert type="info" message="信息内容展示" showIcon={false}/>
+          <div className="showcase-row">
+            <Select className="showcase-select-menu" value="menu" options={[{value:"menu",label:"下拉菜单"}]}/>
+            <ColorPicker className="showcase-color-input" defaultValue="#1677ff" showText/>
+            <Select mode="multiple" value={["apple","banana"]} options={selectOptions}/>
+          </div>
+          <div className="showcase-row">
+            <DatePicker className="showcase-picker" placeholder="请选择日期"/>
+            <Select mode="multiple" value={["apple","banana"]} options={selectOptions}/>
+          </div>
+          <Progress percent={60}/>
+          <Steps
+            current={1}
+            items={[
+              { title:"已完成", status:"finish" },
+              { title:"进行中", status:"process" },
+              { title:"等待中", status:"wait" },
+            ]}
+          />
+          <Slider defaultValue={55}/>
+          <div className="showcase-row showcase-button-row">
+            <Button type="primary">主要按钮</Button>
+            <Button type="primary" danger>危险按钮</Button>
+            <Button>默认按钮</Button>
+            <Button type="dashed">虚线按钮</Button>
+          </div>
+          <div className="showcase-row showcase-check-row">
+            <Switch defaultChecked/>
+            <Checkbox defaultChecked>苹果</Checkbox>
+            <Checkbox>香蕉</Checkbox>
+            <Checkbox>橘子</Checkbox>
+            <Radio.Group defaultValue="apple">
+              <Radio value="apple">苹果</Radio>
+              <Radio value="banana">香蕉</Radio>
+            </Radio.Group>
+          </div>
+          <div className="showcase-row showcase-segment-row">
+            <Segmented options={["A","B","C"]} defaultValue="A"/>
+            <Segmented options={["每日","每周","每月"]} defaultValue="每日"/>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ButtonPage(){
   return(<>
@@ -1173,6 +1273,7 @@ function FloatButtonPage(){
    Page map
    ═══════════════════════════════════════════════════ */
 const pageMap = {
+  Showcase:ShowcasePage,
   Button:ButtonPage,Icon:IconPage,Typography:TypographyPage,
   Divider:DividerPage,Flex:FlexPage,Grid:GridPage,Layout:LayoutPage,Space:SpacePage,Splitter:SplitterPage,
   Affix:AffixPage,Anchor:AnchorPage,Breadcrumb:BreadcrumbPage,Dropdown:DropdownPage,Menu:MenuPage,
@@ -1195,27 +1296,33 @@ const pageMap = {
    Main App
    ═══════════════════════════════════════════════════ */
 function AppLayout(){
-  const [active,setActive]=useState('Button');
+  const initialPage = new URLSearchParams(window.location.search).get('page') ||
+    (window.location.hash ? window.location.hash.slice(1) : '') ||
+    'Showcase';
+  const [active,setActive]=useState(pageMap[initialPage] ? initialPage : 'Showcase');
   const PageComp=pageMap[active]||(()=>(<div>Not found</div>));
+  const showcaseOnly = active === 'Showcase';
 
   return(
     <ConfigProvider theme={{token:{colorPrimary:'#1677ff'}}}>
-      <div className="layout">
-        <div className="sidebar">
-          <div className="sidebar-brand">Ant Design 5.x</div>
-          <div className="sidebar-nav">
-            {registry.map(g=>(
-              <React.Fragment key={g.cat}>
-                <div className="cat-header">{g.cat}</div>
-                {g.pages.map(p=>(
-                  <div key={p} className={`nav-item${active===p?' active':''}`} onClick={()=>setActive(p)}>{p}</div>
-                ))}
-              </React.Fragment>
-            ))}
+      <div className={`layout${showcaseOnly?' layout-showcase':''}`}>
+        {!showcaseOnly && (
+          <div className="sidebar">
+            <div className="sidebar-brand">Ant Design 5.x</div>
+            <div className="sidebar-nav">
+              {registry.map(g=>(
+                <React.Fragment key={g.cat}>
+                  <div className="cat-header">{g.cat}</div>
+                  {g.pages.map(p=>(
+                    <div key={p} className={`nav-item${active===p?' active':''}`} onClick={()=>{setActive(p); window.location.hash=p;}}>{p}</div>
+                  ))}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="content">
-          <div className="page-title">{active}</div>
+        )}
+        <div className={`content${showcaseOnly?' content-showcase':''}`}>
+          {!showcaseOnly && <div className="page-title">{active}</div>}
           <PageComp/>
         </div>
       </div>

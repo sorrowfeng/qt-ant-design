@@ -1,5 +1,6 @@
 #include "AntIcon.h"
 
+#include <QDir>
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPathStroker>
@@ -326,6 +327,61 @@ QPainterPath createLoadingPath()
     path.arcTo(QRectF(5, 5, 22, 22), 35, 290);
     return path;
 }
+
+QString themeSuffix(Ant::IconTheme theme)
+{
+    switch (theme)
+    {
+    case Ant::IconTheme::Filled:
+        return QStringLiteral("Filled");
+    case Ant::IconTheme::TwoTone:
+        return QStringLiteral("TwoTone");
+    case Ant::IconTheme::Outlined:
+    default:
+        return QStringLiteral("Outlined");
+    }
+}
+
+QString normalizedIconBaseName(const QString& iconName, Ant::IconTheme* parsedTheme)
+{
+    QString normalized = iconName.trimmed();
+    const int slashIndex = qMax(normalized.lastIndexOf(QLatin1Char('/')), normalized.lastIndexOf(QLatin1Char('\\')));
+    if (slashIndex >= 0)
+    {
+        normalized = normalized.mid(slashIndex + 1);
+    }
+    if (normalized.endsWith(QStringLiteral(".svg"), Qt::CaseInsensitive))
+    {
+        normalized.chop(4);
+    }
+
+    if (normalized.endsWith(QStringLiteral("TwoTone")))
+    {
+        normalized.chop(7);
+        if (parsedTheme)
+        {
+            *parsedTheme = Ant::IconTheme::TwoTone;
+        }
+    }
+    else if (normalized.endsWith(QStringLiteral("Outlined")))
+    {
+        normalized.chop(8);
+        if (parsedTheme)
+        {
+            *parsedTheme = Ant::IconTheme::Outlined;
+        }
+    }
+    else if (normalized.endsWith(QStringLiteral("Filled")))
+    {
+        normalized.chop(6);
+        if (parsedTheme)
+        {
+            *parsedTheme = Ant::IconTheme::Filled;
+        }
+    }
+
+    return normalized;
+}
 }
 
 AntIcon::AntIcon(QWidget* parent)
@@ -345,20 +401,85 @@ AntIcon::AntIcon(Ant::IconType iconType, QWidget* parent)
     : AntIcon(parent)
 {
     m_iconType = iconType;
+    m_iconName = iconNameForType(iconType);
+}
+
+AntIcon::AntIcon(const QString& iconName, QWidget* parent)
+    : AntIcon(parent)
+{
+    Ant::IconTheme parsedTheme = m_iconTheme;
+    m_iconName = normalizedIconBaseName(iconName, &parsedTheme);
+    m_iconTheme = parsedTheme;
 }
 
 Ant::IconType AntIcon::iconType() const { return m_iconType; }
 
 void AntIcon::setIconType(Ant::IconType iconType)
 {
-    if (m_iconType == iconType)
+    const QString newIconName = iconNameForType(iconType);
+    if (m_iconType == iconType && m_iconName == newIconName)
     {
         return;
     }
+    const bool typeChanged = m_iconType != iconType;
+    const bool nameChanged = m_iconName != newIconName;
     m_iconType = iconType;
+    m_iconName = newIconName;
     m_hasCustomPath = false;
     update();
-    Q_EMIT iconTypeChanged(m_iconType);
+    if (typeChanged)
+    {
+        Q_EMIT iconTypeChanged(m_iconType);
+    }
+    if (nameChanged)
+    {
+        Q_EMIT iconNameChanged(m_iconName);
+    }
+}
+
+QString AntIcon::iconName() const { return m_iconName; }
+
+void AntIcon::setIconName(const QString& iconName)
+{
+    Ant::IconTheme parsedTheme = m_iconTheme;
+    const QString newIconName = normalizedIconBaseName(iconName, &parsedTheme);
+    if (m_iconType == Ant::IconType::None && m_iconName == newIconName && m_iconTheme == parsedTheme)
+    {
+        return;
+    }
+
+    const bool typeChanged = m_iconType != Ant::IconType::None;
+    const bool nameChanged = m_iconName != newIconName;
+    const bool themeChanged = m_iconTheme != parsedTheme;
+
+    m_iconType = Ant::IconType::None;
+    m_iconName = newIconName;
+    m_iconTheme = parsedTheme;
+    m_hasCustomPath = false;
+    update();
+
+    if (typeChanged)
+    {
+        Q_EMIT iconTypeChanged(m_iconType);
+    }
+    if (themeChanged)
+    {
+        Q_EMIT iconThemeChanged(m_iconTheme);
+    }
+    if (nameChanged)
+    {
+        Q_EMIT iconNameChanged(m_iconName);
+    }
+}
+
+QString AntIcon::resolvedIconName() const
+{
+    const QString baseName = !m_iconName.isEmpty() ? m_iconName : iconNameForType(m_iconType);
+    if (baseName.isEmpty())
+    {
+        return QString();
+    }
+    return baseName + themeSuffix(m_iconTheme);
 }
 
 Ant::IconTheme AntIcon::iconTheme() const { return m_iconTheme; }
@@ -692,6 +813,87 @@ AntIcon::IconPaths AntIcon::builtinPaths(Ant::IconType type, Ant::IconTheme them
         }
     }
     return result;
+}
+
+QString AntIcon::iconNameForType(Ant::IconType type)
+{
+    switch (type)
+    {
+    case Ant::IconType::Search:
+        return QStringLiteral("Search");
+    case Ant::IconType::Close:
+        return QStringLiteral("Close");
+    case Ant::IconType::Plus:
+        return QStringLiteral("Plus");
+    case Ant::IconType::Minus:
+        return QStringLiteral("Minus");
+    case Ant::IconType::Check:
+        return QStringLiteral("Check");
+    case Ant::IconType::InfoCircle:
+        return QStringLiteral("InfoCircle");
+    case Ant::IconType::ExclamationCircle:
+        return QStringLiteral("ExclamationCircle");
+    case Ant::IconType::CloseCircle:
+        return QStringLiteral("CloseCircle");
+    case Ant::IconType::CheckCircle:
+        return QStringLiteral("CheckCircle");
+    case Ant::IconType::Loading:
+        return QStringLiteral("Loading");
+    case Ant::IconType::Down:
+        return QStringLiteral("Down");
+    case Ant::IconType::Up:
+        return QStringLiteral("Up");
+    case Ant::IconType::Left:
+        return QStringLiteral("Left");
+    case Ant::IconType::Right:
+        return QStringLiteral("Right");
+    case Ant::IconType::Calendar:
+        return QStringLiteral("Calendar");
+    case Ant::IconType::ClockCircle:
+        return QStringLiteral("ClockCircle");
+    case Ant::IconType::User:
+        return QStringLiteral("User");
+    case Ant::IconType::Home:
+        return QStringLiteral("Home");
+    case Ant::IconType::Star:
+        return QStringLiteral("Star");
+    case Ant::IconType::Setting:
+        return QStringLiteral("Setting");
+    case Ant::IconType::Heart:
+        return QStringLiteral("Heart");
+    case Ant::IconType::Bell:
+        return QStringLiteral("Bell");
+    case Ant::IconType::Mail:
+        return QStringLiteral("Mail");
+    case Ant::IconType::Edit:
+        return QStringLiteral("Edit");
+    case Ant::IconType::Delete:
+        return QStringLiteral("Delete");
+    case Ant::IconType::CloudUpload:
+        return QStringLiteral("CloudUpload");
+    case Ant::IconType::None:
+    default:
+        return QString();
+    }
+}
+
+QStringList AntIcon::builtinIconNames()
+{
+    static QStringList names;
+    static bool initialized = false;
+    if (!initialized)
+    {
+        QDir dir(QStringLiteral(":/qt-ant-design/icons/antd"));
+        const QStringList entries = dir.entryList(QStringList{QStringLiteral("*.svg")}, QDir::Files, QDir::Name);
+        names.reserve(entries.size());
+        for (QString entry : entries)
+        {
+            entry.chop(4);
+            names.append(entry);
+        }
+        initialized = true;
+    }
+    return names;
 }
 
 QPainterPath AntIcon::transformPath(const QPainterPath& path, const QRectF& targetRect)

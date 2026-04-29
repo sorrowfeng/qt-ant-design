@@ -1,6 +1,7 @@
 #include "AntIconStyle.h"
 
 #include <QEvent>
+#include <QFile>
 #include <QPainter>
 #include <QPainterPathStroker>
 #include <QStyleOption>
@@ -566,6 +567,36 @@ QColor officialTwoToneSecondaryColor(const QColor& primary)
     return AntPalette::tint(primary, 0.92);
 }
 
+bool drawResourceIcon(const QString& iconName,
+                      const QRectF& iconRect,
+                      const QColor& primaryColor,
+                      const QColor& secondaryColor,
+                      QPainter* painter)
+{
+    if (iconName.isEmpty() || !painter)
+    {
+        return false;
+    }
+
+    QFile file(QStringLiteral(":/qt-ant-design/icons/antd/%1.svg").arg(iconName));
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        return false;
+    }
+
+    QString svg = QString::fromUtf8(file.readAll());
+    svg.replace(QStringLiteral("__PRIMARY__"), primaryColor.name(QColor::HexRgb));
+    svg.replace(QStringLiteral("__SECONDARY__"), secondaryColor.name(QColor::HexRgb));
+
+    QSvgRenderer renderer(svg.toUtf8());
+    if (!renderer.isValid())
+    {
+        return false;
+    }
+    renderer.render(painter, iconRect);
+    return true;
+}
+
 bool drawOfficialOutlinedIcon(Ant::IconType type, const QRectF& iconRect, const QColor& color, QPainter* painter)
 {
     const auto* data = officialOutlinedIcon(type);
@@ -756,12 +787,6 @@ void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const
         paths = AntIcon::builtinPaths(iconType, iconTheme);
     }
 
-    if (paths.primary.isEmpty() && paths.secondary.isEmpty())
-    {
-        painter->restore();
-        return;
-    }
-
     painter->translate(widget->rect().center());
     painter->rotate(icon->rotate() + (icon->isSpin() ? icon->spinAngle() : 0));
     painter->translate(-widget->rect().center());
@@ -774,6 +799,19 @@ void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const
     if (iconTheme == Ant::IconTheme::TwoTone)
     {
         primaryColor = icon->twoToneColor().isValid() ? icon->twoToneColor() : token.colorPrimary;
+    }
+
+    const QColor resourceSecondaryColor = !enabled ? token.colorBgContainerDisabled : officialTwoToneSecondaryColor(primaryColor);
+    if (!icon->hasCustomPath() && drawResourceIcon(icon->resolvedIconName(), iconRect, primaryColor, resourceSecondaryColor, painter))
+    {
+        painter->restore();
+        return;
+    }
+
+    if (paths.primary.isEmpty() && paths.secondary.isEmpty())
+    {
+        painter->restore();
+        return;
     }
 
     if (!icon->hasCustomPath() && iconTheme == Ant::IconTheme::Outlined &&

@@ -220,5 +220,14 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
         painter->drawLine(QPointF(cx + 4.5, cy - 4.5), QPointF(cx - 4.5, cy + 4.5));
     }
 
+    // Draw an inner outline so frameless windows remain visible on light desktop backgrounds.
+    if (!maximized)
+    {
+        painter->setPen(QPen(token.colorBorder, token.lineWidth));
+        painter->setBrush(Qt::NoBrush);
+        const qreal halfLine = token.lineWidth / 2.0;
+        painter->drawRect(QRectF(option->rect).adjusted(halfLine, halfLine, -halfLine, -halfLine));
+    }
+
     painter->restore();
 }

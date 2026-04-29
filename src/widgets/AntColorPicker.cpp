@@ -1,22 +1,21 @@
 #include "AntColorPicker.h"
 
-#include <QComboBox>
-#include <QDialog>
 #include <QEvent>
 #include <QFontMetrics>
-#include <QGridLayout>
+#include <QFrame>
+#include <QGuiApplication>
 #include <QHBoxLayout>
+#include <QHideEvent>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPushButton>
+#include <QPainterPath>
 #include <QRegularExpressionValidator>
-#include <QSpinBox>
+#include <QScreen>
 #include <QVBoxLayout>
 
-#include "AntButton.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -27,36 +26,34 @@ class HueSatField : public QWidget
 public:
     explicit HueSatField(QWidget* parent = nullptr) : QWidget(parent)
     {
-        setFixedSize(200, 200);
+        setFixedSize(234, 160);
         setMouseTracking(true);
-        m_image = QImage(256, 256, QImage::Format_RGB32);
-        for (int y = 0; y < 256; ++y)
-        {
-            for (int x = 0; x < 256; ++x)
-            {
-                m_image.setPixelColor(x, y, QColor::fromHsvF(x / 255.0, 1.0 - y / 255.0, 1.0));
-            }
-        }
-        // Default position: red (hue=0, sat=1)
-        m_point = QPoint(0, 0);
     }
 
-    void setHsv(int h, int s)
+    void setHsv(int h, int s, int v)
     {
-        int x = qBound(0, h * 256 / 360, 255);
-        int y = qBound(0, 255 - s * 256 / 255, 255);
-        if (m_point != QPoint(x, y))
+        m_hue = qBound(0, h < 0 ? 0 : h, 359);
+        const int x = qBound(0, s * width() / 255, width() - 1);
+        const int y = qBound(0, height() - 1 - v * height() / 255, height() - 1);
+        const QPoint next(x, y);
+        if (m_point != next)
         {
-            m_point = QPoint(x, y);
-            update();
+            m_point = next;
         }
+        update();
     }
 
     void setCurrentHsv(int& h, int& s, int& v)
     {
-        h = m_point.x() * 360 / 256;
-        s = 255 - m_point.y() * 255 / 256;
-        v = m_value;
+        h = m_hue;
+        s = qBound(0, m_point.x() * 255 / qMax(1, width() - 1), 255);
+        v = qBound(0, 255 - m_point.y() * 255 / qMax(1, height() - 1), 255);
+    }
+
+    void setHue(int hue)
+    {
+        m_hue = qBound(0, hue < 0 ? 0 : hue, 359);
+        update();
     }
 
 std::function<void()> onChanged;
@@ -66,19 +63,29 @@ protected:
     {
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
-        p.drawImage(rect().adjusted(3, 3, -3, -3), m_image);
 
-        const auto& token = antTheme->tokens();
-        p.setPen(QPen(token.colorBorder, 3));
-        p.setBrush(Qt::NoBrush);
-        p.drawRoundedRect(rect(), 5, 5);
+        const QRectF field = rect().adjusted(0.5, 0.5, -0.5, -0.5);
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor::fromHsv(m_hue, 255, 255));
+        p.drawRoundedRect(field, 3, 3);
 
-        // Cursor
-        p.setPen(QPen(token.colorTextLightSolid, 2));
+        QLinearGradient white(0, 0, width(), 0);
+        white.setColorAt(0, Qt::white);
+        white.setColorAt(1, QColor(255, 255, 255, 0));
+        p.setBrush(white);
+        p.drawRoundedRect(field, 3, 3);
+
+        QLinearGradient black(0, 0, 0, height());
+        black.setColorAt(0, QColor(0, 0, 0, 0));
+        black.setColorAt(1, Qt::black);
+        p.setBrush(black);
+        p.drawRoundedRect(field, 3, 3);
+
+        p.setPen(QPen(Qt::white, 2));
         p.setBrush(Qt::NoBrush);
-        p.drawEllipse(QPointF(m_point.x() * width() / 256.0, m_point.y() * height() / 256.0), 8, 8);
-        p.setPen(QPen(QColor(0, 0, 0, 80), 1));
-        p.drawEllipse(QPointF(m_point.x() * width() / 256.0, m_point.y() * height() / 256.0), 9, 9);
+        p.drawEllipse(QPointF(m_point), 8, 8);
+        p.setPen(QPen(QColor(0, 0, 0, 70), 1));
+        p.drawEllipse(QPointF(m_point), 9, 9);
     }
 
     void mousePressEvent(QMouseEvent* e) override { updatePoint(e->pos()); }
@@ -90,44 +97,37 @@ protected:
 private:
     void updatePoint(const QPoint& pos)
     {
-        int x = qBound(3, pos.x(), width() - 4);
-        int y = qBound(3, pos.y(), height() - 4);
-        m_point = QPoint(x * 256 / width(), y * 256 / height());
+        const int x = qBound(0, pos.x(), width() - 1);
+        const int y = qBound(0, pos.y(), height() - 1);
+        m_point = QPoint(x, y);
         update();
         if (onChanged) onChanged();
     }
 
-    QImage m_image;
-    QPoint m_point;
-    int m_value = 255;
+    QPoint m_point = QPoint(233, 0);
+    int m_hue = 215;
 };
 
-// ---- ColorSlider ----
+// ---- HueSlider ----
 
-class ColorSlider : public QWidget
+class HueSlider : public QWidget
 {
 public:
-    explicit ColorSlider(QWidget* parent = nullptr) : QWidget(parent)
+    explicit HueSlider(QWidget* parent = nullptr) : QWidget(parent)
     {
-        setFixedSize(200, 20);
+        setFixedSize(234, 16);
         setMouseTracking(true);
     }
 
-    void setBaseColor(const QColor& c)
+    void setHue(int hue)
     {
-        m_baseColor = c;
+        m_hue = qBound(0, hue < 0 ? 0 : hue, 359);
         update();
     }
 
-    void setValue(int v)
-    {
-        m_value = qBound(0, v, 255);
-        update();
-    }
+    int hue() const { return m_hue; }
 
-    int value() const { return m_value; }
-
-std::function<void(int)> onValueChanged;
+std::function<void(int)> onHueChanged;
 
 protected:
     void paintEvent(QPaintEvent*) override
@@ -135,21 +135,22 @@ protected:
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
 
-        const QRectF r = rect().adjusted(4, 8, -4, -8);
+        const QRectF r = rect().adjusted(0.5, 4.5, -0.5, -4.5);
         QLinearGradient grad(r.left(), 0, r.right(), 0);
-        grad.setColorAt(0.0, Qt::black);
-        QColor mid = m_baseColor;
-        mid.setHsv(m_baseColor.hue(), m_baseColor.saturation(), 128);
-        grad.setColorAt(0.5, mid);
-        grad.setColorAt(1.0, QColor::fromHsv(m_baseColor.hue(), m_baseColor.saturation(), 255));
-        p.setPen(QPen(antTheme->tokens().colorBorder, 1));
+        for (int i = 0; i <= 6; ++i)
+        {
+            grad.setColorAt(i / 6.0, QColor::fromHsv(i * 60 % 360, 255, 255));
+        }
+        p.setPen(Qt::NoPen);
         p.setBrush(grad);
-        p.drawRoundedRect(r, 3, 3);
+        p.drawRoundedRect(r, 4, 4);
 
-        qreal cx = r.left() + m_value * r.width() / 255.0;
-        p.setPen(QPen(antTheme->tokens().colorBorder, 1));
-        p.setBrush(antTheme->tokens().colorBgContainer);
+        const qreal cx = r.left() + m_hue * r.width() / 359.0;
+        p.setPen(QPen(antTheme->tokens().colorBgContainer, 2));
+        p.setBrush(Qt::NoBrush);
         p.drawEllipse(QPointF(cx, r.center().y()), 6, 6);
+        p.setPen(QPen(AntPalette::alpha(antTheme->tokens().colorText, 0.35), 1));
+        p.drawEllipse(QPointF(cx, r.center().y()), 7, 7);
     }
 
     void mousePressEvent(QMouseEvent* e) override { updateFromPos(e->pos()); }
@@ -161,13 +162,71 @@ protected:
 private:
     void updateFromPos(const QPoint& pos)
     {
-        const QRectF r = rect().adjusted(4, 8, -4, -8);
-        int v = qBound(0, static_cast<int>((pos.x() - r.left()) * 255.0 / r.width()), 255);
-        if (v != m_value) { m_value = v; update(); if (onValueChanged) onValueChanged(v); }
+        const QRectF r = rect().adjusted(0.5, 4.5, -0.5, -4.5);
+        const int nextHue = qBound(0, static_cast<int>((pos.x() - r.left()) * 359.0 / r.width()), 359);
+        if (nextHue != m_hue)
+        {
+            m_hue = nextHue;
+            update();
+            if (onHueChanged) onHueChanged(m_hue);
+        }
     }
 
-    QColor m_baseColor = Qt::red;
-    int m_value = 255;
+    int m_hue = 215;
+};
+
+// ---- AlphaSlider ----
+
+class AlphaSlider : public QWidget
+{
+public:
+    explicit AlphaSlider(QWidget* parent = nullptr) : QWidget(parent)
+    {
+        setFixedSize(234, 16);
+    }
+
+    void setColor(const QColor& color)
+    {
+        m_color = color;
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+
+        const QRectF r = rect().adjusted(0.5, 4.5, -0.5, -4.5);
+        const int cell = 4;
+        for (int y = static_cast<int>(r.top()); y < r.bottom(); y += cell)
+        {
+            for (int x = static_cast<int>(r.left()); x < r.right(); x += cell)
+            {
+                const bool dark = ((x / cell) + (y / cell)) % 2;
+                p.fillRect(QRect(x, y, cell, cell), dark ? QColor(QStringLiteral("#d9d9d9")) : Qt::white);
+            }
+        }
+
+        QLinearGradient grad(r.left(), 0, r.right(), 0);
+        QColor transparent = m_color;
+        transparent.setAlpha(0);
+        QColor opaque = m_color;
+        opaque.setAlpha(255);
+        grad.setColorAt(0.0, transparent);
+        grad.setColorAt(1.0, opaque);
+        p.setPen(Qt::NoPen);
+        p.setBrush(grad);
+        p.drawRoundedRect(r, 3, 3);
+
+        const qreal cx = r.right();
+        p.setPen(QPen(antTheme->tokens().colorBgContainer, 2));
+        p.setBrush(Qt::NoBrush);
+        p.drawEllipse(QPointF(cx, r.center().y()), 6, 6);
+    }
+
+private:
+    QColor m_color = QColor(QStringLiteral("#1677ff"));
 };
 
 // ---- ColorPreview ----
@@ -267,309 +326,208 @@ private:
     int m_selected = -1;
 };
 
-class ColorPickerDialog : public QDialog
+class ColorPickerPopup : public QFrame
 {
 public:
-    explicit ColorPickerDialog(QWidget* parent = nullptr);
-    explicit ColorPickerDialog(const QColor& initial, QWidget* parent = nullptr);
+    explicit ColorPickerPopup(AntColorPicker* owner)
+        : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+          m_owner(owner)
+    {
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setFocusPolicy(Qt::StrongFocus);
+        setupUi();
+    }
 
-    QColor currentColor() const;
-    void setCurrentColor(const QColor& color);
+    void setCurrentColor(const QColor& color)
+    {
+        if (!color.isValid() || m_currentColor == color)
+        {
+            return;
+        }
+
+        m_currentColor = color;
+        updateFromColor(color);
+    }
 
 private:
     void setupUi();
     void updateFromColor(const QColor& color);
     void updateSlidersFromColor();
-    void updateEditFieldsFromColor();
-    void updatePreviewFromColor();
+    void updateHexField();
     void syncColor();
+    void emitColor();
 
+    void hideEvent(QHideEvent* event) override
+    {
+        if (m_owner && m_owner->isOpen())
+        {
+            m_owner->setOpen(false);
+        }
+        QFrame::hideEvent(event);
+    }
+
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event)
+        const auto& token = antTheme->tokens();
+        const QRectF panel = QRectF(rect()).adjusted(10.5, 10.5, -10.5, -10.5);
+        const QPointF arrowCenter(panel.left() + 22.0, panel.top());
+
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+        antTheme->drawEffectShadow(&painter, panel.toRect(), 16, token.borderRadiusLG, 0.42);
+
+        QPainterPath arrow;
+        arrow.moveTo(arrowCenter.x() - 7.0, arrowCenter.y());
+        arrow.lineTo(arrowCenter.x(), arrowCenter.y() - 7.0);
+        arrow.lineTo(arrowCenter.x() + 7.0, arrowCenter.y());
+        arrow.closeSubpath();
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(token.colorBgElevated);
+        painter.drawPath(arrow);
+        painter.drawRoundedRect(panel, token.borderRadiusLG, token.borderRadiusLG);
+
+        QPainterPath border;
+        border.addRoundedRect(panel, token.borderRadiusLG, token.borderRadiusLG);
+        border.addPath(arrow);
+        painter.setPen(QPen(token.colorBorder, 1));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawPath(border);
+
+        painter.setPen(QPen(token.colorBgElevated, 2));
+        painter.drawLine(QPointF(arrowCenter.x() - 6.0, panel.top() + 0.5),
+                         QPointF(arrowCenter.x() + 6.0, panel.top() + 0.5));
+    }
+
+    AntColorPicker* m_owner = nullptr;
     QColor m_currentColor = Qt::white;
-    QColor m_previousColor = Qt::white;
     bool m_updating = false;
 
     QWidget* m_hsField = nullptr;
-    QWidget* m_valueSlider = nullptr;
+    QWidget* m_hueSlider = nullptr;
+    QWidget* m_alphaSlider = nullptr;
     QLineEdit* m_hexEdit = nullptr;
-    QComboBox* m_modeCombo = nullptr;
-    QSpinBox* m_rEdit = nullptr;
-    QSpinBox* m_gEdit = nullptr;
-    QSpinBox* m_bEdit = nullptr;
-    QLabel* m_rLabel = nullptr;
-    QLabel* m_gLabel = nullptr;
-    QLabel* m_bLabel = nullptr;
-    QWidget* m_previewOld = nullptr;
     QWidget* m_previewNew = nullptr;
-    QWidget* m_presetGrid = nullptr;
-    QWidget* m_customGrid = nullptr;
-    QPushButton* m_addCustomBtn = nullptr;
-    QPushButton* m_removeCustomBtn = nullptr;
-
-    QList<QColor> m_customColors;
 };
 
-// ---- ColorPickerDialog ----
+// ---- ColorPickerPopup ----
 
-ColorPickerDialog::ColorPickerDialog(QWidget* parent)
-    : QDialog(parent)
+void ColorPickerPopup::setupUi()
 {
-    setupUi();
-}
-
-ColorPickerDialog::ColorPickerDialog(const QColor& initial, QWidget* parent)
-    : QDialog(parent)
-{
-    setupUi();
-    setCurrentColor(initial);
-}
-
-QColor ColorPickerDialog::currentColor() const { return m_currentColor; }
-
-void ColorPickerDialog::setCurrentColor(const QColor& color)
-{
-    if (m_currentColor == color) return;
-    m_currentColor = color;
-    m_previousColor = color;
-    updateFromColor(color);
-}
-
-void ColorPickerDialog::setupUi()
-{
-    setWindowTitle(QStringLiteral("Color Picker"));
-    setFixedSize(480, 440);
+    setFixedSize(278, 292);
 
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(16, 16, 16, 16);
-
-    // Color area: HS field + sliders + inputs
-    auto* colorArea = new QHBoxLayout();
+    mainLayout->setContentsMargins(22, 22, 22, 22);
+    mainLayout->setSpacing(8);
 
     m_hsField = new HueSatField(this);
-    static_cast<HueSatField*>(m_hsField)->onChanged = [this]() { syncColor(); };
-    colorArea->addWidget(m_hsField);
+    static_cast<HueSatField*>(m_hsField)->onChanged = [this]() {
+        syncColor();
+        emitColor();
+    };
+    mainLayout->addWidget(m_hsField, 0, Qt::AlignHCenter);
 
-    auto* rightCol = new QVBoxLayout();
+    m_hueSlider = new HueSlider(this);
+    static_cast<HueSlider*>(m_hueSlider)->onHueChanged = [this](int hue) {
+        static_cast<HueSatField*>(m_hsField)->setHue(hue);
+        syncColor();
+        emitColor();
+    };
+    mainLayout->addWidget(m_hueSlider, 0, Qt::AlignHCenter);
 
-    // Value slider
-    auto* valLabel = new QLabel(QStringLiteral("Value"), this);
-    rightCol->addWidget(valLabel);
-    m_valueSlider = new ColorSlider(this);
-    static_cast<ColorSlider*>(m_valueSlider)->onValueChanged = [this](int) { syncColor(); };
-    rightCol->addWidget(m_valueSlider);
-    rightCol->addSpacing(8);
+    m_alphaSlider = new AlphaSlider(this);
+    mainLayout->addWidget(m_alphaSlider, 0, Qt::AlignHCenter);
 
-    // Hex input
-    auto* hexLayout = new QHBoxLayout();
-    hexLayout->addWidget(new QLabel(QStringLiteral("Hex"), this));
+    auto* valueRow = new QHBoxLayout();
+    valueRow->setSpacing(6);
+    m_previewNew = new ColorPreview(this);
+    static_cast<ColorPreview*>(m_previewNew)->setFixedSize(28, 28);
+    valueRow->addWidget(m_previewNew);
+
+    auto* modeLabel = new QLabel(QStringLiteral("HEX v"), this);
+    modeLabel->setFixedWidth(40);
+    modeLabel->setAlignment(Qt::AlignCenter);
+    valueRow->addWidget(modeLabel);
+
     m_hexEdit = new QLineEdit(this);
-    m_hexEdit->setFixedWidth(100);
+    m_hexEdit->setFixedHeight(32);
     m_hexEdit->setText(QStringLiteral("#FFFFFF"));
     m_hexEdit->setValidator(new QRegularExpressionValidator(QRegularExpression(QStringLiteral("#[0-9A-Fa-f]{0,6}")), this));
     connect(m_hexEdit, &QLineEdit::editingFinished, this, [this]() {
         if (m_updating) return;
         QString t = m_hexEdit->text().trimmed();
-        if (t.size() < 7) t = t.left(1) + QString(7 - t.size(), QLatin1Char('0')) + t.mid(1);
+        if (!t.startsWith(QLatin1Char('#')))
+        {
+            t.prepend(QLatin1Char('#'));
+        }
+        if (t.size() < 7)
+        {
+            t = t.left(1) + QString(7 - t.size(), QLatin1Char('0')) + t.mid(1);
+        }
         QColor c(t);
-        if (c.isValid()) { m_updating = true; m_currentColor = c; updateFromColor(c); m_updating = false; }
+        if (c.isValid())
+        {
+            m_currentColor = c;
+            updateFromColor(c);
+            emitColor();
+        }
     });
-    hexLayout->addWidget(m_hexEdit);
-    rightCol->addLayout(hexLayout);
-    rightCol->addSpacing(4);
+    valueRow->addWidget(m_hexEdit, 1);
 
-    // Mode combo
-    auto* modeLayout = new QHBoxLayout();
-    modeLayout->addWidget(new QLabel(QStringLiteral("Mode"), this));
-    m_modeCombo = new QComboBox(this);
-    m_modeCombo->addItems({QStringLiteral("RGB"), QStringLiteral("HSV")});
-    modeLayout->addWidget(m_modeCombo);
-    rightCol->addLayout(modeLayout);
-    rightCol->addSpacing(4);
-
-    // RGB/HSV edits
-    auto* editGrid = new QGridLayout();
-    m_rLabel = new QLabel(QStringLiteral("R"), this);
-    m_gLabel = new QLabel(QStringLiteral("G"), this);
-    m_bLabel = new QLabel(QStringLiteral("B"), this);
-    m_rEdit = new QSpinBox(this); m_rEdit->setRange(0, 255);
-    m_gEdit = new QSpinBox(this); m_gEdit->setRange(0, 255);
-    m_bEdit = new QSpinBox(this); m_bEdit->setRange(0, 255);
-    editGrid->addWidget(m_rLabel, 0, 0); editGrid->addWidget(m_rEdit, 0, 1);
-    editGrid->addWidget(m_gLabel, 1, 0); editGrid->addWidget(m_gEdit, 1, 1);
-    editGrid->addWidget(m_bLabel, 2, 0); editGrid->addWidget(m_bEdit, 2, 1);
-    rightCol->addLayout(editGrid);
-
-    auto rgbChanged = [this]() {
-        if (m_updating) return;
-        m_updating = true;
-        QColor c;
-        if (m_modeCombo->currentIndex() == 0)
-            c.setRgb(m_rEdit->value(), m_gEdit->value(), m_bEdit->value());
-        else
-            c.setHsv(m_rEdit->value(), m_gEdit->value(), m_bEdit->value());
-        m_currentColor = c;
-        updateSlidersFromColor();
-        updatePreviewFromColor();
-        m_updating = false;
-    };
-    connect(m_rEdit, &QSpinBox::valueChanged, this, rgbChanged);
-    connect(m_gEdit, &QSpinBox::valueChanged, this, rgbChanged);
-    connect(m_bEdit, &QSpinBox::valueChanged, this, rgbChanged);
-
-    connect(m_modeCombo, &QComboBox::currentIndexChanged, this, [this](int idx) {
-        m_updating = true;
-        if (idx == 0) { m_rLabel->setText(QStringLiteral("R")); m_gLabel->setText(QStringLiteral("G")); m_bLabel->setText(QStringLiteral("B")); m_rEdit->setRange(0, 255); m_gEdit->setRange(0, 255); m_bEdit->setRange(0, 255); }
-        else { m_rLabel->setText(QStringLiteral("H")); m_gLabel->setText(QStringLiteral("S")); m_bLabel->setText(QStringLiteral("V")); m_rEdit->setRange(0, 359); m_gEdit->setRange(0, 100); m_bEdit->setRange(0, 100); }
-        m_updating = false;
-        updateEditFieldsFromColor();
-    });
-
-    rightCol->addStretch();
-    colorArea->addLayout(rightCol);
-
-    // Preview
-    auto* previewLayout = new QHBoxLayout();
-    previewLayout->addWidget(new QLabel(QStringLiteral("Old"), this));
-    m_previewOld = new ColorPreview(this);
-    previewLayout->addWidget(m_previewOld);
-    previewLayout->addSpacing(8);
-    m_previewNew = new ColorPreview(this);
-    previewLayout->addWidget(m_previewNew);
-    previewLayout->addWidget(new QLabel(QStringLiteral("New"), this));
-    previewLayout->addStretch();
-    colorArea->addLayout(previewLayout);
-
-    mainLayout->addLayout(colorArea);
-    mainLayout->addSpacing(12);
-
-    // Preset colors
-    auto* presetLabel = new QLabel(QStringLiteral("Preset Colors"), this);
-    mainLayout->addWidget(presetLabel);
-    auto* presetGrid = new ColorGrid(13, this);
-    m_presetGrid = presetGrid;
-    QList<QColor> presets;
-    const QStringList presetNames = {QStringLiteral("blue"), QStringLiteral("purple"), QStringLiteral("cyan"),
-                                     QStringLiteral("green"), QStringLiteral("magenta"), QStringLiteral("pink"),
-                                     QStringLiteral("red"), QStringLiteral("orange"), QStringLiteral("yellow"),
-                                     QStringLiteral("volcano"), QStringLiteral("geekblue"), QStringLiteral("gold"),
-                                     QStringLiteral("lime")};
-    for (const auto& name : presetNames)
-        presets.append(AntPalette::presetColor(name));
-    presetGrid->setColors(presets);
-    presetGrid->onColorClicked = [this](int idx) {
-        const auto& colors = QList<QColor>{
-            AntPalette::presetColor(QStringLiteral("blue")), AntPalette::presetColor(QStringLiteral("purple")),
-            AntPalette::presetColor(QStringLiteral("cyan")), AntPalette::presetColor(QStringLiteral("green")),
-            AntPalette::presetColor(QStringLiteral("magenta")), AntPalette::presetColor(QStringLiteral("pink")),
-            AntPalette::presetColor(QStringLiteral("red")), AntPalette::presetColor(QStringLiteral("orange")),
-            AntPalette::presetColor(QStringLiteral("yellow")), AntPalette::presetColor(QStringLiteral("volcano")),
-            AntPalette::presetColor(QStringLiteral("geekblue")), AntPalette::presetColor(QStringLiteral("gold")),
-            AntPalette::presetColor(QStringLiteral("lime"))};
-        if (idx < colors.size()) setCurrentColor(colors[idx]);
-    };
-    mainLayout->addWidget(m_presetGrid);
-
-    // Custom colors
-    auto* customHeader = new QHBoxLayout();
-    customHeader->addWidget(new QLabel(QStringLiteral("Custom Colors"), this));
-    customHeader->addStretch();
-    m_addCustomBtn = new QPushButton(QStringLiteral("+"), this);
-    m_addCustomBtn->setFixedSize(24, 24);
-    m_removeCustomBtn = new QPushButton(QStringLiteral("-"), this);
-    m_removeCustomBtn->setFixedSize(24, 24);
-    customHeader->addWidget(m_addCustomBtn);
-    customHeader->addWidget(m_removeCustomBtn);
-    mainLayout->addLayout(customHeader);
-
-    auto* customGrid = new ColorGrid(9, this);
-    m_customGrid = customGrid;
-    m_customColors = QList<QColor>(18, QColor());
-    customGrid->setColors(m_customColors);
-    customGrid->onColorClicked = [this](int idx) {
-        if (idx < m_customColors.size() && m_customColors[idx].isValid())
-            setCurrentColor(m_customColors[idx]);
-    };
-    mainLayout->addWidget(m_customGrid);
-
-    connect(m_addCustomBtn, &QPushButton::clicked, this, [this, customGrid]() {
-        for (auto& c : m_customColors) { if (!c.isValid()) { c = m_currentColor; break; } }
-        customGrid->setColors(m_customColors);
-    });
-    connect(m_removeCustomBtn, &QPushButton::clicked, this, [this, customGrid]() {
-        for (int i = m_customColors.size() - 1; i >= 0; --i)
-        { if (m_customColors[i].isValid()) { m_customColors[i] = QColor(); break; } }
-        customGrid->setColors(m_customColors);
-    });
-
-    // Buttons
-    mainLayout->addSpacing(12);
-    auto* btnLayout = new QHBoxLayout();
-    btnLayout->addStretch();
-    auto* cancelBtn = new AntButton(QStringLiteral("Cancel"), this);
-    cancelBtn->setButtonType(Ant::ButtonType::Default);
-    connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
-    btnLayout->addWidget(cancelBtn);
-    auto* okBtn = new AntButton(QStringLiteral("OK"), this);
-    okBtn->setButtonType(Ant::ButtonType::Primary);
-    connect(okBtn, &QPushButton::clicked, this, [this]() {
-        accept();
-    });
-    btnLayout->addWidget(okBtn);
-    mainLayout->addLayout(btnLayout);
+    auto* alphaEdit = new QLineEdit(QStringLiteral("100%"), this);
+    alphaEdit->setFixedSize(44, 32);
+    alphaEdit->setReadOnly(true);
+    valueRow->addWidget(alphaEdit);
+    mainLayout->addLayout(valueRow);
 
     updateFromColor(Qt::white);
 }
 
-void ColorPickerDialog::updateFromColor(const QColor& color)
+void ColorPickerPopup::updateFromColor(const QColor& color)
 {
     m_updating = true;
     m_currentColor = color;
     updateSlidersFromColor();
-    updateEditFieldsFromColor();
-    updatePreviewFromColor();
+    updateHexField();
+    static_cast<ColorPreview*>(m_previewNew)->setColor(m_currentColor);
     m_updating = false;
 }
 
-void ColorPickerDialog::updateSlidersFromColor()
+void ColorPickerPopup::updateSlidersFromColor()
 {
-    static_cast<ColorSlider*>(m_valueSlider)->setBaseColor(m_currentColor);
-    static_cast<ColorSlider*>(m_valueSlider)->setValue(m_currentColor.value());
-    static_cast<HueSatField*>(m_hsField)->setHsv(m_currentColor.hue(), m_currentColor.saturation());
+    const int hue = m_currentColor.hue() < 0 ? 0 : m_currentColor.hue();
+    static_cast<HueSlider*>(m_hueSlider)->setHue(hue);
+    static_cast<AlphaSlider*>(m_alphaSlider)->setColor(m_currentColor);
+    static_cast<HueSatField*>(m_hsField)->setHsv(hue, m_currentColor.saturation(), m_currentColor.value());
 }
 
-void ColorPickerDialog::updateEditFieldsFromColor()
+void ColorPickerPopup::updateHexField()
 {
-    if (m_modeCombo->currentIndex() == 0)
-    {
-        m_rEdit->setValue(m_currentColor.red());
-        m_gEdit->setValue(m_currentColor.green());
-        m_bEdit->setValue(m_currentColor.blue());
-    }
-    else
-    {
-        m_rEdit->setValue(m_currentColor.hue());
-        m_gEdit->setValue(m_currentColor.saturation());
-        m_bEdit->setValue(m_currentColor.value());
-    }
     m_hexEdit->setText(m_currentColor.name().toUpper());
 }
 
-void ColorPickerDialog::updatePreviewFromColor()
-{
-    static_cast<ColorPreview*>(m_previewOld)->setColor(m_previousColor);
-    static_cast<ColorPreview*>(m_previewNew)->setColor(m_currentColor);
-}
-
-void ColorPickerDialog::syncColor()
+void ColorPickerPopup::syncColor()
 {
     if (m_updating) return;
     m_updating = true;
     int h, s, v;
     static_cast<HueSatField*>(m_hsField)->setCurrentHsv(h, s, v);
-    v = static_cast<ColorSlider*>(m_valueSlider)->value();
     m_currentColor.setHsv(h, s, v);
-    updateEditFieldsFromColor();
-    updatePreviewFromColor();
+    static_cast<AlphaSlider*>(m_alphaSlider)->setColor(m_currentColor);
+    updateHexField();
+    static_cast<ColorPreview*>(m_previewNew)->setColor(m_currentColor);
     m_updating = false;
+}
+
+void ColorPickerPopup::emitColor()
+{
+    if (!m_owner)
+    {
+        return;
+    }
+    m_owner->setCurrentColor(m_currentColor);
+    Q_EMIT m_owner->colorSelected(m_currentColor);
 }
 
 // ---- AntColorPicker ----
@@ -598,6 +556,7 @@ AntColorPicker::AntColorPicker(QWidget* parent)
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         updateGeometry();
+        updatePopupGeometry();
         update();
     });
 }
@@ -618,6 +577,10 @@ void AntColorPicker::setCurrentColor(const QColor& color)
     }
 
     m_currentColor = color;
+    if (m_popup)
+    {
+        static_cast<ColorPickerPopup*>(m_popup)->setCurrentColor(m_currentColor);
+    }
     updateGeometry();
     update();
     Q_EMIT currentColorChanged(m_currentColor);
@@ -638,18 +601,34 @@ void AntColorPicker::setShowText(bool showText)
     Q_EMIT showTextChanged(m_showText);
 }
 
-QColor AntColorPicker::getColor(const QColor& initial, QWidget* parent, const QString& title)
+bool AntColorPicker::isOpen() const { return m_open; }
+
+void AntColorPicker::setOpen(bool open)
 {
-    ColorPickerDialog dlg(initial, parent);
-    if (!title.isEmpty())
+    if (m_open == open)
     {
-        dlg.setWindowTitle(title);
+        return;
     }
-    if (dlg.exec() == QDialog::Accepted)
+
+    m_open = open;
+    if (m_open)
     {
-        return dlg.currentColor();
+        if (!m_popup)
+        {
+            m_popup = new ColorPickerPopup(this);
+        }
+        static_cast<ColorPickerPopup*>(m_popup)->setCurrentColor(m_currentColor);
+        updatePopupGeometry();
+        m_popup->show();
+        m_popup->raise();
     }
-    return {};
+    else if (m_popup)
+    {
+        m_popup->hide();
+    }
+
+    update();
+    Q_EMIT openChanged(m_open);
 }
 
 QSize AntColorPicker::sizeHint() const
@@ -770,13 +749,36 @@ void AntColorPicker::keyPressEvent(QKeyEvent* event)
 
 void AntColorPicker::openEditor()
 {
-    ColorPickerDialog dlg(m_currentColor, window());
-    dlg.setWindowTitle(QStringLiteral("Color Picker"));
-    if (dlg.exec() == QDialog::Accepted)
+    setOpen(!m_open);
+}
+
+void AntColorPicker::updatePopupGeometry()
+{
+    if (!m_popup)
     {
-        setCurrentColor(dlg.currentColor());
-        Q_EMIT colorSelected(m_currentColor);
+        return;
     }
+
+    const QSize popupSize = m_popup->sizeHint().isValid() ? m_popup->sizeHint() : m_popup->size();
+    m_popup->resize(popupSize);
+
+    QPoint globalPos = mapToGlobal(QPoint(0, height() + 4));
+    QRect available = QGuiApplication::primaryScreen() ? QGuiApplication::primaryScreen()->availableGeometry()
+                                                       : QRect(globalPos, QSize(1280, 720));
+    if (QScreen* screen = QGuiApplication::screenAt(mapToGlobal(rect().center())))
+    {
+        available = screen->availableGeometry();
+    }
+
+    if (globalPos.x() + m_popup->width() > available.right())
+    {
+        globalPos.setX(qMax(available.left() + 8, available.right() - m_popup->width() - 8));
+    }
+    if (globalPos.y() + m_popup->height() > available.bottom())
+    {
+        globalPos.setY(mapToGlobal(QPoint(0, -m_popup->height() - 4)).y());
+    }
+    m_popup->move(globalPos);
 }
 
 QRect AntColorPicker::colorBlockRect() const

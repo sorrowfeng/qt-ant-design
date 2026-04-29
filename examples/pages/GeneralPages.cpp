@@ -148,6 +148,23 @@ QWidget* createIconPage(QWidget* /*owner*/)
         return block;
     };
 
+    auto createNamedIconBlock = [](const QString& iconName) {
+        auto* block = new QWidget();
+        block->setFixedWidth(124);
+        auto* blockLayout = new QVBoxLayout(block);
+        blockLayout->setContentsMargins(0, 0, 0, 0);
+        blockLayout->setSpacing(4);
+        auto* icon = new AntIcon(iconName, block);
+        icon->setIconSize(22);
+        blockLayout->addWidget(icon, 0, Qt::AlignHCenter);
+        auto* label = new AntTypography(iconName, block);
+        label->setType(Ant::TypographyType::Secondary);
+        label->setEllipsis(true);
+        label->setFixedWidth(120);
+        blockLayout->addWidget(label, 0, Qt::AlignHCenter);
+        return block;
+    };
+
     {
         auto* card = new AntCard(QStringLiteral("Outlined Icons"));
         auto* cl = card->bodyLayout();
@@ -179,6 +196,27 @@ QWidget* createIconPage(QWidget* /*owner*/)
             auto* icon = new AntIcon(item.second);
             icon->setIconSize(22);
             grid->addWidget(createIconBlock(item.first, icon), i / 10, i % 10);
+        }
+        cl->addLayout(grid);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("Official Icon Library"));
+        auto* cl = card->bodyLayout();
+        const QStringList iconNames = AntIcon::builtinIconNames();
+        auto* summary = new AntTypography(QStringLiteral("%1 official Ant Design icons bundled").arg(iconNames.size()));
+        summary->setType(Ant::TypographyType::Secondary);
+        cl->addWidget(summary);
+
+        auto* grid = new QGridLayout();
+        grid->setContentsMargins(0, 4, 0, 0);
+        grid->setHorizontalSpacing(18);
+        grid->setVerticalSpacing(16);
+        const int visibleCount = qMin(iconNames.size(), 120);
+        for (int i = 0; i < visibleCount; ++i)
+        {
+            grid->addWidget(createNamedIconBlock(iconNames.at(i)), i / 6, i % 6);
         }
         cl->addLayout(grid);
         layout->addWidget(card);

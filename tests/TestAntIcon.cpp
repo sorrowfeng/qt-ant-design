@@ -1,3 +1,5 @@
+#include <QImage>
+#include <QPainter>
 #include <QSignalSpy>
 #include <QTest>
 #include <QList>
@@ -15,19 +17,26 @@ void TestAntIcon::propertiesAndSignals()
 {
     auto* w = new AntIcon;
     QCOMPARE(w->iconType(), Ant::IconType::None);
+    QCOMPARE(w->iconName(), QString());
+    QCOMPARE(w->resolvedIconName(), QString());
     QCOMPARE(w->iconTheme(), Ant::IconTheme::Outlined);
     QVERIFY(w->iconSize() > 0);
     QCOMPARE(w->rotate(), 0);
     QCOMPARE(w->isSpin(), false);
 
     QSignalSpy typeSpy(w, &AntIcon::iconTypeChanged);
+    QSignalSpy nameSpy(w, &AntIcon::iconNameChanged);
     w->setIconType(Ant::IconType::Search);
     QCOMPARE(w->iconType(), Ant::IconType::Search);
+    QCOMPARE(w->iconName(), QStringLiteral("Search"));
+    QCOMPARE(w->resolvedIconName(), QStringLiteral("SearchOutlined"));
     QCOMPARE(typeSpy.count(), 1);
+    QCOMPARE(nameSpy.count(), 1);
 
     QSignalSpy themeSpy(w, &AntIcon::iconThemeChanged);
     w->setIconTheme(Ant::IconTheme::Filled);
     QCOMPARE(w->iconTheme(), Ant::IconTheme::Filled);
+    QCOMPARE(w->resolvedIconName(), QStringLiteral("SearchFilled"));
     QCOMPARE(themeSpy.count(), 1);
 
     QSignalSpy sizeSpy(w, &AntIcon::iconSizeChanged);
@@ -55,6 +64,48 @@ void TestAntIcon::propertiesAndSignals()
     QVERIFY(!w->customSecondaryPath().isEmpty());
     w->clearCustomPath();
     QVERIFY(!w->hasCustomPath());
+
+    QSignalSpy namedIconSpy(w, &AntIcon::iconNameChanged);
+    w->setIconName(QStringLiteral("GithubFilled"));
+    QCOMPARE(w->iconType(), Ant::IconType::None);
+    QCOMPARE(w->iconName(), QStringLiteral("Github"));
+    QCOMPARE(w->iconTheme(), Ant::IconTheme::Filled);
+    QCOMPARE(w->resolvedIconName(), QStringLiteral("GithubFilled"));
+    QCOMPARE(namedIconSpy.count(), 1);
+
+    w->setIconName(QStringLiteral("AccountBookTwoTone.svg"));
+    QCOMPARE(w->iconName(), QStringLiteral("AccountBook"));
+    QCOMPARE(w->iconTheme(), Ant::IconTheme::TwoTone);
+    QCOMPARE(w->resolvedIconName(), QStringLiteral("AccountBookTwoTone"));
+
+    const QStringList builtinIconNames = AntIcon::builtinIconNames();
+    QCOMPARE(builtinIconNames.size(), 831);
+    QVERIFY(builtinIconNames.contains(QStringLiteral("AccountBookOutlined")));
+    QVERIFY(builtinIconNames.contains(QStringLiteral("GithubFilled")));
+    QVERIFY(builtinIconNames.contains(QStringLiteral("HeartTwoTone")));
+
+    AntIcon official(QStringLiteral("GithubFilled"));
+    official.setIconSize(24);
+    official.resize(24, 24);
+    QImage rendered(official.size(), QImage::Format_ARGB32_Premultiplied);
+    rendered.fill(Qt::transparent);
+    QPainter painter(&rendered);
+    official.render(&painter);
+    painter.end();
+
+    bool hasPaintedPixel = false;
+    for (int y = 0; y < rendered.height() && !hasPaintedPixel; ++y)
+    {
+        for (int x = 0; x < rendered.width(); ++x)
+        {
+            if (qAlpha(rendered.pixel(x, y)) > 0)
+            {
+                hasPaintedPixel = true;
+                break;
+            }
+        }
+    }
+    QVERIFY(hasPaintedPixel);
 
     const QList<Ant::IconType> outlinedReferenceIcons = {
         Ant::IconType::Home,
