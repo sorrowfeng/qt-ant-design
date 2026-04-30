@@ -90,6 +90,16 @@ void TestAntNavigation::propertiesAndSignals()
     QCOMPARE(selectedSpy.count(), 1);
 
     menu->clearItems();
+    menu->setMode(Ant::MenuMode::Inline);
+    menu->setInlineCollapsed(false);
+    QSignalSpy openSpy(menu, &AntMenu::openKeysChanged);
+    menu->addSubMenu("sub", "Navigation");
+    menu->addSubItem("sub", "s1", "Sub 1");
+    QCOMPARE(menu->openKeys(), QStringList());
+    menu->setOpenKeys(QStringList{"sub"});
+    QCOMPARE(menu->openKeys(), QStringList{"sub"});
+    QCOMPARE(openSpy.count(), 1);
+    menu->clearItems();
 
     // AntPagination
     auto* pag = new AntPagination;

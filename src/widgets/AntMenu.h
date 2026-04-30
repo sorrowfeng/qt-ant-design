@@ -13,6 +13,7 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 class QPainter;
+class QTimer;
 class QVariantAnimation;
 
 struct AntMenuItem
@@ -43,6 +44,7 @@ class AntMenu : public QWidget
 
 public:
     explicit AntMenu(QWidget* parent = nullptr);
+    ~AntMenu() override;
 
     Ant::MenuMode mode() const;
     void setMode(Ant::MenuMode mode);
@@ -120,13 +122,17 @@ Q_SIGNALS:
     void itemSelected(const QString& key);
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
 
 private:
+    class SubMenuPopup;
+
     struct VisibleItem
     {
         int index = -1;
@@ -134,23 +140,34 @@ private:
     };
 
     QList<VisibleItem> visibleItems() const;
+    QRect itemRect(int itemIndex) const;
     int itemAt(const QPoint& pos) const;
     int selectedVisibleIndex() const;
     int nextSelectableVisibleIndex(int from, int direction) const;
     bool isOpen(const QString& key) const;
+    bool isPopupMode() const;
+    bool isItemSelected(const AntMenuItem& item) const;
     bool isSubMenuVisible(const QString& key) const;
     qreal subMenuProgress(const QString& key) const;
     void toggleOpen(const QString& key);
     void animateSubMenu(const QString& key, bool open);
     void stopSubMenuAnimation(const QString& key);
     void activateItem(int itemIndex);
+    void ensureSubMenuPopup();
+    void showSubMenuPopup(int itemIndex);
+    void hideSubMenuPopup();
+    void scheduleSubMenuClose();
+    void cancelSubMenuClose();
+    void handlePopupItemClicked(const QString& key);
+    void handleSubMenuPopupHidden();
+    QRect popupGeometryForItem(int itemIndex, const QSize& popupSize) const;
     int itemHeight() const;
     int horizontalItemWidth(const AntMenuItem& item) const;
     QRect itemContentRect(const QRect& rect, const AntMenuItem& item) const;
     QColor menuBackgroundColor() const;
     QColor itemTextColor(const AntMenuItem& item, bool selected, bool hovered) const;
-    QColor itemBackgroundColor(const AntMenuItem& item, bool selected, bool hovered) const;
-    void drawItem(QPainter& painter, const AntMenuItem& item, const QRect& rect, bool selected, bool hovered) const;
+    QColor itemBackgroundColor(const AntMenuItem& item, bool selected, bool hovered, bool pressed) const;
+    void drawItem(QPainter& painter, const AntMenuItem& item, const QRect& rect, bool selected, bool hovered, bool pressed) const;
     void updateMenuGeometry();
 
     QVector<AntMenuItem> m_items;
@@ -163,6 +180,10 @@ private:
     QStringList m_openKeys;
     QHash<QString, qreal> m_subMenuProgress;
     QHash<QString, QVariantAnimation*> m_subMenuAnimations;
+    SubMenuPopup* m_subMenuPopup = nullptr;
+    QTimer* m_subMenuCloseTimer = nullptr;
+    QString m_popupParentKey;
     int m_inlineIndent = 24;
     int m_hoveredIndex = -1;
+    int m_pressedIndex = -1;
 };

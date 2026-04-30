@@ -1,10 +1,18 @@
 #include "AntMenu.h"
 
+#include <QApplication>
+#include <QEnterEvent>
+#include <QFrame>
+#include <QGuiApplication>
+#include <QHideEvent>
 #include <QKeyEvent>
 #include <QLayout>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QScreen>
+#include <QTimer>
+#include <QVBoxLayout>
 #include <QVariantAnimation>
 
 #include <algorithm>
@@ -12,6 +20,7 @@
 
 #include "../styles/AntMenuStyle.h"
 #include "AntIcon.h"
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -63,7 +72,140 @@ void drawMenuIcon(QPainter& painter, const AntMenuItem& item, const QRectF& rect
     }
     painter.restore();
 }
+
+QRect availableScreenGeometryFor(const QWidget* widget)
+{
+    if (widget)
+    {
+        if (QScreen* screen = widget->screen())
+        {
+            return screen->availableGeometry();
+        }
+    }
+    if (QScreen* screen = QGuiApplication::primaryScreen())
+    {
+        return screen->availableGeometry();
+    }
+    return QRect(0, 0, 1280, 720);
+}
 } // namespace
+
+class AntMenu::SubMenuPopup : public QFrame
+{
+public:
+    explicit SubMenuPopup(AntMenu* owner)
+        : QFrame(nullptr, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+          m_owner(owner)
+    {
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_ShowWithoutActivating, true);
+        setMouseTracking(true);
+
+        auto* layout = new QVBoxLayout(this);
+        layout->setContentsMargins(8, 8, 8, 8);
+        layout->setSpacing(0);
+
+        m_menu = new AntMenu(this);
+        m_menu->setCompact(true);
+        layout->addWidget(m_menu);
+
+        connect(m_menu, &AntMenu::itemClicked, this, [this](const QString& key) {
+            if (m_owner)
+            {
+                m_owner->handlePopupItemClicked(key);
+            }
+        });
+    }
+
+    void rebuild(const QString& parentKey)
+    {
+        if (!m_owner || !m_menu)
+        {
+            return;
+        }
+
+        m_menu->setMode(Ant::MenuMode::Vertical);
+        m_menu->setMenuTheme(m_owner->menuTheme());
+        m_menu->setSelectable(m_owner->isSelectable());
+        m_menu->clearItems();
+        m_menu->setSelectedKey(m_owner->selectedKey());
+
+        int maxTextWidth = 88;
+        QFont textFont = m_menu->font();
+        textFont.setPixelSize(antTheme->tokens().fontSize);
+        const QFontMetrics fm(textFont);
+
+        for (const AntMenuItem& item : std::as_const(m_owner->m_items))
+        {
+            if (item.parentKey != parentKey)
+            {
+                continue;
+            }
+            if (item.iconType != Ant::IconType::None)
+            {
+                m_menu->addItem(item.key, item.label, item.iconType, item.extra, item.disabled, item.danger);
+            }
+            else
+            {
+                m_menu->addItem(item.key, item.label, item.iconText, item.extra, item.disabled, item.danger);
+            }
+            maxTextWidth = qMax(maxTextWidth, fm.horizontalAdvance(item.label));
+        }
+
+        const auto& token = antTheme->tokens();
+        const int popupMenuWidth = qBound(128, maxTextWidth + token.paddingLG * 2 + 32, 260);
+        m_menu->setFixedWidth(popupMenuWidth);
+        m_menu->adjustSize();
+        setFixedSize(popupMenuWidth + 16, m_menu->sizeHint().height() + 16);
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event)
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+        const QRect panel = rect().adjusted(8, 8, -8, -8);
+        antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.55);
+        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        painter.setBrush(token.colorBgElevated);
+        painter.drawRoundedRect(QRectF(panel).adjusted(0.5, 0.5, -0.5, -0.5),
+                                token.borderRadiusLG, token.borderRadiusLG);
+    }
+
+    void enterEvent(QEnterEvent* event) override
+    {
+        if (m_owner)
+        {
+            m_owner->cancelSubMenuClose();
+        }
+        QFrame::enterEvent(event);
+    }
+
+    void leaveEvent(QEvent* event) override
+    {
+        if (m_owner)
+        {
+            m_owner->scheduleSubMenuClose();
+        }
+        QFrame::leaveEvent(event);
+    }
+
+    void hideEvent(QHideEvent* event) override
+    {
+        if (m_owner)
+        {
+            m_owner->handleSubMenuPopupHidden();
+        }
+        QFrame::hideEvent(event);
+    }
+
+private:
+    AntMenu* m_owner = nullptr;
+    AntMenu* m_menu = nullptr;
+};
 
 AntMenu::AntMenu(QWidget* parent)
     : QWidget(parent)
@@ -72,6 +214,22 @@ AntMenu::AntMenu(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
+    m_subMenuCloseTimer = new QTimer(this);
+    m_subMenuCloseTimer->setSingleShot(true);
+    connect(m_subMenuCloseTimer, &QTimer::timeout, this, &AntMenu::hideSubMenuPopup);
+}
+
+AntMenu::~AntMenu()
+{
+    if (qApp)
+    {
+        qApp->removeEventFilter(this);
+    }
+    if (m_subMenuPopup)
+    {
+        m_subMenuPopup->deleteLater();
+        m_subMenuPopup = nullptr;
+    }
 }
 
 Ant::MenuMode AntMenu::mode() const { return m_mode; }
@@ -84,6 +242,7 @@ void AntMenu::setMode(Ant::MenuMode mode)
     }
     m_mode = mode;
     m_hoveredIndex = -1;
+    hideSubMenuPopup();
     updateMenuGeometry();
     update();
     Q_EMIT modeChanged(m_mode);
@@ -219,6 +378,36 @@ void AntMenu::setInlineIndent(int indent)
     Q_EMIT inlineIndentChanged(m_inlineIndent);
 }
 
+bool AntMenu::eventFilter(QObject* watched, QEvent* event)
+{
+    Q_UNUSED(watched)
+    if (m_subMenuPopup && m_subMenuPopup->isVisible())
+    {
+        if (event->type() == QEvent::MouseButtonPress)
+        {
+            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            const QPoint globalPos = mouseEvent->globalPosition().toPoint();
+            const QRect menuRect(mapToGlobal(QPoint(0, 0)), size());
+            const bool insideMenu = menuRect.contains(globalPos);
+            const bool insidePopup = m_subMenuPopup->geometry().contains(globalPos);
+            if (!insideMenu && !insidePopup)
+            {
+                hideSubMenuPopup();
+            }
+        }
+        else if (event->type() == QEvent::KeyPress)
+        {
+            auto* keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_Escape)
+            {
+                hideSubMenuPopup();
+                return true;
+            }
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
 void AntMenu::addItem(const QString& key,
                       const QString& label,
                       const QString& iconText,
@@ -266,12 +455,6 @@ void AntMenu::addSubMenu(const QString& key, const QString& label, const QString
     item.disabled = disabled;
     item.subMenu = true;
     m_items.append(item);
-    if (!m_openKeys.contains(key))
-    {
-        m_openKeys.append(key);
-        m_subMenuProgress[key] = 1.0;
-        Q_EMIT openKeysChanged(m_openKeys);
-    }
     updateMenuGeometry();
     update();
 }
@@ -285,12 +468,6 @@ void AntMenu::addSubMenu(const QString& key, const QString& label, Ant::IconType
     item.disabled = disabled;
     item.subMenu = true;
     m_items.append(item);
-    if (!m_openKeys.contains(key))
-    {
-        m_openKeys.append(key);
-        m_subMenuProgress[key] = 1.0;
-        Q_EMIT openKeysChanged(m_openKeys);
-    }
     updateMenuGeometry();
     update();
 }
@@ -350,6 +527,7 @@ void AntMenu::addDivider()
 
 void AntMenu::clearItems()
 {
+    hideSubMenuPopup();
     for (auto* animation : std::as_const(m_subMenuAnimations))
     {
         if (animation)
@@ -387,17 +565,12 @@ QSize AntMenu::sizeHint() const
     const int width = m_inlineCollapsed ? 80 : (m_compact ? 120 : 240);
     const int verticalPadding = m_compact ? token.paddingXXS : token.paddingXS;
     const auto visible = visibleItems();
-    const int rows = visible.count();
-    int dividerCount = 0;
-    for (const auto& item : visible)
+    int contentHeight = verticalPadding;
+    if (!visible.isEmpty())
     {
-        if (m_items.at(item.index).divider)
-        {
-            ++dividerCount;
-        }
+        contentHeight = visible.last().rect.bottom() + 1 + verticalPadding;
     }
-    const int dividerAdjustment = dividerCount * ((m_compact ? 8 : 12) - itemHeight());
-    return QSize(width, std::max(itemHeight(), rows * itemHeight() + dividerAdjustment + verticalPadding * 2));
+    return QSize(width, std::max(itemHeight(), contentHeight));
 }
 
 QSize AntMenu::minimumSizeHint() const
@@ -428,7 +601,6 @@ void AntMenu::paintEvent(QPaintEvent* event)
 
     // Items
     const auto visible = visibleItems();
-    const int selectedIdx = selectedVisibleIndex();
     for (int i = 0; i < visible.count(); ++i)
     {
         const int itemIdx = visible.at(i).index;
@@ -441,9 +613,10 @@ void AntMenu::paintEvent(QPaintEvent* event)
             painter.drawLine(r.left() + token.paddingSM, y, r.right() - token.paddingSM, y);
             continue;
         }
-        const bool selected = (i == selectedIdx);
-        const bool hovered = (itemIdx == m_hoveredIndex);
-        drawItem(painter, item, r, selected, hovered);
+        const bool selected = isItemSelected(item);
+        const bool hovered = itemIdx == m_hoveredIndex || (item.subMenu && item.key == m_popupParentKey);
+        const bool pressed = itemIdx == m_pressedIndex;
+        drawItem(painter, item, r, selected, hovered, pressed);
     }
 }
 
@@ -455,6 +628,14 @@ void AntMenu::mouseMoveEvent(QMouseEvent* event)
         m_hoveredIndex = index;
         update();
     }
+    if (isPopupMode() && index >= 0 && index < m_items.size() && m_items.at(index).subMenu && !m_items.at(index).disabled)
+    {
+        showSubMenuPopup(index);
+    }
+    else if (isPopupMode() && index >= 0)
+    {
+        scheduleSubMenuClose();
+    }
     QWidget::mouseMoveEvent(event);
 }
 
@@ -465,6 +646,8 @@ void AntMenu::mousePressEvent(QMouseEvent* event)
         const int index = itemAt(event->pos());
         if (index >= 0)
         {
+            m_pressedIndex = index;
+            update();
             activateItem(index);
             event->accept();
             return;
@@ -473,12 +656,26 @@ void AntMenu::mousePressEvent(QMouseEvent* event)
     QWidget::mousePressEvent(event);
 }
 
+void AntMenu::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (m_pressedIndex != -1)
+    {
+        m_pressedIndex = -1;
+        update();
+    }
+    QWidget::mouseReleaseEvent(event);
+}
+
 void AntMenu::leaveEvent(QEvent* event)
 {
     if (m_hoveredIndex != -1)
     {
         m_hoveredIndex = -1;
         update();
+    }
+    if (isPopupMode())
+    {
+        scheduleSubMenuClose();
     }
     QWidget::leaveEvent(event);
 }
@@ -550,6 +747,18 @@ QList<AntMenu::VisibleItem> AntMenu::visibleItems() const
     return visible;
 }
 
+QRect AntMenu::itemRect(int itemIndex) const
+{
+    for (const auto& visible : visibleItems())
+    {
+        if (visible.index == itemIndex)
+        {
+            return visible.rect;
+        }
+    }
+    return {};
+}
+
 int AntMenu::itemAt(const QPoint& pos) const
 {
     for (const auto& visible : visibleItems())
@@ -599,6 +808,30 @@ int AntMenu::nextSelectableVisibleIndex(int from, int direction) const
 bool AntMenu::isOpen(const QString& key) const
 {
     return m_openKeys.contains(key);
+}
+
+bool AntMenu::isPopupMode() const
+{
+    return m_mode == Ant::MenuMode::Horizontal || m_mode == Ant::MenuMode::Vertical || m_inlineCollapsed;
+}
+
+bool AntMenu::isItemSelected(const AntMenuItem& item) const
+{
+    if (item.key == m_selectedKey)
+    {
+        return true;
+    }
+    if (item.subMenu)
+    {
+        for (const AntMenuItem& child : std::as_const(m_items))
+        {
+            if (child.parentKey == item.key && child.key == m_selectedKey)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 bool AntMenu::isSubMenuVisible(const QString& key) const
@@ -676,6 +909,128 @@ void AntMenu::stopSubMenuAnimation(const QString& key)
     }
 }
 
+void AntMenu::ensureSubMenuPopup()
+{
+    if (m_subMenuPopup)
+    {
+        return;
+    }
+    m_subMenuPopup = new SubMenuPopup(this);
+}
+
+void AntMenu::showSubMenuPopup(int itemIndex)
+{
+    if (!isPopupMode() || itemIndex < 0 || itemIndex >= m_items.size())
+    {
+        return;
+    }
+    const AntMenuItem& item = m_items.at(itemIndex);
+    if (!item.subMenu || item.disabled)
+    {
+        return;
+    }
+
+    cancelSubMenuClose();
+    if (m_subMenuPopup && m_subMenuPopup->isVisible() && m_popupParentKey == item.key)
+    {
+        return;
+    }
+
+    ensureSubMenuPopup();
+    m_subMenuPopup->rebuild(item.key);
+    const QRect geometry = popupGeometryForItem(itemIndex, m_subMenuPopup->sizeHint().expandedTo(m_subMenuPopup->size()));
+    m_subMenuPopup->setGeometry(geometry);
+    m_popupParentKey = item.key;
+    AntPopupMotion::show(m_subMenuPopup, m_mode == Ant::MenuMode::Horizontal
+                                          ? AntPopupMotion::Placement::Bottom
+                                          : AntPopupMotion::Placement::Right);
+    if (qApp)
+    {
+        qApp->installEventFilter(this);
+    }
+    update();
+}
+
+void AntMenu::hideSubMenuPopup()
+{
+    cancelSubMenuClose();
+    if (qApp)
+    {
+        qApp->removeEventFilter(this);
+    }
+    if (m_subMenuPopup && m_subMenuPopup->isVisible())
+    {
+        AntPopupMotion::hide(m_subMenuPopup, m_mode == Ant::MenuMode::Horizontal
+                                             ? AntPopupMotion::Placement::Bottom
+                                             : AntPopupMotion::Placement::Right);
+    }
+    if (!m_popupParentKey.isEmpty())
+    {
+        m_popupParentKey.clear();
+        update();
+    }
+}
+
+void AntMenu::scheduleSubMenuClose()
+{
+    if (m_subMenuCloseTimer && m_subMenuPopup && m_subMenuPopup->isVisible())
+    {
+        m_subMenuCloseTimer->start(140);
+    }
+}
+
+void AntMenu::cancelSubMenuClose()
+{
+    if (m_subMenuCloseTimer)
+    {
+        m_subMenuCloseTimer->stop();
+    }
+}
+
+void AntMenu::handlePopupItemClicked(const QString& key)
+{
+    Q_EMIT itemClicked(key);
+    if (m_selectable)
+    {
+        setSelectedKey(key);
+        Q_EMIT itemSelected(key);
+    }
+    hideSubMenuPopup();
+}
+
+void AntMenu::handleSubMenuPopupHidden()
+{
+    if (qApp)
+    {
+        qApp->removeEventFilter(this);
+    }
+    if (!m_popupParentKey.isEmpty())
+    {
+        m_popupParentKey.clear();
+        update();
+    }
+}
+
+QRect AntMenu::popupGeometryForItem(int itemIndex, const QSize& popupSize) const
+{
+    const QRect localItemRect = itemRect(itemIndex);
+    const QRect globalItemRect(mapToGlobal(localItemRect.topLeft()), localItemRect.size());
+    QRect geometry;
+    if (m_mode == Ant::MenuMode::Horizontal)
+    {
+        geometry = QRect(globalItemRect.left(), globalItemRect.bottom() + 4, popupSize.width(), popupSize.height());
+    }
+    else
+    {
+        geometry = QRect(globalItemRect.right() + 4, globalItemRect.top(), popupSize.width(), popupSize.height());
+    }
+
+    const QRect screenRect = availableScreenGeometryFor(this);
+    geometry.moveLeft(qBound(screenRect.left() + 4, geometry.left(), screenRect.right() - geometry.width() - 4));
+    geometry.moveTop(qBound(screenRect.top() + 4, geometry.top(), screenRect.bottom() - geometry.height() - 4));
+    return geometry;
+}
+
 void AntMenu::activateItem(int itemIndex)
 {
     if (itemIndex < 0 || itemIndex >= m_items.size())
@@ -690,7 +1045,14 @@ void AntMenu::activateItem(int itemIndex)
 
     if (item.subMenu)
     {
-        toggleOpen(item.key);
+        if (isPopupMode())
+        {
+            showSubMenuPopup(itemIndex);
+        }
+        else
+        {
+            toggleOpen(item.key);
+        }
         Q_EMIT itemClicked(item.key);
         return;
     }
@@ -719,7 +1081,7 @@ int AntMenu::horizontalItemWidth(const AntMenuItem& item) const
     f.setPixelSize(token.fontSize);
     const int textWidth = QFontMetrics(f).horizontalAdvance(item.label);
     const int iconWidth = hasIcon(item) ? 22 : 0;
-    const int arrowWidth = item.subMenu ? 18 : 0;
+    const int arrowWidth = 0;
     return std::max(72, textWidth + iconWidth + arrowWidth + token.paddingLG * 2);
 }
 
@@ -780,7 +1142,7 @@ QColor AntMenu::itemTextColor(const AntMenuItem& item, bool selected, bool hover
     return token.colorText;
 }
 
-QColor AntMenu::itemBackgroundColor(const AntMenuItem& item, bool selected, bool hovered) const
+QColor AntMenu::itemBackgroundColor(const AntMenuItem& item, bool selected, bool hovered, bool pressed) const
 {
     const auto& token = antTheme->tokens();
     if (item.disabled)
@@ -789,7 +1151,11 @@ QColor AntMenu::itemBackgroundColor(const AntMenuItem& item, bool selected, bool
     }
     if (m_mode == Ant::MenuMode::Horizontal)
     {
-        return hovered ? token.colorFillTertiary : Qt::transparent;
+        if (m_menuTheme == Ant::MenuTheme::Dark && selected)
+        {
+            return item.danger ? token.colorError : token.colorPrimary;
+        }
+        return Qt::transparent;
     }
     if (m_menuTheme == Ant::MenuTheme::Dark)
     {
@@ -797,20 +1163,24 @@ QColor AntMenu::itemBackgroundColor(const AntMenuItem& item, bool selected, bool
         {
             return item.danger ? token.colorError : token.colorPrimary;
         }
-        return hovered ? QColor(17, 34, 51) : Qt::transparent;
+        return (hovered || pressed) ? QColor(17, 34, 51) : Qt::transparent;
     }
     if (selected)
+    {
+        return item.danger ? token.colorErrorBg : token.colorPrimaryBg;
+    }
+    if (pressed)
     {
         return item.danger ? token.colorErrorBg : token.colorPrimaryBg;
     }
     return hovered ? token.colorFillTertiary : Qt::transparent;
 }
 
-void AntMenu::drawItem(QPainter& painter, const AntMenuItem& item, const QRect& rect, bool selected, bool hovered) const
+void AntMenu::drawItem(QPainter& painter, const AntMenuItem& item, const QRect& rect, bool selected, bool hovered, bool pressed) const
 {
     const auto& token = antTheme->tokens();
     const QRect content = itemContentRect(rect, item);
-    const QColor bg = itemBackgroundColor(item, selected, hovered);
+    const QColor bg = itemBackgroundColor(item, selected, hovered, pressed);
     painter.setPen(Qt::NoPen);
     painter.setBrush(bg);
 
@@ -821,20 +1191,18 @@ void AntMenu::drawItem(QPainter& painter, const AntMenuItem& item, const QRect& 
     }
     painter.drawRoundedRect(bgRect, token.borderRadiusLG, token.borderRadiusLG);
 
-    if (selected && m_mode == Ant::MenuMode::Inline && m_menuTheme == Ant::MenuTheme::Light)
+    if ((selected || hovered) && m_mode == Ant::MenuMode::Horizontal)
     {
-        painter.setBrush(item.danger ? token.colorError : token.colorPrimary);
-        painter.drawRoundedRect(QRectF(rect.right() - 3, content.top(), 3, content.height()), 1.5, 1.5);
-    }
-    if (selected && m_mode == Ant::MenuMode::Horizontal)
-    {
-        painter.setBrush(item.danger ? token.colorError : token.colorPrimary);
+        const QColor activeColor = m_menuTheme == Ant::MenuTheme::Dark
+            ? token.colorTextLightSolid
+            : (item.danger ? token.colorError : token.colorPrimary);
+        painter.setBrush(activeColor);
         painter.drawRoundedRect(QRectF(content.left() + token.paddingSM, rect.bottom() - 3, content.width() - token.paddingSM * 2, 3), 1.5, 1.5);
     }
 
     QFont textFont = painter.font();
     textFont.setPixelSize(token.fontSize);
-    textFont.setWeight(selected ? QFont::DemiBold : QFont::Normal);
+    textFont.setWeight(QFont::Normal);
     painter.setFont(textFont);
     painter.setPen(itemTextColor(item, selected, hovered));
 
@@ -858,7 +1226,8 @@ void AntMenu::drawItem(QPainter& painter, const AntMenuItem& item, const QRect& 
         return;
     }
 
-    const int rightReserve = (item.subMenu ? 20 : 0) + (!item.extra.isEmpty() ? 48 : 0);
+    const int rightReserve = (item.subMenu && m_mode != Ant::MenuMode::Horizontal ? 20 : 0)
+        + (!item.extra.isEmpty() ? 48 : 0);
     painter.drawText(QRect(x, content.top(), content.right() - x - rightReserve, content.height()),
                      Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine,
                      item.label);
@@ -871,13 +1240,13 @@ void AntMenu::drawItem(QPainter& painter, const AntMenuItem& item, const QRect& 
                          item.extra);
     }
 
-    if (item.subMenu && !m_inlineCollapsed)
+    if (item.subMenu && !m_inlineCollapsed && m_mode != Ant::MenuMode::Horizontal)
     {
         painter.save();
         painter.setPen(QPen(itemTextColor(item, selected, hovered), 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         const QPointF c(content.right() - 10, content.center().y());
         QPainterPath arrow;
-        if (isOpen(item.key) && m_mode != Ant::MenuMode::Horizontal)
+        if (m_mode == Ant::MenuMode::Inline && isOpen(item.key))
         {
             arrow.moveTo(c.x() - 5, c.y() - 2);
             arrow.lineTo(c.x(), c.y() + 3);
