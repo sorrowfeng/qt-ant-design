@@ -22,7 +22,7 @@ class AntTreeSelect : public QWidget
 
 public:
     explicit AntTreeSelect(QWidget* parent = nullptr);
-    ~AntTreeSelect() override = default;
+    ~AntTreeSelect() override;
 
     QVector<AntTreeNode> treeData() const;
     void setTreeData(const QVector<AntTreeNode>& data);

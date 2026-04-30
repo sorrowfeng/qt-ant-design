@@ -66,6 +66,9 @@ add_ant_test(TestAntInteractions)
 # Motion and animation coverage
 add_ant_test(TestAntMotion)
 
+# Popup lifecycle coverage
+add_ant_test(TestAntPopupLifecycle)
+
 # Render smoke coverage
 add_ant_test(TestAntRenderSmoke)
 

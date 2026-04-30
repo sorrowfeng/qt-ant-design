@@ -134,10 +134,11 @@ protected:
     void hideEvent(QHideEvent* event) override
     {
         QFrame::hideEvent(event);
-        if (m_owner)
+        if (m_owner && m_owner->m_open)
         {
             m_owner->m_open = false;
             Q_EMIT m_owner->openChanged(false);
+            m_owner->update();
         }
     }
 
@@ -155,6 +156,16 @@ AntTreeSelect::AntTreeSelect(QWidget* parent)
     s->setParent(this);
     setStyle(s);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+}
+
+AntTreeSelect::~AntTreeSelect()
+{
+    if (m_popup)
+    {
+        AntPopupMotion::stop(m_popup);
+        delete m_popup;
+        m_popup = nullptr;
+    }
 }
 
 QVector<AntTreeNode> AntTreeSelect::treeData() const
@@ -308,11 +319,13 @@ bool AntTreeSelect::isOpen() const
 
 void AntTreeSelect::setOpen(bool open)
 {
-    if (m_open != open)
+    if (open)
     {
-        m_open = open;
-        update();
-        Q_EMIT openChanged(open);
+        showPopup();
+    }
+    else
+    {
+        hidePopup();
     }
 }
 
@@ -416,6 +429,11 @@ void AntTreeSelect::keyPressEvent(QKeyEvent* event)
 
 void AntTreeSelect::showPopup()
 {
+    if (m_open && m_popup && m_popup->isVisible())
+    {
+        return;
+    }
+
     if (!m_popup)
     {
         m_popup = new TreeSelectPopup(this);
@@ -425,19 +443,32 @@ void AntTreeSelect::showPopup()
     const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4));
     m_popup->move(pos);
     AntPopupMotion::show(m_popup);
+    const bool wasOpen = m_open;
     m_open = true;
-    Q_EMIT openChanged(true);
+    if (!wasOpen)
+    {
+        Q_EMIT openChanged(true);
+    }
     update();
 }
 
 void AntTreeSelect::hidePopup()
 {
-    if (m_popup)
+    if (!m_open && (!m_popup || !m_popup->isVisible()))
+    {
+        return;
+    }
+
+    if (m_popup && m_popup->isVisible())
     {
         AntPopupMotion::hide(m_popup);
     }
+    const bool wasOpen = m_open;
     m_open = false;
-    Q_EMIT openChanged(false);
+    if (wasOpen)
+    {
+        Q_EMIT openChanged(false);
+    }
     update();
 }
 
