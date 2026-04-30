@@ -81,11 +81,12 @@ void TestAntButton::cursorAndSizeParity()
 
     auto* largeBtn = new AntButton("Large");
     largeBtn->setButtonSize(Ant::Size::Large);
-    QCOMPARE(largeBtn->sizeHint().height(), antTheme->tokens().controlHeightLG);
+    const int focusPadding = antTheme->tokens().lineWidthFocus + 1;
+    QCOMPARE(largeBtn->sizeHint().height(), antTheme->tokens().controlHeightLG + focusPadding * 2);
 
     auto* smallBtn = new AntButton("Small");
     smallBtn->setButtonSize(Ant::Size::Small);
-    QCOMPARE(smallBtn->sizeHint().height(), antTheme->tokens().controlHeightSM);
+    QCOMPARE(smallBtn->sizeHint().height(), antTheme->tokens().controlHeightSM + focusPadding * 2);
 }
 
 QTEST_MAIN(TestAntButton)

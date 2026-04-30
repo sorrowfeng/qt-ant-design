@@ -10,6 +10,15 @@
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
 
+namespace
+{
+int focusPaddingFor()
+{
+    const auto& token = antTheme->tokens();
+    return token.lineWidthFocus + 1;
+}
+} // namespace
+
 AntButton::AntButton(QWidget* parent)
     : QPushButton(parent)
 {
@@ -177,7 +186,7 @@ void AntButton::leaveEvent(QEvent* event)
 
 void AntButton::mousePressEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::LeftButton && isEnabled())
+    if (event->button() == Qt::LeftButton && isEnabled() && hitButton(event->pos()))
     {
         m_pressed = true;
         m_focusVisible = false;
@@ -215,7 +224,8 @@ void AntButton::focusOutEvent(QFocusEvent* event)
 
 bool AntButton::hitButton(const QPoint& pos) const
 {
-    return QPushButton::hitButton(pos);
+    const int focusPadding = focusPaddingFor();
+    return rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding).contains(pos);
 }
 
 void AntButton::mouseReleaseEvent(QMouseEvent* event)
@@ -224,7 +234,7 @@ void AntButton::mouseReleaseEvent(QMouseEvent* event)
     m_pressed = false;
     update();
     const bool shouldWave = event->button() == Qt::LeftButton
-        && wasPressed && isEnabled() && !m_loading && rect().contains(event->pos())
+        && wasPressed && isEnabled() && !m_loading && hitButton(event->pos())
         && m_buttonType != Ant::ButtonType::Text
         && m_buttonType != Ant::ButtonType::Link;
     QPointer<AntButton> guard(this);
@@ -237,7 +247,9 @@ void AntButton::mouseReleaseEvent(QMouseEvent* event)
                 return;
             }
             const AntButton::Metrics m = guard->metrics();
-            AntWave::trigger(guard, guard->waveColor(), guard->cornerRadius(m));
+            const int focusPadding = focusPaddingFor();
+            const QRect bodyRect = guard->rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
+            AntWave::triggerRect(guard, bodyRect, guard->waveColor(), guard->cornerRadius(m));
         });
     }
 }
@@ -296,9 +308,11 @@ int AntButton::cornerRadius(const Metrics& metrics) const
 
 QRectF AntButton::contentRect(const Metrics& metrics) const
 {
+    const int focusPadding = focusPaddingFor();
+    const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     if (m_buttonShape == Ant::ButtonShape::Circle)
-        return rect();
-    return rect().adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
+        return bodyRect;
+    return bodyRect.adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
 }
 
 QColor AntButton::waveColor() const
@@ -341,8 +355,9 @@ void AntButton::updateGeometryFromState()
     QFont f = font();
     f.setPixelSize(m.fontSize);
     setFont(f);
-    setMinimumHeight(m.height);
-    setMaximumHeight(m.height);
+    const int totalHeight = m.height + focusPaddingFor() * 2;
+    setMinimumHeight(totalHeight);
+    setMaximumHeight(totalHeight);
     setSizePolicy(m_block ? QSizePolicy::Expanding : QSizePolicy::Preferred, QSizePolicy::Fixed);
     updateGeometry();
 }
