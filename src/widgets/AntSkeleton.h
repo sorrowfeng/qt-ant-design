@@ -58,6 +58,7 @@ public:
 
     void setParagraphWidthRatios(const QList<qreal>& ratios);
     QList<qreal> paragraphWidthRatios() const;
+    int shimmerOffset() const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

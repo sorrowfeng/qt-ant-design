@@ -18,7 +18,7 @@ AntSkeleton::AntSkeleton(QWidget* parent)
 
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, [this]() {
-        m_shimmerOffset = (m_shimmerOffset + 18) % qMax(160, width() + 160);
+        m_shimmerOffset = (m_shimmerOffset + 12) % qMax(180, width() + 180);
         update();
     });
 
@@ -207,6 +207,11 @@ void AntSkeleton::setParagraphWidthRatios(const QList<qreal>& ratios)
 QList<qreal> AntSkeleton::paragraphWidthRatios() const
 {
     return m_paragraphWidthRatios;
+}
+
+int AntSkeleton::shimmerOffset() const
+{
+    return m_shimmerOffset;
 }
 
 QSize AntSkeleton::sizeHint() const
@@ -404,7 +409,7 @@ void AntSkeleton::updateTimerState()
 {
     if (m_active && m_loading)
     {
-        m_timer->start(60);
+        m_timer->start(40);
     }
     else
     {

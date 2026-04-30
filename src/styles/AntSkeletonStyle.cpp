@@ -216,14 +216,17 @@ void AntSkeletonStyle::drawSkeleton(const QStyleOption* option, QPainter* painte
         QBrush brush(baseColor);
         if (skeleton->isActive())
         {
-            const int shimmerOffset = 0;
-            QLinearGradient gradient(rect.topLeft(), rect.topRight());
-            const qreal widthValue = qMax<qreal>(rect.width(), 1.0);
-            const qreal offset = static_cast<qreal>(shimmerOffset % static_cast<int>(widthValue + 120)) / widthValue;
-            gradient.setColorAt(qMax(0.0, offset - 0.6), baseColor);
-            gradient.setColorAt(qBound(0.0, offset - 0.2, 1.0), baseColor);
-            gradient.setColorAt(qBound(0.0, offset, 1.0), highlight);
-            gradient.setColorAt(qBound(0.0, offset + 0.2, 1.0), baseColor);
+            const qreal bandWidth = qMax<qreal>(80.0, rect.width() * 0.72);
+            const qreal travel = rect.width() + bandWidth * 2.0;
+            const qreal phase = static_cast<qreal>(skeleton->shimmerOffset() % qMax(1, static_cast<int>(travel)))
+                                / travel;
+            const qreal bandLeft = rect.left() - bandWidth + travel * phase;
+            QLinearGradient gradient(QPointF(bandLeft, rect.center().y()),
+                                     QPointF(bandLeft + bandWidth, rect.center().y()));
+            gradient.setColorAt(0.0, baseColor);
+            gradient.setColorAt(0.42, baseColor);
+            gradient.setColorAt(0.5, highlight);
+            gradient.setColorAt(0.58, baseColor);
             gradient.setColorAt(1.0, baseColor);
             brush = QBrush(gradient);
         }

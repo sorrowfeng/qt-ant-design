@@ -424,6 +424,16 @@ void TestAntFeedback::skeleton()
     w->setParagraphRows(5);
     QCOMPARE(w->paragraphRows(), 5);
     QCOMPARE(rowsSpy.count(), 1);
+
+    auto* moving = new AntSkeleton;
+    moving->resize(320, 80);
+    const int firstOffset = moving->shimmerOffset();
+    QTest::qWait(90);
+    QVERIFY(moving->shimmerOffset() != firstOffset);
+    moving->setActive(false);
+    const int pausedOffset = moving->shimmerOffset();
+    QTest::qWait(90);
+    QCOMPARE(moving->shimmerOffset(), pausedOffset);
 }
 
 void TestAntFeedback::spin()
