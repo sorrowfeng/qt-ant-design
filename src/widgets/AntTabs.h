@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QRectF>
 #include <QVector>
 #include <QWidget>
 
@@ -9,6 +10,7 @@ class QEvent;
 class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
+class QPropertyAnimation;
 class QResizeEvent;
 class QStackedWidget;
 
@@ -33,6 +35,7 @@ class AntTabs : public QWidget
     Q_PROPERTY(bool animated READ isAnimated WRITE setAnimated NOTIFY animatedChanged)
     Q_PROPERTY(bool hideAdd READ isHideAdd WRITE setHideAdd NOTIFY hideAddChanged)
     Q_PROPERTY(int tabBarGutter READ tabBarGutter WRITE setTabBarGutter NOTIFY tabBarGutterChanged)
+    Q_PROPERTY(QRectF indicatorRect READ indicatorRect WRITE setIndicatorRect)
 
 public:
     explicit AntTabs(QWidget* parent = nullptr);
@@ -60,6 +63,8 @@ public:
 
     int tabBarGutter() const;
     void setTabBarGutter(int gutter);
+    QRectF indicatorRect() const;
+    void setIndicatorRect(const QRectF& rect);
 
     int addTab(QWidget* page,
                const QString& key,
@@ -114,6 +119,9 @@ private:
     int tabLength(const AntTabItem& item) const;
     QColor tabTextColor(const AntTabItem& item, bool active, bool hovered) const;
     QColor tabBackgroundColor(bool active, bool hovered) const;
+    QRectF targetIndicatorRect(int index) const;
+    void syncIndicatorRect();
+    void animateIndicator(const QRectF& from, const QRectF& to);
     void setActiveIndex(int index);
     void updateStackGeometry();
     void drawTab(QPainter& painter, const AntTabItem& item, const QRect& rect, bool active, bool hovered) const;
@@ -121,6 +129,7 @@ private:
 
     QVector<AntTabItem> m_tabs;
     QStackedWidget* m_stack = nullptr;
+    QPropertyAnimation* m_indicatorAnimation = nullptr;
     QString m_activeKey;
     Ant::TabsType m_tabsType = Ant::TabsType::Line;
     Ant::Size m_tabsSize = Ant::Size::Middle;
@@ -132,4 +141,6 @@ private:
     int m_hoveredIndex = -1;
     int m_hoveredCloseIndex = -1;
     bool m_addHovered = false;
+    QRectF m_indicatorRect;
+    bool m_indicatorReady = false;
 };

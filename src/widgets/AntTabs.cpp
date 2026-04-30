@@ -1,9 +1,11 @@
 #include "AntTabs.h"
 
+#include <QEasingCurve>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPropertyAnimation>
 #include <QResizeEvent>
 #include <QStackedWidget>
 
@@ -11,6 +13,38 @@
 
 #include "../styles/AntTabsStyle.h"
 #include "core/AntTheme.h"
+
+namespace
+{
+QPainterPath cardTabPath(const QRectF& rect, Ant::TabsPlacement placement, qreal radius)
+{
+    QPainterPath path;
+    if (placement == Ant::TabsPlacement::Top)
+    {
+        path.moveTo(rect.left(), rect.bottom());
+        path.lineTo(rect.left(), rect.top() + radius);
+        path.quadTo(rect.left(), rect.top(), rect.left() + radius, rect.top());
+        path.lineTo(rect.right() - radius, rect.top());
+        path.quadTo(rect.right(), rect.top(), rect.right(), rect.top() + radius);
+        path.lineTo(rect.right(), rect.bottom());
+        path.closeSubpath();
+        return path;
+    }
+    if (placement == Ant::TabsPlacement::Bottom)
+    {
+        path.moveTo(rect.left(), rect.top());
+        path.lineTo(rect.left(), rect.bottom() - radius);
+        path.quadTo(rect.left(), rect.bottom(), rect.left() + radius, rect.bottom());
+        path.lineTo(rect.right() - radius, rect.bottom());
+        path.quadTo(rect.right(), rect.bottom(), rect.right(), rect.bottom() - radius);
+        path.lineTo(rect.right(), rect.top());
+        path.closeSubpath();
+        return path;
+    }
+    path.addRoundedRect(rect, radius, radius);
+    return path;
+}
+} // namespace
 
 AntTabs::AntTabs(QWidget* parent)
     : QWidget(parent)
@@ -23,6 +57,9 @@ AntTabs::AntTabs(QWidget* parent)
     m_stack->setObjectName(QStringLiteral("AntTabsStack"));
     m_stack->setAutoFillBackground(false);
 
+    m_indicatorAnimation = new QPropertyAnimation(this, "indicatorRect", this);
+    m_indicatorAnimation->setDuration(220);
+    m_indicatorAnimation->setEasingCurve(QEasingCurve::OutCubic);
 }
 
 QString AntTabs::activeKey() const { return m_activeKey; }
@@ -42,6 +79,7 @@ void AntTabs::setTabsType(Ant::TabsType type)
     }
     m_tabsType = type;
     updateStackGeometry();
+    syncIndicatorRect();
     update();
     Q_EMIT tabsTypeChanged(m_tabsType);
 }
@@ -56,6 +94,7 @@ void AntTabs::setTabsSize(Ant::Size size)
     }
     m_tabsSize = size;
     updateStackGeometry();
+    syncIndicatorRect();
     update();
     Q_EMIT tabsSizeChanged(m_tabsSize);
 }
@@ -70,6 +109,7 @@ void AntTabs::setTabPlacement(Ant::TabsPlacement placement)
     }
     m_tabPlacement = placement;
     updateStackGeometry();
+    syncIndicatorRect();
     update();
     Q_EMIT tabPlacementChanged(m_tabPlacement);
 }
@@ -83,6 +123,7 @@ void AntTabs::setCentered(bool centered)
         return;
     }
     m_centered = centered;
+    syncIndicatorRect();
     update();
     Q_EMIT centeredChanged(m_centered);
 }
@@ -96,6 +137,10 @@ void AntTabs::setAnimated(bool animated)
         return;
     }
     m_animated = animated;
+    if (!m_animated)
+    {
+        syncIndicatorRect();
+    }
     Q_EMIT animatedChanged(m_animated);
 }
 
@@ -123,8 +168,21 @@ void AntTabs::setTabBarGutter(int gutter)
     }
     m_tabBarGutter = gutter;
     updateStackGeometry();
+    syncIndicatorRect();
     update();
     Q_EMIT tabBarGutterChanged(m_tabBarGutter);
+}
+
+QRectF AntTabs::indicatorRect() const { return m_indicatorRect; }
+
+void AntTabs::setIndicatorRect(const QRectF& rect)
+{
+    if (m_indicatorRect == rect)
+    {
+        return;
+    }
+    m_indicatorRect = rect;
+    update();
 }
 
 int AntTabs::addTab(QWidget* page,
@@ -154,6 +212,7 @@ int AntTabs::addTab(QWidget* page,
         setActiveIndex(m_tabs.size() - 1);
     }
     updateStackGeometry();
+    syncIndicatorRect();
     update();
     return m_tabs.size() - 1;
 }
@@ -199,6 +258,7 @@ void AntTabs::removeTab(const QString& key)
         }
     }
     updateStackGeometry();
+    syncIndicatorRect();
     update();
 }
 
@@ -214,6 +274,9 @@ void AntTabs::clearTabs()
         }
     }
     m_activeKey.clear();
+    m_indicatorAnimation->stop();
+    m_indicatorRect = QRectF();
+    m_indicatorReady = false;
     updateStackGeometry();
     update();
     Q_EMIT activeKeyChanged(m_activeKey);
@@ -227,6 +290,7 @@ void AntTabs::setTabText(const QString& key, const QString& label)
         return;
     }
     m_tabs[index].label = label;
+    syncIndicatorRect();
     update();
 }
 
@@ -238,6 +302,7 @@ void AntTabs::setTabEnabled(const QString& key, bool enabled)
         return;
     }
     m_tabs[index].disabled = !enabled;
+    syncIndicatorRect();
     update();
 }
 
@@ -283,6 +348,12 @@ void AntTabs::paintEvent(QPaintEvent* event)
     {
         drawTab(painter, m_tabs.at(i), rects.at(i), i == active, i == m_hoveredIndex);
     }
+    if (m_tabsType == Ant::TabsType::Line && !m_indicatorRect.isNull())
+    {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(token.colorPrimary);
+        painter.drawRoundedRect(m_indicatorRect, 1.0, 1.0);
+    }
     const QRect addRect = addButtonRect();
     if (!addRect.isNull())
     {
@@ -294,6 +365,7 @@ void AntTabs::paintEvent(QPaintEvent* event)
 void AntTabs::resizeEvent(QResizeEvent* event)
 {
     updateStackGeometry();
+    syncIndicatorRect();
     QWidget::resizeEvent(event);
 }
 
@@ -441,6 +513,7 @@ QVector<QRect> AntTabs::tabRects() const
     {
         int total = 0;
         QVector<int> widths;
+        const int gap = m_tabsType == Ant::TabsType::Line ? m_tabBarGutter : 2;
         for (const auto& item : m_tabs)
         {
             const int w = tabLength(item);
@@ -448,28 +521,29 @@ QVector<QRect> AntTabs::tabRects() const
             total += w;
         }
         const int tabCount = static_cast<int>(m_tabs.size());
-        total += std::max(0, tabCount - 1) * m_tabBarGutter;
-        int x = bar.left() + token.padding;
+        total += std::max(0, tabCount - 1) * gap;
+        int x = bar.left();
         if (m_centered)
         {
-            x = bar.left() + std::max(token.padding, (bar.width() - total) / 2);
+            x = bar.left() + std::max(0, (bar.width() - total) / 2);
         }
         for (int i = 0; i < widths.size(); ++i)
         {
             rects.append(QRect(x, bar.top(), widths.at(i), bar.height()));
-            x += widths.at(i) + m_tabBarGutter;
+            x += widths.at(i) + gap;
         }
         return rects;
     }
 
-    int y = bar.top() + token.paddingXS;
+    int y = bar.top();
+    const int gap = m_tabsType == Ant::TabsType::Line ? token.marginXS : 2;
     const int tabWidth = bar.width();
     for (const auto& item : m_tabs)
     {
         const int h = std::max(tabBarExtent() - token.paddingXS, 36);
         Q_UNUSED(item)
         rects.append(QRect(bar.left(), y, tabWidth, h));
-        y += h + token.marginXS;
+        y += h + gap;
     }
     return rects;
 }
@@ -599,6 +673,10 @@ int AntTabs::tabLength(const AntTabItem& item) const
     const int text = QFontMetrics(f).horizontalAdvance(item.label);
     const int icon = item.iconText.isEmpty() ? 0 : 22;
     const int close = (m_tabsType == Ant::TabsType::EditableCard && item.closable) ? 26 : 0;
+    if (m_tabsType == Ant::TabsType::Line)
+    {
+        return std::max(1, text + icon + close);
+    }
     return std::max(72, text + icon + close + tabPaddingX() * 2);
 }
 
@@ -625,13 +703,77 @@ QColor AntTabs::tabBackgroundColor(bool active, bool hovered) const
     const auto& token = antTheme->tokens();
     if (m_tabsType == Ant::TabsType::Line)
     {
-        return hovered ? token.colorFillQuaternary : Qt::transparent;
+        Q_UNUSED(active)
+        Q_UNUSED(hovered)
+        return Qt::transparent;
     }
     if (active)
     {
         return token.colorBgContainer;
     }
     return hovered ? token.colorFillQuaternary : token.colorFillTertiary;
+}
+
+QRectF AntTabs::targetIndicatorRect(int index) const
+{
+    if (m_tabsType != Ant::TabsType::Line || index < 0 || index >= m_tabs.size())
+    {
+        return {};
+    }
+
+    const auto rects = tabRects();
+    if (index >= rects.size())
+    {
+        return {};
+    }
+
+    const QRect rect = rects.at(index);
+    constexpr qreal thickness = 2.0;
+    if (isHorizontal())
+    {
+        const qreal y = m_tabPlacement == Ant::TabsPlacement::Top
+                            ? tabBarRect().bottom() - thickness + 1.0
+                            : tabBarRect().top();
+        return QRectF(rect.left(), y, rect.width(), thickness);
+    }
+
+    const qreal x = m_tabPlacement == Ant::TabsPlacement::Left
+                        ? tabBarRect().right() - thickness + 1.0
+                        : tabBarRect().left();
+    return QRectF(x, rect.top(), thickness, rect.height());
+}
+
+void AntTabs::syncIndicatorRect()
+{
+    const QRectF target = targetIndicatorRect(activeIndex());
+    m_indicatorAnimation->stop();
+    m_indicatorRect = target;
+    m_indicatorReady = !target.isNull();
+    update();
+}
+
+void AntTabs::animateIndicator(const QRectF& from, const QRectF& to)
+{
+    m_indicatorAnimation->stop();
+    if (to.isNull())
+    {
+        m_indicatorRect = QRectF();
+        m_indicatorReady = false;
+        update();
+        return;
+    }
+
+    if (!m_animated || !m_indicatorReady || from.isNull())
+    {
+        m_indicatorRect = to;
+        m_indicatorReady = true;
+        update();
+        return;
+    }
+
+    m_indicatorAnimation->setStartValue(from);
+    m_indicatorAnimation->setEndValue(to);
+    m_indicatorAnimation->start();
 }
 
 void AntTabs::setActiveIndex(int index)
@@ -645,8 +787,10 @@ void AntTabs::setActiveIndex(int index)
     {
         return;
     }
+    const QRectF previousIndicator = m_indicatorReady ? m_indicatorRect : targetIndicatorRect(activeIndex());
     m_activeKey = key;
     m_stack->setCurrentWidget(m_tabs.at(index).page);
+    animateIndicator(previousIndicator, targetIndicatorRect(index));
     update();
     Q_EMIT activeKeyChanged(m_activeKey);
     Q_EMIT currentChanged(index);
@@ -667,41 +811,34 @@ void AntTabs::drawTab(QPainter& painter, const AntTabItem& item, const QRect& re
     QRect tab = rect;
     if (m_tabsType == Ant::TabsType::Line)
     {
-        tab.adjust(2, 6, -2, -6);
+        tab.adjust(0, 6, 0, -6);
     }
     else
     {
-        tab.adjust(0, 4, 0, 0);
+        if (m_tabPlacement == Ant::TabsPlacement::Bottom)
+            tab.adjust(0, 0, 0, -4);
+        else
+            tab.adjust(0, 4, 0, 0);
     }
 
-    painter.setPen(m_tabsType == Ant::TabsType::Line ? Qt::NoPen : QPen(token.colorBorderSecondary, token.lineWidth));
-    painter.setBrush(tabBackgroundColor(active, hovered));
-    const int radius = m_tabsType == Ant::TabsType::Line ? token.borderRadius : token.borderRadiusLG;
-    painter.drawRoundedRect(tab, radius, radius);
-
-    if (active && m_tabsType == Ant::TabsType::Line)
+    if (m_tabsType != Ant::TabsType::Line)
     {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(token.colorPrimary);
-        if (isHorizontal())
-        {
-            const int y = m_tabPlacement == Ant::TabsPlacement::Top ? rect.bottom() - 2 : rect.top();
-            painter.drawRoundedRect(QRectF(rect.left() + tabPaddingX(), y, rect.width() - tabPaddingX() * 2, 3), 1.5, 1.5);
-        }
-        else
-        {
-            const int x = m_tabPlacement == Ant::TabsPlacement::Left ? rect.right() - 3 : rect.left();
-            painter.drawRoundedRect(QRectF(x, rect.top() + 8, 3, rect.height() - 16), 1.5, 1.5);
-        }
+        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        painter.setBrush(tabBackgroundColor(active, hovered));
+        painter.drawPath(cardTabPath(QRectF(tab).adjusted(0.5, 0.5, -0.5, 0.0),
+                                     m_tabPlacement,
+                                     token.borderRadiusLG));
     }
 
     QFont textFont = painter.font();
     textFont.setPixelSize(tabFontSize());
-    textFont.setWeight(active ? QFont::DemiBold : QFont::Normal);
+    textFont.setWeight(active && m_tabsType != Ant::TabsType::Line ? QFont::DemiBold : QFont::Normal);
     painter.setFont(textFont);
     painter.setPen(tabTextColor(item, active, hovered));
 
-    QRect textRect = tab.adjusted(tabPaddingX(), 0, -tabPaddingX(), 0);
+    QRect textRect = m_tabsType == Ant::TabsType::Line
+                         ? tab
+                         : tab.adjusted(tabPaddingX(), 0, -tabPaddingX(), 0);
     if (!item.iconText.isEmpty())
     {
         painter.drawText(QRect(textRect.left(), textRect.top(), 18, textRect.height()), Qt::AlignCenter, item.iconText.left(2));

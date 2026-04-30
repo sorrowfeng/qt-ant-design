@@ -204,6 +204,17 @@ void TestAntNavigation::propertiesAndSignals()
     QCOMPARE(tabs->activeKey(), "tab2");
     QCOMPARE(activeSpy.count(), 1);
 
+    auto* lineTabs = new AntTabs;
+    lineTabs->resize(320, 120);
+    lineTabs->setAnimated(false);
+    lineTabs->addTab(new QWidget, "one", "Tab 1");
+    lineTabs->addTab(new QWidget, "two", "Tab 2");
+    const QRectF firstIndicator = lineTabs->indicatorRect();
+    QVERIFY(!firstIndicator.isNull());
+    lineTabs->setActiveKey("two");
+    QVERIFY(lineTabs->indicatorRect().left() > firstIndicator.left());
+    QCOMPARE(lineTabs->indicatorRect().height(), 2.0);
+
     tabs->removeTab("tab1");
     tabs->clearTabs();
 
