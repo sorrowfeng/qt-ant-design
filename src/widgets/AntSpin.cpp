@@ -15,8 +15,9 @@ AntSpin::AntSpin(QWidget* parent)
     setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
     m_animationTimer = new QTimer(this);
+    m_animationTimer->setTimerType(Qt::PreciseTimer);
     connect(m_animationTimer, &QTimer::timeout, this, [this]() {
-        m_angle = (m_angle + 18) % 360;
+        m_angle = (m_angle + 5) % 360;
         update();
     });
 
@@ -190,7 +191,7 @@ void AntSpin::updateAnimationState()
     const bool shouldAnimate = isVisible() && isEnabled() && m_effectiveSpinning && m_percent < 0;
     if (shouldAnimate && !m_animationTimer->isActive())
     {
-        m_animationTimer->start(40);
+        m_animationTimer->start(16);
     }
     else if (!shouldAnimate)
     {

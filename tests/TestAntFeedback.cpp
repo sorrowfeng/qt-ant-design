@@ -463,6 +463,15 @@ void TestAntFeedback::spin()
     w->setDelay(500);
     QCOMPARE(w->delay(), 500);
     QCOMPARE(delaySpy.count(), 1);
+
+    auto* animated = new AntSpin;
+    animated->show();
+    const int startAngle = animated->angle();
+    QTest::qWait(55);
+    const int angleDelta = (animated->angle() - startAngle + 360) % 360;
+    QVERIFY(angleDelta > 0);
+    QVERIFY(angleDelta <= 25);
+    animated->hide();
 }
 
 void TestAntFeedback::tooltip()
