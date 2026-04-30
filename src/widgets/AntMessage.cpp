@@ -15,7 +15,25 @@
 #include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntMessageStyle.h"
-#include "styles/AntPalette.h"
+
+namespace
+{
+constexpr int MessageMotionDistance = 24;
+
+bool isBottomMessagePlacement(Ant::Placement placement)
+{
+    return placement == Ant::Placement::Bottom ||
+           placement == Ant::Placement::BottomLeft ||
+           placement == Ant::Placement::BottomRight;
+}
+
+AntPopupMotion::Placement messageMotionPlacement(Ant::Placement placement)
+{
+    return isBottomMessagePlacement(placement)
+               ? AntPopupMotion::Placement::Top
+               : AntPopupMotion::Placement::Bottom;
+}
+} // namespace
 
 AntMessage::AntMessage(QWidget* parent)
     : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
@@ -29,7 +47,7 @@ AntMessage::AntMessage(QWidget* parent)
     m_closeTimer = new QTimer(this);
     m_closeTimer->setSingleShot(true);
     connect(m_closeTimer, &QTimer::timeout, this, [this]() {
-        AntPopupMotion::close(this, AntPopupMotion::fromPlacement(m_placement));
+        AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
     });
 
     m_loadingTimer = new QTimer(this);
@@ -56,7 +74,7 @@ AntMessage* AntMessage::open(const QString& text, Ant::MessageType type, QWidget
     });
 
     relayoutMessages(anchor);
-    AntPopupMotion::show(message, AntPopupMotion::fromPlacement(placement));
+    AntPopupMotion::show(message, messageMotionPlacement(placement), MessageMotionDistance);
     return message;
 }
 
@@ -200,7 +218,7 @@ void AntMessage::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        AntPopupMotion::close(this, AntPopupMotion::fromPlacement(m_placement));
+        AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
         event->accept();
         return;
     }

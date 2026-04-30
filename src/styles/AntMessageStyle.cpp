@@ -5,7 +5,6 @@
 #include <QStyleOption>
 
 #include "styles/AntIconPainter.h"
-#include "styles/AntPalette.h"
 #include "widgets/AntMessage.h"
 
 namespace
@@ -40,14 +39,17 @@ void drawLoadingIcon(QPainter& painter, const QRectF& rect, const QColor& color,
 void drawMessageShadow(QPainter& painter, const QRectF& bubble, qreal radius)
 {
     painter.save();
-    painter.setPen(Qt::NoPen);
+    painter.setPen(QPen(antTheme->tokens().colorShadow, 1));
+    painter.setBrush(Qt::NoBrush);
 
-    for (int i = 12; i >= 1; --i)
+    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    for (int i = 14; i >= 1; --i)
     {
-        const qreal progress = static_cast<qreal>(i) / 12.0;
-        const qreal alpha = 0.003 + 0.008 * (1.0 - progress);
-        const QRectF layer = bubble.adjusted(-i * 0.42, i * 0.12, i * 0.42, i * 0.62 + 2.0);
-        painter.setBrush(AntPalette::alpha(Qt::black, alpha));
+        const qreal progress = 1.0 - static_cast<qreal>(i) / 14.0;
+        QColor shadow = antTheme->tokens().colorShadow;
+        shadow.setAlphaF((dark ? 0.24 : 0.12) * progress * progress);
+        painter.setPen(QPen(shadow, 1));
+        const QRectF layer = bubble.adjusted(-i * 0.45, -i * 0.25 + 3.0, i * 0.45, i * 0.65 + 5.0);
         painter.drawRoundedRect(layer, radius + i * 0.25, radius + i * 0.25);
     }
 
@@ -156,7 +158,7 @@ void AntMessageStyle::drawMessage(const QStyleOption* option, QPainter* painter,
 
     // Bubble
     AntStyleBase::drawCrispRoundedRect(painter, bubble.toRect(),
-        Qt::NoPen,
+        QPen(token.colorBorderSecondary, token.lineWidth),
         token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
 
     // Icon
