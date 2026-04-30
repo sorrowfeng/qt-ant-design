@@ -1,5 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QCoreApplication>
+#include <QEnterEvent>
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntRadio.h"
 #include "widgets/AntSlider.h"
@@ -42,6 +44,15 @@ void TestAntDataEntryA::propertiesAndSignals()
     w1->setControlsVisible(false);
     QCOMPARE(w1->controlsVisible(), false);
     QCOMPARE(ctrlSpy1.count(), 1);
+
+    auto* animatedInput = new AntInputNumber;
+    QCOMPARE(animatedInput->controlsProgress(), 0.0);
+    QEnterEvent enterEvent(QPointF(4, 4), QPointF(4, 4), QPointF(4, 4));
+    QCoreApplication::sendEvent(animatedInput, &enterEvent);
+    QTRY_VERIFY_WITH_TIMEOUT(animatedInput->controlsProgress() > 0.95, 300);
+    QEvent leaveEvent(QEvent::Leave);
+    QCoreApplication::sendEvent(animatedInput, &leaveEvent);
+    QTRY_VERIFY_WITH_TIMEOUT(animatedInput->controlsProgress() < 0.05, 300);
 
     // AntRadio
     auto* w2 = new AntRadio;

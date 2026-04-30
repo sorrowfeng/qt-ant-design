@@ -1,7 +1,9 @@
 #include "AntInputNumber.h"
 
+#include <QEasingCurve>
 #include <QLineEdit>
 #include <QMouseEvent>
+#include <QPropertyAnimation>
 #include <QStyleOptionSpinBox>
 
 #include "../styles/AntInputNumberStyle.h"
@@ -23,6 +25,10 @@ AntInputNumber::AntInputNumber(QWidget* parent)
     auto* inputStyle = new AntInputNumberStyle(style());
     inputStyle->setParent(this);
     setStyle(inputStyle);
+
+    m_controlsAnimation = new QPropertyAnimation(this, "controlsProgress", this);
+    m_controlsAnimation->setDuration(160);
+    m_controlsAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         updateEditStyle();
@@ -99,10 +105,27 @@ void AntInputNumber::setControlsVisible(bool visible)
     }
     m_controlsVisible = visible;
     setButtonSymbols(visible ? QAbstractSpinBox::UpDownArrows : QAbstractSpinBox::NoButtons);
+    animateControls(shouldShowControls());
     updateEditStyle();
     updateGeometry();
     update();
     Q_EMIT controlsVisibleChanged(m_controlsVisible);
+}
+
+qreal AntInputNumber::controlsProgress() const
+{
+    return m_controlsProgress;
+}
+
+void AntInputNumber::setControlsProgress(qreal progress)
+{
+    progress = qBound<qreal>(0.0, progress, 1.0);
+    if (qFuzzyCompare(m_controlsProgress, progress))
+    {
+        return;
+    }
+    m_controlsProgress = progress;
+    update();
 }
 
 QString AntInputNumber::placeholderText() const
@@ -183,6 +206,7 @@ QAbstractSpinBox::StepEnabled AntInputNumber::stepEnabledFlags() const
 void AntInputNumber::enterEvent(QEnterEvent* event)
 {
     m_hovered = true;
+    animateControls(true);
     update();
     QDoubleSpinBox::enterEvent(event);
 }
@@ -192,6 +216,7 @@ void AntInputNumber::leaveEvent(QEvent* event)
     m_hovered = false;
     m_activeSubControl = QStyle::SC_None;
     m_stepPressed = false;
+    animateControls(shouldShowControls());
     update();
     QDoubleSpinBox::leaveEvent(event);
 }
@@ -224,12 +249,14 @@ void AntInputNumber::mouseReleaseEvent(QMouseEvent* event)
 
 void AntInputNumber::focusInEvent(QFocusEvent* event)
 {
+    animateControls(true);
     update();
     QDoubleSpinBox::focusInEvent(event);
 }
 
 void AntInputNumber::focusOutEvent(QFocusEvent* event)
 {
+    animateControls(m_hovered);
     update();
     QDoubleSpinBox::focusOutEvent(event);
 }
@@ -238,6 +265,7 @@ void AntInputNumber::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange)
     {
+        animateControls(shouldShowControls());
         updateEditStyle();
         update();
     }
@@ -322,4 +350,24 @@ QStyle::SubControl AntInputNumber::hitSubControl(const QPoint& pos) const
         return QStyle::SC_SpinBoxDown;
     }
     return QStyle::SC_None;
+}
+
+bool AntInputNumber::shouldShowControls() const
+{
+    return m_controlsVisible && isEnabled() && (m_hovered || hasFocus() || (lineEdit() && lineEdit()->hasFocus()));
+}
+
+void AntInputNumber::animateControls(bool visible)
+{
+    visible = visible && m_controlsVisible && isEnabled();
+    const qreal end = visible ? 1.0 : 0.0;
+    if (qFuzzyCompare(m_controlsProgress, end) && m_controlsAnimation->state() != QAbstractAnimation::Running)
+    {
+        return;
+    }
+
+    m_controlsAnimation->stop();
+    m_controlsAnimation->setStartValue(m_controlsProgress);
+    m_controlsAnimation->setEndValue(end);
+    m_controlsAnimation->start();
 }

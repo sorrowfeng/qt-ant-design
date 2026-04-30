@@ -5,6 +5,8 @@
 
 #include "core/AntTypes.h"
 
+class QPropertyAnimation;
+
 class AntInputNumber : public QDoubleSpinBox
 {
     Q_OBJECT
@@ -12,6 +14,7 @@ class AntInputNumber : public QDoubleSpinBox
     Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
     Q_PROPERTY(bool controlsVisible READ controlsVisible WRITE setControlsVisible NOTIFY controlsVisibleChanged)
+    Q_PROPERTY(qreal controlsProgress READ controlsProgress WRITE setControlsProgress)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText)
 
 public:
@@ -28,6 +31,8 @@ public:
 
     bool controlsVisible() const;
     void setControlsVisible(bool visible);
+    qreal controlsProgress() const;
+    void setControlsProgress(qreal progress);
 
     QString placeholderText() const;
     void setPlaceholderText(const QString& text);
@@ -74,13 +79,17 @@ private:
     Metrics metrics() const;
     void updateEditStyle();
     QStyle::SubControl hitSubControl(const QPoint& pos) const;
+    bool shouldShowControls() const;
+    void animateControls(bool visible);
 
     Ant::Size m_inputSize = Ant::Size::Middle;
     Ant::Status m_status = Ant::Status::Normal;
     Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_controlsVisible = true;
+    qreal m_controlsProgress = 0.0;
     bool m_hovered = false;
     bool m_stepPressed = false;
     QStyle::SubControl m_activeSubControl = QStyle::SC_None;
     QString m_addonAfterText;
+    QPropertyAnimation* m_controlsAnimation = nullptr;
 };

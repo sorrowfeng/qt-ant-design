@@ -127,7 +127,16 @@ QColor backgroundColorFor(const AntInputNumber* input)
 
 bool handlersVisibleFor(const AntInputNumber* input)
 {
-    return input && input->controlsVisible() && input->isEnabled() && (input->isHoveredState() || focusedFor(input));
+    return input && input->controlsVisible() && input->isEnabled() && input->controlsProgress() > 0.01;
+}
+
+int handlerWidthFor(const AntInputNumber* input, const InputNumberMetrics& metrics)
+{
+    if (!handlersVisibleFor(input))
+    {
+        return 0;
+    }
+    return qRound(metrics.handlerWidth * input->controlsProgress());
 }
 
 int addonAfterWidthFor(const AntInputNumber* input, const InputNumberMetrics& metrics)
@@ -191,7 +200,7 @@ QRect AntInputNumberStyle::subControlRect(ComplexControl control,
         const auto* input = qobject_cast<const AntInputNumber*>(widget);
         const InputNumberMetrics metrics = metricsFor(input);
         const QRectF controlRect = controlRectFor(input, option ? option->rect : QRect());
-        const int handlerWidth = handlersVisibleFor(input) ? metrics.handlerWidth : 0;
+        const int handlerWidth = handlerWidthFor(input, metrics);
         const int addonAfterWidth = addonAfterWidthFor(input, metrics);
 
         if (subControl == SC_SpinBoxEditField)
@@ -339,7 +348,10 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
         const QColor hoverColor = token.colorFillTertiary;
         const QColor pressedColor = token.colorFillQuaternary;
         const QColor iconColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
+        const qreal progress = input->controlsProgress();
 
+        painter->save();
+        painter->setOpacity(progress);
         painter->setPen(QPen(splitColor, token.lineWidth));
         painter->drawLine(QPointF(upRect.left() + 0.5, control.top() + 3),
                           QPointF(upRect.left() + 0.5, control.bottom() - 3));
@@ -359,8 +371,13 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
             painter->fillRect(downRect.adjusted(1, 0, -1, -1), pressed ? pressedColor : hoverColor);
         }
 
-        AntIconPainter::drawIcon(*painter, Ant::IconType::Up, upRect.adjusted(6, 2, -6, -2), iconColor);
-        AntIconPainter::drawIcon(*painter, Ant::IconType::Down, downRect.adjusted(6, 2, -6, -2), iconColor);
+        if (upRect.width() >= 12)
+        {
+            const int iconInsetX = qMin(6, qMax(2, upRect.width() / 4));
+            AntIconPainter::drawIcon(*painter, Ant::IconType::Up, upRect.adjusted(iconInsetX, 2, -iconInsetX, -2), iconColor);
+            AntIconPainter::drawIcon(*painter, Ant::IconType::Down, downRect.adjusted(iconInsetX, 2, -iconInsetX, -2), iconColor);
+        }
+        painter->restore();
     }
 
     if (addonAfterWidth > 0)
