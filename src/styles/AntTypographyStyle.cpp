@@ -177,6 +177,12 @@ QRect copyIconRect(const QRect& optionRect, const QFontMetrics& fm, const QStrin
     return QRect(x, y, iconSize + gap, iconSize + gap);
 }
 
+Qt::Alignment horizontalAlignment(Qt::Alignment alignment)
+{
+    const Qt::Alignment horizontal = alignment & Qt::AlignHorizontal_Mask;
+    return horizontal == 0 ? Qt::AlignLeft : horizontal;
+}
+
 } // namespace
 
 AntTypographyStyle::AntTypographyStyle(QStyle* style)
@@ -263,6 +269,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
     QFont font = buildFont(typo, widgetFont);
     QFontMetrics fm(font);
     const QColor color = textColorForType(typo, option);
+    const Qt::Alignment align = horizontalAlignment(typo->alignment());
 
     const bool hasCopyBtn = typo->isCopyable();
     const int copyBtnWidth = hasCopyBtn ? token.fontSize + token.paddingXXS * 2 : 0;
@@ -293,7 +300,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
                                             codePadTop + token.lineWidth,
                                             -(codePadX + token.lineWidth),
                                             -(codePadBottom + token.lineWidth));
-        painter->drawText(innerRect, Qt::AlignLeft | Qt::AlignVCenter, text);
+        painter->drawText(innerRect, align | Qt::AlignVCenter, text);
     }
     // Mark mode: draw yellow highlight background
     else if (typo->isMark())
@@ -307,12 +314,12 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
 
         painter->setFont(font);
         painter->setPen(QColor("#000000"));
-        painter->drawText(textRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, text);
+        painter->drawText(textRect, align | Qt::AlignTop | Qt::TextWordWrap, text);
     }
     // Paragraph or ellipsis modes: word wrap
     else if (typo->isParagraph() || typo->isEllipsis())
     {
-        int flags = Qt::AlignLeft | Qt::AlignTop;
+        int flags = align | Qt::AlignTop;
 
         if (typo->isEllipsis())
         {
@@ -365,15 +372,24 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
         const int textH = fm.height();
         QRect singleRect(textRect.left(), textRect.top(), textRect.width(), textH);
 
-        painter->drawText(singleRect, Qt::AlignLeft | Qt::AlignVCenter, text);
+        painter->drawText(singleRect, align | Qt::AlignVCenter, text);
 
         // Delete: draw strikethrough line
         if (typo->isDelete())
         {
             const int textW = fm.horizontalAdvance(text);
             const int lineY = singleRect.top() + textH / 2;
+            int textX = singleRect.left();
+            if (align & Qt::AlignHCenter)
+            {
+                textX = singleRect.left() + qMax(0, (singleRect.width() - textW) / 2);
+            }
+            else if (align & Qt::AlignRight)
+            {
+                textX = singleRect.right() - textW + 1;
+            }
             painter->setPen(QPen(color, 1));
-            painter->drawLine(singleRect.left(), lineY, singleRect.left() + textW, lineY);
+            painter->drawLine(textX, lineY, textX + textW, lineY);
         }
     }
 

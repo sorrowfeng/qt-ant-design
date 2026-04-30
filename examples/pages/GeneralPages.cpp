@@ -144,6 +144,7 @@ QWidget* createIconPage(QWidget* /*owner*/)
         blockLayout->addWidget(icon, 0, Qt::AlignHCenter);
         auto* label = new AntTypography(title, block);
         label->setType(Ant::TypographyType::Secondary);
+        label->setAlignment(Qt::AlignHCenter);
         blockLayout->addWidget(label, 0, Qt::AlignHCenter);
         return block;
     };
@@ -160,6 +161,7 @@ QWidget* createIconPage(QWidget* /*owner*/)
         auto* label = new AntTypography(iconName, block);
         label->setType(Ant::TypographyType::Secondary);
         label->setEllipsis(true);
+        label->setAlignment(Qt::AlignHCenter);
         label->setFixedWidth(120);
         blockLayout->addWidget(label, 0, Qt::AlignHCenter);
         return block;

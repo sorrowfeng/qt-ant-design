@@ -145,6 +145,16 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(w5->value(), "B");
     QCOMPARE(valueSpy5.count(), 1);
 
+    w5->resize(w5->sizeHint());
+    const QPoint thirdSegmentPoint(w5->width() - 8, w5->height() / 2);
+    QTest::mousePress(w5, Qt::LeftButton, Qt::NoModifier, thirdSegmentPoint);
+    QCOMPARE(w5->pressedIndex(), 2);
+    QCOMPARE(w5->value(), "B");
+    QTest::mouseRelease(w5, Qt::LeftButton, Qt::NoModifier, thirdSegmentPoint);
+    QCOMPARE(w5->pressedIndex(), -1);
+    QCOMPARE(w5->value(), "C");
+    QCOMPARE(valueSpy5.count(), 2);
+
     QSignalSpy blockSpy(w5, &AntSegmented::blockChanged);
     w5->setBlock(true);
     QCOMPARE(w5->isBlock(), true);

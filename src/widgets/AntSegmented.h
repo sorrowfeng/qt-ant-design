@@ -46,7 +46,10 @@ public:
 
     // Accessors needed by AntSegmentedStyle
     int hoveredIndex() const;
+    int pressedIndex() const;
+    int selectedIndex() const;
     qreal thumbPosition() const;
+    QVector<QRectF> segmentRects() const;
 
 Q_SIGNALS:
     void valueChanged(const QString& value);
@@ -59,13 +62,12 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
 private:
-    QVector<QRectF> segmentRects() const;
     int segmentIndexAt(const QPoint& pos) const;
-    int selectedIndex() const;
     void startThumbAnimation(int newIndex);
 
     QVector<AntSegmentedOption> m_options;
@@ -75,6 +77,7 @@ private:
     bool m_vertical = false;
     Ant::SegmentedShape m_shape = Ant::SegmentedShape::Default;
     int m_hoveredIndex = -1;
+    int m_pressedIndex = -1;
     qreal m_thumbPos = 0;
     QVariantAnimation* m_thumbAnimation = nullptr;
 };

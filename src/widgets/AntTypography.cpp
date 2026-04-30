@@ -251,6 +251,21 @@ void AntTypography::setHref(const QString& href)
     Q_EMIT hrefChanged(m_href);
 }
 
+Qt::Alignment AntTypography::alignment() const { return m_alignment; }
+
+void AntTypography::setAlignment(Qt::Alignment alignment)
+{
+    const Qt::Alignment horizontal = alignment & Qt::AlignHorizontal_Mask;
+    const Qt::Alignment normalized = horizontal == 0 ? Qt::AlignLeft : horizontal;
+    if (m_alignment == normalized)
+    {
+        return;
+    }
+    m_alignment = normalized;
+    update();
+    Q_EMIT alignmentChanged(m_alignment);
+}
+
 bool AntTypography::isPressed() const { return m_pressed; }
 
 bool AntTypography::isCopyHovered() const { return m_copyHovered; }

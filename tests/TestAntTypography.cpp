@@ -28,6 +28,7 @@ void TestAntTypography::propertiesAndSignals()
     QCOMPARE(w->isCopyable(), false);
     QCOMPARE(w->isEllipsis(), false);
     QCOMPARE(w->href(), QString());
+    QCOMPARE(w->alignment(), Qt::AlignLeft);
 
     QSignalSpy textSpy(w, &AntTypography::textChanged);
     w->setText("Hello");
@@ -100,6 +101,11 @@ void TestAntTypography::propertiesAndSignals()
     w->setHref("https://example.com");
     QCOMPARE(w->href(), "https://example.com");
     QCOMPARE(hrefSpy.count(), 1);
+
+    QSignalSpy alignmentSpy(w, &AntTypography::alignmentChanged);
+    w->setAlignment(Qt::AlignHCenter);
+    QCOMPARE(w->alignment(), Qt::AlignHCenter);
+    QCOMPARE(alignmentSpy.count(), 1);
 }
 
 void TestAntTypography::copyInteractionState()

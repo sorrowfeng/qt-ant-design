@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include <algorithm>
 #include <cmath>
 
 #include "widgets/AntSegmented.h"
@@ -50,43 +51,60 @@ int segmentedRadius(const AntSegmented* seg)
     }
 }
 
-QVector<QRectF> segmentItemRects(const AntSegmented* seg, const QRect& widgetRect)
+int segmentedItemRadius(const AntSegmented* seg)
 {
-    QVector<QRectF> rects;
-    const int n = seg->options().size();
-    if (n == 0) return rects;
-
-    const int pad = 2;
-    const QRect track = widgetRect.adjusted(pad, pad, -pad, -pad);
-
-    if (seg->isVertical())
+    const auto& token = antTheme->tokens();
+    const int h = segmentedHeight(seg->segmentedSize());
+    if (seg->shape() == Ant::SegmentedShape::Round)
     {
-        const qreal segH = static_cast<qreal>(track.height()) / n;
-        for (int i = 0; i < n; ++i)
-        {
-            rects.append(QRectF(track.x(), track.y() + i * segH, track.width(), segH));
-        }
+        return h / 2;
     }
-    else
+    switch (seg->segmentedSize())
     {
-        const qreal segW = static_cast<qreal>(track.width()) / n;
-        for (int i = 0; i < n; ++i)
-        {
-            rects.append(QRectF(track.x() + i * segW, track.y(), segW, track.height()));
-        }
+    case Ant::Size::Small: return token.borderRadiusXS;
+    case Ant::Size::Large: return token.borderRadius;
+    default: return token.borderRadiusSM;
     }
-    return rects;
 }
 
-QRectF segmentedThumbRect(const AntSegmented* seg, const QRect& widgetRect)
+QRectF segmentedThumbRect(const AntSegmented* seg)
 {
-    const auto rects = segmentItemRects(seg, widgetRect);
-    const int idx = static_cast<int>(seg->thumbPosition());
-    if (idx < 0 || idx >= rects.size()) return QRectF();
+    const auto rects = seg->segmentRects();
+    if (rects.isEmpty()) return QRectF();
 
-    const int r = segmentedRadius(seg);
-    QRectF thumb = rects[idx];
-    return thumb.adjusted(1, 1, -1, -1);
+    const qreal pos = std::clamp(seg->thumbPosition(), 0.0, static_cast<qreal>(rects.size() - 1));
+    const int leftIdx = static_cast<int>(std::floor(pos));
+    const int rightIdx = std::min(leftIdx + 1, static_cast<int>(rects.size()) - 1);
+    const qreal t = pos - leftIdx;
+
+    const QRectF a = rects[leftIdx];
+    const QRectF b = rects[rightIdx];
+    return QRectF(
+        a.left() + (b.left() - a.left()) * t,
+        a.top() + (b.top() - a.top()) * t,
+        a.width() + (b.width() - a.width()) * t,
+        a.height() + (b.height() - a.height()) * t);
+}
+
+void drawSegmentedThumbShadow(QPainter* painter, const QRectF& rect, qreal radius)
+{
+    painter->save();
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QColor(0, 0, 0, 8));
+    painter->drawRoundedRect(rect.translated(0, 1), radius, radius);
+    painter->setBrush(QColor(0, 0, 0, 5));
+    painter->drawRoundedRect(rect.adjusted(-1, 0, 1, 2), radius, radius);
+    painter->setBrush(QColor(0, 0, 0, 5));
+    painter->drawRoundedRect(rect.translated(0, 2), radius, radius);
+    painter->restore();
+}
+
+QColor itemOverlayColor(const AntThemeTokens& token, bool pressed)
+{
+    const bool dark = token.colorBgBase.lightness() < 32;
+    QColor color = dark ? QColor(255, 255, 255) : QColor(0, 0, 0);
+    color.setAlphaF(pressed ? (dark ? 0.18 : 0.15) : (dark ? 0.12 : 0.06));
+    return color;
 }
 
 void drawSegmentedIcon(QPainter* painter, const QString& icon, const QRectF& rect, const QColor& color)
@@ -198,40 +216,41 @@ void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* pain
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
     const int r = segmentedRadius(seg);
+    const int itemR = segmentedItemRadius(seg);
     const bool enabled = option->state & QStyle::State_Enabled;
-    const int selIdx = static_cast<int>(seg->thumbPosition());
-    const auto itemRects = segmentItemRects(seg, option->rect);
+    const int selIdx = seg->selectedIndex();
+    const int pressedIdx = seg->pressedIndex();
+    const auto itemRects = seg->segmentRects();
 
     // Track background
-    const QRectF track = option->rect.adjusted(2, 2, -2, -2);
-    AntStyleBase::drawCrispRoundedRect(painter, track.toRect(),
-        Qt::NoPen, token.colorFillQuaternary, r, r);
+    AntStyleBase::drawCrispRoundedRect(painter, option->rect,
+        Qt::NoPen, token.colorBgLayout, r, r);
 
-    // Thumb
-    if (selIdx >= 0 && selIdx < itemRects.size())
+    for (int i = 0; i < options.size(); ++i)
     {
-        QRectF thumb = itemRects[selIdx].adjusted(1, 1, -1, -1);
-        antTheme->drawEffectShadow(painter, thumb.toRect(), 6, 4, 0.08);
-        AntStyleBase::drawCrispRoundedRect(painter, thumb.toRect(),
-            Qt::NoPen, token.colorBgContainer, r - 1, r - 1);
+        if (!enabled || options[i].disabled || i == selIdx)
+        {
+            continue;
+        }
+
+        const bool isPressed = i == pressedIdx;
+        const bool isHovered = i == seg->hoveredIndex();
+        if (!isPressed && !isHovered)
+        {
+            continue;
+        }
+
+        AntStyleBase::drawCrispRoundedRect(painter, itemRects[i].toRect(),
+            Qt::NoPen, itemOverlayColor(token, isPressed), itemR, itemR);
     }
 
-    // Separators
-    painter->setPen(QPen(token.colorSplit, token.lineWidth));
-    for (int i = 1; i < itemRects.size(); ++i)
+    // Thumb
+    const QRectF thumb = segmentedThumbRect(seg);
+    if (!thumb.isEmpty())
     {
-        if (i == selIdx || i - 1 == selIdx) continue;
-        const QRectF& r0 = itemRects[i];
-        if (seg->isVertical())
-        {
-            const qreal y = r0.top();
-            painter->drawLine(QPointF(r0.left() + 12, y), QPointF(r0.right() - 12, y));
-        }
-        else
-        {
-            const qreal x = r0.left();
-            painter->drawLine(QPointF(x, r0.top() + 6), QPointF(x, r0.bottom() - 6));
-        }
+        drawSegmentedThumbShadow(painter, thumb, itemR);
+        AntStyleBase::drawCrispRoundedRect(painter, thumb.toRect(),
+            Qt::NoPen, token.colorBgElevated, itemR, itemR);
     }
 
     // Labels
@@ -259,20 +278,11 @@ void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* pain
         }
         else if (isHovered)
         {
-            textCol = token.colorPrimary;
+            textCol = token.colorText;
         }
         else
         {
             textCol = token.colorTextSecondary;
-        }
-
-        // Hover overlay
-        if (isHovered && !isSel && !isDisabled && enabled)
-        {
-            QColor hoverBg = token.colorPrimary;
-            hoverBg.setAlphaF(0.06);
-            AntStyleBase::drawCrispRoundedRect(painter, r0.toRect(),
-                Qt::NoPen, hoverBg, r - 1, r - 1);
         }
 
         painter->setPen(textCol);

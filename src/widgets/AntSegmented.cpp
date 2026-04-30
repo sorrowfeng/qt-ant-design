@@ -2,12 +2,57 @@
 
 #include <QMouseEvent>
 #include <QPainter>
+#include <QFontMetrics>
 #include <QResizeEvent>
 #include <QSizePolicy>
 #include <QVariantAnimation>
 
+#include <algorithm>
+
 #include "core/AntTheme.h"
 #include "styles/AntSegmentedStyle.h"
+
+namespace
+{
+constexpr int kTrackPadding = 2;
+constexpr int kIconSize = 14;
+constexpr int kIconGap = 6;
+
+int segmentedFontSize(Ant::Size size)
+{
+    const auto& token = antTheme->tokens();
+    switch (size)
+    {
+    case Ant::Size::Small: return token.fontSizeSM;
+    case Ant::Size::Large: return token.fontSizeLG;
+    default: return token.fontSize;
+    }
+}
+
+int segmentedHeight(Ant::Size size)
+{
+    const auto& token = antTheme->tokens();
+    switch (size)
+    {
+    case Ant::Size::Small: return token.controlHeightSM;
+    case Ant::Size::Large: return token.controlHeightLG;
+    default: return token.controlHeight;
+    }
+}
+
+int segmentedPaddingHorizontal(Ant::Size size)
+{
+    const auto& token = antTheme->tokens();
+    return (size == Ant::Size::Small ? token.paddingXS : token.paddingSM) - token.lineWidth;
+}
+
+int segmentWidth(const AntSegmentedOption& option, const QFontMetrics& fm, Ant::Size size)
+{
+    const int textWidth = fm.horizontalAdvance(option.label);
+    const int iconWidth = option.icon.isEmpty() ? 0 : kIconSize + (option.label.isEmpty() ? 0 : kIconGap);
+    return textWidth + iconWidth + segmentedPaddingHorizontal(size) * 2;
+}
+}
 
 AntSegmented::AntSegmented(QWidget* parent)
     : QWidget(parent)
@@ -136,18 +181,25 @@ QSize AntSegmented::sizeHint() const
     if (m_vertical)
     {
         const int n = m_options.size();
-        return QSize(h + 16, n * h);
+        QFont f = font();
+        f.setPixelSize(fontSize);
+        QFontMetrics fm(f);
+        int maxWidth = h;
+        for (const auto& opt : m_options)
+        {
+            maxWidth = std::max(maxWidth, segmentWidth(opt, fm, m_size));
+        }
+        return QSize(maxWidth + kTrackPadding * 2, n * h);
     }
     else
     {
         QFont f = font();
         f.setPixelSize(fontSize);
         QFontMetrics fm(f);
-        int totalWidth = 0;
+        int totalWidth = kTrackPadding * 2;
         for (const auto& opt : m_options)
         {
-            const int iconWidth = opt.icon.isEmpty() ? 0 : 24;
-            totalWidth += fm.horizontalAdvance(opt.label) + iconWidth + token.paddingSM * 2;
+            totalWidth += segmentWidth(opt, fm, m_size);
         }
         return QSize(totalWidth, h);
     }
@@ -166,9 +218,11 @@ void AntSegmented::paintEvent(QPaintEvent* event)
 void AntSegmented::mouseMoveEvent(QMouseEvent* event)
 {
     const int idx = segmentIndexAt(event->pos());
-    if (m_hoveredIndex != idx)
+    const int pressedIdx = (event->buttons() & Qt::LeftButton) ? idx : -1;
+    if (m_hoveredIndex != idx || m_pressedIndex != pressedIdx)
     {
         m_hoveredIndex = idx;
+        m_pressedIndex = pressedIdx;
         update();
     }
     QWidget::mouseMoveEvent(event);
@@ -181,7 +235,8 @@ void AntSegmented::mousePressEvent(QMouseEvent* event)
         const int idx = segmentIndexAt(event->pos());
         if (idx >= 0 && idx < m_options.size() && !m_options[idx].disabled)
         {
-            setValue(m_options[idx].value);
+            m_pressedIndex = idx;
+            update();
         }
         event->accept();
         return;
@@ -189,9 +244,28 @@ void AntSegmented::mousePressEvent(QMouseEvent* event)
     QWidget::mousePressEvent(event);
 }
 
+void AntSegmented::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        const int idx = segmentIndexAt(event->pos());
+        const int pressedIdx = m_pressedIndex;
+        m_pressedIndex = -1;
+        if (idx == pressedIdx && idx >= 0 && idx < m_options.size() && !m_options[idx].disabled)
+        {
+            setValue(m_options[idx].value);
+        }
+        update();
+        event->accept();
+        return;
+    }
+    QWidget::mouseReleaseEvent(event);
+}
+
 void AntSegmented::leaveEvent(QEvent* event)
 {
     m_hoveredIndex = -1;
+    m_pressedIndex = -1;
     update();
     QWidget::leaveEvent(event);
 }
@@ -207,20 +281,38 @@ QVector<QRectF> AntSegmented::segmentRects() const
     const int n = m_options.size();
     if (n == 0) return rects;
 
+    const QRectF track = QRectF(rect()).adjusted(kTrackPadding, kTrackPadding, -kTrackPadding, -kTrackPadding);
+
     if (m_vertical)
     {
-        const qreal segH = static_cast<qreal>(height()) / n;
+        const qreal segH = track.height() / n;
         for (int i = 0; i < n; ++i)
         {
-            rects.append(QRectF(0, i * segH, width(), segH));
+            rects.append(QRectF(track.x(), track.y() + i * segH, track.width(), segH));
         }
     }
     else
     {
-        const qreal segW = static_cast<qreal>(width()) / n;
-        for (int i = 0; i < n; ++i)
+        if (m_block)
         {
-            rects.append(QRectF(i * segW, 0, segW, height()));
+            const qreal segW = track.width() / n;
+            for (int i = 0; i < n; ++i)
+            {
+                rects.append(QRectF(track.x() + i * segW, track.y(), segW, track.height()));
+            }
+        }
+        else
+        {
+            QFont f = font();
+            f.setPixelSize(segmentedFontSize(m_size));
+            QFontMetrics fm(f);
+            qreal x = track.x();
+            for (const auto& opt : m_options)
+            {
+                const qreal segW = segmentWidth(opt, fm, m_size);
+                rects.append(QRectF(x, track.y(), segW, track.height()));
+                x += segW;
+            }
         }
     }
     return rects;
@@ -250,6 +342,11 @@ int AntSegmented::hoveredIndex() const
     return m_hoveredIndex;
 }
 
+int AntSegmented::pressedIndex() const
+{
+    return m_pressedIndex;
+}
+
 qreal AntSegmented::thumbPosition() const
 {
     return m_thumbPos;
@@ -260,8 +357,8 @@ void AntSegmented::startThumbAnimation(int newIndex)
     if (!m_thumbAnimation)
     {
         m_thumbAnimation = new QVariantAnimation(this);
-        m_thumbAnimation->setDuration(200);
-        m_thumbAnimation->setEasingCurve(QEasingCurve::OutCubic);
+        m_thumbAnimation->setDuration(300);
+        m_thumbAnimation->setEasingCurve(QEasingCurve::InOutCubic);
         connect(m_thumbAnimation, &QVariantAnimation::valueChanged, this, [this](const QVariant& v) {
             m_thumbPos = v.toReal();
             update();
