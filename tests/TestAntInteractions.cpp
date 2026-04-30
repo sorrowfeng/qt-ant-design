@@ -31,7 +31,9 @@ private slots:
     void datePickerPopupSelection();
     void timePickerPopupSelection();
     void inputNumberFocusRevealsControlsAndSteps();
+    void uploadClickTriggerUsesExternalHandler();
     void uploadDraggerDropFlow();
+    void uploadFileStatusAndRemovalFlow();
 };
 
 namespace
@@ -68,6 +70,16 @@ bool writeTempFile(const QString& path, const QByteArray& data)
     }
     file.write(data);
     return true;
+}
+
+AntUploadFile uploadFile(const QString& uid, const QString& name, Ant::UploadFileStatus status = Ant::UploadFileStatus::Done)
+{
+    AntUploadFile file;
+    file.uid = uid;
+    file.name = name;
+    file.status = status;
+    file.percent = status == Ant::UploadFileStatus::Done ? 100 : 0;
+    return file;
 }
 
 void sendDrop(AntUpload* upload, QMimeData* mimeData, const QPoint& pos = QPoint(12, 12))
@@ -271,6 +283,34 @@ void TestAntInteractions::inputNumberFocusRevealsControlsAndSteps()
     QCOMPARE(input.value(), 5.0);
 }
 
+void TestAntInteractions::uploadClickTriggerUsesExternalHandler()
+{
+    AntUpload upload;
+    upload.resize(220, upload.sizeHint().height());
+    upload.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&upload));
+
+    QSignalSpy requestSpy(&upload, &AntUpload::uploadRequested);
+    QTest::mouseClick(&upload, Qt::LeftButton, Qt::NoModifier, QPoint(16, 16));
+    QCOMPARE(requestSpy.count(), 1);
+    QCOMPARE(upload.fileList().size(), 0);
+
+    upload.setDisabled(true);
+    QTest::mouseClick(&upload, Qt::LeftButton, Qt::NoModifier, QPoint(16, 16));
+    QCOMPARE(requestSpy.count(), 1);
+
+    AntUpload cappedUpload;
+    cappedUpload.setMaxCount(1);
+    cappedUpload.addFile(uploadFile(QStringLiteral("done"), QStringLiteral("done.txt")));
+    cappedUpload.resize(220, cappedUpload.sizeHint().height());
+    cappedUpload.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&cappedUpload));
+
+    QSignalSpy cappedRequestSpy(&cappedUpload, &AntUpload::uploadRequested);
+    QTest::mouseClick(&cappedUpload, Qt::LeftButton, Qt::NoModifier, QPoint(16, 16));
+    QCOMPARE(cappedRequestSpy.count(), 0);
+}
+
 void TestAntInteractions::uploadDraggerDropFlow()
 {
     qRegisterMetaType<AntUploadFile>("AntUploadFile");
@@ -325,6 +365,74 @@ void TestAntInteractions::uploadDraggerDropFlow()
     QDropEvent disabledDrop(QPointF(12, 12), Qt::CopyAction, &disabledMime, Qt::LeftButton, Qt::NoModifier);
     QCoreApplication::sendEvent(&disabledUpload, &disabledDrop);
     QCOMPARE(disabledUpload.fileList().size(), 0);
+
+    AntUpload rejectUpload;
+    rejectUpload.setDraggerMode(true);
+    rejectUpload.setAccept(QStringLiteral("image/*"));
+
+    QMimeData rejectMime;
+    rejectMime.setUrls({QUrl::fromLocalFile(textPath)});
+    QDragEnterEvent rejectEnter(QPoint(12, 12), Qt::CopyAction, &rejectMime, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(&rejectUpload, &rejectEnter);
+    QVERIFY(!rejectEnter.isAccepted());
+
+    AntUpload multipleUpload;
+    multipleUpload.setDraggerMode(true);
+    multipleUpload.setMultiple(true);
+    multipleUpload.setMaxCount(2);
+    multipleUpload.setAccept(QStringLiteral(".txt"));
+
+    QMimeData multipleMime;
+    multipleMime.setUrls({QUrl::fromLocalFile(textPath),
+                          QUrl::fromLocalFile(secondTextPath),
+                          QUrl::fromLocalFile(pngPath)});
+    sendDrop(&multipleUpload, &multipleMime);
+    QCOMPARE(multipleUpload.fileList().size(), 2);
+    QCOMPARE(multipleUpload.fileList().at(0).name, QStringLiteral("accepted.txt"));
+    QCOMPARE(multipleUpload.fileList().at(1).name, QStringLiteral("second.txt"));
+}
+
+void TestAntInteractions::uploadFileStatusAndRemovalFlow()
+{
+    qRegisterMetaType<AntUploadFile>("AntUploadFile");
+
+    AntUpload upload;
+    upload.resize(260, upload.sizeHint().height());
+
+    QSignalSpy addedSpy(&upload, &AntUpload::fileAdded);
+    QSignalSpy removedSpy(&upload, &AntUpload::fileRemoved);
+    QSignalSpy statusSpy(&upload, &AntUpload::fileStatusChanged);
+
+    upload.addFile(uploadFile(QStringLiteral("1"), QStringLiteral("report.txt"), Ant::UploadFileStatus::Uploading));
+    QCOMPARE(addedSpy.count(), 1);
+    QCOMPARE(upload.fileList().size(), 1);
+    QCOMPARE(upload.fileList().first().percent, 0);
+
+    upload.updateFileStatus(QStringLiteral("1"), Ant::UploadFileStatus::Done, 150);
+    QCOMPARE(statusSpy.count(), 1);
+    QCOMPARE(upload.fileList().first().status, Ant::UploadFileStatus::Done);
+    QCOMPARE(upload.fileList().first().percent, 100);
+
+    upload.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&upload));
+
+    QTest::mouseClick(&upload, Qt::LeftButton, Qt::NoModifier, QPoint(upload.width() - 12, 54));
+    QCOMPARE(removedSpy.count(), 1);
+    QCOMPARE(removedSpy.takeFirst().at(0).toString(), QStringLiteral("1"));
+    QCOMPARE(upload.fileList().size(), 0);
+
+    AntUpload pictureCard;
+    pictureCard.setListType(Ant::UploadListType::PictureCard);
+    pictureCard.addFile(uploadFile(QStringLiteral("card"), QStringLiteral("image.png")));
+    pictureCard.resize(240, 120);
+    pictureCard.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pictureCard));
+
+    QSignalSpy cardRemovedSpy(&pictureCard, &AntUpload::fileRemoved);
+    QTest::mouseClick(&pictureCard, Qt::LeftButton, Qt::NoModifier, QPoint(62, 50));
+    QCOMPARE(cardRemovedSpy.count(), 1);
+    QCOMPARE(cardRemovedSpy.takeFirst().at(0).toString(), QStringLiteral("card"));
+    QCOMPARE(pictureCard.fileList().size(), 0);
 }
 
 QTEST_MAIN(TestAntInteractions)
