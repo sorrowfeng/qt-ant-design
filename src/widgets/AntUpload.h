@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QMetaType>
 #include <QVector>
 #include <QWidget>
 
@@ -19,6 +20,8 @@ struct AntUploadFile
     QString url;
     qint64 size = 0;
 };
+
+Q_DECLARE_METATYPE(AntUploadFile)
 
 class AntUpload : public QWidget
 {

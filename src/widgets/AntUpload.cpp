@@ -86,6 +86,7 @@ void AntUpload::setDisabled(bool disabled)
         return;
     }
     m_disabled = disabled;
+    setAcceptDrops(m_draggerMode && !m_disabled);
     update();
     Q_EMIT disabledChanged(m_disabled);
 }
@@ -111,7 +112,7 @@ void AntUpload::setDraggerMode(bool dragger)
     if (m_draggerMode == dragger)
         return;
     m_draggerMode = dragger;
-    setAcceptDrops(dragger);
+    setAcceptDrops(dragger && !m_disabled);
     updateGeometry();
     update();
     Q_EMIT draggerModeChanged(m_draggerMode);
@@ -119,16 +120,21 @@ void AntUpload::setDraggerMode(bool dragger)
 
 void AntUpload::dragEnterEvent(QDragEnterEvent* event)
 {
-    if (m_draggerMode && event->mimeData()->hasUrls())
+    if (m_draggerMode && !m_disabled && canAcceptMoreFiles() && event->mimeData()->hasUrls())
     {
-        m_dragOver = true;
-        update();
-        event->acceptProposedAction();
+        const QList<QUrl> urls = event->mimeData()->urls();
+        for (const QUrl& url : urls)
+        {
+            if (url.isLocalFile() && fileMatchesAccept(url.toLocalFile()))
+            {
+                m_dragOver = true;
+                update();
+                event->acceptProposedAction();
+                return;
+            }
+        }
     }
-    else
-    {
-        QWidget::dragEnterEvent(event);
-    }
+    QWidget::dragEnterEvent(event);
 }
 
 void AntUpload::dragLeaveEvent(QDragLeaveEvent* event)
@@ -141,7 +147,7 @@ void AntUpload::dragLeaveEvent(QDragLeaveEvent* event)
 void AntUpload::dropEvent(QDropEvent* event)
 {
     m_dragOver = false;
-    if (m_draggerMode && event->mimeData()->hasUrls())
+    if (m_draggerMode && !m_disabled && canAcceptMoreFiles() && event->mimeData()->hasUrls())
     {
         QStringList paths;
         const QList<QUrl> urls = event->mimeData()->urls();
@@ -594,10 +600,19 @@ void AntUpload::requestUploadFiles()
 
 void AntUpload::addLocalFiles(const QStringList& paths)
 {
+    if (m_disabled || paths.isEmpty())
+    {
+        return;
+    }
+
     int remaining = m_maxCount > 0 ? qMax(0, m_maxCount - m_files.size()) : paths.size();
     if (!m_multiple)
     {
         remaining = qMin(remaining, 1);
+    }
+    if (remaining <= 0)
+    {
+        return;
     }
 
     int accepted = 0;

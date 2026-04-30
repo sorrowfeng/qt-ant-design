@@ -36,7 +36,7 @@
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：`23 / 23` CTest 目标在 Debug 下通过（最近一次全量验证：`2026-04-30`）
+- 测试状态：`24 / 24` CTest 目标在 Debug 下通过（最近一次全量验证：`2026-04-30`）
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -379,10 +379,10 @@ cmake --install build --config Debug
 项目使用 QTest 框架进行单元测试，覆盖所有 82 个公开组件的属性、getter/setter 和信号验证。
 
 - **测试框架**：Qt6::Test（QTest + QSignalSpy）
-- **测试数量**：23 个测试可执行文件
+- **测试数量**：24 个测试可执行文件
 - **覆盖组件**：82 个公开组件全部覆盖，内部 helper 随宿主组件测试
 - **运行方式**：`ctest -C Debug --output-on-failure`
-- **最近全量结果**：`23 / 23` 通过（Debug，2026-04-30）
+- **最近全量结果**：`24 / 24` 通过（Debug，2026-04-30）
 
 ### 测试文件结构
 
@@ -411,6 +411,7 @@ tests/
 ├── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, NavItem, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker
 ├── TestAntObjectTree.cpp       # Public widget parent ownership, style ownership, and parent-driven destruction
 ├── TestAntMetaProperties.cpp   # Every public control's own Q_PROPERTY read/write + NOTIFY coverage through Qt meta-object APIs
+├── TestAntInteractions.cpp     # Complex popup/input/upload interactions through real QTest mouse, keyboard, drag/drop events
 └── TestAntCoverageInventory.cpp # Public Ant*.h coverage guard for lifecycle and meta-property tests
 ```
 
