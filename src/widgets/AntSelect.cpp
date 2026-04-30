@@ -16,6 +16,7 @@
 
 #include "../styles/AntSelectStyle.h"
 #include "AntSelectPopup.h"
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -294,14 +295,13 @@ void AntSelect::setOpen(bool open)
         rebuildPopup();
         updatePopupGeometry();
         m_highlightedIndex = m_currentIndex >= 0 ? m_currentIndex : nextEnabledIndex(-1, 1);
-        m_popup->show();
-        m_popup->raise();
+        AntPopupMotion::show(m_popup);
     }
     else
     {
         if (m_popup->isVisible())
         {
-            m_popup->hide();
+            AntPopupMotion::hide(m_popup);
         }
     }
 

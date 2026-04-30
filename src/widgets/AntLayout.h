@@ -114,11 +114,15 @@ class AntLayout : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool hasSider READ hasSider NOTIFY hasSiderChanged)
+    Q_PROPERTY(int borderRadius READ borderRadius WRITE setBorderRadius NOTIFY borderRadiusChanged)
 
 public:
     explicit AntLayout(QWidget* parent = nullptr);
 
     bool hasSider() const;
+
+    int borderRadius() const;
+    void setBorderRadius(int radius);
 
     void setHeader(AntLayoutHeader* header);
     AntLayoutHeader* header() const;
@@ -139,6 +143,7 @@ public:
 
 Q_SIGNALS:
     void hasSiderChanged(bool hasSider);
+    void borderRadiusChanged(int radius);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -146,6 +151,7 @@ protected:
 
 private:
     void syncLayout();
+    void syncMask();
     void updateHasSider();
 
     QWidget* m_header = nullptr;
@@ -153,4 +159,5 @@ private:
     QWidget* m_content = nullptr;
     QVector<QWidget*> m_siders;
     bool m_hasSider = false;
+    int m_borderRadius = 0;
 };

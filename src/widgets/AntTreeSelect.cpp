@@ -11,6 +11,7 @@
 
 #include <algorithm>
 
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "../styles/AntTreeSelectStyle.h"
 
@@ -423,7 +424,7 @@ void AntTreeSelect::showPopup()
     m_popup->refreshSize();
     const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4));
     m_popup->move(pos);
-    m_popup->show();
+    AntPopupMotion::show(m_popup);
     m_open = true;
     Q_EMIT openChanged(true);
     update();
@@ -433,7 +434,7 @@ void AntTreeSelect::hidePopup()
 {
     if (m_popup)
     {
-        m_popup->hide();
+        AntPopupMotion::hide(m_popup);
     }
     m_open = false;
     Q_EMIT openChanged(false);

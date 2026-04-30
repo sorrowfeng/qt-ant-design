@@ -13,6 +13,7 @@
 #include <algorithm>
 
 #include "../styles/AntCascaderStyle.h"
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -195,14 +196,13 @@ void AntCascader::setOpen(bool open)
         auto* popup = static_cast<CascaderPopup*>(m_popup);
         popup->rebuildColumns();
         popup->updateSizeAndPosition();
-        m_popup->show();
-        m_popup->raise();
+        AntPopupMotion::show(m_popup);
     }
     else
     {
         if (m_popup->isVisible())
         {
-            m_popup->hide();
+            AntPopupMotion::hide(m_popup);
         }
     }
 

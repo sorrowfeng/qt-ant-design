@@ -166,6 +166,12 @@ void TestAntLayout::layout()
 {
     auto* w = new AntLayout;
     QCOMPARE(w->hasSider(), false);
+    QCOMPARE(w->borderRadius(), 0);
+
+    QSignalSpy radiusSpy(w, &AntLayout::borderRadiusChanged);
+    w->setBorderRadius(8);
+    QCOMPARE(w->borderRadius(), 8);
+    QCOMPARE(radiusSpy.count(), 1);
 
     auto* header = new AntLayoutHeader;
     w->setHeader(header);

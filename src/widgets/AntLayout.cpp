@@ -3,7 +3,9 @@
 #include <QEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QResizeEvent>
+#include <QRegion>
 
 #include "../styles/AntLayoutStyle.h"
 #include "core/AntTheme.h"
@@ -294,6 +296,21 @@ AntLayout::AntLayout(QWidget* parent)
 
 bool AntLayout::hasSider() const { return m_hasSider; }
 
+int AntLayout::borderRadius() const { return m_borderRadius; }
+
+void AntLayout::setBorderRadius(int radius)
+{
+    radius = qMax(0, radius);
+    if (m_borderRadius == radius)
+    {
+        return;
+    }
+    m_borderRadius = radius;
+    syncMask();
+    update();
+    Q_EMIT borderRadiusChanged(m_borderRadius);
+}
+
 void AntLayout::setHeader(AntLayoutHeader* header)
 {
     if (m_header == header)
@@ -450,6 +467,7 @@ void AntLayout::paintEvent(QPaintEvent* event)
 void AntLayout::resizeEvent(QResizeEvent* event)
 {
     syncLayout();
+    syncMask();
     QWidget::resizeEvent(event);
 }
 
@@ -510,6 +528,19 @@ void AntLayout::syncLayout()
         m_content->setGeometry(x, y, w - x, contentBottom - y);
         m_content->show();
     }
+}
+
+void AntLayout::syncMask()
+{
+    if (m_borderRadius <= 0 || rect().isEmpty())
+    {
+        clearMask();
+        return;
+    }
+
+    QPainterPath path;
+    path.addRoundedRect(QRectF(rect()), m_borderRadius, m_borderRadius);
+    setMask(QRegion(path.toFillPolygon().toPolygon()));
 }
 
 void AntLayout::updateHasSider()

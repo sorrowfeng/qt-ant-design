@@ -9,6 +9,7 @@
 #include <QScreen>
 #include <QTimer>
 
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntTooltipStyle.h"
 
@@ -61,7 +62,7 @@ AntTooltip::AntTooltip(QWidget* parent)
             return;
         }
         updatePosition();
-        show();
+        AntPopupMotion::show(this, AntPopupMotion::fromTooltipPlacement(m_renderPlacement));
     });
 }
 
@@ -185,14 +186,13 @@ void AntTooltip::showTooltip()
     }
     m_openTimer->stop();
     updatePosition();
-    show();
-    raise();
+    AntPopupMotion::show(this, AntPopupMotion::fromTooltipPlacement(m_renderPlacement));
 }
 
 void AntTooltip::hideTooltip()
 {
     m_openTimer->stop();
-    hide();
+    AntPopupMotion::hide(this, AntPopupMotion::fromTooltipPlacement(m_renderPlacement));
 }
 
 QSize AntTooltip::sizeHint() const

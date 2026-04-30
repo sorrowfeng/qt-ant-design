@@ -7,6 +7,7 @@
 #include <QScreen>
 #include <QTimer>
 
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntPopoverStyle.h"
 #include "styles/AntPalette.h"
@@ -169,12 +170,11 @@ void AntPopover::setOpen(bool open)
     if (m_open && m_target)
     {
         updatePosition();
-        show();
-        raise();
+        AntPopupMotion::show(this, AntPopupMotion::fromTooltipPlacement(m_renderPlacement));
     }
     else
     {
-        hide();
+        AntPopupMotion::hide(this, AntPopupMotion::fromTooltipPlacement(m_renderPlacement));
     }
     Q_EMIT openChanged(m_open);
 }

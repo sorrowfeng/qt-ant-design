@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QList>
+#include <QHash>
 #include <QStringList>
 #include <QVector>
 #include <QWidget>
@@ -12,6 +13,7 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 class QPainter;
+class QVariantAnimation;
 
 struct AntMenuItem
 {
@@ -136,7 +138,11 @@ private:
     int selectedVisibleIndex() const;
     int nextSelectableVisibleIndex(int from, int direction) const;
     bool isOpen(const QString& key) const;
+    bool isSubMenuVisible(const QString& key) const;
+    qreal subMenuProgress(const QString& key) const;
     void toggleOpen(const QString& key);
+    void animateSubMenu(const QString& key, bool open);
+    void stopSubMenuAnimation(const QString& key);
     void activateItem(int itemIndex);
     int itemHeight() const;
     int horizontalItemWidth(const AntMenuItem& item) const;
@@ -155,6 +161,8 @@ private:
     bool m_compact = false;
     QString m_selectedKey;
     QStringList m_openKeys;
+    QHash<QString, qreal> m_subMenuProgress;
+    QHash<QString, QVariantAnimation*> m_subMenuAnimations;
     int m_inlineIndent = 24;
     int m_hoveredIndex = -1;
 };

@@ -13,6 +13,7 @@
 
 #include <algorithm>
 
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntNotificationStyle.h"
 #include "styles/AntPalette.h"
@@ -50,7 +51,9 @@ AntNotification::AntNotification(QWidget* parent)
 
     m_closeTimer = new QTimer(this);
     m_closeTimer->setSingleShot(true);
-    connect(m_closeTimer, &QTimer::timeout, this, &QWidget::close);
+    connect(m_closeTimer, &QTimer::timeout, this, [this]() {
+        AntPopupMotion::close(this, AntPopupMotion::fromPlacement(m_placement));
+    });
 
     m_progressTimer = new QTimer(this);
     connect(m_progressTimer, &QTimer::timeout, this, [this]() { update(); });
@@ -105,8 +108,8 @@ AntNotification* AntNotification::create(const QString& title,
         relayoutNotifications(anchor);
     });
 
-    notification->show();
     relayoutNotifications(anchor);
+    AntPopupMotion::show(notification, AntPopupMotion::fromPlacement(placement));
     return notification;
 }
 
@@ -153,7 +156,7 @@ void AntNotification::closeAll()
     {
         if (notification)
         {
-            notification->close();
+            AntPopupMotion::close(notification, AntPopupMotion::fromPlacement(notification->placement()));
         }
     }
 }
@@ -379,7 +382,7 @@ void AntNotification::mousePressEvent(QMouseEvent* event)
     {
         if (m_closable && closeButtonRect().contains(event->position()))
         {
-            close();
+            AntPopupMotion::close(this, AntPopupMotion::fromPlacement(m_placement));
             event->accept();
             return;
         }

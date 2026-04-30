@@ -12,6 +12,7 @@
 
 #include <algorithm>
 
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntMessageStyle.h"
 #include "styles/AntPalette.h"
@@ -27,7 +28,9 @@ AntMessage::AntMessage(QWidget* parent)
 
     m_closeTimer = new QTimer(this);
     m_closeTimer->setSingleShot(true);
-    connect(m_closeTimer, &QTimer::timeout, this, &QWidget::close);
+    connect(m_closeTimer, &QTimer::timeout, this, [this]() {
+        AntPopupMotion::close(this, AntPopupMotion::fromPlacement(m_placement));
+    });
 
     m_loadingTimer = new QTimer(this);
     connect(m_loadingTimer, &QTimer::timeout, this, [this]() {
@@ -52,8 +55,8 @@ AntMessage* AntMessage::open(const QString& text, Ant::MessageType type, QWidget
         relayoutMessages(anchor);
     });
 
-    message->show();
     relayoutMessages(anchor);
+    AntPopupMotion::show(message, AntPopupMotion::fromPlacement(placement));
     return message;
 }
 
@@ -197,7 +200,7 @@ void AntMessage::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        close();
+        AntPopupMotion::close(this, AntPopupMotion::fromPlacement(m_placement));
         event->accept();
         return;
     }

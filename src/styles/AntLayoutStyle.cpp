@@ -63,7 +63,6 @@ bool AntLayoutStyle::eventFilter(QObject* watched, QEvent* event)
 
 void AntLayoutStyle::drawLayout(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
-    Q_UNUSED(widget)
     if (!painter || !option)
     {
         return;
@@ -76,7 +75,16 @@ void AntLayoutStyle::drawLayout(const QStyleOption* option, QPainter* painter, c
     // Draw layout background
     painter->setPen(Qt::NoPen);
     painter->setBrush(token.colorBgLayout);
-    painter->drawRect(option->rect);
+    const auto* layout = qobject_cast<const AntLayout*>(widget);
+    const int radius = layout ? layout->borderRadius() : 0;
+    if (radius > 0)
+    {
+        painter->drawRoundedRect(QRectF(option->rect), radius, radius);
+    }
+    else
+    {
+        painter->drawRect(option->rect);
+    }
 
     painter->restore();
 }

@@ -10,6 +10,7 @@
 #include <QVBoxLayout>
 
 #include "../styles/AntAutoCompleteStyle.h"
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 
 namespace
@@ -268,7 +269,7 @@ void AntAutoComplete::showPopup()
     updatePopupGeometry();
     if (!wasOpen)
     {
-        m_popup->show();
+        AntPopupMotion::show(m_popup);
     }
     else
     {
@@ -281,7 +282,7 @@ void AntAutoComplete::hidePopup()
 {
     if (!m_open) return;
     m_open = false;
-    m_popup->hide();
+    AntPopupMotion::hide(m_popup);
     m_highlightedIndex = -1;
 }
 

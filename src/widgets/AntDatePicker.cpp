@@ -10,6 +10,7 @@
 #include <QStringList>
 
 #include "../styles/AntDatePickerStyle.h"
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -493,12 +494,11 @@ void AntDatePicker::setOpen(bool open)
             m_panelDate = m_selectedDate;
         }
         updatePopupGeometry();
-        m_popup->show();
-        m_popup->raise();
+        AntPopupMotion::show(m_popup);
     }
     else if (m_popup->isVisible())
     {
-        m_popup->hide();
+        AntPopupMotion::hide(m_popup);
     }
     update();
     Q_EMIT openChanged(m_open);

@@ -5,8 +5,10 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QVariantAnimation>
 
 #include <algorithm>
+#include <utility>
 
 #include "../styles/AntMenuStyle.h"
 #include "AntIcon.h"
@@ -161,7 +163,42 @@ void AntMenu::setOpenKeys(const QStringList& keys)
     {
         return;
     }
+    const QStringList previousKeys = m_openKeys;
+    struct Transition
+    {
+        QString key;
+        bool wasOpen = false;
+        bool nowOpen = false;
+        qreal progress = 0.0;
+    };
+    QVector<Transition> transitions;
+    for (const AntMenuItem& item : std::as_const(m_items))
+    {
+        if (!item.subMenu)
+        {
+            continue;
+        }
+        const bool wasOpen = previousKeys.contains(item.key);
+        const bool nowOpen = keys.contains(item.key);
+        const qreal progress = m_subMenuProgress.contains(item.key)
+            ? subMenuProgress(item.key)
+            : (wasOpen ? 1.0 : 0.0);
+        transitions.append({item.key, wasOpen, nowOpen, progress});
+    }
+
     m_openKeys = keys;
+    for (const Transition& transition : std::as_const(transitions))
+    {
+        m_subMenuProgress[transition.key] = transition.progress;
+        if (transition.wasOpen != transition.nowOpen)
+        {
+            animateSubMenu(transition.key, transition.nowOpen);
+        }
+        else
+        {
+            m_subMenuProgress[transition.key] = transition.nowOpen ? 1.0 : 0.0;
+        }
+    }
     updateMenuGeometry();
     update();
     Q_EMIT openKeysChanged(m_openKeys);
@@ -232,6 +269,7 @@ void AntMenu::addSubMenu(const QString& key, const QString& label, const QString
     if (!m_openKeys.contains(key))
     {
         m_openKeys.append(key);
+        m_subMenuProgress[key] = 1.0;
         Q_EMIT openKeysChanged(m_openKeys);
     }
     updateMenuGeometry();
@@ -250,6 +288,7 @@ void AntMenu::addSubMenu(const QString& key, const QString& label, Ant::IconType
     if (!m_openKeys.contains(key))
     {
         m_openKeys.append(key);
+        m_subMenuProgress[key] = 1.0;
         Q_EMIT openKeysChanged(m_openKeys);
     }
     updateMenuGeometry();
@@ -311,6 +350,16 @@ void AntMenu::addDivider()
 
 void AntMenu::clearItems()
 {
+    for (auto* animation : std::as_const(m_subMenuAnimations))
+    {
+        if (animation)
+        {
+            animation->stop();
+            animation->deleteLater();
+        }
+    }
+    m_subMenuAnimations.clear();
+    m_subMenuProgress.clear();
     m_items.clear();
     m_selectedKey.clear();
     m_openKeys.clear();
@@ -487,11 +536,14 @@ QList<AntMenu::VisibleItem> AntMenu::visibleItems() const
     for (int i = 0; i < m_items.size(); ++i)
     {
         const AntMenuItem& item = m_items.at(i);
-        if (!item.parentKey.isEmpty() && (!isOpen(item.parentKey) || m_inlineCollapsed))
+        const bool childItem = !item.parentKey.isEmpty();
+        if (childItem && (!isSubMenuVisible(item.parentKey) || m_inlineCollapsed))
         {
             continue;
         }
-        const int h = item.divider ? (m_compact ? 8 : 12) : itemHeight();
+        const int baseHeight = item.divider ? (m_compact ? 8 : 12) : itemHeight();
+        const qreal progress = childItem ? subMenuProgress(item.parentKey) : 1.0;
+        const int h = qMax(1, qRound(baseHeight * progress));
         visible.append({i, QRect(0, y, w, h)});
         y += h;
     }
@@ -549,6 +601,20 @@ bool AntMenu::isOpen(const QString& key) const
     return m_openKeys.contains(key);
 }
 
+bool AntMenu::isSubMenuVisible(const QString& key) const
+{
+    return isOpen(key) || subMenuProgress(key) > 0.01;
+}
+
+qreal AntMenu::subMenuProgress(const QString& key) const
+{
+    if (m_subMenuProgress.contains(key))
+    {
+        return qBound<qreal>(0.0, m_subMenuProgress.value(key), 1.0);
+    }
+    return isOpen(key) ? 1.0 : 0.0;
+}
+
 void AntMenu::toggleOpen(const QString& key)
 {
     QStringList keys = m_openKeys;
@@ -561,6 +627,53 @@ void AntMenu::toggleOpen(const QString& key)
         keys.append(key);
     }
     setOpenKeys(keys);
+}
+
+void AntMenu::animateSubMenu(const QString& key, bool open)
+{
+    stopSubMenuAnimation(key);
+
+    const qreal start = subMenuProgress(key);
+    const qreal end = open ? 1.0 : 0.0;
+    if (qAbs(start - end) < 0.001)
+    {
+        m_subMenuProgress[key] = end;
+        updateMenuGeometry();
+        update();
+        return;
+    }
+
+    auto* animation = new QVariantAnimation(this);
+    animation->setDuration(180);
+    animation->setEasingCurve(QEasingCurve::OutCubic);
+    animation->setStartValue(start);
+    animation->setEndValue(end);
+    m_subMenuAnimations.insert(key, animation);
+    connect(animation, &QVariantAnimation::valueChanged, this, [this, key](const QVariant& value) {
+        m_subMenuProgress[key] = value.toReal();
+        updateMenuGeometry();
+        update();
+    });
+    connect(animation, &QVariantAnimation::finished, this, [this, key, animation, end]() {
+        if (m_subMenuAnimations.value(key) == animation)
+        {
+            m_subMenuAnimations.remove(key);
+            m_subMenuProgress[key] = end;
+            updateMenuGeometry();
+            update();
+        }
+        animation->deleteLater();
+    });
+    animation->start();
+}
+
+void AntMenu::stopSubMenuAnimation(const QString& key)
+{
+    if (auto* animation = m_subMenuAnimations.take(key))
+    {
+        animation->stop();
+        animation->deleteLater();
+    }
 }
 
 void AntMenu::activateItem(int itemIndex)

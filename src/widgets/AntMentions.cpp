@@ -12,6 +12,7 @@
 #include <algorithm>
 
 #include "../styles/AntAutoCompleteStyle.h"
+#include "core/AntPopupMotion.h"
 #include "core/AntStyleBase.h"
 #include "core/AntTheme.h"
 
@@ -252,7 +253,14 @@ void AntMentions::checkForPrefix()
             const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4));
             m_popup->setGeometry(pos.x(), pos.y(), width() + kPopupShadowMargin * 2,
                                  count * kOptionHeight + kPopupInnerPadding * 2 + kPopupShadowMargin * 2);
-            m_popup->show();
+            if (m_open)
+            {
+                m_popup->update();
+            }
+            else
+            {
+                AntPopupMotion::show(m_popup);
+            }
             m_open = true;
             return;
         }
@@ -263,12 +271,12 @@ void AntMentions::checkForPrefix()
 void AntMentions::showPopup()
 {
     if (!m_open) return;
-    m_popup->show();
+    AntPopupMotion::show(m_popup);
 }
 
 void AntMentions::hidePopup()
 {
     if (!m_open) return;
     m_open = false;
-    m_popup->hide();
+    AntPopupMotion::hide(m_popup);
 }

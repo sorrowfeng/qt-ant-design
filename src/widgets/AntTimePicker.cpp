@@ -13,6 +13,7 @@
 #include <algorithm>
 
 #include "../styles/AntTimePickerStyle.h"
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -481,12 +482,11 @@ void AntTimePicker::setOpen(bool open)
             m_panelTime = m_selectedTime;
         }
         updatePopupGeometry();
-        m_popup->show();
-        m_popup->raise();
+        AntPopupMotion::show(m_popup);
     }
     else if (m_popup->isVisible())
     {
-        m_popup->hide();
+        AntPopupMotion::hide(m_popup);
     }
     update();
     Q_EMIT openChanged(m_open);

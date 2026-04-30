@@ -15,6 +15,7 @@
 
 #include "AntMenu.h"
 #include "../styles/AntDropdownStyle.h"
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -314,8 +315,7 @@ void AntDropdown::setOpen(bool open)
     if (m_open && m_target)
     {
         updatePopupGeometry(m_lastContextPos);
-        m_popup->show();
-        m_popup->raise();
+        AntPopupMotion::show(m_popup, AntPopupMotion::fromDropdownPlacement(m_renderPlacement));
         qApp->installEventFilter(this);
         if (m_trigger == Ant::DropdownTrigger::Hover)
         {
@@ -327,7 +327,7 @@ void AntDropdown::setOpen(bool open)
     {
         m_hoverTicker->stop();
         qApp->removeEventFilter(this);
-        m_popup->hide();
+        AntPopupMotion::hide(m_popup, AntPopupMotion::fromDropdownPlacement(m_renderPlacement));
     }
 
     Q_EMIT openChanged(m_open);

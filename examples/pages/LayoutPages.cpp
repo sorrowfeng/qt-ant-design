@@ -334,6 +334,7 @@ QWidget* createLayoutPage(QWidget* /*owner*/)
         auto* cl = card->bodyLayout();
         auto* basicLayout = new AntLayout();
         basicLayout->setFixedHeight(254);
+        basicLayout->setBorderRadius(antTheme->tokens().borderRadiusLG);
 
         auto* header = new AntLayoutHeader();
         addText(header, QStringLiteral("Header"), Ant::TypographyType::LightSolid);
@@ -363,6 +364,7 @@ QWidget* createLayoutPage(QWidget* /*owner*/)
         auto* cl = card->bodyLayout();
         auto* siderLayout = new AntLayout();
         siderLayout->setFixedHeight(144);
+        siderLayout->setBorderRadius(antTheme->tokens().borderRadiusLG);
 
         auto* sider = new AntLayoutSider();
         sider->setWidth(160);

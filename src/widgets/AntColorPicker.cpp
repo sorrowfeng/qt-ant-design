@@ -16,6 +16,7 @@
 #include <QScreen>
 #include <QVBoxLayout>
 
+#include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
@@ -619,12 +620,11 @@ void AntColorPicker::setOpen(bool open)
         }
         static_cast<ColorPickerPopup*>(m_popup)->setCurrentColor(m_currentColor);
         updatePopupGeometry();
-        m_popup->show();
-        m_popup->raise();
+        AntPopupMotion::show(m_popup);
     }
     else if (m_popup)
     {
-        m_popup->hide();
+        AntPopupMotion::hide(m_popup);
     }
 
     update();
