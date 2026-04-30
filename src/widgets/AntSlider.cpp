@@ -4,12 +4,81 @@
 #include <QKeyEvent>
 #include <QLineF>
 #include <QMouseEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QScreen>
 
 #include <algorithm>
 #include <cmath>
 
 #include "../styles/AntSliderStyle.h"
 #include "core/AntTheme.h"
+
+namespace
+{
+class SliderValueBubble : public QWidget
+{
+public:
+    explicit SliderValueBubble(QWidget* parent)
+        : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+    {
+        setObjectName(QStringLiteral("antSliderValueBubble"));
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_ShowWithoutActivating, true);
+    }
+
+    void setText(const QString& text)
+    {
+        if (m_text == text)
+        {
+            return;
+        }
+        m_text = text;
+        adjustSize();
+        update();
+    }
+
+    QSize sizeHint() const override
+    {
+        QFont f = font();
+        f.setPixelSize(antTheme->tokens().fontSizeSM);
+        const QFontMetrics fm(f);
+        return QSize(qMax(32, fm.horizontalAdvance(m_text) + 16), fm.height() + 16);
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event)
+
+        const auto& token = antTheme->tokens();
+        const QRectF bubble = rect().adjusted(0.5, 0.5, -0.5, -6.5);
+        const qreal arrowCenter = rect().center().x();
+        QPainterPath path;
+        path.addRoundedRect(bubble, token.borderRadiusSM, token.borderRadiusSM);
+        path.moveTo(arrowCenter - 5, bubble.bottom() - 1);
+        path.lineTo(arrowCenter + 5, bubble.bottom() - 1);
+        path.lineTo(arrowCenter, rect().bottom() - 1);
+        path.closeSubpath();
+
+        QColor bg = antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626");
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(bg);
+        painter.drawPath(path);
+
+        QFont textFont = painter.font();
+        textFont.setPixelSize(token.fontSizeSM);
+        painter.setFont(textFont);
+        painter.setPen(token.colorTextLightSolid);
+        painter.drawText(bubble.adjusted(8, 2, -8, -1), Qt::AlignCenter, m_text);
+    }
+
+private:
+    QString m_text;
+};
+} // namespace
 
 AntSlider::AntSlider(QWidget* parent)
     : QWidget(parent)
@@ -306,6 +375,7 @@ void AntSlider::mousePressEvent(QMouseEvent* event)
             m_activeRangeHandle = startDistance <= endDistance ? 0 : 1;
         }
         setValueFromUser(valueFromPosition(event->position()), false);
+        updateValueBubble();
         Q_EMIT sliderPressed();
         event->accept();
         return;
@@ -318,6 +388,7 @@ void AntSlider::mouseMoveEvent(QMouseEvent* event)
     if (m_pressed && isEnabled())
     {
         setValueFromUser(valueFromPosition(event->position()), false);
+        updateValueBubble();
         event->accept();
         return;
     }
@@ -334,6 +405,7 @@ void AntSlider::mouseReleaseEvent(QMouseEvent* event)
         {
             animateHandle(1.0);
         }
+        hideValueBubble();
         Q_EMIT sliderReleased();
         event->accept();
         return;
@@ -418,6 +490,10 @@ void AntSlider::changeEvent(QEvent* event)
     if (event->type() == QEvent::EnabledChange)
     {
         updateCursor();
+        if (!isEnabled())
+        {
+            hideValueBubble();
+        }
         update();
     }
     QWidget::changeEvent(event);
@@ -624,6 +700,69 @@ void AntSlider::animateFocus(qreal progress)
     m_focusAnimation->setStartValue(m_focusProgress);
     m_focusAnimation->setEndValue(progress);
     m_focusAnimation->start();
+}
+
+int AntSlider::activeDisplayValue() const
+{
+    if (!m_rangeMode)
+    {
+        return m_value;
+    }
+    return m_activeRangeHandle == 0 ? m_rangeStart : m_rangeEnd;
+}
+
+QPointF AntSlider::activeHandleCenter() const
+{
+    const Metrics m = metrics();
+    return handleRectForValue(m, activeDisplayValue()).center();
+}
+
+void AntSlider::updateValueBubble()
+{
+    if (!m_pressed || !isEnabled())
+    {
+        return;
+    }
+    if (!m_valueBubble)
+    {
+        m_valueBubble = new SliderValueBubble(this);
+    }
+
+    auto* bubble = static_cast<SliderValueBubble*>(m_valueBubble);
+    bubble->setText(QString::number(activeDisplayValue()));
+    bubble->adjustSize();
+
+    const QPoint globalCenter = mapToGlobal(activeHandleCenter().toPoint());
+    QPoint topLeft;
+    if (m_orientation == Qt::Vertical)
+    {
+        topLeft = QPoint(globalCenter.x() + 12, globalCenter.y() - bubble->height() / 2);
+    }
+    else
+    {
+        topLeft = QPoint(globalCenter.x() - bubble->width() / 2, globalCenter.y() - bubble->height() - 10);
+    }
+
+    if (QScreen* screen = this->screen())
+    {
+        const QRect available = screen->availableGeometry();
+        topLeft.setX(qBound(available.left() + 4, topLeft.x(), available.right() - bubble->width() - 4));
+        topLeft.setY(qBound(available.top() + 4, topLeft.y(), available.bottom() - bubble->height() - 4));
+    }
+
+    bubble->move(topLeft);
+    if (!bubble->isVisible())
+    {
+        bubble->show();
+    }
+}
+
+void AntSlider::hideValueBubble()
+{
+    if (m_valueBubble)
+    {
+        m_valueBubble->hide();
+    }
 }
 
 void AntSlider::updateCursor()

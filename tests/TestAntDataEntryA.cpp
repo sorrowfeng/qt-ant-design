@@ -105,6 +105,17 @@ void TestAntDataEntryA::propertiesAndSignals()
     w3->setReverse(true);
     QCOMPARE(w3->isReverse(), true);
 
+    auto* sliderWithBubble = new AntSlider;
+    sliderWithBubble->resize(220, 44);
+    sliderWithBubble->show();
+    QVERIFY(QTest::qWaitForWindowExposed(sliderWithBubble));
+    QTest::mousePress(sliderWithBubble, Qt::LeftButton, Qt::NoModifier, QPoint(120, 22));
+    auto* valueBubble = sliderWithBubble->findChild<QWidget*>(QStringLiteral("antSliderValueBubble"));
+    QVERIFY(valueBubble);
+    QTRY_VERIFY_WITH_TIMEOUT(valueBubble->isVisible(), 100);
+    QTest::mouseRelease(sliderWithBubble, Qt::LeftButton, Qt::NoModifier, QPoint(120, 22));
+    QTRY_VERIFY_WITH_TIMEOUT(!valueBubble->isVisible(), 100);
+
     // AntRate
     auto* w4 = new AntRate;
     QCOMPARE(w4->value(), 0.0);

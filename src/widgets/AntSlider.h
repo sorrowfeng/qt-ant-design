@@ -133,6 +133,10 @@ private:
     void setValueFromUser(int value, bool finalChange = false);
     void animateHandle(qreal scale);
     void animateFocus(qreal progress);
+    int activeDisplayValue() const;
+    QPointF activeHandleCenter() const;
+    void updateValueBubble();
+    void hideValueBubble();
     void updateCursor();
 
     int m_minimum = 0;
@@ -155,4 +159,5 @@ private:
     qreal m_focusProgress = 0.0;
     QPropertyAnimation* m_handleAnimation = nullptr;
     QPropertyAnimation* m_focusAnimation = nullptr;
+    QWidget* m_valueBubble = nullptr;
 };
