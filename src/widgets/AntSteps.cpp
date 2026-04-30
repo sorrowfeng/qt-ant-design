@@ -167,11 +167,11 @@ AntSteps::Metrics AntSteps::metrics() const
     Metrics m;
     const auto& token = antTheme->tokens();
     m.iconSize = token.controlHeight;
-    m.titleGap = token.marginSM;
+    m.titleGap = token.marginXS;
     m.tailThickness = 2;
     m.itemGap = token.marginLG;
-    m.titleFontSize = token.fontSize;
-    m.descFontSize = token.fontSizeSM;
+    m.titleFontSize = token.fontSizeLG;
+    m.descFontSize = token.fontSize;
     return m;
 }
 
@@ -216,7 +216,11 @@ QRect AntSteps::textRect(const QRect& itemRect) const
     const Metrics m = metrics();
     if (m_direction == Ant::Orientation::Horizontal)
     {
-        return QRect(itemRect.left() + m.iconSize + 12, 6, itemRect.width() - m.iconSize - 16, itemRect.height() - 12);
+        const QRect icon = iconRect(itemRect);
+        return QRect(icon.right() + 1 + m.titleGap,
+                     icon.top(),
+                     itemRect.width() - m.iconSize - m.titleGap,
+                     itemRect.height() - icon.top());
     }
     return QRect(itemRect.left() + m.iconSize + 16, itemRect.top() + 4, itemRect.width() - m.iconSize - 20, itemRect.height() - 8);
 }

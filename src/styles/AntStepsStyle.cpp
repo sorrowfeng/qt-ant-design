@@ -79,11 +79,11 @@ StepsMetrics stepsMetrics()
     StepsMetrics m;
     const auto& token = antTheme->tokens();
     m.iconSize = token.controlHeight;
-    m.titleGap = token.marginSM;
+    m.titleGap = token.marginXS;
     m.tailThickness = 2;
     m.itemGap = token.marginLG;
-    m.titleFontSize = token.fontSize;
-    m.descFontSize = token.fontSizeSM;
+    m.titleFontSize = token.fontSizeLG;
+    m.descFontSize = token.fontSize;
     return m;
 }
 
@@ -129,7 +129,11 @@ QRect stepsTextRect(const QRect& itemRect, Ant::Orientation direction)
     const StepsMetrics m = stepsMetrics();
     if (direction == Ant::Orientation::Horizontal)
     {
-        return QRect(itemRect.left() + m.iconSize + 12, 6, itemRect.width() - m.iconSize - 16, itemRect.height() - 12);
+        const QRect icon = stepsIconRect(itemRect, direction);
+        return QRect(icon.right() + 1 + m.titleGap,
+                     icon.top(),
+                     itemRect.width() - m.iconSize - m.titleGap,
+                     itemRect.height() - icon.top());
     }
     return QRect(itemRect.left() + m.iconSize + 16, itemRect.top() + 4, itemRect.width() - m.iconSize - 20, itemRect.height() - 8);
 }
@@ -191,6 +195,34 @@ QString stepsIconText(Ant::StepStatus status, int index)
         return QString::number(index + 1);
     }
 }
+
+QFont stepsTitleFont(const QFont& baseFont, const StepsMetrics& metrics, Ant::StepStatus status)
+{
+    QFont titleFont = baseFont;
+    titleFont.setPixelSize(metrics.titleFontSize);
+    titleFont.setWeight(status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
+    return titleFont;
+}
+
+QFont stepsDescFont(const QFont& baseFont, const StepsMetrics& metrics)
+{
+    QFont descFont = baseFont;
+    descFont.setPixelSize(metrics.descFontSize);
+    descFont.setWeight(QFont::Normal);
+    return descFont;
+}
+
+int stepsHorizontalHeaderWidth(const AntStepItem& step, const StepsMetrics& metrics,
+                               const QFont& titleFont, const QFont& subTitleFont)
+{
+    const auto& token = antTheme->tokens();
+    int width = QFontMetrics(titleFont).horizontalAdvance(step.title);
+    if (!step.subTitle.isEmpty())
+    {
+        width += token.marginXS + QFontMetrics(subTitleFont).horizontalAdvance(step.subTitle);
+    }
+    return width;
+}
 } // namespace
 
 void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -218,6 +250,8 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         const QColor color = stepsStatusColor(status);
         const AntStepItem step = steps->stepAt(i);
         const bool disabled = step.disabled;
+        const QFont titleFontForItem = stepsTitleFont(painter->font(), m, status);
+        const QFont descFontForItem = stepsDescFont(painter->font(), m);
 
         // Tail line
         if (i < rects.size() - 1)
@@ -225,11 +259,15 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
             if (steps->direction() == Ant::Orientation::Horizontal)
             {
                 const int y = circle.center().y();
-                const int x1 = circle.right() + 8;
-                const int x2 = rects.at(i + 1).left() - 8;
+                const int headerWidth = stepsHorizontalHeaderWidth(step, m, titleFontForItem, descFontForItem);
+                const int x1 = textArea.left() + headerWidth + token.margin;
+                const int x2 = itemRect.right() - token.marginXS;
                 painter->setPen(QPen(i < steps->currentIndex() ? token.colorPrimary : token.colorSplit,
                                     m.tailThickness, Qt::SolidLine, Qt::RoundCap));
-                painter->drawLine(QPoint(x1, y), QPoint(x2, y));
+                if (x2 > x1)
+                {
+                    painter->drawLine(QPoint(x1, y), QPoint(x2, y));
+                }
             }
             else
             {
@@ -282,38 +320,58 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         painter->drawText(circle, Qt::AlignCenter, stepsIconText(status, i));
 
         // Title
-        QFont titleFont = painter->font();
-        titleFont.setPixelSize(m.titleFontSize);
-        titleFont.setWeight(status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
-        painter->setFont(titleFont);
+        painter->setFont(titleFontForItem);
         painter->setPen(disabled ? token.colorTextDisabled : (status == Ant::StepStatus::Error ? token.colorError : (status == Ant::StepStatus::Wait ? token.colorTextSecondary : token.colorText)));
         QRect titleRect = textArea;
-        titleRect.setHeight(m.titleFontSize + 8);
-        painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignTop, step.title);
+        if (steps->direction() == Ant::Orientation::Horizontal)
+        {
+            titleRect.setTop(circle.top());
+            titleRect.setHeight(m.iconSize);
+            painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, step.title);
+        }
+        else
+        {
+            titleRect.setHeight(m.titleFontSize + 8);
+            painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignTop, step.title);
+        }
 
         // Sub-title
         if (!step.subTitle.isEmpty())
         {
-            QFont subFont = painter->font();
-            subFont.setPixelSize(m.descFontSize);
-            painter->setFont(subFont);
+            painter->setFont(descFontForItem);
             painter->setPen(token.colorTextTertiary);
-            QRect subRect = titleRect;
-            subRect.moveTop(titleRect.bottom() + 2);
-            subRect.setHeight(m.descFontSize + 6);
-            painter->drawText(subRect, Qt::AlignLeft | Qt::AlignTop, step.subTitle);
+            if (steps->direction() == Ant::Orientation::Horizontal)
+            {
+                const int titleWidth = QFontMetrics(titleFontForItem).horizontalAdvance(step.title);
+                QRect subRect(titleRect.left() + titleWidth + token.marginXS,
+                              titleRect.top(),
+                              qMax(0, titleRect.width() - titleWidth - token.marginXS),
+                              titleRect.height());
+                painter->drawText(subRect, Qt::AlignLeft | Qt::AlignVCenter, step.subTitle);
+            }
+            else
+            {
+                QRect subRect = titleRect;
+                subRect.moveTop(titleRect.bottom() + 2);
+                subRect.setHeight(m.descFontSize + 6);
+                painter->drawText(subRect, Qt::AlignLeft | Qt::AlignTop, step.subTitle);
+            }
         }
 
         // Description
         if (!step.description.isEmpty())
         {
-            QFont descFont = painter->font();
-            descFont.setPixelSize(m.descFontSize);
-            descFont.setWeight(QFont::Normal);
-            painter->setFont(descFont);
+            painter->setFont(descFontForItem);
             painter->setPen(disabled ? token.colorTextDisabled : (status == Ant::StepStatus::Error ? token.colorError : token.colorTextSecondary));
             QRect descRect = textArea;
-            descRect.setTop(titleRect.bottom() + (step.subTitle.isEmpty() ? 6 : 22));
+            if (steps->direction() == Ant::Orientation::Horizontal)
+            {
+                descRect.setTop(titleRect.bottom());
+            }
+            else
+            {
+                descRect.setTop(titleRect.bottom() + (step.subTitle.isEmpty() ? 6 : 22));
+            }
             painter->drawText(descRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, step.description);
         }
     }

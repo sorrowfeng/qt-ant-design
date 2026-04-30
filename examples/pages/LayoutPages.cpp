@@ -36,9 +36,9 @@ public:
         {
             lbl->setType(Ant::TypographyType::LightSolid);
         }
-        lay->addStretch();
-        lay->addWidget(lbl);
-        lay->addStretch();
+        lbl->setAlignment(Qt::AlignHCenter);
+        lbl->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        lay->addWidget(lbl, 1, Qt::AlignVCenter);
     }
     QSize sizeHint() const override { return {0, m_h}; }
     QSize minimumSizeHint() const override { return {0, m_h}; }
