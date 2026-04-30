@@ -18,7 +18,7 @@ class TestAntCoverageInventory : public QObject
     Q_OBJECT
 
 private slots:
-    void publicWidgetHeadersAreInLifecycleAndMetaTests();
+    void publicWidgetHeadersAreInCoverageTests();
 };
 
 namespace
@@ -65,19 +65,22 @@ QSet<QString> includedWidgetHeaders(const QString& fileName)
 }
 } // namespace
 
-void TestAntCoverageInventory::publicWidgetHeadersAreInLifecycleAndMetaTests()
+void TestAntCoverageInventory::publicWidgetHeadersAreInCoverageTests()
 {
     const QSet<QString> publicHeaders = publicWidgetHeaders();
     QVERIFY(!publicHeaders.isEmpty());
 
     const QSet<QString> objectTreeHeaders = includedWidgetHeaders(QStringLiteral("TestAntObjectTree.cpp"));
     const QSet<QString> metaPropertyHeaders = includedWidgetHeaders(QStringLiteral("TestAntMetaProperties.cpp"));
+    const QSet<QString> renderSmokeHeaders = includedWidgetHeaders(QStringLiteral("TestAntRenderSmoke.cpp"));
 
     const QStringList missingObjectTree = (publicHeaders - objectTreeHeaders).values();
     const QStringList missingMetaProperties = (publicHeaders - metaPropertyHeaders).values();
+    const QStringList missingRenderSmoke = (publicHeaders - renderSmokeHeaders).values();
 
     QCOMPARE(missingObjectTree, QStringList());
     QCOMPARE(missingMetaProperties, QStringList());
+    QCOMPARE(missingRenderSmoke, QStringList());
 }
 
 QTEST_MAIN(TestAntCoverageInventory)

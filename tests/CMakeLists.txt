@@ -63,5 +63,8 @@ add_ant_test(TestAntMetaProperties)
 # Complex interaction coverage
 add_ant_test(TestAntInteractions)
 
+# Render smoke coverage
+add_ant_test(TestAntRenderSmoke)
+
 # Coverage inventory guard
 add_ant_inventory_test(TestAntCoverageInventory)
