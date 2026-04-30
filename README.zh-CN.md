@@ -14,6 +14,12 @@
 
 > 当前实现与视觉审计状态记录在 [docs/project-status.md](docs/project-status.md) 和 [docs/visual-audit.md](docs/visual-audit.md)。
 
+## Showcase
+
+| 亮色 | 暗色 |
+| --- | --- |
+| ![Qt Showcase 亮色](resources/images/showcase-light.png) | ![Qt Showcase 暗色](resources/images/showcase-dark.png) |
+
 ## 特性
 
 - 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目

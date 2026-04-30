@@ -1,7 +1,9 @@
 #include "AntButton.h"
 
 #include <QEvent>
+#include <QFocusEvent>
 #include <QMouseEvent>
+#include <QPointer>
 #include <QStyleOptionButton>
 
 #include "../styles/AntButtonStyle.h"
@@ -175,14 +177,40 @@ void AntButton::leaveEvent(QEvent* event)
 
 void AntButton::mousePressEvent(QMouseEvent* event)
 {
-    m_pressed = true;
-    update();
+    if (event->button() == Qt::LeftButton && isEnabled())
+    {
+        m_pressed = true;
+        m_focusVisible = false;
+        update();
+    }
     QPushButton::mousePressEvent(event);
 }
 
 void AntButton::keyPressEvent(QKeyEvent* event)
 {
+    if (event->key() == Qt::Key_Space || event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+    {
+        m_focusVisible = true;
+        update();
+    }
     QPushButton::keyPressEvent(event);
+}
+
+void AntButton::focusInEvent(QFocusEvent* event)
+{
+    const Qt::FocusReason reason = event->reason();
+    m_focusVisible = reason == Qt::TabFocusReason
+        || reason == Qt::BacktabFocusReason
+        || reason == Qt::ShortcutFocusReason;
+    update();
+    QPushButton::focusInEvent(event);
+}
+
+void AntButton::focusOutEvent(QFocusEvent* event)
+{
+    m_focusVisible = false;
+    update();
+    QPushButton::focusOutEvent(event);
 }
 
 bool AntButton::hitButton(const QPoint& pos) const
@@ -195,16 +223,23 @@ void AntButton::mouseReleaseEvent(QMouseEvent* event)
     const bool wasPressed = m_pressed;
     m_pressed = false;
     update();
-    if (wasPressed && isEnabled() && !m_loading && rect().contains(event->pos())
+    const bool shouldWave = event->button() == Qt::LeftButton
+        && wasPressed && isEnabled() && !m_loading && rect().contains(event->pos())
         && m_buttonType != Ant::ButtonType::Text
-        && m_buttonType != Ant::ButtonType::Link)
-    {
-        const auto& token = antTheme->tokens();
-        const QColor tint = m_danger ? token.colorError : token.colorPrimary;
-        const Metrics m = metrics();
-        AntWave::trigger(this, tint, cornerRadius(m));
-    }
+        && m_buttonType != Ant::ButtonType::Link;
+    QPointer<AntButton> guard(this);
     QPushButton::mouseReleaseEvent(event);
+    if (shouldWave && guard)
+    {
+        QTimer::singleShot(0, guard.data(), [guard]() {
+            if (!guard)
+            {
+                return;
+            }
+            const AntButton::Metrics m = guard->metrics();
+            AntWave::trigger(guard, guard->waveColor(), guard->cornerRadius(m));
+        });
+    }
 }
 
 void AntButton::changeEvent(QEvent* event)
@@ -266,6 +301,29 @@ QRectF AntButton::contentRect(const Metrics& metrics) const
     return rect().adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
 }
 
+QColor AntButton::waveColor() const
+{
+    const auto& token = antTheme->tokens();
+    const bool hovered = m_hovered || underMouse();
+    const QColor accent = m_danger ? token.colorError : token.colorPrimary;
+    const QColor accentHover = m_danger ? token.colorErrorHover : token.colorPrimaryHover;
+
+    if (m_buttonType == Ant::ButtonType::Primary)
+    {
+        return hovered ? accentHover : accent;
+    }
+    if (m_buttonType == Ant::ButtonType::Default || m_buttonType == Ant::ButtonType::Dashed)
+    {
+        if (m_danger)
+        {
+            return hovered ? token.colorErrorHover : token.colorError;
+        }
+        return hovered ? token.colorPrimaryHover : token.colorBorder;
+    }
+
+    return hovered ? accentHover : accent;
+}
+
 void AntButton::updateCursorState()
 {
     if (!isEnabled())
@@ -292,4 +350,9 @@ void AntButton::updateGeometryFromState()
 int AntButton::spinnerAngle() const
 {
     return m_spinnerAngle;
+}
+
+bool AntButton::isFocusVisibleState() const
+{
+    return m_focusVisible;
 }

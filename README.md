@@ -14,6 +14,12 @@ The project focuses on:
 
 > Current implementation and visual-audit status are tracked in [docs/project-status.md](docs/project-status.md) and [docs/visual-audit.md](docs/visual-audit.md).
 
+## Showcase
+
+| Light | Dark |
+| --- | --- |
+| ![Qt showcase light](resources/images/showcase-light.png) | ![Qt showcase dark](resources/images/showcase-dark.png) |
+
 ## Features
 
 - Built on Qt 6 Widgets — lightweight, easy to embed, and consumable as a static library in existing projects

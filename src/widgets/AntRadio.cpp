@@ -176,7 +176,7 @@ void AntRadio::mouseReleaseEvent(QMouseEvent* event)
             {
                 const QRect box = indicatorRect().toRect();
                 // Radio is circular — use radius = size/2 for a perfect ring.
-                AntWave::triggerRect(this, box, antTheme->tokens().colorPrimary, box.width() / 2);
+                AntWave::triggerRect(this, box, antTheme->tokens().colorPrimary, box.width() / 2, true);
             }
         }
         update();

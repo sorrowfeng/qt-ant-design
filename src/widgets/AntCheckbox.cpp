@@ -148,7 +148,7 @@ void AntCheckbox::mouseReleaseEvent(QMouseEvent* event)
             {
                 // Wave only around the 16x16 indicator (not the whole label row)
                 const QRect box = indicatorRect().toRect();
-                AntWave::triggerRect(this, box, antTheme->tokens().colorPrimary, 2);
+                AntWave::triggerRect(this, box, antTheme->tokens().colorPrimary, 2, true);
             }
         }
         update();

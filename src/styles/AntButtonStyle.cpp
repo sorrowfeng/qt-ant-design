@@ -205,7 +205,7 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
     const bool hovered = option->state.testFlag(QStyle::State_MouseOver);
     const bool pressed = option->state.testFlag(QStyle::State_Sunken) || button->isDown();
     const bool enabled = option->state.testFlag(QStyle::State_Enabled);
-    const bool focused = option->state.testFlag(QStyle::State_HasFocus);
+    const bool focused = button->isFocusVisibleState();
     const bool plainType = button->buttonType() == Ant::ButtonType::Text || button->buttonType() == Ant::ButtonType::Link;
     const QColor accent = semanticColorFor(button);
     const QColor accentHover = button->isDanger() ? token.colorErrorHover : token.colorPrimaryHover;

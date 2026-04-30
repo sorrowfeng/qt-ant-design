@@ -46,6 +46,7 @@ public:
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
     int spinnerAngle() const;
+    bool isFocusVisibleState() const;
 
 Q_SIGNALS:
     void buttonTypeChanged(Ant::ButtonType type);
@@ -64,6 +65,8 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void focusInEvent(QFocusEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
     void changeEvent(QEvent* event) override;
     bool hitButton(const QPoint& pos) const override;
 
@@ -80,6 +83,7 @@ private:
     Metrics metrics() const;
     int cornerRadius(const Metrics& metrics) const;
     QRectF contentRect(const Metrics& metrics) const;
+    QColor waveColor() const;
     void updateCursorState();
     void updateGeometryFromState();
 
@@ -92,6 +96,7 @@ private:
     bool m_block = false;
     bool m_hovered = false;
     bool m_pressed = false;
+    bool m_focusVisible = false;
     int m_spinnerAngle = 0;
     QTimer m_spinnerTimer;
     Ant::IconType m_buttonIconType = Ant::IconType::None;
