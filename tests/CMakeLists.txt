@@ -6,6 +6,14 @@ function(add_ant_test TEST_NAME)
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endfunction()
 
+function(add_ant_inventory_test TEST_NAME)
+    add_ant_test(${TEST_NAME})
+    target_compile_definitions(${TEST_NAME} PRIVATE
+        ANT_WIDGETS_DIR="${CMAKE_SOURCE_DIR}/src/widgets"
+        ANT_TESTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+endfunction()
+
 # Core types
 add_ant_test(TestAntTypes)
 
@@ -51,3 +59,6 @@ add_ant_test(TestAntObjectTree)
 
 # Meta-property coverage
 add_ant_test(TestAntMetaProperties)
+
+# Coverage inventory guard
+add_ant_inventory_test(TestAntCoverageInventory)
