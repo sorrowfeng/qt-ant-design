@@ -90,9 +90,14 @@ void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(QPen(color, 1.5, Qt::SolidLine, Qt::RoundCap));
+    const qreal penWidth = qMax<qreal>(1.5, rect.width() * 0.12);
+    const QRectF arcRect = rect.adjusted(penWidth / 2.0, penWidth / 2.0, -penWidth / 2.0, -penWidth / 2.0);
+    painter.translate(arcRect.center());
+    painter.rotate(angle);
+    painter.translate(-arcRect.center());
+    painter.setPen(QPen(color, penWidth, Qt::SolidLine, Qt::RoundCap));
     painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect.adjusted(1, 1, -1, -1), angle * 16, 270 * 16);
+    painter.drawArc(arcRect, 90 * 16, -96 * 16);
     painter.restore();
 }
 

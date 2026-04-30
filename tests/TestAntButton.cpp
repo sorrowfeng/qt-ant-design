@@ -75,6 +75,8 @@ void TestAntButton::cursorAndSizeParity()
 
     btn->setLoading(true);
     QCOMPARE(btn->cursor().shape(), Qt::ArrowCursor);
+    const int initialAngle = btn->spinnerAngle();
+    QTRY_VERIFY_WITH_TIMEOUT(btn->spinnerAngle() > initialAngle, 100);
 
     btn->setEnabled(false);
     QCOMPARE(btn->cursor().shape(), Qt::ForbiddenCursor);

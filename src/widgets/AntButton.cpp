@@ -35,7 +35,7 @@ AntButton::AntButton(QWidget* parent)
         update();
     });
     connect(&m_spinnerTimer, &QTimer::timeout, this, [this]() {
-        m_spinnerAngle = (m_spinnerAngle - 6 + 360) % 360;
+        m_spinnerAngle = (m_spinnerAngle + 6) % 360;
         update();
     });
 
