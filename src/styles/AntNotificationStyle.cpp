@@ -53,19 +53,20 @@ void drawShadowLayer(QPainter& painter, const QRectF& card, int blur, qreal yOff
     {
         const qreal progress = 1.0 - static_cast<qreal>(i) / static_cast<qreal>(blur);
         shadow.setAlphaF(alpha * progress * progress);
-        painter.setPen(QPen(shadow, 1));
-        painter.setBrush(Qt::NoBrush);
         const QRectF layer = card.adjusted(-i, -i + yOffset, i, i + yOffset);
-        painter.drawRoundedRect(layer, radius + i, radius + i);
+        QPainterPath outer;
+        outer.addRoundedRect(layer, radius + i, radius + i);
+        QPainterPath inner;
+        inner.addRoundedRect(card, radius, radius);
+        painter.fillPath(outer.subtracted(inner), shadow);
     }
 }
 
 void drawNotificationShadow(QPainter& painter, const QRectF& card, qreal radius)
 {
     const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
-    drawShadowLayer(painter, card, 18, 6, dark ? 0.30 : 0.16, radius);
-    drawShadowLayer(painter, card, 10, 2, dark ? 0.22 : 0.10, radius);
-    drawShadowLayer(painter, card, 4, 0, dark ? 0.18 : 0.08, radius);
+    drawShadowLayer(painter, card, 14, 5, dark ? 0.13 : 0.065, radius);
+    drawShadowLayer(painter, card, 7, 1, dark ? 0.08 : 0.035, radius);
 }
 
 void drawTypeIcon(QPainter& painter, const QRectF& rect, Ant::MessageType type, const QColor& accentColor, int spinnerAngle)
@@ -215,7 +216,7 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
 
     // Card background
     AntStyleBase::drawCrispRoundedRect(painter, card.toRect(),
-        QPen(token.colorBorderSecondary, token.lineWidth), token.colorBgElevated,
+        Qt::NoPen, token.colorBgElevated,
         token.borderRadiusLG, token.borderRadiusLG);
 
     const QRectF iconRect(card.left() + token.paddingLG, card.top() + token.padding + 2, 22, 22);

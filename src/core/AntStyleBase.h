@@ -15,10 +15,7 @@ class QPainter;
 class AntStyleBase : public QProxyStyle
 {
 public:
-    explicit AntStyleBase(QStyle* style = nullptr)
-        : QProxyStyle(style)
-    {
-    }
+    explicit AntStyleBase(QStyle* style = nullptr);
 
     // Draw a rounded rect with sub-pixel precision for crisp borders.
     // When pen is valid, rect is inset by 0.5px to center the border on pixel boundaries.

@@ -87,7 +87,15 @@ private:
     QRect triggerRect() const;
     QRect fileItemRect(int index) const;
     QRect fileCardRect(int index) const;
+    QRect fileCardPreviewButtonRect(int index) const;
+    QRect fileCardRemoveButtonRect(int index) const;
     bool isOverRemoveButton(const QPoint& pos) const;
+    bool canAcceptMoreFiles() const;
+    bool fileMatchesAccept(const QString& path) const;
+    QString dialogNameFilter() const;
+    void requestUploadFiles();
+    void addLocalFiles(const QStringList& paths);
+    void openFilePreview(const AntUploadFile& file) const;
 
     QString m_accept;
     bool m_multiple = false;

@@ -476,6 +476,11 @@ void TestAntQtExtensions::window()
     QCOMPARE(w->TitleBarHeight, 40);
     QCOMPARE(w->TitleBarButtonWidth, 46);
 
+    QSignalSpy titleSpy(w, &AntWindow::windowTitleChanged);
+    w->setWindowTitle("Example");
+    QCOMPARE(w->windowTitle(), "Example");
+    QCOMPARE(titleSpy.count(), 1);
+
     auto* content = new QWidget;
     w->setCentralWidget(content);
     QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);

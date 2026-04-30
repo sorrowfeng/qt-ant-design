@@ -40,6 +40,18 @@ AntWindow::AntWindow(QWidget* parent)
     });
 }
 
+void AntWindow::setWindowTitle(const QString& title)
+{
+    if (QMainWindow::windowTitle() == title)
+    {
+        return;
+    }
+
+    QMainWindow::setWindowTitle(title);
+    update(titleBarRect());
+    Q_EMIT windowTitleChanged(title);
+}
+
 void AntWindow::setCentralWidget(QWidget* widget)
 {
     if (!m_contentWidget)
@@ -66,7 +78,31 @@ void AntWindow::setCentralWidget(QWidget* widget)
 
 bool AntWindow::isMaximized() const
 {
-    return m_windowMaximized;
+    return QMainWindow::isMaximized();
+}
+
+void AntWindow::moveToCenter()
+{
+    if (isMaximized() || isFullScreen())
+    {
+        return;
+    }
+
+    QRect available;
+    if (QScreen* currentScreen = screen())
+    {
+        available = currentScreen->availableGeometry();
+    }
+    else if (QScreen* primary = QGuiApplication::primaryScreen())
+    {
+        available = primary->availableGeometry();
+    }
+    else
+    {
+        return;
+    }
+
+    move(available.center() - rect().center());
 }
 
 bool AntWindow::event(QEvent* event)
@@ -116,6 +152,8 @@ void AntWindow::mousePressEvent(QMouseEvent* event)
         m_dragging = true;
         m_dragStartPosition = event->globalPosition().toPoint();
         m_dragStartWindowPos = this->pos();
+        m_dragStartTitleXRatio = width() > 0 ? qBound<qreal>(0.0, static_cast<qreal>(pos.x()) / width(), 1.0) : 0.5;
+        m_dragStartTitleY = qBound(0, pos.y(), TitleBarHeight - 1);
         event->accept();
         return;
     }
@@ -129,18 +167,18 @@ void AntWindow::mouseMoveEvent(QMouseEvent* event)
     {
         const QPoint delta = event->globalPosition().toPoint() - m_dragStartPosition;
 
-        if (m_windowMaximized)
+        if (isMaximized())
         {
-            // If maximized, restore on drag
-            const qreal widthRatio = static_cast<qreal>(m_dragStartWindowPos.x()) / width();
-            m_windowMaximized = false;
+            const QPoint globalPos = event->globalPosition().toPoint();
             showNormal();
+            m_windowMaximized = false;
 
             const QSize restoredSize = size();
-            m_dragStartWindowPos.setX(static_cast<int>(widthRatio * restoredSize.width()));
-            m_dragStartWindowPos.setY(TitleBarHeight / 2);
+            const QPoint restoredOffset(qRound(m_dragStartTitleXRatio * restoredSize.width()), m_dragStartTitleY);
+            m_dragStartWindowPos = globalPos - restoredOffset;
+            m_dragStartPosition = globalPos;
 
-            move(event->globalPosition().toPoint() - m_dragStartWindowPos);
+            move(m_dragStartWindowPos);
         }
         else
         {
@@ -170,7 +208,7 @@ void AntWindow::mouseDoubleClickEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton && isTitleBarArea(event->pos()) && !isButtonArea(event->pos()))
     {
-        if (m_windowMaximized)
+        if (isMaximized())
         {
             showNormal();
             m_windowMaximized = false;
@@ -189,6 +227,16 @@ void AntWindow::mouseDoubleClickEvent(QMouseEvent* event)
     QMainWindow::mouseDoubleClickEvent(event);
 }
 
+void AntWindow::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::WindowStateChange)
+    {
+        m_windowMaximized = QMainWindow::isMaximized();
+        update();
+    }
+    QMainWindow::changeEvent(event);
+}
+
 void AntWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
@@ -197,6 +245,7 @@ void AntWindow::resizeEvent(QResizeEvent* event)
 void AntWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
+    m_windowMaximized = QMainWindow::isMaximized();
 }
 
 void AntWindow::paintEvent(QPaintEvent* event)
@@ -407,7 +456,7 @@ void AntWindow::handleButtonClicked(TitleBarButton button)
         Q_EMIT minimizeRequested();
         break;
     case TitleBarButton::Maximize:
-        if (m_windowMaximized)
+        if (isMaximized())
         {
             showNormal();
             m_windowMaximized = false;

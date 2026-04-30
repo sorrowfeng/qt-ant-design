@@ -51,10 +51,10 @@ protected:
 private:
     void updateSlideVisibility();
     void updateDotsOverlay();
-    void startTransition(int from, int to);
+    void startTransition(int from, int to, int requestedIndex);
     void layoutTransitionSlides();
     void finishTransition();
-    int transitionDirection(int from, int to) const;
+    int transitionDirection(int from, int to, int requestedIndex) const;
 
     QList<QWidget*> m_slides;
     QTimer* m_timer = nullptr;

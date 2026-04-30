@@ -7,6 +7,7 @@
 #include <QStyleOption>
 
 #include "core/AntStyleBase.h"
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntUpload.h"
 
@@ -109,7 +110,7 @@ void AntUploadStyle::drawUpload(const QStyleOption* option, QPainter* painter, c
             const int col = i % cols;
             const int row = i / cols;
             const QRect cardRect(col * (CardSize + CardGap), row * (CardSize + CardGap), CardSize, CardSize);
-            drawPictureCardItem(painter, cardRect, files[i], false);
+            drawPictureCardItem(painter, cardRect, files[i], upload->m_hoveredItemIndex == i);
         }
 
         if (canAdd)
@@ -182,8 +183,10 @@ void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool 
         AntStyleBase::drawCrispRoundedRect(painter, rect, QPen(borderColor, token.lineWidth, Qt::DashLine),
             hovered ? token.colorPrimaryBg : token.colorFillQuaternary, token.borderRadius, token.borderRadius);
 
-        drawInboxIcon(painter, QPoint(rect.center().x(), rect.top() + 38), 30,
-                      disabled ? token.colorTextDisabled : token.colorPrimary);
+        AntIconPainter::drawIcon(*painter,
+                                 Ant::IconType::CloudUpload,
+                                 QRectF(rect.center().x() - 18, rect.top() + 22, 36, 36),
+                                 disabled ? token.colorTextDisabled : token.colorPrimary);
 
         QFont titleFont = painter->font();
         titleFont.setPixelSize(token.fontSize);
@@ -210,7 +213,10 @@ void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool 
     const int totalWidth = iconSize + textGap + textWidth;
     const int startX = rect.left() + (rect.width() - totalWidth) / 2;
 
-    drawUploadIcon(painter, QPoint(startX + iconSize / 2, rect.center().y()), iconSize, iconColor);
+    AntIconPainter::drawIcon(*painter,
+                             Ant::IconType::CloudUpload,
+                             QRectF(startX, rect.center().y() - iconSize / 2, iconSize, iconSize),
+                             iconColor);
 
     painter->setPen(iconColor);
     painter->drawText(QRect(startX + iconSize + textGap, rect.top(), textWidth, rect.height()),

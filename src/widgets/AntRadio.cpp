@@ -172,7 +172,14 @@ void AntRadio::mouseReleaseEvent(QMouseEvent* event)
         {
             toggleFromUser();
             Q_EMIT clicked(m_checked);
-            if (!wasChecked && m_checked)
+            if (m_buttonStyle)
+            {
+                AntWave::triggerRect(this, rect().adjusted(1, 1, -1, -1),
+                                     antTheme->tokens().colorPrimary,
+                                     antTheme->tokens().borderRadius,
+                                     true);
+            }
+            else if (!wasChecked && m_checked)
             {
                 const QRect box = indicatorRect().toRect();
                 // Radio is circular — use radius = size/2 for a perfect ring.

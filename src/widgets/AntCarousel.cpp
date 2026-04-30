@@ -77,7 +77,7 @@ AntCarousel::AntCarousel(QWidget* parent)
     m_timer->setInterval(m_interval);
     connect(m_timer, &QTimer::timeout, this, [this]() {
         if (m_slides.isEmpty()) return;
-        setCurrentIndex((m_currentIndex + 1) % m_slides.size());
+        setCurrentIndex(m_currentIndex + 1);
     });
     if (m_autoPlay) m_timer->start();
 
@@ -126,11 +126,12 @@ int AntCarousel::currentIndex() const { return m_currentIndex; }
 void AntCarousel::setCurrentIndex(int index)
 {
     if (m_slides.isEmpty()) return;
+    const int requestedIndex = index;
     index = (index % m_slides.size() + m_slides.size()) % m_slides.size();
     if (m_currentIndex == index) return;
     const int previous = m_currentIndex;
     m_currentIndex = index;
-    startTransition(previous, m_currentIndex);
+    startTransition(previous, m_currentIndex, requestedIndex);
     update();
     Q_EMIT currentIndexChanged(m_currentIndex);
 }
@@ -242,7 +243,7 @@ void AntCarousel::updateDotsOverlay()
     m_dotsOverlay->update();
 }
 
-void AntCarousel::startTransition(int from, int to)
+void AntCarousel::startTransition(int from, int to, int requestedIndex)
 {
     if (from < 0 || from >= m_slides.size() || to < 0 || to >= m_slides.size() || rect().isEmpty())
     {
@@ -254,7 +255,7 @@ void AntCarousel::startTransition(int from, int to)
 
     m_transitionAnimation->stop();
     m_previousIndex = from;
-    m_transitionDirection = transitionDirection(from, to);
+    m_transitionDirection = transitionDirection(from, to, requestedIndex);
     m_transitionProgress = 0.0;
 
     for (int i = 0; i < m_slides.size(); ++i)
@@ -296,11 +297,12 @@ void AntCarousel::finishTransition()
     updateSlideVisibility();
 }
 
-int AntCarousel::transitionDirection(int from, int to) const
+int AntCarousel::transitionDirection(int from, int to, int requestedIndex) const
 {
-    if (from == m_slides.size() - 1 && to == 0)
-        return 1;
-    if (from == 0 && to == m_slides.size() - 1)
+    const int slideCount = m_slides.size();
+    if (requestedIndex < 0)
         return -1;
+    if (requestedIndex >= slideCount)
+        return 1;
     return to > from ? 1 : -1;
 }

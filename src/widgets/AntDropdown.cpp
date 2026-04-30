@@ -441,7 +441,9 @@ bool AntDropdown::eventFilter(QObject* watched, QEvent* event)
 
 QRect AntDropdown::popupGeometry(const QRect& targetRect, const QSize& popupSize, Ant::DropdownPlacement placement) const
 {
-    const int gap = 8;
+    // PopupFrame keeps an 8px transparent shadow margin. A negative window gap
+    // gives the painted panel the AntD-like 4px visual distance from target.
+    const int gap = -4;
     switch (placement)
     {
     case Ant::DropdownPlacement::Top:
@@ -485,7 +487,7 @@ Ant::DropdownPlacement AntDropdown::resolvedPlacement(const QRect& targetRect,
     const bool wantsTop = m_placement == Ant::DropdownPlacement::Top ||
                           m_placement == Ant::DropdownPlacement::TopLeft ||
                           m_placement == Ant::DropdownPlacement::TopRight;
-    if (wantsTop && targetRect.top() - popupSize.height() - 8 < screenRect.top())
+    if (wantsTop && targetRect.top() - popupSize.height() + 4 < screenRect.top())
     {
         if (m_placement == Ant::DropdownPlacement::TopLeft)
             return Ant::DropdownPlacement::BottomLeft;
@@ -495,7 +497,7 @@ Ant::DropdownPlacement AntDropdown::resolvedPlacement(const QRect& targetRect,
     }
 
     const bool wantsBottom = !wantsTop;
-    if (wantsBottom && targetRect.bottom() + popupSize.height() + 8 > screenRect.bottom())
+    if (wantsBottom && targetRect.bottom() + popupSize.height() - 4 > screenRect.bottom())
     {
         if (m_placement == Ant::DropdownPlacement::BottomLeft)
             return Ant::DropdownPlacement::TopLeft;

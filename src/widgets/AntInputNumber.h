@@ -6,6 +6,8 @@
 #include "core/AntTypes.h"
 
 class QPropertyAnimation;
+class QResizeEvent;
+class QWidget;
 
 class AntInputNumber : public QDoubleSpinBox
 {
@@ -66,6 +68,8 @@ protected:
     void focusInEvent(QFocusEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     struct Metrics
@@ -81,6 +85,8 @@ private:
     QStyle::SubControl hitSubControl(const QPoint& pos) const;
     bool shouldShowControls() const;
     void animateControls(bool visible);
+    int controlsInsetWidth() const;
+    void updateControlsOverlayGeometry();
 
     Ant::Size m_inputSize = Ant::Size::Middle;
     Ant::Status m_status = Ant::Status::Normal;
@@ -92,4 +98,5 @@ private:
     QStyle::SubControl m_activeSubControl = QStyle::SC_None;
     QString m_addonAfterText;
     QPropertyAnimation* m_controlsAnimation = nullptr;
+    QWidget* m_controlsOverlay = nullptr;
 };

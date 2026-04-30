@@ -1,12 +1,18 @@
 #include "AntUpload.h"
 
 #include <QDateTime>
+#include <QDesktopServices>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QEvent>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QMimeData>
+#include <QMimeDatabase>
+#include <QMimeType>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QUrl>
 
 #include "core/AntTheme.h"
 #include "styles/AntUploadStyle.h"
@@ -137,19 +143,16 @@ void AntUpload::dropEvent(QDropEvent* event)
     m_dragOver = false;
     if (m_draggerMode && event->mimeData()->hasUrls())
     {
+        QStringList paths;
         const QList<QUrl> urls = event->mimeData()->urls();
         for (const QUrl& url : urls)
         {
             if (url.isLocalFile())
             {
-                AntUploadFile file;
-                file.uid = QString::number(QDateTime::currentMSecsSinceEpoch());
-                file.name = url.fileName();
-                file.url = url.toLocalFile();
-                file.status = Ant::UploadFileStatus::Done;
-                addFile(file);
+                paths.append(url.toLocalFile());
             }
         }
+        addLocalFiles(paths);
         event->acceptProposedAction();
         update();
     }
@@ -272,6 +275,15 @@ void AntUpload::mouseMoveEvent(QMouseEvent* event)
     if (m_listType == Ant::UploadListType::PictureCard)
     {
         m_triggerHovered = triggerRect().contains(pos);
+        m_hoveredItemIndex = -1;
+        for (int i = 0; i < m_files.size(); ++i)
+        {
+            if (fileCardRect(i).contains(pos))
+            {
+                m_hoveredItemIndex = i;
+                break;
+            }
+        }
     }
     else
     {
@@ -310,9 +322,28 @@ void AntUpload::mousePressEvent(QMouseEvent* event)
             {
                 if (i == m_files.size())
                 {
-                    if (m_maxCount <= 0 || m_files.size() < m_maxCount)
+                    if (canAcceptMoreFiles())
                     {
-                        Q_EMIT uploadRequested();
+                        requestUploadFiles();
+                    }
+                }
+                else if (fileCardRemoveButtonRect(i).contains(pos))
+                {
+                    removeFile(m_files[i].uid);
+                }
+                else if (fileCardPreviewButtonRect(i).contains(pos))
+                {
+                    openFilePreview(m_files[i]);
+                }
+                else if (!m_files[i].url.isEmpty() || !m_files[i].thumbUrl.isEmpty())
+                {
+                    openFilePreview(m_files[i]);
+                }
+                else
+                {
+                    if (canAcceptMoreFiles())
+                    {
+                        requestUploadFiles();
                     }
                 }
                 break;
@@ -349,7 +380,7 @@ void AntUpload::mousePressEvent(QMouseEvent* event)
 
     if (triggerRect().contains(pos))
     {
-        Q_EMIT uploadRequested();
+        requestUploadFiles();
     }
 
     event->accept();
@@ -439,4 +470,168 @@ bool AntUpload::isOverRemoveButton(const QPoint& pos) const
         return removeBtnRect.contains(pos);
     }
     return false;
+}
+
+QRect AntUpload::fileCardPreviewButtonRect(int index) const
+{
+    const QRect card = fileCardRect(index);
+    if (card.isEmpty() || index >= m_files.size())
+    {
+        return {};
+    }
+    const int size = 24;
+    const int gap = 8;
+    const int y = card.center().y() - size / 2;
+    return QRect(card.center().x() - size - gap / 2, y, size, size);
+}
+
+QRect AntUpload::fileCardRemoveButtonRect(int index) const
+{
+    const QRect card = fileCardRect(index);
+    if (card.isEmpty() || index >= m_files.size())
+    {
+        return {};
+    }
+    const int size = 24;
+    const int gap = 8;
+    const int y = card.center().y() - size / 2;
+    return QRect(card.center().x() + gap / 2, y, size, size);
+}
+
+bool AntUpload::canAcceptMoreFiles() const
+{
+    return !m_disabled && (m_maxCount <= 0 || m_files.size() < m_maxCount);
+}
+
+bool AntUpload::fileMatchesAccept(const QString& path) const
+{
+    const QString accept = m_accept.trimmed();
+    if (accept.isEmpty())
+    {
+        return true;
+    }
+
+    const QFileInfo info(path);
+    const QString suffix = QStringLiteral(".") + info.suffix().toLower();
+    const QMimeType mime = QMimeDatabase().mimeTypeForFile(path);
+    const QStringList rules = accept.split(QLatin1Char(','), Qt::SkipEmptyParts);
+    for (QString rule : rules)
+    {
+        rule = rule.trimmed().toLower();
+        if (rule.isEmpty())
+        {
+            continue;
+        }
+        if (rule.startsWith(QLatin1Char('.')) && suffix == rule)
+        {
+            return true;
+        }
+        if (rule.endsWith(QStringLiteral("/*")))
+        {
+            const QString prefix = rule.left(rule.size() - 1);
+            if (mime.name().startsWith(prefix))
+            {
+                return true;
+            }
+        }
+        if (rule.contains(QLatin1Char('/')) && (mime.name() == rule || mime.inherits(rule)))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+QString AntUpload::dialogNameFilter() const
+{
+    QStringList patterns;
+    const QStringList rules = m_accept.split(QLatin1Char(','), Qt::SkipEmptyParts);
+    for (QString rule : rules)
+    {
+        rule = rule.trimmed();
+        if (rule.startsWith(QLatin1Char('.')) && rule.size() > 1)
+        {
+            patterns.append(QStringLiteral("*") + rule);
+        }
+    }
+    if (patterns.isEmpty())
+    {
+        return QStringLiteral("All files (*)");
+    }
+    return QStringLiteral("Accepted files (%1)").arg(patterns.join(QLatin1Char(' ')));
+}
+
+void AntUpload::requestUploadFiles()
+{
+    if (!canAcceptMoreFiles())
+    {
+        return;
+    }
+
+    const bool hasExternalHandler = receivers(SIGNAL(uploadRequested())) > 0;
+    Q_EMIT uploadRequested();
+    if (hasExternalHandler)
+    {
+        return;
+    }
+
+    QStringList paths;
+    const QString filter = dialogNameFilter();
+    if (m_multiple)
+    {
+        paths = QFileDialog::getOpenFileNames(this, QStringLiteral("Select files"), QString(), filter);
+    }
+    else
+    {
+        const QString path = QFileDialog::getOpenFileName(this, QStringLiteral("Select file"), QString(), filter);
+        if (!path.isEmpty())
+        {
+            paths.append(path);
+        }
+    }
+    addLocalFiles(paths);
+}
+
+void AntUpload::addLocalFiles(const QStringList& paths)
+{
+    int remaining = m_maxCount > 0 ? qMax(0, m_maxCount - m_files.size()) : paths.size();
+    if (!m_multiple)
+    {
+        remaining = qMin(remaining, 1);
+    }
+
+    int accepted = 0;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    for (const QString& path : paths)
+    {
+        if (accepted >= remaining || path.isEmpty() || !fileMatchesAccept(path))
+        {
+            continue;
+        }
+
+        const QFileInfo info(path);
+        AntUploadFile file;
+        file.uid = QString::number(now) + QStringLiteral("-") + QString::number(accepted);
+        file.name = info.fileName();
+        file.url = info.absoluteFilePath();
+        file.thumbUrl = m_listType == Ant::UploadListType::Picture || m_listType == Ant::UploadListType::PictureCard
+                            ? info.absoluteFilePath()
+                            : QString();
+        file.size = info.size();
+        file.percent = 100;
+        file.status = Ant::UploadFileStatus::Done;
+        addFile(file);
+        ++accepted;
+    }
+}
+
+void AntUpload::openFilePreview(const AntUploadFile& file) const
+{
+    const QString target = !file.url.isEmpty() ? file.url : file.thumbUrl;
+    if (target.isEmpty())
+    {
+        return;
+    }
+    const QUrl url = QUrl::fromUserInput(target);
+    QDesktopServices::openUrl(url.isLocalFile() ? QUrl::fromLocalFile(url.toLocalFile()) : url);
 }

@@ -169,8 +169,11 @@ protected:
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
         const QRect panel = rect().adjusted(8, 8, -8, -8);
-        antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.55);
-        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.72);
+        const QColor border = antTheme->themeMode() == Ant::ThemeMode::Dark
+                                  ? AntPalette::alpha(token.colorTextLightSolid, 0.18)
+                                  : token.colorBorder;
+        painter.setPen(QPen(border, token.lineWidth));
         painter.setBrush(token.colorBgElevated);
         painter.drawRoundedRect(QRectF(panel).adjusted(0.5, 0.5, -0.5, -0.5),
                                 token.borderRadiusLG, token.borderRadiusLG);

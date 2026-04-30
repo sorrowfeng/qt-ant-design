@@ -20,7 +20,9 @@ public:
     explicit AntWindow(QWidget* parent = nullptr);
     ~AntWindow() override = default;
 
+    void setWindowTitle(const QString& title);
     void setCentralWidget(QWidget* widget);
+    void moveToCenter();
 
     static constexpr int TitleBarHeight = 40;
     static constexpr int TitleBarButtonWidth = 46;
@@ -40,6 +42,7 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void changeEvent(QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
@@ -68,6 +71,8 @@ private:
     bool m_dragging = false;
     QPoint m_dragStartPosition;
     QPoint m_dragStartWindowPos;
+    qreal m_dragStartTitleXRatio = 0.5;
+    int m_dragStartTitleY = TitleBarHeight / 2;
     bool m_windowMaximized = false;
     TitleBarButton m_hoveredButton = TitleBarButton::None;
     QWidget* m_contentWidget = nullptr;

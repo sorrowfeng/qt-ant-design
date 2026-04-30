@@ -1,13 +1,106 @@
 #include "AntInputNumber.h"
 
 #include <QEasingCurve>
+#include <QEvent>
 #include <QLineEdit>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QPropertyAnimation>
+#include <QResizeEvent>
 #include <QStyleOptionSpinBox>
 
 #include "../styles/AntInputNumberStyle.h"
 #include "core/AntTheme.h"
+#include "styles/AntIconPainter.h"
+
+namespace
+{
+int handlerWidthForInput(const AntInputNumber* input)
+{
+    const auto& token = antTheme->tokens();
+    int handlerWidth = token.fontSize + token.paddingSM;
+    if (!input)
+    {
+        return handlerWidth;
+    }
+
+    switch (input->inputSize())
+    {
+    case Ant::Size::Large:
+        handlerWidth = token.fontSizeLG + token.padding;
+        break;
+    case Ant::Size::Small:
+        handlerWidth = token.fontSize + token.paddingXS + token.paddingXXS;
+        break;
+    case Ant::Size::Middle:
+        break;
+    }
+    return handlerWidth;
+}
+
+class InputNumberControlsOverlay : public QWidget
+{
+public:
+    explicit InputNumberControlsOverlay(AntInputNumber* input)
+        : QWidget(input)
+        , m_input(input)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_NoSystemBackground);
+        setAttribute(Qt::WA_TranslucentBackground);
+        setAutoFillBackground(false);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        if (!m_input || !m_input->controlsVisible() || !m_input->isEnabled() || m_input->controlsProgress() <= 0.01)
+        {
+            return;
+        }
+
+        const auto& token = antTheme->tokens();
+        const qreal progress = m_input->controlsProgress();
+        const int panelWidth = handlerWidthForInput(m_input);
+        const QRect panelRect(width() - panelWidth, 0, panelWidth, height());
+        const QRect upRect(panelRect.left(), 1, panelRect.width(), height() / 2 - 1);
+        const QRect downRect(panelRect.left(), height() / 2, panelRect.width(), height() / 2 - 1);
+        const bool upHovered = m_input->activeSubControl() == QStyle::SC_SpinBoxUp;
+        const bool downHovered = m_input->activeSubControl() == QStyle::SC_SpinBoxDown;
+
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+        painter.setOpacity(progress);
+        painter.setClipRect(rect());
+        painter.translate((1.0 - progress) * panelWidth, 0);
+
+        painter.setPen(QPen(token.colorSplit, token.lineWidth));
+        painter.drawLine(QPointF(panelRect.left() + 0.5, 3),
+                         QPointF(panelRect.left() + 0.5, height() - 3));
+        painter.drawLine(QPointF(panelRect.left() + 2, height() / 2.0),
+                         QPointF(panelRect.right() - 2, height() / 2.0));
+
+        const QColor hoverColor = m_input->isStepPressed() ? token.colorFillQuaternary : token.colorFillTertiary;
+        painter.setPen(Qt::NoPen);
+        if (upHovered)
+        {
+            painter.fillRect(upRect.adjusted(1, 0, -1, 0), hoverColor);
+        }
+        if (downHovered)
+        {
+            painter.fillRect(downRect.adjusted(1, 0, -1, 0), hoverColor);
+        }
+
+        const QColor iconColor = token.colorTextTertiary;
+        const int iconInsetX = qMin(6, qMax(2, panelWidth / 4));
+        AntIconPainter::drawIcon(painter, Ant::IconType::Up, upRect.adjusted(iconInsetX, 2, -iconInsetX, -2), iconColor);
+        AntIconPainter::drawIcon(painter, Ant::IconType::Down, downRect.adjusted(iconInsetX, 2, -iconInsetX, -2), iconColor);
+    }
+
+private:
+    AntInputNumber* m_input = nullptr;
+};
+}
 
 AntInputNumber::AntInputNumber(QWidget* parent)
     : QDoubleSpinBox(parent)
@@ -30,15 +123,24 @@ AntInputNumber::AntInputNumber(QWidget* parent)
     m_controlsAnimation->setDuration(160);
     m_controlsAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
+    m_controlsOverlay = new InputNumberControlsOverlay(this);
+    m_controlsOverlay->hide();
+
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         updateEditStyle();
         style()->unpolish(this);
         style()->polish(this);
+        updateControlsOverlayGeometry();
         updateGeometry();
         update();
     });
 
     updateEditStyle();
+    if (lineEdit())
+    {
+        lineEdit()->installEventFilter(this);
+        lineEdit()->setMouseTracking(true);
+    }
 }
 
 Ant::Size AntInputNumber::inputSize() const
@@ -125,6 +227,16 @@ void AntInputNumber::setControlsProgress(qreal progress)
         return;
     }
     m_controlsProgress = progress;
+    updateEditStyle();
+    if (lineEdit())
+    {
+        lineEdit()->update();
+    }
+    updateControlsOverlayGeometry();
+    if (m_controlsOverlay)
+    {
+        m_controlsOverlay->update();
+    }
     update();
 }
 
@@ -224,6 +336,10 @@ void AntInputNumber::leaveEvent(QEvent* event)
 void AntInputNumber::mouseMoveEvent(QMouseEvent* event)
 {
     m_activeSubControl = hitSubControl(event->pos());
+    if (m_controlsOverlay)
+    {
+        m_controlsOverlay->update();
+    }
     update();
     QDoubleSpinBox::mouseMoveEvent(event);
 }
@@ -234,6 +350,10 @@ void AntInputNumber::mousePressEvent(QMouseEvent* event)
     {
         m_activeSubControl = hitSubControl(event->pos());
         m_stepPressed = m_activeSubControl == QStyle::SC_SpinBoxUp || m_activeSubControl == QStyle::SC_SpinBoxDown;
+        if (m_controlsOverlay)
+        {
+            m_controlsOverlay->update();
+        }
         update();
     }
     QDoubleSpinBox::mousePressEvent(event);
@@ -243,6 +363,10 @@ void AntInputNumber::mouseReleaseEvent(QMouseEvent* event)
 {
     m_activeSubControl = hitSubControl(event->pos());
     m_stepPressed = false;
+    if (m_controlsOverlay)
+    {
+        m_controlsOverlay->update();
+    }
     update();
     QDoubleSpinBox::mouseReleaseEvent(event);
 }
@@ -270,6 +394,38 @@ void AntInputNumber::changeEvent(QEvent* event)
         update();
     }
     QDoubleSpinBox::changeEvent(event);
+}
+
+void AntInputNumber::resizeEvent(QResizeEvent* event)
+{
+    QDoubleSpinBox::resizeEvent(event);
+    updateControlsOverlayGeometry();
+}
+
+bool AntInputNumber::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == lineEdit())
+    {
+        switch (event->type())
+        {
+        case QEvent::Enter:
+        case QEvent::FocusIn:
+            animateControls(true);
+            update();
+            break;
+        case QEvent::Leave:
+            animateControls(shouldShowControls());
+            update();
+            break;
+        case QEvent::FocusOut:
+            animateControls(m_hovered);
+            update();
+            break;
+        default:
+            break;
+        }
+    }
+    return QDoubleSpinBox::eventFilter(watched, event);
 }
 
 AntInputNumber::Metrics AntInputNumber::metrics() const
@@ -324,6 +480,7 @@ void AntInputNumber::updateEditStyle()
     lineEdit()->setPalette(lePalette);
     lineEdit()->setAttribute(Qt::WA_TranslucentBackground, true);
     lineEdit()->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
+    lineEdit()->setTextMargins(0, 0, controlsInsetWidth(), 0);
 
     setMinimumHeight(m.height);
     setMaximumHeight(m.height);
@@ -370,4 +527,31 @@ void AntInputNumber::animateControls(bool visible)
     m_controlsAnimation->setStartValue(m_controlsProgress);
     m_controlsAnimation->setEndValue(end);
     m_controlsAnimation->start();
+}
+
+int AntInputNumber::controlsInsetWidth() const
+{
+    if (!m_controlsVisible || !isEnabled())
+    {
+        return 0;
+    }
+
+    return qRound(handlerWidthForInput(this) * m_controlsProgress);
+}
+
+void AntInputNumber::updateControlsOverlayGeometry()
+{
+    if (!m_controlsOverlay)
+    {
+        return;
+    }
+
+    const int handlerWidth = handlerWidthForInput(this);
+    const QRect control = rect().adjusted(1, 1, -1, -1);
+    m_controlsOverlay->setGeometry(control.right() - handlerWidth + 1,
+                                   control.top(),
+                                   handlerWidth,
+                                   control.height());
+    m_controlsOverlay->setVisible(m_controlsVisible && isEnabled() && m_controlsProgress > 0.01);
+    m_controlsOverlay->raise();
 }
