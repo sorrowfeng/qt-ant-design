@@ -4,8 +4,40 @@
 #include <QPainter>
 #include <QWheelEvent>
 
+#include <algorithm>
+
 #include "../styles/AntTableStyle.h"
 #include "core/AntTheme.h"
+
+namespace
+{
+int compareSortValues(const QVariant& left, const QVariant& right)
+{
+    const bool leftEmpty = !left.isValid() || left.isNull();
+    const bool rightEmpty = !right.isValid() || right.isNull();
+    if (leftEmpty || rightEmpty)
+    {
+        if (leftEmpty == rightEmpty)
+            return 0;
+        return leftEmpty ? 1 : -1;
+    }
+
+    bool leftOk = false;
+    bool rightOk = false;
+    const double leftNumber = left.toDouble(&leftOk);
+    const double rightNumber = right.toDouble(&rightOk);
+    if (leftOk && rightOk)
+    {
+        if (leftNumber < rightNumber)
+            return -1;
+        if (leftNumber > rightNumber)
+            return 1;
+        return 0;
+    }
+
+    return QString::localeAwareCompare(left.toString(), right.toString());
+}
+} // namespace
 
 // ─── AntTable ───
 
@@ -22,6 +54,7 @@ AntTable::AntTable(QWidget* parent)
 void AntTable::addColumn(const AntTableColumn& column)
 {
     m_columns.append(column);
+    rebuildDisplayOrder();
     updateGeometry();
     update();
 }
@@ -40,6 +73,7 @@ void AntTable::removeColumn(const QString& key)
         m_sortColumn.clear();
         m_sortOrder = Ant::TableSortOrder::None;
     }
+    rebuildDisplayOrder();
     updateGeometry();
     update();
 }
@@ -49,6 +83,7 @@ void AntTable::setColumns(const QVector<AntTableColumn>& columns)
     m_columns = columns;
     m_sortColumn.clear();
     m_sortOrder = Ant::TableSortOrder::None;
+    rebuildDisplayOrder();
     updateGeometry();
     update();
 }
@@ -63,16 +98,19 @@ QVector<AntTableColumn> AntTable::columns() const
 void AntTable::addRow(const AntTableRow& row)
 {
     m_rows.append(row);
+    rebuildDisplayOrder();
     update();
 }
 
 void AntTable::removeRow(int index)
 {
-    if (index < 0 || index >= m_rows.size())
+    const int sourceIndex = sourceRowIndex(index);
+    if (sourceIndex < 0 || sourceIndex >= m_rows.size())
     {
         return;
     }
-    m_rows.remove(index);
+    m_rows.remove(sourceIndex);
+    rebuildDisplayOrder();
     if (m_hoveredRow >= m_rows.size())
     {
         m_hoveredRow = -1;
@@ -85,12 +123,14 @@ void AntTable::setRows(const QVector<AntTableRow>& rows)
     m_rows = rows;
     m_scrollY = 0;
     m_hoveredRow = -1;
+    rebuildDisplayOrder();
     update();
 }
 
 void AntTable::clearRows()
 {
     m_rows.clear();
+    m_displayOrder.clear();
     m_scrollY = 0;
     m_hoveredRow = -1;
     update();
@@ -103,11 +143,12 @@ int AntTable::rowCount() const
 
 AntTableRow AntTable::rowAt(int index) const
 {
-    if (index < 0 || index >= m_rows.size())
+    const int sourceIndex = sourceRowIndex(index);
+    if (sourceIndex < 0 || sourceIndex >= m_rows.size())
     {
         return {};
     }
-    return m_rows.at(index);
+    return m_rows.at(sourceIndex);
 }
 
 // ─── Properties ───
@@ -179,12 +220,15 @@ Ant::TableSortOrder AntTable::sortOrder() const { return m_sortOrder; }
 
 void AntTable::setSortOrder(const QString& columnKey, Ant::TableSortOrder order)
 {
-    if (m_sortColumn == columnKey && m_sortOrder == order)
+    const QString nextColumn = order == Ant::TableSortOrder::None ? QString() : columnKey;
+    if (m_sortColumn == nextColumn && m_sortOrder == order)
     {
         return;
     }
-    m_sortColumn = columnKey;
+    m_sortColumn = nextColumn;
     m_sortOrder = order;
+    m_scrollY = 0;
+    rebuildDisplayOrder();
     update();
     Q_EMIT sortChanged(m_sortColumn, m_sortOrder);
 }
@@ -260,13 +304,14 @@ int AntTable::hoveredRow() const { return m_hoveredRow; }
 QStringList AntTable::selectedRowKeys() const
 {
     QStringList keys;
-    for (int i = 0; i < m_rows.size(); ++i)
+    for (int displayIndex = 0; displayIndex < m_rows.size(); ++displayIndex)
     {
-        if (m_rows.at(i).selected)
+        const int sourceIndex = sourceRowIndex(displayIndex);
+        if (sourceIndex >= 0 && sourceIndex < m_rows.size() && m_rows.at(sourceIndex).selected)
         {
             const QString primaryKey = m_columns.isEmpty()
-                                           ? QString::number(i)
-                                           : m_rows.at(i).data.value(m_columns.first().dataIndex).toString();
+                                           ? QString::number(displayIndex)
+                                           : m_rows.at(sourceIndex).data.value(m_columns.first().dataIndex).toString();
             keys.append(primaryKey);
         }
     }
@@ -331,22 +376,20 @@ void AntTable::mousePressEvent(QMouseEvent* event)
 
             if (col.sorter)
             {
+                Ant::TableSortOrder nextOrder = Ant::TableSortOrder::None;
                 if (m_sortColumn != colKey)
                 {
-                    m_sortColumn = colKey;
-                    m_sortOrder = Ant::TableSortOrder::Ascending;
+                    nextOrder = Ant::TableSortOrder::Ascending;
                 }
                 else if (m_sortOrder == Ant::TableSortOrder::Ascending)
                 {
-                    m_sortOrder = Ant::TableSortOrder::Descending;
+                    nextOrder = Ant::TableSortOrder::Descending;
                 }
                 else
                 {
-                    m_sortColumn.clear();
-                    m_sortOrder = Ant::TableSortOrder::None;
+                    nextOrder = Ant::TableSortOrder::None;
                 }
-                update();
-                Q_EMIT sortChanged(m_sortColumn, m_sortOrder);
+                setSortOrder(colKey, nextOrder);
             }
         }
         event->accept();
@@ -357,7 +400,8 @@ void AntTable::mousePressEvent(QMouseEvent* event)
     const int rowIdx = rowAtPos(pos);
     if (rowIdx >= 0 && rowIdx < m_rows.size())
     {
-        if (m_rows.at(rowIdx).disabled)
+        const AntTableRow clickedRow = rowAt(rowIdx);
+        if (clickedRow.disabled)
         {
             event->accept();
             return;
@@ -592,13 +636,78 @@ int AntTable::pageEndIndex() const
     return qMin(m_currentPage * m_pageSize, m_rows.size());
 }
 
+void AntTable::rebuildDisplayOrder()
+{
+    m_displayOrder.clear();
+    m_displayOrder.reserve(m_rows.size());
+    for (int i = 0; i < m_rows.size(); ++i)
+    {
+        m_displayOrder.append(i);
+    }
+
+    if (m_sortColumn.isEmpty() || m_sortOrder == Ant::TableSortOrder::None)
+    {
+        m_currentPage = qBound(1, m_currentPage, qMax(1, totalPages()));
+        return;
+    }
+
+    const QString dataIndex = sortDataIndex();
+    if (dataIndex.isEmpty())
+    {
+        m_currentPage = qBound(1, m_currentPage, qMax(1, totalPages()));
+        return;
+    }
+
+    const bool descending = m_sortOrder == Ant::TableSortOrder::Descending;
+    std::stable_sort(m_displayOrder.begin(), m_displayOrder.end(),
+        [this, &dataIndex, descending](int leftIndex, int rightIndex) {
+            const QVariant leftValue = m_rows.at(leftIndex).data.value(dataIndex);
+            const QVariant rightValue = m_rows.at(rightIndex).data.value(dataIndex);
+            const bool leftEmpty = !leftValue.isValid() || leftValue.isNull();
+            const bool rightEmpty = !rightValue.isValid() || rightValue.isNull();
+
+            if (leftEmpty || rightEmpty)
+            {
+                return !leftEmpty && rightEmpty;
+            }
+
+            const int compare = compareSortValues(leftValue, rightValue);
+            return descending ? compare > 0 : compare < 0;
+        });
+
+    m_currentPage = qBound(1, m_currentPage, qMax(1, totalPages()));
+}
+
+int AntTable::sourceRowIndex(int displayIndex) const
+{
+    if (displayIndex < 0 || displayIndex >= m_displayOrder.size())
+    {
+        return -1;
+    }
+    return m_displayOrder.at(displayIndex);
+}
+
+QString AntTable::sortDataIndex() const
+{
+    for (const auto& col : m_columns)
+    {
+        if (col.key == m_sortColumn)
+        {
+            return col.dataIndex;
+        }
+    }
+    return {};
+}
+
 bool AntTable::isAllSelected() const
 {
     const int start = pageStartIndex();
     const int end = pageEndIndex();
     for (int i = start; i < end; ++i)
     {
-        if (!m_rows.at(i).disabled && !m_rows.at(i).selected)
+        const int sourceIndex = sourceRowIndex(i);
+        if (sourceIndex >= 0 && sourceIndex < m_rows.size()
+            && !m_rows.at(sourceIndex).disabled && !m_rows.at(sourceIndex).selected)
         {
             return false;
         }
@@ -613,9 +722,10 @@ void AntTable::toggleSelectAll()
     const int end = pageEndIndex();
     for (int i = start; i < end; ++i)
     {
-        if (!m_rows.at(i).disabled)
+        const int sourceIndex = sourceRowIndex(i);
+        if (sourceIndex >= 0 && sourceIndex < m_rows.size() && !m_rows.at(sourceIndex).disabled)
         {
-            m_rows[i].selected = selectAll;
+            m_rows[sourceIndex].selected = selectAll;
         }
     }
     update();
@@ -624,7 +734,8 @@ void AntTable::toggleSelectAll()
 
 void AntTable::toggleRowSelection(int index)
 {
-    if (index < 0 || index >= m_rows.size() || m_rows.at(index).disabled)
+    const int sourceIndex = sourceRowIndex(index);
+    if (sourceIndex < 0 || sourceIndex >= m_rows.size() || m_rows.at(sourceIndex).disabled)
     {
         return;
     }
@@ -634,12 +745,12 @@ void AntTable::toggleRowSelection(int index)
         // Deselect all others
         for (int i = 0; i < m_rows.size(); ++i)
         {
-            m_rows[i].selected = (i == index);
+            m_rows[i].selected = (i == sourceIndex);
         }
     }
     else
     {
-        m_rows[index].selected = !m_rows.at(index).selected;
+        m_rows[sourceIndex].selected = !m_rows.at(sourceIndex).selected;
     }
     update();
     Q_EMIT selectionChanged(selectedRowKeys());

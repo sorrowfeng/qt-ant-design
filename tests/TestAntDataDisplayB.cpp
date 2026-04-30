@@ -97,6 +97,33 @@ void TestAntDataDisplayB::propertiesAndSignals()
     tbl->clearRows();
     QCOMPARE(tbl->rowCount(), 0);
 
+    auto* sortTbl = new AntTable;
+    sortTbl->resize(360, 220);
+    sortTbl->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 120});
+    AntTableColumn sortAgeColumn{QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 120};
+    sortAgeColumn.sorter = true;
+    sortTbl->addColumn(sortAgeColumn);
+
+    QVector<AntTableRow> sortRows;
+    sortRows.push_back({{{QStringLiteral("name"), QStringLiteral("John")}, {QStringLiteral("age"), 28}}});
+    sortRows.push_back({{{QStringLiteral("name"), QStringLiteral("Jane")}, {QStringLiteral("age"), 32}}});
+    sortRows.push_back({{{QStringLiteral("name"), QStringLiteral("Joe")}, {QStringLiteral("age"), 24}}});
+    sortTbl->setRows(sortRows);
+    QCOMPARE(sortTbl->rowAt(0).data.value(QStringLiteral("name")).toString(), QStringLiteral("John"));
+
+    QSignalSpy sortSpy(sortTbl, &AntTable::sortChanged);
+    QTest::mouseClick(sortTbl, Qt::LeftButton, Qt::NoModifier, QPoint(170, 20));
+    QCOMPARE(sortTbl->sortOrder(), Ant::TableSortOrder::Ascending);
+    QCOMPARE(sortTbl->rowAt(0).data.value(QStringLiteral("name")).toString(), QStringLiteral("Joe"));
+    QTest::mouseClick(sortTbl, Qt::LeftButton, Qt::NoModifier, QPoint(170, 20));
+    QCOMPARE(sortTbl->sortOrder(), Ant::TableSortOrder::Descending);
+    QCOMPARE(sortTbl->rowAt(0).data.value(QStringLiteral("name")).toString(), QStringLiteral("Jane"));
+    QTest::mouseClick(sortTbl, Qt::LeftButton, Qt::NoModifier, QPoint(170, 20));
+    QCOMPARE(sortTbl->sortOrder(), Ant::TableSortOrder::None);
+    QCOMPARE(sortTbl->currentSortColumn(), QString());
+    QCOMPARE(sortTbl->rowAt(0).data.value(QStringLiteral("name")).toString(), QStringLiteral("John"));
+    QCOMPARE(sortSpy.count(), 3);
+
     // AntTree
     auto* tree = new AntTree;
     QCOMPARE(tree->isSelectable(), true);

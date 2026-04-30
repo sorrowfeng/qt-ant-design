@@ -144,9 +144,13 @@ private:
     bool isAllSelected() const;
     void toggleSelectAll();
     void toggleRowSelection(int index);
+    void rebuildDisplayOrder();
+    int sourceRowIndex(int displayIndex) const;
+    QString sortDataIndex() const;
 
     QVector<AntTableColumn> m_columns;
     QVector<AntTableRow> m_rows;
+    QVector<int> m_displayOrder;
 
     bool m_bordered = true;
     Ant::Size m_tableSize = Ant::Size::Middle;
