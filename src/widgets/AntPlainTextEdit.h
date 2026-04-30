@@ -4,6 +4,8 @@
 
 #include "core/AntTypes.h"
 
+class QMouseEvent;
+
 class AntPlainTextEdit : public QPlainTextEdit
 {
     Q_OBJECT
@@ -28,9 +30,16 @@ protected:
     void focusInEvent(QFocusEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
+    QRect resizeGripRect() const;
+    bool handleResizeGripMouseEvent(QMouseEvent* event, const QPoint& widgetPos);
+
     Ant::Variant m_variant = Ant::Variant::Outlined;
     QString m_placeholderText;
     bool m_focused = false;
+    bool m_resizing = false;
+    QPoint m_resizeStartGlobal;
+    QSize m_resizeStartSize;
 };

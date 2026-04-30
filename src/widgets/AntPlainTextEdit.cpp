@@ -3,6 +3,7 @@
 #include <QContextMenuEvent>
 #include <QFocusEvent>
 #include <QMenu>
+#include <QMouseEvent>
 
 #include "../styles/AntPlainTextEditStyle.h"
 #include "AntScrollBar.h"
@@ -18,6 +19,7 @@ AntPlainTextEdit::AntPlainTextEdit(QWidget* parent)
     setVerticalScrollBar(new AntScrollBar(Qt::Vertical, this));
     setHorizontalScrollBar(new AntScrollBar(Qt::Horizontal, this));
     setFrameShape(QFrame::NoFrame);
+    viewport()->installEventFilter(this);
 
     auto applyVisualState = [this]() {
         const auto& token = antTheme->tokens();
@@ -120,4 +122,88 @@ void AntPlainTextEdit::contextMenuEvent(QContextMenuEvent* event)
 
     menu->exec(event->globalPos());
     menu->deleteLater();
+}
+
+bool AntPlainTextEdit::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == viewport())
+    {
+        switch (event->type())
+        {
+        case QEvent::MouseButtonPress:
+        case QEvent::MouseMove:
+        case QEvent::MouseButtonRelease:
+        {
+            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            const QPoint widgetPos = viewport()->mapTo(this, mouseEvent->position().toPoint());
+            if (handleResizeGripMouseEvent(mouseEvent, widgetPos))
+            {
+                return true;
+            }
+            break;
+        }
+        case QEvent::Leave:
+            if (!m_resizing)
+            {
+                viewport()->unsetCursor();
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    return QPlainTextEdit::eventFilter(watched, event);
+}
+
+QRect AntPlainTextEdit::resizeGripRect() const
+{
+    constexpr int gripSize = 18;
+    return QRect(width() - gripSize, height() - gripSize, gripSize, gripSize);
+}
+
+bool AntPlainTextEdit::handleResizeGripMouseEvent(QMouseEvent* event, const QPoint& widgetPos)
+{
+    if (!event || !isEnabled() || m_variant != Ant::Variant::Outlined)
+    {
+        return false;
+    }
+
+    const bool overGrip = resizeGripRect().contains(widgetPos);
+    if (event->type() == QEvent::MouseMove && !m_resizing)
+    {
+        overGrip ? viewport()->setCursor(Qt::SizeFDiagCursor) : viewport()->unsetCursor();
+        return false;
+    }
+
+    if (event->type() == QEvent::MouseButtonPress && event->button() == Qt::LeftButton && overGrip)
+    {
+        m_resizing = true;
+        m_resizeStartGlobal = event->globalPosition().toPoint();
+        m_resizeStartSize = size();
+        viewport()->setCursor(Qt::SizeFDiagCursor);
+        event->accept();
+        return true;
+    }
+
+    if (event->type() == QEvent::MouseMove && m_resizing)
+    {
+        const QPoint delta = event->globalPosition().toPoint() - m_resizeStartGlobal;
+        const QSize minSize(120, 56);
+        const QSize nextSize(qMax(minSize.width(), m_resizeStartSize.width() + delta.x()),
+                             qMax(minSize.height(), m_resizeStartSize.height() + delta.y()));
+        setFixedSize(nextSize);
+        updateGeometry();
+        event->accept();
+        return true;
+    }
+
+    if (event->type() == QEvent::MouseButtonRelease && m_resizing)
+    {
+        m_resizing = false;
+        overGrip ? viewport()->setCursor(Qt::SizeFDiagCursor) : viewport()->unsetCursor();
+        event->accept();
+        return true;
+    }
+
+    return false;
 }

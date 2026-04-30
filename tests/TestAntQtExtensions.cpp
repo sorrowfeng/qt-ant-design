@@ -280,6 +280,16 @@ void TestAntQtExtensions::plainTextEdit()
     w->setEnabled(false);
     QCOMPARE(w->palette().color(QPalette::Disabled, QPalette::Text), antTheme->tokens().colorTextDisabled);
 
+    auto* resizable = new AntPlainTextEdit;
+    resizable->setFixedSize(180, 80);
+    resizable->show();
+    QVERIFY(QTest::qWaitForWindowExposed(resizable));
+    const QPoint grip = resizable->viewport()->mapFrom(resizable, QPoint(resizable->width() - 4, resizable->height() - 4));
+    QTest::mousePress(resizable->viewport(), Qt::LeftButton, Qt::NoModifier, grip);
+    QTest::mouseMove(resizable->viewport(), grip + QPoint(32, 18));
+    QTest::mouseRelease(resizable->viewport(), Qt::LeftButton, Qt::NoModifier, grip + QPoint(32, 18));
+    QCOMPARE(resizable->size(), QSize(212, 98));
+
     auto* w2 = new AntPlainTextEdit("Initial text");
     QCOMPARE(w2->toPlainText(), "Initial text");
 }
