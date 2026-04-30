@@ -12,14 +12,52 @@
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.10/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ant-design/icons@5.6.1/dist/index.umd.min.js"></script>
 <style>
+  @font-face {
+    font-family:'AlibabaSans';
+    font-style:normal;
+    font-weight:300;
+    font-display:swap;
+    src:url('https://mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*1GSgSYDD_aIAAAAAQsAAAAgAegCCAQ/AlibabaSans-Light.woff2') format('woff2');
+  }
+  @font-face {
+    font-family:'AlibabaSans';
+    font-style:normal;
+    font-weight:400;
+    font-display:swap;
+    src:url('https://mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*2zEUQqnPNesAAAAAQtAAAAgAegCCAQ/AlibabaSans-Regular.woff2') format('woff2');
+  }
+  @font-face {
+    font-family:'AlibabaSans';
+    font-style:normal;
+    font-weight:500;
+    font-display:swap;
+    src:url('https://mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*E_cxRbMlZqUAAAAAQuAAAAgAegCCAQ/AlibabaSans-Medium.woff2') format('woff2');
+  }
+  @font-face {
+    font-family:'AlibabaSans';
+    font-style:normal;
+    font-weight:600;
+    font-display:swap;
+    src:url('https://mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*E_cxRbMlZqUAAAAAQuAAAAgAegCCAQ/AlibabaSans-Bold.woff2') format('woff2');
+  }
+  @font-face {
+    font-family:'AlibabaSans';
+    font-style:normal;
+    font-weight:700;
+    font-display:swap;
+    src:url('https://mdn.alipayobjects.com/huamei_iwk9zp/afts/file/A*E_cxRbMlZqUAAAAAQuAAAAgAegCCAQ/AlibabaSans-Heavy.woff2') format('woff2');
+  }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body, #root { height:100%; }
-  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; }
+  body { font-family:AlibabaSans,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji'; }
   .layout { display:flex; height:100vh; }
   .layout.layout-showcase { display:block; }
   .sidebar { width:220px; background:#fff; border-right:1px solid #f0f0f0;
              display:flex; flex-direction:column; flex-shrink:0; overflow:hidden; }
-  .sidebar-brand { padding:16px 20px; font-size:18px; font-weight:600; border-bottom:1px solid #f0f0f0; }
+  .sidebar-brand { padding:16px 20px; font-size:18px; font-weight:600; border-bottom:1px solid #f0f0f0;
+                   display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .brand-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .theme-floating-toggle { position:fixed; top:16px; right:20px; z-index:20; }
   .sidebar-nav { flex:1; overflow-y:auto; padding:8px 0; }
   .sidebar-nav::-webkit-scrollbar { width:6px; }
   .sidebar-nav::-webkit-scrollbar-thumb { background:#d9d9d9; border-radius:3px; }
@@ -70,6 +108,21 @@
   .showcase-check-row { gap:12px; }
   .showcase-check-row .ant-switch { margin-right:2px; }
   .showcase-segment-row { gap:18px; }
+  .layout.theme-dark { color:rgba(255,255,255,.85); background:#000; }
+  .theme-dark .sidebar { background:#141414; border-right-color:#303030; }
+  .theme-dark .sidebar-brand { border-bottom-color:#303030; }
+  .theme-dark .sidebar-nav::-webkit-scrollbar-thumb,
+  .theme-dark .content::-webkit-scrollbar-thumb { background:#424242; }
+  .theme-dark .cat-header,
+  .theme-dark .page-desc { color:rgba(255,255,255,.45); }
+  .theme-dark .nav-item { color:rgba(255,255,255,.85); }
+  .theme-dark .nav-item:hover { background:#1f1f1f; }
+  .theme-dark .nav-item.active { color:#3c89e8; background:#111a2c; border-left-color:#1668dc; }
+  .theme-dark .content { background:#000; }
+  .theme-dark .content.content-showcase { background:#000; }
+  .theme-dark .section { background:#141414; border-color:#303030; }
+  .theme-dark .section-title { color:rgba(255,255,255,.85); border-bottom-color:#303030; }
+  .theme-dark .showcase-modal-root .ant-modal-content { box-shadow:0 8px 28px rgba(0,0,0,.48); }
 </style>
 </head>
 <body>
@@ -77,7 +130,7 @@
 <script type="text/babel">
 const { useState, useEffect } = React;
 const {
-  Button, ConfigProvider, Input, Select, Checkbox, Radio, Switch, Slider,
+  Button, ConfigProvider, Input, Select, Checkbox, Radio, Switch, Slider, theme,
   InputNumber, DatePicker, TimePicker, Rate, Upload, Transfer, TreeSelect,
   Cascader, Mentions, ColorPicker, AutoComplete, Form,
   Avatar, Badge, Card, Calendar, Carousel, Collapse, Descriptions, Empty,
@@ -90,6 +143,7 @@ const {
   Typography
 } = antd;
 const icons = window.icons || {};
+const antFontFamily = "AlibabaSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'";
 const {
   SearchOutlined, EditOutlined, DeleteOutlined, EllipsisOutlined,
   CheckCircleFilled, CloseCircleFilled, ExclamationCircleFilled,
@@ -127,6 +181,8 @@ const registry = [
   { cat:"Feedback", pages:["Alert","Drawer","Message","Modal","Notification","Popconfirm","Progress",
     "Result","Skeleton","Spin","Tour","Watermark"] },
   { cat:"Other", pages:["App","ConfigProvider","FloatButton"] },
+  { cat:"Qt Extensions", pages:["Window","ScrollArea","ScrollBar","StatusBar","MenuBar","ToolBar",
+    "ToolButton","DockWidget","PlainTextEdit","Log","Masonry"] },
 ];
 
 /* ═══════════════════════════════════════════════════
@@ -1269,6 +1325,17 @@ function FloatButtonPage(){
   </>);
 }
 
+function QtExtensionPage({ name }){
+  return(<>
+    <div className="section"><div className="section-title">{name}</div>
+      <p style={{color:'#8c8c8c',marginBottom:12}}>
+        {name} is a Qt-only extension in qt-ant-design. Ant Design does not provide an official web component with matching behavior, so this page is kept as a navigation placeholder to mirror the Qt example app.
+      </p>
+      <Empty description="No official Ant Design reference"/>
+    </div>
+  </>);
+}
+
 /* ═══════════════════════════════════════════════════
    Page map
    ═══════════════════════════════════════════════════ */
@@ -1290,25 +1357,50 @@ const pageMap = {
   Popconfirm:PopconfirmPage,Progress:ProgressPage,Result:ResultPage,Skeleton:SkeletonPage,Spin:SpinPage,
   Tour:TourPage,Watermark:WatermarkPage,
   App:AppPage,ConfigProvider:ConfigProviderPage,FloatButton:FloatButtonPage,
+  Window:()=> <QtExtensionPage name="Window"/>,
+  ScrollArea:()=> <QtExtensionPage name="ScrollArea"/>,
+  ScrollBar:()=> <QtExtensionPage name="ScrollBar"/>,
+  StatusBar:()=> <QtExtensionPage name="StatusBar"/>,
+  MenuBar:()=> <QtExtensionPage name="MenuBar"/>,
+  ToolBar:()=> <QtExtensionPage name="ToolBar"/>,
+  ToolButton:()=> <QtExtensionPage name="ToolButton"/>,
+  DockWidget:()=> <QtExtensionPage name="DockWidget"/>,
+  PlainTextEdit:()=> <QtExtensionPage name="PlainTextEdit"/>,
+  Log:()=> <QtExtensionPage name="Log"/>,
+  Masonry:()=> <QtExtensionPage name="Masonry"/>,
 };
 
 /* ═══════════════════════════════════════════════════
    Main App
    ═══════════════════════════════════════════════════ */
 function AppLayout(){
-  const initialPage = new URLSearchParams(window.location.search).get('page') ||
+  const params = new URLSearchParams(window.location.search);
+  const initialPage = params.get('page') ||
     (window.location.hash ? window.location.hash.slice(1) : '') ||
     'Showcase';
   const [active,setActive]=useState(pageMap[initialPage] ? initialPage : 'Showcase');
+  const [dark,setDark]=useState(()=>{
+    const urlTheme = params.get('theme');
+    if (urlTheme) return urlTheme === 'dark';
+    return window.localStorage.getItem('ant-reference-theme') === 'dark';
+  });
+  useEffect(()=>{
+    window.localStorage.setItem('ant-reference-theme', dark ? 'dark' : 'light');
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  },[dark]);
   const PageComp=pageMap[active]||(()=>(<div>Not found</div>));
-  const showcaseOnly = active === 'Showcase';
+  const showcaseOnly = active === 'Showcase' &&
+    (params.get('showcaseOnly') === '1' || params.get('standalone') === '1');
+  const toggleTheme = () => setDark(value => !value);
+  const themeButton = <Button size="small" onClick={toggleTheme}>{dark ? 'Light' : 'Dark'}</Button>;
 
   return(
-    <ConfigProvider theme={{token:{colorPrimary:'#1677ff'}}}>
-      <div className={`layout${showcaseOnly?' layout-showcase':''}`}>
+    <ConfigProvider theme={{token:{colorPrimary:'#1677ff', fontFamily:antFontFamily}, algorithm: dark ? theme.darkAlgorithm : undefined}}>
+      <div className={`layout${showcaseOnly?' layout-showcase':''}${dark?' theme-dark':''}`}>
+        {showcaseOnly && <div className="theme-floating-toggle">{themeButton}</div>}
         {!showcaseOnly && (
           <div className="sidebar">
-            <div className="sidebar-brand">Ant Design 5.x</div>
+            <div className="sidebar-brand"><span className="brand-title">Ant Design 5.x</span>{themeButton}</div>
             <div className="sidebar-nav">
               {registry.map(g=>(
                 <React.Fragment key={g.cat}>

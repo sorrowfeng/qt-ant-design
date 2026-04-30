@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/qt-ant-design">
+        <file>fonts/NotoSans.ttf</file>
         <file>images/image-basic.png</file>
         <file>icons/antd/AccountBookFilled.svg</file>
         <file>icons/antd/AccountBookOutlined.svg</file>
