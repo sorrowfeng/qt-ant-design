@@ -56,6 +56,27 @@ Use this loop for one component at a time.
 | Theme | Light/dark parity, contrast, inherited text colors, transparent surfaces |
 | Example | Uses Ant components for visible text, no stale "missing" notes, no stylesheet-only styling |
 
+## Issue-Driven Interaction Pass 2026-04-30
+
+This pass followed the user-reported interaction list one item at a time. Each completed item was built, tested, committed, and pushed separately.
+
+| Component | Result |
+| --- | --- |
+| Popover | Hover target and popup hover area now cooperate so the popup no longer flickers between show/hide. |
+| Loading Button | Spinner direction and visible arc now match Ant Design more closely. |
+| PlainTextEdit / TextArea | Bottom-right drag resize behavior is available for TextArea-style usage. |
+| InputNumber | Handler arrows animate in on hover/focus instead of appearing abruptly. |
+| Slider | Dragging shows a value bubble that follows the handle. |
+| Switch | Clicks trigger a grey Wave effect around the switch track. |
+| Transfer | Lists scroll correctly, clicked rows respect scroll offset, and header select-all works. |
+| Carousel | Slide changes now animate horizontally instead of swapping instantly. |
+| Table | Sorter clicks reorder rows and cycle ascending / descending / none. |
+| Tabs | Line tabs use text-sized tabs with animated ink bar; card tabs align closer to Ant Design tab geometry. |
+| Notification | Cards have stronger visible elevation and placement-aware enter/exit motion. |
+| Message | Toasts use AntD-like move-up / move-down motion and a clearer elevated bubble. |
+| Skeleton | Active shimmer now moves across placeholders. |
+| Spin | Indeterminate spinner uses a precise 16 ms timer with smaller angle steps for smoother frames. |
+
 ## Homepage Showcase Audit
 
 The official Chinese homepage at `https://ant.design/index-cn` was checked on 2026-04-29. It rendered the Ant Design 6.3.7 homepage showcase, but the page also emitted a React hydration error (`Minified React error #418`) and several `ERR_CONNECTION_CLOSED` resource errors during Playwright capture. The local reference keeps AntD 5.24.7 for component-audit stability and now includes a standalone `Showcase` page that isolates the visible controls from the homepage showcase for repeatable screenshots.

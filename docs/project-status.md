@@ -2,7 +2,7 @@
 
 Updated: `2026-04-30`
 
-This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline, and official Ant Design Icon resource work.
+This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline, official Ant Design Icon resource work, and the 2026-04-30 interaction/motion parity pass.
 
 ## Summary
 
@@ -26,6 +26,21 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Bundled all official Ant Design SVG icons and connected them to `AntIcon` through a string-name API.
 - Added `docs/ant-design-icons.md` with the full icon inventory.
 - Updated visual audit notes for Showcase, ColorPicker popup, Icon resources, and Qt extension consistency.
+- Completed an issue-driven Ant Design parity pass for interactive behavior and motion:
+  - Stabilized `AntPopover` hover popups.
+  - Aligned loading button spinner direction and visible arc.
+  - Added TextArea-style resize handling to `AntPlainTextEdit`.
+  - Animated `AntInputNumber` handler reveal on hover/focus.
+  - Added `AntSlider` drag value bubble.
+  - Added grey click wave feedback to `AntSwitch`.
+  - Fixed `AntTransfer` scrolling, visible-row selection, and header select-all.
+  - Added slide transitions to `AntCarousel`.
+  - Enabled actual row reordering for `AntTable` sorter clicks.
+  - Reworked `AntTabs` line/card visuals and active indicator motion.
+  - Strengthened `AntNotification` elevation and placement-aware enter/exit motion.
+  - Aligned `AntMessage` popup motion and elevated bubble styling.
+  - Restored animated shimmer movement for `AntSkeleton`.
+  - Improved `AntSpin` animation smoothness with a precise 16 ms timer.
 
 ## Visual Audit State
 
@@ -57,8 +72,8 @@ Inventory:
 Last full verification run:
 
 ```powershell
-cmake --build build --config Debug --target TestAntIcon qt-ant-design-example -- /m:1
-ctest --test-dir build -C Debug --output-on-failure
+cmake --build build --config Debug --target qt-ant-design-example
+ctest -C Debug --output-on-failure
 ```
 
 Result: `20 / 20` tests passed.

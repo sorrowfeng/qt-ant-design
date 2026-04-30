@@ -77,6 +77,25 @@
 - AntButtonStyle：修复 `adjusted(0,0,-1,-1)` 导致右/下边框 1px 缺失
 - AntAutoComplete：修复 Qt::Popup 抢占焦点问题
 
+## 交互与动效对齐批次（2026-04-30）
+
+本批次按用户发现的问题逐项修复，并在每项完成后单独提交和推送。所有改动均通过 `qt-ant-design-example` Debug 构建和 `20 / 20` CTest 全量验证。
+
+- `AntPopover`：修复 hover 触发时浮窗反复显示/隐藏的问题。
+- `AntButton`：loading spinner 改为顺时针旋转，并将可见弧段调整到约 30%。
+- `AntPlainTextEdit`：补齐 TextArea 式右下角拖拽缩放。
+- `AntInputNumber`：鼠标进入/聚焦时上下箭头控制区以动画显示。
+- `AntSlider`：拖动时显示数值浮标并跟随 handle。
+- `AntSwitch`：点击时触发灰色 Wave 边缘动效。
+- `AntTransfer`：修复列表滚动、滚动后行点击和顶部全选。
+- `AntCarousel`：补齐轮播图滑动切换动效。
+- `AntTable`：表头排序点击会真正按列重排行数据，并支持升序/降序/取消排序。
+- `AntTabs`：Line/Card 样式和 active indicator 动效贴近官方 Ant Design。
+- `AntNotification`：增强浮层阴影，补齐按 placement 进入/退出动效。
+- `AntMessage`：补齐 AntD-like move-up/move-down 显示与消失动效，并强化气泡阴影。
+- `AntSkeleton`：修复 shimmer 偏移量未参与绘制导致占位符不动的问题。
+- `AntSpin`：使用 16ms precise timer 和小角度步进提升动画流畅度。
+
 ## 子组件/变体完整度（完成于 2026-04-26，状态复核 2026-04-30）
 
 ### Phase 1: 简单变体（6 项）

@@ -38,6 +38,15 @@
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
 - 最近一次 Debug 全量验证：`20 / 20` 个 CTest 目标通过（`2026-04-30`）
 
+## 最近 Ant Design 对齐更新
+
+2026-04-30 的交互与动效对齐批次补齐了多处用户可见细节：
+
+- 弹层反馈：`AntPopover`、`AntMessage`、`AntNotification` 的悬停/关闭行为更稳定，阴影层级更清晰，并补齐了按 placement 进入/退出的动效。
+- 动效表现：`AntCarousel`、`AntTabs`、`AntSkeleton`、`AntSpin`、`AntInputNumber`、`AntSwitch` 和 loading button 的方向、节奏、状态反馈更贴近 Ant Design。
+- 数据交互：`AntTransfer` 支持正常滚动和顶部全选，`AntTable` 表头排序点击会真正重排行数据。
+- 输入反馈：`AntPlainTextEdit` 支持 TextArea 式右下角拖拽缩放，`AntSlider` 拖动时显示数值浮标。
+
 ## 安装与集成
 
 ### 环境要求
@@ -179,13 +188,13 @@ Ant Design 标准组件按 `submodules/ant-design/components` 顶层目录统计
 - `AntStatistic`：数值展示、千分位分隔、前缀后缀、精度控制
 - `AntPopover`：标题、正文、action、点击/悬停触发、placement、箭头
 - `AntPopconfirm`：确认标题、说明、确认/取消按钮、禁用态、placement
-- `AntSkeleton`：支持 `active` shimmer、头像占位、标题/段落配置、圆角风格以及 `loading` 切换真实内容
+- `AntSkeleton`：支持动态 `active` shimmer、头像占位、标题/段落配置、圆角风格以及 `loading` 切换真实内容
 - `AntTooltip`：常用 `placement`、箭头、颜色、延迟显示、自动翻转
-- `AntSlider`：横竖向、`reverse / dots / included`
-- `AntSwitch`：`checked / loading / small / text`
-- `AntSpin`：`small / middle / large / percent / delay`
+- `AntSlider`：横竖向、`reverse / dots / included`、拖动数值浮标
+- `AntSwitch`：`checked / loading / small / text`、点击 Wave 反馈
+- `AntSpin`：`small / middle / large / percent / delay`、更平滑的高频动画
 - `AntDatePicker` / `AntTimePicker`：自绘弹层选择器
-- `AntMessage` / `AntNotification`：全局反馈组件
+- `AntMessage` / `AntNotification`：带浮层阴影和进入/退出动效的全局反馈组件
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`：常用展示组件
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`：导航组件
 - `AntTable`：数据表格，支持列排序、行选择（复选框/单选框）、分页、加载状态
@@ -207,11 +216,11 @@ Ant Design 标准组件按 `submodules/ant-design/components` 顶层目录统计
 - `AntAffix`：固钉工具，QObject 辅助类，监听滚动容器，自动吸附/解除，占位保持布局
 - `AntAutoComplete`：自动完成输入，弹出建议列表，键盘导航
 - `AntCalendar`：日历面板，Day/Month/Year 三态切换，日期选择
-- `AntCarousel`：轮播图，自动播放，圆点指示器，点击翻页
+- `AntCarousel`：轮播图，自动播放，圆点指示器，滑动切换动效，点击翻页
 - `AntCollapse`：折叠面板/手风琴，InOutCubic 展开动画，accordion 互斥模式
 - `AntColorPicker`：内联颜色触发器，可显示文本，弹窗内提供 HS field + value slider + RGB/HSV 输入、预设/自定义颜色
 - `AntImage`：图片展示，placeholder fallback，点击全屏预览
-- `AntTransfer`：穿梭框，双列表批量转移
+- `AntTransfer`：穿梭框，双列表滚动、顶部全选、批量转移
 - `AntTour`：遮罩式分步引导，目标高亮，Prev/Next/Finish
 - `AntMentions`：@提及输入，输入 @ 弹出建议
 - `AntGrid` (Row/Col)：24 列栅格布局，span/offset/gutter
@@ -226,7 +235,7 @@ Ant Design 标准组件按 `submodules/ant-design/components` 顶层目录统计
 - `AntToolBar`：QToolBar 主题化，浮动阴影
 - `AntDockWidget`：可停靠面板，自定义标题栏，Win32 resize 边缘
 - `AntScrollArea`：QScrollArea + AntScrollBar + QScroller 手势滚动
-- `AntPlainTextEdit`：多行文本编辑器，3 种变体，上下文菜单
+- `AntPlainTextEdit`：多行文本编辑器，3 种变体，TextArea 式右下角缩放柄，上下文菜单
 - `AntLog`：5 级别彩色日志输出（Debug/Info/Success/Warning/Error），时间戳
 
 ## 使用示例

@@ -38,6 +38,15 @@ The project focuses on:
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
 - Latest full Debug verification: `20 / 20` CTest targets passed on `2026-04-30`
 
+## Recent Ant Design Parity Updates
+
+The 2026-04-30 interaction and motion pass tightened several user-visible details:
+
+- Popup feedback: `AntPopover`, `AntMessage`, and `AntNotification` now have more stable hover/close behavior, stronger elevation, and placement-aware enter/exit motion.
+- Motion: `AntCarousel`, `AntTabs`, `AntSkeleton`, `AntSpin`, `AntInputNumber`, `AntSwitch`, and loading buttons now better match Ant Design timing, direction, and state feedback.
+- Data interaction: `AntTransfer` now supports scrolling and header select-all correctly, while `AntTable` sorter clicks reorder rows instead of only changing the icon state.
+- Input feedback: `AntPlainTextEdit` supports TextArea-style bottom-right resizing, and `AntSlider` shows a value bubble while dragging.
+
 ## Installation & Integration
 
 ### Requirements
@@ -179,13 +188,13 @@ Ant Design standard components are counted by the top-level directories under `s
 - `AntStatistic`: numeric display, thousands separators, prefix / suffix, precision control
 - `AntPopover`: title, body, action, click / hover triggers, placement, arrow
 - `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement
-- `AntSkeleton`: `active` shimmer, avatar placeholder, title / paragraph configuration, rounded style, and `loading` toggle to swap in real content
+- `AntSkeleton`: moving `active` shimmer, avatar placeholder, title / paragraph configuration, rounded style, and `loading` toggle to swap in real content
 - `AntTooltip`: common `placement`, arrow, color, delayed display, auto flip
-- `AntSlider`: horizontal / vertical, `reverse / dots / included`
-- `AntSwitch`: `checked / loading / small / text`
-- `AntSpin`: `small / middle / large / percent / delay`
+- `AntSlider`: horizontal / vertical, `reverse / dots / included`, drag value bubble
+- `AntSwitch`: `checked / loading / small / text`, click wave feedback
+- `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation
 - `AntDatePicker` / `AntTimePicker`: hand-painted popup pickers
-- `AntMessage` / `AntNotification`: global feedback components
+- `AntMessage` / `AntNotification`: global feedback components with elevated surfaces and enter / exit motion
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`: common display components
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`: navigation components
 - `AntTable`: data table with column sorting, row selection (checkbox / radio), pagination, loading state
@@ -207,11 +216,11 @@ Ant Design standard components are counted by the top-level directories under `s
 - `AntAffix`: pin helper — a QObject utility that watches the scroll container and auto-pins / un-pins while preserving layout
 - `AntAutoComplete`: autocomplete input with popup suggestions and keyboard navigation
 - `AntCalendar`: calendar panel with Day / Month / Year mode switching and date selection
-- `AntCarousel`: carousel with autoplay, dot indicators, and click-to-page
+- `AntCarousel`: carousel with autoplay, dot indicators, animated slide transitions, and click-to-page
 - `AntCollapse`: collapse panel / accordion with InOutCubic expand animation and accordion exclusivity
 - `AntColorPicker`: inline color trigger with optional text, plus popup HS field + value slider + RGB / HSV inputs, preset and custom colors
 - `AntImage`: image display with placeholder fallback and click-to-fullscreen preview
-- `AntTransfer`: transfer component with two lists for batch movement
+- `AntTransfer`: transfer component with two scrollable lists, header select-all, and batch movement
 - `AntTour`: masked step-by-step guide with target highlighting and Prev / Next / Finish
 - `AntMentions`: `@` mentions input that pops suggestions on `@`
 - `AntGrid` (Row/Col): 24-column grid with span / offset / gutter
@@ -226,7 +235,7 @@ Ant Design standard components are counted by the top-level directories under `s
 - `AntToolBar`: themed QToolBar with floating shadow
 - `AntDockWidget`: dockable panel with custom title bar and Win32 resize edges
 - `AntScrollArea`: QScrollArea + AntScrollBar + QScroller gesture scrolling
-- `AntPlainTextEdit`: multi-line text editor with 3 variants and a context menu
+- `AntPlainTextEdit`: multi-line text editor with 3 variants, TextArea-style resize grip, and a context menu
 - `AntLog`: 5-level colored log output (Debug / Info / Success / Warning / Error) with timestamps
 
 ## Usage Examples
