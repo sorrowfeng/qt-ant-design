@@ -57,6 +57,9 @@ add_ant_test(TestAntQtExtensions)
 # Object tree ownership
 add_ant_test(TestAntObjectTree)
 
+# Assigned child ownership
+add_ant_test(TestAntChildOwnership)
+
 # Meta-property coverage
 add_ant_test(TestAntMetaProperties)
 

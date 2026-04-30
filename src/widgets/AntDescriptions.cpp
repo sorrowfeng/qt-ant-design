@@ -82,6 +82,11 @@ void AntDescriptionsItem::setContentWidget(QWidget* widget)
     if (m_contentWidget == widget) return;
     if (m_contentWidget) m_contentWidget->setParent(nullptr);
     m_contentWidget = widget;
+    if (m_contentWidget)
+    {
+        m_contentWidget->setParent(this);
+        m_contentWidget->hide();
+    }
     Q_EMIT contentChanged(m_content);
 }
 
