@@ -306,7 +306,7 @@ private:
 AntTimePicker::AntTimePicker(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntTimePickerStyle(style()));
+    installAntStyle<AntTimePickerStyle>(this);
     setAttribute(Qt::WA_Hover, true);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAutoFillBackground(false);

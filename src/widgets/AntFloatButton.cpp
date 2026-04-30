@@ -12,7 +12,7 @@
 AntFloatButton::AntFloatButton(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntFloatButtonStyle(style()));
+    installAntStyle<AntFloatButtonStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setFixedSize(40, 40);

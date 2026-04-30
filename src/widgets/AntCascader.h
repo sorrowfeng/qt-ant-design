@@ -25,6 +25,9 @@ struct AntCascaderOption
     bool isLeaf = true;
 };
 
+Q_DECLARE_METATYPE(AntCascaderOption)
+Q_DECLARE_METATYPE(QVector<AntCascaderOption>)
+
 class AntCascader : public QWidget
 {
     Q_OBJECT

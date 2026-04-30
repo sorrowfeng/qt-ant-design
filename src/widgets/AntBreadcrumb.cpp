@@ -12,7 +12,7 @@
 AntBreadcrumb::AntBreadcrumb(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntBreadcrumbStyle(style()));
+    installAntStyle<AntBreadcrumbStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 }

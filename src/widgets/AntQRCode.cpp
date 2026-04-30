@@ -10,7 +10,7 @@
 AntQRCode::AntQRCode(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntQRCodeStyle(style()));
+    installAntStyle<AntQRCodeStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 }

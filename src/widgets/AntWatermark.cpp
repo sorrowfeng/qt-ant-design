@@ -8,7 +8,7 @@
 AntWatermark::AntWatermark(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntWatermarkStyle(style()));
+    installAntStyle<AntWatermarkStyle>(this);
     setAttribute(Qt::WA_TransparentForMouseEvents, false);
 }
 

@@ -13,7 +13,7 @@
 AntSkeleton::AntSkeleton(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntSkeletonStyle(style()));
+    installAntStyle<AntSkeletonStyle>(this);
     setAttribute(Qt::WA_Hover, false);
 
     m_timer = new QTimer(this);

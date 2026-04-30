@@ -13,7 +13,7 @@
 AntCard::AntCard(QWidget* parent)
     : QFrame(parent)
 {
-    setStyle(new AntCardStyle(style()));
+    installAntStyle<AntCardStyle>(this);
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     setFrameShape(QFrame::NoFrame);

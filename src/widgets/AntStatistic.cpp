@@ -12,7 +12,7 @@
 AntStatistic::AntStatistic(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntStatisticStyle(style()));
+    installAntStyle<AntStatisticStyle>(this);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 

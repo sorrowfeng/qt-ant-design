@@ -88,7 +88,7 @@ void AntDescriptionsItem::setContentWidget(QWidget* widget)
 AntDescriptions::AntDescriptions(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntDescriptionsStyle(style()));
+    installAntStyle<AntDescriptionsStyle>(this);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_root = new QVBoxLayout(this);
     m_root->setContentsMargins(0, 0, 0, 0);

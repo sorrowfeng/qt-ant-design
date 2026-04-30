@@ -44,7 +44,7 @@ int compareSortValues(const QVariant& left, const QVariant& right)
 AntTable::AntTable(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntTableStyle(style()));
+    installAntStyle<AntTableStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 }

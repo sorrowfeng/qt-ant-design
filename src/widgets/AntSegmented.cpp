@@ -57,7 +57,7 @@ int segmentWidth(const AntSegmentedOption& option, const QFontMetrics& fm, Ant::
 AntSegmented::AntSegmented(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntSegmentedStyle(style()));
+    installAntStyle<AntSegmentedStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);

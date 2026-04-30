@@ -49,7 +49,7 @@ QPainterPath cardTabPath(const QRectF& rect, Ant::TabsPlacement placement, qreal
 AntTabs::AntTabs(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntTabsStyle(style()));
+    installAntStyle<AntTabsStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 

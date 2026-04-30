@@ -12,7 +12,7 @@
 AntResult::AntResult(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntResultStyle(style()));
+    installAntStyle<AntResultStyle>(this);
 }
 
 AntResult::AntResult(const QString& title, QWidget* parent)

@@ -84,3 +84,12 @@ protected:
     // The base implementation draws nothing (returns false).
     virtual bool drawWidget(QWidget* widget, QPaintEvent* event);
 };
+
+template <typename StyleType, typename WidgetType>
+StyleType* installAntStyle(WidgetType* widget)
+{
+    auto* antStyle = new StyleType(widget->style());
+    antStyle->setParent(widget);
+    widget->setStyle(antStyle);
+    return antStyle;
+}

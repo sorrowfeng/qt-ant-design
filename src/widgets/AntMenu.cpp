@@ -95,7 +95,7 @@ class AntMenu::SubMenuPopup : public QFrame
 {
 public:
     explicit SubMenuPopup(AntMenu* owner)
-        : QFrame(nullptr, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+        : QFrame(owner, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
           m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
@@ -214,7 +214,7 @@ private:
 AntMenu::AntMenu(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntMenuStyle(style()));
+    installAntStyle<AntMenuStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
@@ -231,7 +231,7 @@ AntMenu::~AntMenu()
     }
     if (m_subMenuPopup)
     {
-        m_subMenuPopup->deleteLater();
+        delete m_subMenuPopup;
         m_subMenuPopup = nullptr;
     }
 }

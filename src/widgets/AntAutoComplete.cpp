@@ -136,7 +136,7 @@ AntAutoComplete::AntAutoComplete(QWidget* parent)
     });
 
     // Popup — ToolTip avoids stealing keyboard focus from the lineEdit
-    m_popup = new SuggestionPopupFrame(nullptr, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    m_popup = new SuggestionPopupFrame(this, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     m_popup->setAttribute(Qt::WA_TranslucentBackground);
     m_popup->setAttribute(Qt::WA_ShowWithoutActivating);
     m_popup->setMouseTracking(true);

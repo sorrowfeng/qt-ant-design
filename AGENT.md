@@ -36,7 +36,7 @@
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：`20 / 20` CTest 目标在 Debug 下通过（最近一次全量验证：`2026-04-30`）
+- 测试状态：`22 / 22` CTest 目标在 Debug 下通过（最近一次全量验证：`2026-04-30`）
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -351,7 +351,7 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 - 参考页截图使用 Playwright，例如：
   - `npx playwright screenshot --wait-for-timeout=4000 --viewport-size "1280,900" "file:///D:/Project/GitProject/qt-ant-design/docs/ant-design-reference.html" build/<component>-reference-full.png`
 - Qt 侧截图优先使用 `build/visual-capture/` 下的临时 helper 输出 `build/<component>-qt.png`；截图 helper、PNG、拼图都属于 `build/` 产物，不提交
-- Windows 下 Qt `offscreen` 平台可能把文字渲染成方块；遇到时使用原生 Windows 平台截图。若临时 helper 保存 PNG 后因 QProxyStyle 析构崩溃，可保存成功后立即退出进程
+- Windows 下 Qt `offscreen` 平台可能把文字渲染成方块；遇到时使用原生 Windows 平台截图。
 - 差异必须先归因：控件本体问题在当前控件修；容器、页面边距、卡片留白等归到对应组件审查；参考示例缺状态则先补示例/记录 `Needs fix`
 - 状态含义：`Pass` 表示已截图对比且无控件本体差异；`Needs visual QA` 表示状态已覆盖但待截图确认；`Needs fix` 表示仍有控件差异；`Blocked` 表示无法截图或参考缺失
 - 当前矩阵状态：可对比的 Ant Design 标准组件为 `Pass`，Qt 桌面扩展为 `Local Pass`。后续视觉工作按用户发现的问题逐项复核，不再从“待审计队列”推进。
@@ -379,10 +379,10 @@ cmake --install build --config Debug
 项目使用 QTest 框架进行单元测试，覆盖所有 82 个公开组件的属性、getter/setter 和信号验证。
 
 - **测试框架**：Qt6::Test（QTest + QSignalSpy）
-- **测试数量**：20 个测试可执行文件
+- **测试数量**：22 个测试可执行文件
 - **覆盖组件**：82 个公开组件全部覆盖，内部 helper 随宿主组件测试
 - **运行方式**：`ctest -C Debug --output-on-failure`
-- **最近全量结果**：`20 / 20` 通过（Debug，2026-04-30）
+- **最近全量结果**：`22 / 22` 通过（Debug，2026-04-30）
 
 ### 测试文件结构
 
@@ -408,7 +408,9 @@ tests/
 ├── TestAntModal.cpp            # Modal 属性/命令式 API
 ├── TestAntNavigation.cpp       # Breadcrumb, Dropdown, Menu, Pagination, Steps, Tabs, Anchor
 ├── TestAntLayout.cpp           # Divider, Flex, Grid, Space, Layout, Masonry, Affix
-└── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, NavItem, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker
+├── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, NavItem, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker
+├── TestAntObjectTree.cpp       # Public widget parent ownership, style ownership, and parent-driven destruction
+└── TestAntMetaProperties.cpp   # Every public control's own Q_PROPERTY read/write + NOTIFY coverage through Qt meta-object APIs
 ```
 
 ### 测试模式
@@ -429,7 +431,7 @@ private slots:
 
 void TestAntXxx::propertiesAndSignals()
 {
-    auto* w = new AntXxx;           // 堆分配，不 delete（避免 QProxyStyle 析构崩溃）
+    auto* w = new AntXxx;           // 属性测试保持简单生命周期，对象树析构由 TestAntObjectTree 覆盖
     QCOMPARE(w->property(), default);  // 验证默认值
 
     QSignalSpy spy(w, &AntXxx::propertyChanged);
@@ -444,9 +446,9 @@ QTEST_MAIN(TestAntXxx)
 
 ### 关键注意事项
 
-1. **单测试函数模式**：由于 QProxyStyle 析构在 QTest 环境中会崩溃，所有测试必须使用单个 `propertiesAndSignals()` 函数，避免多个测试槽之间 widget 构造/析构的冲突。
+1. **单测试函数模式**：属性测试优先保持单个 `propertiesAndSignals()` 函数，减少 UI 状态、主题状态和事件队列互相影响。
 
-2. **堆分配不删除**：widget 必须用 `new` 创建且不调用 `delete`，让进程退出时统一清理。
+2. **对象树析构**：`AntStyleBase` 会为 `QProxyStyle` 创建独立 base style；组件 style 应挂到对应控件 parent。新增生命周期测试应优先使用 parent-owned 控件并删除父对象，参考 `TestAntObjectTree`。
 
 3. **信号验证**：设置新值必须与当前值不同，否则 setter 会提前返回不发射信号。
 

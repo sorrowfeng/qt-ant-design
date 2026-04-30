@@ -49,7 +49,7 @@ bool isBottomPlacement(Ant::TooltipPlacement placement)
 AntTooltip::AntTooltip(QWidget* parent)
     : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
 {
-    setStyle(new AntTooltipStyle(style()));
+    installAntStyle<AntTooltipStyle>(this);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
     setAttribute(Qt::WA_DeleteOnClose, false);

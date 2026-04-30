@@ -10,7 +10,7 @@
 AntSpace::AntSpace(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntSpaceStyle(style()));
+    installAntStyle<AntSpaceStyle>(this);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
     m_layout = new QHBoxLayout(this);

@@ -291,7 +291,7 @@ void AntLayoutSider::syncTriggerGeometry()
 AntLayout::AntLayout(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntLayoutStyle(style()));
+    installAntStyle<AntLayoutStyle>(this);
 }
 
 bool AntLayout::hasSider() const { return m_hasSider; }

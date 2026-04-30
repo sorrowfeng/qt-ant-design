@@ -32,7 +32,7 @@ constexpr int SectionGap = 12;
 AntUpload::AntUpload(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntUploadStyle(style()));
+    installAntStyle<AntUploadStyle>(this);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAutoFillBackground(false);
     setMouseTracking(true);

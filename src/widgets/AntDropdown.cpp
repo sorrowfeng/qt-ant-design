@@ -42,7 +42,7 @@ class AntDropdown::PopupFrame : public QFrame
 {
 public:
     explicit PopupFrame(AntDropdown* owner)
-        : QFrame(nullptr, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+        : QFrame(owner, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
         , m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
@@ -146,7 +146,7 @@ private:
 AntDropdown::AntDropdown(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntDropdownStyle(style()));
+    installAntStyle<AntDropdownStyle>(this);
     m_popup = new PopupFrame(this);
     auto* layout = new QVBoxLayout(m_popup);
     layout->setContentsMargins(12, 12, 12, 12);
@@ -215,7 +215,8 @@ AntDropdown::~AntDropdown()
     uninstallTarget();
     if (m_popup)
     {
-        m_popup->deleteLater();
+        delete m_popup;
+        m_popup = nullptr;
     }
 }
 

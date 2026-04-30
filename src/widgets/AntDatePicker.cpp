@@ -308,7 +308,7 @@ private:
 AntDatePicker::AntDatePicker(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntDatePickerStyle(style()));
+    installAntStyle<AntDatePickerStyle>(this);
     setAttribute(Qt::WA_Hover, true);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAutoFillBackground(false);

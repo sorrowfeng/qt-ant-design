@@ -387,7 +387,7 @@ QString normalizedIconBaseName(const QString& iconName, Ant::IconTheme* parsedTh
 AntIcon::AntIcon(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntIconStyle(style()));
+    installAntStyle<AntIconStyle>(this);
     setAttribute(Qt::WA_TransparentForMouseEvents);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     m_spinTimer.setInterval(16);

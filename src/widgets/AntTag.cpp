@@ -11,7 +11,7 @@
 AntTag::AntTag(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntTagStyle(style()));
+    installAntStyle<AntTagStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);

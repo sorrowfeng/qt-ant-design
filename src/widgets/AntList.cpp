@@ -496,7 +496,7 @@ void AntListItem::syncLayout()
 AntList::AntList(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntListStyle(style()));
+    installAntStyle<AntListStyle>(this);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 

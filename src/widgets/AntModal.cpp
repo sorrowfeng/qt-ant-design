@@ -116,7 +116,7 @@ QRect fallbackGeometry()
 AntModal::AntModal(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntModalStyle(style()));
+    installAntStyle<AntModalStyle>(this);
     setAttribute(Qt::WA_StyledBackground, false);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_DeleteOnClose, false);

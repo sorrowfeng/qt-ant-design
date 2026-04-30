@@ -25,7 +25,7 @@ constexpr int ScrollStep = 40;
 AntTree::AntTree(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntTreeStyle(style()));
+    installAntStyle<AntTreeStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setMinimumWidth(120);

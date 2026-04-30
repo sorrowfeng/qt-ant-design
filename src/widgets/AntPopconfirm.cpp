@@ -11,7 +11,7 @@
 AntPopconfirm::AntPopconfirm(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntPopconfirmStyle(style()));
+    installAntStyle<AntPopconfirmStyle>(this);
     m_popover = new AntPopover(this);
     m_popover->setTrigger(Ant::PopoverTrigger::Click);
     m_popover->setTitle(QString());

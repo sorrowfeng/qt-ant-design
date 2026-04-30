@@ -159,7 +159,8 @@ AntSelect::~AntSelect()
 {
     if (m_popup)
     {
-        m_popup->deleteLater();
+        delete m_popup;
+        m_popup = nullptr;
     }
 }
 

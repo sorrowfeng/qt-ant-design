@@ -45,3 +45,9 @@ add_ant_test(TestAntLayout)
 
 # Qt Extensions (18 widgets)
 add_ant_test(TestAntQtExtensions)
+
+# Object tree ownership
+add_ant_test(TestAntObjectTree)
+
+# Meta-property coverage
+add_ant_test(TestAntMetaProperties)

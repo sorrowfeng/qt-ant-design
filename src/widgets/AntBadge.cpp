@@ -60,7 +60,7 @@ private:
 AntBadge::AntBadge(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntBadgeStyle(style()));
+    installAntStyle<AntBadgeStyle>(this);
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 

@@ -57,7 +57,7 @@ AntPopupMotion::Placement notificationMotionPlacement(Ant::Placement placement)
 AntNotification::AntNotification(QWidget* parent)
     : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
 {
-    setStyle(new AntNotificationStyle(style()));
+    installAntStyle<AntNotificationStyle>(this);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
     setAttribute(Qt::WA_DeleteOnClose, true);

@@ -53,7 +53,7 @@ void drawProgressStatusIcon(QPainter& painter, const QRectF& rect, Ant::Progress
 AntProgress::AntProgress(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntProgressStyle(style()));
+    installAntStyle<AntProgressStyle>(this);
     m_activeTimer = new QTimer(this);
     connect(m_activeTimer, &QTimer::timeout, this, [this]() {
         m_activeOffset = (m_activeOffset + 6) % 120;

@@ -18,7 +18,7 @@ class AntSelectPopup : public QFrame
 {
 public:
     explicit AntSelectPopup(AntSelect* owner)
-        : QFrame(nullptr, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+        : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
           m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);

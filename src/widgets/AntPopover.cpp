@@ -46,7 +46,7 @@ bool isBottomPlacement(Ant::TooltipPlacement placement)
 AntPopover::AntPopover(QWidget* parent)
     : QWidget(parent, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
 {
-    setStyle(new AntPopoverStyle(style()));
+    installAntStyle<AntPopoverStyle>(this);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setMouseTracking(true);
 

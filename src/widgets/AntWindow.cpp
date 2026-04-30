@@ -24,7 +24,7 @@ AntWindow::AntWindow(QWidget* parent)
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_StyledBackground, false);
     setAttribute(Qt::WA_Hover, true);
-    setStyle(new AntWindowStyle(style()));
+    installAntStyle<AntWindowStyle>(this);
     setMinimumSize(400, 300);
     syncTheme();
 

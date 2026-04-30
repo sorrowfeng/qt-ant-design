@@ -186,7 +186,7 @@ private:
 AntDrawer::AntDrawer(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntDrawerStyle(style()));
+    installAntStyle<AntDrawerStyle>(this);
     setAttribute(Qt::WA_StyledBackground, false);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_DeleteOnClose, false);

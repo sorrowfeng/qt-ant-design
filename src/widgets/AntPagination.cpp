@@ -15,7 +15,7 @@
 AntPagination::AntPagination(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntPaginationStyle(style()));
+    installAntStyle<AntPaginationStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 }

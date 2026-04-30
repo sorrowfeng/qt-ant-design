@@ -10,7 +10,7 @@
 AntEmpty::AntEmpty(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntEmptyStyle(style()));
+    installAntStyle<AntEmptyStyle>(this);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 

@@ -10,7 +10,7 @@
 AntStatusBar::AntStatusBar(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntStatusBarStyle(style()));
+    installAntStyle<AntStatusBarStyle>(this);
     setMouseTracking(true);
     setFixedHeight(28);
 }

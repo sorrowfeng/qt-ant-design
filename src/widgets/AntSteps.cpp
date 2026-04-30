@@ -10,7 +10,7 @@
 AntSteps::AntSteps(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntStepsStyle(style()));
+    installAntStyle<AntStepsStyle>(this);
     setMouseTracking(true);
 }
 

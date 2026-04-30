@@ -15,7 +15,7 @@
 AntAlert::AntAlert(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntAlertStyle(style()));
+    installAntStyle<AntAlertStyle>(this);
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);

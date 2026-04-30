@@ -9,7 +9,7 @@
 AntTimeline::AntTimeline(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntTimelineStyle(style()));
+    installAntStyle<AntTimelineStyle>(this);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 

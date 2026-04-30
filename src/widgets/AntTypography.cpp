@@ -16,7 +16,7 @@
 AntTypography::AntTypography(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntTypographyStyle(style()));
+    installAntStyle<AntTypographyStyle>(this);
     setMouseTracking(true);
 }
 

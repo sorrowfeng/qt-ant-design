@@ -10,7 +10,7 @@
 AntDivider::AntDivider(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntDividerStyle(style()));
+    installAntStyle<AntDividerStyle>(this);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 

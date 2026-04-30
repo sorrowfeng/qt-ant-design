@@ -12,7 +12,7 @@
 AntAvatar::AntAvatar(QWidget* parent)
     : QWidget(parent)
 {
-    setStyle(new AntAvatarStyle(style()));
+    installAntStyle<AntAvatarStyle>(this);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
