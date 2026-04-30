@@ -6,6 +6,7 @@ class QListWidget;
 class AntButton;
 class QMouseEvent;
 class QPaintEvent;
+class QWheelEvent;
 
 class AntTransfer : public QWidget
 {
@@ -31,11 +32,18 @@ Q_SIGNALS:
 private:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void wheelEvent(QWheelEvent* event) override;
 
     void doTransfer(bool toTarget);
     void updateButtons();
     int rowAt(const QPoint& pos, bool sourcePanel) const;
     QRect panelRect(bool sourcePanel) const;
+    QRect headerCheckRect(bool sourcePanel) const;
+    int visibleRowCount() const;
+    int maxScrollOffset(bool sourcePanel) const;
+    int scrollOffset(bool sourcePanel) const;
+    void setScrollOffset(bool sourcePanel, int offset);
+    void togglePanelSelection(bool sourcePanel);
 
     QListWidget* m_sourceList = nullptr;
     QListWidget* m_targetList = nullptr;
@@ -43,4 +51,6 @@ private:
     AntButton* m_toSourceBtn = nullptr;
     QStringList m_selectedSourceItems;
     QStringList m_selectedTargetItems;
+    int m_sourceScrollOffset = 0;
+    int m_targetScrollOffset = 0;
 };

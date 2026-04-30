@@ -1,5 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QCoreApplication>
+#include <QWheelEvent>
 #include "widgets/AntCascader.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntTimePicker.h"
@@ -159,6 +161,25 @@ void TestAntDataEntryB::propertiesAndSignals()
     w5->setTargetItems({"A"});
     QCOMPARE(w5->targetItems().size(), 1);
     QVERIFY(itemsSpy.count() >= 1);
+
+    auto* allTransfer = new AntTransfer;
+    allTransfer->setSourceItems({"A", "B", "C"});
+    allTransfer->resize(allTransfer->sizeHint());
+    QTest::mouseClick(allTransfer, Qt::LeftButton, Qt::NoModifier, QPoint(20, 20));
+    QTest::mouseClick(allTransfer, Qt::LeftButton, Qt::NoModifier, QPoint(200, 86));
+    QCOMPARE(allTransfer->sourceItems().size(), 0);
+    QCOMPARE(allTransfer->targetItems(), QStringList({"A", "B", "C"}));
+
+    auto* scrollTransfer = new AntTransfer;
+    scrollTransfer->setSourceItems({"A", "B", "C", "D", "E", "F", "G"});
+    scrollTransfer->resize(scrollTransfer->sizeHint());
+    const QPointF wheelPos(90, 72);
+    QWheelEvent wheelEvent(wheelPos, wheelPos, QPoint(), QPoint(0, -120),
+                           Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+    QCoreApplication::sendEvent(scrollTransfer, &wheelEvent);
+    QTest::mouseClick(scrollTransfer, Qt::LeftButton, Qt::NoModifier, QPoint(20, 56));
+    QTest::mouseClick(scrollTransfer, Qt::LeftButton, Qt::NoModifier, QPoint(200, 86));
+    QCOMPARE(scrollTransfer->targetItems(), QStringList({"B"}));
 
     // AntTreeSelect
     auto* w6 = new AntTreeSelect;

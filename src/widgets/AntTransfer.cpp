@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 
 #include <algorithm>
 #include <utility>
@@ -14,6 +15,15 @@
 #include "core/AntStyleBase.h"
 #include "core/AntTheme.h"
 #include "styles/AntIconPainter.h"
+
+namespace
+{
+constexpr int kPanelWidth = 180;
+constexpr int kPanelHeight = 200;
+constexpr int kButtonColumnWidth = 40;
+constexpr int kHeaderHeight = 40;
+constexpr int kRowHeight = 32;
+} // namespace
 
 AntTransfer::AntTransfer(QWidget* parent)
     : QWidget(parent)
@@ -98,6 +108,7 @@ void AntTransfer::setSourceItems(const QStringList& items)
 {
     m_sourceList->clear();
     m_sourceList->addItems(items);
+    setScrollOffset(true, m_sourceScrollOffset);
     const QStringList selectedSource = m_selectedSourceItems;
     for (const QString& selected : selectedSource)
     {
@@ -114,6 +125,7 @@ void AntTransfer::setTargetItems(const QStringList& items)
 {
     m_targetList->clear();
     m_targetList->addItems(items);
+    setScrollOffset(false, m_targetScrollOffset);
     const QStringList selectedTarget = m_selectedTargetItems;
     for (const QString& selected : selectedTarget)
     {
@@ -144,8 +156,6 @@ void AntTransfer::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    const int panelW = 180;
-    const int headerH = 40;
     const QRect sourceRect = panelRect(true);
     const QRect targetRect = panelRect(false);
 
@@ -175,11 +185,12 @@ void AntTransfer::paintEvent(QPaintEvent* event)
             token.borderRadius, token.borderRadius);
 
         painter.setPen(QPen(token.colorSplit, token.lineWidth));
-        painter.drawLine(rect.left(), rect.top() + headerH, rect.right(), rect.top() + headerH);
+        painter.drawLine(rect.left(), rect.top() + kHeaderHeight, rect.right(), rect.top() + kHeaderHeight);
 
         const bool hasSelection = !selectedItems.isEmpty();
+        const bool allSelected = !items.isEmpty() && selectedItems.size() >= items.size();
         drawCheckBox(QRect(rect.left() + 12, rect.top() + 12, 16, 16), hasSelection,
-            hasSelection && selectedItems.size() < items.size());
+            hasSelection && !allSelected);
         QFont headerFont = painter.font();
         headerFont.setPixelSize(token.fontSize);
         painter.setFont(headerFont);
@@ -192,22 +203,25 @@ void AntTransfer::paintEvent(QPaintEvent* event)
         const QString countText = hasSelection
             ? QStringLiteral("%1/%2 items").arg(selectedItems.size()).arg(items.size())
             : QStringLiteral("%1 item%2").arg(items.size()).arg(items.size() <= 1 ? QString() : QStringLiteral("s"));
-        painter.drawText(QRect(rect.left() + 50, rect.top(), rect.width() - 62, headerH),
+        painter.drawText(QRect(rect.left() + 50, rect.top(), rect.width() - 62, kHeaderHeight),
                          Qt::AlignVCenter | Qt::AlignLeft, countText);
 
         if (items.isEmpty())
         {
             painter.setPen(token.colorTextTertiary);
-            painter.drawText(rect.adjusted(0, headerH, 0, 0), Qt::AlignCenter, QStringLiteral("No data"));
+            painter.drawText(rect.adjusted(0, kHeaderHeight, 0, 0), Qt::AlignCenter, QStringLiteral("No data"));
             return;
         }
 
         const int itemCount = static_cast<int>(items.size());
-        const int visible = std::min(5, itemCount);
+        const bool sourcePanel = rect.left() == sourceRect.left();
+        const int offset = scrollOffset(sourcePanel);
+        const int visible = std::min(visibleRowCount(), itemCount - offset);
         for (int i = 0; i < visible; ++i)
         {
-            const QRect row(rect.left(), rect.top() + headerH + i * 32, rect.width(), 32);
-            const bool selected = selectedItems.contains(items.at(i));
+            const int itemIndex = offset + i;
+            const QRect row(rect.left(), rect.top() + kHeaderHeight + i * kRowHeight, rect.width(), kRowHeight);
+            const bool selected = selectedItems.contains(items.at(itemIndex));
             if (selected)
             {
                 painter.setPen(Qt::NoPen);
@@ -217,18 +231,21 @@ void AntTransfer::paintEvent(QPaintEvent* event)
             drawCheckBox(QRect(row.left() + 12, row.top() + 8, 16, 16), selected);
             painter.setPen(token.colorText);
             painter.drawText(QRect(row.left() + 38, row.top(), row.width() - 46, row.height()),
-                             Qt::AlignVCenter | Qt::AlignLeft, items.at(i));
+                             Qt::AlignVCenter | Qt::AlignLeft, items.at(itemIndex));
         }
 
-        if (itemCount > visible)
+        if (itemCount > visibleRowCount())
         {
-            const QRect scrollTrack(rect.right() - 9, rect.top() + headerH + 8, 4, rect.height() - headerH - 16);
+            const QRect scrollTrack(rect.right() - 9, rect.top() + kHeaderHeight + 8, 4, rect.height() - kHeaderHeight - 16);
             painter.setPen(Qt::NoPen);
             painter.setBrush(token.colorFillSecondary);
             painter.drawRoundedRect(scrollTrack, 2, 2);
-            const int thumbH = std::max(30, scrollTrack.height() * visible / itemCount);
+            const int thumbH = std::max(30, scrollTrack.height() * visibleRowCount() / itemCount);
+            const int maxOffset = maxScrollOffset(sourcePanel);
+            const int thumbTravel = std::max(0, scrollTrack.height() - thumbH);
+            const int thumbY = scrollTrack.top() + (maxOffset <= 0 ? 0 : thumbTravel * offset / maxOffset);
             painter.setBrush(token.colorTextDisabled);
-            painter.drawRoundedRect(QRect(scrollTrack.left(), scrollTrack.top(), scrollTrack.width(), thumbH), 2, 2);
+            painter.drawRoundedRect(QRect(scrollTrack.left(), thumbY, scrollTrack.width(), thumbH), 2, 2);
         }
     };
 
@@ -243,8 +260,8 @@ void AntTransfer::paintEvent(QPaintEvent* event)
         const QColor iconColor = enabled ? token.colorTextLightSolid : token.colorTextDisabled;
         AntIconPainter::drawIcon(painter, iconType, QRectF(rect).adjusted(7, 7, -7, -7), iconColor);
     };
-    drawArrowButton(QRect(panelW + 8, 74, 24, 24), Ant::IconType::Right, !m_selectedSourceItems.isEmpty());
-    drawArrowButton(QRect(panelW + 8, 106, 24, 24), Ant::IconType::Left, !m_selectedTargetItems.isEmpty());
+    drawArrowButton(QRect(kPanelWidth + 8, 74, 24, 24), Ant::IconType::Right, !m_selectedSourceItems.isEmpty());
+    drawArrowButton(QRect(kPanelWidth + 8, 106, 24, 24), Ant::IconType::Left, !m_selectedTargetItems.isEmpty());
 }
 
 void AntTransfer::mousePressEvent(QMouseEvent* event)
@@ -256,6 +273,19 @@ void AntTransfer::mousePressEvent(QMouseEvent* event)
     }
 
     const QPoint pos = event->pos();
+    if (headerCheckRect(true).contains(pos))
+    {
+        togglePanelSelection(true);
+        event->accept();
+        return;
+    }
+    if (headerCheckRect(false).contains(pos))
+    {
+        togglePanelSelection(false);
+        event->accept();
+        return;
+    }
+
     const int sourceRow = rowAt(pos, true);
     if (sourceRow >= 0)
     {
@@ -309,6 +339,40 @@ void AntTransfer::mousePressEvent(QMouseEvent* event)
     QWidget::mousePressEvent(event);
 }
 
+void AntTransfer::wheelEvent(QWheelEvent* event)
+{
+    const QPoint pos = event->position().toPoint();
+    const bool inSource = panelRect(true).contains(pos);
+    const bool inTarget = panelRect(false).contains(pos);
+    if (!inSource && !inTarget)
+    {
+        QWidget::wheelEvent(event);
+        return;
+    }
+
+    const bool sourcePanel = inSource;
+    int steps = -event->angleDelta().y() / 120;
+    if (steps == 0 && event->pixelDelta().y() != 0)
+    {
+        steps = event->pixelDelta().y() > 0 ? -1 : 1;
+    }
+    if (steps == 0)
+    {
+        QWidget::wheelEvent(event);
+        return;
+    }
+
+    const int before = scrollOffset(sourcePanel);
+    setScrollOffset(sourcePanel, before + steps);
+    if (before != scrollOffset(sourcePanel))
+    {
+        update();
+        event->accept();
+        return;
+    }
+    QWidget::wheelEvent(event);
+}
+
 void AntTransfer::doTransfer(bool toTarget)
 {
     QStringList fromItems = toTarget ? sourceItems() : targetItems();
@@ -337,6 +401,8 @@ void AntTransfer::doTransfer(bool toTarget)
         m_sourceList->clear();
         m_sourceList->addItems(toItems);
     }
+    setScrollOffset(true, m_sourceScrollOffset);
+    setScrollOffset(false, m_targetScrollOffset);
     updateButtons();
     update();
     Q_EMIT itemsChanged();
@@ -351,19 +417,61 @@ void AntTransfer::updateButtons()
 int AntTransfer::rowAt(const QPoint& pos, bool sourcePanel) const
 {
     const QRect rect = panelRect(sourcePanel);
-    if (!rect.contains(pos) || pos.y() < rect.top() + 40)
+    if (!rect.contains(pos) || pos.y() < rect.top() + kHeaderHeight)
     {
         return -1;
     }
-    const int row = (pos.y() - rect.top() - 40) / 32;
+    const int row = (pos.y() - rect.top() - kHeaderHeight) / kRowHeight;
     const int count = sourcePanel ? sourceItems().size() : targetItems().size();
-    return row >= 0 && row < std::min(5, count) ? row : -1;
+    const int itemIndex = scrollOffset(sourcePanel) + row;
+    return row >= 0 && row < visibleRowCount() && itemIndex < count ? itemIndex : -1;
 }
 
 QRect AntTransfer::panelRect(bool sourcePanel) const
 {
-    const int panelW = 180;
-    const int panelH = 200;
-    const int buttonColW = 40;
-    return sourcePanel ? QRect(0, 0, panelW, panelH) : QRect(panelW + buttonColW, 0, panelW, panelH);
+    return sourcePanel ? QRect(0, 0, kPanelWidth, kPanelHeight) : QRect(kPanelWidth + kButtonColumnWidth, 0, kPanelWidth, kPanelHeight);
+}
+
+QRect AntTransfer::headerCheckRect(bool sourcePanel) const
+{
+    const QRect rect = panelRect(sourcePanel);
+    return QRect(rect.left() + 8, rect.top() + 8, 24, 24);
+}
+
+int AntTransfer::visibleRowCount() const
+{
+    return (kPanelHeight - kHeaderHeight) / kRowHeight;
+}
+
+int AntTransfer::maxScrollOffset(bool sourcePanel) const
+{
+    const int count = sourcePanel ? sourceItems().size() : targetItems().size();
+    return std::max(0, count - visibleRowCount());
+}
+
+int AntTransfer::scrollOffset(bool sourcePanel) const
+{
+    return sourcePanel ? m_sourceScrollOffset : m_targetScrollOffset;
+}
+
+void AntTransfer::setScrollOffset(bool sourcePanel, int offset)
+{
+    offset = std::clamp(offset, 0, maxScrollOffset(sourcePanel));
+    if (sourcePanel)
+    {
+        m_sourceScrollOffset = offset;
+    }
+    else
+    {
+        m_targetScrollOffset = offset;
+    }
+}
+
+void AntTransfer::togglePanelSelection(bool sourcePanel)
+{
+    const QStringList items = sourcePanel ? sourceItems() : targetItems();
+    QStringList& selectedItems = sourcePanel ? m_selectedSourceItems : m_selectedTargetItems;
+    selectedItems = selectedItems.size() >= items.size() ? QStringList() : items;
+    updateButtons();
+    update();
 }
