@@ -57,7 +57,6 @@ void ExampleWindow::buildSidebar()
     m_sidebar->setFixedWidth(220);
 
     auto* sideLayout = new QVBoxLayout(m_sidebar);
-    sideLayout->setContentsMargins(0, 0, 0, 0);
     sideLayout->setSpacing(0);
 
     auto* brandArea = new QWidget(m_sidebar);
