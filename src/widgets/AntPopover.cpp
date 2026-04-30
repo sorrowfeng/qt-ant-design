@@ -4,6 +4,7 @@
 #include <QHideEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QCursor>
 #include <QScreen>
 #include <QTimer>
 
@@ -58,7 +59,10 @@ AntPopover::AntPopover(QWidget* parent)
     connect(m_closeTimer, &QTimer::timeout, this, [this]() {
         if (m_trigger == Ant::PopoverTrigger::Hover)
         {
-            setOpen(false);
+            if (!isHoveringInteractiveArea())
+            {
+                setOpen(false);
+            }
         }
     });
 }
@@ -261,7 +265,10 @@ bool AntPopover::eventFilter(QObject* watched, QEvent* event)
             if (m_trigger == Ant::PopoverTrigger::Hover)
             {
                 m_closeTimer->stop();
-                m_openTimer->start(120);
+                if (!m_open)
+                {
+                    m_openTimer->start(120);
+                }
             }
             break;
         case QEvent::Leave:
@@ -499,6 +506,20 @@ void AntPopover::uninstallTarget()
         m_target->removeEventFilter(this);
     }
     m_target = nullptr;
+}
+
+bool AntPopover::isHoveringInteractiveArea() const
+{
+    const QPoint globalPos = QCursor::pos();
+    if (m_target)
+    {
+        const QRect targetRect(m_target->mapToGlobal(QPoint(0, 0)), m_target->size());
+        if (targetRect.contains(globalPos))
+        {
+            return true;
+        }
+    }
+    return isVisible() && geometry().contains(globalPos);
 }
 
 Ant::TooltipPlacement AntPopover::resolvedPlacement(const QRect& targetRect, const QRect& screenRect) const

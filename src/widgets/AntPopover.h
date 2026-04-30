@@ -91,6 +91,7 @@ private:
     void syncActionGeometry();
     void installTarget(QWidget* target);
     void uninstallTarget();
+    bool isHoveringInteractiveArea() const;
     Ant::TooltipPlacement resolvedPlacement(const QRect& targetRect, const QRect& screenRect) const;
     QPoint popupTopLeft(const QRect& targetRect, const QSize& popupSize, Ant::TooltipPlacement placement) const;
 
