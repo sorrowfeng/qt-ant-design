@@ -63,6 +63,9 @@ add_ant_test(TestAntMetaProperties)
 # Complex interaction coverage
 add_ant_test(TestAntInteractions)
 
+# Motion and animation coverage
+add_ant_test(TestAntMotion)
+
 # Render smoke coverage
 add_ant_test(TestAntRenderSmoke)
 
