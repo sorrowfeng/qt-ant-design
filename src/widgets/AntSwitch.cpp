@@ -9,6 +9,7 @@
 
 #include "../styles/AntSwitchStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntWave.h"
 
 AntSwitch::AntSwitch(QWidget* parent)
     : QWidget(parent)
@@ -189,6 +190,12 @@ void AntSwitch::mouseReleaseEvent(QMouseEvent* event)
         if (rect().contains(event->pos()))
         {
             setChecked(!m_checked);
+            const Metrics m = metrics();
+            const QRect track((width() - m.trackMinWidth) / 2,
+                              (height() - m.trackHeight) / 2,
+                              m.trackMinWidth,
+                              m.trackHeight);
+            AntWave::triggerRect(this, track, antTheme->tokens().colorTextDisabled, m.trackHeight / 2);
             Q_EMIT clicked(m_checked);
         }
         event->accept();

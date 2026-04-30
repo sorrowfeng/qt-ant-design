@@ -1,6 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
 
+#include "core/AntWave.h"
 #include "widgets/AntSwitch.h"
 
 class TestAntSwitch : public QObject
@@ -47,6 +48,15 @@ void TestAntSwitch::propertiesAndSignals()
     QSize hint = sw->sizeHint();
     QVERIFY(hint.width() > 0);
     QVERIFY(hint.height() > 0);
+
+    auto* host = new QWidget;
+    host->resize(120, 80);
+    auto* clickable = new AntSwitch(host);
+    clickable->move(24, 24);
+    host->show();
+    QVERIFY(QTest::qWaitForWindowExposed(host));
+    QTest::mouseClick(clickable, Qt::LeftButton, Qt::NoModifier, clickable->rect().center());
+    QTRY_VERIFY_WITH_TIMEOUT(!host->findChildren<AntWave*>().isEmpty(), 100);
 }
 
 QTEST_MAIN(TestAntSwitch)
