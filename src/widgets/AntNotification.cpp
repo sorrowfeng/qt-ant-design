@@ -21,7 +21,8 @@
 namespace
 {
 constexpr int NoticeWidth = 384;
-constexpr int ShadowInset = 10;
+constexpr int ShadowInset = 18;
+constexpr int NotificationMotionDistance = 24;
 
 bool isTopPlacement(Ant::Placement placement)
 {
@@ -38,6 +39,19 @@ bool isRightPlacement(Ant::Placement placement)
 {
     return placement == Ant::Placement::TopRight || placement == Ant::Placement::BottomRight;
 }
+
+AntPopupMotion::Placement notificationMotionPlacement(Ant::Placement placement)
+{
+    if (isRightPlacement(placement))
+    {
+        return AntPopupMotion::Placement::Left;
+    }
+    if (isLeftPlacement(placement))
+    {
+        return AntPopupMotion::Placement::Right;
+    }
+    return AntPopupMotion::fromPlacement(placement);
+}
 } // namespace
 
 AntNotification::AntNotification(QWidget* parent)
@@ -52,7 +66,7 @@ AntNotification::AntNotification(QWidget* parent)
     m_closeTimer = new QTimer(this);
     m_closeTimer->setSingleShot(true);
     connect(m_closeTimer, &QTimer::timeout, this, [this]() {
-        AntPopupMotion::close(this, AntPopupMotion::fromPlacement(m_placement));
+        AntPopupMotion::close(this, notificationMotionPlacement(m_placement), NotificationMotionDistance);
     });
 
     m_progressTimer = new QTimer(this);
@@ -109,7 +123,7 @@ AntNotification* AntNotification::create(const QString& title,
     });
 
     relayoutNotifications(anchor);
-    AntPopupMotion::show(notification, AntPopupMotion::fromPlacement(placement));
+    AntPopupMotion::show(notification, notificationMotionPlacement(placement), NotificationMotionDistance);
     return notification;
 }
 
@@ -156,7 +170,9 @@ void AntNotification::closeAll()
     {
         if (notification)
         {
-            AntPopupMotion::close(notification, AntPopupMotion::fromPlacement(notification->placement()));
+            AntPopupMotion::close(notification,
+                                  notificationMotionPlacement(notification->placement()),
+                                  NotificationMotionDistance);
         }
     }
 }
@@ -382,7 +398,7 @@ void AntNotification::mousePressEvent(QMouseEvent* event)
     {
         if (m_closable && closeButtonRect().contains(event->position()))
         {
-            AntPopupMotion::close(this, AntPopupMotion::fromPlacement(m_placement));
+            AntPopupMotion::close(this, notificationMotionPlacement(m_placement), NotificationMotionDistance);
             event->accept();
             return;
         }

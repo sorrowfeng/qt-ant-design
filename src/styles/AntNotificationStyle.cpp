@@ -14,7 +14,7 @@
 namespace
 {
 constexpr int NoticeWidth = 384;
-constexpr int ShadowInset = 10;
+constexpr int ShadowInset = 18;
 
 QRectF computeNoticeRect(const QRect& rect)
 {
@@ -44,6 +44,28 @@ QRectF computeCloseButtonRect(const QRectF& card)
     const auto& token = antTheme->tokens();
     const qreal size = token.controlHeightLG * 0.55;
     return QRectF(card.right() - token.paddingLG - size, card.top() + token.paddingMD - 4, size, size);
+}
+
+void drawShadowLayer(QPainter& painter, const QRectF& card, int blur, qreal yOffset, qreal alpha, qreal radius)
+{
+    QColor shadow = antTheme->tokens().colorShadow;
+    for (int i = blur; i >= 1; --i)
+    {
+        const qreal progress = 1.0 - static_cast<qreal>(i) / static_cast<qreal>(blur);
+        shadow.setAlphaF(alpha * progress * progress);
+        painter.setPen(QPen(shadow, 1));
+        painter.setBrush(Qt::NoBrush);
+        const QRectF layer = card.adjusted(-i, -i + yOffset, i, i + yOffset);
+        painter.drawRoundedRect(layer, radius + i, radius + i);
+    }
+}
+
+void drawNotificationShadow(QPainter& painter, const QRectF& card, qreal radius)
+{
+    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    drawShadowLayer(painter, card, 18, 6, dark ? 0.30 : 0.16, radius);
+    drawShadowLayer(painter, card, 10, 2, dark ? 0.22 : 0.10, radius);
+    drawShadowLayer(painter, card, 4, 0, dark ? 0.18 : 0.08, radius);
 }
 
 void drawTypeIcon(QPainter& painter, const QRectF& rect, Ant::MessageType type, const QColor& accentColor, int spinnerAngle)
@@ -189,11 +211,12 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
     // Shadow
-    antTheme->drawEffectShadow(painter, card.toRect(), 14, token.borderRadiusLG, 0.7);
+    drawNotificationShadow(*painter, card, token.borderRadiusLG);
 
     // Card background
     AntStyleBase::drawCrispRoundedRect(painter, card.toRect(),
-        Qt::NoPen, token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
+        QPen(token.colorBorderSecondary, token.lineWidth), token.colorBgElevated,
+        token.borderRadiusLG, token.borderRadiusLG);
 
     const QRectF iconRect(card.left() + token.paddingLG, card.top() + token.padding + 2, 22, 22);
     if (iconVisible)
