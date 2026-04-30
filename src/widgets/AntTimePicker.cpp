@@ -6,7 +6,6 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStringList>
 #include <QWheelEvent>
 

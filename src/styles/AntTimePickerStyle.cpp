@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntTimePicker.h"
 
@@ -246,11 +247,10 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
         painter->setPen(startColor);
         painter->drawText(startRect, Qt::AlignVCenter | Qt::AlignLeft, startText);
 
-        painter->setPen(token.colorTextTertiary);
-        const QPointF arrowCenter = arrowRect.center();
-        painter->drawLine(arrowCenter + QPointF(-5, 0), arrowCenter + QPointF(5, 0));
-        painter->drawLine(arrowCenter + QPointF(1, -4), arrowCenter + QPointF(5, 0));
-        painter->drawLine(arrowCenter + QPointF(1, 4), arrowCenter + QPointF(5, 0));
+        AntIconPainter::drawIcon(*painter,
+                                 Ant::IconType::Right,
+                                 arrowRect.adjusted(4, 4, -4, -4),
+                                 token.colorTextTertiary);
 
         painter->setPen(endColor);
         painter->drawText(endRect, Qt::AlignVCenter | Qt::AlignLeft, endText);

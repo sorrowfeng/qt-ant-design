@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSteps.h"
 
@@ -181,19 +182,9 @@ QColor stepsStatusColor(Ant::StepStatus status)
     }
 }
 
-QString stepsIconText(Ant::StepStatus status, int index)
+QString stepsIconText(int index)
 {
-    switch (status)
-    {
-    case Ant::StepStatus::Finish:
-        return QStringLiteral("✓");
-    case Ant::StepStatus::Error:
-        return QStringLiteral("×");
-    case Ant::StepStatus::Process:
-    case Ant::StepStatus::Wait:
-    default:
-        return QString::number(index + 1);
-    }
+    return QString::number(index + 1);
 }
 
 QFont stepsTitleFont(const QFont& baseFont, const StepsMetrics& metrics, Ant::StepStatus status)
@@ -311,13 +302,22 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         painter->setBrush(fill);
         painter->drawEllipse(circle);
 
-        // Icon text
-        QFont iconFont = painter->font();
-        iconFont.setPixelSize(14);
-        iconFont.setWeight(QFont::DemiBold);
-        painter->setFont(iconFont);
-        painter->setPen(numberColor);
-        painter->drawText(circle, Qt::AlignCenter, stepsIconText(status, i));
+        // Icon / number
+        if (status == Ant::StepStatus::Finish || status == Ant::StepStatus::Error)
+        {
+            const Ant::IconType iconType = status == Ant::StepStatus::Error ? Ant::IconType::Close : Ant::IconType::Check;
+            const QColor iconColor = status == Ant::StepStatus::Finish ? token.colorPrimary : token.colorTextLightSolid;
+            AntIconPainter::drawIcon(*painter, iconType, QRectF(circle).adjusted(8, 8, -8, -8), iconColor);
+        }
+        else
+        {
+            QFont iconFont = painter->font();
+            iconFont.setPixelSize(14);
+            iconFont.setWeight(QFont::DemiBold);
+            painter->setFont(iconFont);
+            painter->setPen(numberColor);
+            painter->drawText(circle, Qt::AlignCenter, stepsIconText(i));
+        }
 
         // Title
         painter->setFont(titleFontForItem);

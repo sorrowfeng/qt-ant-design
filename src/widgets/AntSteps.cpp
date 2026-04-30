@@ -282,15 +282,6 @@ QColor AntSteps::statusColor(Ant::StepStatus status) const
 
 QString AntSteps::iconText(Ant::StepStatus status, int index) const
 {
-    switch (status)
-    {
-    case Ant::StepStatus::Finish:
-        return QStringLiteral("✓");
-    case Ant::StepStatus::Error:
-        return QStringLiteral("×");
-    case Ant::StepStatus::Process:
-    case Ant::StepStatus::Wait:
-    default:
-        return QString::number(index + 1);
-    }
+    Q_UNUSED(status)
+    return QString::number(index + 1);
 }

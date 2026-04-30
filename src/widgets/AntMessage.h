@@ -75,7 +75,6 @@ private:
     Ant::Placement m_placement = Ant::Placement::Top;
 
     QColor accentColor() const;
-    QString iconText() const;
     void startTimers();
     void updateLoadingState();
     void drawLoadingIcon(QPainter& painter, const QRectF& rect) const;

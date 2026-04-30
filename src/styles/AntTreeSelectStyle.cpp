@@ -3,9 +3,9 @@
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStyleOption>
 
+#include "styles/AntIconPainter.h"
 #include "widgets/AntTreeSelect.h"
 
 AntTreeSelectStyle::AntTreeSelectStyle(QStyle* style)
@@ -240,23 +240,11 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
         }
         else
         {
-            QPointF c = arrowR.center();
-            painter->setPen(QPen(disabled ? token.colorTextDisabled : token.colorTextTertiary,
-                                 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-            QPainterPath arrow;
-            if (select->isOpen())
-            {
-                arrow.moveTo(c.x() - 5, c.y() + 2);
-                arrow.lineTo(c.x(), c.y() - 3);
-                arrow.lineTo(c.x() + 5, c.y() + 2);
-            }
-            else
-            {
-                arrow.moveTo(c.x() - 5, c.y() - 2);
-                arrow.lineTo(c.x(), c.y() + 3);
-                arrow.lineTo(c.x() + 5, c.y() - 2);
-            }
-            painter->drawPath(arrow);
+            const Ant::IconType arrowIcon = select->isOpen() ? Ant::IconType::Up : Ant::IconType::Down;
+            AntIconPainter::drawIcon(*painter,
+                                     arrowIcon,
+                                     arrowR.adjusted(5, 5, -5, -5),
+                                     disabled ? token.colorTextDisabled : token.colorTextTertiary);
         }
     }
 

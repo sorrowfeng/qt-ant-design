@@ -4,9 +4,9 @@
 
 #include <QEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStyleOption>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntTree.h"
 
@@ -151,24 +151,10 @@ void AntTreeStyle::drawTree(const QStyleOption* option, QPainter* painter, const
             const QRectF arrowRect(x + (ArrowZoneWidth - ArrowSize) / 2.0,
                                    y + (RowHeight - ArrowSize) / 2.0,
                                    ArrowSize, ArrowSize);
-            const QPointF c = arrowRect.center();
-            QPainterPath arrow;
-            if (node->expanded)
-            {
-                arrow.moveTo(c.x() - 4, c.y() - 2);
-                arrow.lineTo(c.x() + 4, c.y() - 2);
-                arrow.lineTo(c.x(), c.y() + 3);
-            }
-            else
-            {
-                arrow.moveTo(c.x() - 2, c.y() - 4);
-                arrow.lineTo(c.x() - 2, c.y() + 4);
-                arrow.lineTo(c.x() + 3, c.y());
-            }
-            arrow.closeSubpath();
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(token.colorTextSecondary);
-            painter->drawPath(arrow);
+            AntIconPainter::drawIcon(*painter,
+                                     node->expanded ? Ant::IconType::Down : Ant::IconType::Right,
+                                     arrowRect.adjusted(-1, -1, 1, 1),
+                                     token.colorTextSecondary);
         }
         x += ArrowZoneWidth;
 
@@ -185,13 +171,10 @@ void AntTreeStyle::drawTree(const QStyleOption* option, QPainter* painter, const
                 AntStyleBase::drawCrispRoundedRect(painter, cbRect.toRect(),
                     Qt::NoPen, token.colorPrimary, token.borderRadiusSM, token.borderRadiusSM);
 
-                QPainterPath check;
-                check.moveTo(cbRect.left() + cbRect.width() * 0.28, cbRect.top() + cbRect.height() * 0.52);
-                check.lineTo(cbRect.left() + cbRect.width() * 0.43, cbRect.top() + cbRect.height() * 0.68);
-                check.lineTo(cbRect.left() + cbRect.width() * 0.74, cbRect.top() + cbRect.height() * 0.32);
-                painter->setPen(QPen(token.colorTextLightSolid, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-                painter->setBrush(Qt::NoBrush);
-                painter->drawPath(check);
+                AntIconPainter::drawIcon(*painter,
+                                         Ant::IconType::Check,
+                                         cbRect.adjusted(3, 3, -3, -3),
+                                         token.colorTextLightSolid);
             }
             else if (node->halfChecked)
             {

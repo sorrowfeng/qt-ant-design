@@ -13,6 +13,7 @@
 #include "AntButton.h"
 #include "core/AntStyleBase.h"
 #include "core/AntTheme.h"
+#include "styles/AntIconPainter.h"
 
 AntTransfer::AntTransfer(QWidget* parent)
     : QWidget(parent)
@@ -35,12 +36,14 @@ AntTransfer::AntTransfer(QWidget* parent)
     // Buttons
     auto* btnCol = new QVBoxLayout();
     btnCol->addStretch();
-    m_toTargetBtn = new AntButton(QStringLiteral(">"));
+    m_toTargetBtn = new AntButton();
     m_toTargetBtn->setButtonType(Ant::ButtonType::Default);
+    m_toTargetBtn->setButtonIconType(Ant::IconType::Right);
     m_toTargetBtn->setFixedSize(32, 32);
     btnCol->addWidget(m_toTargetBtn);
-    m_toSourceBtn = new AntButton(QStringLiteral("<"));
+    m_toSourceBtn = new AntButton();
     m_toSourceBtn->setButtonType(Ant::ButtonType::Default);
+    m_toSourceBtn->setButtonIconType(Ant::IconType::Left);
     m_toSourceBtn->setFixedSize(32, 32);
     btnCol->addWidget(m_toSourceBtn);
     btnCol->addStretch();
@@ -159,8 +162,10 @@ void AntTransfer::paintEvent(QPaintEvent* event)
                 painter.drawLine(box.left() + 4, box.center().y(), box.right() - 4, box.center().y());
                 return;
             }
-            painter.drawLine(box.left() + 3, box.center().y(), box.center().x() - 1, box.bottom() - 4);
-            painter.drawLine(box.center().x() - 1, box.bottom() - 4, box.right() - 3, box.top() + 4);
+            AntIconPainter::drawIcon(painter,
+                                     Ant::IconType::Check,
+                                     QRectF(box).adjusted(3, 3, -3, -3),
+                                     token.colorTextLightSolid);
         }
     };
 
@@ -230,16 +235,16 @@ void AntTransfer::paintEvent(QPaintEvent* event)
     drawPanel(sourceRect, sourceItems(), m_selectedSourceItems);
     drawPanel(targetRect, targetItems(), m_selectedTargetItems);
 
-    auto drawArrowButton = [&](const QRect& rect, const QString& text, bool enabled) {
+    auto drawArrowButton = [&](const QRect& rect, Ant::IconType iconType, bool enabled) {
         AntStyleBase::drawCrispRoundedRect(&painter, rect,
             QPen(enabled ? token.colorPrimary : token.colorBorderDisabled, token.lineWidth),
             enabled ? token.colorPrimary : token.colorBgContainerDisabled,
             token.borderRadiusSM, token.borderRadiusSM);
-        painter.setPen(enabled ? token.colorTextLightSolid : token.colorTextDisabled);
-        painter.drawText(rect, Qt::AlignCenter, text);
+        const QColor iconColor = enabled ? token.colorTextLightSolid : token.colorTextDisabled;
+        AntIconPainter::drawIcon(painter, iconType, QRectF(rect).adjusted(7, 7, -7, -7), iconColor);
     };
-    drawArrowButton(QRect(panelW + 8, 74, 24, 24), QStringLiteral(">"), !m_selectedSourceItems.isEmpty());
-    drawArrowButton(QRect(panelW + 8, 106, 24, 24), QStringLiteral("<"), !m_selectedTargetItems.isEmpty());
+    drawArrowButton(QRect(panelW + 8, 74, 24, 24), Ant::IconType::Right, !m_selectedSourceItems.isEmpty());
+    drawArrowButton(QRect(panelW + 8, 106, 24, 24), Ant::IconType::Left, !m_selectedTargetItems.isEmpty());
 }
 
 void AntTransfer::mousePressEvent(QMouseEvent* event)

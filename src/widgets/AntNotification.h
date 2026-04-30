@@ -137,8 +137,6 @@ private:
     void pauseCloseTimer();
     void resumeCloseTimer();
     void updateSpinnerState();
-    void drawTypeIcon(QPainter& painter, const QRectF& rect) const;
-    void drawSpinner(QPainter& painter, const QRectF& rect) const;
 
     QString m_title;
     QString m_description;

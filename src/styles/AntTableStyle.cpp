@@ -3,10 +3,10 @@
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStyleOption>
 
 #include "core/AntStyleBase.h"
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntTable.h"
 
@@ -355,29 +355,19 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
             {
                 const QRect upRect(arrowX, arrowTop, arrowW, arrowH / 2);
                 const bool upActive = (activeOrder == Ant::TableSortOrder::Ascending);
-                painter->setPen(Qt::NoPen);
-                painter->setBrush(upActive ? token.colorPrimary : token.colorTextTertiary);
-                const int cx = upRect.center().x();
-                QPainterPath path;
-                path.moveTo(cx, upRect.top());
-                path.lineTo(cx - 3, upRect.bottom());
-                path.lineTo(cx + 3, upRect.bottom());
-                path.closeSubpath();
-                painter->drawPath(path);
+                AntIconPainter::drawIcon(*painter,
+                                         Ant::IconType::Up,
+                                         QRectF(upRect).adjusted(1, -1, 1, -1),
+                                         upActive ? token.colorPrimary : token.colorTextTertiary);
             }
             // Down arrow
             {
                 const QRect downRect(arrowX, arrowTop + arrowH / 2, arrowW, arrowH / 2);
                 const bool downActive = (activeOrder == Ant::TableSortOrder::Descending);
-                painter->setPen(Qt::NoPen);
-                painter->setBrush(downActive ? token.colorPrimary : token.colorTextTertiary);
-                const int cx = downRect.center().x();
-                QPainterPath path;
-                path.moveTo(cx, downRect.bottom());
-                path.lineTo(cx - 3, downRect.top());
-                path.lineTo(cx + 3, downRect.top());
-                path.closeSubpath();
-                painter->drawPath(path);
+                AntIconPainter::drawIcon(*painter,
+                                         Ant::IconType::Down,
+                                         QRectF(downRect).adjusted(1, 1, 1, 1),
+                                         downActive ? token.colorPrimary : token.colorTextTertiary);
             }
         }
         else

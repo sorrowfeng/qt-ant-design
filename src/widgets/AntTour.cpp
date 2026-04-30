@@ -85,9 +85,10 @@ public:
         f.setPixelSize(antTheme->tokens().fontSize);
         titleLabel->setFont(f);
         titleLabel->setStyleSheet(QStringLiteral("background: transparent;"));
-        closeBtn = new AntButton(QStringLiteral("×"));
+        closeBtn = new AntButton();
         closeBtn->setButtonType(Ant::ButtonType::Text);
         closeBtn->setButtonSize(Ant::Size::Small);
+        closeBtn->setButtonIconType(Ant::IconType::Close);
         closeBtn->setFixedSize(24, 24);
         titleRow->addWidget(titleLabel);
         titleRow->addStretch();

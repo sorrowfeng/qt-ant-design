@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntDatePicker.h"
 
@@ -242,11 +243,10 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
         painter->drawText(startRect, Qt::AlignVCenter | Qt::AlignLeft, startText);
         painter->setPen(picker->endDate().isValid() ? valueColor : placeholderColor);
         painter->drawText(endRect, Qt::AlignVCenter | Qt::AlignLeft, endText);
-        painter->setPen(token.colorTextDisabled);
-        const QPointF arrowCenter = arrowRect.center();
-        painter->drawLine(arrowCenter + QPointF(-5, 0), arrowCenter + QPointF(5, 0));
-        painter->drawLine(arrowCenter + QPointF(2, -3), arrowCenter + QPointF(5, 0));
-        painter->drawLine(arrowCenter + QPointF(2, 3), arrowCenter + QPointF(5, 0));
+        AntIconPainter::drawIcon(*painter,
+                                 Ant::IconType::Right,
+                                 arrowRect.adjusted(4, 4, -4, -4),
+                                 token.colorTextDisabled);
     }
     else
     {

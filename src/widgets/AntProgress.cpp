@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
+#include "styles/AntIconPainter.h"
 #include "styles/AntProgressStyle.h"
 #include "styles/AntPalette.h"
 
@@ -37,28 +38,15 @@ QColor progressInfoColor(Ant::ProgressStatus status, int percent)
 void drawProgressStatusIcon(QPainter& painter, const QRectF& rect, Ant::ProgressStatus status, int percent)
 {
     const QColor color = progressInfoColor(status, percent);
-    const QPointF c = rect.center();
-    const qreal side = std::min(rect.width(), rect.height());
-    const qreal stroke = std::max<qreal>(1.6, side / 8.0);
-
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(QPen(color, stroke, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    if (status == Ant::ProgressStatus::Exception)
-    {
-        painter.drawLine(QPointF(c.x() - side * 0.24, c.y() - side * 0.24),
-                         QPointF(c.x() + side * 0.24, c.y() + side * 0.24));
-        painter.drawLine(QPointF(c.x() + side * 0.24, c.y() - side * 0.24),
-                         QPointF(c.x() - side * 0.24, c.y() + side * 0.24));
-    }
-    else
-    {
-        painter.drawLine(QPointF(c.x() - side * 0.28, c.y() + side * 0.02),
-                         QPointF(c.x() - side * 0.08, c.y() + side * 0.22));
-        painter.drawLine(QPointF(c.x() - side * 0.08, c.y() + side * 0.22),
-                         QPointF(c.x() + side * 0.30, c.y() - side * 0.26));
-    }
-    painter.restore();
+    const Ant::IconType iconType = status == Ant::ProgressStatus::Exception
+        ? Ant::IconType::CloseCircle
+        : Ant::IconType::CheckCircle;
+    AntIconPainter::drawIcon(painter,
+                             iconType,
+                             rect,
+                             color,
+                             Ant::IconTheme::Filled,
+                             antTheme->tokens().colorTextLightSolid);
 }
 } // namespace
 
@@ -234,11 +222,11 @@ QString AntProgress::infoText() const
 {
     if (m_status == Ant::ProgressStatus::Success || m_percent >= 100)
     {
-        return QStringLiteral("✓");
+        return QString();
     }
     if (m_status == Ant::ProgressStatus::Exception)
     {
-        return QStringLiteral("×");
+        return QString();
     }
     return QStringLiteral("%1%").arg(m_percent);
 }

@@ -7,6 +7,7 @@
 #include <QStyleOption>
 #include <QTextOption>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntNotification.h"
 
@@ -57,47 +58,28 @@ void drawTypeIcon(QPainter& painter, const QRectF& rect, Ant::MessageType type, 
         return;
     }
 
-    painter.save();
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(accentColor);
-
-    if (type == Ant::MessageType::Warning)
+    Ant::IconType iconType = Ant::IconType::InfoCircle;
+    switch (type)
     {
-        QPainterPath triangle;
-        triangle.moveTo(rect.center().x(), rect.top() + 1);
-        triangle.lineTo(rect.right() - 1, rect.bottom() - 1);
-        triangle.lineTo(rect.left() + 1, rect.bottom() - 1);
-        triangle.closeSubpath();
-        painter.drawPath(triangle);
-        painter.setPen(QPen(antTheme->tokens().colorTextLightSolid, 1.6, Qt::SolidLine, Qt::RoundCap));
-        painter.drawLine(QPointF(rect.center().x(), rect.top() + 7), QPointF(rect.center().x(), rect.bottom() - 7));
-        painter.drawPoint(QPointF(rect.center().x(), rect.bottom() - 4));
+    case Ant::MessageType::Success:
+        iconType = Ant::IconType::CheckCircle;
+        break;
+    case Ant::MessageType::Warning:
+        iconType = Ant::IconType::ExclamationCircle;
+        break;
+    case Ant::MessageType::Error:
+        iconType = Ant::IconType::CloseCircle;
+        break;
+    case Ant::MessageType::Info:
+    default:
+        break;
     }
-    else
-    {
-        painter.drawEllipse(rect);
-        painter.setPen(QPen(antTheme->tokens().colorTextLightSolid, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        const QPointF c = rect.center();
-        if (type == Ant::MessageType::Success)
-        {
-            painter.drawLine(QPointF(c.x() - 5, c.y()), QPointF(c.x() - 1, c.y() + 4));
-            painter.drawLine(QPointF(c.x() - 1, c.y() + 4), QPointF(c.x() + 6, c.y() - 5));
-        }
-        else if (type == Ant::MessageType::Error)
-        {
-            painter.drawLine(QPointF(c.x() - 5, c.y() - 5), QPointF(c.x() + 5, c.y() + 5));
-            painter.drawLine(QPointF(c.x() + 5, c.y() - 5), QPointF(c.x() - 5, c.y() + 5));
-        }
-        else
-        {
-            QFont infoFont = painter.font();
-            infoFont.setPixelSize(14);
-            infoFont.setWeight(QFont::DemiBold);
-            painter.setFont(infoFont);
-            painter.drawText(rect, Qt::AlignCenter, QStringLiteral("i"));
-        }
-    }
-    painter.restore();
+    AntIconPainter::drawIcon(painter,
+                             iconType,
+                             rect,
+                             accentColor,
+                             Ant::IconTheme::Filled,
+                             antTheme->tokens().colorTextLightSolid);
 }
 } // namespace
 

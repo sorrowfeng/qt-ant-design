@@ -2,10 +2,10 @@
 
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -137,20 +137,11 @@ void AntCollapsePanel::paintEvent(QPaintEvent*)
     p.drawLine(QPointF(0, headerR.bottom()), QPointF(width(), headerR.bottom()));
 
     // Expand arrow
-    const qreal arrowX = kCollapseIconX;
-    const qreal arrowY = headerR.center().y();
-    const qreal sz = 4;
-    p.setPen(QPen(isEnabled() ? token.colorText : token.colorTextDisabled, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    if (m_expanded)
-    {
-        p.drawLine(QPointF(arrowX - sz, arrowY - sz * 0.5), QPointF(arrowX, arrowY + sz * 0.7));
-        p.drawLine(QPointF(arrowX, arrowY + sz * 0.7), QPointF(arrowX + sz, arrowY - sz * 0.5));
-    }
-    else
-    {
-        p.drawLine(QPointF(arrowX - sz * 0.5, arrowY - sz), QPointF(arrowX + sz * 0.8, arrowY));
-        p.drawLine(QPointF(arrowX + sz * 0.8, arrowY), QPointF(arrowX - sz * 0.5, arrowY + sz));
-    }
+    const QRectF arrowRect(kCollapseIconX - 7, headerR.center().y() - 7, 14, 14);
+    AntIconPainter::drawIcon(p,
+                             m_expanded ? Ant::IconType::Down : Ant::IconType::Right,
+                             arrowRect,
+                             isEnabled() ? token.colorText : token.colorTextDisabled);
 
     // Title text
     QFont f = p.font();

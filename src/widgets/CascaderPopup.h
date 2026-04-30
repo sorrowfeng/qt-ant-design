@@ -5,13 +5,13 @@
 #include <QHideEvent>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QScreen>
 
 #include <algorithm>
 
 #include "AntCascader.h"
 #include "core/AntTheme.h"
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -260,15 +260,14 @@ protected:
 
                 if (hasChildren)
                 {
-                    painter.setPen(QPen(isDisabled ? token.colorTextDisabled : token.colorTextTertiary,
-                                        1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-                    qreal cx = itemRect.right() - kOptionHPadding - kArrowSize / 2.0;
-                    qreal cy = itemRect.center().y();
-                    QPainterPath arrow;
-                    arrow.moveTo(cx - 3, cy - 4);
-                    arrow.lineTo(cx + 3, cy);
-                    arrow.lineTo(cx - 3, cy + 4);
-                    painter.drawPath(arrow);
+                    const QRectF arrowRect(itemRect.right() - kOptionHPadding - kArrowSize,
+                                           itemRect.center().y() - kArrowSize / 2.0,
+                                           kArrowSize,
+                                           kArrowSize);
+                    AntIconPainter::drawIcon(painter,
+                                             Ant::IconType::Right,
+                                             arrowRect,
+                                             isDisabled ? token.colorTextDisabled : token.colorTextTertiary);
                 }
             }
 

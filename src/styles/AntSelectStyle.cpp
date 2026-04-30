@@ -2,11 +2,11 @@
 
 #include <QEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStyleOption>
 
 #include <algorithm>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSelect.h"
 #include <QFontMetrics>
@@ -407,16 +407,10 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
         painter->translate(clearRect.center());
         painter->rotate(select->arrowRotation());
         painter->translate(-clearRect.center());
-        painter->setPen(QPen(disabled ? token.colorTextDisabled : token.colorTextTertiary,
-                             1.7,
-                             Qt::SolidLine,
-                             Qt::RoundCap,
-                             Qt::RoundJoin));
-        QPainterPath arrow;
-        arrow.moveTo(clearRect.center().x() - 5, clearRect.center().y() - 2);
-        arrow.lineTo(clearRect.center().x(), clearRect.center().y() + 3);
-        arrow.lineTo(clearRect.center().x() + 5, clearRect.center().y() - 2);
-        painter->drawPath(arrow);
+        AntIconPainter::drawIcon(*painter,
+                                 Ant::IconType::Down,
+                                 clearRect.adjusted(5, 5, -5, -5),
+                                 disabled ? token.colorTextDisabled : token.colorTextTertiary);
         painter->restore();
     }
 

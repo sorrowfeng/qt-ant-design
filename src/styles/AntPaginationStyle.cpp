@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntPagination.h"
 
@@ -166,7 +167,7 @@ QVector<PageItem> buildPageItems(const AntPagination* p)
         append(PageItemKind::Text, 0, totalText, false, false, QFontMetrics(f).horizontalAdvance(totalText) + token.paddingSM);
     }
 
-    append(PageItemKind::Prev, current - 1, QStringLiteral("<"), current > 1);
+    append(PageItemKind::Prev, current - 1, QString(), current > 1);
     if (simple)
     {
         QFont f = p->font();
@@ -189,7 +190,7 @@ QVector<PageItem> buildPageItems(const AntPagination* p)
         const int right = std::min(pageCount - 1, current + sibling);
         if (left > 2)
         {
-            append(PageItemKind::JumpPrev, std::max(1, current - 5), QStringLiteral("..."));
+            append(PageItemKind::JumpPrev, std::max(1, current - 5), QString());
         }
         for (int page = left; page <= right; ++page)
         {
@@ -197,14 +198,14 @@ QVector<PageItem> buildPageItems(const AntPagination* p)
         }
         if (right < pageCount - 1)
         {
-            append(PageItemKind::JumpNext, std::min(pageCount, current + 5), QStringLiteral("..."));
+            append(PageItemKind::JumpNext, std::min(pageCount, current + 5), QString());
         }
         if (pageCount > 1)
         {
             appendPage(pageCount);
         }
     }
-    append(PageItemKind::Next, current + 1, QStringLiteral(">"), current < pageCount);
+    append(PageItemKind::Next, current + 1, QString(), current < pageCount);
 
     if (showSizeChanger)
     {
@@ -254,6 +255,34 @@ QColor paginationItemBackgroundColor(const PageItem& item, bool hovered, bool di
     }
     return hovered ? token.colorFillQuaternary : token.colorBgContainer;
 }
+
+bool drawPaginationItemIcon(QPainter* painter, const PageItem& item, const QColor& color)
+{
+    if (!painter)
+    {
+        return false;
+    }
+
+    const qreal side = qMin(item.rect.width(), item.rect.height()) * 0.44;
+    const QRectF iconRect(item.rect.center().x() - side / 2.0,
+                          item.rect.center().y() - side / 2.0,
+                          side,
+                          side);
+
+    switch (item.kind)
+    {
+    case PageItemKind::Prev:
+        return AntIconPainter::drawIcon(*painter, Ant::IconType::Left, iconRect, color);
+    case PageItemKind::Next:
+        return AntIconPainter::drawIcon(*painter, Ant::IconType::Right, iconRect, color);
+    case PageItemKind::JumpPrev:
+    case PageItemKind::JumpNext:
+        AntIconPainter::drawEllipsis(*painter, iconRect, color);
+        return true;
+    default:
+        return false;
+    }
+}
 } // namespace
 
 void AntPaginationStyle::drawPagination(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -283,8 +312,12 @@ void AntPaginationStyle::drawPagination(const QStyleOption* option, QPainter* pa
                 paginationItemBackgroundColor(item, false, pagination->isDisabled()),
                 token.borderRadius, token.borderRadius);
         }
-        painter->setPen(paginationItemTextColor(item, false));
-        painter->drawText(item.rect, Qt::AlignCenter | Qt::TextSingleLine, item.text);
+        const QColor itemColor = paginationItemTextColor(item, false);
+        if (!drawPaginationItemIcon(painter, item, itemColor))
+        {
+            painter->setPen(itemColor);
+            painter->drawText(item.rect, Qt::AlignCenter | Qt::TextSingleLine, item.text);
+        }
     }
 
     painter->restore();

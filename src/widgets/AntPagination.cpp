@@ -10,6 +10,7 @@
 
 #include "../styles/AntPaginationStyle.h"
 #include "core/AntTheme.h"
+#include "styles/AntIconPainter.h"
 
 AntPagination::AntPagination(QWidget* parent)
     : QWidget(parent)
@@ -272,7 +273,7 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
         append(ItemKind::Text, 0, totalText, false, false, QFontMetrics(f).horizontalAdvance(totalText) + token.paddingSM);
     }
 
-    append(ItemKind::Prev, m_current - 1, QStringLiteral("<"), m_current > 1);
+    append(ItemKind::Prev, m_current - 1, QString(), m_current > 1);
     if (m_simple)
     {
         QFont f = font();
@@ -296,7 +297,7 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
         const int right = std::min(count - 1, m_current + sibling);
         if (left > 2)
         {
-            append(ItemKind::JumpPrev, std::max(1, m_current - 5), QStringLiteral("..."));
+            append(ItemKind::JumpPrev, std::max(1, m_current - 5), QString());
         }
         for (int page = left; page <= right; ++page)
         {
@@ -304,14 +305,14 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
         }
         if (right < count - 1)
         {
-            append(ItemKind::JumpNext, std::min(count, m_current + 5), QStringLiteral("..."));
+            append(ItemKind::JumpNext, std::min(count, m_current + 5), QString());
         }
         if (count > 1)
         {
             appendPage(count);
         }
     }
-    append(ItemKind::Next, m_current + 1, QStringLiteral(">"), m_current < pageCount());
+    append(ItemKind::Next, m_current + 1, QString(), m_current < pageCount());
 
     if (m_showSizeChanger)
     {
@@ -423,8 +424,34 @@ void AntPagination::drawItem(QPainter& painter, const PageItem& item, bool hover
         painter.setBrush(itemBackgroundColor(item, hovered));
         painter.drawRoundedRect(item.rect.adjusted(0, 0, -1, -1), token.borderRadius, token.borderRadius);
     }
-    painter.setPen(itemTextColor(item, hovered));
-    painter.drawText(item.rect, Qt::AlignCenter | Qt::TextSingleLine, item.text);
+    const QColor color = itemTextColor(item, hovered);
+    const qreal side = qMin(item.rect.width(), item.rect.height()) * 0.44;
+    const QRectF iconRect(item.rect.center().x() - side / 2.0,
+                          item.rect.center().y() - side / 2.0,
+                          side,
+                          side);
+    bool drewIcon = false;
+    switch (item.kind)
+    {
+    case ItemKind::Prev:
+        drewIcon = AntIconPainter::drawIcon(painter, Ant::IconType::Left, iconRect, color);
+        break;
+    case ItemKind::Next:
+        drewIcon = AntIconPainter::drawIcon(painter, Ant::IconType::Right, iconRect, color);
+        break;
+    case ItemKind::JumpPrev:
+    case ItemKind::JumpNext:
+        AntIconPainter::drawEllipsis(painter, iconRect, color);
+        drewIcon = true;
+        break;
+    default:
+        break;
+    }
+    if (!drewIcon)
+    {
+        painter.setPen(color);
+        painter.drawText(item.rect, Qt::AlignCenter | Qt::TextSingleLine, item.text);
+    }
 }
 
 void AntPagination::activateItem(const PageItem& item)

@@ -4,7 +4,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
-#include "widgets/AntIcon.h"
+#include "styles/AntIconPainter.h"
 #include "widgets/AntFloatButton.h"
 
 namespace
@@ -44,36 +44,11 @@ QColor floatButtonIconColor(const AntFloatButton* fb)
     return token.colorText;
 }
 
-Ant::IconType floatButtonIconType(const QString& icon)
-{
-    const QString key = icon.trimmed().toLower();
-    if (key == QStringLiteral("home")) return Ant::IconType::Home;
-    if (key == QStringLiteral("search")) return Ant::IconType::Search;
-    if (key == QStringLiteral("close")) return Ant::IconType::Close;
-    if (key == QStringLiteral("plus")) return Ant::IconType::Plus;
-    if (key == QStringLiteral("mail")) return Ant::IconType::Mail;
-    if (key == QStringLiteral("bell")) return Ant::IconType::Bell;
-    if (key == QStringLiteral("setting")) return Ant::IconType::Setting;
-    if (key == QStringLiteral("user")) return Ant::IconType::User;
-    return Ant::IconType::None;
-}
-
 void drawFloatButtonIcon(QPainter* painter, const QRectF& buttonRect, const QString& icon, const QColor& color)
 {
-    const Ant::IconType iconType = floatButtonIconType(icon);
-    if (iconType != Ant::IconType::None)
+    const QRectF iconRect(buttonRect.center().x() - 9, buttonRect.center().y() - 9, 18, 18);
+    if (AntIconPainter::drawIconForKey(*painter, icon, iconRect, color))
     {
-        const QRectF iconRect(buttonRect.center().x() - 9, buttonRect.center().y() - 9, 18, 18);
-        const AntIcon::IconPaths paths = AntIcon::builtinPaths(iconType, Ant::IconTheme::Outlined);
-        painter->save();
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(color);
-        painter->drawPath(AntIcon::transformPath(paths.primary, iconRect));
-        if (!paths.secondary.isEmpty())
-        {
-            painter->drawPath(AntIcon::transformPath(paths.secondary, iconRect));
-        }
-        painter->restore();
         return;
     }
 
@@ -223,7 +198,7 @@ void AntFloatButtonStyle::drawMainButton(const QStyleOption* option, QPainter* p
     QString icon = fb->icon();
     if (icon.isEmpty() && fb->isBackTop())
     {
-        icon = QStringLiteral("▲");
+        icon = QStringLiteral("up");
     }
     if (fb->isOpen() && !fb->closeIcon().isEmpty())
     {

@@ -4,6 +4,7 @@
 #include <QStyleOptionComplex>
 #include <QStyleOptionToolButton>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntToolButton.h"
 
@@ -115,18 +116,10 @@ Colors computeColors(const AntToolButton* btn, bool hovered, bool pressed, bool 
 void drawArrow(QPainter* p, const QRectF& r, const QColor& color, qreal rotation)
 {
     p->save();
-    p->setRenderHint(QPainter::Antialiasing);
-    p->setPen(Qt::NoPen);
-    p->setBrush(color);
-
-    const qreal cx = r.center().x();
-    const qreal cy = r.center().y();
-    const qreal sz = 3.5;
-    p->translate(cx, cy);
+    p->translate(r.center());
     p->rotate(rotation);
-    QPolygonF arrow;
-    arrow << QPointF(-sz, -sz * 0.55) << QPointF(sz, -sz * 0.55) << QPointF(0, sz * 0.6);
-    p->drawPolygon(arrow);
+    p->translate(-r.center());
+    AntIconPainter::drawIcon(*p, Ant::IconType::Down, r, color);
     p->restore();
 }
 

@@ -2,11 +2,11 @@
 
 #include <QEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStyleOptionButton>
 
-#include "widgets/AntCheckbox.h"
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
+#include "widgets/AntCheckbox.h"
 
 namespace
 {
@@ -81,17 +81,10 @@ void AntCheckboxStyle::drawControl(ControlElement element, const QStyleOption* o
 
         if (checkbox->isChecked() && !checkbox->isIndeterminate())
         {
-            QPainterPath check;
-            check.moveTo(box.left() + box.width() * 0.28, box.top() + box.height() * 0.52);
-            check.lineTo(box.left() + box.width() * 0.43, box.top() + box.height() * 0.68);
-            check.lineTo(box.left() + box.width() * 0.74, box.top() + box.height() * 0.32);
-            painter->setPen(QPen(enabled ? token.colorTextLightSolid : token.colorTextDisabled,
-                                  2,
-                                  Qt::SolidLine,
-                                  Qt::RoundCap,
-                                  Qt::RoundJoin));
-            painter->setBrush(Qt::NoBrush);
-            painter->drawPath(check);
+            AntIconPainter::drawIcon(*painter,
+                                     Ant::IconType::Check,
+                                     box.adjusted(3, 3, -3, -3),
+                                     enabled ? token.colorTextLightSolid : token.colorTextDisabled);
         }
         else if (checkbox->isIndeterminate())
         {

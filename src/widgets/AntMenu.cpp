@@ -22,6 +22,7 @@
 #include "AntIcon.h"
 #include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -1242,24 +1243,11 @@ void AntMenu::drawItem(QPainter& painter, const AntMenuItem& item, const QRect& 
 
     if (item.subMenu && !m_inlineCollapsed && m_mode != Ant::MenuMode::Horizontal)
     {
-        painter.save();
-        painter.setPen(QPen(itemTextColor(item, selected, hovered), 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        const QPointF c(content.right() - 10, content.center().y());
-        QPainterPath arrow;
-        if (m_mode == Ant::MenuMode::Inline && isOpen(item.key))
-        {
-            arrow.moveTo(c.x() - 5, c.y() - 2);
-            arrow.lineTo(c.x(), c.y() + 3);
-            arrow.lineTo(c.x() + 5, c.y() - 2);
-        }
-        else
-        {
-            arrow.moveTo(c.x() - 2, c.y() - 5);
-            arrow.lineTo(c.x() + 3, c.y());
-            arrow.lineTo(c.x() - 2, c.y() + 5);
-        }
-        painter.drawPath(arrow);
-        painter.restore();
+        const Ant::IconType arrowIcon = (m_mode == Ant::MenuMode::Inline && isOpen(item.key))
+            ? Ant::IconType::Down
+            : Ant::IconType::Right;
+        const QRectF arrowRect(content.right() - 17, content.center().y() - 7, 14, 14);
+        AntIconPainter::drawIcon(painter, arrowIcon, arrowRect, itemTextColor(item, selected, hovered));
     }
 }
 

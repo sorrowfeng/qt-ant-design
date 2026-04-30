@@ -6,12 +6,12 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStringList>
 
 #include "../styles/AntDatePickerStyle.h"
 #include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 
 class AntDatePickerPopup : public QFrame
@@ -285,21 +285,10 @@ private:
 
     void drawChevron(QPainter& painter, const QRectF& rect, bool left) const
     {
-        const QPointF center = rect.center();
-        QPainterPath path;
-        if (left)
-        {
-            path.moveTo(center.x() + 4, center.y() - 6);
-            path.lineTo(center.x() - 3, center.y());
-            path.lineTo(center.x() + 4, center.y() + 6);
-        }
-        else
-        {
-            path.moveTo(center.x() - 4, center.y() - 6);
-            path.lineTo(center.x() + 3, center.y());
-            path.lineTo(center.x() - 4, center.y() + 6);
-        }
-        painter.drawPath(path);
+        AntIconPainter::drawIcon(painter,
+                                 left ? Ant::IconType::Left : Ant::IconType::Right,
+                                 rect.adjusted(8, 7, -8, -7),
+                                 antTheme->tokens().colorTextTertiary);
     }
 
     void drawDoubleChevron(QPainter& painter, const QRectF& rect, bool left) const

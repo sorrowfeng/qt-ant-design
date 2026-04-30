@@ -7,6 +7,7 @@
 #include <QPainterPath>
 #include <QStyleOptionSpinBox>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntInputNumber.h"
 
@@ -358,18 +359,8 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
             painter->fillRect(downRect.adjusted(1, 0, -1, -1), pressed ? pressedColor : hoverColor);
         }
 
-        painter->setPen(QPen(iconColor, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        QPainterPath upArrow;
-        upArrow.moveTo(upRect.center().x() - 3, upRect.center().y() + 1);
-        upArrow.lineTo(upRect.center().x(), upRect.center().y() - 2);
-        upArrow.lineTo(upRect.center().x() + 3, upRect.center().y() + 1);
-        painter->drawPath(upArrow);
-
-        QPainterPath downArrow;
-        downArrow.moveTo(downRect.center().x() - 3, downRect.center().y() - 1);
-        downArrow.lineTo(downRect.center().x(), downRect.center().y() + 2);
-        downArrow.lineTo(downRect.center().x() + 3, downRect.center().y() - 1);
-        painter->drawPath(downArrow);
+        AntIconPainter::drawIcon(*painter, Ant::IconType::Up, upRect.adjusted(6, 2, -6, -2), iconColor);
+        AntIconPainter::drawIcon(*painter, Ant::IconType::Down, downRect.adjusted(6, 2, -6, -2), iconColor);
     }
 
     if (addonAfterWidth > 0)

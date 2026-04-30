@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntMessage.h"
 
@@ -55,40 +56,28 @@ void drawMessageShadow(QPainter& painter, const QRectF& bubble, qreal radius)
 
 void drawStatusIcon(QPainter& painter, const QRectF& rect, const QColor& color, Ant::MessageType type)
 {
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(color);
-    painter.drawEllipse(rect.adjusted(1, 1, -1, -1));
-
-    const QPointF center = rect.center();
-    painter.setPen(QPen(Qt::white, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-
+    Ant::IconType iconType = Ant::IconType::InfoCircle;
     switch (type)
     {
     case Ant::MessageType::Success:
-        painter.drawLine(QPointF(center.x() - 4.2, center.y() + 0.1), QPointF(center.x() - 1.2, center.y() + 3.1));
-        painter.drawLine(QPointF(center.x() - 1.2, center.y() + 3.1), QPointF(center.x() + 4.6, center.y() - 4.0));
+        iconType = Ant::IconType::CheckCircle;
         break;
     case Ant::MessageType::Error:
-        painter.drawLine(QPointF(center.x() - 3.4, center.y() - 3.4), QPointF(center.x() + 3.4, center.y() + 3.4));
-        painter.drawLine(QPointF(center.x() + 3.4, center.y() - 3.4), QPointF(center.x() - 3.4, center.y() + 3.4));
+        iconType = Ant::IconType::CloseCircle;
         break;
     case Ant::MessageType::Warning:
+        iconType = Ant::IconType::ExclamationCircle;
+        break;
     case Ant::MessageType::Info:
     default:
-    {
-        QFont iconFont = painter.font();
-        iconFont.setPixelSize(type == Ant::MessageType::Info ? 11 : 12);
-        iconFont.setWeight(QFont::DemiBold);
-        painter.setFont(iconFont);
-        painter.setPen(Qt::white);
-        painter.drawText(rect, Qt::AlignCenter, type == Ant::MessageType::Info ? QStringLiteral("i") : QStringLiteral("!"));
         break;
     }
-    }
-
-    painter.restore();
+    AntIconPainter::drawIcon(painter,
+                             iconType,
+                             rect,
+                             color,
+                             Ant::IconTheme::Filled,
+                             antTheme->tokens().colorTextLightSolid);
 }
 } // namespace
 

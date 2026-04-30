@@ -304,22 +304,6 @@ QColor AntMessage::accentColor() const
     }
 }
 
-QString AntMessage::iconText() const
-{
-    switch (m_messageType)
-    {
-    case Ant::MessageType::Success:
-        return QStringLiteral("✓");
-    case Ant::MessageType::Warning:
-        return QStringLiteral("!");
-    case Ant::MessageType::Error:
-        return QStringLiteral("×");
-    case Ant::MessageType::Info:
-    default:
-        return QStringLiteral("i");
-    }
-}
-
 void AntMessage::startTimers()
 {
     if (m_duration > 0 && isVisible() && !m_hovered)

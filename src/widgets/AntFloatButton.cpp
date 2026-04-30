@@ -148,7 +148,7 @@ void AntFloatButton::setBackTop(bool backTop)
     m_backTop = backTop;
     if (m_backTop)
     {
-        if (m_icon.isEmpty()) m_icon = QStringLiteral("▲");
+        if (m_icon.isEmpty()) m_icon = QStringLiteral("up");
         hide();
     }
     update();
