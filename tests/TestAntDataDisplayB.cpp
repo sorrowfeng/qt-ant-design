@@ -294,6 +294,7 @@ void TestAntDataDisplayB::propertiesAndSignals()
 
     auto* s1 = new QWidget;
     auto* s2 = new QWidget;
+    car->resize(240, 160);
     car->addSlide(s1);
     car->addSlide(s2);
     QCOMPARE(car->count(), 2);
@@ -302,6 +303,13 @@ void TestAntDataDisplayB::propertiesAndSignals()
     car->setCurrentIndex(1);
     QCOMPARE(car->currentIndex(), 1);
     QCOMPARE(idxSpy.count(), 1);
+    QCOMPARE(car->transitionProgress(), 0.0);
+    QVERIFY(!s1->isHidden());
+    QVERIFY(!s2->isHidden());
+    QCOMPARE(s1->geometry(), car->rect());
+    QCOMPARE(s2->geometry().left(), car->width());
+    QTRY_VERIFY_WITH_TIMEOUT(s1->isHidden(), 1000);
+    QCOMPARE(s2->geometry(), car->rect());
 
     car->clearSlides();
     QCOMPARE(car->count(), 0);

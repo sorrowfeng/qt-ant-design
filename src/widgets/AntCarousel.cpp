@@ -1,9 +1,14 @@
 #include "AntCarousel.h"
 
+#include <QAbstractAnimation>
+#include <QEasingCurve>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPropertyAnimation>
 #include <QResizeEvent>
 #include <QTimer>
+
+#include <algorithm>
 
 #include "core/AntTheme.h"
 
@@ -79,6 +84,11 @@ AntCarousel::AntCarousel(QWidget* parent)
     m_dotsOverlay = new CarouselDotsOverlay(this);
     m_dotsOverlay->hide();
 
+    m_transitionAnimation = new QPropertyAnimation(this, "transitionProgress", this);
+    m_transitionAnimation->setDuration(500);
+    m_transitionAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    connect(m_transitionAnimation, &QPropertyAnimation::finished, this, &AntCarousel::finishTransition);
+
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         update();
         updateDotsOverlay();
@@ -118,10 +128,19 @@ void AntCarousel::setCurrentIndex(int index)
     if (m_slides.isEmpty()) return;
     index = (index % m_slides.size() + m_slides.size()) % m_slides.size();
     if (m_currentIndex == index) return;
+    const int previous = m_currentIndex;
     m_currentIndex = index;
-    updateSlideVisibility();
+    startTransition(previous, m_currentIndex);
     update();
     Q_EMIT currentIndexChanged(m_currentIndex);
+}
+
+qreal AntCarousel::transitionProgress() const { return m_transitionProgress; }
+
+void AntCarousel::setTransitionProgress(qreal progress)
+{
+    m_transitionProgress = std::clamp(progress, 0.0, 1.0);
+    layoutTransitionSlides();
 }
 
 int AntCarousel::count() const { return m_slides.size(); }
@@ -137,6 +156,8 @@ void AntCarousel::addSlide(QWidget* widget)
 void AntCarousel::removeSlide(int index)
 {
     if (index < 0 || index >= m_slides.size()) return;
+    m_transitionAnimation->stop();
+    m_previousIndex = -1;
     m_slides[index]->deleteLater();
     m_slides.removeAt(index);
     if (m_currentIndex >= m_slides.size()) m_currentIndex = 0;
@@ -145,15 +166,24 @@ void AntCarousel::removeSlide(int index)
 
 void AntCarousel::clearSlides()
 {
+    m_transitionAnimation->stop();
     for (auto* w : m_slides) w->deleteLater();
     m_slides.clear();
     m_currentIndex = 0;
+    m_previousIndex = -1;
+    m_transitionProgress = 1.0;
     updateDotsOverlay();
     update();
 }
 
 void AntCarousel::updateSlideVisibility()
 {
+    if (m_transitionAnimation->state() == QAbstractAnimation::Running)
+    {
+        layoutTransitionSlides();
+        return;
+    }
+
     for (int i = 0; i < m_slides.size(); ++i)
     {
         if (i == m_currentIndex)
@@ -195,7 +225,10 @@ void AntCarousel::mousePressEvent(QMouseEvent* e)
 void AntCarousel::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    updateSlideVisibility();
+    if (m_transitionAnimation->state() == QAbstractAnimation::Running)
+        layoutTransitionSlides();
+    else
+        updateSlideVisibility();
 }
 
 void AntCarousel::updateDotsOverlay()
@@ -207,4 +240,67 @@ void AntCarousel::updateDotsOverlay()
     m_dotsOverlay->setVisible(m_showDots && m_slides.size() > 1);
     m_dotsOverlay->raise();
     m_dotsOverlay->update();
+}
+
+void AntCarousel::startTransition(int from, int to)
+{
+    if (from < 0 || from >= m_slides.size() || to < 0 || to >= m_slides.size() || rect().isEmpty())
+    {
+        m_previousIndex = -1;
+        m_transitionProgress = 1.0;
+        updateSlideVisibility();
+        return;
+    }
+
+    m_transitionAnimation->stop();
+    m_previousIndex = from;
+    m_transitionDirection = transitionDirection(from, to);
+    m_transitionProgress = 0.0;
+
+    for (int i = 0; i < m_slides.size(); ++i)
+    {
+        if (i == from || i == to)
+            m_slides[i]->show();
+        else
+            m_slides[i]->hide();
+    }
+
+    layoutTransitionSlides();
+    m_transitionAnimation->setStartValue(0.0);
+    m_transitionAnimation->setEndValue(1.0);
+    m_transitionAnimation->start();
+}
+
+void AntCarousel::layoutTransitionSlides()
+{
+    if (m_previousIndex < 0 || m_previousIndex >= m_slides.size() || m_currentIndex < 0 || m_currentIndex >= m_slides.size())
+        return;
+
+    const QRect base = rect();
+    const int dx = qRound(base.width() * m_transitionProgress);
+    auto* previousSlide = m_slides[m_previousIndex];
+    auto* currentSlide = m_slides[m_currentIndex];
+
+    previousSlide->setGeometry(base.translated(-m_transitionDirection * dx, 0));
+    currentSlide->setGeometry(base.translated(m_transitionDirection * (base.width() - dx), 0));
+    previousSlide->show();
+    currentSlide->show();
+    currentSlide->raise();
+    updateDotsOverlay();
+}
+
+void AntCarousel::finishTransition()
+{
+    m_previousIndex = -1;
+    m_transitionProgress = 1.0;
+    updateSlideVisibility();
+}
+
+int AntCarousel::transitionDirection(int from, int to) const
+{
+    if (from == m_slides.size() - 1 && to == 0)
+        return 1;
+    if (from == 0 && to == m_slides.size() - 1)
+        return -1;
+    return to > from ? 1 : -1;
 }
