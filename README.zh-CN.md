@@ -77,7 +77,7 @@ add_executable(my-qt-app main.cpp)
 target_link_libraries(my-qt-app PRIVATE Qt6::Core Qt6::Widgets qt-ant-design)
 ```
 
-### 方式二：直接编译并链接静态库
+### 方式二：安装并使用 CMake package
 
 ```bash
 cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/path/to/install
@@ -85,19 +85,19 @@ cmake --build build --config Release
 cmake --install build --config Release
 ```
 
-然后在你的项目中引用安装目录：
+然后让你的消费项目指向安装前缀：
 
 ```cmake
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg)
+find_package(qt-ant-design CONFIG REQUIRED)
 
 add_executable(my-qt-app main.cpp)
-target_include_directories(my-qt-app PRIVATE /path/to/install/include/qt-ant-design)
 target_link_libraries(my-qt-app PRIVATE
-    Qt6::Core
-    Qt6::Widgets
-    /path/to/install/lib/qt-ant-design.lib
+    qt-ant-design::qt-ant-design
 )
 ```
+
+如果该安装前缀不在 CMake package 搜索路径中，请在配置消费项目时传入 `-DCMAKE_PREFIX_PATH=/path/to/install`。
 
 Windows 下也可以直接使用安装目录中的示例程序：
 
