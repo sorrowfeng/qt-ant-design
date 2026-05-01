@@ -72,14 +72,17 @@ void TestAntCoverageInventory::publicWidgetHeadersAreInCoverageTests()
 
     const QSet<QString> objectTreeHeaders = includedWidgetHeaders(QStringLiteral("TestAntObjectTree.cpp"));
     const QSet<QString> metaPropertyHeaders = includedWidgetHeaders(QStringLiteral("TestAntMetaProperties.cpp"));
+    const QSet<QString> themeLifecycleHeaders = includedWidgetHeaders(QStringLiteral("TestAntThemeLifecycle.cpp"));
     const QSet<QString> renderSmokeHeaders = includedWidgetHeaders(QStringLiteral("TestAntRenderSmoke.cpp"));
 
     const QStringList missingObjectTree = (publicHeaders - objectTreeHeaders).values();
     const QStringList missingMetaProperties = (publicHeaders - metaPropertyHeaders).values();
+    const QStringList missingThemeLifecycle = (publicHeaders - themeLifecycleHeaders).values();
     const QStringList missingRenderSmoke = (publicHeaders - renderSmokeHeaders).values();
 
     QCOMPARE(missingObjectTree, QStringList());
     QCOMPARE(missingMetaProperties, QStringList());
+    QCOMPARE(missingThemeLifecycle, QStringList());
     QCOMPARE(missingRenderSmoke, QStringList());
 }
 

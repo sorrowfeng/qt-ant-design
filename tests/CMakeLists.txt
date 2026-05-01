@@ -60,6 +60,9 @@ add_ant_test(TestAntObjectTree)
 # Assigned child ownership
 add_ant_test(TestAntChildOwnership)
 
+# Theme switching lifecycle
+add_ant_test(TestAntThemeLifecycle)
+
 # Meta-property coverage
 add_ant_test(TestAntMetaProperties)
 
