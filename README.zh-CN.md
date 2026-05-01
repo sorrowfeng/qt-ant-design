@@ -26,7 +26,7 @@
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
 - 当前已移植 `82` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `12` 个 Qt / 桌面扩展组件）
 - 当前 `62` 个组件使用 `QProxyStyle` 架构绘制
-- 示例程序当前覆盖 `80 / 82` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
+- 示例程序当前覆盖 `82 / 82` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
 - `AntIcon` 已内置 `831` 个来自 `@ant-design/icons-svg@4.4.2` 的官方 SVG 资源
 - 可对比的标准组件已在视觉审计矩阵中标记为 `Pass`，Qt-only 桌面扩展标记为 `Local Pass`
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
@@ -36,7 +36,7 @@
 - 状态总览：[docs/project-status.md](docs/project-status.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
-- 最近一次 Debug 全量验证：`20 / 20` 个 CTest 目标通过（`2026-04-30`）
+- 最近一次 Debug 全量验证：`34 / 34` 个 CTest 目标通过（`2026-05-01`）
 
 ## 最近 Ant Design 对齐更新
 
@@ -307,7 +307,7 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 5. 在 `examples/ExampleWindow.cpp` 中补齐展示页
 6. 更新 `AGENT.md` 与 `README.md`
 
-欢迎提交 Issue 和 PR。
+欢迎提交 Issue 和 PR。如果发现视觉差异、交互缺失、Qt 集成问题或文档遗漏，欢迎带上复现信息提交 Issue；组件修复、测试、示例和文档改进类 PR 都很欢迎。
 
 ## 致谢
 

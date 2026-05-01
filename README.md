@@ -307,7 +307,7 @@ When adding a new component, the recommended flow is:
 5. Add a demo page in `examples/ExampleWindow.cpp`
 6. Update `AGENT.md` and `README.md`
 
-Issues and PRs are welcome.
+Issues and PRs are welcome. If you find a visual mismatch, missing interaction, Qt integration problem, or documentation gap, please open an issue with reproduction details. Pull requests for component fixes, tests, examples, and docs are appreciated.
 
 ## Acknowledgements
 
