@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
 
 `src/widgets` 当前包含 `83` 个 `Ant*.h` 头文件，其中 `AntSelectPopup` 是内部弹层 helper，不计入公开组件。
 
-Ant Design 标准组件按 `submodules/ant-design/components` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
+Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
 
 | 分类 | 组件 | 当前绘制方式 |
 | --- | --- | --- |
@@ -300,8 +300,8 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 
 添加新组件时，推荐遵循以下流程：
 
-1. 阅读 `submodules/ant-design/components/<component>/` 的 API 与样式
-2. 查阅 ElaWidgetTools 中相似控件的实现方式
+1. 阅读 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/<component>/` 的 API 与样式
+2. 需要时参考 [`sorrowfeng/ElaWidgetTools`](https://github.com/sorrowfeng/ElaWidgetTools) 中相似 Qt 控件的实现方式
 3. 新增 `src/widgets/Ant<Name>.h/.cpp`
 4. 如需样式解耦，新增 `src/styles/Ant<Name>Style.h/.cpp`
 5. 在 `examples/ExampleWindow.cpp` 中补齐展示页
@@ -311,8 +311,9 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 
 ## 致谢
 
-- 感谢 Ant Design 团队提供完整的设计系统、组件规范与 token 体系
-- 感谢 ElaWidgetTools 项目提供 Qt 主题和手绘控件实现灵感
+- 感谢 Ant Design 提供设计系统、组件规范与 token 基础：[ant-design/ant-design](https://github.com/ant-design/ant-design)
+- 感谢 ElaWidgetTools 提供 Qt 控件参考：[sorrowfeng/ElaWidgetTools](https://github.com/sorrowfeng/ElaWidgetTools)
+- 开发说明：本项目 90% 以上由 Codex GPT-5.5 开发，其余由 Claude Code 与 Mimo v2.5 Pro 协助完成。
 
 ## 许可证
 

@@ -8,7 +8,7 @@ Current project status is summarized in `docs/project-status.md`. As of `2026-04
 
 Use this loop for one component at a time.
 
-1. Confirm the component row in the matrix and inspect the Ant Design source under `submodules/ant-design/components/<component>/`.
+1. Confirm the component row in the matrix and inspect the Ant Design source under `components/<component>/` in `https://github.com/ant-design/ant-design`.
 2. Build the Qt example and target tests before taking screenshots:
    ```powershell
    cmake --build build --config Debug --target TestAntButton qt-ant-design-example -- /m:1

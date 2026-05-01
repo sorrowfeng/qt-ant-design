@@ -157,7 +157,7 @@ Total public components implemented: `82`
 
 `src/widgets` currently contains `83` `Ant*.h` headers; `AntSelectPopup` is an internal popup helper and is not counted as a public component.
 
-Ant Design standard components are counted by the top-level directories under `submodules/ant-design/components`, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
+Ant Design standard components are counted by the top-level directories under [`ant-design/ant-design`](https://github.com/ant-design/ant-design)'s `components/` directory, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
 
 | Category | Components | Rendering |
 | --- | --- | --- |
@@ -300,8 +300,8 @@ The per-component visual audit tracker lives in `docs/visual-audit.md`.
 
 When adding a new component, the recommended flow is:
 
-1. Read the API and styles in `submodules/ant-design/components/<component>/`
-2. Reference the implementation of similar widgets in ElaWidgetTools
+1. Read the API and styles in [`ant-design/ant-design`](https://github.com/ant-design/ant-design) under `components/<component>/`
+2. Reference similar Qt widget implementations in [`sorrowfeng/ElaWidgetTools`](https://github.com/sorrowfeng/ElaWidgetTools) when useful
 3. Add `src/widgets/Ant<Name>.h/.cpp`
 4. If style decoupling is needed, add `src/styles/Ant<Name>Style.h/.cpp`
 5. Add a demo page in `examples/ExampleWindow.cpp`
@@ -311,8 +311,9 @@ Issues and PRs are welcome.
 
 ## Acknowledgements
 
-- Thanks to the Ant Design team for the complete design system, component spec, and token foundation
-- Thanks to the ElaWidgetTools project for inspiration on Qt theming and hand-painted controls
+- Thanks to Ant Design for the design system, component specs, and token foundation: [ant-design/ant-design](https://github.com/ant-design/ant-design)
+- Thanks to ElaWidgetTools for Qt widget references: [sorrowfeng/ElaWidgetTools](https://github.com/sorrowfeng/ElaWidgetTools)
+- Development note: 90%+ of this project was developed with Codex GPT-5.5; the rest was completed with Claude Code and Mimo v2.5 Pro.
 
 ## License
 

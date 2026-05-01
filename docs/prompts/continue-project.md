@@ -1,12 +1,11 @@
 # qt-ant-design 跨电脑续做通用提示词
 
 下面这段提示词用于在新电脑上继续 `qt-ant-design` 项目的开发工作。  
-使用前请先完成仓库拉取与 submodule 初始化：
+使用前请先完成仓库拉取：
 
 ```bash
 git clone <your-repo-url>
 cd qt-ant-design
-git submodule update --init --recursive
 ```
 
 ---
@@ -21,9 +20,9 @@ git submodule update --init --recursive
 - 目标：使用 Qt6 Widgets，将 Ant Design 设计系统移植为 C++ 组件库
 - 当前绘制架构：项目处于 `paintEvent` 与 `QProxyStyle` 并存阶段，新的架构迁移优先采用 `QProxyStyle`
 
-## 仓库内参考路径
-- ElaWidgetTools 参考仓库路径：`submodules/ElaWidgetTools`
-- Ant Design 参考仓库路径：`submodules/ant-design`
+## 外部参考仓库
+- ElaWidgetTools 参考仓库：`https://github.com/sorrowfeng/ElaWidgetTools`
+- Ant Design 参考仓库：`https://github.com/ant-design/ant-design`
 
 ## 开始工作前必须执行
 1. 阅读项目根目录下的 `AGENT.md`
@@ -33,9 +32,9 @@ git submodule update --init --recursive
    - `src/styles/`
    - `src/widgets/`
    - `examples/`
-4. 确认 submodule 已初始化：
-   - `submodules/ElaWidgetTools`
-   - `submodules/ant-design`
+4. 需要对照上游实现时，查看外部参考仓库：
+   - `https://github.com/sorrowfeng/ElaWidgetTools`
+   - `https://github.com/ant-design/ant-design`
 5. 总结当前项目状态：
    - 已实现组件数量
    - 已迁移至 `QProxyStyle` 的组件

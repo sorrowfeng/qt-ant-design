@@ -12,10 +12,10 @@
 
 ## 参考仓库
 
-- 绘制实现参考：`D:\Project\GitProject\qt-ant-design\submodules\ElaWidgetTools`
-- 设计规范参考：`D:\Project\GitProject\qt-ant-design\submodules\ant-design`
+- 绘制实现参考：`https://github.com/sorrowfeng/ElaWidgetTools`
+- 设计规范参考：`https://github.com/ant-design/ant-design`
 
-当前两个参考仓库都以 Git submodule 方式维护在项目内的 `submodules/` 目录下，便于版本对齐和协同开发。
+参考仓库不再以 Git submodule 方式维护在项目内，需要对照上游实现时直接查看对应 GitHub 仓库。
 
 重点参考内容：
 

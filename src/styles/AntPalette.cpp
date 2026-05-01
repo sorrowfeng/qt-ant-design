@@ -9,7 +9,7 @@ int clampChannel(qreal value)
     return std::clamp(static_cast<int>(std::round(value)), 0, 255);
 }
 
-// Ant Design 5.x preset color primaries (from submodules/ant-design/.../seed.ts)
+// Ant Design 5.x preset color primaries (from ant-design/ant-design .../seed.ts)
 struct PresetEntry
 {
     const char* name;

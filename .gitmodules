@@ -1,6 +1,0 @@
-[submodule "ant-design"]
-	path = submodules/ant-design
-	url = https://github.com/ant-design/ant-design.git
-[submodule "submodules/ElaWidgetTools"]
-	path = submodules/ElaWidgetTools
-	url = https://github.com/sorrowfeng/ElaWidgetTools.git
