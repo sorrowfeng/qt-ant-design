@@ -79,5 +79,8 @@ add_ant_test(TestAntPopupLifecycle)
 # Render smoke coverage
 add_ant_test(TestAntRenderSmoke)
 
+# Automated visual regression coverage
+add_ant_test(TestAntVisualRegression)
+
 # Coverage inventory guard
 add_ant_inventory_test(TestAntCoverageInventory)
