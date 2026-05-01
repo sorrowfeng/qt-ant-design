@@ -2,6 +2,7 @@
 #include <QImage>
 #include <QLabel>
 #include <QPainter>
+#include <QPalette>
 #include <QTest>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -15,13 +16,20 @@
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckbox.h"
 #include "widgets/AntDescriptions.h"
+#include "widgets/AntDrawer.h"
 #include "widgets/AntInputNumber.h"
+#include "widgets/AntLayout.h"
 #include "widgets/AntList.h"
 #include "widgets/AntMessage.h"
+#include "widgets/AntMenu.h"
+#include "widgets/AntModal.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntNotification.h"
+#include "widgets/AntPagination.h"
+#include "widgets/AntPopover.h"
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
+#include "widgets/AntSteps.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTabs.h"
 #include "widgets/AntTable.h"
@@ -41,6 +49,8 @@ private slots:
     void tagAndBadgeStatusColorsStayVisible();
     void feedbackSurfacesKeepElevatedTokenFill();
     void dataDisplayBordersAndSeparatorsStayVisible();
+    void navigationAndLayoutStructureStayVisible();
+    void complexPopupSurfacesStayElevated();
     void lightAndDarkThemesRenderDifferentSurfaces();
 };
 
@@ -80,6 +90,32 @@ QImage renderWidget(QWidget* widget, const QSize& size)
     }
     widget->hide();
     return image;
+}
+
+QImage renderCurrentWidget(QWidget* widget)
+{
+    widget->ensurePolished();
+    QCoreApplication::sendPostedEvents(widget, QEvent::Polish);
+    QCoreApplication::processEvents();
+
+    QImage image(widget->size(), QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        widget->render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
+    }
+    return image;
+}
+
+void prepareHost(QWidget& host, const QSize& size, const QColor& background)
+{
+    QPalette palette = host.palette();
+    palette.setColor(QPalette::Window, background);
+    host.setPalette(palette);
+    host.setAutoFillBackground(true);
+    host.resize(size);
+    host.show();
+    QCoreApplication::processEvents();
 }
 
 bool nearColor(const QColor& actual, const QColor& expected, int tolerance)
@@ -382,6 +418,140 @@ void TestAntVisualRegression::dataDisplayBordersAndSeparatorsStayVisible()
     assertNearColorPixels(descriptionsImage, token.colorFillQuaternary, 7000, "descriptions label cells", 18);
     assertNearColorPixels(descriptionsImage, token.colorBgContainer, 12000, "descriptions content cells", 12);
     assertNearColorPixels(descriptionsImage, token.colorSplit, 1000, "descriptions cell borders", 18);
+}
+
+void TestAntVisualRegression::navigationAndLayoutStructureStayVisible()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const auto& token = antTheme->tokens();
+
+    AntMenu menu;
+    menu.setMode(Ant::MenuMode::Vertical);
+    menu.addItem(QStringLiteral("home"), QStringLiteral("Home"), Ant::IconType::Home);
+    menu.addItem(QStringLiteral("reports"), QStringLiteral("Reports"), Ant::IconType::Setting);
+    menu.addDivider();
+    menu.addItem(QStringLiteral("alerts"), QStringLiteral("Alerts"), Ant::IconType::Bell, QStringLiteral("8"));
+    menu.setSelectedKey(QStringLiteral("reports"));
+    const QImage menuImage = renderWidget(&menu, QSize(260, 160));
+    assertNearColorPixels(menuImage, token.colorBgContainer, 26000, "menu container surface", 12);
+    assertNearColorPixels(menuImage, token.colorPrimaryBg, 3500, "menu selected item fill", 18);
+    assertNearColorPixels(menuImage, token.colorPrimary, 120, "menu selected item text and icon");
+    assertNearColorPixels(menuImage, token.colorSplit, 120, "menu divider", 18);
+
+    AntPagination pagination;
+    pagination.setTotal(180);
+    pagination.setCurrent(4);
+    pagination.setShowTotal(true);
+    pagination.setShowSizeChanger(true);
+    pagination.setShowQuickJumper(true);
+    const QImage paginationImage = renderWidget(&pagination, QSize(640, 48));
+    assertNearColorPixels(paginationImage, token.colorBgContainer, 7000, "pagination item surfaces", 12);
+    assertNearColorPixels(paginationImage, token.colorBorder, 1200, "pagination item borders", 18);
+    assertNearColorPixels(paginationImage, token.colorPrimary, 80, "pagination active page");
+    assertNearColorPixels(paginationImage, token.colorTextSecondary, 120, "pagination total text", 36);
+
+    AntSteps steps;
+    steps.addStep(QStringLiteral("Login"), QStringLiteral("Done"), QString(), Ant::StepStatus::Finish);
+    steps.addStep(QStringLiteral("Profile"), QStringLiteral("In progress"));
+    steps.addStep(QStringLiteral("Review"), QStringLiteral("Needs attention"), QString(), Ant::StepStatus::Error);
+    steps.addStep(QStringLiteral("Done"), QStringLiteral("Waiting"));
+    steps.setCurrentIndex(1);
+    const QImage stepsImage = renderWidget(&steps, QSize(720, 104));
+    assertNearColorPixels(stepsImage, token.colorPrimary, 700, "steps process and finish color", 28);
+    assertNearColorPixels(stepsImage, token.colorPrimaryBg, 500, "steps finished icon fill", 18);
+    assertNearColorPixels(stepsImage, token.colorError, 500, "steps error state", 28);
+    assertNearColorPixels(stepsImage, token.colorSplit, 300, "steps wait connector", 28);
+
+    AntLayout layout;
+    layout.setBorderRadius(8);
+    auto* sider = new AntLayoutSider;
+    sider->setWidth(120);
+    sider->setCollapsible(true);
+    layout.addSider(sider);
+    layout.setHeader(new AntLayoutHeader);
+    layout.setContent(new AntLayoutContent);
+    layout.setFooter(new AntLayoutFooter);
+    const QImage layoutImage = renderWidget(&layout, QSize(480, 260));
+    assertNearColorPixels(layoutImage, token.colorBgLayout, 56000, "layout background and footer", 12);
+    assertNearColorPixels(layoutImage, token.colorBgContainer, 45000, "layout content surface", 12);
+    assertNearColorPixels(layoutImage, QColor(0, 21, 41), 34000, "layout header and sider dark surface", 12);
+}
+
+void TestAntVisualRegression::complexPopupSurfacesStayElevated()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const auto& token = antTheme->tokens();
+
+    AntMenu popupSource;
+    popupSource.setMode(Ant::MenuMode::Vertical);
+    popupSource.addSubMenu(QStringLiteral("products"), QStringLiteral("Products"), Ant::IconType::Setting);
+    popupSource.addSubItem(QStringLiteral("products"), QStringLiteral("analytics"), QStringLiteral("Analytics"));
+    popupSource.addSubItem(QStringLiteral("products"), QStringLiteral("billing"), QStringLiteral("Billing"));
+    popupSource.resize(popupSource.sizeHint());
+    popupSource.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&popupSource));
+    QTest::mouseClick(&popupSource, Qt::LeftButton, Qt::NoModifier, QPoint(24, 20));
+
+    AntMenu* popupMenu = nullptr;
+    QTRY_VERIFY_WITH_TIMEOUT(([&]() {
+        const auto menus = popupSource.findChildren<AntMenu*>();
+        for (AntMenu* candidate : menus)
+        {
+            if (candidate && candidate->isVisible())
+            {
+                popupMenu = candidate;
+                return true;
+            }
+        }
+        return false;
+    })(), 300);
+    QWidget* popupPanel = popupMenu->parentWidget();
+    QVERIFY(popupPanel != nullptr);
+    QTest::qWait(180);
+    const QImage submenuImage = renderCurrentWidget(popupPanel);
+    assertNearColorPixels(submenuImage, token.colorBgElevated, 8500, "submenu popup elevated surface", 12);
+    assertNearColorPixels(submenuImage, token.colorBorder, 50, "submenu popup border", 18);
+
+    AntPopover popover;
+    popover.setTitle(QStringLiteral("Popover Title"));
+    popover.setTitleIconType(Ant::IconType::InfoCircle);
+    popover.setContent(QStringLiteral("Elevated popover body"));
+    popover.setPlacement(Ant::TooltipPlacement::Bottom);
+    popover.setArrowVisible(true);
+    const QImage popoverImage = renderWidget(&popover, QSize(280, 132));
+    assertNearColorPixels(popoverImage, token.colorBgElevated, 19000, "popover elevated surface", 12);
+    assertNearColorPixels(popoverImage, token.colorPrimary, 70, "popover title icon");
+
+    QWidget modalHost;
+    prepareHost(modalHost, QSize(640, 420), token.colorBgLayout);
+    QVERIFY(QTest::qWaitForWindowExposed(&modalHost));
+    AntModal modal(&modalHost);
+    modal.setTitle(QStringLiteral("Modal Title"));
+    modal.setContent(QStringLiteral("Dialog content"));
+    modal.setCommandIconType(Ant::IconType::InfoCircle);
+    modal.setOpen(true);
+    QTest::qWait(280);
+    const QImage modalImage = renderCurrentWidget(&modalHost);
+    assertNearColorPixels(modalImage, token.colorBgElevated, 54000, "modal elevated dialog", 12);
+    assertNearColorPixels(modalImage, token.colorPrimary, 950, "modal primary action and icon", 28);
+    modal.setOpen(false);
+
+    QWidget drawerHost;
+    prepareHost(drawerHost, QSize(640, 420), token.colorBgLayout);
+    QVERIFY(QTest::qWaitForWindowExposed(&drawerHost));
+    AntDrawer drawer(&drawerHost);
+    drawer.setTitle(QStringLiteral("Drawer Title"));
+    drawer.setDrawerWidth(260);
+    drawer.setPlacement(Ant::DrawerPlacement::Right);
+    drawer.setBodyWidget(new QLabel(QStringLiteral("Drawer body")));
+    drawer.setOpen(true);
+    QTest::qWait(240);
+    const QImage drawerImage = renderCurrentWidget(&drawerHost);
+    assertNearColorPixels(drawerImage, token.colorBgContainer, 94000, "drawer panel surface", 12);
+    assertNearColorPixels(drawerImage, token.colorBorderSecondary, 220, "drawer header divider", 18);
+    drawer.setOpen(false);
 }
 
 void TestAntVisualRegression::lightAndDarkThemesRenderDifferentSurfaces()

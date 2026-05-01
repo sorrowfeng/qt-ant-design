@@ -419,7 +419,7 @@ tests/
 ├── TestAntPopupLifecycle.cpp   # Popup open/close and owner/target destruction lifecycle coverage
 ├── TestAntStressLifecycle.cpp  # Repeated theme, popup, and transient feedback lifecycle stress coverage
 ├── TestAntRenderSmoke.cpp      # Public widget render smoke coverage with nonblank checks for direct paint surfaces
-├── TestAntVisualRegression.cpp # Token-color, input handler, data display, selection, tag/badge, feedback surface, navigation, and light/dark visual guards
+├── TestAntVisualRegression.cpp # Token-color, input handler, data display, selection, tag/badge, feedback surface, navigation/layout/popup, and light/dark visual guards
 ├── TestAntInstallConsumer.cmake # Installed package can be found and linked by an external CMake consumer
 ├── TestAntExampleCloseStress   # Example executable theme-cycle and auto-close CTest target
 └── TestAntCoverageInventory.cpp # Public Ant*.h coverage guard for lifecycle and meta-property tests

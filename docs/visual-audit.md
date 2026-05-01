@@ -65,6 +65,7 @@ Use this loop for one component at a time.
 - Feedback surfaces: Message and Notification elevated backgrounds and status/accent icons.
 - Input affordances: InputNumber edit-state handler arrows.
 - Data display structure: Card/List/Table/Descriptions container fills, borders, split lines, selected row fills, and selected checkbox fills.
+- Navigation/layout/popup structure: Menu selected items and submenu popup edge, Pagination active/border states, Steps process/error/connectors, Layout regions, and Popover/Modal/Drawer elevated panels.
 - Theme contrast: light/dark surface luminance remains meaningfully different.
 
 ## Issue-Driven Interaction Pass 2026-04-30
