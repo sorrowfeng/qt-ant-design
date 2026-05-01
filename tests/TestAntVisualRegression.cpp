@@ -9,11 +9,19 @@
 
 #include "core/AntTheme.h"
 #include "widgets/AntAlert.h"
+#include "widgets/AntBadge.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
+#include "widgets/AntCheckbox.h"
+#include "widgets/AntInputNumber.h"
+#include "widgets/AntMessage.h"
 #include "widgets/AntNavItem.h"
+#include "widgets/AntNotification.h"
 #include "widgets/AntProgress.h"
+#include "widgets/AntRadio.h"
+#include "widgets/AntSwitch.h"
 #include "widgets/AntTabs.h"
+#include "widgets/AntTag.h"
 
 class TestAntVisualRegression : public QObject
 {
@@ -24,6 +32,10 @@ private slots:
     void alertSemanticBackgroundsStayVisible();
     void progressStatusColorsStayVisible();
     void navigationActiveIndicatorsStayPrimary();
+    void inputNumberHandlersStayVisible();
+    void selectionControlsKeepPrimaryStateFills();
+    void tagAndBadgeStatusColorsStayVisible();
+    void feedbackSurfacesKeepElevatedTokenFill();
     void lightAndDarkThemesRenderDifferentSurfaces();
 };
 
@@ -119,6 +131,12 @@ QString countMessage(const char* name, int count, int expected)
         .arg(count)
         .arg(expected);
 }
+
+void assertNearColorPixels(const QImage& image, const QColor& color, int expected, const char* name, int tolerance = 28)
+{
+    const int pixels = countNearColor(image, color, tolerance);
+    QVERIFY2(pixels > expected, qPrintable(countMessage(name, pixels, expected)));
+}
 } // namespace
 
 void TestAntVisualRegression::primaryButtonKeepsTokenFill()
@@ -200,6 +218,93 @@ void TestAntVisualRegression::navigationActiveIndicatorsStayPrimary()
     navItem.setActive(true);
     const int navPrimaryPixels = countNearColor(renderWidget(&navItem, QSize(220, 36)), primary);
     QVERIFY2(navPrimaryPixels > 80, qPrintable(countMessage("nav item active", navPrimaryPixels, 80)));
+}
+
+void TestAntVisualRegression::inputNumberHandlersStayVisible()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const auto& token = antTheme->tokens();
+
+    AntInputNumber inputNumber;
+    inputNumber.setValue(24);
+    inputNumber.setControlsProgress(1.0);
+    assertNearColorPixels(renderWidget(&inputNumber, QSize(220, 40)), token.colorTextTertiary, 20, "input number handler arrows", 36);
+}
+
+void TestAntVisualRegression::selectionControlsKeepPrimaryStateFills()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const QColor primary = antTheme->tokens().colorPrimary;
+
+    AntCheckbox checkbox(QStringLiteral("Checked"));
+    checkbox.setChecked(true);
+    assertNearColorPixels(renderWidget(&checkbox, QSize(120, 32)), primary, 90, "checked checkbox");
+
+    AntRadio radio(QStringLiteral("Selected"));
+    radio.setChecked(true);
+    assertNearColorPixels(renderWidget(&radio, QSize(120, 32)), primary, 60, "checked radio");
+
+    AntSwitch switcher;
+    switcher.setChecked(true);
+    switcher.setHandleProgress(1.0);
+    assertNearColorPixels(renderWidget(&switcher, QSize(72, 36)), primary, 420, "checked switch");
+
+    AntTag checkableTag(QStringLiteral("Active"));
+    checkableTag.setCheckable(true);
+    checkableTag.setChecked(true);
+    assertNearColorPixels(renderWidget(&checkableTag, QSize(92, 28)), primary, 1000, "checked tag");
+}
+
+void TestAntVisualRegression::tagAndBadgeStatusColorsStayVisible()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const auto& token = antTheme->tokens();
+
+    AntTag successTag(QStringLiteral("Success"));
+    successTag.setColor(QStringLiteral("success"));
+    const QImage successTagImage = renderWidget(&successTag, QSize(96, 28));
+    assertNearColorPixels(successTagImage, token.colorSuccessBg, 1000, "success tag bg", 18);
+    assertNearColorPixels(successTagImage, token.colorSuccess, 60, "success tag text/border");
+
+    AntTag errorTag(QStringLiteral("Error"));
+    errorTag.setColor(QStringLiteral("error"));
+    const QImage errorTagImage = renderWidget(&errorTag, QSize(80, 28));
+    assertNearColorPixels(errorTagImage, token.colorErrorBg, 800, "error tag bg", 18);
+    assertNearColorPixels(errorTagImage, token.colorError, 40, "error tag text/border");
+
+    AntBadge countBadge(12);
+    assertNearColorPixels(renderWidget(&countBadge, QSize(56, 32)), token.colorError, 120, "count badge fill");
+
+    AntBadge successStatus;
+    successStatus.setStatus(Ant::BadgeStatus::Success);
+    successStatus.setText(QStringLiteral("Ready"));
+    assertNearColorPixels(renderWidget(&successStatus, QSize(120, 32)), token.colorSuccess, 24, "success badge status");
+}
+
+void TestAntVisualRegression::feedbackSurfacesKeepElevatedTokenFill()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const auto& token = antTheme->tokens();
+
+    AntMessage message;
+    message.setText(QStringLiteral("Saved"));
+    message.setMessageType(Ant::MessageType::Success);
+    const QImage messageImage = renderWidget(&message, QSize(180, 52));
+    assertNearColorPixels(messageImage, token.colorBgElevated, 3400, "message elevated surface", 12);
+    assertNearColorPixels(messageImage, token.colorSuccess, 50, "message success icon");
+
+    AntNotification notification;
+    notification.setTitle(QStringLiteral("Notice"));
+    notification.setDescription(QStringLiteral("Visual surface"));
+    notification.setNotificationType(Ant::MessageType::Info);
+    notification.setShowProgress(true);
+    const QImage notificationImage = renderWidget(&notification, QSize(420, 140));
+    assertNearColorPixels(notificationImage, token.colorBgElevated, 18000, "notification elevated surface", 12);
+    assertNearColorPixels(notificationImage, token.colorPrimary, 80, "notification primary accent");
 }
 
 void TestAntVisualRegression::lightAndDarkThemesRenderDifferentSurfaces()

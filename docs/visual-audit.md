@@ -56,6 +56,16 @@ Use this loop for one component at a time.
 | Theme | Light/dark parity, contrast, inherited text colors, transparent surfaces |
 | Example | Uses Ant components for visible text, no stale "missing" notes, no stylesheet-only styling |
 
+## Automated Visual Regression Guards
+
+`TestAntVisualRegression` covers stable pixel-level checks that should fail before broad visual drift reaches manual screenshot review:
+
+- Primary/token fills: primary Button, Tabs ink/active state, NavItem active indicator, checked Checkbox/Radio/Switch/Tag.
+- Semantic state colors: Alert backgrounds, Progress success/error, Tag success/error, Badge count/status.
+- Feedback surfaces: Message and Notification elevated backgrounds and status/accent icons.
+- Input affordances: InputNumber edit-state handler arrows.
+- Theme contrast: light/dark surface luminance remains meaningfully different.
+
 ## Issue-Driven Interaction Pass 2026-04-30
 
 This pass followed the user-reported interaction list one item at a time. Each completed item was built, tested, committed, and pushed separately.

@@ -43,6 +43,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
   - Improved `AntSpin` animation smoothness with a precise 16 ms timer.
 - Added installed CMake package consumer coverage with `find_package(qt-ant-design CONFIG REQUIRED)`.
 - Added lifecycle stress coverage for repeated theme switching, popup open/close cycles, transient feedback cleanup, and example auto-close behavior.
+- Expanded automated visual regression guards for InputNumber handler visibility, selection primary fills, Tag/Badge status colors, and Message/Notification elevated surfaces.
 
 ## Visual Audit State
 
@@ -50,6 +51,7 @@ The component visual audit matrix in `docs/visual-audit.md` is current:
 
 - Comparable Ant Design standard components are marked `Pass`.
 - Qt-only desktop extensions are marked `Local Pass`.
+- `TestAntVisualRegression` now guards stable pixel-level regressions across token fills, semantic status colors, selection controls, feedback surfaces, navigation indicators, and light/dark surface contrast.
 - The homepage Showcase audit is marked `Pass` against the isolated local HTML and Qt control pages.
 - Future visual work should be issue-driven: when a mismatch is found, re-run the single-component capture loop documented in `docs/visual-audit.md`.
 
