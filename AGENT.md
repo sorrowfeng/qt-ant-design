@@ -32,7 +32,7 @@
 - Qt / 桌面扩展组件：`12`（AntWindow、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntPlainTextEdit、AntDockWidget、AntLog、AntNavItem）
 - 已迁移至 `QProxyStyle` 的组件数：`62` 个 `Ant*Style` 类
 - 不依赖独立 Style 类的组件：`AntAffix`、`AntAnchor`、`AntApp`、`AntCarousel`、`AntCollapse`、`AntColorPicker`、`AntConfigProvider`、`AntDockWidget`、`AntFlex`、`AntGrid`、`AntImage`、`AntLog`、`AntMasonry`、`AntMentions`、`AntNavItem`、`AntScrollArea`、`AntSplitter`、`AntTour`、`AntTransfer`、`AntWidget`
-- 示例程序覆盖：`80 / 82` 个公开组件，另有独立 `Showcase` 页面；当前未单独提供示例页的组件：`AntWidget`、`AntNavItem`（NavItem 用于示例程序自身导航）
+- 示例程序覆盖：`82 / 82` 个公开组件，另有独立 `Showcase` 页面；所有公开组件均已提供独立示例页
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
@@ -332,7 +332,7 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖 `80 / 82` 个公开组件，另有 `Showcase` 页面用于首页展示控件对标。左侧导航与右侧页面一一对应。
+当前 `examples/ExampleWindow.cpp` 已覆盖 `82 / 82` 个公开组件，另有 `Showcase` 页面用于首页展示控件对标。左侧导航与右侧页面一一对应。
 
 示例程序架构：
 - `ExampleWindow` 继承 `AntWindow`（无边框窗口，自定义标题栏）

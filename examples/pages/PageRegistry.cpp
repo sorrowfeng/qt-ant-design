@@ -104,6 +104,7 @@ QVector<PageEntry> buildPageRegistry()
     add(kOther, QStringLiteral("FloatButton"), &createFloatButtonPage);
 
     add(kQtExtensions, QStringLiteral("Window"), &createWindowPage);
+    add(kQtExtensions, QStringLiteral("Widget"), &createWidgetPage);
     add(kQtExtensions, QStringLiteral("ScrollArea"), &createScrollAreaPage);
     add(kQtExtensions, QStringLiteral("ScrollBar"), &createScrollBarPage);
     add(kQtExtensions, QStringLiteral("StatusBar"), &createStatusBarPage);
@@ -113,6 +114,7 @@ QVector<PageEntry> buildPageRegistry()
     add(kQtExtensions, QStringLiteral("DockWidget"), &createDockWidgetPage);
     add(kQtExtensions, QStringLiteral("PlainTextEdit"), &createPlainTextEditPage);
     add(kQtExtensions, QStringLiteral("Log"), &createLogPage);
+    add(kQtExtensions, QStringLiteral("NavItem"), &createNavItemPage);
     add(kQtExtensions, QStringLiteral("Masonry"), &createMasonryPage);
 
     return registry;

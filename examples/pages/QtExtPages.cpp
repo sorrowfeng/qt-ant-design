@@ -20,6 +20,7 @@
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
 #include "widgets/AntMenuBar.h"
+#include "widgets/AntNavItem.h"
 #include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntScrollArea.h"
 #include "widgets/AntScrollBar.h"
@@ -27,6 +28,7 @@
 #include "widgets/AntToolBar.h"
 #include "widgets/AntToolButton.h"
 #include "widgets/AntTypography.h"
+#include "widgets/AntWidget.h"
 #include "widgets/AntWindow.h"
 
 namespace example::pages
@@ -68,7 +70,164 @@ private:
     QString m_text;
     QColor m_color;
 };
+
+class ThemeAwarePanel : public AntWidget
+{
+public:
+    explicit ThemeAwarePanel(const QString& title, const QString& caption, QWidget* parent = nullptr)
+        : AntWidget(parent), m_title(title), m_caption(caption)
+    {
+        setMinimumHeight(112);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const auto& token = tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+        const QRectF panel = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
+        painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        painter.setBrush(token.colorBgElevated);
+        painter.drawRoundedRect(panel, token.borderRadiusLG, token.borderRadiusLG);
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(token.colorPrimary);
+        painter.drawRoundedRect(QRectF(16, 18, 5, height() - 36), 2, 2);
+
+        QFont titleFont = painter.font();
+        titleFont.setPixelSize(token.fontSizeLG);
+        titleFont.setWeight(QFont::DemiBold);
+        painter.setFont(titleFont);
+        painter.setPen(token.colorText);
+        painter.drawText(QRect(32, 18, width() - 48, 24), Qt::AlignLeft | Qt::AlignVCenter, m_title);
+
+        QFont captionFont = painter.font();
+        captionFont.setPixelSize(token.fontSize);
+        captionFont.setWeight(QFont::Normal);
+        painter.setFont(captionFont);
+        painter.setPen(token.colorTextSecondary);
+        painter.drawText(QRect(32, 48, width() - 48, 24), Qt::AlignLeft | Qt::AlignVCenter, m_caption);
+
+        const QString mode = currentTheme() == Ant::ThemeMode::Dark ? QStringLiteral("Dark") : QStringLiteral("Light");
+        painter.setPen(token.colorTextTertiary);
+        painter.drawText(QRect(32, 74, width() - 48, 22),
+                         Qt::AlignLeft | Qt::AlignVCenter,
+                         QStringLiteral("%1 theme - %2 updates").arg(mode).arg(m_themeUpdates));
+    }
+
+    void onThemeChanged(Ant::ThemeMode mode) override
+    {
+        Q_UNUSED(mode)
+        ++m_themeUpdates;
+        update();
+    }
+
+private:
+    QString m_title;
+    QString m_caption;
+    int m_themeUpdates = 0;
+};
 } // namespace
+
+QWidget* createWidgetPage(QWidget* /*owner*/)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    {
+        auto* card = new AntCard(QStringLiteral("AntWidget"));
+        auto* cl = card->bodyLayout();
+
+        auto* desc = makeParagraph(QStringLiteral("AntWidget is the theme-aware base QWidget used by the example shell. "
+                                                  "It exposes design tokens and receives global theme updates automatically."),
+                                   page);
+        cl->addWidget(desc);
+
+        auto* row = new QHBoxLayout();
+        row->setSpacing(12);
+        row->addWidget(new ThemeAwarePanel(QStringLiteral("Token Surface"),
+                                           QStringLiteral("Painted from AntThemeTokens"),
+                                           page));
+        row->addWidget(new ThemeAwarePanel(QStringLiteral("Theme Listener"),
+                                           QStringLiteral("onThemeChanged refreshes this panel"),
+                                           page));
+        cl->addLayout(row);
+
+        auto* toggle = new AntButton(QStringLiteral("Toggle Theme"));
+        toggle->setButtonType(Ant::ButtonType::Primary);
+        QObject::connect(toggle, &AntButton::clicked, antTheme, &AntTheme::toggleThemeMode);
+        cl->addWidget(toggle, 0, Qt::AlignLeft);
+
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* createNavItemPage(QWidget* /*owner*/)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    {
+        auto* card = new AntCard(QStringLiteral("AntNavItem"));
+        auto* cl = card->bodyLayout();
+
+        auto* desc = makeParagraph(QStringLiteral("AntNavItem is the self-painted sidebar item used by the example navigation. "
+                                                  "Click the items below to switch the active state."),
+                                   page);
+        cl->addWidget(desc);
+
+        auto* demoRow = new QHBoxLayout();
+        demoRow->setSpacing(16);
+
+        auto* navColumn = new AntWidget(page);
+        navColumn->setFixedWidth(220);
+        auto* navLayout = new QVBoxLayout(navColumn);
+        navLayout->setContentsMargins(0, 8, 0, 8);
+        navLayout->setSpacing(0);
+
+        auto* overview = new AntNavItem(QStringLiteral("Overview"), navColumn);
+        auto* activity = new AntNavItem(QStringLiteral("Activity"), navColumn);
+        auto* settings = new AntNavItem(QStringLiteral("Settings"), navColumn);
+        const QVector<AntNavItem*> items{overview, activity, settings};
+        for (AntNavItem* item : items)
+        {
+            navLayout->addWidget(item);
+        }
+        navLayout->addStretch();
+
+        auto* detail = makeParagraph(QStringLiteral("Overview selected"), page);
+        overview->setActive(true);
+
+        auto selectItem = [items, detail](int activeIndex) {
+            for (int i = 0; i < items.size(); ++i)
+            {
+                items.at(i)->setActive(i == activeIndex);
+            }
+            detail->setText(QStringLiteral("%1 selected").arg(items.at(activeIndex)->text()));
+        };
+        QObject::connect(overview, &AntNavItem::clicked, overview, [selectItem]() { selectItem(0); });
+        QObject::connect(activity, &AntNavItem::clicked, activity, [selectItem]() { selectItem(1); });
+        QObject::connect(settings, &AntNavItem::clicked, settings, [selectItem]() { selectItem(2); });
+
+        demoRow->addWidget(navColumn);
+        demoRow->addWidget(detail, 1);
+        cl->addLayout(demoRow);
+
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
 
 QWidget* createDockWidgetPage(QWidget* /*owner*/)
 {

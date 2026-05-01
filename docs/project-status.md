@@ -13,9 +13,9 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Widget headers | `83` headers in `src/widgets`; `AntSelectPopup` is an internal helper and is not counted as a public component |
 | Qt / desktop extensions | `12` components |
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
-| Example coverage | `80 / 82` public components, plus the standalone `Showcase` page |
-| Dedicated examples intentionally absent | `AntWidget`, `AntNavItem`; both are infrastructure widgets used by the example shell |
-| Tests | `20` CTest targets, all passing in Debug on `2026-04-30` |
+| Example coverage | `82 / 82` public components, plus the standalone `Showcase` page |
+| Dedicated examples intentionally absent | None |
+| Tests | `30` CTest targets, all passing in Debug on `2026-05-01` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 
 ## Recent Completed Work

@@ -26,7 +26,7 @@ The project focuses on:
 - Built-in Design Token system with real-time light / dark theme switching
 - `82` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `12` Qt / desktop extension components)
 - `62` style-driven components are rendered through a `QProxyStyle` architecture
-- The example app currently demos `80 / 82` public components, plus a standalone Ant Design homepage-style `Showcase`
+- The example app currently demos `82 / 82` public components, plus a standalone Ant Design homepage-style `Showcase`
 - `AntIcon` bundles `831` official SVG resources from `@ant-design/icons-svg@4.4.2`
 - Comparable standard components are tracked as visual-audit `Pass`; Qt-only desktop extensions are tracked as `Local Pass`
 - Clean code structure — `core / styles / widgets / examples` layering keeps the project easy to extend
