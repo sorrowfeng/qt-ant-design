@@ -1,7 +1,5 @@
 # qt-ant-design
 
-> ⚠️ **实验性移植版本，API 与视觉细节仍在持续打磨。**
-
 [English](README.md) | 简体中文
 
 `qt-ant-design` 是一个基于 Qt6 Widgets 的 C++ 组件库，目标是将 Ant Design 设计系统移植到原生桌面组件中。
@@ -13,6 +11,8 @@
 - 使用 `QPainter` / `QProxyStyle` 构建可维护的桌面绘制体系
 
 > 当前实现与视觉审计状态记录在 [docs/project-status.md](docs/project-status.md) 和 [docs/visual-audit.md](docs/visual-audit.md)。
+
+> 欢迎提交 Issue 和 PR：视觉差异、交互缺失、Qt 集成问题、文档遗漏、组件修复、测试、示例和文档改进都很欢迎。
 
 ## Showcase
 
@@ -307,7 +307,7 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 5. 在 `examples/ExampleWindow.cpp` 中补齐展示页
 6. 更新 `AGENT.md` 与 `README.md`
 
-欢迎提交 Issue 和 PR。如果发现视觉差异、交互缺失、Qt 集成问题或文档遗漏，欢迎带上复现信息提交 Issue；组件修复、测试、示例和文档改进类 PR 都很欢迎。
+欢迎提交 Issue 和 PR。
 
 ## 致谢
 

@@ -1,7 +1,5 @@
 # qt-ant-design
 
-> ⚠️ **Experimental port — APIs and visual details are still being refined.**
-
 English | [简体中文](README.zh-CN.md)
 
 `qt-ant-design` is a C++ component library built on Qt 6 Widgets that ports the Ant Design system to native desktop widgets.
@@ -13,6 +11,8 @@ The project focuses on:
 - A maintainable desktop rendering stack built on `QPainter` / `QProxyStyle`
 
 > Current implementation and visual-audit status are tracked in [docs/project-status.md](docs/project-status.md) and [docs/visual-audit.md](docs/visual-audit.md).
+
+> Issues and PRs are welcome: visual mismatches, missing interactions, Qt integration problems, documentation gaps, component fixes, tests, examples, and docs improvements are all appreciated.
 
 ## Showcase
 
@@ -307,7 +307,7 @@ When adding a new component, the recommended flow is:
 5. Add a demo page in `examples/ExampleWindow.cpp`
 6. Update `AGENT.md` and `README.md`
 
-Issues and PRs are welcome. If you find a visual mismatch, missing interaction, Qt integration problem, or documentation gap, please open an issue with reproduction details. Pull requests for component fixes, tests, examples, and docs are appreciated.
+Issues and PRs are welcome.
 
 ## Acknowledgements
 
