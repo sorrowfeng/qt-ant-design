@@ -64,6 +64,7 @@ Use this loop for one component at a time.
 - Semantic state colors: Alert backgrounds, Progress success/error, Tag success/error, Badge count/status.
 - Feedback surfaces: Message and Notification elevated backgrounds and status/accent icons.
 - Input affordances: InputNumber edit-state handler arrows.
+- Data display structure: Card/List/Table/Descriptions container fills, borders, split lines, selected row fills, and selected checkbox fills.
 - Theme contrast: light/dark surface luminance remains meaningfully different.
 
 ## Issue-Driven Interaction Pass 2026-04-30

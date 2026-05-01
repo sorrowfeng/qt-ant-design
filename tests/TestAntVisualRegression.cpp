@@ -1,5 +1,6 @@
 #include <QColor>
 #include <QImage>
+#include <QLabel>
 #include <QPainter>
 #include <QTest>
 #include <QVBoxLayout>
@@ -13,7 +14,9 @@
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckbox.h"
+#include "widgets/AntDescriptions.h"
 #include "widgets/AntInputNumber.h"
+#include "widgets/AntList.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntNotification.h"
@@ -21,6 +24,7 @@
 #include "widgets/AntRadio.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTabs.h"
+#include "widgets/AntTable.h"
 #include "widgets/AntTag.h"
 
 class TestAntVisualRegression : public QObject
@@ -36,6 +40,7 @@ private slots:
     void selectionControlsKeepPrimaryStateFills();
     void tagAndBadgeStatusColorsStayVisible();
     void feedbackSurfacesKeepElevatedTokenFill();
+    void dataDisplayBordersAndSeparatorsStayVisible();
     void lightAndDarkThemesRenderDifferentSurfaces();
 };
 
@@ -305,6 +310,78 @@ void TestAntVisualRegression::feedbackSurfacesKeepElevatedTokenFill()
     const QImage notificationImage = renderWidget(&notification, QSize(420, 140));
     assertNearColorPixels(notificationImage, token.colorBgElevated, 18000, "notification elevated surface", 12);
     assertNearColorPixels(notificationImage, token.colorPrimary, 80, "notification primary accent");
+}
+
+void TestAntVisualRegression::dataDisplayBordersAndSeparatorsStayVisible()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const auto& token = antTheme->tokens();
+
+    AntCard card(QStringLiteral("Card Title"));
+    card.setExtra(QStringLiteral("More"));
+    card.bodyLayout()->addWidget(new AntButton(QStringLiteral("Action"), &card));
+    const QImage cardImage = renderWidget(&card, QSize(320, 160));
+    assertNearColorPixels(cardImage, token.colorBgContainer, 22000, "card container surface", 12);
+    assertNearColorPixels(cardImage, token.colorBorderSecondary, 600, "card border and header separator", 18);
+
+    AntList list;
+    list.setBordered(true);
+    list.setSplit(true);
+    list.setHeaderWidget(new QLabel(QStringLiteral("Header")));
+    list.setFooterWidget(new QLabel(QStringLiteral("Footer")));
+    for (const QString& text : {QStringLiteral("First item"), QStringLiteral("Second item")})
+    {
+        auto* item = new AntListItem;
+        item->setContentWidget(new QLabel(text));
+        list.addItem(item);
+    }
+    const QImage listImage = renderWidget(&list, QSize(360, 190));
+    assertNearColorPixels(listImage, token.colorBorder, 700, "list outer/header/footer border", 18);
+    assertNearColorPixels(listImage, token.colorSplit, 280, "list item split lines", 18);
+
+    AntTableColumn nameColumn;
+    nameColumn.title = QStringLiteral("Name");
+    nameColumn.dataIndex = QStringLiteral("name");
+    nameColumn.key = QStringLiteral("name");
+    nameColumn.width = 160;
+
+    AntTableColumn roleColumn;
+    roleColumn.title = QStringLiteral("Role");
+    roleColumn.dataIndex = QStringLiteral("role");
+    roleColumn.key = QStringLiteral("role");
+    roleColumn.width = 160;
+
+    AntTableRow selectedRow;
+    selectedRow.data.insert(QStringLiteral("name"), QStringLiteral("Alice"));
+    selectedRow.data.insert(QStringLiteral("role"), QStringLiteral("Designer"));
+    selectedRow.selected = true;
+
+    AntTableRow normalRow;
+    normalRow.data.insert(QStringLiteral("name"), QStringLiteral("Bob"));
+    normalRow.data.insert(QStringLiteral("role"), QStringLiteral("Engineer"));
+
+    AntTable table;
+    table.setRowSelection(Ant::TableSelectionMode::Checkbox);
+    table.setPageSize(4);
+    table.setColumns({nameColumn, roleColumn});
+    table.setRows({selectedRow, normalRow});
+    const QImage tableImage = renderWidget(&table, QSize(420, 180));
+    assertNearColorPixels(tableImage, token.colorFillQuaternary, 9000, "table header and alternating fill", 18);
+    assertNearColorPixels(tableImage, token.colorBorderSecondary, 1200, "table grid separators", 18);
+    assertNearColorPixels(tableImage, token.colorPrimaryBg, 7000, "table selected row fill", 18);
+    assertNearColorPixels(tableImage, token.colorPrimary, 120, "table selected checkbox fill");
+
+    AntDescriptions descriptions;
+    descriptions.setTitle(QStringLiteral("User Info"));
+    descriptions.setBordered(true);
+    descriptions.setColumnCount(2);
+    descriptions.addItem(QStringLiteral("Name"), QStringLiteral("Alice"));
+    descriptions.addItem(QStringLiteral("Role"), QStringLiteral("Designer"));
+    const QImage descriptionsImage = renderWidget(&descriptions, QSize(420, 150));
+    assertNearColorPixels(descriptionsImage, token.colorFillQuaternary, 7000, "descriptions label cells", 18);
+    assertNearColorPixels(descriptionsImage, token.colorBgContainer, 12000, "descriptions content cells", 12);
+    assertNearColorPixels(descriptionsImage, token.colorSplit, 1000, "descriptions cell borders", 18);
 }
 
 void TestAntVisualRegression::lightAndDarkThemesRenderDifferentSurfaces()

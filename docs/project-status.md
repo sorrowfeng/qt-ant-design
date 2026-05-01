@@ -43,7 +43,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
   - Improved `AntSpin` animation smoothness with a precise 16 ms timer.
 - Added installed CMake package consumer coverage with `find_package(qt-ant-design CONFIG REQUIRED)`.
 - Added lifecycle stress coverage for repeated theme switching, popup open/close cycles, transient feedback cleanup, and example auto-close behavior.
-- Expanded automated visual regression guards for InputNumber handler visibility, selection primary fills, Tag/Badge status colors, and Message/Notification elevated surfaces.
+- Expanded automated visual regression guards for InputNumber handler visibility, selection primary fills, Tag/Badge status colors, Message/Notification elevated surfaces, and Card/List/Table/Descriptions data-display borders.
 
 ## Visual Audit State
 
