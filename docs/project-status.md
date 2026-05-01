@@ -1,8 +1,8 @@
 # Project Status
 
-Updated: `2026-04-30`
+Updated: `2026-05-01`
 
-This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline, official Ant Design Icon resource work, and the 2026-04-30 interaction/motion parity pass.
+This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, installed package coverage, and lifecycle stress coverage.
 
 ## Summary
 
@@ -15,7 +15,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `82 / 82` public components, plus the standalone `Showcase` page |
 | Dedicated examples intentionally absent | None |
-| Tests | `32` CTest targets, all passing in Debug on `2026-05-01` |
+| Tests | `34` CTest targets, all passing in Debug on `2026-05-01` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 
 ## Recent Completed Work
@@ -41,6 +41,8 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
   - Aligned `AntMessage` popup motion and elevated bubble styling.
   - Restored animated shimmer movement for `AntSkeleton`.
   - Improved `AntSpin` animation smoothness with a precise 16 ms timer.
+- Added installed CMake package consumer coverage with `find_package(qt-ant-design CONFIG REQUIRED)`.
+- Added lifecycle stress coverage for repeated theme switching, popup open/close cycles, transient feedback cleanup, and example auto-close behavior.
 
 ## Visual Audit State
 
@@ -72,11 +74,11 @@ Inventory:
 Last full verification run:
 
 ```powershell
-cmake --build build --config Debug --target qt-ant-design-example
+cmake --build build --config Debug
 ctest -C Debug --output-on-failure
 ```
 
-Result: `32 / 32` tests passed.
+Result: `34 / 34` tests passed.
 
 ## Remaining Notes
 

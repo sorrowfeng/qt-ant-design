@@ -76,6 +76,9 @@ add_ant_test(TestAntMotion)
 # Popup lifecycle coverage
 add_ant_test(TestAntPopupLifecycle)
 
+# Repeated lifecycle stress coverage
+add_ant_test(TestAntStressLifecycle)
+
 # Render smoke coverage
 add_ant_test(TestAntRenderSmoke)
 
@@ -95,6 +98,16 @@ add_test(NAME TestAntInstallConsumer
         -DANT_CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntInstallConsumer.cmake
 )
+
+if(TARGET qt-ant-design-example)
+    add_test(NAME TestAntExampleCloseStress
+        COMMAND $<TARGET_FILE:qt-ant-design-example>
+            --stress-theme-cycles 16
+            --stress-theme-interval-ms 20
+            --smoke-exit-ms 800
+    )
+    set_tests_properties(TestAntExampleCloseStress PROPERTIES TIMEOUT 10)
+endif()
 
 # Coverage inventory guard
 add_ant_inventory_test(TestAntCoverageInventory)

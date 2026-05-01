@@ -36,7 +36,7 @@ The project focuses on:
 - Status snapshot: [docs/project-status.md](docs/project-status.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
-- Latest full Debug verification: `32 / 32` CTest targets passed on `2026-05-01`
+- Latest full Debug verification: `34 / 34` CTest targets passed on `2026-05-01`
 
 ## Recent Ant Design Parity Updates
 
