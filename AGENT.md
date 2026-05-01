@@ -12,7 +12,7 @@
 
 ## 参考仓库
 
-- 绘制实现参考：`https://github.com/sorrowfeng/ElaWidgetTools`
+- 绘制实现参考：`https://github.com/Liniyous/ElaWidgetTools`
 - 设计规范参考：`https://github.com/ant-design/ant-design`
 
 参考仓库不再以 Git submodule 方式维护在项目内，需要对照上游实现时直接查看对应 GitHub 仓库。

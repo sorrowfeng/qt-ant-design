@@ -301,7 +301,7 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 添加新组件时，推荐遵循以下流程：
 
 1. 阅读 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/<component>/` 的 API 与样式
-2. 需要时参考 [`sorrowfeng/ElaWidgetTools`](https://github.com/sorrowfeng/ElaWidgetTools) 中相似 Qt 控件的实现方式
+2. 需要时参考 [`Liniyous/ElaWidgetTools`](https://github.com/Liniyous/ElaWidgetTools) 中相似 Qt 控件的实现方式
 3. 新增 `src/widgets/Ant<Name>.h/.cpp`
 4. 如需样式解耦，新增 `src/styles/Ant<Name>Style.h/.cpp`
 5. 在 `examples/ExampleWindow.cpp` 中补齐展示页
@@ -312,7 +312,7 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 ## 致谢
 
 - 感谢 Ant Design 提供设计系统、组件规范与 token 基础：[ant-design/ant-design](https://github.com/ant-design/ant-design)
-- 感谢 ElaWidgetTools 提供 Qt 控件参考：[sorrowfeng/ElaWidgetTools](https://github.com/sorrowfeng/ElaWidgetTools)
+- 感谢 ElaWidgetTools 提供 Qt 控件参考：[Liniyous/ElaWidgetTools](https://github.com/Liniyous/ElaWidgetTools)
 - 开发说明：本项目 90% 以上由 Codex GPT-5.5 开发，其余由 Claude Code 与 Mimo v2.5 Pro 协助完成。
 
 ## 许可证

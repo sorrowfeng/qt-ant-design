@@ -21,7 +21,7 @@ cd qt-ant-design
 - 当前绘制架构：项目处于 `paintEvent` 与 `QProxyStyle` 并存阶段，新的架构迁移优先采用 `QProxyStyle`
 
 ## 外部参考仓库
-- ElaWidgetTools 参考仓库：`https://github.com/sorrowfeng/ElaWidgetTools`
+- ElaWidgetTools 参考仓库：`https://github.com/Liniyous/ElaWidgetTools`
 - Ant Design 参考仓库：`https://github.com/ant-design/ant-design`
 
 ## 开始工作前必须执行
@@ -33,7 +33,7 @@ cd qt-ant-design
    - `src/widgets/`
    - `examples/`
 4. 需要对照上游实现时，查看外部参考仓库：
-   - `https://github.com/sorrowfeng/ElaWidgetTools`
+   - `https://github.com/Liniyous/ElaWidgetTools`
    - `https://github.com/ant-design/ant-design`
 5. 总结当前项目状态：
    - 已实现组件数量

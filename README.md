@@ -301,7 +301,7 @@ The per-component visual audit tracker lives in `docs/visual-audit.md`.
 When adding a new component, the recommended flow is:
 
 1. Read the API and styles in [`ant-design/ant-design`](https://github.com/ant-design/ant-design) under `components/<component>/`
-2. Reference similar Qt widget implementations in [`sorrowfeng/ElaWidgetTools`](https://github.com/sorrowfeng/ElaWidgetTools) when useful
+2. Reference similar Qt widget implementations in [`Liniyous/ElaWidgetTools`](https://github.com/Liniyous/ElaWidgetTools) when useful
 3. Add `src/widgets/Ant<Name>.h/.cpp`
 4. If style decoupling is needed, add `src/styles/Ant<Name>Style.h/.cpp`
 5. Add a demo page in `examples/ExampleWindow.cpp`
@@ -312,7 +312,7 @@ Issues and PRs are welcome.
 ## Acknowledgements
 
 - Thanks to Ant Design for the design system, component specs, and token foundation: [ant-design/ant-design](https://github.com/ant-design/ant-design)
-- Thanks to ElaWidgetTools for Qt widget references: [sorrowfeng/ElaWidgetTools](https://github.com/sorrowfeng/ElaWidgetTools)
+- Thanks to ElaWidgetTools for Qt widget references: [Liniyous/ElaWidgetTools](https://github.com/Liniyous/ElaWidgetTools)
 - Development note: 90%+ of this project was developed with Codex GPT-5.5; the rest was completed with Claude Code and Mimo v2.5 Pro.
 
 ## License
