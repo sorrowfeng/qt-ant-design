@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(Qt6 COMPONENTS Core Widgets Svg)
+
+include("${CMAKE_CURRENT_LIST_DIR}/qt-ant-design-targets.cmake")
+
+check_required_components(qt-ant-design)

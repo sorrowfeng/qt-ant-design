@@ -15,7 +15,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `82 / 82` public components, plus the standalone `Showcase` page |
 | Dedicated examples intentionally absent | None |
-| Tests | `31` CTest targets, all passing in Debug on `2026-05-01` |
+| Tests | `32` CTest targets, all passing in Debug on `2026-05-01` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 
 ## Recent Completed Work
@@ -76,7 +76,7 @@ cmake --build build --config Debug --target qt-ant-design-example
 ctest -C Debug --output-on-failure
 ```
 
-Result: `20 / 20` tests passed.
+Result: `32 / 32` tests passed.
 
 ## Remaining Notes
 

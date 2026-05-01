@@ -82,5 +82,19 @@ add_ant_test(TestAntRenderSmoke)
 # Automated visual regression coverage
 add_ant_test(TestAntVisualRegression)
 
+# Installed package consumer coverage
+add_test(NAME TestAntInstallConsumer
+    COMMAND ${CMAKE_COMMAND}
+        -DANT_BINARY_DIR=${CMAKE_BINARY_DIR}
+        -DANT_TEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+        -DANT_CONFIG=$<CONFIG>
+        -DANT_QT6_DIR=${Qt6_DIR}
+        -DANT_CMAKE_GENERATOR=${CMAKE_GENERATOR}
+        -DANT_CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+        -DANT_CMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+        -DANT_CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntInstallConsumer.cmake
+)
+
 # Coverage inventory guard
 add_ant_inventory_test(TestAntCoverageInventory)

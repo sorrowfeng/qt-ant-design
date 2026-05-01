@@ -36,7 +36,7 @@ The project focuses on:
 - Status snapshot: [docs/project-status.md](docs/project-status.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
-- Latest full Debug verification: `20 / 20` CTest targets passed on `2026-04-30`
+- Latest full Debug verification: `32 / 32` CTest targets passed on `2026-05-01`
 
 ## Recent Ant Design Parity Updates
 
@@ -77,7 +77,7 @@ add_executable(my-qt-app main.cpp)
 target_link_libraries(my-qt-app PRIVATE Qt6::Core Qt6::Widgets qt-ant-design)
 ```
 
-### Option 2: Build and link the static library directly
+### Option 2: Install and use the CMake package
 
 ```bash
 cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/path/to/install
@@ -85,19 +85,19 @@ cmake --build build --config Release
 cmake --install build --config Release
 ```
 
-Then reference the install directory in your project:
+Then point your consumer project at the install prefix:
 
 ```cmake
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg)
+find_package(qt-ant-design CONFIG REQUIRED)
 
 add_executable(my-qt-app main.cpp)
-target_include_directories(my-qt-app PRIVATE /path/to/install/include/qt-ant-design)
 target_link_libraries(my-qt-app PRIVATE
-    Qt6::Core
-    Qt6::Widgets
-    /path/to/install/lib/qt-ant-design.lib
+    qt-ant-design::qt-ant-design
 )
 ```
+
+Configure the consumer with `-DCMAKE_PREFIX_PATH=/path/to/install` if the prefix is not already on CMake's package search path.
 
 On Windows you can also run the example app from the install directory directly:
 
