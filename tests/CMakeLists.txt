@@ -68,6 +68,7 @@ add_ant_test(TestAntMetaProperties)
 
 # Complex interaction coverage
 add_ant_test(TestAntInteractions)
+add_ant_test(TestAntAdvancedInteractions)
 
 # Motion and animation coverage
 add_ant_test(TestAntMotion)

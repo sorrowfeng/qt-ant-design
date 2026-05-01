@@ -342,6 +342,8 @@ void AntTable::mousePressEvent(QMouseEvent* event)
         if (btnIndex >= 0)
         {
             m_pressedPageButton = btnIndex;
+            setCurrentPage(btnIndex + 1);
+            m_pressedPageButton = -1;
             update();
         }
         event->accept();
@@ -606,23 +608,33 @@ bool AntTable::isInPagination(const QPoint& pos) const
 
 int AntTable::paginationButtonAtPos(const QPoint& pos) const
 {
-    // Approximate button positions; the style computes exact positions.
-    // Each button is roughly 32px wide with 4px gaps.
-    const int btnSize = 32;
-    const int gap = 4;
-    const int startX = 16 + 200; // after "Showing X-Y of Z" text
-    const int relX = pos.x() - startX;
-
-    if (relX < 0)
+    if (!isInPagination(pos))
     {
         return -1;
     }
-    const int btnIndex = relX / (btnSize + gap);
-    const int localX = relX % (btnSize + gap);
-    if (localX <= btnSize && btnIndex < totalPages())
+
+    const int btnSize = 32;
+    const int gap = 4;
+    const int pages = totalPages();
+    if (pages <= 1)
     {
-        return btnIndex;
+        return -1;
     }
+
+    const int buttonsWidth = pages * (btnSize + gap) - gap;
+    const int startX = width() - 16 - buttonsWidth;
+    const int paginationTop = metrics().headerHeight + bodyHeight();
+    const int buttonY = paginationTop + (48 - btnSize) / 2;
+
+    for (int index = 0; index < pages; ++index)
+    {
+        const QRect buttonRect(startX + index * (btnSize + gap), buttonY, btnSize, btnSize);
+        if (buttonRect.contains(pos))
+        {
+            return index;
+        }
+    }
+
     return -1;
 }
 
