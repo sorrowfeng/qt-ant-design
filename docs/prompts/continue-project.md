@@ -25,7 +25,7 @@ cd qt-ant-design
 - Ant Design 参考仓库：`https://github.com/ant-design/ant-design`
 
 ## 开始工作前必须执行
-1. 阅读项目根目录下的 `AGENT.md`
+1. 阅读项目根目录下的 `AGENTS.md`
 2. 阅读项目根目录下的 `README.md`
 3. 扫描以下目录，了解当前代码状态：
    - `src/core/`
@@ -48,19 +48,19 @@ cd qt-ant-design
 4. 组件 API 风格保持与 Ant Design 官方尽量一致
 5. 不依赖 QSS 实现核心外观
 6. 每完成一个阶段性任务后，同步更新：
-   - `AGENT.md`
+   - `AGENTS.md`
    - `README.md`（如果功能范围发生变化）
    - `examples/ExampleWindow.cpp`（如果新增了组件或展示页）
 
 ## 如果当前任务是“继续迁移组件到 QProxyStyle”
 请按以下流程执行：
-1. 读取 `AGENT.md`，找出尚未迁移到 `QProxyStyle` 的已实现组件
+1. 读取 `AGENTS.md`，找出尚未迁移到 `QProxyStyle` 的已实现组件
 2. 优先选择复杂度适中的组件继续迁移
 3. 在 `src/styles/` 中创建对应 `Ant[Component]Style.h/.cpp`
 4. 将原组件中的主绘制逻辑迁移到 Style
 5. 保持组件公开 API 不变
 6. 更新 `CMakeLists.txt`
-7. 更新 `AGENT.md`
+7. 更新 `AGENTS.md`
 8. 编译验证：
    - `cmake -S . -B build-codex -DCMAKE_INSTALL_PREFIX=<install-path>`
    - `cmake --build build-codex --config Debug`
@@ -68,7 +68,7 @@ cd qt-ant-design
 9. 提交并推送
 
 ## 如果当前任务不明确
-请先输出一份“当前项目状态摘要”和“下一步建议”，然后从 `AGENT.md` 中优先级最高的未完成事项开始执行。
+请先输出一份“当前项目状态摘要”和“下一步建议”，然后从 `AGENTS.md` 中优先级最高的未完成事项开始执行。
 
 ## Git 要求
 完成修改后请执行：
@@ -76,7 +76,7 @@ cd qt-ant-design
 - `git commit -m "<合适的提交信息>"`
 - `git push`
 
-请先从扫描 `AGENT.md`、`README.md` 和 `src/widgets/` 开始，并告诉我你建议优先处理什么。
+请先从扫描 `AGENTS.md`、`README.md` 和 `src/widgets/` 开始，并告诉我你建议优先处理什么。
 ```
 
 ---

@@ -1,4 +1,4 @@
-请更新 qt-ant-design 项目根目录下的 AGENT.md 文件，更新完成后提交并推送到远端仓库。
+请更新 qt-ant-design 项目根目录下的 AGENTS.md 文件，更新完成后提交并推送到远端仓库。
 
 **更新要求：**
 
@@ -13,7 +13,7 @@
    - 示例程序左侧导航改用 AntMenu
    ]
 
-3. **更新 AGENT.md 以下章节**
+3. **更新 AGENTS.md 以下章节**
    - **“已移植组件”**（或“已完成组件”）：
       - 列出当前已实现并可用的组件，包含简要说明和支持的主要属性/功能。
       - 如有必要，可分组展示（通用、布局、导航、数据录入、数据展示、反馈等），参考 Ant Design 的分类方式。
@@ -28,9 +28,9 @@
       - 说明当前 example 中展示了哪些组件，以及如何运行。
 
 4. **输出与提交**
-   - 输出完整的 AGENT.md 内容（覆盖原文件）。
+   - 输出完整的 AGENTS.md 内容（覆盖原文件）。
    - 执行 Git 命令：
      ```bash
-     git add AGENT.md
-     git commit -m "docs: update AGENT.md - [简要描述本次更新内容]"
+     git add AGENTS.md
+     git commit -m "docs: update AGENTS.md - [简要描述本次更新内容]"
      git push

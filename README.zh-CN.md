@@ -288,7 +288,7 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 
 ## 开发指南与贡献
 
-项目使用 `AGENT.md` 作为 AI 协作规范与项目同步文档，记录：
+项目使用 `AGENTS.md` 作为 AI 协作规范与项目同步文档，记录：
 
 - 已移植组件清单
 - 视觉审查清单
@@ -305,7 +305,7 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 3. 新增 `src/widgets/Ant<Name>.h/.cpp`
 4. 如需样式解耦，新增 `src/styles/Ant<Name>Style.h/.cpp`
 5. 在 `examples/ExampleWindow.cpp` 中补齐展示页
-6. 更新 `AGENT.md` 与 `README.md`
+6. 更新 `AGENTS.md` 与 `README.md`
 
 欢迎提交 Issue 和 PR。
 

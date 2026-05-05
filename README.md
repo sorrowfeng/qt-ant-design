@@ -288,7 +288,7 @@ A theme switch currently triggers `polish / updateGeometry / update` on every `Q
 
 ## Development Guide & Contributing
 
-The project uses `AGENT.md` as the AI collaboration spec and project sync document, tracking:
+The project uses `AGENTS.md` as the AI collaboration spec and project sync document, tracking:
 
 - Ported component list
 - Visual audit checklist
@@ -305,7 +305,7 @@ When adding a new component, the recommended flow is:
 3. Add `src/widgets/Ant<Name>.h/.cpp`
 4. If style decoupling is needed, add `src/styles/Ant<Name>Style.h/.cpp`
 5. Add a demo page in `examples/ExampleWindow.cpp`
-6. Update `AGENT.md` and `README.md`
+6. Update `AGENTS.md` and `README.md`
 
 Issues and PRs are welcome.
 

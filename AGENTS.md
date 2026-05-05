@@ -263,7 +263,7 @@
   - `AntTheme::themeChanged`
   - 或 `AntTheme::themeModeChanged`
 - 每次新增组件后，必须同步更新：
-  - `AGENT.md`
+  - `AGENTS.md`
   - `README.md`
   - `examples/ExampleWindow.cpp`
 
