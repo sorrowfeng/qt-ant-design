@@ -9,6 +9,7 @@
 #include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
+#include <QStyleHints>
 #include <QVBoxLayout>
 
 #include "../styles/AntWindowStyle.h"
@@ -28,6 +29,49 @@ constexpr AntWindow::TitleBarButton kTitleBarButtonsRightToLeft[] = {
     AntWindow::TitleBarButton::Theme,
     AntWindow::TitleBarButton::Pin,
 };
+
+#ifdef Q_OS_WIN
+using GetDpiForWindowFn = UINT(WINAPI*)(HWND);
+using GetSystemMetricsForDpiFn = int(WINAPI*)(int, UINT);
+
+UINT dpiForWindow(HWND hwnd)
+{
+    if (HMODULE user32 = ::GetModuleHandleW(L"user32.dll"))
+    {
+        auto* getDpiForWindow = reinterpret_cast<GetDpiForWindowFn>(::GetProcAddress(user32, "GetDpiForWindow"));
+        if (getDpiForWindow)
+        {
+            return getDpiForWindow(hwnd);
+        }
+    }
+
+    return 96;
+}
+
+int systemMetricForDpi(int metric, UINT dpi)
+{
+    if (HMODULE user32 = ::GetModuleHandleW(L"user32.dll"))
+    {
+        auto* getSystemMetricsForDpi =
+            reinterpret_cast<GetSystemMetricsForDpiFn>(::GetProcAddress(user32, "GetSystemMetricsForDpi"));
+        if (getSystemMetricsForDpi)
+        {
+            return getSystemMetricsForDpi(metric, dpi);
+        }
+    }
+
+    Q_UNUSED(dpi)
+    return ::GetSystemMetrics(metric);
+}
+
+int resizeBorderMetric(HWND hwnd, int frameMetric, int paddedMetric)
+{
+    const UINT dpi = dpiForWindow(hwnd);
+    const int frame = systemMetricForDpi(frameMetric, dpi);
+    const int padded = systemMetricForDpi(paddedMetric, dpi);
+    return qMax(8, frame + padded);
+}
+#endif
 }
 
 AntWindow::AntWindow(QWidget* parent)
@@ -357,7 +401,9 @@ bool AntWindow::eventFilter(QObject* watched, QEvent* event)
         case QEvent::MouseButtonRelease:
         {
             auto* mouseEvent = static_cast<QMouseEvent*>(event);
-            if (handleTitleBarMouseRelease(mapMousePosition(mouseEvent), mouseEvent->button()))
+            if (handleTitleBarMouseRelease(mapMousePosition(mouseEvent),
+                                           mouseEvent->globalPosition().toPoint(),
+                                           mouseEvent->button()))
             {
                 return true;
             }
@@ -404,7 +450,7 @@ void AntWindow::mouseMoveEvent(QMouseEvent* event)
 
 void AntWindow::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (handleTitleBarMouseRelease(event->pos(), event->button()))
+    if (handleTitleBarMouseRelease(event->pos(), event->globalPosition().toPoint(), event->button()))
     {
         event->accept();
         return;
@@ -464,71 +510,69 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         {
         case WM_NCHITTEST:
         {
-            if (isMaximized())
+            const QPoint globalPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+            const QPoint widgetPos = mapFromGlobal(globalPos);
+            const int clientWidth = width();
+            const int clientHeight = height();
+
+            const bool canResize = !isMaximized() && !isFullScreen() && clientWidth > 0 && clientHeight > 0;
+            if (canResize)
             {
-                *result = HTCLIENT;
-                return true;
+                const qreal dpr = qMax<qreal>(1.0, devicePixelRatioF());
+                const int borderWidth =
+                    qMax(8, qRound(static_cast<qreal>(resizeBorderMetric(hwnd, SM_CXSIZEFRAME, SM_CXPADDEDBORDER)) / dpr));
+                const int borderHeight =
+                    qMax(8, qRound(static_cast<qreal>(resizeBorderMetric(hwnd, SM_CYSIZEFRAME, SM_CXPADDEDBORDER)) / dpr));
+                const bool left = widgetPos.x() >= 0 && widgetPos.x() < borderWidth;
+                const bool right = widgetPos.x() < clientWidth && widgetPos.x() >= clientWidth - borderWidth;
+                const bool top = widgetPos.y() >= 0 && widgetPos.y() < borderHeight;
+                const bool bottom = widgetPos.y() < clientHeight && widgetPos.y() >= clientHeight - borderHeight;
+
+                if (left && top)
+                {
+                    *result = HTTOPLEFT;
+                    return true;
+                }
+                if (left && bottom)
+                {
+                    *result = HTBOTTOMLEFT;
+                    return true;
+                }
+                if (right && top)
+                {
+                    *result = HTTOPRIGHT;
+                    return true;
+                }
+                if (right && bottom)
+                {
+                    *result = HTBOTTOMRIGHT;
+                    return true;
+                }
+                if (left)
+                {
+                    *result = HTLEFT;
+                    return true;
+                }
+                if (right)
+                {
+                    *result = HTRIGHT;
+                    return true;
+                }
+                if (top)
+                {
+                    *result = HTTOP;
+                    return true;
+                }
+                if (bottom)
+                {
+                    *result = HTBOTTOM;
+                    return true;
+                }
             }
 
-            const POINT nativeLocalPos{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-            POINT localPos = nativeLocalPos;
-            ::ScreenToClient(hwnd, &localPos);
-
-            RECT clientRect{0, 0, 0, 0};
-            ::GetClientRect(hwnd, &clientRect);
-            const int clientWidth = clientRect.right - clientRect.left;
-            const int clientHeight = clientRect.bottom - clientRect.top;
-
-            const int borderWidth = 8;
-            const bool left = localPos.x < borderWidth;
-            const bool right = localPos.x > clientWidth - borderWidth;
-            const bool top = localPos.y < borderWidth;
-            const bool bottom = localPos.y > clientHeight - borderWidth;
-
-            *result = 0;
-
-            if (left && top)
+            if (isTitleBarArea(widgetPos))
             {
-                *result = HTTOPLEFT;
-            }
-            else if (left && bottom)
-            {
-                *result = HTBOTTOMLEFT;
-            }
-            else if (right && top)
-            {
-                *result = HTTOPRIGHT;
-            }
-            else if (right && bottom)
-            {
-                *result = HTBOTTOMRIGHT;
-            }
-            else if (left)
-            {
-                *result = HTLEFT;
-            }
-            else if (right)
-            {
-                *result = HTRIGHT;
-            }
-            else if (top)
-            {
-                *result = HTTOP;
-            }
-            else if (bottom)
-            {
-                *result = HTBOTTOM;
-            }
-
-            if (*result != 0)
-            {
-                return true;
-            }
-
-            // Check if in title bar area (but not on buttons)
-            if (localPos.y >= 0 && localPos.y < TitleBarHeight)
-            {
-                if (buttonAtPosition(QPoint(localPos.x, localPos.y)) != TitleBarButton::None)
+                if (buttonAtPosition(widgetPos) != TitleBarButton::None)
                 {
                     *result = HTCLIENT;
                 }
@@ -545,20 +589,43 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         case WM_GETMINMAXINFO:
         {
             auto* minmaxInfo = reinterpret_cast<MINMAXINFO*>(lParam);
-            RECT workArea;
-            SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0);
-            minmaxInfo->ptMaxPosition.x = workArea.left;
-            minmaxInfo->ptMaxPosition.y = workArea.top;
-            minmaxInfo->ptMaxSize.x = workArea.right - workArea.left;
-            minmaxInfo->ptMaxSize.y = workArea.bottom - workArea.top;
-            minmaxInfo->ptMinTrackSize.x = minimumWidth() * devicePixelRatioF();
-            minmaxInfo->ptMinTrackSize.y = minimumHeight() * devicePixelRatioF();
+            bool hasMonitorInfo = false;
+            if (HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST))
+            {
+                MONITORINFO monitorInfo{};
+                monitorInfo.cbSize = sizeof(MONITORINFO);
+                if (::GetMonitorInfoW(monitor, &monitorInfo))
+                {
+                    const RECT& monitorArea = monitorInfo.rcMonitor;
+                    const RECT& workArea = monitorInfo.rcWork;
+                    minmaxInfo->ptMaxPosition.x = workArea.left - monitorArea.left;
+                    minmaxInfo->ptMaxPosition.y = workArea.top - monitorArea.top;
+                    minmaxInfo->ptMaxSize.x = workArea.right - workArea.left;
+                    minmaxInfo->ptMaxSize.y = workArea.bottom - workArea.top;
+                    hasMonitorInfo = true;
+                }
+            }
+            if (!hasMonitorInfo)
+            {
+                RECT workArea{};
+                ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0);
+                minmaxInfo->ptMaxPosition.x = workArea.left;
+                minmaxInfo->ptMaxPosition.y = workArea.top;
+                minmaxInfo->ptMaxSize.x = workArea.right - workArea.left;
+                minmaxInfo->ptMaxSize.y = workArea.bottom - workArea.top;
+            }
+            minmaxInfo->ptMinTrackSize.x = qRound(minimumWidth() * devicePixelRatioF());
+            minmaxInfo->ptMinTrackSize.y = qRound(minimumHeight() * devicePixelRatioF());
             return true;
         }
         case WM_NCLBUTTONDBLCLK:
         {
             // Handle double-click on title bar to maximize/restore.
             // The system won't deliver mouseDoubleClickEvent for HTCAPTION areas.
+            if (msg->wParam != HTCAPTION)
+            {
+                break;
+            }
             if (!isMaximized())
             {
                 showMaximized();
@@ -673,7 +740,7 @@ bool AntWindow::handleTitleBarMouseMove(const QPoint& pos, const QPoint& globalP
     return false;
 }
 
-bool AntWindow::handleTitleBarMouseRelease(const QPoint& pos, Qt::MouseButton button)
+bool AntWindow::handleTitleBarMouseRelease(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button)
 {
     if (button != Qt::LeftButton)
     {
@@ -695,6 +762,7 @@ bool AntWindow::handleTitleBarMouseRelease(const QPoint& pos, Qt::MouseButton bu
     if (m_dragging)
     {
         m_dragging = false;
+        applyManualSnap(globalPos);
         return true;
     }
 
@@ -757,6 +825,85 @@ void AntWindow::handleButtonClicked(TitleBarButton button)
         break;
     default:
         break;
+    }
+}
+
+void AntWindow::applyManualSnap(const QPoint& globalPos)
+{
+    if (isFullScreen())
+    {
+        return;
+    }
+
+    const int dragDistance = (globalPos - m_dragStartPosition).manhattanLength();
+    const QStyleHints* hints = QGuiApplication::styleHints();
+    const int minimumDragDistance = hints ? hints->startDragDistance() : 10;
+    if (dragDistance < minimumDragDistance)
+    {
+        return;
+    }
+
+    QScreen* targetScreen = QGuiApplication::screenAt(globalPos);
+    if (!targetScreen)
+    {
+        targetScreen = screen();
+    }
+    if (!targetScreen)
+    {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+    if (!targetScreen)
+    {
+        return;
+    }
+
+    const QRect availableGeometry = targetScreen->availableGeometry();
+    const int snapThreshold = qMax(16, minimumDragDistance * 2);
+    const bool snapTop = globalPos.y() <= availableGeometry.top() + snapThreshold;
+    const bool snapLeft = globalPos.x() <= availableGeometry.left() + snapThreshold;
+    const bool snapRight = globalPos.x() >= availableGeometry.right() - snapThreshold;
+
+    if (snapTop)
+    {
+        if (!isMaximized())
+        {
+            showMaximized();
+            Q_EMIT maximizeRequested();
+        }
+        m_windowMaximized = true;
+        return;
+    }
+
+    QRect snappedGeometry;
+    if (snapLeft)
+    {
+        snappedGeometry = QRect(availableGeometry.left(),
+                                availableGeometry.top(),
+                                availableGeometry.width() / 2,
+                                availableGeometry.height());
+    }
+    else if (snapRight)
+    {
+        const int leftWidth = availableGeometry.width() / 2;
+        snappedGeometry = QRect(availableGeometry.left() + leftWidth,
+                                availableGeometry.top(),
+                                availableGeometry.width() - leftWidth,
+                                availableGeometry.height());
+    }
+
+    if (!snappedGeometry.isNull())
+    {
+        const bool wasMaximized = isMaximized();
+        if (wasMaximized)
+        {
+            showNormal();
+        }
+        m_windowMaximized = false;
+        setGeometry(snappedGeometry);
+        if (wasMaximized)
+        {
+            Q_EMIT restoreRequested();
+        }
     }
 }
 

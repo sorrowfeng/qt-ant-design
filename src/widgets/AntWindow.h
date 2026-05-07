@@ -99,10 +99,11 @@ private:
     QRect titleBarRect() const;
     bool handleTitleBarMousePress(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button);
     bool handleTitleBarMouseMove(const QPoint& pos, const QPoint& globalPos, Qt::MouseButtons buttons);
-    bool handleTitleBarMouseRelease(const QPoint& pos, Qt::MouseButton button);
+    bool handleTitleBarMouseRelease(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button);
     bool handleTitleBarMouseDoubleClick(const QPoint& pos, Qt::MouseButton button);
     void handleButtonClicked(TitleBarButton button);
     void emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible);
+    void applyManualSnap(const QPoint& globalPos);
     void syncTheme();
     void applyContentPalette(QWidget* widget);
 

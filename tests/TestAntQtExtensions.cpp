@@ -22,6 +22,11 @@
 #include "widgets/AntWindow.h"
 #include "widgets/AntColorPicker.h"
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <windowsx.h>
+#endif
+
 class TestAntQtExtensions : public QObject
 {
     Q_OBJECT
@@ -46,6 +51,7 @@ private slots:
     void window();
     void windowTitleBarButtonsHandleChildDeliveredClicks();
     void windowTitleBarButtonsTriggerOnRelease();
+    void windowNativeHitTestSupportsSnapZones();
     void colorPicker();
 };
 
@@ -606,6 +612,61 @@ void TestAntQtExtensions::windowTitleBarButtonsTriggerOnRelease()
 
     window.setAlwaysOnTop(false);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
+}
+
+void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows native hit testing is only available on Windows.");
+#else
+    class NativeHitTestWindow : public AntWindow
+    {
+    public:
+        using AntWindow::nativeEvent;
+    };
+
+    NativeHitTestWindow window;
+    window.resize(640, 420);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    const HWND hwnd = reinterpret_cast<HWND>(window.winId());
+    QVERIFY(hwnd != nullptr);
+
+    auto hitTest = [&](const QPoint& localPos) -> qintptr {
+        MSG msg{};
+        msg.hwnd = hwnd;
+        msg.message = WM_NCHITTEST;
+        const QPoint globalPos = window.mapToGlobal(localPos);
+        msg.lParam = MAKELPARAM(globalPos.x(), globalPos.y());
+        qintptr result = 0;
+        if (!window.nativeEvent("windows_generic_MSG", &msg, &result))
+        {
+            return -1;
+        }
+        return result;
+    };
+
+    QCOMPARE(hitTest(QPoint(2, 2)), static_cast<qintptr>(HTTOPLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() - 3, 2)), static_cast<qintptr>(HTTOPRIGHT));
+    QCOMPARE(hitTest(QPoint(2, window.height() - 3)), static_cast<qintptr>(HTBOTTOMLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() - 3, window.height() - 3)), static_cast<qintptr>(HTBOTTOMRIGHT));
+    QCOMPARE(hitTest(QPoint(2, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() - 3, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTRIGHT));
+    QCOMPARE(hitTest(QPoint(80, 2)), static_cast<qintptr>(HTTOP));
+    QCOMPARE(hitTest(QPoint(80, window.height() - 3)), static_cast<qintptr>(HTBOTTOM));
+    QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<qintptr>(HTCAPTION));
+    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Close).center()),
+             static_cast<qintptr>(HTCLIENT));
+
+    window.showMaximized();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    QCoreApplication::processEvents();
+
+    QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<qintptr>(HTCAPTION));
+    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Close).center()),
+             static_cast<qintptr>(HTCLIENT));
+#endif
 }
 
 void TestAntQtExtensions::colorPicker()
