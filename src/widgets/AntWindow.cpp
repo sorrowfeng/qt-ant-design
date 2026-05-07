@@ -2,7 +2,6 @@
 
 #include <QCoreApplication>
 #include <QCursor>
-#include <QEasingCurve>
 #include <QElapsedTimer>
 #include <QEvent>
 #include <QEventLoop>
@@ -13,6 +12,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPixmap>
+#include <QRadialGradient>
 #include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
@@ -43,6 +43,9 @@ constexpr AntWindow::TitleBarButton kTitleBarButtonsRightToLeft[] = {
 };
 
 constexpr auto kThemeTransitionOverlayName = "AntWindowThemeTransitionOverlay";
+constexpr int kThemeTransitionFrameIntervalMs = 8;
+constexpr int kThemeTransitionDurationMs = 320;
+constexpr int kThemeTransitionEdgeFeather = 24;
 
 class AntWindowThemeTransitionOverlay : public QWidget
 {
@@ -57,9 +60,12 @@ public:
         setAttribute(Qt::WA_NoSystemBackground, true);
         setAttribute(Qt::WA_TranslucentBackground, true);
         setFocusPolicy(Qt::NoFocus);
-        m_timer.setInterval(8);
+        m_timer.setInterval(kThemeTransitionFrameIntervalMs);
         m_timer.setTimerType(Qt::PreciseTimer);
         setProperty("transitionFrameIntervalMs", m_timer.interval());
+        setProperty("transitionDurationMs", kThemeTransitionDurationMs);
+        setProperty("transitionMotionCurve", QStringLiteral("smootherstep"));
+        setProperty("transitionEdgeFeather", kThemeTransitionEdgeFeather);
         connect(&m_timer, &QTimer::timeout, this, [this]() {
             advanceAnimation();
         });
@@ -96,7 +102,7 @@ private:
     {
         const qreal linearProgress =
             qBound<qreal>(0.0, static_cast<qreal>(m_elapsed.elapsed()) / static_cast<qreal>(m_durationMs), 1.0);
-        setProgress(m_easing.valueForProgress(linearProgress));
+        setProgress(smootherStep(linearProgress));
         if (linearProgress >= 1.0)
         {
             m_timer.stop();
@@ -129,11 +135,24 @@ protected:
 
         const QRectF sourceRect(m_oldFrame.rect());
         painter.drawPixmap(bounds, m_oldFrame, sourceRect);
+        if (radius <= 0.0)
+        {
+            return;
+        }
+
+        const qreal feather = qMin<qreal>(kThemeTransitionEdgeFeather, qMax<qreal>(1.0, radius));
+        const qreal gradientRadius = radius + feather;
+        QRadialGradient revealGradient(QPointF(m_origin), gradientRadius);
+        revealGradient.setColorAt(0.0, QColor(0, 0, 0, 255));
+        revealGradient.setColorAt(qBound<qreal>(0.0, (radius - feather) / gradientRadius, 1.0), QColor(0, 0, 0, 255));
+        revealGradient.setColorAt(qBound<qreal>(0.0, radius / gradientRadius, 1.0), QColor(0, 0, 0, 210));
+        revealGradient.setColorAt(1.0, QColor(0, 0, 0, 0));
+
         painter.setOpacity(1.0);
-        painter.setCompositionMode(QPainter::CompositionMode_Clear);
+        painter.setCompositionMode(QPainter::CompositionMode_DestinationOut);
         painter.setPen(Qt::NoPen);
-        painter.setBrush(Qt::transparent);
-        painter.drawEllipse(QPointF(m_origin), radius, radius);
+        painter.setBrush(revealGradient);
+        painter.drawEllipse(QPointF(m_origin), gradientRadius, gradientRadius);
     }
 
     qreal transitionRadius() const
@@ -145,16 +164,21 @@ protected:
         {
             radius = qMax(radius, QLineF(origin, corner).length());
         }
-        return radius * m_progress;
+        return (radius + kThemeTransitionEdgeFeather) * m_progress;
+    }
+
+    static qreal smootherStep(qreal value)
+    {
+        const qreal t = qBound<qreal>(0.0, value, 1.0);
+        return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
     }
 
     QPixmap m_oldFrame;
     QPoint m_origin;
     QTimer m_timer;
     QElapsedTimer m_elapsed;
-    QEasingCurve m_easing = QEasingCurve(QEasingCurve::OutCubic);
     std::function<void()> m_finished;
-    int m_durationMs = 240;
+    int m_durationMs = kThemeTransitionDurationMs;
     qreal m_progress = 0.0;
 };
 
@@ -1284,7 +1308,7 @@ void AntWindow::startThemeModeTransition()
     overlay->raise();
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-    overlay->startTransition(240, [this, overlay]() {
+    overlay->startTransition(kThemeTransitionDurationMs, [this, overlay]() {
         if (m_themeTransitionOverlay == overlay)
         {
             m_themeTransitionOverlay = nullptr;

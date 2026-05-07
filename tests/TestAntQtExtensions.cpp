@@ -682,6 +682,9 @@ void TestAntQtExtensions::windowThemeButtonShowsTransitionOverlay()
     QVERIFY(overlay->testAttribute(Qt::WA_TransparentForMouseEvents));
     QCOMPARE(overlay->geometry(), window.rect());
     QCOMPARE(overlay->property("transitionFrameIntervalMs").toInt(), 8);
+    QCOMPARE(overlay->property("transitionDurationMs").toInt(), 320);
+    QCOMPARE(overlay->property("transitionMotionCurve").toString(), QStringLiteral("smootherstep"));
+    QCOMPARE(overlay->property("transitionEdgeFeather").toInt(), 24);
 
     QTRY_VERIFY(window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay")) == nullptr);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
