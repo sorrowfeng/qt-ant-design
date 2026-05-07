@@ -47,6 +47,15 @@
 - 数据交互：`AntTransfer` 支持正常滚动和顶部全选，`AntTable` 表头排序点击会真正重排行数据。
 - 输入反馈：`AntPlainTextEdit` 支持 TextArea 式右下角拖拽缩放，`AntSlider` 拖动时显示数值浮标。
 
+## 最近桌面窗口更新
+
+2026-05-07 的 `AntWindow` 批次增强了原生桌面行为和标题栏细节：
+
+- 无边框窗口支持 Windows 11 Snap：四边/四角缩放、标题栏拖拽、最大化按钮 Snap Layout hover、边缘吸附和最大化后拖拽还原。
+- Windows 下接入 DWM 圆角、边框/阴影，并提供 `cornerRadius` API；平台相关实现均通过 Qt/Win32 宏隔离。
+- 标题栏新增置顶和亮暗主题切换按钮，使用内置官方 Ant Design 图标；所有标题栏按钮均可通过公开 API 控制显示或隐藏。
+- 内置主题按钮使用全窗口截图 overlay 和柔和揭示动画，让 Light/Dark 全局切换更连续。
+
 ## 安装与集成
 
 ### 环境要求
@@ -205,7 +214,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntRate`：评分组件，`count / value / allowHalf / allowClear / disabled / size`，hover 放大效果，键盘左右箭头操作
 - `AntWidget`：基础 QWidget 子类，自动处理主题切换
 - `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略
-- `AntWindow`：无边框窗口，自定义标题栏、拖拽、最小化/最大化/关闭按钮
+- `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，DWM 圆角/边框阴影，以及平滑主题切换遮罩动画
 - `AntDrawer`：滑动面板，支持 Left/Right/Top/Bottom 四个方向、动画、遮罩层
 - `AntStatusBar`：状态栏，左右项、分隔符、消息区、size grip
 - `AntScrollBar`：自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮
@@ -284,7 +293,7 @@ card->bodyLayout()->addWidget(new AntTypography("Card content"));
 AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 ```
 
-目前主题切换会触发所有 `QProxyStyle` 组件的 `polish / updateGeometry / update`。
+目前主题切换会触发所有 `QProxyStyle` 组件的 `polish / updateGeometry / update`。`AntWindow` 内置主题按钮会用全窗口截图 overlay 和柔和揭示动画包裹这次重绘，让 Light/Dark 全局切换更连续。
 
 ## 开发指南与贡献
 

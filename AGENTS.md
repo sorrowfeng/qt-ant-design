@@ -24,7 +24,7 @@
 
 ## 项目状态
 
-- 同步日期：`2026-04-30`
+- 同步日期：`2026-05-07`
 - 状态总览：`docs/project-status.md`
 - 已实现公开组件总数：`82`（`src/widgets` 有 83 个 `Ant*.h`，其中 `AntSelectPopup` 是内部弹层 helper，不计入公开组件）
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
@@ -95,6 +95,16 @@
 - `AntMessage`：补齐 AntD-like move-up/move-down 显示与消失动效，并强化气泡阴影。
 - `AntSkeleton`：修复 shimmer 偏移量未参与绘制导致占位符不动的问题。
 - `AntSpin`：使用 16ms precise timer 和小角度步进提升动画流畅度。
+
+## AntWindow 桌面体验增强（2026-05-07）
+
+- `AntWindow` 标题栏新增置顶和 Light/Dark 一键切换按钮，图标使用内置官方 Ant Design SVG；pin/theme/minimize/maximize/close 按钮均提供公开显示隐藏 API。
+- Windows 下通过 `nativeEvent` + Win32/DWM 路径支持无边框窗口缩放命中测试、标题栏拖拽、最大化按钮 Windows 11 Snap Layout hover、拖拽到屏幕边缘吸附、最大化后标题栏拖拽还原，并用平台宏隔离非 Windows 构建。
+- Windows 下接入 DWM 圆角、边框颜色和阴影，新增 `cornerRadius` API 控制窗口圆角大小。
+- 标题栏按钮 hover 状态改为 `AntWindow` 统一维护，content/title/native leave 均会清理旧 hover，避免 hover 或离开主窗口后颜色残留。
+- 主题按钮切换 Light/Dark 时使用全窗口截图 overlay、captured new-frame 和 smootherstep 圆形软揭示动画，避免全量主题刷新期间卡顿、高 DPI 放大、黑色圆洞或生硬的纯色扩散。
+- 示例程序嵌入 Windows 10/11 manifest，并在 `ExampleWindow` 中启用全部标题栏按钮，去掉独立 dark 切换按钮。
+- 相关 targeted 验证覆盖 `TestAntQtExtensions|TestAntExampleCloseStress`，包含 Snap hit-test、标题栏 hover 清理、主题切换 overlay、8ms 动画帧率、320ms 时长、高 DPI 截图比例和无黑洞揭示路径。
 
 ## 子组件/变体完整度（完成于 2026-04-26，状态复核 2026-04-30）
 
@@ -228,7 +238,7 @@
 | 组件 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- |
 | `AntWidget` | — | 是 | 基础 QWidget，自动主题切换 |
-| `AntWindow` | `QProxyStyle` | 是 | 无边框窗口，自定义标题栏 |
+| `AntWindow` | `QProxyStyle` | 是 | 无边框窗口，自定义标题栏，Win11 Snap/DWM 圆角阴影，标题栏按钮 API，主题切换遮罩动画 |
 | `AntDockWidget` | 自绘 | 是 | 可停靠面板，Win32 resize |
 | `AntStatusBar` | `QProxyStyle` | 是 | 状态栏 |
 | `AntScrollBar` | `QProxyStyle` | 是 | 8px 细滚动条，自动隐藏 |

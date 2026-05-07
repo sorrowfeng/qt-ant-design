@@ -1,8 +1,8 @@
 # Project Status
 
-Updated: `2026-05-01`
+Updated: `2026-05-07`
 
-This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, installed package coverage, and lifecycle stress coverage.
+This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, installed package coverage, and lifecycle stress coverage.
 
 ## Summary
 
@@ -44,6 +44,13 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added installed CMake package consumer coverage with `find_package(qt-ant-design CONFIG REQUIRED)`.
 - Added lifecycle stress coverage for repeated theme switching, popup open/close cycles, transient feedback cleanup, and example auto-close behavior.
 - Expanded automated visual regression guards for InputNumber handler visibility, selection primary fills, Tag/Badge status colors, Message/Notification elevated surfaces, Card/List/Table/Descriptions data-display borders, and Menu/Pagination/Steps/Layout/Popover/Modal/Drawer structure.
+- Completed an `AntWindow` desktop behavior pass:
+  - Added Windows 11 Snap support for the frameless window path, including resize hit-testing, title-bar drag, maximize-button Snap Layout hover, edge snapping, and drag-to-restore behavior.
+  - Added DWM rounded corners, border/shadow integration, and a public `cornerRadius` API for Windows builds.
+  - Added title-bar pin and light/dark theme buttons with bundled official Ant Design icons, plus public visibility APIs for every title-bar button.
+  - Reworked title-bar hover state cleanup so hover colors clear reliably when leaving title/content/native areas.
+  - Added a captured-frame `AntWindow` theme transition overlay with an 8 ms timer, 320 ms duration, smootherstep easing, high-DPI-safe captures, and a soft reveal that avoids black-hole artifacts.
+  - Embedded the Windows 10/11 compatibility manifest in the example app so the native Snap Layout flyout can appear on the maximize button.
 
 ## Visual Audit State
 
@@ -81,6 +88,14 @@ ctest -C Debug --output-on-failure
 ```
 
 Result: `34 / 34` tests passed.
+
+Latest targeted AntWindow verification:
+
+```powershell
+ctest -C Debug -R "TestAntQtExtensions|TestAntExampleCloseStress" --output-on-failure
+```
+
+Result: `2 / 2` targeted tests passed during the AntWindow desktop behavior pass.
 
 ## Remaining Notes
 

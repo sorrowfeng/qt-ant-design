@@ -47,6 +47,15 @@ The 2026-04-30 interaction and motion pass tightened several user-visible detail
 - Data interaction: `AntTransfer` now supports scrolling and header select-all correctly, while `AntTable` sorter clicks reorder rows instead of only changing the icon state.
 - Input feedback: `AntPlainTextEdit` supports TextArea-style bottom-right resizing, and `AntSlider` shows a value bubble while dragging.
 
+## Recent Desktop Window Updates
+
+The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar polish:
+
+- Windows 11 Snap support for frameless windows: resize edges/corners, draggable title bar, maximize-button Snap Layout hover, edge snapping, and drag-to-restore.
+- DWM-backed rounded corners, border/shadow integration, and a `cornerRadius` API for Windows builds while keeping platform-specific code behind Qt/Win32 guards.
+- Title-bar pin and light/dark theme buttons use bundled official Ant Design icons, and every title-bar button can be shown or hidden through public APIs.
+- The built-in theme button uses a captured-frame overlay with a soft reveal animation so full-window light/dark switching feels continuous.
+
 ## Installation & Integration
 
 ### Requirements
@@ -205,7 +214,7 @@ Ant Design standard components are counted by the top-level directories under [`
 - `AntRate`: rating component with `count / value / allowHalf / allowClear / disabled / size`, hover scaling, left / right keyboard control
 - `AntWidget`: base QWidget subclass that handles theme switching automatically
 - `AntTypography`: theme-aware text component, Title (H1–H5) / Text / Paragraph, with type / decoration / copy / ellipsis support
-- `AntWindow`: frameless window with custom title bar, dragging, minimize / maximize / close buttons
+- `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, DWM rounded corners / border shadow, and a smooth theme transition overlay
 - `AntDrawer`: sliding panel with Left / Right / Top / Bottom placement, animation, and mask
 - `AntStatusBar`: status bar with left / right items, separators, message area, and size grip
 - `AntScrollBar`: custom 8 px slim scrollbar with auto-hide and no arrow buttons
@@ -284,7 +293,7 @@ card->bodyLayout()->addWidget(new AntTypography("Card content"));
 AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 ```
 
-A theme switch currently triggers `polish / updateGeometry / update` on every `QProxyStyle`-based component.
+A theme switch currently triggers `polish / updateGeometry / update` on every `QProxyStyle`-based component. `AntWindow`'s built-in theme button wraps the repaint in a captured-frame overlay with a soft reveal animation so full-window light/dark switches stay visually continuous.
 
 ## Development Guide & Contributing
 
