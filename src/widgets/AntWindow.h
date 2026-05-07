@@ -55,6 +55,7 @@ public:
     bool isTitleBarButtonVisible(TitleBarButton button) const;
     void setTitleBarButtonVisible(TitleBarButton button, bool visible);
     QRect titleBarButtonRect(TitleBarButton button) const;
+    TitleBarButton hoveredTitleBarButton() const;
 
     bool isPinButtonVisible() const;
     bool isThemeButtonVisible() const;
@@ -101,6 +102,9 @@ private:
     bool isButtonArea(const QPoint& pos) const;
     TitleBarButton buttonAtPosition(const QPoint& pos) const;
     QRect titleBarRect() const;
+    void updateTitleBarHover(const QPoint& pos);
+    void setHoveredTitleBarButton(TitleBarButton button);
+    void clearTitleBarHover();
     bool handleTitleBarMousePress(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button);
     bool handleTitleBarMouseMove(const QPoint& pos, const QPoint& globalPos, Qt::MouseButtons buttons);
     bool handleTitleBarMouseRelease(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button);

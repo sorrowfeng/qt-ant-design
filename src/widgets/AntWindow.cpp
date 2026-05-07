@@ -3,6 +3,7 @@
 #include <QCursor>
 #include <QEvent>
 #include <QGuiApplication>
+#include <QHoverEvent>
 #include <QMetaType>
 #include <QMouseEvent>
 #include <QPainter>
@@ -197,11 +198,14 @@ AntWindow::AntWindow(QWidget* parent)
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_StyledBackground, false);
     setAttribute(Qt::WA_Hover, true);
+    setMouseTracking(true);
     installAntStyle<AntWindowStyle>(this);
     setMinimumSize(400, 300);
     syncTheme();
 
     m_contentWidget = new QWidget(this);
+    m_contentWidget->setAttribute(Qt::WA_Hover, true);
+    m_contentWidget->setMouseTracking(true);
     m_contentWidget->installEventFilter(this);
     auto* contentLayout = new QVBoxLayout(m_contentWidget);
     contentLayout->setContentsMargins(0, TitleBarHeight, 0, 0);
@@ -403,6 +407,11 @@ QRect AntWindow::titleBarButtonRect(TitleBarButton button) const
     return {};
 }
 
+AntWindow::TitleBarButton AntWindow::hoveredTitleBarButton() const
+{
+    return m_hoveredButton;
+}
+
 bool AntWindow::isPinButtonVisible() const
 {
     return m_pinButtonVisible;
@@ -479,24 +488,20 @@ void AntWindow::moveToCenter()
 
 bool AntWindow::event(QEvent* event)
 {
-    if (event->type() == QEvent::HoverMove)
+    switch (event->type())
+    {
+    case QEvent::HoverMove:
     {
         auto* hoverEvent = static_cast<QHoverEvent*>(event);
-        const TitleBarButton oldHovered = m_hoveredButton;
-        m_hoveredButton = buttonAtPosition(hoverEvent->position().toPoint());
-        if (m_hoveredButton != oldHovered)
-        {
-            update();
-        }
-
-        if (m_hoveredButton != TitleBarButton::None)
-        {
-            setCursor(Qt::ArrowCursor);
-        }
-        else if (isTitleBarArea(hoverEvent->position().toPoint()))
-        {
-            setCursor(Qt::ArrowCursor);
-        }
+        updateTitleBarHover(hoverEvent->position().toPoint());
+        break;
+    }
+    case QEvent::HoverLeave:
+    case QEvent::Leave:
+        clearTitleBarHover();
+        break;
+    default:
+        break;
     }
     return QMainWindow::event(event);
 }
@@ -508,9 +513,22 @@ bool AntWindow::eventFilter(QObject* watched, QEvent* event)
         auto mapMousePosition = [this](QMouseEvent* mouseEvent) {
             return m_contentWidget->mapTo(this, mouseEvent->position().toPoint());
         };
+        auto mapHoverPosition = [this](QHoverEvent* hoverEvent) {
+            return m_contentWidget->mapTo(this, hoverEvent->position().toPoint());
+        };
 
         switch (event->type())
         {
+        case QEvent::HoverMove:
+        {
+            auto* hoverEvent = static_cast<QHoverEvent*>(event);
+            updateTitleBarHover(mapHoverPosition(hoverEvent));
+            break;
+        }
+        case QEvent::HoverLeave:
+        case QEvent::Leave:
+            clearTitleBarHover();
+            break;
         case QEvent::MouseButtonPress:
         {
             auto* mouseEvent = static_cast<QMouseEvent*>(event);
@@ -756,8 +774,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
             if (button != TitleBarButton::None)
             {
                 const WPARAM nativeHitTest = static_cast<WPARAM>(nativeHitTestForTitleBarButton(button));
-                m_hoveredButton = button;
-                update(titleBarButtonRect(button));
+                setHoveredTitleBarButton(button);
                 requestNonClientHoverTracking(hwnd);
                 *result = ::DefWindowProcW(hwnd, uMsg, nativeHitTest, lParam);
                 return true;
@@ -777,14 +794,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         }
         case WM_NCMOUSELEAVE:
         {
-            if (m_hoveredButton == TitleBarButton::Minimize ||
-                m_hoveredButton == TitleBarButton::Maximize ||
-                m_hoveredButton == TitleBarButton::Close)
-            {
-                const TitleBarButton oldHovered = m_hoveredButton;
-                m_hoveredButton = TitleBarButton::None;
-                update(titleBarButtonRect(oldHovered));
-            }
+            clearTitleBarHover();
             break;
         }
         case WM_NCLBUTTONDOWN:
@@ -911,6 +921,43 @@ AntWindow::TitleBarButton AntWindow::buttonAtPosition(const QPoint& pos) const
 QRect AntWindow::titleBarRect() const
 {
     return QRect(0, 0, width(), TitleBarHeight);
+}
+
+void AntWindow::updateTitleBarHover(const QPoint& pos)
+{
+    setHoveredTitleBarButton(buttonAtPosition(pos));
+    if (isTitleBarArea(pos))
+    {
+        setCursor(Qt::ArrowCursor);
+    }
+}
+
+void AntWindow::setHoveredTitleBarButton(TitleBarButton button)
+{
+    if (button != TitleBarButton::None && !isTitleBarButtonVisible(button))
+    {
+        button = TitleBarButton::None;
+    }
+    if (m_hoveredButton == button)
+    {
+        return;
+    }
+
+    const TitleBarButton oldHovered = m_hoveredButton;
+    m_hoveredButton = button;
+    if (oldHovered != TitleBarButton::None)
+    {
+        update(titleBarButtonRect(oldHovered));
+    }
+    if (m_hoveredButton != TitleBarButton::None)
+    {
+        update(titleBarButtonRect(m_hoveredButton));
+    }
+}
+
+void AntWindow::clearTitleBarHover()
+{
+    setHoveredTitleBarButton(TitleBarButton::None);
 }
 
 bool AntWindow::handleTitleBarMousePress(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button)

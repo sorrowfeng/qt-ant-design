@@ -1,6 +1,5 @@
 #include "AntWindowStyle.h"
 
-#include <QCursor>
 #include <QEvent>
 #include <QFile>
 #include <QIcon>
@@ -194,7 +193,7 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
     }
 
     // ─── Draw title bar buttons ───
-    const QPoint cursorPos = window->mapFromGlobal(QCursor::pos());
+    const AntWindow::TitleBarButton hoveredButton = window->hoveredTitleBarButton();
 
     auto drawButtonBackground = [&](AntWindow::TitleBarButton button, bool destructive = false, bool active = false) {
         const QRect btnRect = window->titleBarButtonRect(button);
@@ -203,7 +202,7 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
             return btnRect;
         }
 
-        const bool hovered = btnRect.contains(cursorPos);
+        const bool hovered = hoveredButton == button;
         if (hovered || active)
         {
             painter->setPen(Qt::NoPen);
@@ -227,7 +226,7 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
 
     auto iconColorFor = [&](AntWindow::TitleBarButton button, bool destructive = false, bool active = false) {
         const QRect btnRect = window->titleBarButtonRect(button);
-        const bool hovered = btnRect.contains(cursorPos);
+        const bool hovered = hoveredButton == button;
         if (destructive && hovered)
         {
             return QColor(Qt::white);

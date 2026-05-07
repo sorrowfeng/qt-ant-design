@@ -1,6 +1,7 @@
 #include <QPalette>
 #include <QPlainTextEdit>
 #include <QSignalSpy>
+#include <QHoverEvent>
 #include <QTest>
 #include <QToolButton>
 #include "core/AntTheme.h"
@@ -51,6 +52,7 @@ private slots:
     void window();
     void windowTitleBarButtonsHandleChildDeliveredClicks();
     void windowTitleBarButtonsTriggerOnRelease();
+    void windowTitleBarHoverStateClearsOnLeave();
     void windowNativeHitTestSupportsSnapZones();
     void colorPicker();
 };
@@ -623,6 +625,38 @@ void TestAntQtExtensions::windowTitleBarButtonsTriggerOnRelease()
     antTheme->setThemeMode(Ant::ThemeMode::Default);
 }
 
+void TestAntQtExtensions::windowTitleBarHoverStateClearsOnLeave()
+{
+    AntWindow window;
+    window.resize(640, 420);
+    window.setCentralWidget(new QWidget);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    const QPoint closePoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Close).center();
+    QHoverEvent closeHover(QEvent::HoverMove, QPointF(closePoint), QPointF(closePoint - QPoint(1, 0)));
+    QCoreApplication::sendEvent(&window, &closeHover);
+    QCOMPARE(window.hoveredTitleBarButton(), AntWindow::TitleBarButton::Close);
+
+    QEvent windowLeave(QEvent::Leave);
+    QCoreApplication::sendEvent(&window, &windowLeave);
+    QCOMPARE(window.hoveredTitleBarButton(), AntWindow::TitleBarButton::None);
+
+    QWidget* titleBarEventTarget = window.centralWidget();
+    QVERIFY(titleBarEventTarget != nullptr);
+    QVERIFY(titleBarEventTarget->testAttribute(Qt::WA_Hover));
+
+    const QPoint themePoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center();
+    const QPoint contentThemePoint = titleBarEventTarget->mapFrom(&window, themePoint);
+    QHoverEvent themeHover(QEvent::HoverMove, QPointF(contentThemePoint), QPointF(contentThemePoint - QPoint(1, 0)));
+    QCoreApplication::sendEvent(titleBarEventTarget, &themeHover);
+    QCOMPARE(window.hoveredTitleBarButton(), AntWindow::TitleBarButton::Theme);
+
+    QEvent contentLeave(QEvent::Leave);
+    QCoreApplication::sendEvent(titleBarEventTarget, &contentLeave);
+    QCOMPARE(window.hoveredTitleBarButton(), AntWindow::TitleBarButton::None);
+}
+
 void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
 {
 #ifndef Q_OS_WIN
@@ -703,6 +737,10 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
 
     const QPoint maximizePoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Maximize).center();
     QCOMPARE(hitTest(maximizePoint), static_cast<qintptr>(HTZOOM));
+    QVERIFY(sendNonClientButtonMessage(WM_NCMOUSEMOVE, HTCLIENT, maximizePoint) != -1);
+    QCOMPARE(window.hoveredTitleBarButton(), AntWindow::TitleBarButton::Maximize);
+    sendNonClientButtonMessage(WM_NCMOUSELEAVE, HTZOOM, maximizePoint);
+    QCOMPARE(window.hoveredTitleBarButton(), AntWindow::TitleBarButton::None);
     QVERIFY(sendNonClientButtonMessage(WM_NCMOUSEMOVE, HTCLIENT, maximizePoint) != -1);
     QVERIFY(sendNonClientButtonMessage(WM_NCMOUSEHOVER, HTCLIENT, maximizePoint) != -1);
     QVERIFY(sendNonClientButtonMessage(WM_NCLBUTTONDOWN, HTZOOM, maximizePoint) != -1);
