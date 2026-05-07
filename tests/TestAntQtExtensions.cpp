@@ -1,4 +1,5 @@
 #include <QPalette>
+#include <QPainter>
 #include <QPlainTextEdit>
 #include <QSignalSpy>
 #include <QHoverEvent>
@@ -54,6 +55,7 @@ private slots:
     void windowTitleBarButtonsTriggerOnRelease();
     void windowTitleBarHoverStateClearsOnLeave();
     void windowThemeButtonShowsTransitionOverlay();
+    void windowThemeTransitionOverlayKeepsOldFrameScale();
     void windowNativeHitTestSupportsSnapZones();
     void colorPicker();
 };
@@ -679,6 +681,64 @@ void TestAntQtExtensions::windowThemeButtonShowsTransitionOverlay()
     QVERIFY(overlay->isVisible());
     QVERIFY(overlay->testAttribute(Qt::WA_TransparentForMouseEvents));
     QCOMPARE(overlay->geometry(), window.rect());
+    QCOMPARE(overlay->property("transitionFrameIntervalMs").toInt(), 8);
+
+    QTRY_VERIFY(window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay")) == nullptr);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+}
+
+void TestAntQtExtensions::windowThemeTransitionOverlayKeepsOldFrameScale()
+{
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    class SplitPaintWidget : public QWidget
+    {
+    public:
+        explicit SplitPaintWidget(QWidget* parent = nullptr)
+            : QWidget(parent)
+        {
+            setAutoFillBackground(false);
+        }
+
+    protected:
+        void paintEvent(QPaintEvent*) override
+        {
+            QPainter painter(this);
+            painter.fillRect(rect(), QColor(220, 30, 30));
+            painter.fillRect(QRect(400, 0, qMax(0, width() - 400), height()), QColor(20, 90, 230));
+        }
+    };
+
+    AntWindow window;
+    window.resize(640, 420);
+    window.setCentralWidget(new SplitPaintWidget);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    if (window.devicePixelRatioF() <= 1.01)
+    {
+        QSKIP("High-DPI frame scale guard only applies when devicePixelRatioF > 1.");
+    }
+
+    QTest::mouseClick(&window,
+                      Qt::LeftButton,
+                      Qt::NoModifier,
+                      window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center());
+    auto* overlay = window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay"));
+    QVERIFY(overlay != nullptr);
+
+    QImage rendered(overlay->size(), QImage::Format_ARGB32_Premultiplied);
+    rendered.fill(Qt::transparent);
+    QPainter painter(&rendered);
+    overlay->render(&painter);
+    painter.end();
+
+    const QColor rightSide = rendered.pixelColor(520, 220);
+    QVERIFY2(rightSide.blue() > 170 && rightSide.red() < 120,
+             qPrintable(QStringLiteral("Overlay old frame was scaled incorrectly: sampled rgba(%1,%2,%3,%4)")
+                            .arg(rightSide.red())
+                            .arg(rightSide.green())
+                            .arg(rightSide.blue())
+                            .arg(rightSide.alpha())));
 
     QTRY_VERIFY(window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay")) == nullptr);
     antTheme->setThemeMode(Ant::ThemeMode::Default);

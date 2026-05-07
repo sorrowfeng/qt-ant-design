@@ -1,9 +1,9 @@
 #include "AntWindow.h"
 
-#include <QAbstractAnimation>
 #include <QCoreApplication>
 #include <QCursor>
 #include <QEasingCurve>
+#include <QElapsedTimer>
 #include <QEvent>
 #include <QEventLoop>
 #include <QGuiApplication>
@@ -12,15 +12,17 @@
 #include <QMetaType>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QPixmap>
 #include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
 #include <QStyleHints>
-#include <QVariantAnimation>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QWindow>
+
+#include <functional>
+#include <utility>
 
 #include "../styles/AntWindowStyle.h"
 #include "core/AntTheme.h"
@@ -55,8 +57,30 @@ public:
         setAttribute(Qt::WA_NoSystemBackground, true);
         setAttribute(Qt::WA_TranslucentBackground, true);
         setFocusPolicy(Qt::NoFocus);
+        m_timer.setInterval(8);
+        m_timer.setTimerType(Qt::PreciseTimer);
+        setProperty("transitionFrameIntervalMs", m_timer.interval());
+        connect(&m_timer, &QTimer::timeout, this, [this]() {
+            advanceAnimation();
+        });
     }
 
+    void startTransition(int durationMs, std::function<void()> finished)
+    {
+        m_durationMs = qMax(1, durationMs);
+        m_finished = std::move(finished);
+        m_progress = 0.0;
+        m_elapsed.restart();
+        update();
+        m_timer.start();
+    }
+
+    qreal progress() const
+    {
+        return m_progress;
+    }
+
+private:
     void setProgress(qreal progress)
     {
         const qreal normalized = qBound<qreal>(0.0, progress, 1.0);
@@ -66,6 +90,22 @@ public:
         }
         m_progress = normalized;
         update();
+    }
+
+    void advanceAnimation()
+    {
+        const qreal linearProgress =
+            qBound<qreal>(0.0, static_cast<qreal>(m_elapsed.elapsed()) / static_cast<qreal>(m_durationMs), 1.0);
+        setProgress(m_easing.valueForProgress(linearProgress));
+        if (linearProgress >= 1.0)
+        {
+            m_timer.stop();
+            if (m_finished)
+            {
+                auto finished = std::move(m_finished);
+                finished();
+            }
+        }
     }
 
 protected:
@@ -83,26 +123,19 @@ protected:
         }
 
         const qreal radius = transitionRadius();
-        QPainterPath oldFrameArea;
-        oldFrameArea.addRect(bounds);
-        QPainterPath revealArea;
-        revealArea.addEllipse(QPointF(m_origin), radius, radius);
-        oldFrameArea = oldFrameArea.subtracted(revealArea);
-
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing, true);
-        painter.setClipPath(oldFrameArea);
         painter.setOpacity(qBound<qreal>(0.0, 1.0 - m_progress, 1.0));
 
-        const qreal dpr = qMax<qreal>(1.0, m_oldFrame.devicePixelRatio());
-        const QRectF sourceRect(0.0,
-                                0.0,
-                                static_cast<qreal>(m_oldFrame.width()) / dpr,
-                                static_cast<qreal>(m_oldFrame.height()) / dpr);
+        const QRectF sourceRect(m_oldFrame.rect());
         painter.drawPixmap(bounds, m_oldFrame, sourceRect);
+        painter.setOpacity(1.0);
+        painter.setCompositionMode(QPainter::CompositionMode_Clear);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(Qt::transparent);
+        painter.drawEllipse(QPointF(m_origin), radius, radius);
     }
 
-private:
     qreal transitionRadius() const
     {
         const QRectF bounds(rect());
@@ -117,6 +150,11 @@ private:
 
     QPixmap m_oldFrame;
     QPoint m_origin;
+    QTimer m_timer;
+    QElapsedTimer m_elapsed;
+    QEasingCurve m_easing = QEasingCurve(QEasingCurve::OutCubic);
+    std::function<void()> m_finished;
+    int m_durationMs = 240;
     qreal m_progress = 0.0;
 };
 
@@ -1246,22 +1284,13 @@ void AntWindow::startThemeModeTransition()
     overlay->raise();
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-    auto* animation = new QVariantAnimation(overlay);
-    animation->setDuration(240);
-    animation->setStartValue(0.0);
-    animation->setEndValue(1.0);
-    animation->setEasingCurve(QEasingCurve::OutCubic);
-    connect(animation, &QVariantAnimation::valueChanged, overlay, [overlay](const QVariant& value) {
-        overlay->setProgress(value.toReal());
-    });
-    connect(animation, &QVariantAnimation::finished, overlay, [this, overlay]() {
+    overlay->startTransition(240, [this, overlay]() {
         if (m_themeTransitionOverlay == overlay)
         {
             m_themeTransitionOverlay = nullptr;
         }
         overlay->deleteLater();
     });
-    animation->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 void AntWindow::applyManualSnap(const QPoint& globalPos)
