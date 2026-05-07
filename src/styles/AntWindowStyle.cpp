@@ -4,7 +4,10 @@
 #include <QEvent>
 #include <QIcon>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyleOption>
+
+#include <cmath>
 
 #include "widgets/AntWindow.h"
 
@@ -75,7 +78,6 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
     const int titleBarH = AntWindow::TitleBarHeight;
-    const int btnW = AntWindow::TitleBarButtonWidth;
     const int w = option->rect.width();
     const bool maximized = window->isMaximized();
 
@@ -116,8 +118,22 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
         painter->setFont(titleFont);
         painter->setPen(token.colorText);
 
+        int controlsLeft = w;
+        for (AntWindow::TitleBarButton button : {AntWindow::TitleBarButton::Pin,
+                                                 AntWindow::TitleBarButton::Theme,
+                                                 AntWindow::TitleBarButton::Minimize,
+                                                 AntWindow::TitleBarButton::Maximize,
+                                                 AntWindow::TitleBarButton::Close})
+        {
+            const QRect rect = window->titleBarButtonRect(button);
+            if (!rect.isNull())
+            {
+                controlsLeft = qMin(controlsLeft, rect.left());
+            }
+        }
+
         const int iconOffset = windowIcon.isNull() ? 12 : 12 + 16 + 8;
-        const int textMaxWidth = w - iconOffset - btnW * 3 - 12;
+        const int textMaxWidth = qMax(0, controlsLeft - iconOffset - 12);
         const QRect textRect(iconOffset, 0, textMaxWidth, titleBarH);
         painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft | Qt::TextSingleLine, titleText);
     }
@@ -125,99 +141,163 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
     // ─── Draw title bar buttons ───
     const QPoint cursorPos = window->mapFromGlobal(QCursor::pos());
 
-    // Determine hovered button
-    auto hoveredButton = [w, titleBarH, btnW, &cursorPos]() {
-        const QRect closeRect(w - btnW, 0, btnW, titleBarH);
-        if (closeRect.contains(cursorPos))
-            return 3;
-        const QRect maxRect(w - btnW * 2, 0, btnW, titleBarH);
-        if (maxRect.contains(cursorPos))
-            return 2;
-        const QRect minRect(w - btnW * 3, 0, btnW, titleBarH);
-        if (minRect.contains(cursorPos))
-            return 1;
-        return 0;
-    }();
+    auto drawButtonBackground = [&](AntWindow::TitleBarButton button, bool destructive = false, bool active = false) {
+        const QRect btnRect = window->titleBarButtonRect(button);
+        if (btnRect.isNull())
+        {
+            return btnRect;
+        }
 
-    // Minimize button
-    {
-        const QRect btnRect(w - btnW * 3, 0, btnW, titleBarH);
-        const bool isBtnHovered = hoveredButton == 1;
-
-        if (isBtnHovered)
+        const bool hovered = btnRect.contains(cursorPos);
+        if (hovered || active)
         {
             painter->setPen(Qt::NoPen);
-            painter->setBrush(token.colorFillTertiary);
+            if (destructive && hovered)
+            {
+                painter->setBrush(token.colorError);
+            }
+            else if (active)
+            {
+                painter->setBrush(token.colorPrimaryBg);
+            }
+            else
+            {
+                painter->setBrush(token.colorFillTertiary);
+            }
             painter->drawRect(btnRect);
         }
 
-        // Draw minimize icon (horizontal line)
-        painter->setPen(QPen(token.colorText, 1.4, Qt::SolidLine, Qt::RoundCap));
-        const int cx = btnRect.center().x();
-        const int cy = btnRect.center().y();
-        painter->drawLine(QPointF(cx - 5, cy), QPointF(cx + 5, cy));
+        return btnRect;
+    };
+
+    auto iconColorFor = [&](AntWindow::TitleBarButton button, bool destructive = false, bool active = false) {
+        const QRect btnRect = window->titleBarButtonRect(button);
+        const bool hovered = btnRect.contains(cursorPos);
+        if (destructive && hovered)
+        {
+            return QColor(Qt::white);
+        }
+        if (active)
+        {
+            return token.colorPrimary;
+        }
+        return hovered ? token.colorTextSecondary : token.colorText;
+    };
+
+    auto drawPinIcon = [&](const QRect& btnRect, const QColor& iconColor) {
+        if (btnRect.isNull())
+        {
+            return;
+        }
+
+        const QPointF center = btnRect.center();
+        painter->setPen(QPen(iconColor, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawLine(center + QPointF(-4.0, -5.5), center + QPointF(4.0, 2.5));
+        painter->drawLine(center + QPointF(-5.5, -3.5), center + QPointF(-2.0, -7.0));
+        painter->drawLine(center + QPointF(2.0, 0.5), center + QPointF(-4.5, 7.0));
+        painter->drawPoint(center + QPointF(-5.5, 8.0));
+    };
+
+    auto drawThemeIcon = [&](const QRect& btnRect, const QColor& iconColor) {
+        if (btnRect.isNull())
+        {
+            return;
+        }
+
+        const QPointF center = btnRect.center();
+        if (antTheme->themeMode() == Ant::ThemeMode::Dark)
+        {
+            constexpr qreal kPi = 3.14159265358979323846;
+            painter->setPen(QPen(iconColor, 1.3, Qt::SolidLine, Qt::RoundCap));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawEllipse(center, 4.2, 4.2);
+            for (int i = 0; i < 8; ++i)
+            {
+                const qreal angle = i * kPi / 4.0;
+                const QPointF start(center.x() + std::cos(angle) * 7.0, center.y() + std::sin(angle) * 7.0);
+                const QPointF end(center.x() + std::cos(angle) * 9.0, center.y() + std::sin(angle) * 9.0);
+                painter->drawLine(start, end);
+            }
+        }
+        else
+        {
+            QPainterPath moon;
+            moon.addEllipse(QRectF(center.x() - 5.0, center.y() - 6.0, 11.0, 12.0));
+            QPainterPath cutout;
+            cutout.addEllipse(QRectF(center.x() - 1.0, center.y() - 7.0, 11.0, 12.0));
+            painter->fillPath(moon.subtracted(cutout), iconColor);
+        }
+    };
+
+    // Pin button
+    {
+        const bool active = window->isAlwaysOnTop();
+        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Pin, false, active);
+        drawPinIcon(btnRect, iconColorFor(AntWindow::TitleBarButton::Pin, false, active));
+    }
+
+    // Theme toggle button
+    {
+        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Theme);
+        drawThemeIcon(btnRect, iconColorFor(AntWindow::TitleBarButton::Theme));
+    }
+
+    // Minimize button
+    {
+        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Minimize);
+        if (!btnRect.isNull())
+        {
+            // Draw minimize icon (horizontal line)
+            painter->setPen(QPen(iconColorFor(AntWindow::TitleBarButton::Minimize), 1.4, Qt::SolidLine, Qt::RoundCap));
+            const int cx = btnRect.center().x();
+            const int cy = btnRect.center().y();
+            painter->drawLine(QPointF(cx - 5, cy), QPointF(cx + 5, cy));
+        }
     }
 
     // Maximize/Restore button
     {
-        const QRect btnRect(w - btnW * 2, 0, btnW, titleBarH);
-        const bool isBtnHovered = hoveredButton == 2;
-
-        if (isBtnHovered)
-        {
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(token.colorFillTertiary);
-            painter->drawRect(btnRect);
-        }
+        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Maximize);
 
         // Draw maximize/restore icon
-        const QColor iconColor = isBtnHovered ? token.colorTextSecondary : token.colorText;
-        painter->setPen(QPen(iconColor, 1.4, Qt::SolidLine, Qt::SquareCap));
-        painter->setBrush(Qt::NoBrush);
-
-        if (maximized)
+        if (!btnRect.isNull())
         {
-            // Restore icon: two overlapping rectangles
+            painter->setPen(QPen(iconColorFor(AntWindow::TitleBarButton::Maximize), 1.4, Qt::SolidLine, Qt::SquareCap));
+            painter->setBrush(Qt::NoBrush);
             const int cx = btnRect.center().x();
             const int cy = btnRect.center().y();
-            const int rw = 8;
-            const int rh = 7;
-
-            // Back rectangle (offset top-right)
-            painter->drawRect(QRectF(cx - 1, cy - rh + 1, rw, rh));
-            // Front rectangle (offset bottom-left)
-            painter->drawRect(QRectF(cx - rw + 1, cy, rw, rh));
-        }
-        else
-        {
-            // Maximize icon: single rectangle
-            const int cx = btnRect.center().x();
-            const int cy = btnRect.center().y();
-            const int rw = 8;
-            const int rh = 8;
-            painter->drawRect(QRectF(cx - rw / 2.0, cy - rh / 2.0, rw, rh));
+            if (maximized)
+            {
+                // Restore icon: two overlapping rectangles
+                const int rw = 8;
+                const int rh = 7;
+                painter->drawRect(QRectF(cx - 1, cy - rh + 1, rw, rh));
+                painter->drawRect(QRectF(cx - rw + 1, cy, rw, rh));
+            }
+            else
+            {
+                // Maximize icon: single rectangle
+                const int rw = 8;
+                const int rh = 8;
+                painter->drawRect(QRectF(cx - rw / 2.0, cy - rh / 2.0, rw, rh));
+            }
         }
     }
 
     // Close button
     {
-        const QRect btnRect(w - btnW, 0, btnW, titleBarH);
-        const bool isBtnHovered = hoveredButton == 3;
-
-        if (isBtnHovered)
-        {
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(token.colorError);
-            painter->drawRect(btnRect);
-        }
+        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Close, true);
 
         // Draw close icon (X)
-        const QColor closeColor = isBtnHovered ? QColor(Qt::white) : token.colorText;
-        painter->setPen(QPen(closeColor, 1.4, Qt::SolidLine, Qt::RoundCap));
-        const int cx = btnRect.center().x();
-        const int cy = btnRect.center().y();
-        painter->drawLine(QPointF(cx - 4.5, cy - 4.5), QPointF(cx + 4.5, cy + 4.5));
-        painter->drawLine(QPointF(cx + 4.5, cy - 4.5), QPointF(cx - 4.5, cy + 4.5));
+        if (!btnRect.isNull())
+        {
+            painter->setPen(QPen(iconColorFor(AntWindow::TitleBarButton::Close, true), 1.4, Qt::SolidLine, Qt::RoundCap));
+            const int cx = btnRect.center().x();
+            const int cy = btnRect.center().y();
+            painter->drawLine(QPointF(cx - 4.5, cy - 4.5), QPointF(cx + 4.5, cy + 4.5));
+            painter->drawLine(QPointF(cx + 4.5, cy - 4.5), QPointF(cx - 4.5, cy + 4.5));
+        }
     }
 
     // Draw an inner outline so frameless windows remain visible on light desktop backgrounds.

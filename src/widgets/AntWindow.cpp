@@ -3,6 +3,7 @@
 #include <QCursor>
 #include <QEvent>
 #include <QGuiApplication>
+#include <QMetaType>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QResizeEvent>
@@ -18,9 +19,21 @@
 #include <windowsx.h>
 #endif
 
+namespace
+{
+constexpr AntWindow::TitleBarButton kTitleBarButtonsRightToLeft[] = {
+    AntWindow::TitleBarButton::Close,
+    AntWindow::TitleBarButton::Maximize,
+    AntWindow::TitleBarButton::Minimize,
+    AntWindow::TitleBarButton::Theme,
+    AntWindow::TitleBarButton::Pin,
+};
+}
+
 AntWindow::AntWindow(QWidget* parent)
     : QMainWindow(parent)
 {
+    qRegisterMetaType<AntWindow::TitleBarButton>("AntWindow::TitleBarButton");
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_StyledBackground, false);
     setAttribute(Qt::WA_Hover, true);
@@ -79,6 +92,185 @@ void AntWindow::setCentralWidget(QWidget* widget)
 bool AntWindow::isMaximized() const
 {
     return QMainWindow::isMaximized();
+}
+
+bool AntWindow::isAlwaysOnTop() const
+{
+    return m_alwaysOnTop;
+}
+
+void AntWindow::setAlwaysOnTop(bool on)
+{
+    if (m_alwaysOnTop == on)
+    {
+        return;
+    }
+
+    m_alwaysOnTop = on;
+    const bool wasVisible = isVisible();
+    const QRect oldGeometry = geometry();
+    const Qt::WindowStates oldState = windowState();
+
+    setWindowFlag(Qt::WindowStaysOnTopHint, on);
+
+    if (wasVisible)
+    {
+        setGeometry(oldGeometry);
+        if (oldState.testFlag(Qt::WindowMaximized))
+        {
+            showMaximized();
+        }
+        else if (oldState.testFlag(Qt::WindowMinimized))
+        {
+            showMinimized();
+        }
+        else
+        {
+            show();
+        }
+    }
+
+    update(titleBarRect());
+    Q_EMIT alwaysOnTopChanged(m_alwaysOnTop);
+}
+
+void AntWindow::toggleAlwaysOnTop()
+{
+    setAlwaysOnTop(!m_alwaysOnTop);
+}
+
+bool AntWindow::isTitleBarButtonVisible(TitleBarButton button) const
+{
+    switch (button)
+    {
+    case TitleBarButton::Pin:
+        return m_pinButtonVisible;
+    case TitleBarButton::Theme:
+        return m_themeButtonVisible;
+    case TitleBarButton::Minimize:
+        return m_minimizeButtonVisible;
+    case TitleBarButton::Maximize:
+        return m_maximizeButtonVisible;
+    case TitleBarButton::Close:
+        return m_closeButtonVisible;
+    default:
+        return false;
+    }
+}
+
+void AntWindow::setTitleBarButtonVisible(TitleBarButton button, bool visible)
+{
+    bool* target = nullptr;
+    switch (button)
+    {
+    case TitleBarButton::Pin:
+        target = &m_pinButtonVisible;
+        break;
+    case TitleBarButton::Theme:
+        target = &m_themeButtonVisible;
+        break;
+    case TitleBarButton::Minimize:
+        target = &m_minimizeButtonVisible;
+        break;
+    case TitleBarButton::Maximize:
+        target = &m_maximizeButtonVisible;
+        break;
+    case TitleBarButton::Close:
+        target = &m_closeButtonVisible;
+        break;
+    default:
+        break;
+    }
+
+    if (!target || *target == visible)
+    {
+        return;
+    }
+
+    *target = visible;
+    if (!visible && m_hoveredButton == button)
+    {
+        m_hoveredButton = TitleBarButton::None;
+    }
+
+    update(titleBarRect());
+    emitTitleBarButtonVisibleChanged(button, visible);
+}
+
+QRect AntWindow::titleBarButtonRect(TitleBarButton button) const
+{
+    if (!isTitleBarButtonVisible(button))
+    {
+        return {};
+    }
+
+    int right = width();
+    for (TitleBarButton current : kTitleBarButtonsRightToLeft)
+    {
+        if (!isTitleBarButtonVisible(current))
+        {
+            continue;
+        }
+
+        right -= TitleBarButtonWidth;
+        const QRect rect(right, 0, TitleBarButtonWidth, TitleBarHeight);
+        if (current == button)
+        {
+            return rect;
+        }
+    }
+
+    return {};
+}
+
+bool AntWindow::isPinButtonVisible() const
+{
+    return m_pinButtonVisible;
+}
+
+bool AntWindow::isThemeButtonVisible() const
+{
+    return m_themeButtonVisible;
+}
+
+bool AntWindow::isMinimizeButtonVisible() const
+{
+    return m_minimizeButtonVisible;
+}
+
+bool AntWindow::isMaximizeButtonVisible() const
+{
+    return m_maximizeButtonVisible;
+}
+
+bool AntWindow::isCloseButtonVisible() const
+{
+    return m_closeButtonVisible;
+}
+
+void AntWindow::setPinButtonVisible(bool visible)
+{
+    setTitleBarButtonVisible(TitleBarButton::Pin, visible);
+}
+
+void AntWindow::setThemeButtonVisible(bool visible)
+{
+    setTitleBarButtonVisible(TitleBarButton::Theme, visible);
+}
+
+void AntWindow::setMinimizeButtonVisible(bool visible)
+{
+    setTitleBarButtonVisible(TitleBarButton::Minimize, visible);
+}
+
+void AntWindow::setMaximizeButtonVisible(bool visible)
+{
+    setTitleBarButtonVisible(TitleBarButton::Maximize, visible);
+}
+
+void AntWindow::setCloseButtonVisible(bool visible)
+{
+    setTitleBarButtonVisible(TitleBarButton::Close, visible);
 }
 
 void AntWindow::moveToCenter()
@@ -331,8 +523,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
             // Check if in title bar area (but not on buttons)
             if (localPos.y >= 0 && localPos.y < TitleBarHeight)
             {
-                const int btnAreaWidth = TitleBarButtonWidth * 3;
-                if (localPos.x >= clientWidth - btnAreaWidth)
+                if (buttonAtPosition(QPoint(localPos.x, localPos.y)) != TitleBarButton::None)
                 {
                     *result = HTCLIENT;
                 }
@@ -403,25 +594,12 @@ AntWindow::TitleBarButton AntWindow::buttonAtPosition(const QPoint& pos) const
         return TitleBarButton::None;
     }
 
-    const int btnW = TitleBarButtonWidth;
-    const int w = width();
-
-    const QRect closeRect(w - btnW, 0, btnW, TitleBarHeight);
-    if (closeRect.contains(pos))
+    for (TitleBarButton button : kTitleBarButtonsRightToLeft)
     {
-        return TitleBarButton::Close;
-    }
-
-    const QRect maximizeRect(w - btnW * 2, 0, btnW, TitleBarHeight);
-    if (maximizeRect.contains(pos))
-    {
-        return TitleBarButton::Maximize;
-    }
-
-    const QRect minimizeRect(w - btnW * 3, 0, btnW, TitleBarHeight);
-    if (minimizeRect.contains(pos))
-    {
-        return TitleBarButton::Minimize;
+        if (titleBarButtonRect(button).contains(pos))
+        {
+            return button;
+        }
     }
 
     return TitleBarButton::None;
@@ -432,25 +610,16 @@ QRect AntWindow::titleBarRect() const
     return QRect(0, 0, width(), TitleBarHeight);
 }
 
-QRect AntWindow::minimizeButtonRect() const
-{
-    return QRect(width() - TitleBarButtonWidth * 3, 0, TitleBarButtonWidth, TitleBarHeight);
-}
-
-QRect AntWindow::maximizeButtonRect() const
-{
-    return QRect(width() - TitleBarButtonWidth * 2, 0, TitleBarButtonWidth, TitleBarHeight);
-}
-
-QRect AntWindow::closeButtonRect() const
-{
-    return QRect(width() - TitleBarButtonWidth, 0, TitleBarButtonWidth, TitleBarHeight);
-}
-
 void AntWindow::handleButtonClicked(TitleBarButton button)
 {
     switch (button)
     {
+    case TitleBarButton::Pin:
+        toggleAlwaysOnTop();
+        break;
+    case TitleBarButton::Theme:
+        antTheme->toggleThemeMode();
+        break;
     case TitleBarButton::Minimize:
         showMinimized();
         Q_EMIT minimizeRequested();
@@ -476,6 +645,32 @@ void AntWindow::handleButtonClicked(TitleBarButton button)
     default:
         break;
     }
+}
+
+void AntWindow::emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible)
+{
+    switch (button)
+    {
+    case TitleBarButton::Pin:
+        Q_EMIT pinButtonVisibleChanged(visible);
+        break;
+    case TitleBarButton::Theme:
+        Q_EMIT themeButtonVisibleChanged(visible);
+        break;
+    case TitleBarButton::Minimize:
+        Q_EMIT minimizeButtonVisibleChanged(visible);
+        break;
+    case TitleBarButton::Maximize:
+        Q_EMIT maximizeButtonVisibleChanged(visible);
+        break;
+    case TitleBarButton::Close:
+        Q_EMIT closeButtonVisibleChanged(visible);
+        break;
+    default:
+        return;
+    }
+
+    Q_EMIT titleBarButtonVisibilityChanged(button, visible);
 }
 
 void AntWindow::syncTheme()

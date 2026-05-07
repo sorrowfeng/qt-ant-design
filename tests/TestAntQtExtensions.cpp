@@ -475,11 +475,77 @@ void TestAntQtExtensions::window()
     QCOMPARE(w->isMaximized(), false);
     QCOMPARE(w->TitleBarHeight, 40);
     QCOMPARE(w->TitleBarButtonWidth, 46);
+    QCOMPARE(w->isAlwaysOnTop(), false);
+    QCOMPARE(w->isPinButtonVisible(), true);
+    QCOMPARE(w->isThemeButtonVisible(), true);
+    QCOMPARE(w->isMinimizeButtonVisible(), true);
+    QCOMPARE(w->isMaximizeButtonVisible(), true);
+    QCOMPARE(w->isCloseButtonVisible(), true);
+    QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Pin), true);
+    QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Theme), true);
+    QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Minimize), true);
+    QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Maximize), true);
+    QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Close), true);
 
     QSignalSpy titleSpy(w, &AntWindow::windowTitleChanged);
     w->setWindowTitle("Example");
     QCOMPARE(w->windowTitle(), "Example");
     QCOMPARE(titleSpy.count(), 1);
+
+    w->resize(640, 400);
+    QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Pin).isNull());
+    QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Theme).isNull());
+    QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Minimize).isNull());
+    QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Maximize).isNull());
+    QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Close).isNull());
+
+    QSignalSpy visibilitySpy(w, &AntWindow::titleBarButtonVisibilityChanged);
+    QSignalSpy pinVisibilitySpy(w, &AntWindow::pinButtonVisibleChanged);
+    w->setPinButtonVisible(false);
+    QCOMPARE(w->isPinButtonVisible(), false);
+    QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Pin), false);
+    QVERIFY(w->titleBarButtonRect(AntWindow::TitleBarButton::Pin).isNull());
+    QCOMPARE(pinVisibilitySpy.count(), 1);
+    QCOMPARE(visibilitySpy.count(), 1);
+    w->setTitleBarButtonVisible(AntWindow::TitleBarButton::Pin, true);
+    QCOMPARE(w->isPinButtonVisible(), true);
+    QCOMPARE(pinVisibilitySpy.count(), 2);
+    QCOMPARE(visibilitySpy.count(), 2);
+
+    w->setThemeButtonVisible(false);
+    w->setMinimizeButtonVisible(false);
+    w->setMaximizeButtonVisible(false);
+    w->setCloseButtonVisible(false);
+    QCOMPARE(w->isThemeButtonVisible(), false);
+    QCOMPARE(w->isMinimizeButtonVisible(), false);
+    QCOMPARE(w->isMaximizeButtonVisible(), false);
+    QCOMPARE(w->isCloseButtonVisible(), false);
+    QVERIFY(w->titleBarButtonRect(AntWindow::TitleBarButton::Theme).isNull());
+    QVERIFY(w->titleBarButtonRect(AntWindow::TitleBarButton::Minimize).isNull());
+    QVERIFY(w->titleBarButtonRect(AntWindow::TitleBarButton::Maximize).isNull());
+    QVERIFY(w->titleBarButtonRect(AntWindow::TitleBarButton::Close).isNull());
+    w->setTitleBarButtonVisible(AntWindow::TitleBarButton::Theme, true);
+    w->setTitleBarButtonVisible(AntWindow::TitleBarButton::Minimize, true);
+    w->setTitleBarButtonVisible(AntWindow::TitleBarButton::Maximize, true);
+    w->setTitleBarButtonVisible(AntWindow::TitleBarButton::Close, true);
+
+    QSignalSpy alwaysOnTopSpy(w, &AntWindow::alwaysOnTopChanged);
+    w->setAlwaysOnTop(true);
+    QCOMPARE(w->isAlwaysOnTop(), true);
+    QVERIFY(w->windowFlags().testFlag(Qt::WindowStaysOnTopHint));
+    QCOMPARE(alwaysOnTopSpy.count(), 1);
+    w->setAlwaysOnTop(false);
+    QCOMPARE(w->isAlwaysOnTop(), false);
+    QVERIFY(!w->windowFlags().testFlag(Qt::WindowStaysOnTopHint));
+    QCOMPARE(alwaysOnTopSpy.count(), 2);
+
+    const Ant::ThemeMode beforeClickMode = antTheme->themeMode();
+    QTest::mouseClick(w, Qt::LeftButton, Qt::NoModifier, w->titleBarButtonRect(AntWindow::TitleBarButton::Theme).center());
+    QCOMPARE(antTheme->themeMode(),
+             beforeClickMode == Ant::ThemeMode::Dark ? Ant::ThemeMode::Default : Ant::ThemeMode::Dark);
+    QTest::mouseClick(w, Qt::LeftButton, Qt::NoModifier, w->titleBarButtonRect(AntWindow::TitleBarButton::Pin).center());
+    QCOMPARE(w->isAlwaysOnTop(), true);
+    w->setAlwaysOnTop(false);
 
     auto* content = new QWidget;
     w->setCentralWidget(content);

@@ -15,8 +15,25 @@ class AntWindow : public QMainWindow
 {
     Q_OBJECT
     Q_PROPERTY(QString windowTitle READ windowTitle WRITE setWindowTitle NOTIFY windowTitleChanged)
+    Q_PROPERTY(bool alwaysOnTop READ isAlwaysOnTop WRITE setAlwaysOnTop NOTIFY alwaysOnTopChanged)
+    Q_PROPERTY(bool pinButtonVisible READ isPinButtonVisible WRITE setPinButtonVisible NOTIFY pinButtonVisibleChanged)
+    Q_PROPERTY(bool themeButtonVisible READ isThemeButtonVisible WRITE setThemeButtonVisible NOTIFY themeButtonVisibleChanged)
+    Q_PROPERTY(bool minimizeButtonVisible READ isMinimizeButtonVisible WRITE setMinimizeButtonVisible NOTIFY minimizeButtonVisibleChanged)
+    Q_PROPERTY(bool maximizeButtonVisible READ isMaximizeButtonVisible WRITE setMaximizeButtonVisible NOTIFY maximizeButtonVisibleChanged)
+    Q_PROPERTY(bool closeButtonVisible READ isCloseButtonVisible WRITE setCloseButtonVisible NOTIFY closeButtonVisibleChanged)
 
 public:
+    enum class TitleBarButton
+    {
+        None,
+        Pin,
+        Theme,
+        Minimize,
+        Maximize,
+        Close,
+    };
+    Q_ENUM(TitleBarButton)
+
     explicit AntWindow(QWidget* parent = nullptr);
     ~AntWindow() override = default;
 
@@ -28,9 +45,35 @@ public:
     static constexpr int TitleBarButtonWidth = 46;
 
     bool isMaximized() const;
+    bool isAlwaysOnTop() const;
+    void setAlwaysOnTop(bool on);
+    void toggleAlwaysOnTop();
+
+    bool isTitleBarButtonVisible(TitleBarButton button) const;
+    void setTitleBarButtonVisible(TitleBarButton button, bool visible);
+    QRect titleBarButtonRect(TitleBarButton button) const;
+
+    bool isPinButtonVisible() const;
+    bool isThemeButtonVisible() const;
+    bool isMinimizeButtonVisible() const;
+    bool isMaximizeButtonVisible() const;
+    bool isCloseButtonVisible() const;
+
+    void setPinButtonVisible(bool visible);
+    void setThemeButtonVisible(bool visible);
+    void setMinimizeButtonVisible(bool visible);
+    void setMaximizeButtonVisible(bool visible);
+    void setCloseButtonVisible(bool visible);
 
 Q_SIGNALS:
     void windowTitleChanged(const QString& title);
+    void alwaysOnTopChanged(bool on);
+    void titleBarButtonVisibilityChanged(AntWindow::TitleBarButton button, bool visible);
+    void pinButtonVisibleChanged(bool visible);
+    void themeButtonVisibleChanged(bool visible);
+    void minimizeButtonVisibleChanged(bool visible);
+    void maximizeButtonVisibleChanged(bool visible);
+    void closeButtonVisibleChanged(bool visible);
     void minimizeRequested();
     void maximizeRequested();
     void restoreRequested();
@@ -49,22 +92,12 @@ protected:
     bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
 
 private:
-    enum class TitleBarButton
-    {
-        None,
-        Minimize,
-        Maximize,
-        Close,
-    };
-
     bool isTitleBarArea(const QPoint& pos) const;
     bool isButtonArea(const QPoint& pos) const;
     TitleBarButton buttonAtPosition(const QPoint& pos) const;
     QRect titleBarRect() const;
-    QRect minimizeButtonRect() const;
-    QRect maximizeButtonRect() const;
-    QRect closeButtonRect() const;
     void handleButtonClicked(TitleBarButton button);
+    void emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible);
     void syncTheme();
     void applyContentPalette(QWidget* widget);
 
@@ -74,6 +107,12 @@ private:
     qreal m_dragStartTitleXRatio = 0.5;
     int m_dragStartTitleY = TitleBarHeight / 2;
     bool m_windowMaximized = false;
+    bool m_alwaysOnTop = false;
+    bool m_pinButtonVisible = true;
+    bool m_themeButtonVisible = true;
+    bool m_minimizeButtonVisible = true;
+    bool m_maximizeButtonVisible = true;
+    bool m_closeButtonVisible = true;
     TitleBarButton m_hoveredButton = TitleBarButton::None;
     QWidget* m_contentWidget = nullptr;
 };
