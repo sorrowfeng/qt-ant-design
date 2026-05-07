@@ -641,6 +641,11 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
 
     const HWND hwnd = reinterpret_cast<HWND>(window.winId());
     QVERIFY(hwnd != nullptr);
+    const LONG_PTR nativeStyle = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
+    QVERIFY((nativeStyle & WS_THICKFRAME) != 0);
+    QVERIFY((nativeStyle & WS_CAPTION) != 0);
+    QVERIFY((nativeStyle & WS_MAXIMIZEBOX) != 0);
+    QVERIFY((nativeStyle & WS_MINIMIZEBOX) != 0);
 
     auto hitTest = [&](const QPoint& localPos) -> qintptr {
         MSG msg{};

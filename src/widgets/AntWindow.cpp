@@ -11,6 +11,7 @@
 #include <QShowEvent>
 #include <QStyleHints>
 #include <QVBoxLayout>
+#include <QWindow>
 
 #include "../styles/AntWindowStyle.h"
 #include "core/AntTheme.h"
@@ -140,6 +141,31 @@ bool resolveDwmApis(DwmSetWindowAttributeFn* setWindowAttribute, DwmExtendFrameI
     }
 
     return (setWindowAttribute && *setWindowAttribute) || (extendFrame && *extendFrame);
+}
+
+void triggerFrameChange(HWND hwnd)
+{
+    ::SetWindowPos(hwnd,
+                   nullptr,
+                   0,
+                   0,
+                   0,
+                   0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+}
+
+void ensureNativeSnapWindowStyle(HWND hwnd)
+{
+    LONG_PTR style = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
+    const LONG_PTR snapStyle = WS_THICKFRAME | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU;
+    const LONG_PTR newStyle = style | snapStyle;
+    if (newStyle == style)
+    {
+        return;
+    }
+
+    ::SetWindowLongPtrW(hwnd, GWL_STYLE, newStyle);
+    triggerFrameChange(hwnd);
 }
 #endif
 }
@@ -599,6 +625,24 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
 
         switch (uMsg)
         {
+        case WM_NCCALCSIZE:
+        {
+            if (msg->wParam == TRUE && lParam)
+            {
+                auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam);
+                if (isMaximized() && !isFullScreen())
+                {
+                    const int borderWidth = resizeBorderMetric(hwnd, SM_CXSIZEFRAME, SM_CXPADDEDBORDER);
+                    const int borderHeight = resizeBorderMetric(hwnd, SM_CYSIZEFRAME, SM_CXPADDEDBORDER);
+                    params->rgrc[0].left += borderWidth;
+                    params->rgrc[0].right -= borderWidth;
+                    params->rgrc[0].top += borderHeight;
+                    params->rgrc[0].bottom -= borderHeight;
+                }
+            }
+            *result = 0;
+            return true;
+        }
         case WM_NCHITTEST:
         {
             const QPoint globalPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
@@ -862,6 +906,17 @@ bool AntWindow::handleTitleBarMouseMove(const QPoint& pos, const QPoint& globalP
     Q_UNUSED(pos)
     if (m_dragging && (buttons & Qt::LeftButton))
     {
+#ifdef Q_OS_WIN
+        if (QWindow* nativeWindow = windowHandle())
+        {
+            if (nativeWindow->startSystemMove())
+            {
+                m_dragging = false;
+                return true;
+            }
+        }
+#endif
+
         const QPoint delta = globalPos - m_dragStartPosition;
 
         if (isMaximized())
@@ -977,11 +1032,6 @@ void AntWindow::handleButtonClicked(TitleBarButton button)
 
 void AntWindow::applyManualSnap(const QPoint& globalPos)
 {
-#ifdef Q_OS_WIN
-    Q_UNUSED(globalPos)
-    // Windows uses HTCAPTION/HTZOOM and the native window manager for Snap.
-    return;
-#else
     if (isFullScreen())
     {
         return;
@@ -1057,7 +1107,6 @@ void AntWindow::applyManualSnap(const QPoint& globalPos)
             Q_EMIT restoreRequested();
         }
     }
-#endif
 }
 
 void AntWindow::applyNativeWindowFrame()
@@ -1073,6 +1122,8 @@ void AntWindow::applyNativeWindowFrame()
     {
         return;
     }
+
+    ensureNativeSnapWindowStyle(hwnd);
 
     DwmSetWindowAttributeFn setWindowAttribute = nullptr;
     DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
