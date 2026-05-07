@@ -110,6 +110,11 @@ void AntTree::setTreeData(const QVector<AntTreeNode>& data)
     update();
 }
 
+QVector<AntTreeNode> AntTree::treeData() const
+{
+    return m_data;
+}
+
 void AntTree::addNode(const QString& parentKey, const AntTreeNode& node)
 {
     if (parentKey.isEmpty())
@@ -139,6 +144,36 @@ void AntTree::removeNode(const QString& key)
 AntTreeNode* AntTree::findNode(const QString& key)
 {
     return findNodeRecursive(m_data, key);
+}
+
+bool AntTree::containsNode(const QString& key) const
+{
+    return findNodeRecursive(m_data, key) != nullptr;
+}
+
+int AntTree::topLevelNodeCount() const
+{
+    return m_data.size();
+}
+
+int AntTree::nodeCount() const
+{
+    return countNodesRecursive(m_data);
+}
+
+void AntTree::clear()
+{
+    if (m_data.isEmpty() && m_selectedKeys.isEmpty() && m_scrollY == 0 && m_hoveredRow == -1)
+    {
+        return;
+    }
+
+    m_data.clear();
+    m_selectedKeys.clear();
+    m_scrollY = 0;
+    m_hoveredRow = -1;
+    updateGeometry();
+    update();
 }
 
 QStringList AntTree::expandedKeys() const
@@ -217,6 +252,37 @@ void AntTree::setCheckedKeys(const QStringList& keys)
             n->checked = true;
         }
     }
+    refreshCheckStateUp();
+    update();
+    Q_EMIT nodeChecked(checkedKeys());
+}
+
+void AntTree::setNodeExpanded(const QString& key, bool expanded)
+{
+    AntTreeNode* node = findNode(key);
+    if (!node || node->isLeaf || node->children.isEmpty() || node->expanded == expanded)
+    {
+        return;
+    }
+
+    node->expanded = expanded;
+    clampScrollY();
+    updateGeometry();
+    update();
+    Q_EMIT nodeExpanded(node->key, node->expanded);
+}
+
+void AntTree::setNodeChecked(const QString& key, bool checked)
+{
+    AntTreeNode* node = findNode(key);
+    if (!node || !node->checkable || node->checked == checked)
+    {
+        return;
+    }
+
+    node->checked = checked;
+    node->halfChecked = false;
+    refreshCheckStateDown(*node, checked);
     refreshCheckStateUp();
     update();
     Q_EMIT nodeChecked(checkedKeys());
@@ -472,6 +538,33 @@ AntTreeNode* AntTree::findNodeRecursive(QVector<AntTreeNode>& nodes, const QStri
         }
     }
     return nullptr;
+}
+
+const AntTreeNode* AntTree::findNodeRecursive(const QVector<AntTreeNode>& nodes, const QString& key) const
+{
+    for (const auto& node : nodes)
+    {
+        if (node.key == key)
+        {
+            return &node;
+        }
+        const AntTreeNode* found = findNodeRecursive(node.children, key);
+        if (found)
+        {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
+int AntTree::countNodesRecursive(const QVector<AntTreeNode>& nodes) const
+{
+    int count = nodes.size();
+    for (const auto& node : nodes)
+    {
+        count += countNodesRecursive(node.children);
+    }
+    return count;
 }
 
 bool AntTree::removeNodeRecursive(QVector<AntTreeNode>& nodes, const QString& key)

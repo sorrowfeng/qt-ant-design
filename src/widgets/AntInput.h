@@ -19,6 +19,11 @@ class AntInput : public QWidget
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
     Q_PROPERTY(bool passwordMode READ isPasswordMode WRITE setPasswordMode NOTIFY passwordModeChanged)
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
+    Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText)
+    Q_PROPERTY(bool readOnly READ isReadOnly WRITE setReadOnly)
+    Q_PROPERTY(int maxLength READ maxLength WRITE setMaxLength)
+    Q_PROPERTY(QLineEdit::EchoMode echoMode READ echoMode WRITE setEchoMode)
+    Q_PROPERTY(Qt::Alignment alignment READ alignment WRITE setAlignment)
 
 public:
     explicit AntInput(QWidget* parent = nullptr);
@@ -26,7 +31,29 @@ public:
     QLineEdit* lineEdit() const;
     QString text() const;
     void setText(const QString& text);
+    void clear();
+    QString placeholderText() const;
     void setPlaceholderText(const QString& text);
+    bool isReadOnly() const;
+    void setReadOnly(bool readOnly);
+    int maxLength() const;
+    void setMaxLength(int length);
+    QLineEdit::EchoMode echoMode() const;
+    void setEchoMode(QLineEdit::EchoMode mode);
+    Qt::Alignment alignment() const;
+    void setAlignment(Qt::Alignment alignment);
+    int cursorPosition() const;
+    void setCursorPosition(int position);
+    void setSelection(int start, int length);
+    void selectAll();
+    void deselect();
+    QString selectedText() const;
+    bool hasSelectedText() const;
+    void copy() const;
+    void cut();
+    void paste();
+    void undo();
+    void redo();
 
     Ant::Size inputSize() const;
     void setInputSize(Ant::Size size);
@@ -69,6 +96,11 @@ Q_SIGNALS:
     void passwordModeChanged(bool passwordMode);
     void focusIn();
     void focusOut();
+    void textEdited(const QString& text);
+    void returnPressed();
+    void editingFinished();
+    void selectionChanged();
+    void inputRejected();
 
 protected:
     void enterEvent(QEnterEvent* event) override;

@@ -51,6 +51,9 @@ public:
     void removeColumn(const QString& key);
     void setColumns(const QVector<AntTableColumn>& columns);
     QVector<AntTableColumn> columns() const;
+    int columnCount() const;
+    AntTableColumn columnAt(int index) const;
+    QStringList headerLabels() const;
 
     // Row management
     void addRow(const AntTableRow& row);
@@ -59,6 +62,8 @@ public:
     void clearRows();
     int rowCount() const;
     AntTableRow rowAt(int index) const;
+    QVariant cellData(int row, const QString& dataIndex) const;
+    void setData(int row, const QString& dataIndex, const QVariant& value);
 
     // Properties
     bool isBordered() const;
@@ -107,6 +112,9 @@ Q_SIGNALS:
     void tableSizeChanged(Ant::Size size);
     void loadingChanged(bool loading);
     void rowSelectionChanged(Ant::TableSelectionMode mode);
+    void columnsChanged();
+    void rowsChanged();
+    void cellDataChanged(int row, const QString& dataIndex, const QVariant& value);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

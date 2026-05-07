@@ -20,6 +20,11 @@ void TestAntInput::propertiesAndSignals()
     QCOMPARE(input->allowClear(), false);
     QCOMPARE(input->isPasswordMode(), false);
     QCOMPARE(input->isSearchMode(), false);
+    QCOMPARE(input->placeholderText(), QString());
+    QCOMPARE(input->isReadOnly(), false);
+    QCOMPARE(input->maxLength(), 32767);
+    QCOMPARE(input->echoMode(), QLineEdit::Normal);
+    QCOMPARE(input->alignment(), Qt::AlignLeft | Qt::AlignVCenter);
 
     QSignalSpy textSpy(input, &AntInput::textChanged);
     input->setText("hello");
@@ -27,7 +32,36 @@ void TestAntInput::propertiesAndSignals()
     QCOMPARE(textSpy.count(), 1);
 
     input->setPlaceholderText("Enter text");
+    QCOMPARE(input->placeholderText(), "Enter text");
     QCOMPARE(input->lineEdit()->placeholderText(), "Enter text");
+
+    input->setReadOnly(true);
+    QCOMPARE(input->isReadOnly(), true);
+    QCOMPARE(input->lineEdit()->isReadOnly(), true);
+    input->setReadOnly(false);
+
+    input->setMaxLength(4);
+    QCOMPARE(input->maxLength(), 4);
+    input->setText("abcdef");
+    QCOMPARE(input->text(), "abcd");
+
+    input->setEchoMode(QLineEdit::Password);
+    QCOMPARE(input->echoMode(), QLineEdit::Password);
+    QCOMPARE(input->lineEdit()->echoMode(), QLineEdit::Password);
+
+    input->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    QCOMPARE(input->alignment(), Qt::AlignRight | Qt::AlignVCenter);
+    QCOMPARE(input->lineEdit()->alignment(), Qt::AlignRight | Qt::AlignVCenter);
+
+    input->setCursorPosition(2);
+    QCOMPARE(input->cursorPosition(), 2);
+    input->selectAll();
+    QVERIFY(input->hasSelectedText());
+    QCOMPARE(input->selectedText(), QStringLiteral("abcd"));
+    input->deselect();
+    QVERIFY(!input->hasSelectedText());
+    input->clear();
+    QCOMPARE(input->text(), QString());
 
     QSignalSpy sizeSpy(input, &AntInput::inputSizeChanged);
     input->setInputSize(Ant::Size::Large);
@@ -51,6 +85,14 @@ void TestAntInput::propertiesAndSignals()
     input->setPasswordMode(true);
     QCOMPARE(input->isPasswordMode(), true);
     QCOMPARE(passwordSpy.count(), 1);
+
+    QSignalSpy editedSpy(input, &AntInput::textEdited);
+    QSignalSpy returnSpy(input, &AntInput::returnPressed);
+    QTest::keyClicks(input->lineEdit(), "xy");
+    QCOMPARE(input->text(), QStringLiteral("xy"));
+    QCOMPARE(editedSpy.count(), 2);
+    QTest::keyClick(input->lineEdit(), Qt::Key_Return);
+    QCOMPARE(returnSpy.count(), 1);
 
     QSize hint = input->sizeHint();
     QVERIFY(hint.width() > 0);

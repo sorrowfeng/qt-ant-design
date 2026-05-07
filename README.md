@@ -56,6 +56,17 @@ The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar p
 - Title-bar pin and light/dark theme buttons use bundled official Ant Design icons, and every title-bar button can be shown or hidden through public APIs.
 - The built-in theme button uses a captured-frame overlay with a soft reveal animation so full-window light/dark switching feels continuous.
 
+## Recent Qt API Compatibility Updates
+
+The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget conventions:
+
+- `AntInput`, `AntInputNumber`, `AntCheckbox`, `AntRadio`, `AntSlider`, `AntProgress`, and `AntStatusBar` expose more common Qt-style methods and signals.
+- `AntSelect` supports QComboBox-style item management, lookup, `currentData`, `activated`, and highlighted signals.
+- `AntDatePicker` / `AntTimePicker` expose QDateEdit / QTimeEdit-style `date` / `time` aliases plus minimum / maximum range APIs.
+- `AntList`, `AntTable`, and `AntTree` expose more item/view-style helpers for count, item access, cell data, node lookup, clear, and key-based node state changes.
+- `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
+- `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, and clear controls.
+
 ## Installation & Integration
 
 ### Requirements
@@ -213,7 +224,7 @@ Ant Design standard components are counted by the top-level directories under [`
 - `AntTreeSelect`: tree selector that renders a tree inside a dropdown
 - `AntRate`: rating component with `count / value / allowHalf / allowClear / disabled / size`, hover scaling, left / right keyboard control
 - `AntWidget`: base QWidget subclass that handles theme switching automatically
-- `AntTypography`: theme-aware text component, Title (H1–H5) / Text / Paragraph, with type / decoration / copy / ellipsis support
+- `AntTypography`: theme-aware text component, Title (H1-H5) / Text / Paragraph, with type / decoration / copy / ellipsis / alignment support
 - `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, DWM rounded corners / border shadow, and a smooth theme transition overlay
 - `AntDrawer`: sliding panel with Left / Right / Top / Bottom placement, animation, and mask
 - `AntStatusBar`: status bar with left / right items, separators, message area, and size grip

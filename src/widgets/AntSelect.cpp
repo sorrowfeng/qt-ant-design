@@ -20,6 +20,40 @@
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
+namespace
+{
+bool antSelectTextMatches(const QString& candidate, const QString& text, Qt::MatchFlags flags)
+{
+    const Qt::CaseSensitivity caseSensitivity = flags.testFlag(Qt::MatchCaseSensitive)
+        ? Qt::CaseSensitive
+        : Qt::CaseInsensitive;
+
+    if (flags.testFlag(Qt::MatchContains))
+    {
+        return candidate.contains(text, caseSensitivity);
+    }
+    if (flags.testFlag(Qt::MatchStartsWith))
+    {
+        return candidate.startsWith(text, caseSensitivity);
+    }
+    if (flags.testFlag(Qt::MatchEndsWith))
+    {
+        return candidate.endsWith(text, caseSensitivity);
+    }
+    return candidate.compare(text, caseSensitivity) == 0;
+}
+
+bool antSelectDataMatches(const QVariant& candidate, const QVariant& data, Qt::MatchFlags flags)
+{
+    if (flags.testFlag(Qt::MatchContains) || flags.testFlag(Qt::MatchStartsWith) ||
+        flags.testFlag(Qt::MatchEndsWith) || flags.testFlag(Qt::MatchFixedString))
+    {
+        return antSelectTextMatches(candidate.toString(), data.toString(), flags);
+    }
+    return candidate == data;
+}
+}
+
 void AntSelectOptionWidget::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
@@ -336,6 +370,21 @@ void AntSelect::setCurrentIndex(int index)
     Q_EMIT currentValueChanged(currentValue());
 }
 
+void AntSelect::setCurrentText(const QString& text)
+{
+    const int index = findText(text);
+    if (index >= 0)
+    {
+        setCurrentIndex(index);
+        return;
+    }
+
+    if (m_editable && m_editField)
+    {
+        m_editField->setText(text);
+    }
+}
+
 QString AntSelect::currentText() const
 {
     if (m_currentIndex < 0 || m_currentIndex >= m_options.size())
@@ -352,6 +401,11 @@ QVariant AntSelect::currentValue() const
         return QVariant();
     }
     return m_options.at(m_currentIndex).value;
+}
+
+QVariant AntSelect::currentData(int role) const
+{
+    return itemData(m_currentIndex, role);
 }
 
 int AntSelect::count() const { return m_options.size(); }
@@ -394,6 +448,211 @@ void AntSelect::clearOptions()
     Q_EMIT currentIndexChanged(m_currentIndex);
     Q_EMIT currentTextChanged(QString());
     Q_EMIT currentValueChanged(QVariant());
+}
+
+void AntSelect::addItem(const QString& text, const QVariant& userData)
+{
+    addOption(text, userData);
+}
+
+void AntSelect::addItems(const QStringList& texts)
+{
+    for (const QString& text : texts)
+    {
+        addItem(text);
+    }
+}
+
+void AntSelect::insertItem(int index, const QString& text, const QVariant& userData)
+{
+    index = qBound(0, index, m_options.size());
+
+    m_options.insert(index, {text, userData.isValid() ? userData : QVariant(text), false});
+    for (int& selectedIndex : m_selectedIndices)
+    {
+        if (selectedIndex >= index)
+        {
+            ++selectedIndex;
+        }
+    }
+    if (m_currentIndex >= index)
+    {
+        ++m_currentIndex;
+    }
+    if (m_highlightedIndex >= index)
+    {
+        ++m_highlightedIndex;
+    }
+
+    rebuildPopup();
+    update();
+}
+
+void AntSelect::insertItems(int index, const QStringList& texts)
+{
+    index = qBound(0, index, m_options.size());
+    for (const QString& text : texts)
+    {
+        insertItem(index, text);
+        ++index;
+    }
+}
+
+void AntSelect::removeItem(int index)
+{
+    if (index < 0 || index >= m_options.size())
+    {
+        return;
+    }
+
+    const int oldCurrentIndex = m_currentIndex;
+    const QString oldCurrentText = currentText();
+    const QVariant oldCurrentValue = currentValue();
+    const QList<QVariant> oldSelectedValues = selectedValues();
+
+    m_options.removeAt(index);
+
+    QList<int> adjustedSelectedIndices;
+    adjustedSelectedIndices.reserve(m_selectedIndices.size());
+    for (int selectedIndex : m_selectedIndices)
+    {
+        if (selectedIndex == index)
+        {
+            continue;
+        }
+        adjustedSelectedIndices.append(selectedIndex > index ? selectedIndex - 1 : selectedIndex);
+    }
+    m_selectedIndices = adjustedSelectedIndices;
+
+    if (m_currentIndex == index)
+    {
+        m_currentIndex = -1;
+    }
+    else if (m_currentIndex > index)
+    {
+        --m_currentIndex;
+    }
+
+    if (m_highlightedIndex == index)
+    {
+        m_highlightedIndex = -1;
+    }
+    else if (m_highlightedIndex > index)
+    {
+        --m_highlightedIndex;
+    }
+
+    rebuildPopup();
+    update();
+
+    if (oldCurrentIndex != m_currentIndex)
+    {
+        Q_EMIT currentIndexChanged(m_currentIndex);
+    }
+    if (oldCurrentText != currentText())
+    {
+        Q_EMIT currentTextChanged(currentText());
+    }
+    if (oldCurrentValue != currentValue())
+    {
+        Q_EMIT currentValueChanged(currentValue());
+    }
+    if (oldSelectedValues != selectedValues())
+    {
+        Q_EMIT selectionChanged(selectedValues());
+    }
+}
+
+QString AntSelect::itemText(int index) const
+{
+    if (index < 0 || index >= m_options.size())
+    {
+        return QString();
+    }
+    return m_options.at(index).label;
+}
+
+void AntSelect::setItemText(int index, const QString& text)
+{
+    if (index < 0 || index >= m_options.size() || m_options.at(index).label == text)
+    {
+        return;
+    }
+
+    m_options[index].label = text;
+    rebuildPopup();
+    update();
+    if (m_currentIndex == index)
+    {
+        Q_EMIT currentTextChanged(currentText());
+    }
+}
+
+QVariant AntSelect::itemData(int index, int role) const
+{
+    if (index < 0 || index >= m_options.size())
+    {
+        return QVariant();
+    }
+    if (role == Qt::DisplayRole || role == Qt::EditRole)
+    {
+        return m_options.at(index).label;
+    }
+    return m_options.at(index).value;
+}
+
+void AntSelect::setItemData(int index, const QVariant& value, int role)
+{
+    if (index < 0 || index >= m_options.size())
+    {
+        return;
+    }
+    if (role == Qt::DisplayRole || role == Qt::EditRole)
+    {
+        setItemText(index, value.toString());
+        return;
+    }
+    if (m_options.at(index).value == value)
+    {
+        return;
+    }
+
+    m_options[index].value = value;
+    rebuildPopup();
+    update();
+    if (m_currentIndex == index)
+    {
+        Q_EMIT currentValueChanged(currentValue());
+    }
+}
+
+int AntSelect::findText(const QString& text, Qt::MatchFlags flags) const
+{
+    for (int i = 0; i < m_options.size(); ++i)
+    {
+        if (antSelectTextMatches(m_options.at(i).label, text, flags))
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int AntSelect::findData(const QVariant& data, int role, Qt::MatchFlags flags) const
+{
+    for (int i = 0; i < m_options.size(); ++i)
+    {
+        if (antSelectDataMatches(itemData(i, role), data, flags))
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void AntSelect::clear()
+{
+    clearOptions();
 }
 
 int AntSelect::maxVisibleItems() const { return m_maxVisibleItems; }
@@ -717,6 +976,8 @@ void AntSelect::selectOptionFromPopup(int index)
     setCurrentIndex(index);
     setOpen(false);
     Q_EMIT optionSelected(m_currentIndex, currentValue());
+    Q_EMIT activated(m_currentIndex);
+    Q_EMIT textActivated(currentText());
 }
 
 void AntSelect::setHighlightedIndex(int index)
@@ -734,6 +995,11 @@ void AntSelect::setHighlightedIndex(int index)
     if (m_popup)
     {
         m_popup->update();
+    }
+    if (m_highlightedIndex >= 0)
+    {
+        Q_EMIT highlighted(m_highlightedIndex);
+        Q_EMIT textHighlighted(m_options.at(m_highlightedIndex).label);
     }
 }
 

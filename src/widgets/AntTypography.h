@@ -16,6 +16,7 @@ class AntTypography : public QWidget
     Q_PROPERTY(Ant::TypographyTitleLevel titleLevel READ titleLevel WRITE setTitleLevel NOTIFY titleLevelChanged)
     Q_PROPERTY(bool title READ isTitle WRITE setTitle NOTIFY titleChanged)
     Q_PROPERTY(bool paragraph READ isParagraph WRITE setParagraph NOTIFY paragraphChanged)
+    Q_PROPERTY(bool wordWrap READ wordWrap WRITE setWordWrap NOTIFY paragraphChanged)
     Q_PROPERTY(bool disabled READ isDisabled WRITE setDisabled NOTIFY disabledChanged)
     Q_PROPERTY(bool strong READ isStrong WRITE setStrong NOTIFY strongChanged)
     Q_PROPERTY(bool underline READ isUnderline WRITE setUnderline NOTIFY underlineChanged)
@@ -35,6 +36,7 @@ public:
 
     QString text() const;
     void setText(const QString& text);
+    void clear();
 
     Ant::TypographyType type() const;
     void setType(Ant::TypographyType type);
@@ -46,6 +48,8 @@ public:
 
     bool isParagraph() const;
     void setParagraph(bool paragraph);
+    bool wordWrap() const;
+    void setWordWrap(bool wordWrap);
 
     bool isDisabled() const;
     void setDisabled(bool disabled);
@@ -133,7 +137,7 @@ private:
     bool m_copyable = false;
     bool m_ellipsis = false;
     int m_ellipsisRows = 1;
-    Qt::Alignment m_alignment = Qt::AlignLeft;
+    Qt::Alignment m_alignment = Qt::AlignLeft | Qt::AlignVCenter;
     bool m_copyHovered = false;
     bool m_copyPressed = false;
     bool m_copied = false;

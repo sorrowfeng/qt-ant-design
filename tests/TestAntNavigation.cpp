@@ -1,5 +1,6 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QAction>
 #include "widgets/AntBreadcrumb.h"
 #include "widgets/AntDropdown.h"
 #include "widgets/AntMenu.h"
@@ -100,6 +101,33 @@ void TestAntNavigation::propertiesAndSignals()
     QCOMPARE(menu->openKeys(), QStringList{"sub"});
     QCOMPARE(openSpy.count(), 1);
     menu->clearItems();
+
+    auto* actionMenu = new AntMenu;
+    auto* openAction = new QAction(QStringLiteral("&Open"), actionMenu);
+    openAction->setData(QStringLiteral("open"));
+    openAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
+    actionMenu->addAction(openAction);
+    QCOMPARE(actionMenu->itemCount(), 1);
+    QCOMPARE(actionMenu->itemAt(0).key, QStringLiteral("open"));
+    QCOMPARE(actionMenu->itemAt(0).label, QStringLiteral("Open"));
+    QCOMPARE(actionMenu->itemAt(0).extra, openAction->shortcut().toString(QKeySequence::NativeText));
+
+    openAction->setText(QStringLiteral("&Open File"));
+    openAction->setEnabled(false);
+    QCOMPARE(actionMenu->itemAt(0).label, QStringLiteral("Open File"));
+    QCOMPARE(actionMenu->itemAt(0).disabled, true);
+
+    openAction->setEnabled(true);
+    actionMenu->resize(actionMenu->sizeHint());
+    QSignalSpy openTriggeredSpy(openAction, &QAction::triggered);
+    QSignalSpy actionItemSpy(actionMenu, &AntMenu::itemClicked);
+    QTest::mouseClick(actionMenu, Qt::LeftButton, Qt::NoModifier, QPoint(20, 20));
+    QCOMPARE(openTriggeredSpy.count(), 1);
+    QCOMPARE(actionItemSpy.count(), 1);
+    QCOMPARE(actionItemSpy.takeFirst().at(0).toString(), QStringLiteral("open"));
+
+    actionMenu->removeAction(openAction);
+    QCOMPARE(actionMenu->itemCount(), 0);
 
     // AntPagination
     auto* pag = new AntPagination;

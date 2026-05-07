@@ -56,6 +56,17 @@
 - 标题栏新增置顶和亮暗主题切换按钮，使用内置官方 Ant Design 图标；所有标题栏按钮均可通过公开 API 控制显示或隐藏。
 - 内置主题按钮使用全窗口截图 overlay 和柔和揭示动画，让 Light/Dark 全局切换更连续。
 
+## 最近 Qt API 兼容更新
+
+2026-05-07 的 API 批次增强了 Qt 对象树接入和常见 Qt 控件习惯：
+
+- `AntInput`、`AntInputNumber`、`AntCheckbox`、`AntRadio`、`AntSlider`、`AntProgress`、`AntStatusBar` 补充更多 Qt 风格常用方法和信号。
+- `AntSelect` 支持 QComboBox 风格的 item 增删插查、`currentData`、`activated` 和 highlighted 信号。
+- `AntDatePicker` / `AntTimePicker` 支持 QDateEdit / QTimeEdit 风格的 `date` / `time` 别名，以及最小 / 最大范围 API。
+- `AntList`、`AntTable`、`AntTree` 补充 count、item 访问、cell data、节点查找、clear 和按 key 修改节点状态等 item/view 风格辅助接口。
+- `AntMenu` 支持 QWidget `QAction` 的添加、变更、移除和触发流程同步；`AntToolButton` / `AntToolBar` 的继承 QAction 行为已加入测试覆盖。
+- `AntTypography` 默认垂直居中，并提供 alignment、word-wrap 和 clear 控制。
+
 ## 安装与集成
 
 ### 环境要求
@@ -213,7 +224,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntTreeSelect`：树形选择器，下拉框内展示树形结构
 - `AntRate`：评分组件，`count / value / allowHalf / allowClear / disabled / size`，hover 放大效果，键盘左右箭头操作
 - `AntWidget`：基础 QWidget 子类，自动处理主题切换
-- `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略
+- `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略/对齐策略
 - `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，DWM 圆角/边框阴影，以及平滑主题切换遮罩动画
 - `AntDrawer`：滑动面板，支持 Left/Right/Top/Bottom 四个方向、动画、遮罩层
 - `AntStatusBar`：状态栏，左右项、分隔符、消息区、size grip

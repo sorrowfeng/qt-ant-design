@@ -72,15 +72,32 @@ public:
 
     int currentIndex() const;
     void setCurrentIndex(int index);
+    void setCurrentText(const QString& text);
 
     QString currentText() const;
     QVariant currentValue() const;
+    QVariant currentData(int role = Qt::UserRole) const;
 
     int count() const;
     AntSelectOption optionAt(int index) const;
     void addOption(const QString& label, const QVariant& value = QVariant(), bool disabled = false);
     void addOptions(const QStringList& labels);
     void clearOptions();
+    void addItem(const QString& text, const QVariant& userData = QVariant());
+    void addItems(const QStringList& texts);
+    void insertItem(int index, const QString& text, const QVariant& userData = QVariant());
+    void insertItems(int index, const QStringList& texts);
+    void removeItem(int index);
+    QString itemText(int index) const;
+    void setItemText(int index, const QString& text);
+    QVariant itemData(int index, int role = Qt::UserRole) const;
+    void setItemData(int index, const QVariant& value, int role = Qt::UserRole);
+    int findText(const QString& text,
+                 Qt::MatchFlags flags = Qt::MatchExactly | Qt::MatchCaseSensitive) const;
+    int findData(const QVariant& data,
+                 int role = Qt::UserRole,
+                 Qt::MatchFlags flags = Qt::MatchExactly | Qt::MatchCaseSensitive) const;
+    void clear();
 
     int maxVisibleItems() const;
     void setMaxVisibleItems(int count);
@@ -123,6 +140,10 @@ Q_SIGNALS:
     void currentTextChanged(const QString& text);
     void currentValueChanged(const QVariant& value);
     void optionSelected(int index, const QVariant& value);
+    void activated(int index);
+    void textActivated(const QString& text);
+    void highlighted(int index);
+    void textHighlighted(const QString& text);
     void cleared();
     void maxVisibleItemsChanged(int count);
     void selectModeChanged(Ant::SelectMode mode);

@@ -154,6 +154,11 @@ AntInput::AntInput(QWidget* parent)
     connect(m_lineEdit, &QLineEdit::returnPressed, this, [this]() {
         if (m_searchMode) Q_EMIT searchTriggered(m_lineEdit->text());
     });
+    connect(m_lineEdit, &QLineEdit::textEdited, this, &AntInput::textEdited);
+    connect(m_lineEdit, &QLineEdit::returnPressed, this, &AntInput::returnPressed);
+    connect(m_lineEdit, &QLineEdit::editingFinished, this, &AntInput::editingFinished);
+    connect(m_lineEdit, &QLineEdit::selectionChanged, this, &AntInput::selectionChanged);
+    connect(m_lineEdit, &QLineEdit::inputRejected, this, &AntInput::inputRejected);
 
     connect(m_lineEdit, &QLineEdit::textChanged, this, [this](const QString& value) {
         updateButtonVisibility();
@@ -171,7 +176,29 @@ AntInput::AntInput(QWidget* parent)
 QLineEdit* AntInput::lineEdit() const { return m_lineEdit; }
 QString AntInput::text() const { return m_lineEdit->text(); }
 void AntInput::setText(const QString& text) { m_lineEdit->setText(text); }
+void AntInput::clear() { m_lineEdit->clear(); }
+QString AntInput::placeholderText() const { return m_lineEdit->placeholderText(); }
 void AntInput::setPlaceholderText(const QString& text) { m_lineEdit->setPlaceholderText(text); }
+bool AntInput::isReadOnly() const { return m_lineEdit->isReadOnly(); }
+void AntInput::setReadOnly(bool readOnly) { m_lineEdit->setReadOnly(readOnly); }
+int AntInput::maxLength() const { return m_lineEdit->maxLength(); }
+void AntInput::setMaxLength(int length) { m_lineEdit->setMaxLength(length); }
+QLineEdit::EchoMode AntInput::echoMode() const { return m_lineEdit->echoMode(); }
+void AntInput::setEchoMode(QLineEdit::EchoMode mode) { m_lineEdit->setEchoMode(mode); }
+Qt::Alignment AntInput::alignment() const { return m_lineEdit->alignment(); }
+void AntInput::setAlignment(Qt::Alignment alignment) { m_lineEdit->setAlignment(alignment); }
+int AntInput::cursorPosition() const { return m_lineEdit->cursorPosition(); }
+void AntInput::setCursorPosition(int position) { m_lineEdit->setCursorPosition(position); }
+void AntInput::setSelection(int start, int length) { m_lineEdit->setSelection(start, length); }
+void AntInput::selectAll() { m_lineEdit->selectAll(); }
+void AntInput::deselect() { m_lineEdit->deselect(); }
+QString AntInput::selectedText() const { return m_lineEdit->selectedText(); }
+bool AntInput::hasSelectedText() const { return m_lineEdit->hasSelectedText(); }
+void AntInput::copy() const { m_lineEdit->copy(); }
+void AntInput::cut() { m_lineEdit->cut(); }
+void AntInput::paste() { m_lineEdit->paste(); }
+void AntInput::undo() { m_lineEdit->undo(); }
+void AntInput::redo() { m_lineEdit->redo(); }
 Ant::Size AntInput::inputSize() const { return m_inputSize; }
 Ant::Status AntInput::status() const { return m_status; }
 Ant::Variant AntInput::variant() const { return m_variant; }

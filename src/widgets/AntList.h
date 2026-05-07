@@ -117,7 +117,12 @@ public:
     void insertItem(int index, AntListItem* item);
     void removeItem(AntListItem* item);
     int itemCount() const;
+    int count() const;
+    bool isEmpty() const;
     AntListItem* itemAt(int index) const;
+    AntListItem* takeItem(int index);
+    void clearItems();
+    void clear();
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

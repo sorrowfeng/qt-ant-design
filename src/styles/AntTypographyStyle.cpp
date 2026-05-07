@@ -166,21 +166,54 @@ void drawCheckIcon(QPainter* painter, const QRect& rect, const QColor& color)
     painter->drawPath(check);
 }
 
-QRect copyIconRect(const QRect& optionRect, const QFontMetrics& fm, const QString& text, int reservedWidth)
+QRect typographyAlignedRect(const QRect& bounds, const QSize& requestedSize, Qt::Alignment alignment);
+
+QRect copyIconRect(const QRect& optionRect, const QFontMetrics& fm, const QString& text, int reservedWidth, Qt::Alignment alignment)
 {
     const auto& token = antTheme->tokens();
     const int iconSize = token.fontSize;
     const int gap = token.paddingXXS;
-    const int textW = qMin(fm.horizontalAdvance(text), qMax(0, optionRect.width() - reservedWidth));
-    const int x = qMin(optionRect.left() + textW + gap, optionRect.right() - reservedWidth + 1);
-    const int y = optionRect.top() + qMax(0, (fm.height() - iconSize) / 2);
+    QRect textArea(optionRect.left(), optionRect.top(), qMax(0, optionRect.width() - reservedWidth), optionRect.height());
+    const QRect textBounds = fm.boundingRect(textArea, alignment | Qt::TextSingleLine, text);
+    const int preferredX = textBounds.right() + 1 + gap;
+    const int x = qBound(optionRect.left(), preferredX, optionRect.right() - reservedWidth + 1);
+    const int y = typographyAlignedRect(optionRect, QSize(reservedWidth, iconSize + gap), alignment).top();
     return QRect(x, y, iconSize + gap, iconSize + gap);
 }
 
-Qt::Alignment horizontalAlignment(Qt::Alignment alignment)
+Qt::Alignment normalizedAlignment(Qt::Alignment alignment)
 {
     const Qt::Alignment horizontal = alignment & Qt::AlignHorizontal_Mask;
-    return horizontal == 0 ? Qt::AlignLeft : horizontal;
+    const Qt::Alignment vertical = alignment & Qt::AlignVertical_Mask;
+    return (horizontal == 0 ? Qt::AlignLeft : horizontal) |
+           (vertical == 0 ? Qt::AlignVCenter : vertical);
+}
+
+QRect typographyAlignedRect(const QRect& bounds, const QSize& requestedSize, Qt::Alignment alignment)
+{
+    const QSize size(qMin(bounds.width(), requestedSize.width()),
+                     qMin(bounds.height(), requestedSize.height()));
+    int x = bounds.left();
+    if (alignment & Qt::AlignRight)
+    {
+        x = bounds.right() - size.width() + 1;
+    }
+    else if (alignment & Qt::AlignHCenter)
+    {
+        x = bounds.left() + (bounds.width() - size.width()) / 2;
+    }
+
+    int y = bounds.top();
+    if (alignment & Qt::AlignBottom)
+    {
+        y = bounds.bottom() - size.height() + 1;
+    }
+    else if (alignment & Qt::AlignVCenter)
+    {
+        y = bounds.top() + (bounds.height() - size.height()) / 2;
+    }
+
+    return QRect(QPoint(x, y), size);
 }
 
 } // namespace
@@ -269,7 +302,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
     QFont font = buildFont(typo, widgetFont);
     QFontMetrics fm(font);
     const QColor color = textColorForType(typo, option);
-    const Qt::Alignment align = horizontalAlignment(typo->alignment());
+    const Qt::Alignment align = normalizedAlignment(typo->alignment());
 
     const bool hasCopyBtn = typo->isCopyable();
     const int copyBtnWidth = hasCopyBtn ? token.fontSize + token.paddingXXS * 2 : 0;
@@ -286,9 +319,9 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
         const int codePadX = qMax(1, qRound(font.pixelSize() * 0.4));
         const int codePadTop = qMax(1, qRound(font.pixelSize() * 0.2));
         const int codePadBottom = qMax(1, qRound(font.pixelSize() * 0.1));
-        QRect codeRect(textRect.left(), textRect.top(),
-                       fm.horizontalAdvance(text) + codePadX * 2 + token.lineWidth * 2,
-                       fm.height() + codePadTop + codePadBottom + token.lineWidth * 2);
+        const QSize codeSize(fm.horizontalAdvance(text) + codePadX * 2 + token.lineWidth * 2,
+                             fm.height() + codePadTop + codePadBottom + token.lineWidth * 2);
+        QRect codeRect = typographyAlignedRect(textRect, codeSize, align);
 
         painter->setPen(QPen(AntPalette::alpha(QColor(100, 100, 100), 0.2), token.lineWidth));
         painter->setBrush(AntPalette::alpha(QColor(150, 150, 150), 0.1));
@@ -300,12 +333,12 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
                                             codePadTop + token.lineWidth,
                                             -(codePadX + token.lineWidth),
                                             -(codePadBottom + token.lineWidth));
-        painter->drawText(innerRect, align | Qt::AlignVCenter, text);
+        painter->drawText(innerRect, align, text);
     }
     // Mark mode: draw yellow highlight background
     else if (typo->isMark())
     {
-        QRect markRect = fm.boundingRect(textRect, Qt::TextWordWrap, text);
+        QRect markRect = fm.boundingRect(textRect, align | Qt::TextWordWrap, text);
         markRect.adjust(-2, -1, 2, 1);
 
         painter->setPen(Qt::NoPen);
@@ -314,17 +347,17 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
 
         painter->setFont(font);
         painter->setPen(QColor("#000000"));
-        painter->drawText(textRect, align | Qt::AlignTop | Qt::TextWordWrap, text);
+        painter->drawText(textRect, align | Qt::TextWordWrap, text);
     }
     // Paragraph or ellipsis modes: word wrap
     else if (typo->isParagraph() || typo->isEllipsis())
     {
-        int flags = align | Qt::AlignTop;
+        int flags = align;
 
         if (typo->isEllipsis())
         {
             const int maxH = fm.height() * typo->ellipsisRows();
-            QRect elideRect(textRect.left(), textRect.top(), textRect.width(), maxH);
+            QRect elideRect = typographyAlignedRect(textRect, QSize(textRect.width(), maxH), align);
 
             QString elidedText = fm.elidedText(text, Qt::ElideRight, textRect.width() * typo->ellipsisRows());
 
@@ -333,8 +366,8 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
 
             if (typo->isDelete())
             {
-                QRect br = fm.boundingRect(elideRect, Qt::TextWordWrap, elidedText);
-                painter->drawText(elideRect, flags | Qt::TextWordWrap, elidedText);
+                QRect br;
+                painter->drawText(elideRect, flags | Qt::TextWordWrap, elidedText, &br);
                 const int lineY = br.center().y();
                 painter->setPen(QPen(color, 1));
                 painter->drawLine(br.left(), lineY, br.right(), lineY);
@@ -351,9 +384,9 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
 
             if (typo->isDelete())
             {
-                QRect br = fm.boundingRect(textRect, Qt::TextWordWrap, text);
-                painter->drawText(textRect, flags | Qt::TextWordWrap, text);
-                const int lineY = textRect.top() + br.center().y();
+                QRect br;
+                painter->drawText(textRect, flags | Qt::TextWordWrap, text, &br);
+                const int lineY = br.center().y();
                 painter->setPen(QPen(color, 1));
                 painter->drawLine(br.left(), lineY, br.right(), lineY);
             }
@@ -369,27 +402,18 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
         painter->setFont(font);
         painter->setPen(color);
 
-        const int textH = fm.height();
-        QRect singleRect(textRect.left(), textRect.top(), textRect.width(), textH);
-
-        painter->drawText(singleRect, align | Qt::AlignVCenter, text);
-
         // Delete: draw strikethrough line
         if (typo->isDelete())
         {
-            const int textW = fm.horizontalAdvance(text);
-            const int lineY = singleRect.top() + textH / 2;
-            int textX = singleRect.left();
-            if (align & Qt::AlignHCenter)
-            {
-                textX = singleRect.left() + qMax(0, (singleRect.width() - textW) / 2);
-            }
-            else if (align & Qt::AlignRight)
-            {
-                textX = singleRect.right() - textW + 1;
-            }
+            QRect textBounds;
+            painter->drawText(textRect, align | Qt::TextSingleLine, text, &textBounds);
+            const int lineY = textBounds.center().y();
             painter->setPen(QPen(color, 1));
-            painter->drawLine(textX, lineY, textX + textW, lineY);
+            painter->drawLine(textBounds.left(), lineY, textBounds.right(), lineY);
+        }
+        else
+        {
+            painter->drawText(textRect, align | Qt::TextSingleLine, text);
         }
     }
 
@@ -414,7 +438,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
             copyColor = token.colorLinkHover;
         }
 
-        const QRect iconRect = copyIconRect(option->rect, fm, text, copyBtnWidth);
+        const QRect iconRect = copyIconRect(option->rect, fm, text, copyBtnWidth, align);
         if (typo->isCopied())
         {
             drawCheckIcon(painter, iconRect, copyColor);

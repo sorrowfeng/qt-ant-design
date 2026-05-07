@@ -1,13 +1,51 @@
+#include <QImage>
+#include <QPainter>
 #include <QSignalSpy>
 #include <QMouseEvent>
 #include <QTest>
 #include "widgets/AntTypography.h"
+
+namespace
+{
+
+constexpr QRgb SentinelPixel = 0xffff00ff;
+
+QRect renderedInkBounds(AntTypography& widget)
+{
+    widget.ensurePolished();
+    QCoreApplication::sendPostedEvents(&widget, QEvent::Polish);
+    QCoreApplication::processEvents();
+
+    QImage image(widget.size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(SentinelPixel);
+    {
+        QPainter painter(&image);
+        widget.render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
+    }
+
+    QRect bounds;
+    for (int y = 0; y < image.height(); ++y)
+    {
+        const QRgb* row = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); ++x)
+        {
+            if (row[x] != SentinelPixel)
+            {
+                bounds |= QRect(x, y, 1, 1);
+            }
+        }
+    }
+    return bounds;
+}
+
+} // namespace
 
 class TestAntTypography : public QObject
 {
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void verticalAlignmentRendering();
     void copyInteractionState();
 };
 
@@ -18,6 +56,7 @@ void TestAntTypography::propertiesAndSignals()
     QCOMPARE(w->type(), Ant::TypographyType::Default);
     QCOMPARE(w->isTitle(), false);
     QCOMPARE(w->isParagraph(), false);
+    QCOMPARE(w->wordWrap(), false);
     QCOMPARE(w->isDisabled(), false);
     QCOMPARE(w->isStrong(), false);
     QCOMPARE(w->isUnderline(), false);
@@ -28,7 +67,7 @@ void TestAntTypography::propertiesAndSignals()
     QCOMPARE(w->isCopyable(), false);
     QCOMPARE(w->isEllipsis(), false);
     QCOMPARE(w->href(), QString());
-    QCOMPARE(w->alignment(), Qt::AlignLeft);
+    QCOMPARE(w->alignment(), Qt::AlignLeft | Qt::AlignVCenter);
 
     QSignalSpy textSpy(w, &AntTypography::textChanged);
     w->setText("Hello");
@@ -103,9 +142,43 @@ void TestAntTypography::propertiesAndSignals()
     QCOMPARE(hrefSpy.count(), 1);
 
     QSignalSpy alignmentSpy(w, &AntTypography::alignmentChanged);
-    w->setAlignment(Qt::AlignHCenter);
-    QCOMPARE(w->alignment(), Qt::AlignHCenter);
+    w->setAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+    QCOMPARE(w->alignment(), Qt::AlignHCenter | Qt::AlignBottom);
     QCOMPARE(alignmentSpy.count(), 1);
+
+    w->setAlignment(Qt::AlignRight);
+    QCOMPARE(w->alignment(), Qt::AlignRight | Qt::AlignVCenter);
+    QCOMPARE(alignmentSpy.count(), 2);
+
+    QSignalSpy wordWrapSpy(w, &AntTypography::paragraphChanged);
+    w->setWordWrap(true);
+    QCOMPARE(w->wordWrap(), true);
+    QCOMPARE(w->isParagraph(), true);
+    QCOMPARE(wordWrapSpy.count(), 1);
+
+    w->clear();
+    QCOMPARE(w->text(), QString());
+}
+
+void TestAntTypography::verticalAlignmentRendering()
+{
+    AntTypography centered(QStringLiteral("Centered"));
+    centered.setAttribute(Qt::WA_NoSystemBackground);
+    centered.resize(180, 80);
+    QRect centeredInk = renderedInkBounds(centered);
+    QVERIFY(centeredInk.isValid());
+    QVERIFY(centeredInk.height() < centered.height() / 2);
+    QVERIFY(centeredInk.center().y() > centered.height() / 3);
+    QVERIFY(centeredInk.center().y() < centered.height() * 2 / 3);
+
+    AntTypography bottom(QStringLiteral("Bottom"));
+    bottom.setAttribute(Qt::WA_NoSystemBackground);
+    bottom.setAlignment(Qt::AlignLeft | Qt::AlignBottom);
+    bottom.resize(180, 80);
+    QRect bottomInk = renderedInkBounds(bottom);
+    QVERIFY(bottomInk.isValid());
+    QVERIFY(bottomInk.top() > centeredInk.top());
+    QVERIFY(bottomInk.center().y() > bottom.height() * 2 / 3);
 }
 
 void TestAntTypography::copyInteractionState()

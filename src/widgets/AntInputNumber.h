@@ -18,6 +18,9 @@ class AntInputNumber : public QDoubleSpinBox
     Q_PROPERTY(bool controlsVisible READ controlsVisible WRITE setControlsVisible NOTIFY controlsVisibleChanged)
     Q_PROPERTY(qreal controlsProgress READ controlsProgress WRITE setControlsProgress)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText)
+    Q_PROPERTY(QString prefixText READ prefixText WRITE setPrefixText NOTIFY prefixTextChanged)
+    Q_PROPERTY(QString suffixText READ suffixText WRITE setSuffixText NOTIFY suffixTextChanged)
+    Q_PROPERTY(int precision READ precision WRITE setPrecision NOTIFY precisionChanged)
 
 public:
     explicit AntInputNumber(QWidget* parent = nullptr);
@@ -39,10 +42,13 @@ public:
     QString placeholderText() const;
     void setPlaceholderText(const QString& text);
 
+    QString prefixText() const;
     void setPrefixText(const QString& text);
+    QString suffixText() const;
     void setSuffixText(const QString& text);
     QString addonAfterText() const;
     void setAddonAfterText(const QString& text);
+    int precision() const;
     void setPrecision(int decimals);
 
     QSize sizeHint() const override;
@@ -58,6 +64,9 @@ Q_SIGNALS:
     void statusChanged(Ant::Status status);
     void variantChanged(Ant::Variant variant);
     void controlsVisibleChanged(bool visible);
+    void prefixTextChanged(const QString& text);
+    void suffixTextChanged(const QString& text);
+    void precisionChanged(int decimals);
 
 protected:
     void enterEvent(QEnterEvent* event) override;

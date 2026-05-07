@@ -77,6 +77,21 @@ void TestAntDataEntryB::propertiesAndSignals()
     QCOMPARE(w2->hasSelectedDate(), true);
     QCOMPARE(dateSpy.count(), 1);
 
+    QSignalSpy dateRangeSpy(w2, &AntDatePicker::dateRangeChanged);
+    w2->setDateRange(QDate(2026, 4, 1), QDate(2026, 4, 30));
+    QCOMPARE(w2->minimumDate(), QDate(2026, 4, 1));
+    QCOMPARE(w2->maximumDate(), QDate(2026, 4, 30));
+    QCOMPARE(dateRangeSpy.count(), 1);
+
+    QSignalSpy dateAliasSpy(w2, &AntDatePicker::dateChanged);
+    w2->setDate(QDate(2026, 5, 9));
+    QCOMPARE(w2->date(), QDate(2026, 4, 30));
+    QCOMPARE(w2->selectedDate(), QDate(2026, 4, 30));
+    QCOMPARE(dateAliasSpy.count(), 1);
+
+    w2->clearMaximumDate();
+    QCOMPARE(w2->maximumDate(), QDate(9999, 12, 31));
+
     QSignalSpy clearSpy2(w2, &AntDatePicker::allowClearChanged);
     w2->setAllowClear(false);
     QCOMPARE(w2->allowClear(), false);
@@ -114,6 +129,21 @@ void TestAntDataEntryB::propertiesAndSignals()
     QCOMPARE(w3->selectedTime(), QTime(14, 30, 0));
     QCOMPARE(w3->hasSelectedTime(), true);
     QCOMPARE(timeSpy.count(), 1);
+
+    QSignalSpy timeRangeSpy(w3, &AntTimePicker::timeRangeChanged);
+    w3->setTimeRange(QTime(9, 0), QTime(18, 0));
+    QCOMPARE(w3->minimumTime(), QTime(9, 0));
+    QCOMPARE(w3->maximumTime(), QTime(18, 0));
+    QCOMPARE(timeRangeSpy.count(), 1);
+
+    QSignalSpy timeAliasSpy(w3, &AntTimePicker::timeChanged);
+    w3->setTime(QTime(20, 15, 0));
+    QCOMPARE(w3->time(), QTime(18, 0));
+    QCOMPARE(w3->selectedTime(), QTime(18, 0));
+    QCOMPARE(timeAliasSpy.count(), 1);
+
+    w3->clearMinimumTime();
+    QCOMPARE(w3->minimumTime(), QTime(0, 0));
 
     QSignalSpy hourSpy(w3, &AntTimePicker::hourStepChanged);
     w3->setHourStep(2);

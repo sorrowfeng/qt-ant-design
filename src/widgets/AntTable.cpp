@@ -57,6 +57,7 @@ void AntTable::addColumn(const AntTableColumn& column)
     rebuildDisplayOrder();
     updateGeometry();
     update();
+    Q_EMIT columnsChanged();
 }
 
 void AntTable::removeColumn(const QString& key)
@@ -76,6 +77,7 @@ void AntTable::removeColumn(const QString& key)
     rebuildDisplayOrder();
     updateGeometry();
     update();
+    Q_EMIT columnsChanged();
 }
 
 void AntTable::setColumns(const QVector<AntTableColumn>& columns)
@@ -86,11 +88,37 @@ void AntTable::setColumns(const QVector<AntTableColumn>& columns)
     rebuildDisplayOrder();
     updateGeometry();
     update();
+    Q_EMIT columnsChanged();
 }
 
 QVector<AntTableColumn> AntTable::columns() const
 {
     return m_columns;
+}
+
+int AntTable::columnCount() const
+{
+    return m_columns.size();
+}
+
+AntTableColumn AntTable::columnAt(int index) const
+{
+    if (index < 0 || index >= m_columns.size())
+    {
+        return {};
+    }
+    return m_columns.at(index);
+}
+
+QStringList AntTable::headerLabels() const
+{
+    QStringList labels;
+    labels.reserve(m_columns.size());
+    for (const auto& column : m_columns)
+    {
+        labels.append(column.title);
+    }
+    return labels;
 }
 
 // ─── Row management ───
@@ -100,6 +128,7 @@ void AntTable::addRow(const AntTableRow& row)
     m_rows.append(row);
     rebuildDisplayOrder();
     update();
+    Q_EMIT rowsChanged();
 }
 
 void AntTable::removeRow(int index)
@@ -116,6 +145,7 @@ void AntTable::removeRow(int index)
         m_hoveredRow = -1;
     }
     update();
+    Q_EMIT rowsChanged();
 }
 
 void AntTable::setRows(const QVector<AntTableRow>& rows)
@@ -125,6 +155,7 @@ void AntTable::setRows(const QVector<AntTableRow>& rows)
     m_hoveredRow = -1;
     rebuildDisplayOrder();
     update();
+    Q_EMIT rowsChanged();
 }
 
 void AntTable::clearRows()
@@ -134,6 +165,7 @@ void AntTable::clearRows()
     m_scrollY = 0;
     m_hoveredRow = -1;
     update();
+    Q_EMIT rowsChanged();
 }
 
 int AntTable::rowCount() const
@@ -149,6 +181,38 @@ AntTableRow AntTable::rowAt(int index) const
         return {};
     }
     return m_rows.at(sourceIndex);
+}
+
+QVariant AntTable::cellData(int row, const QString& dataIndex) const
+{
+    const int sourceIndex = sourceRowIndex(row);
+    if (sourceIndex < 0 || sourceIndex >= m_rows.size())
+    {
+        return {};
+    }
+    return m_rows.at(sourceIndex).data.value(dataIndex);
+}
+
+void AntTable::setData(int row, const QString& dataIndex, const QVariant& value)
+{
+    const int sourceIndex = sourceRowIndex(row);
+    if (sourceIndex < 0 || sourceIndex >= m_rows.size())
+    {
+        return;
+    }
+    if (m_rows.at(sourceIndex).data.value(dataIndex) == value)
+    {
+        return;
+    }
+
+    m_rows[sourceIndex].data[dataIndex] = value;
+    if (sortDataIndex() == dataIndex)
+    {
+        rebuildDisplayOrder();
+    }
+    update();
+    Q_EMIT cellDataChanged(row, dataIndex, value);
+    Q_EMIT rowsChanged();
 }
 
 // ─── Properties ───

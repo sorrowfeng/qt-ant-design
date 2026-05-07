@@ -11,7 +11,9 @@ class AntCheckbox : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool checked READ isChecked WRITE setChecked NOTIFY checkedChanged)
+    Q_PROPERTY(Qt::CheckState checkState READ checkState WRITE setCheckState NOTIFY checkStateChanged)
     Q_PROPERTY(bool indeterminate READ isIndeterminate WRITE setIndeterminate NOTIFY indeterminateChanged)
+    Q_PROPERTY(bool tristate READ isTristate WRITE setTristate NOTIFY tristateChanged)
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
 
 public:
@@ -20,9 +22,15 @@ public:
 
     bool isChecked() const;
     void setChecked(bool checked);
+    Qt::CheckState checkState() const;
+    void setCheckState(Qt::CheckState state);
 
     bool isIndeterminate() const;
     void setIndeterminate(bool indeterminate);
+    bool isTristate() const;
+    void setTristate(bool tristate);
+    void toggle();
+    void click();
 
     QString text() const;
     void setText(const QString& text);
@@ -34,7 +42,9 @@ public:
 
 Q_SIGNALS:
     void checkedChanged(bool checked);
+    void checkStateChanged(Qt::CheckState state);
     void indeterminateChanged(bool indeterminate);
+    void tristateChanged(bool tristate);
     void textChanged(const QString& text);
     void stateChanged(int state);
     void toggled(bool checked);
@@ -50,12 +60,12 @@ protected:
 
 private:
     QRectF indicatorRect() const;
-    void toggle();
     QColor indicatorBorderColor() const;
     QColor indicatorBackgroundColor() const;
 
     bool m_checked = false;
     bool m_indeterminate = false;
+    bool m_tristate = false;
     bool m_hovered = false;
     bool m_pressed = false;
     QString m_text;

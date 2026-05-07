@@ -16,6 +16,8 @@ void TestAntCheckbox::propertiesAndSignals()
     auto* cb = new AntCheckbox;
     QCOMPARE(cb->isChecked(), false);
     QCOMPARE(cb->isIndeterminate(), false);
+    QCOMPARE(cb->checkState(), Qt::Unchecked);
+    QCOMPARE(cb->isTristate(), false);
     QCOMPARE(cb->text(), QString());
 
     QSignalSpy checkedSpy(cb, &AntCheckbox::checkedChanged);
@@ -25,8 +27,11 @@ void TestAntCheckbox::propertiesAndSignals()
     QCOMPARE(checkedSpy.at(0).at(0).toBool(), true);
 
     QSignalSpy indeterminateSpy(cb, &AntCheckbox::indeterminateChanged);
-    cb->setIndeterminate(true);
+    cb->setTristate(true);
+    QCOMPARE(cb->isTristate(), true);
+    cb->setCheckState(Qt::PartiallyChecked);
     QCOMPARE(cb->isIndeterminate(), true);
+    QCOMPARE(cb->checkState(), Qt::PartiallyChecked);
     QCOMPARE(indeterminateSpy.count(), 1);
 
     QSignalSpy textSpy(cb, &AntCheckbox::textChanged);
@@ -37,6 +42,13 @@ void TestAntCheckbox::propertiesAndSignals()
     QSignalSpy toggledSpy(cb, &AntCheckbox::toggled);
     cb->setChecked(false);
     QCOMPARE(toggledSpy.count(), 1);
+
+    cb->setTristate(false);
+    QCOMPARE(cb->isTristate(), false);
+    cb->toggle();
+    QCOMPARE(cb->isChecked(), true);
+    cb->click();
+    QCOMPARE(cb->isChecked(), false);
 
     QSize hint = cb->sizeHint();
     QVERIFY(hint.width() > 0);

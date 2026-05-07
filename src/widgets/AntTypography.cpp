@@ -13,6 +13,32 @@
 #include "core/AntTheme.h"
 #include "styles/AntTypographyStyle.h"
 
+namespace
+{
+
+Qt::Alignment normalizedTypographyAlignment(Qt::Alignment alignment)
+{
+    const Qt::Alignment horizontal = alignment & Qt::AlignHorizontal_Mask;
+    const Qt::Alignment vertical = alignment & Qt::AlignVertical_Mask;
+    return (horizontal == 0 ? Qt::AlignLeft : horizontal) |
+           (vertical == 0 ? Qt::AlignVCenter : vertical);
+}
+
+int alignedTop(const QRect& rect, int height, Qt::Alignment alignment)
+{
+    if (alignment & Qt::AlignBottom)
+    {
+        return rect.bottom() - height + 1;
+    }
+    if (alignment & Qt::AlignVCenter)
+    {
+        return rect.top() + (rect.height() - height) / 2;
+    }
+    return rect.top();
+}
+
+} // namespace
+
 AntTypography::AntTypography(QWidget* parent)
     : QWidget(parent)
 {
@@ -38,6 +64,11 @@ void AntTypography::setText(const QString& text)
     updateGeometry();
     update();
     Q_EMIT textChanged(m_text);
+}
+
+void AntTypography::clear()
+{
+    setText(QString());
 }
 
 Ant::TypographyType AntTypography::type() const { return m_type; }
@@ -97,6 +128,13 @@ void AntTypography::setParagraph(bool paragraph)
     updateGeometry();
     update();
     Q_EMIT paragraphChanged(m_paragraph);
+}
+
+bool AntTypography::wordWrap() const { return m_paragraph; }
+
+void AntTypography::setWordWrap(bool wordWrap)
+{
+    setParagraph(wordWrap);
 }
 
 bool AntTypography::isDisabled() const { return m_disabled; }
@@ -255,8 +293,7 @@ Qt::Alignment AntTypography::alignment() const { return m_alignment; }
 
 void AntTypography::setAlignment(Qt::Alignment alignment)
 {
-    const Qt::Alignment horizontal = alignment & Qt::AlignHorizontal_Mask;
-    const Qt::Alignment normalized = horizontal == 0 ? Qt::AlignLeft : horizontal;
+    const Qt::Alignment normalized = normalizedTypographyAlignment(alignment);
     if (m_alignment == normalized)
     {
         return;
@@ -516,8 +553,11 @@ QRect AntTypography::copyButtonRect() const
     const int iconSize = token.fontSize;
     const int gap = token.paddingXXS;
     const int btnW = iconSize + gap * 2;
-    const int textW = qMin(fm.horizontalAdvance(m_text), qMax(0, width() - btnW));
-    const int x = qMin(textW + gap, qMax(0, width() - btnW));
-    const int y = qMax(0, (fm.height() - iconSize) / 2);
+    const Qt::Alignment align = normalizedTypographyAlignment(m_alignment);
+    QRect textArea(0, 0, qMax(0, width() - btnW), height());
+    const QRect textBounds = fm.boundingRect(textArea, align | Qt::TextSingleLine, m_text);
+    const int preferredX = textBounds.right() + 1 + gap;
+    const int x = qBound(0, preferredX, qMax(0, width() - btnW));
+    const int y = qMax(0, alignedTop(rect(), iconSize + gap, align));
     return QRect(x, y, btnW, iconSize + gap);
 }

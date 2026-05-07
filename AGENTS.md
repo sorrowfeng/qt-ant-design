@@ -106,6 +106,17 @@
 - 示例程序嵌入 Windows 10/11 manifest，并在 `ExampleWindow` 中启用全部标题栏按钮，去掉独立 dark 切换按钮。
 - 相关 targeted 验证覆盖 `TestAntQtExtensions|TestAntExampleCloseStress`，包含 Snap hit-test、标题栏 hover 清理、主题切换 overlay、8ms 动画帧率、320ms 时长、高 DPI 截图比例和无黑洞揭示路径。
 
+## Qt 官方常用接口兼容批次（2026-05-07）
+
+- `AntTypography` 默认垂直居中，新增 alignment 策略、wordWrap 和 clear API。
+- `AntInput` 补齐常用 `QLineEdit` 风格 API/信号，包括 placeholder、readOnly、maxLength、echoMode、alignment、selection、clipboard、undo/redo、return/editing/selection/inputRejected 等。
+- `AntInputNumber` / `AntCheckbox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API，并增加对应属性/信号测试。
+- `AntSelect` 补齐常用 `QComboBox` 风格 API/信号，包括 add/insert/remove/find、itemText/itemData、currentData、setCurrentText、activated/textActivated/highlighted/textHighlighted。
+- `AntDatePicker` / `AntTimePicker` 补齐 `QDateEdit` / `QTimeEdit` 风格 date/time 别名、minimum/maximum range API、range changed 信号，并对越界输入做边界收敛。
+- `AntList` / `AntTable` / `AntTree` 补齐 item/view 风格辅助 API，包括 count/item/take/clear、columnCount/headerLabels/cellData/setData、treeData/nodeCount/containsNode/setNodeExpanded/setNodeChecked。
+- `AntMenu` 接入 QWidget `QAction` 体系：`addAction/removeAction` 会同步自绘菜单项，action text/enabled/shortcut 变更会刷新显示，点击菜单项会触发对应 QAction；`AntToolButton` / `AntToolBar` 的默认 action 和 toolbar action 触发行为已有测试保护。
+- 相关 targeted 验证覆盖 `TestAntInput|TestAntCheckbox|TestAntDataEntryA|TestAntDataEntryB|TestAntDataDisplayB|TestAntFeedback|TestAntNavigation|TestAntQtExtensions|TestAntTypography|TestAntSelect|TestAntMetaProperties|TestAntRenderSmoke`。
+
 ## 子组件/变体完整度（完成于 2026-04-26，状态复核 2026-04-30）
 
 ### Phase 1: 简单变体（6 项）
@@ -138,7 +149,7 @@
 | `AntButton` | `button` | `QProxyStyle` | 是 | 五种类型、三种尺寸、三种形状 |
 | `AntFloatButton` | `float-button` | `QProxyStyle` | 是 | 圆形/方形、Group/BackTop、Badge |
 | `AntIcon` | `icon` | `QProxyStyle` | 是 | 831 个官方 SVG 图标资源、字符串名称 API、Outlined/Filled/TwoTone、旋转、spin |
-| `AntTypography` | `typography` | `QProxyStyle` | 是 | Title(H1-H5)/Text/Paragraph/Link |
+| `AntTypography` | `typography` | `QProxyStyle` | 是 | Title(H1-H5)/Text/Paragraph/Link，对齐策略 |
 
 ### 导航
 

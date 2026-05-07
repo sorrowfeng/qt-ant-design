@@ -1,6 +1,7 @@
 #include <QPalette>
 #include <QPainter>
 #include <QPlainTextEdit>
+#include <QAction>
 #include <QSignalSpy>
 #include <QHoverEvent>
 #include <QTest>
@@ -378,7 +379,14 @@ void TestAntQtExtensions::statusBar()
     QSignalSpy msgSpy(w, &AntStatusBar::messageChanged);
     w->setMessage("Ready");
     QCOMPARE(w->message(), "Ready");
+    QCOMPARE(w->currentMessage(), "Ready");
     QCOMPARE(msgSpy.count(), 1);
+
+    w->clearMessage();
+    QCOMPARE(w->currentMessage(), QString());
+    w->showMessage(QStringLiteral("Saving"), 30);
+    QCOMPARE(w->currentMessage(), QStringLiteral("Saving"));
+    QTRY_COMPARE(w->currentMessage(), QString());
 
     QSignalSpy gripSpy(w, &AntStatusBar::sizeGripChanged);
     w->setSizeGrip(false);
@@ -430,6 +438,16 @@ void TestAntQtExtensions::toolButton()
 
     auto* w2 = new AntToolButton("Click");
     QCOMPARE(w2->text(), "Click");
+
+    auto* actionButton = new AntToolButton;
+    auto* runAction = new QAction(QStringLiteral("Run"), actionButton);
+    actionButton->setDefaultAction(runAction);
+    QCOMPARE(actionButton->defaultAction(), runAction);
+    QCOMPARE(actionButton->text(), QStringLiteral("Run"));
+    QSignalSpy runSpy(runAction, &QAction::triggered);
+    actionButton->resize(actionButton->sizeHint());
+    QTest::mouseClick(actionButton, Qt::LeftButton, Qt::NoModifier, actionButton->rect().center());
+    QCOMPARE(runSpy.count(), 1);
 }
 
 void TestAntQtExtensions::toolBar()
@@ -441,6 +459,9 @@ void TestAntQtExtensions::toolBar()
     QVERIFY(button != nullptr);
     QVERIFY(button->property("antToolBarButton").toBool());
     QCOMPARE(button->style(), w->style());
+    QSignalSpy actionSpy(action, &QAction::triggered);
+    QTest::mouseClick(button, Qt::LeftButton, Qt::NoModifier, button->rect().center());
+    QCOMPARE(actionSpy.count(), 1);
 
     auto* w2 = new AntToolBar("My Toolbar");
     QVERIFY(w2 != nullptr);

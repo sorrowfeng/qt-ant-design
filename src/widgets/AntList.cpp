@@ -606,6 +606,7 @@ void AntList::insertItem(int index, AntListItem* item)
     {
         return;
     }
+    index = qBound(0, index, m_items.size());
     item->setParent(this);
     m_items.insert(index, item);
     syncLayout();
@@ -628,6 +629,10 @@ void AntList::removeItem(AntListItem* item)
 
 int AntList::itemCount() const { return m_items.size(); }
 
+int AntList::count() const { return itemCount(); }
+
+bool AntList::isEmpty() const { return m_items.isEmpty(); }
+
 AntListItem* AntList::itemAt(int index) const
 {
     if (index < 0 || index >= m_items.size())
@@ -635,6 +640,44 @@ AntListItem* AntList::itemAt(int index) const
         return nullptr;
     }
     return m_items.at(index).data();
+}
+
+AntListItem* AntList::takeItem(int index)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return nullptr;
+    }
+
+    AntListItem* item = m_items.takeAt(index).data();
+    if (item)
+    {
+        item->setParent(nullptr);
+    }
+    syncLayout();
+    updateGeometry();
+    update();
+    return item;
+}
+
+void AntList::clearItems()
+{
+    for (const auto& item : m_items)
+    {
+        if (item)
+        {
+            item->setParent(nullptr);
+        }
+    }
+    m_items.clear();
+    syncLayout();
+    updateGeometry();
+    update();
+}
+
+void AntList::clear()
+{
+    clearItems();
 }
 
 QSize AntList::sizeHint() const

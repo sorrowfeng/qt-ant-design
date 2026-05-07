@@ -45,6 +45,38 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(w1->controlsVisible(), false);
     QCOMPARE(ctrlSpy1.count(), 1);
 
+    QSignalSpy prefixSpy1(w1, &AntInputNumber::prefixTextChanged);
+    w1->setPrefixText(QStringLiteral("$"));
+    QCOMPARE(w1->prefixText(), QStringLiteral("$"));
+    QCOMPARE(w1->prefix(), QStringLiteral("$"));
+    QCOMPARE(prefixSpy1.count(), 1);
+
+    QSignalSpy suffixSpy1(w1, &AntInputNumber::suffixTextChanged);
+    w1->setSuffixText(QStringLiteral(" kg"));
+    QCOMPARE(w1->suffixText(), QStringLiteral(" kg"));
+    QCOMPARE(w1->suffix(), QStringLiteral(" kg"));
+    QCOMPARE(suffixSpy1.count(), 1);
+
+    QSignalSpy precisionSpy1(w1, &AntInputNumber::precisionChanged);
+    w1->setPrecision(2);
+    QCOMPARE(w1->precision(), 2);
+    QCOMPARE(w1->decimals(), 2);
+    QCOMPARE(precisionSpy1.count(), 1);
+
+    w1->setRange(-5.0, 5.0);
+    w1->setSingleStep(0.5);
+    w1->setValue(4.75);
+    w1->stepBy(1);
+    QCOMPARE(w1->value(), 5.0);
+    w1->stepBy(-2);
+    QCOMPARE(w1->value(), 4.0);
+
+    w1->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    w1->setInputSize(Ant::Size::Small);
+    QCOMPARE(w1->alignment() & Qt::AlignHorizontal_Mask, Qt::AlignRight);
+    w1->setVariant(Ant::Variant::Outlined);
+    QCOMPARE(w1->alignment() & Qt::AlignHorizontal_Mask, Qt::AlignRight);
+
     auto* animatedInput = new AntInputNumber;
     QCOMPARE(animatedInput->controlsProgress(), 0.0);
     QEnterEvent enterEvent(QPointF(4, 4), QPointF(4, 4), QPointF(4, 4));
@@ -75,6 +107,12 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(w2->value().toInt(), 42);
     QCOMPARE(valueSpy.count(), 1);
 
+    QSignalSpy radioClickSpy(w2, &AntRadio::clicked);
+    w2->setChecked(false);
+    w2->click();
+    QCOMPARE(w2->isChecked(), true);
+    QCOMPARE(radioClickSpy.count(), 1);
+
     // AntSlider
     auto* w3 = new AntSlider;
     QCOMPARE(w3->minimum(), 0);
@@ -82,6 +120,10 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(w3->value(), 0);
     QCOMPARE(w3->orientation(), Qt::Horizontal);
     QCOMPARE(w3->isReverse(), false);
+    QCOMPARE(w3->invertedAppearance(), false);
+    QCOMPARE(w3->hasTracking(), true);
+    QCOMPARE(w3->pageStep(), 10);
+    QCOMPARE(w3->sliderPosition(), 0);
     QCOMPARE(w3->dots(), false);
 
     QSignalSpy valSpy3(w3, &AntSlider::valueChanged);
@@ -104,6 +146,21 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(w3->dots(), true);
     w3->setReverse(true);
     QCOMPARE(w3->isReverse(), true);
+    QCOMPARE(w3->invertedAppearance(), true);
+
+    QSignalSpy pageStepSpy(w3, &AntSlider::pageStepChanged);
+    w3->setPageStep(12);
+    QCOMPARE(w3->pageStep(), 12);
+    QCOMPARE(pageStepSpy.count(), 1);
+
+    QSignalSpy trackingSpy(w3, &AntSlider::trackingChanged);
+    w3->setTracking(false);
+    QCOMPARE(w3->hasTracking(), false);
+    QCOMPARE(trackingSpy.count(), 1);
+
+    w3->setSliderPosition(42);
+    QCOMPARE(w3->sliderPosition(), 42);
+    QCOMPARE(w3->value(), 42);
 
     auto* sliderWithBubble = new AntSlider;
     sliderWithBubble->resize(220, 44);

@@ -329,11 +329,12 @@ QTime AntTimePicker::selectedTime() const { return m_selectedTime; }
 
 void AntTimePicker::setSelectedTime(const QTime& time)
 {
-    if (m_selectedTime == time)
+    const QTime nextTime = boundedTime(time);
+    if (m_selectedTime == nextTime)
     {
         return;
     }
-    m_selectedTime = time;
+    m_selectedTime = nextTime;
     if (m_selectedTime.isValid())
     {
         m_panelTime = m_selectedTime;
@@ -344,7 +345,92 @@ void AntTimePicker::setSelectedTime(const QTime& time)
         m_popup->update();
     }
     Q_EMIT selectedTimeChanged(m_selectedTime);
+    Q_EMIT timeChanged(m_selectedTime);
     Q_EMIT timeStringChanged(timeString());
+}
+
+QTime AntTimePicker::time() const { return selectedTime(); }
+
+void AntTimePicker::setTime(const QTime& time)
+{
+    setSelectedTime(time);
+}
+
+QTime AntTimePicker::minimumTime() const { return m_minimumTime; }
+
+void AntTimePicker::setMinimumTime(const QTime& time)
+{
+    setTimeRange(time, m_maximumTime);
+}
+
+QTime AntTimePicker::maximumTime() const { return m_maximumTime; }
+
+void AntTimePicker::setMaximumTime(const QTime& time)
+{
+    setTimeRange(m_minimumTime, time);
+}
+
+void AntTimePicker::setTimeRange(const QTime& minTime, const QTime& maxTime)
+{
+    QTime nextMin = minTime.isValid() ? minTime : QTime(0, 0, 0, 0);
+    QTime nextMax = maxTime.isValid() ? maxTime : QTime(23, 59, 59, 999);
+    if (nextMin > nextMax)
+    {
+        nextMax = nextMin;
+    }
+
+    const bool minChanged = m_minimumTime != nextMin;
+    const bool maxChanged = m_maximumTime != nextMax;
+    if (!minChanged && !maxChanged)
+    {
+        return;
+    }
+
+    m_minimumTime = nextMin;
+    m_maximumTime = nextMax;
+    if (m_selectedTime.isValid())
+    {
+        setSelectedTime(m_selectedTime);
+    }
+    if (m_startTime.isValid())
+    {
+        m_startTime = boundedTime(m_startTime);
+    }
+    if (m_endTime.isValid())
+    {
+        m_endTime = boundedTime(m_endTime);
+    }
+    if (m_panelTime.isValid())
+    {
+        m_panelTime = boundedTime(m_panelTime);
+    }
+
+    updateGeometry();
+    update();
+    if (m_popup)
+    {
+        m_popup->update();
+    }
+    if (minChanged)
+    {
+        Q_EMIT minimumTimeChanged(m_minimumTime);
+    }
+    if (maxChanged)
+    {
+        Q_EMIT maximumTimeChanged(m_maximumTime);
+    }
+    Q_EMIT timeRangeChanged(m_minimumTime, m_maximumTime);
+    Q_EMIT timeStringChanged(timeString());
+}
+
+void AntTimePicker::clearMinimumTime()
+{
+    setMinimumTime(QTime(0, 0, 0, 0));
+}
+
+void AntTimePicker::clearMaximumTime()
+{
+    setMaximumTime(QTime(23, 59, 59, 999));
 }
 
 bool AntTimePicker::hasSelectedTime() const
@@ -768,11 +854,12 @@ void AntTimePicker::updatePopupGeometry()
 
 void AntTimePicker::setPanelTime(const QTime& time)
 {
-    if (!time.isValid())
+    const QTime nextTime = boundedTime(time);
+    if (!nextTime.isValid())
     {
         return;
     }
-    m_panelTime = QTime(time.hour(), time.minute(), time.second());
+    m_panelTime = QTime(nextTime.hour(), nextTime.minute(), nextTime.second(), nextTime.msec());
     if (m_popup)
     {
         m_popup->update();
@@ -831,8 +918,9 @@ void AntTimePicker::setRangeMode(bool rangeMode)
 QTime AntTimePicker::startTime() const { return m_startTime; }
 void AntTimePicker::setStartTime(const QTime& time)
 {
-    if (m_startTime == time) return;
-    m_startTime = time;
+    const QTime nextTime = boundedTime(time);
+    if (m_startTime == nextTime) return;
+    m_startTime = nextTime;
     updateGeometry();
     update();
     Q_EMIT startTimeChanged(m_startTime);
@@ -842,8 +930,9 @@ void AntTimePicker::setStartTime(const QTime& time)
 QTime AntTimePicker::endTime() const { return m_endTime; }
 void AntTimePicker::setEndTime(const QTime& time)
 {
-    if (m_endTime == time) return;
-    m_endTime = time;
+    const QTime nextTime = boundedTime(time);
+    if (m_endTime == nextTime) return;
+    m_endTime = nextTime;
     updateGeometry();
     update();
     Q_EMIT endTimeChanged(m_endTime);
@@ -858,4 +947,21 @@ void AntTimePicker::updateCursor()
 int AntTimePicker::normalizeStep(int step, int maximum) const
 {
     return std::clamp(step, 1, maximum);
+}
+
+QTime AntTimePicker::boundedTime(const QTime& time) const
+{
+    if (!time.isValid())
+    {
+        return QTime();
+    }
+    if (time < m_minimumTime)
+    {
+        return m_minimumTime;
+    }
+    if (time > m_maximumTime)
+    {
+        return m_maximumTime;
+    }
+    return time;
 }

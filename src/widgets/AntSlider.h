@@ -18,9 +18,13 @@ class AntSlider : public QWidget
     Q_PROPERTY(int minimum READ minimum WRITE setMinimum NOTIFY rangeChanged)
     Q_PROPERTY(int maximum READ maximum WRITE setMaximum NOTIFY rangeChanged)
     Q_PROPERTY(int value READ value WRITE setValue NOTIFY valueChanged)
+    Q_PROPERTY(int sliderPosition READ sliderPosition WRITE setSliderPosition NOTIFY sliderMoved)
     Q_PROPERTY(int singleStep READ singleStep WRITE setSingleStep NOTIFY singleStepChanged)
+    Q_PROPERTY(int pageStep READ pageStep WRITE setPageStep NOTIFY pageStepChanged)
     Q_PROPERTY(Qt::Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
     Q_PROPERTY(bool reverse READ isReverse WRITE setReverse NOTIFY reverseChanged)
+    Q_PROPERTY(bool tracking READ hasTracking WRITE setTracking NOTIFY trackingChanged)
+    Q_PROPERTY(bool invertedAppearance READ invertedAppearance WRITE setInvertedAppearance NOTIFY reverseChanged)
     Q_PROPERTY(bool dots READ dots WRITE setDots NOTIFY dotsChanged)
     Q_PROPERTY(bool included READ included WRITE setIncluded NOTIFY includedChanged)
     Q_PROPERTY(bool keyboard READ keyboard WRITE setKeyboard NOTIFY keyboardChanged)
@@ -42,15 +46,23 @@ public:
 
     int value() const;
     void setValue(int value);
+    int sliderPosition() const;
+    void setSliderPosition(int position);
 
     int singleStep() const;
     void setSingleStep(int step);
+    int pageStep() const;
+    void setPageStep(int step);
 
     Qt::Orientation orientation() const;
     void setOrientation(Qt::Orientation orientation);
 
     bool isReverse() const;
     void setReverse(bool reverse);
+    bool invertedAppearance() const;
+    void setInvertedAppearance(bool inverted);
+    bool hasTracking() const;
+    void setTracking(bool tracking);
 
     bool dots() const;
     void setDots(bool dots);
@@ -89,8 +101,10 @@ Q_SIGNALS:
     void changeComplete(int value);
     void rangeChanged(int minimum, int maximum);
     void singleStepChanged(int step);
+    void pageStepChanged(int step);
     void orientationChanged(Qt::Orientation orientation);
     void reverseChanged(bool reverse);
+    void trackingChanged(bool tracking);
     void dotsChanged(bool dots);
     void includedChanged(bool included);
     void keyboardChanged(bool enabled);
@@ -145,8 +159,10 @@ private:
     int m_rangeStart = 0;
     int m_rangeEnd = 100;
     int m_singleStep = 1;
+    int m_pageStep = 10;
     Qt::Orientation m_orientation = Qt::Horizontal;
     bool m_reverse = false;
+    bool m_tracking = true;
     bool m_dots = false;
     bool m_included = true;
     bool m_keyboard = true;

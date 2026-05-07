@@ -115,6 +115,21 @@ void AntRadio::setButtonStyle(bool buttonStyle)
     Q_EMIT buttonStyleChanged(m_buttonStyle);
 }
 
+void AntRadio::toggle()
+{
+    setChecked(!m_checked);
+}
+
+void AntRadio::click()
+{
+    if (!isEnabled())
+    {
+        return;
+    }
+    toggleFromUser();
+    Q_EMIT clicked(m_checked);
+}
+
 QSize AntRadio::sizeHint() const
 {
     QFont f = font();

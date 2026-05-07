@@ -6,6 +6,7 @@
 class QEvent;
 class QMouseEvent;
 class QPaintEvent;
+class QTimer;
 
 struct AntStatusBarItem
 {
@@ -26,6 +27,9 @@ public:
 
     QString message() const;
     void setMessage(const QString& message);
+    QString currentMessage() const;
+    void showMessage(const QString& message, int timeout = 0);
+    void clearMessage();
 
     bool hasSizeGrip() const;
     void setSizeGrip(bool enabled);
@@ -71,4 +75,5 @@ private:
     bool m_sizeGrip = true;
     int m_hoveredRegularIndex = -1;
     int m_hoveredPermanentIndex = -1;
+    QTimer* m_messageTimer = nullptr;
 };

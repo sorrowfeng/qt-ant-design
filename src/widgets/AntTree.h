@@ -60,9 +60,14 @@ public:
     void setMultiple(bool multiple);
 
     void setTreeData(const QVector<AntTreeNode>& data);
+    QVector<AntTreeNode> treeData() const;
     void addNode(const QString& parentKey, const AntTreeNode& node);
     void removeNode(const QString& key);
     AntTreeNode* findNode(const QString& key);
+    bool containsNode(const QString& key) const;
+    int topLevelNodeCount() const;
+    int nodeCount() const;
+    void clear();
 
     QStringList expandedKeys() const;
     QStringList selectedKeys() const;
@@ -71,6 +76,8 @@ public:
     void setExpandedKeys(const QStringList& keys);
     void setSelectedKeys(const QStringList& keys);
     void setCheckedKeys(const QStringList& keys);
+    void setNodeExpanded(const QString& key, bool expanded);
+    void setNodeChecked(const QString& key, bool checked);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -100,6 +107,8 @@ private:
     void collectCheckedKeys(const QVector<AntTreeNode>& nodes, QStringList& keys) const;
     void collectExpandedKeys(const QVector<AntTreeNode>& nodes, QStringList& keys) const;
     AntTreeNode* findNodeRecursive(QVector<AntTreeNode>& nodes, const QString& key);
+    const AntTreeNode* findNodeRecursive(const QVector<AntTreeNode>& nodes, const QString& key) const;
+    int countNodesRecursive(const QVector<AntTreeNode>& nodes) const;
     bool removeNodeRecursive(QVector<AntTreeNode>& nodes, const QString& key);
     void setNodeExpanded(QVector<AntTreeNode>& nodes, const QString& key, bool expanded);
     void setNodeChecked(QVector<AntTreeNode>& nodes, const QString& key, bool checked);

@@ -39,7 +39,23 @@ void TestAntDataDisplayB::propertiesAndSignals()
     auto* item = new AntListItem;
     list->addItem(item);
     QCOMPARE(list->itemCount(), 1);
+    QCOMPARE(list->count(), 1);
+    QCOMPARE(list->isEmpty(), false);
     QCOMPARE(list->itemAt(0), item);
+
+    auto* insertedItem = new AntListItem;
+    list->insertItem(0, insertedItem);
+    QCOMPARE(list->itemAt(0), insertedItem);
+    QCOMPARE(list->itemAt(1), item);
+
+    QCOMPARE(list->takeItem(0), insertedItem);
+    QCOMPARE(insertedItem->parentWidget(), nullptr);
+    QCOMPARE(list->count(), 1);
+
+    list->clear();
+    QCOMPARE(list->count(), 0);
+    QCOMPARE(list->isEmpty(), true);
+    QCOMPARE(item->parentWidget(), nullptr);
 
     // AntTable
     auto* tbl = new AntTable;
@@ -50,6 +66,7 @@ void TestAntDataDisplayB::propertiesAndSignals()
     QCOMPARE(tbl->currentPage(), 1);
     QCOMPARE(tbl->pageSize(), 10);
     QCOMPARE(tbl->rowCount(), 0);
+    QCOMPARE(tbl->columnCount(), 0);
 
     QSignalSpy tBorderSpy(tbl, &AntTable::borderedChanged);
     tbl->setBordered(false);
@@ -71,12 +88,27 @@ void TestAntDataDisplayB::propertiesAndSignals()
     QCOMPARE(tbl->rowSelection(), Ant::TableSelectionMode::Checkbox);
     QCOMPARE(selSpy.count(), 1);
 
+    QSignalSpy tableColumnsSpy(tbl, &AntTable::columnsChanged);
+    tbl->addColumn({QStringLiteral("ID"), QStringLiteral("id"), QStringLiteral("id"), 80});
+    QCOMPARE(tbl->columnCount(), 1);
+    QCOMPARE(tbl->columnAt(0).key, QStringLiteral("id"));
+    QCOMPARE(tbl->headerLabels(), QStringList({QStringLiteral("ID")}));
+    QCOMPARE(tableColumnsSpy.count(), 1);
+
     // Add rows first so pagination works
+    QSignalSpy tableRowsSpy(tbl, &AntTable::rowsChanged);
     for (int i = 0; i < 25; ++i) {
         AntTableRow r;
         r.data["id"] = i;
         tbl->addRow(r);
     }
+    QCOMPARE(tableRowsSpy.count(), 25);
+    QCOMPARE(tbl->cellData(0, QStringLiteral("id")).toInt(), 0);
+
+    QSignalSpy cellSpy(tbl, &AntTable::cellDataChanged);
+    tbl->setData(0, QStringLiteral("id"), 100);
+    QCOMPARE(tbl->cellData(0, QStringLiteral("id")).toInt(), 100);
+    QCOMPARE(cellSpy.count(), 1);
 
     QSignalSpy pageSpy(tbl, &AntTable::pageChanged);
     tbl->setCurrentPage(2);
@@ -156,6 +188,33 @@ void TestAntDataDisplayB::propertiesAndSignals()
     tree->setMultiple(true);
     QCOMPARE(tree->isMultiple(), true);
     QCOMPARE(multiSpy.count(), 1);
+
+    QVector<AntTreeNode> treeData;
+    AntTreeNode root;
+    root.key = QStringLiteral("root");
+    root.title = QStringLiteral("Root");
+    root.children.push_back({QStringLiteral("child"), QStringLiteral("Child")});
+    treeData.push_back(root);
+    tree->setTreeData(treeData);
+    QCOMPARE(tree->treeData().size(), 1);
+    QCOMPARE(tree->topLevelNodeCount(), 1);
+    QCOMPARE(tree->nodeCount(), 2);
+    QCOMPARE(tree->containsNode(QStringLiteral("child")), true);
+
+    QSignalSpy expandedSpy(tree, &AntTree::nodeExpanded);
+    tree->setNodeExpanded(QStringLiteral("root"), true);
+    QCOMPARE(tree->expandedKeys(), QStringList({QStringLiteral("root")}));
+    QCOMPARE(expandedSpy.count(), 1);
+
+    QSignalSpy checkedSpy(tree, &AntTree::nodeChecked);
+    tree->setNodeChecked(QStringLiteral("child"), true);
+    QVERIFY(tree->checkedKeys().contains(QStringLiteral("child")));
+    QCOMPARE(checkedSpy.count(), 1);
+
+    tree->clear();
+    QCOMPARE(tree->nodeCount(), 0);
+    QCOMPARE(tree->selectedKeys().isEmpty(), true);
+    QCOMPARE(tree->checkedKeys().isEmpty(), true);
 
     // AntTimeline
     auto* tl = new AntTimeline;

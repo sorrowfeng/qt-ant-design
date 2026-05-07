@@ -1,7 +1,9 @@
 #pragma once
 
+#include <QAction>
 #include <QList>
 #include <QHash>
+#include <QPointer>
 #include <QStringList>
 #include <QVector>
 #include <QWidget>
@@ -9,6 +11,7 @@
 #include "core/AntTypes.h"
 
 class QEvent;
+class QActionEvent;
 class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
@@ -29,6 +32,7 @@ struct AntMenuItem
     bool danger = false;
     bool divider = false;
     bool subMenu = false;
+    QPointer<QAction> action;
 };
 
 class AntMenu : public QWidget
@@ -106,6 +110,8 @@ public:
                     bool danger = false);
     void addDivider();
     void clearItems();
+    int itemCount() const;
+    AntMenuItem itemAt(int index) const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -122,6 +128,7 @@ Q_SIGNALS:
     void itemSelected(const QString& key);
 
 protected:
+    void actionEvent(QActionEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -149,6 +156,11 @@ private:
     bool isItemSelected(const AntMenuItem& item) const;
     bool isSubMenuVisible(const QString& key) const;
     qreal subMenuProgress(const QString& key) const;
+    void insertActionItem(QAction* action, QAction* before);
+    void removeActionItem(QAction* action);
+    void updateActionItem(QAction* action);
+    AntMenuItem itemFromAction(QAction* action) const;
+    QString keyForAction(QAction* action) const;
     void toggleOpen(const QString& key);
     void animateSubMenu(const QString& key, bool open);
     void stopSubMenuAnimation(const QString& key);

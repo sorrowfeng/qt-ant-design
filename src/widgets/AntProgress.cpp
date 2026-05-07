@@ -68,13 +68,69 @@ int AntProgress::percent() const { return m_percent; }
 void AntProgress::setPercent(int percent)
 {
     percent = std::clamp(percent, 0, 100);
-    if (m_percent == percent)
+    setValueAndPercent(valueForPercent(percent), percent);
+}
+
+int AntProgress::minimum() const { return m_minimum; }
+
+void AntProgress::setMinimum(int minimum)
+{
+    setRange(minimum, m_maximum);
+}
+
+int AntProgress::maximum() const { return m_maximum; }
+
+void AntProgress::setMaximum(int maximum)
+{
+    setRange(m_minimum, maximum);
+}
+
+void AntProgress::setRange(int minimum, int maximum)
+{
+    if (minimum > maximum)
     {
-        return;
+        std::swap(minimum, maximum);
     }
-    m_percent = percent;
-    update();
-    Q_EMIT percentChanged(m_percent);
+
+    const bool rangeWasChanged = m_minimum != minimum || m_maximum != maximum;
+    const int oldValue = m_value;
+    const int oldPercent = m_percent;
+
+    m_minimum = minimum;
+    m_maximum = maximum;
+    m_value = std::clamp(m_value, m_minimum, m_maximum);
+    syncPercentFromValue();
+
+    if (rangeWasChanged || oldValue != m_value || oldPercent != m_percent)
+    {
+        updateAnimationState();
+        update();
+    }
+    if (rangeWasChanged)
+    {
+        Q_EMIT rangeChanged(m_minimum, m_maximum);
+    }
+    if (oldValue != m_value)
+    {
+        Q_EMIT valueChanged(m_value);
+    }
+    if (oldPercent != m_percent)
+    {
+        Q_EMIT percentChanged(m_percent);
+    }
+}
+
+int AntProgress::value() const { return m_value; }
+
+void AntProgress::setValue(int value)
+{
+    value = std::clamp(value, m_minimum, m_maximum);
+    setValueAndPercent(value, percentForValue(value));
+}
+
+void AntProgress::reset()
+{
+    setValue(m_minimum);
 }
 
 Ant::ProgressType AntProgress::progressType() const { return m_progressType; }
@@ -118,6 +174,13 @@ void AntProgress::setShowInfo(bool showInfo)
     updateGeometry();
     update();
     Q_EMIT showInfoChanged(m_showInfo);
+}
+
+bool AntProgress::textVisible() const { return m_showInfo; }
+
+void AntProgress::setTextVisible(bool visible)
+{
+    setShowInfo(visible);
 }
 
 int AntProgress::strokeWidth() const { return m_strokeWidth; }
@@ -241,6 +304,55 @@ void AntProgress::updateAnimationState()
     else if (!shouldAnimate)
     {
         m_activeTimer->stop();
+    }
+}
+
+int AntProgress::percentForValue(int value) const
+{
+    if (m_maximum <= m_minimum)
+    {
+        return 0;
+    }
+    value = std::clamp(value, m_minimum, m_maximum);
+    return std::clamp(qRound((value - m_minimum) * 100.0 / (m_maximum - m_minimum)), 0, 100);
+}
+
+int AntProgress::valueForPercent(int percent) const
+{
+    percent = std::clamp(percent, 0, 100);
+    if (m_maximum <= m_minimum)
+    {
+        return m_minimum;
+    }
+    return std::clamp(m_minimum + qRound((m_maximum - m_minimum) * percent / 100.0), m_minimum, m_maximum);
+}
+
+void AntProgress::syncPercentFromValue()
+{
+    m_percent = percentForValue(m_value);
+}
+
+void AntProgress::setValueAndPercent(int value, int percent)
+{
+    value = std::clamp(value, m_minimum, m_maximum);
+    percent = std::clamp(percent, 0, 100);
+    const bool valueWasChanged = m_value != value;
+    const bool percentWasChanged = m_percent != percent;
+    if (!valueWasChanged && !percentWasChanged)
+    {
+        return;
+    }
+    m_value = value;
+    m_percent = percent;
+    updateAnimationState();
+    update();
+    if (valueWasChanged)
+    {
+        Q_EMIT valueChanged(m_value);
+    }
+    if (percentWasChanged)
+    {
+        Q_EMIT percentChanged(m_percent);
     }
 }
 

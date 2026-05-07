@@ -36,6 +36,8 @@ public:
     void setButtonStyle(bool buttonStyle);
     bool isHoveredState() const;
     bool isPressedState() const;
+    void toggle();
+    void click();
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

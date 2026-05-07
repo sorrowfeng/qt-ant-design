@@ -103,7 +103,7 @@ protected:
         }
 
         const QDate date = dateAt(event->position());
-        if (date.isValid())
+        if (date.isValid() && m_owner->isDateInRange(date))
         {
             m_owner->selectDateFromPopup(date);
             event->accept();
@@ -257,7 +257,8 @@ private:
             const bool inMonth = date.month() == m_owner->m_panelDate.month();
             const bool selected = m_owner->m_selectedDate.isValid() && date == m_owner->m_selectedDate;
             const bool isToday = date == today;
-            const bool hovered = date == m_hoveredDate;
+            const bool dateEnabled = m_owner->isDateInRange(date);
+            const bool hovered = dateEnabled && date == m_hoveredDate;
 
             if (hovered && !selected)
             {
@@ -278,7 +279,9 @@ private:
                 painter.drawRoundedRect(inner.adjusted(0.5, 0.5, -0.5, -0.5), token.borderRadiusSM, token.borderRadiusSM);
             }
 
-            painter.setPen(selected ? token.colorTextLightSolid : (inMonth ? token.colorText : token.colorTextDisabled));
+            painter.setPen(selected
+                               ? token.colorTextLightSolid
+                               : ((inMonth && dateEnabled) ? token.colorText : token.colorTextDisabled));
             painter.drawText(cell, Qt::AlignCenter, QString::number(date.day()));
         }
     }
@@ -331,11 +334,12 @@ QDate AntDatePicker::selectedDate() const { return m_selectedDate; }
 
 void AntDatePicker::setSelectedDate(const QDate& date)
 {
-    if (m_selectedDate == date)
+    const QDate nextDate = boundedDate(date);
+    if (m_selectedDate == nextDate)
     {
         return;
     }
-    m_selectedDate = date;
+    m_selectedDate = nextDate;
     if (m_selectedDate.isValid())
     {
         m_panelDate = m_selectedDate;
@@ -346,7 +350,92 @@ void AntDatePicker::setSelectedDate(const QDate& date)
         m_popup->update();
     }
     Q_EMIT selectedDateChanged(m_selectedDate);
+    Q_EMIT dateChanged(m_selectedDate);
     Q_EMIT dateStringChanged(dateString());
+}
+
+QDate AntDatePicker::date() const { return selectedDate(); }
+
+void AntDatePicker::setDate(const QDate& date)
+{
+    setSelectedDate(date);
+}
+
+QDate AntDatePicker::minimumDate() const { return m_minimumDate; }
+
+void AntDatePicker::setMinimumDate(const QDate& date)
+{
+    setDateRange(date, m_maximumDate);
+}
+
+QDate AntDatePicker::maximumDate() const { return m_maximumDate; }
+
+void AntDatePicker::setMaximumDate(const QDate& date)
+{
+    setDateRange(m_minimumDate, date);
+}
+
+void AntDatePicker::setDateRange(const QDate& minDate, const QDate& maxDate)
+{
+    QDate nextMin = minDate.isValid() ? minDate : QDate(100, 1, 1);
+    QDate nextMax = maxDate.isValid() ? maxDate : QDate(9999, 12, 31);
+    if (nextMin > nextMax)
+    {
+        nextMax = nextMin;
+    }
+
+    const bool minChanged = m_minimumDate != nextMin;
+    const bool maxChanged = m_maximumDate != nextMax;
+    if (!minChanged && !maxChanged)
+    {
+        return;
+    }
+
+    m_minimumDate = nextMin;
+    m_maximumDate = nextMax;
+    if (m_selectedDate.isValid())
+    {
+        setSelectedDate(m_selectedDate);
+    }
+    if (m_startDate.isValid())
+    {
+        m_startDate = boundedDate(m_startDate);
+    }
+    if (m_endDate.isValid())
+    {
+        m_endDate = boundedDate(m_endDate);
+    }
+    if (m_panelDate.isValid())
+    {
+        m_panelDate = QDate(boundedDate(m_panelDate).year(), boundedDate(m_panelDate).month(), 1);
+    }
+
+    updateGeometry();
+    update();
+    if (m_popup)
+    {
+        m_popup->update();
+    }
+    if (minChanged)
+    {
+        Q_EMIT minimumDateChanged(m_minimumDate);
+    }
+    if (maxChanged)
+    {
+        Q_EMIT maximumDateChanged(m_maximumDate);
+    }
+    Q_EMIT dateRangeChanged(m_minimumDate, m_maximumDate);
+    Q_EMIT dateStringChanged(dateString());
+}
+
+void AntDatePicker::clearMinimumDate()
+{
+    setMinimumDate(QDate(100, 1, 1));
+}
+
+void AntDatePicker::clearMaximumDate()
+{
+    setMaximumDate(QDate(9999, 12, 31));
 }
 
 bool AntDatePicker::hasSelectedDate() const
@@ -730,11 +819,12 @@ void AntDatePicker::updatePopupGeometry()
 
 void AntDatePicker::setPanelDate(const QDate& date)
 {
-    if (!date.isValid())
+    const QDate nextDate = boundedDate(date);
+    if (!nextDate.isValid())
     {
         return;
     }
-    m_panelDate = QDate(date.year(), date.month(), 1);
+    m_panelDate = QDate(nextDate.year(), nextDate.month(), 1);
     if (m_popup)
     {
         m_popup->update();
@@ -743,11 +833,16 @@ void AntDatePicker::setPanelDate(const QDate& date)
 
 void AntDatePicker::selectDateFromPopup(const QDate& date)
 {
+    if (!isDateInRange(date))
+    {
+        return;
+    }
+
     if (m_rangeMode)
     {
         if (!m_pickingEnd || !m_startDate.isValid())
         {
-            m_startDate = date;
+            m_startDate = boundedDate(date);
             m_endDate = QDate();
             m_pickingEnd = true;
             update();
@@ -757,8 +852,9 @@ void AntDatePicker::selectDateFromPopup(const QDate& date)
         }
         else
         {
-            m_endDate = (date >= m_startDate) ? date : m_startDate;
-            if (date < m_startDate) m_startDate = date;
+            const QDate nextDate = boundedDate(date);
+            m_endDate = (nextDate >= m_startDate) ? nextDate : m_startDate;
+            if (nextDate < m_startDate) m_startDate = nextDate;
             m_pickingEnd = false;
             setSelectedDate(m_startDate); // update display
             setOpen(false);
@@ -788,8 +884,9 @@ void AntDatePicker::setRangeMode(bool rangeMode)
 QDate AntDatePicker::startDate() const { return m_startDate; }
 void AntDatePicker::setStartDate(const QDate& date)
 {
-    if (m_startDate == date) return;
-    m_startDate = date;
+    const QDate nextDate = boundedDate(date);
+    if (m_startDate == nextDate) return;
+    m_startDate = nextDate;
     updateGeometry();
     update();
     Q_EMIT startDateChanged(m_startDate);
@@ -799,8 +896,9 @@ void AntDatePicker::setStartDate(const QDate& date)
 QDate AntDatePicker::endDate() const { return m_endDate; }
 void AntDatePicker::setEndDate(const QDate& date)
 {
-    if (m_endDate == date) return;
-    m_endDate = date;
+    const QDate nextDate = boundedDate(date);
+    if (m_endDate == nextDate) return;
+    m_endDate = nextDate;
     updateGeometry();
     update();
     Q_EMIT endDateChanged(m_endDate);
@@ -810,4 +908,26 @@ void AntDatePicker::setEndDate(const QDate& date)
 void AntDatePicker::updateCursor()
 {
     setCursor(isEnabled() ? Qt::PointingHandCursor : Qt::ArrowCursor);
+}
+
+QDate AntDatePicker::boundedDate(const QDate& date) const
+{
+    if (!date.isValid())
+    {
+        return QDate();
+    }
+    if (date < m_minimumDate)
+    {
+        return m_minimumDate;
+    }
+    if (date > m_maximumDate)
+    {
+        return m_maximumDate;
+    }
+    return date;
+}
+
+bool AntDatePicker::isDateInRange(const QDate& date) const
+{
+    return date.isValid() && date >= m_minimumDate && date <= m_maximumDate;
 }

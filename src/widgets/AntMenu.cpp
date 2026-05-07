@@ -1,5 +1,6 @@
 #include "AntMenu.h"
 
+#include <QActionEvent>
 #include <QApplication>
 #include <QEnterEvent>
 #include <QFrame>
@@ -88,6 +89,13 @@ QRect availableScreenGeometryFor(const QWidget* widget)
         return screen->availableGeometry();
     }
     return QRect(0, 0, 1280, 720);
+}
+
+QString normalizedActionText(const QString& text)
+{
+    QString result = text;
+    result.remove(QLatin1Char('&'));
+    return result;
 }
 } // namespace
 
@@ -412,6 +420,28 @@ bool AntMenu::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
+void AntMenu::actionEvent(QActionEvent* event)
+{
+    QWidget::actionEvent(event);
+    if (!event || !event->action())
+    {
+        return;
+    }
+
+    if (event->type() == QEvent::ActionAdded)
+    {
+        insertActionItem(event->action(), event->before());
+    }
+    else if (event->type() == QEvent::ActionRemoved)
+    {
+        removeActionItem(event->action());
+    }
+    else if (event->type() == QEvent::ActionChanged)
+    {
+        updateActionItem(event->action());
+    }
+}
+
 void AntMenu::addItem(const QString& key,
                       const QString& label,
                       const QString& iconText,
@@ -548,6 +578,20 @@ void AntMenu::clearItems()
     m_hoveredIndex = -1;
     updateMenuGeometry();
     update();
+}
+
+int AntMenu::itemCount() const
+{
+    return m_items.size();
+}
+
+AntMenuItem AntMenu::itemAt(int index) const
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return {};
+    }
+    return m_items.at(index);
 }
 
 QSize AntMenu::sizeHint() const
@@ -866,6 +910,133 @@ void AntMenu::toggleOpen(const QString& key)
     setOpenKeys(keys);
 }
 
+void AntMenu::insertActionItem(QAction* action, QAction* before)
+{
+    if (!action)
+    {
+        return;
+    }
+    for (const auto& item : std::as_const(m_items))
+    {
+        if (item.action == action)
+        {
+            updateActionItem(action);
+            return;
+        }
+    }
+
+    const AntMenuItem item = itemFromAction(action);
+    int insertIndex = m_items.size();
+    if (before)
+    {
+        for (int i = 0; i < m_items.size(); ++i)
+        {
+            if (m_items.at(i).action == before)
+            {
+                insertIndex = i;
+                break;
+            }
+        }
+    }
+    m_items.insert(insertIndex, item);
+    updateMenuGeometry();
+    update();
+}
+
+void AntMenu::removeActionItem(QAction* action)
+{
+    if (!action)
+    {
+        return;
+    }
+    for (int i = m_items.size() - 1; i >= 0; --i)
+    {
+        if (m_items.at(i).action == action)
+        {
+            const QString key = m_items.at(i).key;
+            m_items.removeAt(i);
+            if (m_selectedKey == key)
+            {
+                setSelectedKey(QString());
+            }
+            m_openKeys.removeAll(key);
+            m_subMenuProgress.remove(key);
+        }
+    }
+    updateMenuGeometry();
+    update();
+}
+
+void AntMenu::updateActionItem(QAction* action)
+{
+    if (!action)
+    {
+        return;
+    }
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        if (m_items.at(i).action != action)
+        {
+            continue;
+        }
+        const QString previousKey = m_items.at(i).key;
+        m_items[i] = itemFromAction(action);
+        if (m_selectedKey == previousKey)
+        {
+            m_selectedKey = m_items.at(i).key;
+        }
+        for (QString& key : m_openKeys)
+        {
+            if (key == previousKey)
+            {
+                key = m_items.at(i).key;
+            }
+        }
+        updateMenuGeometry();
+        update();
+        return;
+    }
+}
+
+AntMenuItem AntMenu::itemFromAction(QAction* action) const
+{
+    AntMenuItem item;
+    if (!action)
+    {
+        return item;
+    }
+    item.key = keyForAction(action);
+    item.label = normalizedActionText(action->text());
+    item.extra = action->shortcut().toString(QKeySequence::NativeText);
+    item.disabled = !action->isEnabled();
+    item.divider = action->isSeparator();
+    item.action = action;
+    return item;
+}
+
+QString AntMenu::keyForAction(QAction* action) const
+{
+    if (!action)
+    {
+        return QString();
+    }
+    const QString dataKey = action->data().toString();
+    if (!dataKey.isEmpty())
+    {
+        return dataKey;
+    }
+    if (!action->objectName().isEmpty())
+    {
+        return action->objectName();
+    }
+    const QString textKey = normalizedActionText(action->text()).trimmed();
+    if (!textKey.isEmpty())
+    {
+        return textKey;
+    }
+    return QStringLiteral("action_%1").arg(reinterpret_cast<quintptr>(action));
+}
+
 void AntMenu::animateSubMenu(const QString& key, bool open)
 {
     stopSubMenuAnimation(key);
@@ -1042,6 +1213,7 @@ void AntMenu::activateItem(int itemIndex)
         return;
     }
     const AntMenuItem& item = m_items.at(itemIndex);
+    const QPointer<QAction> action = item.action;
     if (item.disabled || item.divider)
     {
         return;
@@ -1066,6 +1238,10 @@ void AntMenu::activateItem(int itemIndex)
     {
         setSelectedKey(item.key);
         Q_EMIT itemSelected(item.key);
+    }
+    if (action)
+    {
+        action->trigger();
     }
 }
 

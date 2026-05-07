@@ -44,21 +44,58 @@ bool AntCheckbox::isChecked() const { return m_checked; }
 
 void AntCheckbox::setChecked(bool checked)
 {
-    if (m_checked == checked && !m_indeterminate)
+    setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+}
+
+Qt::CheckState AntCheckbox::checkState() const
+{
+    if (m_indeterminate)
+    {
+        return Qt::PartiallyChecked;
+    }
+    return m_checked ? Qt::Checked : Qt::Unchecked;
+}
+
+void AntCheckbox::setCheckState(Qt::CheckState state)
+{
+    const Qt::CheckState oldState = checkState();
+    const bool oldChecked = m_checked;
+    const bool oldIndeterminate = m_indeterminate;
+
+    if (state == Qt::PartiallyChecked)
+    {
+        if (!m_tristate)
+        {
+            setTristate(true);
+        }
+        m_indeterminate = true;
+    }
+    else
+    {
+        m_checked = state == Qt::Checked;
+        m_indeterminate = false;
+    }
+
+    const Qt::CheckState newState = checkState();
+    if (oldState == newState && oldChecked == m_checked && oldIndeterminate == m_indeterminate)
     {
         return;
     }
 
-    m_checked = checked;
-    const bool wasIndeterminate = m_indeterminate;
-    m_indeterminate = false;
     update();
-    Q_EMIT checkedChanged(m_checked);
-    Q_EMIT toggled(m_checked);
-    Q_EMIT stateChanged(m_checked ? Qt::Checked : Qt::Unchecked);
-    if (wasIndeterminate)
+    if (oldChecked != m_checked)
     {
-        Q_EMIT indeterminateChanged(false);
+        Q_EMIT checkedChanged(m_checked);
+        Q_EMIT toggled(m_checked);
+    }
+    if (oldIndeterminate != m_indeterminate)
+    {
+        Q_EMIT indeterminateChanged(m_indeterminate);
+    }
+    if (oldState != newState)
+    {
+        Q_EMIT checkStateChanged(newState);
+        Q_EMIT stateChanged(newState);
     }
 }
 
@@ -66,15 +103,59 @@ bool AntCheckbox::isIndeterminate() const { return m_indeterminate; }
 
 void AntCheckbox::setIndeterminate(bool indeterminate)
 {
-    if (m_indeterminate == indeterminate)
+    if (indeterminate)
+    {
+        setCheckState(Qt::PartiallyChecked);
+        return;
+    }
+    setCheckState(m_checked ? Qt::Checked : Qt::Unchecked);
+}
+
+bool AntCheckbox::isTristate() const { return m_tristate; }
+
+void AntCheckbox::setTristate(bool tristate)
+{
+    if (m_tristate == tristate)
     {
         return;
     }
+    m_tristate = tristate;
+    if (!m_tristate && m_indeterminate)
+    {
+        setCheckState(m_checked ? Qt::Checked : Qt::Unchecked);
+    }
+    Q_EMIT tristateChanged(m_tristate);
+}
 
-    m_indeterminate = indeterminate;
-    update();
-    Q_EMIT indeterminateChanged(m_indeterminate);
-    Q_EMIT stateChanged(m_indeterminate ? Qt::PartiallyChecked : (m_checked ? Qt::Checked : Qt::Unchecked));
+void AntCheckbox::toggle()
+{
+    if (m_tristate)
+    {
+        switch (checkState())
+        {
+        case Qt::Unchecked:
+            setCheckState(Qt::PartiallyChecked);
+            break;
+        case Qt::PartiallyChecked:
+            setCheckState(Qt::Checked);
+            break;
+        case Qt::Checked:
+            setCheckState(Qt::Unchecked);
+            break;
+        }
+        return;
+    }
+    setChecked(!m_checked);
+}
+
+void AntCheckbox::click()
+{
+    if (!isEnabled())
+    {
+        return;
+    }
+    toggle();
+    Q_EMIT clicked(m_checked);
 }
 
 QString AntCheckbox::text() const { return m_text; }
@@ -183,11 +264,6 @@ void AntCheckbox::keyPressEvent(QKeyEvent* event)
 QRectF AntCheckbox::indicatorRect() const
 {
     return QRectF(0.5, (height() - IndicatorSize) / 2.0 + 0.5, IndicatorSize - 1, IndicatorSize - 1);
-}
-
-void AntCheckbox::toggle()
-{
-    setChecked(!m_checked);
 }
 
 QColor AntCheckbox::indicatorBorderColor() const

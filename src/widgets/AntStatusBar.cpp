@@ -3,6 +3,7 @@
 #include <QEvent>
 #include <QFontMetrics>
 #include <QMouseEvent>
+#include <QTimer>
 
 #include "../styles/AntStatusBarStyle.h"
 #include "core/AntTheme.h"
@@ -13,6 +14,9 @@ AntStatusBar::AntStatusBar(QWidget* parent)
     installAntStyle<AntStatusBarStyle>(this);
     setMouseTracking(true);
     setFixedHeight(28);
+    m_messageTimer = new QTimer(this);
+    m_messageTimer->setSingleShot(true);
+    connect(m_messageTimer, &QTimer::timeout, this, &AntStatusBar::clearMessage);
 }
 
 QString AntStatusBar::message() const { return m_message; }
@@ -26,6 +30,27 @@ void AntStatusBar::setMessage(const QString& message)
     m_message = message;
     update();
     Q_EMIT messageChanged(m_message);
+}
+
+QString AntStatusBar::currentMessage() const { return m_message; }
+
+void AntStatusBar::showMessage(const QString& message, int timeout)
+{
+    setMessage(message);
+    if (timeout > 0)
+    {
+        m_messageTimer->start(timeout);
+    }
+    else
+    {
+        m_messageTimer->stop();
+    }
+}
+
+void AntStatusBar::clearMessage()
+{
+    m_messageTimer->stop();
+    setMessage(QString());
 }
 
 bool AntStatusBar::hasSizeGrip() const { return m_sizeGrip; }

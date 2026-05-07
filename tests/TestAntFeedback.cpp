@@ -310,6 +310,10 @@ void TestAntFeedback::progress()
 {
     auto* w = new AntProgress;
     QCOMPARE(w->percent(), 0);
+    QCOMPARE(w->minimum(), 0);
+    QCOMPARE(w->maximum(), 100);
+    QCOMPARE(w->value(), 0);
+    QCOMPARE(w->textVisible(), true);
     QCOMPARE(w->progressType(), Ant::ProgressType::Line);
     QCOMPARE(w->status(), Ant::ProgressStatus::Normal);
     QCOMPARE(w->showInfo(), true);
@@ -319,7 +323,18 @@ void TestAntFeedback::progress()
     QSignalSpy pctSpy(w, &AntProgress::percentChanged);
     w->setPercent(50);
     QCOMPARE(w->percent(), 50);
+    QCOMPARE(w->value(), 50);
     QCOMPARE(pctSpy.count(), 1);
+
+    w->setRange(10, 110);
+    QCOMPARE(w->minimum(), 10);
+    QCOMPARE(w->maximum(), 110);
+
+    QSignalSpy valueSpy(w, &AntProgress::valueChanged);
+    w->setValue(60);
+    QCOMPARE(w->value(), 60);
+    QCOMPARE(w->percent(), 50);
+    QCOMPARE(valueSpy.count(), 1);
 
     QSignalSpy typeSpy(w, &AntProgress::progressTypeChanged);
     w->setProgressType(Ant::ProgressType::Circle);
@@ -332,9 +347,14 @@ void TestAntFeedback::progress()
     QCOMPARE(statusSpy.count(), 1);
 
     QSignalSpy infoSpy(w, &AntProgress::showInfoChanged);
-    w->setShowInfo(false);
+    w->setTextVisible(false);
     QCOMPARE(w->showInfo(), false);
+    QCOMPARE(w->textVisible(), false);
     QCOMPARE(infoSpy.count(), 1);
+
+    w->reset();
+    QCOMPARE(w->value(), 10);
+    QCOMPARE(w->percent(), 0);
 
     QSignalSpy strokeSpy(w, &AntProgress::strokeWidthChanged);
     w->setStrokeWidth(12);

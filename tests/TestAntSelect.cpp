@@ -89,6 +89,51 @@ void TestAntSelect::propertiesAndSignals()
     sel->clearOptions();
     QCOMPARE(sel->count(), 0);
 
+    // QComboBox-style compatibility helpers
+    auto* combo = new AntSelect;
+    combo->addItem(QStringLiteral("One"), 1);
+    combo->addItems({QStringLiteral("Two"), QStringLiteral("Three")});
+    combo->insertItem(1, QStringLiteral("Inserted"), 99);
+    QCOMPARE(combo->count(), 4);
+    QCOMPARE(combo->itemText(1), QStringLiteral("Inserted"));
+    QCOMPARE(combo->itemData(1).toInt(), 99);
+    QCOMPARE(combo->findText(QStringLiteral("Two")), 2);
+    QCOMPARE(combo->findData(99), 1);
+
+    combo->setItemText(1, QStringLiteral("Renamed"));
+    combo->setItemData(1, 100);
+    QCOMPARE(combo->itemText(1), QStringLiteral("Renamed"));
+    QCOMPARE(combo->itemData(1).toInt(), 100);
+
+    QSignalSpy comboIndexSpy(combo, &AntSelect::currentIndexChanged);
+    combo->setCurrentText(QStringLiteral("Three"));
+    QCOMPARE(combo->currentIndex(), 3);
+    QCOMPARE(combo->currentData().toString(), QStringLiteral("Three"));
+    QCOMPARE(comboIndexSpy.count(), 1);
+
+    combo->removeItem(3);
+    QCOMPARE(combo->count(), 3);
+    QCOMPARE(combo->findText(QStringLiteral("Three")), -1);
+
+    combo->clear();
+    QCOMPARE(combo->count(), 0);
+
+    auto* activatedSelect = new AntSelect;
+    activatedSelect->addItems({QStringLiteral("Alpha"), QStringLiteral("Beta")});
+    QSignalSpy activatedSpy(activatedSelect, &AntSelect::activated);
+    QSignalSpy textActivatedSpy(activatedSelect, &AntSelect::textActivated);
+    QSignalSpy highlightedSpy(activatedSelect, &AntSelect::highlighted);
+    QSignalSpy textHighlightedSpy(activatedSelect, &AntSelect::textHighlighted);
+    activatedSelect->setOpen(true);
+    QTest::keyClick(activatedSelect, Qt::Key_Down);
+    QVERIFY(highlightedSpy.count() >= 1);
+    QVERIFY(textHighlightedSpy.count() >= 1);
+    QTest::keyClick(activatedSelect, Qt::Key_Return);
+    QCOMPARE(activatedSpy.count(), 1);
+    QCOMPARE(textActivatedSpy.count(), 1);
+    QCOMPARE(activatedSpy.takeFirst().at(0).toInt(), activatedSelect->currentIndex());
+    QCOMPARE(textActivatedSpy.takeFirst().at(0).toString(), activatedSelect->currentText());
+
     // sizeHint
     QSize hint = sel->sizeHint();
     QVERIFY(hint.width() > 0);

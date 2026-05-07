@@ -162,6 +162,13 @@ void AntSlider::setValue(int value)
     Q_EMIT valueChanged(m_value);
 }
 
+int AntSlider::sliderPosition() const { return m_value; }
+
+void AntSlider::setSliderPosition(int position)
+{
+    setValue(position);
+}
+
 int AntSlider::singleStep() const { return m_singleStep; }
 
 void AntSlider::setSingleStep(int step)
@@ -176,6 +183,20 @@ void AntSlider::setSingleStep(int step)
     setValue(m_value);
     update();
     Q_EMIT singleStepChanged(m_singleStep);
+}
+
+int AntSlider::pageStep() const { return m_pageStep; }
+
+void AntSlider::setPageStep(int step)
+{
+    step = std::max(1, step);
+    if (m_pageStep == step)
+    {
+        return;
+    }
+
+    m_pageStep = step;
+    Q_EMIT pageStepChanged(m_pageStep);
 }
 
 Qt::Orientation AntSlider::orientation() const { return m_orientation; }
@@ -205,6 +226,25 @@ void AntSlider::setReverse(bool reverse)
     m_reverse = reverse;
     update();
     Q_EMIT reverseChanged(m_reverse);
+}
+
+bool AntSlider::invertedAppearance() const { return m_reverse; }
+
+void AntSlider::setInvertedAppearance(bool inverted)
+{
+    setReverse(inverted);
+}
+
+bool AntSlider::hasTracking() const { return m_tracking; }
+
+void AntSlider::setTracking(bool tracking)
+{
+    if (m_tracking == tracking)
+    {
+        return;
+    }
+    m_tracking = tracking;
+    Q_EMIT trackingChanged(m_tracking);
 }
 
 bool AntSlider::dots() const { return m_dots; }
@@ -437,10 +477,10 @@ void AntSlider::keyPressEvent(QKeyEvent* event)
         delta = step;
         break;
     case Qt::Key_PageDown:
-        delta = -step * 10;
+        delta = -m_pageStep;
         break;
     case Qt::Key_PageUp:
-        delta = step * 10;
+        delta = m_pageStep;
         break;
     case Qt::Key_Home:
         target = m_minimum;

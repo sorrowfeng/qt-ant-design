@@ -16,7 +16,10 @@ class QPaintEvent;
 class AntTimePicker : public QWidget
 {
     Q_OBJECT
+    Q_PROPERTY(QTime time READ time WRITE setTime NOTIFY timeChanged)
     Q_PROPERTY(QTime selectedTime READ selectedTime WRITE setSelectedTime NOTIFY selectedTimeChanged)
+    Q_PROPERTY(QTime minimumTime READ minimumTime WRITE setMinimumTime NOTIFY minimumTimeChanged)
+    Q_PROPERTY(QTime maximumTime READ maximumTime WRITE setMaximumTime NOTIFY maximumTimeChanged)
     Q_PROPERTY(QString displayFormat READ displayFormat WRITE setDisplayFormat NOTIFY displayFormatChanged)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)
     Q_PROPERTY(Ant::Size pickerSize READ pickerSize WRITE setPickerSize NOTIFY pickerSizeChanged)
@@ -35,6 +38,15 @@ public:
 
     QTime selectedTime() const;
     void setSelectedTime(const QTime& time);
+    QTime time() const;
+    void setTime(const QTime& time);
+    QTime minimumTime() const;
+    void setMinimumTime(const QTime& time);
+    QTime maximumTime() const;
+    void setMaximumTime(const QTime& time);
+    void setTimeRange(const QTime& minTime, const QTime& maxTime);
+    void clearMinimumTime();
+    void clearMaximumTime();
     bool hasSelectedTime() const;
     void clear();
 
@@ -86,6 +98,10 @@ public:
 
 Q_SIGNALS:
     void selectedTimeChanged(const QTime& time);
+    void timeChanged(const QTime& time);
+    void minimumTimeChanged(const QTime& time);
+    void maximumTimeChanged(const QTime& time);
+    void timeRangeChanged(const QTime& minTime, const QTime& maxTime);
     void timeStringChanged(const QString& text);
     void displayFormatChanged(const QString& format);
     void placeholderTextChanged(const QString& text);
@@ -137,11 +153,14 @@ private:
     void acceptPanelTime();
     void updateCursor();
     int normalizeStep(int step, int maximum) const;
+    QTime boundedTime(const QTime& time) const;
 
     QTime m_selectedTime;
     QTime m_panelTime;
     QTime m_startTime;
     QTime m_endTime;
+    QTime m_minimumTime = QTime(0, 0, 0, 0);
+    QTime m_maximumTime = QTime(23, 59, 59, 999);
     QString m_displayFormat = QStringLiteral("HH:mm:ss");
     QString m_placeholderText = QStringLiteral("Select time");
     Ant::Size m_pickerSize = Ant::Size::Middle;

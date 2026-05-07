@@ -16,7 +16,10 @@ class QPaintEvent;
 class AntDatePicker : public QWidget
 {
     Q_OBJECT
+    Q_PROPERTY(QDate date READ date WRITE setDate NOTIFY dateChanged)
     Q_PROPERTY(QDate selectedDate READ selectedDate WRITE setSelectedDate NOTIFY selectedDateChanged)
+    Q_PROPERTY(QDate minimumDate READ minimumDate WRITE setMinimumDate NOTIFY minimumDateChanged)
+    Q_PROPERTY(QDate maximumDate READ maximumDate WRITE setMaximumDate NOTIFY maximumDateChanged)
     Q_PROPERTY(QString displayFormat READ displayFormat WRITE setDisplayFormat NOTIFY displayFormatChanged)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)
     Q_PROPERTY(Ant::Size pickerSize READ pickerSize WRITE setPickerSize NOTIFY pickerSizeChanged)
@@ -31,6 +34,15 @@ public:
 
     QDate selectedDate() const;
     void setSelectedDate(const QDate& date);
+    QDate date() const;
+    void setDate(const QDate& date);
+    QDate minimumDate() const;
+    void setMinimumDate(const QDate& date);
+    QDate maximumDate() const;
+    void setMaximumDate(const QDate& date);
+    void setDateRange(const QDate& minDate, const QDate& maxDate);
+    void clearMinimumDate();
+    void clearMaximumDate();
     bool hasSelectedDate() const;
     void clear();
 
@@ -72,6 +84,10 @@ public:
 
 Q_SIGNALS:
     void selectedDateChanged(const QDate& date);
+    void dateChanged(const QDate& date);
+    void minimumDateChanged(const QDate& date);
+    void maximumDateChanged(const QDate& date);
+    void dateRangeChanged(const QDate& minDate, const QDate& maxDate);
     void dateStringChanged(const QString& text);
     void displayFormatChanged(const QString& format);
     void placeholderTextChanged(const QString& text);
@@ -117,11 +133,15 @@ private:
     void setPanelDate(const QDate& date);
     void selectDateFromPopup(const QDate& date);
     void updateCursor();
+    QDate boundedDate(const QDate& date) const;
+    bool isDateInRange(const QDate& date) const;
 
     QDate m_selectedDate;
     QDate m_panelDate;
     QDate m_startDate;
     QDate m_endDate;
+    QDate m_minimumDate = QDate(100, 1, 1);
+    QDate m_maximumDate = QDate(9999, 12, 31);
     QString m_displayFormat = QStringLiteral("yyyy-MM-dd");
     QString m_placeholderText = QStringLiteral("Select date");
     Ant::Size m_pickerSize = Ant::Size::Middle;

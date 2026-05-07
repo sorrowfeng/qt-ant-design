@@ -253,14 +253,40 @@ void AntInputNumber::setPlaceholderText(const QString& text)
     }
 }
 
+QString AntInputNumber::prefixText() const
+{
+    return prefix();
+}
+
 void AntInputNumber::setPrefixText(const QString& text)
 {
+    if (prefix() == text)
+    {
+        return;
+    }
     setPrefix(text);
+    updateEditStyle();
+    updateGeometry();
+    update();
+    Q_EMIT prefixTextChanged(prefix());
+}
+
+QString AntInputNumber::suffixText() const
+{
+    return suffix();
 }
 
 void AntInputNumber::setSuffixText(const QString& text)
 {
+    if (suffix() == text)
+    {
+        return;
+    }
     setSuffix(text);
+    updateEditStyle();
+    updateGeometry();
+    update();
+    Q_EMIT suffixTextChanged(suffix());
 }
 
 QString AntInputNumber::addonAfterText() const
@@ -280,9 +306,20 @@ void AntInputNumber::setAddonAfterText(const QString& text)
     update();
 }
 
+int AntInputNumber::precision() const
+{
+    return decimals();
+}
+
 void AntInputNumber::setPrecision(int decimals)
 {
-    setDecimals(qMax(0, decimals));
+    decimals = qMax(0, decimals);
+    if (this->decimals() == decimals)
+    {
+        return;
+    }
+    setDecimals(decimals);
+    Q_EMIT precisionChanged(this->decimals());
 }
 
 QSize AntInputNumber::sizeHint() const
@@ -470,7 +507,7 @@ void AntInputNumber::updateEditStyle()
     font.setPixelSize(m.fontSize);
     lineEdit()->setFont(font);
     lineEdit()->setFrame(false);
-    lineEdit()->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    lineEdit()->setAlignment(alignment());
 
     QPalette lePalette = lineEdit()->palette();
     lePalette.setColor(QPalette::Base, Qt::transparent);
