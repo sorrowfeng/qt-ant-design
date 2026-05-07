@@ -647,11 +647,18 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     QVERIFY((nativeStyle & WS_MAXIMIZEBOX) != 0);
     QVERIFY((nativeStyle & WS_MINIMIZEBOX) != 0);
 
+    auto nativeGlobalPoint = [&](const QPoint& localPos) {
+        POINT nativePoint{qRound(localPos.x() * window.devicePixelRatioF()),
+                          qRound(localPos.y() * window.devicePixelRatioF())};
+        ::ClientToScreen(hwnd, &nativePoint);
+        return QPoint(nativePoint.x, nativePoint.y);
+    };
+
     auto hitTest = [&](const QPoint& localPos) -> qintptr {
         MSG msg{};
         msg.hwnd = hwnd;
         msg.message = WM_NCHITTEST;
-        const QPoint globalPos = window.mapToGlobal(localPos);
+        const QPoint globalPos = nativeGlobalPoint(localPos);
         msg.lParam = MAKELPARAM(globalPos.x(), globalPos.y());
         qintptr result = 0;
         if (!window.nativeEvent("windows_generic_MSG", &msg, &result))
@@ -684,7 +691,7 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
         msg.hwnd = hwnd;
         msg.message = message;
         msg.wParam = hitTestCode;
-        const QPoint globalPos = window.mapToGlobal(localPos);
+        const QPoint globalPos = nativeGlobalPoint(localPos);
         msg.lParam = MAKELPARAM(globalPos.x(), globalPos.y());
         qintptr result = 0;
         if (!window.nativeEvent("windows_generic_MSG", &msg, &result))
@@ -697,6 +704,7 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     const QPoint maximizePoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Maximize).center();
     QCOMPARE(hitTest(maximizePoint), static_cast<qintptr>(HTZOOM));
     QVERIFY(sendNonClientButtonMessage(WM_NCMOUSEMOVE, HTCLIENT, maximizePoint) != -1);
+    QVERIFY(sendNonClientButtonMessage(WM_NCMOUSEHOVER, HTCLIENT, maximizePoint) != -1);
     QVERIFY(sendNonClientButtonMessage(WM_NCLBUTTONDOWN, HTZOOM, maximizePoint) != -1);
     QVERIFY(sendNonClientButtonMessage(WM_NCLBUTTONUP, HTZOOM, maximizePoint) != -1);
     QTRY_VERIFY(window.isMaximized());

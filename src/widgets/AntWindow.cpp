@@ -91,14 +91,34 @@ int resizeBorderMetric(HWND hwnd, int frameMetric, int paddedMetric)
     return qMax(8, frame + padded);
 }
 
+QPoint nativeMessageLocalPoint(HWND hwnd, LPARAM messagePos, qreal devicePixelRatio)
+{
+    POINT nativePoint{GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
+    ::ScreenToClient(hwnd, &nativePoint);
+
+    const qreal dpr = qMax<qreal>(1.0, devicePixelRatio);
+    return QPoint(qRound(static_cast<qreal>(nativePoint.x) / dpr),
+                  qRound(static_cast<qreal>(nativePoint.y) / dpr));
+}
+
+void requestNonClientHoverTracking(HWND hwnd)
+{
+    TRACKMOUSEEVENT trackEvent{};
+    trackEvent.cbSize = sizeof(trackEvent);
+    trackEvent.dwFlags = TME_HOVER | TME_LEAVE | TME_NONCLIENT;
+    trackEvent.hwndTrack = hwnd;
+    trackEvent.dwHoverTime = HOVER_DEFAULT;
+    ::TrackMouseEvent(&trackEvent);
+}
+
 qintptr nativeHitTestForTitleBarButton(AntWindow::TitleBarButton button)
 {
     switch (button)
     {
     case AntWindow::TitleBarButton::Minimize:
-        return HTREDUCE;
+        return HTMINBUTTON;
     case AntWindow::TitleBarButton::Maximize:
-        return HTZOOM;
+        return HTMAXBUTTON;
     case AntWindow::TitleBarButton::Close:
         return HTCLOSE;
     default:
@@ -110,9 +130,9 @@ AntWindow::TitleBarButton titleBarButtonForNativeHitTest(WPARAM hitTestCode)
 {
     switch (hitTestCode)
     {
-    case HTREDUCE:
+    case HTMINBUTTON:
         return AntWindow::TitleBarButton::Minimize;
-    case HTZOOM:
+    case HTMAXBUTTON:
         return AntWindow::TitleBarButton::Maximize;
     case HTCLOSE:
         return AntWindow::TitleBarButton::Close;
@@ -622,9 +642,9 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         const HWND hwnd = msg->hwnd;
         const UINT uMsg = msg->message;
         const LPARAM lParam = msg->lParam;
-        const auto titleBarButtonForNativeMouseMessage = [this](WPARAM hitTestCode, LPARAM messagePos) {
-            const QPoint globalPos(GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos));
-            const TitleBarButton buttonAtCursor = buttonAtPosition(mapFromGlobal(globalPos));
+        const auto titleBarButtonForNativeMouseMessage = [this, hwnd](WPARAM hitTestCode, LPARAM messagePos) {
+            const TitleBarButton buttonAtCursor =
+                buttonAtPosition(nativeMessageLocalPoint(hwnd, messagePos, devicePixelRatioF()));
             if (titleBarButtonForNativeHitTest(nativeHitTestForTitleBarButton(buttonAtCursor)) != TitleBarButton::None)
             {
                 return buttonAtCursor;
@@ -654,8 +674,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         }
         case WM_NCHITTEST:
         {
-            const QPoint globalPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-            const QPoint widgetPos = mapFromGlobal(globalPos);
+            const QPoint widgetPos = nativeMessageLocalPoint(hwnd, lParam, devicePixelRatioF());
             const int clientWidth = width();
             const int clientHeight = height();
 
@@ -739,6 +758,18 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
                 const WPARAM nativeHitTest = static_cast<WPARAM>(nativeHitTestForTitleBarButton(button));
                 m_hoveredButton = button;
                 update(titleBarButtonRect(button));
+                requestNonClientHoverTracking(hwnd);
+                *result = ::DefWindowProcW(hwnd, uMsg, nativeHitTest, lParam);
+                return true;
+            }
+            break;
+        }
+        case WM_NCMOUSEHOVER:
+        {
+            const TitleBarButton button = titleBarButtonForNativeMouseMessage(msg->wParam, lParam);
+            if (button != TitleBarButton::None)
+            {
+                const WPARAM nativeHitTest = static_cast<WPARAM>(nativeHitTestForTitleBarButton(button));
                 *result = ::DefWindowProcW(hwnd, uMsg, nativeHitTest, lParam);
                 return true;
             }
@@ -773,8 +804,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
             const TitleBarButton button = titleBarButtonForNativeMouseMessage(msg->wParam, lParam);
             if (button != TitleBarButton::None || m_pressedButton != TitleBarButton::None)
             {
-                const QPoint globalPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-                const QPoint widgetPos = mapFromGlobal(globalPos);
+                const QPoint widgetPos = nativeMessageLocalPoint(hwnd, lParam, devicePixelRatioF());
                 const TitleBarButton pressedButton = m_pressedButton;
                 m_pressedButton = TitleBarButton::None;
                 if (pressedButton != TitleBarButton::None && buttonAtPosition(widgetPos) == pressedButton)
