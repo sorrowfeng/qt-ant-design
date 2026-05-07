@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPropertyAnimation>
 #include <QMap>
 #include <QWidget>
@@ -12,7 +14,7 @@ class QMouseEvent;
 class QPainter;
 class QPaintEvent;
 
-class AntSlider : public QWidget
+class QT_ANT_DESIGN_EXPORT AntSlider : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int minimum READ minimum WRITE setMinimum NOTIFY rangeChanged)

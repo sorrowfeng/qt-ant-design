@@ -1,10 +1,10 @@
-#include "AntCheckbox.h"
+#include "AntCheckBox.h"
 
 #include <QEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
 
-#include "../styles/AntCheckboxStyle.h"
+#include "../styles/AntCheckBoxStyle.h"
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
 
@@ -13,7 +13,7 @@ namespace
 constexpr int IndicatorSize = 16;
 }
 
-AntCheckbox::AntCheckbox(QWidget* parent)
+AntCheckBox::AntCheckBox(QWidget* parent)
     : QWidget(parent)
 {
     setAttribute(Qt::WA_Hover, true);
@@ -21,7 +21,7 @@ AntCheckbox::AntCheckbox(QWidget* parent)
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);
 
-    auto* checkboxStyle = new AntCheckboxStyle(style());
+    auto* checkboxStyle = new AntCheckBoxStyle(style());
     checkboxStyle->setParent(this);
     setStyle(checkboxStyle);
 
@@ -34,20 +34,20 @@ AntCheckbox::AntCheckbox(QWidget* parent)
     });
 }
 
-AntCheckbox::AntCheckbox(const QString& text, QWidget* parent)
-    : AntCheckbox(parent)
+AntCheckBox::AntCheckBox(const QString& text, QWidget* parent)
+    : AntCheckBox(parent)
 {
     setText(text);
 }
 
-bool AntCheckbox::isChecked() const { return m_checked; }
+bool AntCheckBox::isChecked() const { return m_checked; }
 
-void AntCheckbox::setChecked(bool checked)
+void AntCheckBox::setChecked(bool checked)
 {
     setCheckState(checked ? Qt::Checked : Qt::Unchecked);
 }
 
-Qt::CheckState AntCheckbox::checkState() const
+Qt::CheckState AntCheckBox::checkState() const
 {
     if (m_indeterminate)
     {
@@ -56,7 +56,7 @@ Qt::CheckState AntCheckbox::checkState() const
     return m_checked ? Qt::Checked : Qt::Unchecked;
 }
 
-void AntCheckbox::setCheckState(Qt::CheckState state)
+void AntCheckBox::setCheckState(Qt::CheckState state)
 {
     const Qt::CheckState oldState = checkState();
     const bool oldChecked = m_checked;
@@ -99,9 +99,9 @@ void AntCheckbox::setCheckState(Qt::CheckState state)
     }
 }
 
-bool AntCheckbox::isIndeterminate() const { return m_indeterminate; }
+bool AntCheckBox::isIndeterminate() const { return m_indeterminate; }
 
-void AntCheckbox::setIndeterminate(bool indeterminate)
+void AntCheckBox::setIndeterminate(bool indeterminate)
 {
     if (indeterminate)
     {
@@ -111,9 +111,9 @@ void AntCheckbox::setIndeterminate(bool indeterminate)
     setCheckState(m_checked ? Qt::Checked : Qt::Unchecked);
 }
 
-bool AntCheckbox::isTristate() const { return m_tristate; }
+bool AntCheckBox::isTristate() const { return m_tristate; }
 
-void AntCheckbox::setTristate(bool tristate)
+void AntCheckBox::setTristate(bool tristate)
 {
     if (m_tristate == tristate)
     {
@@ -127,7 +127,7 @@ void AntCheckbox::setTristate(bool tristate)
     Q_EMIT tristateChanged(m_tristate);
 }
 
-void AntCheckbox::toggle()
+void AntCheckBox::toggle()
 {
     if (m_tristate)
     {
@@ -148,7 +148,7 @@ void AntCheckbox::toggle()
     setChecked(!m_checked);
 }
 
-void AntCheckbox::click()
+void AntCheckBox::click()
 {
     if (!isEnabled())
     {
@@ -158,9 +158,9 @@ void AntCheckbox::click()
     Q_EMIT clicked(m_checked);
 }
 
-QString AntCheckbox::text() const { return m_text; }
+QString AntCheckBox::text() const { return m_text; }
 
-void AntCheckbox::setText(const QString& text)
+void AntCheckBox::setText(const QString& text)
 {
     if (m_text == text)
     {
@@ -173,7 +173,7 @@ void AntCheckbox::setText(const QString& text)
     Q_EMIT textChanged(m_text);
 }
 
-QSize AntCheckbox::sizeHint() const
+QSize AntCheckBox::sizeHint() const
 {
     constexpr int indicatorSize = 16;
     constexpr int textSpacing = 8;
@@ -184,19 +184,19 @@ QSize AntCheckbox::sizeHint() const
     return QSize(indicatorSize + textWidth, std::max(indicatorSize, fm.height()));
 }
 
-QSize AntCheckbox::minimumSizeHint() const
+QSize AntCheckBox::minimumSizeHint() const
 {
     return QSize(16, 16);
 }
 
-void AntCheckbox::enterEvent(QEnterEvent* event)
+void AntCheckBox::enterEvent(QEnterEvent* event)
 {
     m_hovered = true;
     update();
     QWidget::enterEvent(event);
 }
 
-void AntCheckbox::leaveEvent(QEvent* event)
+void AntCheckBox::leaveEvent(QEvent* event)
 {
     m_hovered = false;
     m_pressed = false;
@@ -204,7 +204,7 @@ void AntCheckbox::leaveEvent(QEvent* event)
     QWidget::leaveEvent(event);
 }
 
-void AntCheckbox::mousePressEvent(QMouseEvent* event)
+void AntCheckBox::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton && isEnabled())
     {
@@ -216,7 +216,7 @@ void AntCheckbox::mousePressEvent(QMouseEvent* event)
     QWidget::mousePressEvent(event);
 }
 
-void AntCheckbox::mouseReleaseEvent(QMouseEvent* event)
+void AntCheckBox::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton && m_pressed)
     {
@@ -239,7 +239,7 @@ void AntCheckbox::mouseReleaseEvent(QMouseEvent* event)
     QWidget::mouseReleaseEvent(event);
 }
 
-void AntCheckbox::changeEvent(QEvent* event)
+void AntCheckBox::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange)
     {
@@ -249,7 +249,7 @@ void AntCheckbox::changeEvent(QEvent* event)
     QWidget::changeEvent(event);
 }
 
-void AntCheckbox::keyPressEvent(QKeyEvent* event)
+void AntCheckBox::keyPressEvent(QKeyEvent* event)
 {
     if ((event->key() == Qt::Key_Space || event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && isEnabled())
     {
@@ -261,12 +261,12 @@ void AntCheckbox::keyPressEvent(QKeyEvent* event)
     QWidget::keyPressEvent(event);
 }
 
-QRectF AntCheckbox::indicatorRect() const
+QRectF AntCheckBox::indicatorRect() const
 {
     return QRectF(0.5, (height() - IndicatorSize) / 2.0 + 0.5, IndicatorSize - 1, IndicatorSize - 1);
 }
 
-QColor AntCheckbox::indicatorBorderColor() const
+QColor AntCheckBox::indicatorBorderColor() const
 {
     const auto& token = antTheme->tokens();
     if (!isEnabled())
@@ -280,7 +280,7 @@ QColor AntCheckbox::indicatorBorderColor() const
     return m_hovered ? token.colorPrimary : token.colorBorder;
 }
 
-QColor AntCheckbox::indicatorBackgroundColor() const
+QColor AntCheckBox::indicatorBackgroundColor() const
 {
     const auto& token = antTheme->tokens();
     if (!isEnabled())
@@ -294,12 +294,12 @@ QColor AntCheckbox::indicatorBackgroundColor() const
     return token.colorBgContainer;
 }
 
-bool AntCheckbox::isHoveredState() const
+bool AntCheckBox::isHoveredState() const
 {
     return m_hovered;
 }
 
-bool AntCheckbox::isPressedState() const
+bool AntCheckBox::isPressedState() const
 {
     return m_pressed;
 }

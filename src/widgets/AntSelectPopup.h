@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QFrame>
 #include <QPainter>
 #include <QPainterPath>
@@ -14,7 +16,7 @@ class QHideEvent;
 class QMouseEvent;
 class QPaintEvent;
 
-class AntSelectPopup : public QFrame
+class QT_ANT_DESIGN_EXPORT AntSelectPopup : public QFrame
 {
 public:
     explicit AntSelectPopup(AntSelect* owner)
@@ -54,7 +56,7 @@ private:
     AntSelect* m_owner = nullptr;
 };
 
-class AntSelectOptionWidget : public QWidget
+class QT_ANT_DESIGN_EXPORT AntSelectOptionWidget : public QWidget
 {
 public:
     AntSelectOptionWidget(AntSelect* select, int index, QWidget* parent)

@@ -26,6 +26,10 @@ target_link_libraries(qt-ant-design-example
         qt-ant-design
 )
 
+if(WIN32)
+    set_target_properties(qt-ant-design-example PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
+
 if(MSVC)
     target_link_options(qt-ant-design-example
         PRIVATE

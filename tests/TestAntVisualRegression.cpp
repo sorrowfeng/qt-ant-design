@@ -14,7 +14,7 @@
 #include "widgets/AntBadge.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
-#include "widgets/AntCheckbox.h"
+#include "widgets/AntCheckBox.h"
 #include "widgets/AntDescriptions.h"
 #include "widgets/AntDrawer.h"
 #include "widgets/AntInputNumber.h"
@@ -49,6 +49,7 @@ private slots:
     void selectionControlsKeepPrimaryStateFills();
     void tagAndBadgeStatusColorsStayVisible();
     void feedbackSurfacesKeepElevatedTokenFill();
+    void feedbackPopupShadowsStaySubtle();
     void dataDisplayBordersAndSeparatorsStayVisible();
     void navigationAndLayoutStructureStayVisible();
     void complexPopupSurfacesStayElevated();
@@ -206,6 +207,23 @@ void assertNearColorPixels(const QImage& image, const QColor& color, int expecte
     const int pixels = countNearColor(image, color, tolerance);
     QVERIFY2(pixels > expected, qPrintable(countMessage(name, pixels, expected)));
 }
+
+int maxAlphaOutsideSurface(const QImage& image, const QRect& surface)
+{
+    int maxAlpha = 0;
+    for (int y = 0; y < image.height(); ++y)
+    {
+        for (int x = 0; x < image.width(); ++x)
+        {
+            if (surface.contains(x, y))
+            {
+                continue;
+            }
+            maxAlpha = qMax(maxAlpha, image.pixelColor(x, y).alpha());
+        }
+    }
+    return maxAlpha;
+}
 } // namespace
 
 void TestAntVisualRegression::primaryButtonKeepsTokenFill()
@@ -325,7 +343,7 @@ void TestAntVisualRegression::selectionControlsKeepPrimaryStateFills()
     antTheme->setThemeMode(Ant::ThemeMode::Default);
     const QColor primary = antTheme->tokens().colorPrimary;
 
-    AntCheckbox checkbox(QStringLiteral("Checked"));
+    AntCheckBox checkbox(QStringLiteral("Checked"));
     checkbox.setChecked(true);
     assertNearColorPixels(renderWidget(&checkbox, QSize(120, 32)), primary, 90, "checked checkbox");
 
@@ -392,6 +410,43 @@ void TestAntVisualRegression::feedbackSurfacesKeepElevatedTokenFill()
     const QImage notificationImage = renderWidget(&notification, QSize(420, 140));
     assertNearColorPixels(notificationImage, token.colorBgElevated, 18000, "notification elevated surface", 12);
     assertNearColorPixels(notificationImage, token.colorPrimary, 80, "notification primary accent");
+}
+
+void TestAntVisualRegression::feedbackPopupShadowsStaySubtle()
+{
+    ThemeModeGuard guard;
+
+    auto assertMessageShadow = [](Ant::ThemeMode mode, int maxExpected) {
+        antTheme->setThemeMode(mode);
+        AntMessage message;
+        message.setText(QStringLiteral("Saved"));
+        message.setMessageType(Ant::MessageType::Success);
+        const QImage image = renderWidget(&message, QSize(180, 52));
+        const int maxAlpha = maxAlphaOutsideSurface(image, QRect(8, 4, 164, 40));
+        QVERIFY2(maxAlpha <= maxExpected,
+                 qPrintable(QStringLiteral("message shadow max alpha: %1, expected <= %2")
+                                .arg(maxAlpha)
+                                .arg(maxExpected)));
+    };
+
+    auto assertNotificationShadow = [](Ant::ThemeMode mode, int maxExpected) {
+        antTheme->setThemeMode(mode);
+        AntNotification notification;
+        notification.setTitle(QStringLiteral("Notice"));
+        notification.setDescription(QStringLiteral("Visual surface"));
+        notification.setNotificationType(Ant::MessageType::Info);
+        const QImage image = renderWidget(&notification, QSize(420, 140));
+        const int maxAlpha = maxAlphaOutsideSurface(image, QRect(18, 18, 384, 104));
+        QVERIFY2(maxAlpha <= maxExpected,
+                 qPrintable(QStringLiteral("notification shadow max alpha: %1, expected <= %2")
+                                .arg(maxAlpha)
+                                .arg(maxExpected)));
+    };
+
+    assertMessageShadow(Ant::ThemeMode::Default, 30);
+    assertNotificationShadow(Ant::ThemeMode::Default, 36);
+    assertMessageShadow(Ant::ThemeMode::Dark, 44);
+    assertNotificationShadow(Ant::ThemeMode::Dark, 50);
 }
 
 void TestAntVisualRegression::dataDisplayBordersAndSeparatorsStayVisible()

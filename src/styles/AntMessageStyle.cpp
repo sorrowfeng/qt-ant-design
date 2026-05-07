@@ -40,13 +40,15 @@ void drawMessageShadow(QPainter& painter, const QRectF& bubble, qreal radius)
 {
     painter.save();
     const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
-    for (int i = 14; i >= 1; --i)
+    constexpr int ShadowLayers = 14;
+    const qreal maxAlpha = dark ? 0.040 : 0.024;
+    for (int i = ShadowLayers; i >= 1; --i)
     {
-        const qreal progress = 1.0 - static_cast<qreal>(i) / 14.0;
+        const qreal progress = 1.0 - static_cast<qreal>(i) / ShadowLayers;
         QColor shadow = antTheme->tokens().colorShadow;
-        shadow.setAlphaF((dark ? 0.10 : 0.045) * progress * progress);
+        shadow.setAlphaF(maxAlpha * progress * progress);
 
-        const QRectF layer = bubble.adjusted(-i * 0.32, -i * 0.12 + 2.0, i * 0.32, i * 0.42 + 3.5);
+        const QRectF layer = bubble.adjusted(-i * 0.26, -i * 0.08 + 1.2, i * 0.26, i * 0.32 + 2.4);
         QPainterPath outer;
         outer.addRoundedRect(layer, radius + i * 0.25, radius + i * 0.25);
         QPainterPath inner;
@@ -159,7 +161,10 @@ void AntMessageStyle::drawMessage(const QStyleOption* option, QPainter* painter,
 
     // Bubble
     AntStyleBase::drawCrispRoundedRect(painter, bubble.toRect(),
-        Qt::NoPen, token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
+        QPen(token.colorBorderSecondary, token.lineWidth),
+        token.colorBgElevated,
+        token.borderRadiusLG,
+        token.borderRadiusLG);
 
     // Icon
     const QRectF iconRect(bubble.left() + token.paddingSM, bubble.center().y() - 8, 16, 16);

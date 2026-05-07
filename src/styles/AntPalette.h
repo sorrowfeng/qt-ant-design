@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QColor>
 #include <QVector>
 
 #include "core/AntTypes.h"
 
-class AntPalette
+class QT_ANT_DESIGN_EXPORT AntPalette
 {
 public:
     static QColor fromHex(const char* hex);

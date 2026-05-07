@@ -1,5 +1,7 @@
 #pragma once
 
+#include "QtAntDesignExport.h"
+
 #include <QString>
 #include <QVector>
 
@@ -8,7 +10,7 @@
 namespace Ant
 {
 
-class AntQRGenerator
+class QT_ANT_DESIGN_EXPORT AntQRGenerator
 {
 public:
     static QVector<QVector<bool>> generate(const QString& data, QRCodeErrorLevel errorLevel, int version = 0);

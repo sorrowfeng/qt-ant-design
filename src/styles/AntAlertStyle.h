@@ -1,8 +1,10 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include "core/AntStyleBase.h"
 
-class AntAlertStyle : public AntStyleBase
+class QT_ANT_DESIGN_EXPORT AntAlertStyle : public AntStyleBase
 {
     Q_OBJECT
 

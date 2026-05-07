@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
@@ -7,7 +9,7 @@
 
 class QTimer;
 
-class AntPopover : public QWidget
+class QT_ANT_DESIGN_EXPORT AntPopover : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)

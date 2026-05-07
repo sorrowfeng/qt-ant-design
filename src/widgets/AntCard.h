@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QFrame>
 #include <QTimer>
 
@@ -10,7 +12,7 @@ class QLabel;
 class QGridLayout;
 class QVBoxLayout;
 
-class AntCard : public QFrame
+class QT_ANT_DESIGN_EXPORT AntCard : public QFrame
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)

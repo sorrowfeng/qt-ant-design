@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
@@ -7,7 +9,7 @@ class QLabel;
 class QGridLayout;
 class QVBoxLayout;
 
-class AntDescriptionsItem : public QWidget
+class QT_ANT_DESIGN_EXPORT AntDescriptionsItem : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY labelChanged)
@@ -42,7 +44,7 @@ private:
     QPointer<QWidget> m_contentWidget;
 };
 
-class AntDescriptions : public QWidget
+class QT_ANT_DESIGN_EXPORT AntDescriptions : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)

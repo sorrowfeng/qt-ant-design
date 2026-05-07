@@ -1,12 +1,14 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 class QPropertyAnimation;
 class QTimer;
 class QResizeEvent;
 
-class AntCarousel : public QWidget
+class QT_ANT_DESIGN_EXPORT AntCarousel : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool autoPlay READ autoPlay WRITE setAutoPlay NOTIFY autoPlayChanged)

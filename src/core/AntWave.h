@@ -1,5 +1,7 @@
 #pragma once
 
+#include "QtAntDesignExport.h"
+
 #include <QColor>
 #include <QPointer>
 #include <QRect>
@@ -10,7 +12,7 @@ class QPaintEvent;
 // Click-wave overlay: draws an expanding soft glow around a target widget (or
 // a specific rect within it), matching Ant Design's `.wave-motion-appear-active`
 // (box-shadow 0 -> 6px over 0.4s, opacity 0.2 -> 0 over 2s).
-class AntWave : public QWidget
+class QT_ANT_DESIGN_EXPORT AntWave : public QWidget
 {
     Q_OBJECT
 
@@ -20,7 +22,7 @@ public:
 
     // Spawn a wave around a specific rect (in `target`'s local coordinates).
     // Useful when only a portion of the widget visually "responds" — e.g. the
-    // 16x16 check box of an AntCheckbox rather than the whole label row.
+    // 16x16 check box of an AntCheckBox rather than the whole label row.
     static void triggerRect(QWidget* target, const QRect& localRect,
                              const QColor& color = QColor(), int radius = 6, bool quick = false);
 

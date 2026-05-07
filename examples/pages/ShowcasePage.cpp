@@ -12,7 +12,7 @@
 #include "widgets/AntAlert.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
-#include "widgets/AntCheckbox.h"
+#include "widgets/AntCheckBox.h"
 #include "widgets/AntColorPicker.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntProgress.h"
@@ -216,11 +216,11 @@ QWidget* createShowcasePage(QWidget* /*owner*/)
     enabledSwitch->setChecked(true);
     stateRow->addWidget(enabledSwitch);
 
-    auto* cbApple = new AntCheckbox(QStringLiteral("苹果"), board);
+    auto* cbApple = new AntCheckBox(QStringLiteral("苹果"), board);
     cbApple->setChecked(true);
     stateRow->addWidget(cbApple);
-    stateRow->addWidget(new AntCheckbox(QStringLiteral("香蕉"), board));
-    stateRow->addWidget(new AntCheckbox(QStringLiteral("橘子"), board));
+    stateRow->addWidget(new AntCheckBox(QStringLiteral("香蕉"), board));
+    stateRow->addWidget(new AntCheckBox(QStringLiteral("橘子"), board));
 
     auto* radioApple = new AntRadio(QStringLiteral("苹果"), board);
     radioApple->setChecked(true);

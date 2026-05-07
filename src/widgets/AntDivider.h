@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -7,7 +9,7 @@
 class QPaintEvent;
 class QPainter;
 
-class AntDivider : public QWidget
+class QT_ANT_DESIGN_EXPORT AntDivider : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)

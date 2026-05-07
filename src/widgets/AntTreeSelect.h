@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 #include <QVector>
 #include "core/AntTypes.h"
@@ -7,7 +9,7 @@
 
 class AntTreeSelectStyle;
 
-class AntTreeSelect : public QWidget
+class QT_ANT_DESIGN_EXPORT AntTreeSelect : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString placeholder READ placeholder WRITE setPlaceholder NOTIFY placeholderChanged)

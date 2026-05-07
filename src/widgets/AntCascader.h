@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QList>
 #include <QStringList>
 #include <QVariant>
@@ -28,7 +30,7 @@ struct AntCascaderOption
 Q_DECLARE_METATYPE(AntCascaderOption)
 Q_DECLARE_METATYPE(QVector<AntCascaderOption>)
 
-class AntCascader : public QWidget
+class QT_ANT_DESIGN_EXPORT AntCascader : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QVector<AntCascaderOption> options READ options WRITE setOptions NOTIFY optionsChanged)

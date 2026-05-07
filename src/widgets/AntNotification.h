@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QElapsedTimer>
 #include <QList>
 #include <QWidget>
@@ -15,7 +17,7 @@ class QPainter;
 class QShowEvent;
 class QTimer;
 
-class AntNotification : public QWidget
+class QT_ANT_DESIGN_EXPORT AntNotification : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)

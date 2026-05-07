@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QList>
 #include <QWidget>
 
@@ -14,7 +16,7 @@ class QPainter;
 class QShowEvent;
 class QTimer;
 
-class AntMessage : public QWidget
+class QT_ANT_DESIGN_EXPORT AntMessage : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)

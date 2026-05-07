@@ -1,5 +1,7 @@
 #pragma once
 
+#include "QtAntDesignExport.h"
+
 #include <QApplication>
 #include <QBrush>
 #include <QPen>
@@ -12,7 +14,7 @@ class QPainter;
 
 // Base class for all Ant Design style classes.
 // Provides automatic theme-change handling.
-class AntStyleBase : public QProxyStyle
+class QT_ANT_DESIGN_EXPORT AntStyleBase : public QProxyStyle
 {
 public:
     explicit AntStyleBase(QStyle* style = nullptr);

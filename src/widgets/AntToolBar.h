@@ -1,10 +1,12 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QToolBar>
 
 class QActionEvent;
 
-class AntToolBar : public QToolBar
+class QT_ANT_DESIGN_EXPORT AntToolBar : public QToolBar
 {
     Q_OBJECT
 

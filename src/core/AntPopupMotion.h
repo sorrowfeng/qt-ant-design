@@ -1,10 +1,12 @@
 #pragma once
 
+#include "QtAntDesignExport.h"
+
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
-class AntPopupMotion
+class QT_ANT_DESIGN_EXPORT AntPopupMotion
 {
 public:
     enum class Placement

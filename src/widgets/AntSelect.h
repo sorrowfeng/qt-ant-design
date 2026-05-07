@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QList>
 #include <QStringList>
 #include <QVariant>
@@ -26,7 +28,7 @@ struct AntSelectOption
     bool disabled = false;
 };
 
-class AntSelect : public QWidget
+class QT_ANT_DESIGN_EXPORT AntSelect : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(Ant::Size selectSize READ selectSize WRITE setSelectSize NOTIFY selectSizeChanged)

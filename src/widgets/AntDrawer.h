@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QPropertyAnimation>
 #include <QRect>
@@ -15,7 +17,7 @@ class QMouseEvent;
 class QPaintEvent;
 class QShowEvent;
 
-class AntDrawer : public QWidget
+class QT_ANT_DESIGN_EXPORT AntDrawer : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)

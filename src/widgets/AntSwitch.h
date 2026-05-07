@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPropertyAnimation>
 #include <QWidget>
 
@@ -12,7 +14,7 @@ class QMouseEvent;
 class QPainter;
 class QTimer;
 
-class AntSwitch : public QWidget
+class QT_ANT_DESIGN_EXPORT AntSwitch : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool checked READ isChecked WRITE setChecked NOTIFY checkedChanged)

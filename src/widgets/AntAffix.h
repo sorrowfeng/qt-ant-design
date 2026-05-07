@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QObject>
 #include <QWidget>
 
 class QAbstractScrollArea;
 
-class AntAffix : public QObject
+class QT_ANT_DESIGN_EXPORT AntAffix : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(int offsetTop READ offsetTop WRITE setOffsetTop NOTIFY offsetTopChanged)

@@ -1,4 +1,4 @@
-#include "AntCheckboxStyle.h"
+#include "AntCheckBoxStyle.h"
 
 #include <QEvent>
 #include <QPainter>
@@ -6,7 +6,7 @@
 
 #include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
-#include "widgets/AntCheckbox.h"
+#include "widgets/AntCheckBox.h"
 
 namespace
 {
@@ -14,36 +14,36 @@ constexpr int IndicatorSize = 16;
 constexpr int TextSpacing = 8;
 }
 
-AntCheckboxStyle::AntCheckboxStyle(QStyle* style)
+AntCheckBoxStyle::AntCheckBoxStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntCheckbox>();
+    connectThemeUpdate<AntCheckBox>();
 }
 
-void AntCheckboxStyle::polish(QWidget* widget)
+void AntCheckBoxStyle::polish(QWidget* widget)
 {
     QProxyStyle::polish(widget);
-    if (qobject_cast<AntCheckbox*>(widget))
+    if (qobject_cast<AntCheckBox*>(widget))
     {
         widget->installEventFilter(this);
         widget->setAttribute(Qt::WA_Hover, true);
     }
 }
 
-void AntCheckboxStyle::unpolish(QWidget* widget)
+void AntCheckBoxStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntCheckbox*>(widget))
+    if (qobject_cast<AntCheckBox*>(widget))
     {
         widget->removeEventFilter(this);
     }
     QProxyStyle::unpolish(widget);
 }
 
-void AntCheckboxStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
+void AntCheckBoxStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
     if (element == QStyle::CE_CheckBox)
     {
-        const auto* checkbox = qobject_cast<const AntCheckbox*>(widget);
+        const auto* checkbox = qobject_cast<const AntCheckBox*>(widget);
         const auto* bopt = qstyleoption_cast<const QStyleOptionButton*>(option);
         if (!checkbox || !bopt || !painter)
         {
@@ -117,9 +117,9 @@ void AntCheckboxStyle::drawControl(ControlElement element, const QStyleOption* o
     QProxyStyle::drawControl(element, option, painter, widget);
 }
 
-int AntCheckboxStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, const QWidget* widget) const
+int AntCheckBoxStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, const QWidget* widget) const
 {
-    if (qobject_cast<const AntCheckbox*>(widget))
+    if (qobject_cast<const AntCheckBox*>(widget))
     {
         switch (metric)
         {
@@ -135,9 +135,9 @@ int AntCheckboxStyle::pixelMetric(PixelMetric metric, const QStyleOption* option
     return QProxyStyle::pixelMetric(metric, option, widget);
 }
 
-bool AntCheckboxStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntCheckBoxStyle::eventFilter(QObject* watched, QEvent* event)
 {
-    auto* checkbox = qobject_cast<AntCheckbox*>(watched);
+    auto* checkbox = qobject_cast<AntCheckBox*>(watched);
     if (checkbox && event->type() == QEvent::Paint)
     {
         QStyleOptionButton option;

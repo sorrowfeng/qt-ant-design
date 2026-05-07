@@ -1,8 +1,8 @@
 # Project Status
 
-Updated: `2026-05-07`
+Updated: `2026-05-08`
 
-This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, installed package coverage, and lifecycle stress coverage.
+This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, and lifecycle stress coverage.
 
 ## Summary
 
@@ -10,12 +10,12 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | --- | --- |
 | Ant Design standard coverage | `70 / 70` top-level components covered |
 | Public Qt component count | `82` public components |
-| Widget headers | `83` headers in `src/widgets`; `AntSelectPopup` is an internal helper and is not counted as a public component |
+| Widget headers | `103` headers in `src/widgets`: `82` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup` |
 | Qt / desktop extensions | `12` components |
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `82 / 82` public components, plus the standalone `Showcase` page |
 | Dedicated examples intentionally absent | None |
-| Tests | `34` CTest targets, all passing in Debug on `2026-05-01` |
+| Tests | `37` CTest targets configured; latest build-system / install targeted verification passed in Debug on `2026-05-08` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 
 ## Recent Completed Work
@@ -87,7 +87,15 @@ cmake --build build --config Debug
 ctest -C Debug --output-on-failure
 ```
 
-Result: `34 / 34` tests passed.
+Configured tests after alias, build-system, and example subsystem guards: `37`.
+
+Latest build-system / install targeted validation:
+
+```powershell
+ctest --test-dir build -C Debug -R "TestAntBuildSystem|TestAntInstallConsumer|TestAntIcon|TestAntAliases" --output-on-failure
+```
+
+Result: `4 / 4` targeted tests passed.
 
 Latest targeted AntWindow verification:
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QColor>
 #include <QWidget>
 
@@ -11,7 +13,7 @@ class QPainter;
 class QShowEvent;
 class QTimer;
 
-class AntProgress : public QWidget
+class QT_ANT_DESIGN_EXPORT AntProgress : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int percent READ percent WRITE setPercent NOTIFY percentChanged)

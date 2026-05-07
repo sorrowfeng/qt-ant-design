@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 #include <QVariantAnimation>
 
 class QVBoxLayout;
 
-class AntCollapsePanel : public QWidget
+class QT_ANT_DESIGN_EXPORT AntCollapsePanel : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
@@ -47,7 +49,7 @@ private:
     int m_contentHeight = 0;
 };
 
-class AntCollapse : public QWidget
+class QT_ANT_DESIGN_EXPORT AntCollapse : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool accordion READ accordion WRITE setAccordion NOTIFY accordionChanged)

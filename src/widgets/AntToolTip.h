@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
@@ -12,7 +14,7 @@ class QMouseEvent;
 class QPaintEvent;
 class QTimer;
 
-class AntTooltip : public QWidget
+class QT_ANT_DESIGN_EXPORT AntToolTip : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
@@ -22,8 +24,8 @@ class AntTooltip : public QWidget
     Q_PROPERTY(int openDelay READ openDelay WRITE setOpenDelay NOTIFY openDelayChanged)
 
 public:
-    explicit AntTooltip(QWidget* parent = nullptr);
-    ~AntTooltip() override;
+    explicit AntToolTip(QWidget* parent = nullptr);
+    ~AntToolTip() override;
 
     QString title() const;
     void setTitle(const QString& title);

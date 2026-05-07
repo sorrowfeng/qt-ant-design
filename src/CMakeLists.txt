@@ -6,11 +6,18 @@ set(QT_ANT_DESIGN_RESOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../resources/qt-ant-design.qrc
 )
 
-add_library(qt-ant-design STATIC
+add_library(qt-ant-design
     ${QT_ANT_DESIGN_HEADERS}
     ${QT_ANT_DESIGN_SOURCES}
     ${QT_ANT_DESIGN_RESOURCES}
 )
+
+get_target_property(QT_ANT_DESIGN_TARGET_TYPE qt-ant-design TYPE)
+if(QT_ANT_DESIGN_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
+    target_compile_definitions(qt-ant-design PUBLIC QT_ANT_DESIGN_STATIC_DEFINE)
+else()
+    target_compile_definitions(qt-ant-design PRIVATE QT_ANT_DESIGN_LIBRARY)
+endif()
 
 target_include_directories(qt-ant-design
     PUBLIC
@@ -20,9 +27,9 @@ target_include_directories(qt-ant-design
 
 target_link_libraries(qt-ant-design
     PUBLIC
-        Qt6::Core
-        Qt6::Widgets
-        Qt6::Svg
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::Svg
 )
 
 # Install headers preserving directory structure

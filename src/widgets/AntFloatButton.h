@@ -1,12 +1,14 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 #include <QTimer>
 #include <QVector>
 
 #include "core/AntTypes.h"
 
-class AntFloatButton : public QWidget
+class QT_ANT_DESIGN_EXPORT AntFloatButton : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString icon READ icon WRITE setIcon NOTIFY iconChanged)

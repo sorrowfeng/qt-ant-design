@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPushButton>
 #include <QTimer>
 
 #include "core/AntTypes.h"
 
-class AntButton : public QPushButton
+class QT_ANT_DESIGN_EXPORT AntButton : public QPushButton
 {
     Q_OBJECT
     Q_PROPERTY(Ant::ButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged)

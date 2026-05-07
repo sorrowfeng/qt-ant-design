@@ -1,9 +1,11 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
-class AntEmpty : public QWidget
+class QT_ANT_DESIGN_EXPORT AntEmpty : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)

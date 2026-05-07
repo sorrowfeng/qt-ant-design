@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QVector>
 #include <QWidget>
 
 class QPlainTextEdit;
 
-class AntLog : public QWidget
+class QT_ANT_DESIGN_EXPORT AntLog : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int maxEntries READ maxEntries WRITE setMaxEntries NOTIFY maxEntriesChanged)

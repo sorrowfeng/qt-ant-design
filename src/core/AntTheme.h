@@ -1,5 +1,7 @@
 #pragma once
 
+#include "QtAntDesignExport.h"
+
 #include <QObject>
 #include <QColor>
 
@@ -94,7 +96,7 @@ struct AntThemeTokens
 
 class QPainter;
 
-class AntTheme : public QObject
+class QT_ANT_DESIGN_EXPORT AntTheme : public QObject
 {
     Q_OBJECT
 

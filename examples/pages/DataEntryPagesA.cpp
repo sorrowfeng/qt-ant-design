@@ -16,7 +16,7 @@
 #include "widgets/AntAutoComplete.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCascader.h"
-#include "widgets/AntCheckbox.h"
+#include "widgets/AntCheckBox.h"
 #include "widgets/AntColorPicker.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntForm.h"
@@ -118,10 +118,10 @@ QWidget* createCheckboxPage(QWidget* /*owner*/)
         cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(16);
-        auto* apple = new AntCheckbox(QStringLiteral("Apple"));
-        auto* banana = new AntCheckbox(QStringLiteral("Banana"));
+        auto* apple = new AntCheckBox(QStringLiteral("Apple"));
+        auto* banana = new AntCheckBox(QStringLiteral("Banana"));
         banana->setChecked(true);
-        auto* orange = new AntCheckbox(QStringLiteral("Orange"));
+        auto* orange = new AntCheckBox(QStringLiteral("Orange"));
         basicRow->addWidget(apple);
         basicRow->addWidget(banana);
         basicRow->addWidget(orange);
@@ -136,10 +136,10 @@ QWidget* createCheckboxPage(QWidget* /*owner*/)
         cl->setAlignment(Qt::AlignTop);
         auto* groupRow = new QHBoxLayout();
         groupRow->setSpacing(16);
-        auto* apple = new AntCheckbox(QStringLiteral("Apple"));
+        auto* apple = new AntCheckBox(QStringLiteral("Apple"));
         apple->setChecked(true);
-        auto* banana = new AntCheckbox(QStringLiteral("Banana"));
-        auto* orange = new AntCheckbox(QStringLiteral("Orange"));
+        auto* banana = new AntCheckBox(QStringLiteral("Banana"));
+        auto* orange = new AntCheckBox(QStringLiteral("Orange"));
         groupRow->addWidget(apple);
         groupRow->addWidget(banana);
         groupRow->addWidget(orange);
@@ -268,7 +268,7 @@ QWidget* createFormPage(QWidget* /*owner*/)
     gender->addOptions({QStringLiteral("Male"), QStringLiteral("Female")});
     form->addItem(QStringLiteral("Gender"), gender);
 
-    auto* remember = new AntCheckbox(QStringLiteral("Remember me"), form);
+    auto* remember = new AntCheckBox(QStringLiteral("Remember me"), form);
     form->addItem(QStringLiteral("Remember"), remember);
 
     auto* submit = new AntButton(QStringLiteral("Submit"), form);

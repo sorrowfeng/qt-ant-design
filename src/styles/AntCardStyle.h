@@ -1,8 +1,10 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include "core/AntStyleBase.h"
 
-class AntCardStyle : public AntStyleBase
+class QT_ANT_DESIGN_EXPORT AntCardStyle : public AntStyleBase
 {
     Q_OBJECT
 

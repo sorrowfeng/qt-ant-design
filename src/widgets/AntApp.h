@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QObject>
 #include <QWidget>
 
@@ -7,7 +9,7 @@ class AntMessage;
 class AntModal;
 class AntNotification;
 
-class AntApp : public QObject
+class QT_ANT_DESIGN_EXPORT AntApp : public QObject
 {
     Q_OBJECT
 

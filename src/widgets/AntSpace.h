@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QVector>
 #include <QWidget>
@@ -10,7 +12,7 @@ class QHBoxLayout;
 class QVBoxLayout;
 class QBoxLayout;
 
-class AntSpace : public QWidget
+class QT_ANT_DESIGN_EXPORT AntSpace : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(Ant::Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)

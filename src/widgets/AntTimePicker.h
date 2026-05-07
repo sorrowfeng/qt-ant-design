@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QTime>
 #include <QWidget>
 
@@ -13,7 +15,7 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 
-class AntTimePicker : public QWidget
+class QT_ANT_DESIGN_EXPORT AntTimePicker : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QTime time READ time WRITE setTime NOTIFY timeChanged)

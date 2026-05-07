@@ -23,7 +23,7 @@
 #include "widgets/AntCard.h"
 #include "widgets/AntCarousel.h"
 #include "widgets/AntCascader.h"
-#include "widgets/AntCheckbox.h"
+#include "widgets/AntCheckBox.h"
 #include "widgets/AntCollapse.h"
 #include "widgets/AntColorPicker.h"
 #include "widgets/AntConfigProvider.h"
@@ -82,7 +82,7 @@
 #include "widgets/AntTimePicker.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntToolButton.h"
-#include "widgets/AntTooltip.h"
+#include "widgets/AntToolTip.h"
 #include "widgets/AntTour.h"
 #include "widgets/AntTransfer.h"
 #include "widgets/AntTree.h"
@@ -150,7 +150,7 @@ QList<ObjectCase> objectCases()
         {"AntCard", [](QWidget* parent) { return new AntCard(parent); }},
         {"AntCarousel", [](QWidget* parent) { return new AntCarousel(parent); }},
         {"AntCascader", [](QWidget* parent) { return new AntCascader(parent); }},
-        {"AntCheckbox", [](QWidget* parent) { return new AntCheckbox(parent); }},
+        {"AntCheckBox", [](QWidget* parent) { return new AntCheckBox(parent); }},
         {"AntCollapsePanel", [](QWidget* parent) { return new AntCollapsePanel(QStringLiteral("Panel"), parent); }},
         {"AntCollapse", [](QWidget* parent) { return new AntCollapse(parent); }},
         {"AntColorPicker", [](QWidget* parent) { return new AntColorPicker(parent); }},
@@ -221,7 +221,7 @@ QList<ObjectCase> objectCases()
         {"AntTimePicker", [](QWidget* parent) { return new AntTimePicker(parent); }},
         {"AntToolBar", [](QWidget* parent) { return new AntToolBar(parent); }},
         {"AntToolButton", [](QWidget* parent) { return new AntToolButton(parent); }},
-        {"AntTooltip", [](QWidget* parent) { return new AntTooltip(parent); }},
+        {"AntToolTip", [](QWidget* parent) { return new AntToolTip(parent); }},
         {"AntTour", [](QWidget* parent) { return new AntTour(parent); }},
         {"AntTransfer", [](QWidget* parent) { return new AntTransfer(parent); }},
         {"AntTree", [](QWidget* parent) { return new AntTree(parent); }},
@@ -408,7 +408,7 @@ void TestAntThemeLifecycle::openPopupsSurviveThemeSwitch()
     popover.setOpen(true);
     QVERIFY(waitUntil([&]() { return popover.isOpen() && popover.isVisible(); }));
 
-    AntTooltip tooltip(&host);
+    AntToolTip tooltip(&host);
     tooltip.setTarget(&target);
     tooltip.setTitle(QStringLiteral("Tooltip"));
     tooltip.showTooltip();

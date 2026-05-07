@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
@@ -10,7 +12,7 @@ class QBoxLayout;
 class QPushButton;
 class QVBoxLayout;
 
-class AntFormItem : public QWidget
+class QT_ANT_DESIGN_EXPORT AntFormItem : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY labelChanged)
@@ -91,7 +93,7 @@ private:
 
 class AntForm; // forward declaration
 
-class AntFormProvider : public QWidget
+class QT_ANT_DESIGN_EXPORT AntFormProvider : public QWidget
 {
     Q_OBJECT
 
@@ -115,7 +117,7 @@ private:
     QList<FormEntry> m_forms;
 };
 
-class AntForm : public QWidget
+class QT_ANT_DESIGN_EXPORT AntForm : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(Ant::FormLayout formLayout READ formLayout WRITE setFormLayout NOTIFY formLayoutChanged)
@@ -178,7 +180,7 @@ private:
 
 using AntFormListItemFactory = std::function<QWidget*(int index)>;
 
-class AntFormList : public QWidget
+class QT_ANT_DESIGN_EXPORT AntFormList : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int minCount READ minCount WRITE setMinCount NOTIFY minCountChanged)

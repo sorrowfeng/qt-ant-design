@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 #include "core/AntTypes.h"
 
 struct AntThemeTokens;
 
-class AntWidget : public QWidget
+class QT_ANT_DESIGN_EXPORT AntWidget : public QWidget
 {
     Q_OBJECT
 

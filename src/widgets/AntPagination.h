@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QVector>
 #include <QWidget>
 
@@ -10,7 +12,7 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 
-class AntPagination : public QWidget
+class QT_ANT_DESIGN_EXPORT AntPagination : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int current READ current WRITE setCurrent NOTIFY currentChanged)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QDoubleSpinBox>
 #include <QStyle>
 
@@ -9,7 +11,7 @@ class QPropertyAnimation;
 class QResizeEvent;
 class QWidget;
 
-class AntInputNumber : public QDoubleSpinBox
+class QT_ANT_DESIGN_EXPORT AntInputNumber : public QDoubleSpinBox
 {
     Q_OBJECT
     Q_PROPERTY(Ant::Size inputSize READ inputSize WRITE setInputSize NOTIFY inputSizeChanged)

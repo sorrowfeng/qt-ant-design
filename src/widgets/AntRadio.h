@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QVariant>
 #include <QWidget>
 
@@ -8,7 +10,7 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 
-class AntRadio : public QWidget
+class QT_ANT_DESIGN_EXPORT AntRadio : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool checked READ isChecked WRITE setChecked NOTIFY checkedChanged)

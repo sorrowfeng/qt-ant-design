@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QRectF>
 #include <QVector>
 #include <QWidget>
@@ -24,7 +26,7 @@ struct AntTabItem
     bool closable = true;
 };
 
-class AntTabs : public QWidget
+class QT_ANT_DESIGN_EXPORT AntTabs : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString activeKey READ activeKey WRITE setActiveKey NOTIFY activeKeyChanged)

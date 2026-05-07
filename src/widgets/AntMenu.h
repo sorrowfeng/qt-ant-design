@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QAction>
 #include <QList>
 #include <QHash>
@@ -35,7 +37,7 @@ struct AntMenuItem
     QPointer<QAction> action;
 };
 
-class AntMenu : public QWidget
+class QT_ANT_DESIGN_EXPORT AntMenu : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(Ant::MenuMode mode READ mode WRITE setMode NOTIFY modeChanged)

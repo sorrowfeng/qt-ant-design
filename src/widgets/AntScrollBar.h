@@ -1,10 +1,12 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QScrollBar>
 
 class AntScrollBarStyle;
 
-class AntScrollBar : public QScrollBar
+class QT_ANT_DESIGN_EXPORT AntScrollBar : public QScrollBar
 {
     Q_OBJECT
     Q_PROPERTY(bool autoHide READ autoHide WRITE setAutoHide NOTIFY autoHideChanged)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 class QEvent;
@@ -7,7 +9,7 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 
-class AntCheckbox : public QWidget
+class QT_ANT_DESIGN_EXPORT AntCheckBox : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool checked READ isChecked WRITE setChecked NOTIFY checkedChanged)
@@ -17,8 +19,8 @@ class AntCheckbox : public QWidget
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
 
 public:
-    explicit AntCheckbox(QWidget* parent = nullptr);
-    explicit AntCheckbox(const QString& text, QWidget* parent = nullptr);
+    explicit AntCheckBox(QWidget* parent = nullptr);
+    explicit AntCheckBox(const QString& text, QWidget* parent = nullptr);
 
     bool isChecked() const;
     void setChecked(bool checked);

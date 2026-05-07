@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 #include <QStringList>
 #include <QSize>
@@ -20,7 +22,7 @@ struct AntWatermarkFont
     bool operator!=(const AntWatermarkFont& other) const { return !(*this == other); }
 };
 
-class AntWatermark : public QWidget
+class QT_ANT_DESIGN_EXPORT AntWatermark : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QStringList content READ content WRITE setContent NOTIFY contentChanged)

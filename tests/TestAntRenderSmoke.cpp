@@ -22,7 +22,7 @@
 #include "widgets/AntCard.h"
 #include "widgets/AntCarousel.h"
 #include "widgets/AntCascader.h"
-#include "widgets/AntCheckbox.h"
+#include "widgets/AntCheckBox.h"
 #include "widgets/AntCollapse.h"
 #include "widgets/AntColorPicker.h"
 #include "widgets/AntConfigProvider.h"
@@ -81,7 +81,7 @@
 #include "widgets/AntTimePicker.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntToolButton.h"
-#include "widgets/AntTooltip.h"
+#include "widgets/AntToolTip.h"
 #include "widgets/AntTour.h"
 #include "widgets/AntTransfer.h"
 #include "widgets/AntTree.h"
@@ -222,8 +222,8 @@ QList<RenderCase> renderCases()
              option.label = QStringLiteral("Zhejiang");
              qobject_cast<AntCascader*>(w)->setOptions({option});
          }},
-        {"AntCheckbox", [](QWidget* p) { return new AntCheckbox(p); }, [](QWidget* w) {
-             auto* checkbox = qobject_cast<AntCheckbox*>(w);
+        {"AntCheckBox", [](QWidget* p) { return new AntCheckBox(p); }, [](QWidget* w) {
+             auto* checkbox = qobject_cast<AntCheckBox*>(w);
              checkbox->setText(QStringLiteral("Remember"));
              checkbox->setChecked(true);
          }},
@@ -462,8 +462,8 @@ QList<RenderCase> renderCases()
              qobject_cast<AntToolBar*>(w)->addAction(QStringLiteral("New"));
          }, QSize(260, 64)},
         {"AntToolButton", [](QWidget* p) { return new AntToolButton(QStringLiteral("Tool"), p); }, nullptr},
-        {"AntTooltip", [](QWidget* p) { return new AntTooltip(p); }, [](QWidget* w) {
-             qobject_cast<AntTooltip*>(w)->setTitle(QStringLiteral("Tooltip"));
+        {"AntToolTip", [](QWidget* p) { return new AntToolTip(p); }, [](QWidget* w) {
+             qobject_cast<AntToolTip*>(w)->setTitle(QStringLiteral("Tooltip"));
          }, QSize(160, 48), false},
         {"AntTransfer", [](QWidget* p) { return new AntTransfer(p); }, [](QWidget* w) {
              qobject_cast<AntTransfer*>(w)->setSourceItems({QStringLiteral("A"), QStringLiteral("B")});

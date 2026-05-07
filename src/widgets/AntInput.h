@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QIcon>
 #include <QRect>
 #include <QLineEdit>
@@ -11,7 +13,7 @@
 class QHBoxLayout;
 class QLabel;
 
-class AntInput : public QWidget
+class QT_ANT_DESIGN_EXPORT AntInput : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(Ant::Size inputSize READ inputSize WRITE setInputSize NOTIFY inputSizeChanged)

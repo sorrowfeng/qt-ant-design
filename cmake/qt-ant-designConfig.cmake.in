@@ -1,7 +1,13 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
-find_dependency(Qt6 COMPONENTS Core Widgets Svg)
+
+set(QT_ANT_DESIGN_QT_MAJOR_VERSION @QT_ANT_DESIGN_QT_MAJOR_VERSION@)
+find_dependency(QT NAMES Qt${QT_ANT_DESIGN_QT_MAJOR_VERSION} Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Svg)
+if(NOT QT_VERSION_MAJOR STREQUAL QT_ANT_DESIGN_QT_MAJOR_VERSION)
+    message(FATAL_ERROR "qt-ant-design was built with Qt${QT_ANT_DESIGN_QT_MAJOR_VERSION}, but Qt${QT_VERSION_MAJOR} was found")
+endif()
+find_dependency(Qt${QT_ANT_DESIGN_QT_MAJOR_VERSION} REQUIRED COMPONENTS Core Widgets Svg)
 
 include("${CMAKE_CURRENT_LIST_DIR}/qt-ant-design-targets.cmake")
 

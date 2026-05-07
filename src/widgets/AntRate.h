@@ -1,10 +1,12 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
-class AntRate : public QWidget
+class QT_ANT_DESIGN_EXPORT AntRate : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(double value READ value WRITE setValue NOTIFY valueChanged)

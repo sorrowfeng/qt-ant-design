@@ -23,7 +23,7 @@
 #include "widgets/AntTabs.h"
 #include "widgets/AntTag.h"
 #include "widgets/AntTimeline.h"
-#include "widgets/AntTooltip.h"
+#include "widgets/AntToolTip.h"
 #include "widgets/AntTree.h"
 #include "widgets/AntTypography.h"
 
@@ -365,7 +365,7 @@ QWidget* createTooltipPage(QWidget* /*owner*/)
         for (const auto& item : placements)
         {
             auto* button = new AntButton(item.first);
-            auto* tooltip = new AntTooltip(page);
+            auto* tooltip = new AntToolTip(page);
             tooltip->setTitle(QStringLiteral("Prompt Text"));
             tooltip->setPlacement(item.second);
             tooltip->setTarget(button);

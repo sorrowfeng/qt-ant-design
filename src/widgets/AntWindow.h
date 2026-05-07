@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QMainWindow>
 
 #include "core/AntTypes.h"
@@ -11,7 +13,7 @@ class QResizeEvent;
 class QShowEvent;
 class QWidget;
 
-class AntWindow : public QMainWindow
+class QT_ANT_DESIGN_EXPORT AntWindow : public QMainWindow
 {
     Q_OBJECT
     Q_PROPERTY(QString windowTitle READ windowTitle WRITE setWindowTitle NOTIFY windowTitleChanged)

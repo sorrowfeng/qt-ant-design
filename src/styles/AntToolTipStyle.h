@@ -1,14 +1,16 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include "core/AntStyleBase.h"
 
-class AntTooltipStyle : public AntStyleBase
+class QT_ANT_DESIGN_EXPORT AntToolTipStyle : public AntStyleBase
 {
     Q_OBJECT
 
 public:
-    explicit AntTooltipStyle(QStyle* style = nullptr);
-    ~AntTooltipStyle() override = default;
+    explicit AntToolTipStyle(QStyle* style = nullptr);
+    ~AntToolTipStyle() override = default;
 
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;

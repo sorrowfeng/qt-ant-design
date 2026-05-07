@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QVector>
 #include <QWidget>
 
@@ -16,7 +18,7 @@ struct AntStatusBarItem
     int stretch = 0;
 };
 
-class AntStatusBar : public QWidget
+class QT_ANT_DESIGN_EXPORT AntStatusBar : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString message READ message WRITE setMessage NOTIFY messageChanged)

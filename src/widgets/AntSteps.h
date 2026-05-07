@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QVector>
 #include <QWidget>
 
@@ -17,7 +19,7 @@ struct AntStepItem
     bool disabled = false;
 };
 
-class AntSteps : public QWidget
+class QT_ANT_DESIGN_EXPORT AntSteps : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)

@@ -1,8 +1,10 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
-class AntMasonry : public QWidget
+class QT_ANT_DESIGN_EXPORT AntMasonry : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int columns READ columns WRITE setColumns NOTIFY columnsChanged)

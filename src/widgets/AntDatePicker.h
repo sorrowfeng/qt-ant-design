@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QDate>
 #include <QWidget>
 
@@ -13,7 +15,7 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 
-class AntDatePicker : public QWidget
+class QT_ANT_DESIGN_EXPORT AntDatePicker : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QDate date READ date WRITE setDate NOTIFY dateChanged)

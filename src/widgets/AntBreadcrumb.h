@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QVector>
 #include <QWidget>
 
@@ -17,7 +19,7 @@ struct AntBreadcrumbItem
     QString separator;
 };
 
-class AntBreadcrumb : public QWidget
+class QT_ANT_DESIGN_EXPORT AntBreadcrumb : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString separator READ separator WRITE setSeparator NOTIFY separatorChanged)

@@ -1,10 +1,12 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QDockWidget>
 
 class QWidget;
 
-class AntDockWidget : public QDockWidget
+class QT_ANT_DESIGN_EXPORT AntDockWidget : public QDockWidget
 {
     Q_OBJECT
 

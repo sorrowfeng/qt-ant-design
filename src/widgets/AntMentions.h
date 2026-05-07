@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 #include <QVariant>
 
@@ -7,7 +9,7 @@ class QLineEdit;
 class QFrame;
 class QPaintEvent;
 
-class AntMentions : public QWidget
+class QT_ANT_DESIGN_EXPORT AntMentions : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)

@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-`qt-ant-design` 是一个基于 Qt6 Widgets 的 C++ 组件库，目标是将 Ant Design 设计系统移植到原生桌面组件中。
+`qt-ant-design` 是一个基于 Qt Widgets 的 C++ 组件库，配置时可自动识别 Qt6 或 Qt5，目标是将 Ant Design 设计系统移植到原生桌面组件中。
 
 项目强调：
 
@@ -22,7 +22,7 @@
 
 ## 特性
 
-- 基于 Qt6 Widgets，轻量、易集成，可直接作为静态库接入现有项目
+- 基于 Qt Widgets，轻量、易集成，可作为静态库或动态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
 - 当前已移植 `82` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `12` 个 Qt / 桌面扩展组件）
 - 当前 `62` 个组件使用 `QProxyStyle` 架构绘制
@@ -36,7 +36,7 @@
 - 状态总览：[docs/project-status.md](docs/project-status.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
-- 最近一次 Debug 全量验证：`34 / 34` 个 CTest 目标通过（`2026-05-01`）
+- 当前 CTest 目标数：`37`；最近一次 build-system / install targeted 验证：`4 / 4` 通过（`2026-05-08`）
 
 ## 最近 Ant Design 对齐更新
 
@@ -60,7 +60,7 @@
 
 2026-05-07 的 API 批次增强了 Qt 对象树接入和常见 Qt 控件习惯：
 
-- `AntInput`、`AntInputNumber`、`AntCheckbox`、`AntRadio`、`AntSlider`、`AntProgress`、`AntStatusBar` 补充更多 Qt 风格常用方法和信号。
+- `AntInput`、`AntInputNumber`、`AntCheckBox`、`AntRadio`、`AntSlider`、`AntProgress`、`AntStatusBar` 补充更多 Qt 风格常用方法和信号。
 - `AntSelect` 支持 QComboBox 风格的 item 增删插查、`currentData`、`activated` 和 highlighted 信号。
 - `AntDatePicker` / `AntTimePicker` 支持 QDateEdit / QTimeEdit 风格的 `date` / `time` 别名，以及最小 / 最大范围 API。
 - `AntList`、`AntTable`、`AntTree` 补充 count、item 访问、cell data、节点查找、clear 和按 key 修改节点状态等 item/view 风格辅助接口。
@@ -89,12 +89,13 @@ project(my-qt-app LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 
 add_subdirectory(third_party/qt-ant-design)
 
 add_executable(my-qt-app main.cpp)
-target_link_libraries(my-qt-app PRIVATE Qt6::Core Qt6::Widgets qt-ant-design)
+target_link_libraries(my-qt-app PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets qt-ant-design)
 ```
 
 ### 方式二：安装并使用 CMake package
@@ -108,7 +109,8 @@ cmake --install build --config Release
 然后让你的消费项目指向安装前缀：
 
 ```cmake
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Svg)
 find_package(qt-ant-design CONFIG REQUIRED)
 
 add_executable(my-qt-app main.cpp)
@@ -131,9 +133,11 @@ Windows 下也可以直接使用安装目录中的示例程序：
 git clone https://github.com/sorrowfeng/qt-ant-design.git
 cd qt-ant-design
 mkdir build && cd build
-cmake .. -DCMAKE_PREFIX_PATH=/path/to/Qt6
+cmake .. -DCMAKE_PREFIX_PATH=/path/to/Qt
 cmake --build .
 ```
+
+传入 `-DBUILD_SHARED_LIBS=ON` 可构建 `qt-ant-design` 动态库；不传或设为 `OFF` 时保持默认静态库构建。
 
 在 Windows / 多配置生成器下，推荐使用：
 
@@ -175,16 +179,22 @@ int main(int argc, char* argv[])
 
 当前已实现公开组件总数：`82`
 
-`src/widgets` 当前包含 `83` 个 `Ant*.h` 头文件，其中 `AntSelectPopup` 是内部弹层 helper，不计入公开组件。
+`src/widgets` 当前包含 `103` 个 `Ant*.h` 头文件：`82` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`。
 
 Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
+
+### Qt 风格别名
+
+当 Ant Design 命名与常用 Qt 控件名不直观对应时，组件也提供 Qt 风格别名头：`AntLabel` → `AntTypography`、`AntLineEdit` → `AntInput`、`AntComboBox` → `AntSelect`、`AntSpinBox` / `AntDoubleSpinBox` → `AntInputNumber`、`AntPushButton` → `AntButton`、`AntProgressBar` → `AntProgress`、`AntCalendarWidget` → `AntCalendar`、`AntTabWidget` → `AntTabs`、`AntDialog` → `AntModal`、`AntMainWindow` → `AntWindow`，以及 List / Table / Tree 的 view-style 别名。
+
+如果只是大小写与 Qt 不一致，则以 Qt 命名为准：使用 `AntCheckBox` 和 `AntToolTip`。
 
 | 分类 | 组件 | 当前绘制方式 |
 | --- | --- | --- |
 | 通用 | `AntButton` `AntFloatButton` `AntIcon` `AntTypography` | `QProxyStyle` |
 | 导航 | `AntAnchor` `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | 混合（`QProxyStyle` / 自绘） |
-| 数据录入 | `AntAutoComplete` `AntCascader` `AntCheckbox` `AntColorPicker` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntMentions` `AntRadio` `AntRate` `AntSegmented` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` `AntTransfer` `AntTreeSelect` `AntUpload` | 混合（`QProxyStyle` / 自绘） |
-| 反馈 | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntTooltip` `AntTour` `AntWatermark` | 混合（`QProxyStyle` / 自绘） |
+| 数据录入 | `AntAutoComplete` `AntCascader` `AntCheckBox` `AntColorPicker` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntMentions` `AntRadio` `AntRate` `AntSegmented` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` `AntTransfer` `AntTreeSelect` `AntUpload` | 混合（`QProxyStyle` / 自绘） |
+| 反馈 | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | 混合（`QProxyStyle` / 自绘） |
 | 数据展示 | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | 混合（`QProxyStyle` / 自绘） |
 | 布局与其他 | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | 混合（`QProxyStyle` / 自绘 / QObject 工具） |
 | Qt / 桌面扩展 | `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | 混合（`QProxyStyle` / 自绘） |
@@ -209,7 +219,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntPopover`：标题、正文、action、点击/悬停触发、placement、箭头
 - `AntPopconfirm`：确认标题、说明、确认/取消按钮、禁用态、placement
 - `AntSkeleton`：支持动态 `active` shimmer、头像占位、标题/段落配置、圆角风格以及 `loading` 切换真实内容
-- `AntTooltip`：常用 `placement`、箭头、颜色、延迟显示、自动翻转
+- `AntToolTip`：常用 `placement`、箭头、颜色、延迟显示、自动翻转
 - `AntSlider`：横竖向、`reverse / dots / included`、拖动数值浮标
 - `AntSwitch`：`checked / loading / small / text`、点击 Wave 反馈
 - `AntSpin`：`small / middle / large / percent / delay`、更平滑的高频动画

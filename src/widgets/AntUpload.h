@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QMetaType>
 #include <QVector>
 #include <QWidget>
@@ -23,7 +25,7 @@ struct AntUploadFile
 
 Q_DECLARE_METATYPE(AntUploadFile)
 
-class AntUpload : public QWidget
+class QT_ANT_DESIGN_EXPORT AntUpload : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString accept READ accept WRITE setAccept NOTIFY acceptChanged)

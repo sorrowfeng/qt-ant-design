@@ -20,11 +20,17 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Svg)
+
+set(QT_ANT_DESIGN_QT_MAJOR_VERSION ${QT_VERSION_MAJOR})
+set(QT_ANT_DESIGN_QT_PACKAGE Qt${QT_VERSION_MAJOR})
+
+message(STATUS "qt-ant-design using ${QT_ANT_DESIGN_QT_PACKAGE}")
 
 # Options
 option(BUILD_EXAMPLES "Build example application" ON)
-option(BUILD_TESTS "Build unit tests (requires Qt6::Test)" ON)
+option(BUILD_TESTS "Build unit tests (requires Qt Test)" ON)
 
 # Library
 add_subdirectory(src)
@@ -36,8 +42,8 @@ endif()
 
 # Tests
 if(BUILD_TESTS)
-    find_package(Qt6 COMPONENTS Test)
-    if(Qt6Test_FOUND)
+    find_package(${QT_ANT_DESIGN_QT_PACKAGE} COMPONENTS Test)
+    if(${QT_ANT_DESIGN_QT_PACKAGE}Test_FOUND)
         enable_testing()
         add_subdirectory(tests)
     endif()
@@ -81,7 +87,9 @@ install(FILES
 
 # Windows deployment
 if(BUILD_EXAMPLES AND WIN32)
-    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${Qt6_DIR}/../../../bin")
+    set(QT_ANT_DESIGN_QT_DIR_VARIABLE "${QT_ANT_DESIGN_QT_PACKAGE}_DIR")
+    set(QT_ANT_DESIGN_QT_DIR "${${QT_ANT_DESIGN_QT_DIR_VARIABLE}}")
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${QT_ANT_DESIGN_QT_DIR}/../../../bin")
     if(WINDEPLOYQT_EXECUTABLE)
         install(CODE "
             execute_process(

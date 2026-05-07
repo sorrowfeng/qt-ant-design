@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QObject>
 #include <QColor>
 
 #include "core/AntTypes.h"
 
-class AntConfigProvider : public QObject
+class QT_ANT_DESIGN_EXPORT AntConfigProvider : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(Ant::ThemeMode themeMode READ themeMode WRITE setThemeMode NOTIFY themeModeChanged)

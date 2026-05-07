@@ -1,14 +1,16 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include "core/AntStyleBase.h"
 
-class AntCheckboxStyle : public AntStyleBase
+class QT_ANT_DESIGN_EXPORT AntCheckBoxStyle : public AntStyleBase
 {
     Q_OBJECT
 
 public:
-    explicit AntCheckboxStyle(QStyle* style = nullptr);
-    ~AntCheckboxStyle() override = default;
+    explicit AntCheckBoxStyle(QStyle* style = nullptr);
+    ~AntCheckBoxStyle() override = default;
 
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;

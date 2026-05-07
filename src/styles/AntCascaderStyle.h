@@ -1,8 +1,10 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include "core/AntStyleBase.h"
 
-class AntCascaderStyle : public AntStyleBase
+class QT_ANT_DESIGN_EXPORT AntCascaderStyle : public AntStyleBase
 {
     Q_OBJECT
 

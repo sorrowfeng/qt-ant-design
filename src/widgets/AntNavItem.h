@@ -1,10 +1,12 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 class QLabel;
 
-class AntNavItem : public QWidget
+class QT_ANT_DESIGN_EXPORT AntNavItem : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool active READ isActive WRITE setActive NOTIFY activeChanged)

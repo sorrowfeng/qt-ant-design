@@ -1,12 +1,14 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPlainTextEdit>
 
 #include "core/AntTypes.h"
 
 class QMouseEvent;
 
-class AntPlainTextEdit : public QPlainTextEdit
+class QT_ANT_DESIGN_EXPORT AntPlainTextEdit : public QPlainTextEdit
 {
     Q_OBJECT
     Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)

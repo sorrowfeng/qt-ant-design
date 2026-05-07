@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
@@ -7,7 +9,7 @@
 
 class QTimer;
 
-class AntSkeleton : public QWidget
+class QT_ANT_DESIGN_EXPORT AntSkeleton : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool active READ isActive WRITE setActive NOTIFY activeChanged)

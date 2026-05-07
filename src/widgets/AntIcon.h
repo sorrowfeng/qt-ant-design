@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QColor>
 #include <QPainterPath>
 #include <QString>
@@ -9,7 +11,7 @@
 
 #include "core/AntTypes.h"
 
-class AntIcon : public QWidget
+class QT_ANT_DESIGN_EXPORT AntIcon : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(Ant::IconType iconType READ iconType WRITE setIconType NOTIFY iconTypeChanged)

@@ -1,8 +1,10 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include "core/AntStyleBase.h"
 
-class AntToolBarStyle : public AntStyleBase
+class QT_ANT_DESIGN_EXPORT AntToolBarStyle : public AntStyleBase
 {
     Q_OBJECT
 

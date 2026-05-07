@@ -1,10 +1,12 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QMenuBar>
 
 class QMenu;
 
-class AntMenuBar : public QMenuBar
+class QT_ANT_DESIGN_EXPORT AntMenuBar : public QMenuBar
 {
     Q_OBJECT
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QIcon>
 #include <QStringList>
 #include <QVector>
@@ -32,7 +34,7 @@ struct FlatNode
     bool isLastChild = false;
 };
 
-class AntTree : public QWidget
+class QT_ANT_DESIGN_EXPORT AntTree : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool selectable READ isSelectable WRITE setSelectable NOTIFY selectableChanged)

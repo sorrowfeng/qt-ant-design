@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QColor>
 #include <QPainterPath>
 #include <QPixmap>
@@ -11,7 +13,7 @@ class QPaintEvent;
 class QResizeEvent;
 class AntAvatar;
 
-class AntAvatarGroup : public QWidget
+class QT_ANT_DESIGN_EXPORT AntAvatarGroup : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int maxCount READ maxCount WRITE setMaxCount NOTIFY maxCountChanged)
@@ -50,7 +52,7 @@ private:
     AntAvatar* m_overflowAvatar = nullptr;
 };
 
-class AntAvatar : public QWidget
+class QT_ANT_DESIGN_EXPORT AntAvatar : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)

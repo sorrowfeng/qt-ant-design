@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPoint>
 #include <QWidget>
 
@@ -13,7 +15,7 @@ class QResizeEvent;
 class QShowEvent;
 class QTimer;
 
-class AntBadge : public QWidget
+class QT_ANT_DESIGN_EXPORT AntBadge : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int count READ count WRITE setCount NOTIFY countChanged)

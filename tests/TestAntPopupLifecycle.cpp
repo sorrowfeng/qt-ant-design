@@ -17,7 +17,7 @@
 #include "widgets/AntPopover.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntTimePicker.h"
-#include "widgets/AntTooltip.h"
+#include "widgets/AntToolTip.h"
 #include "widgets/AntTreeSelect.h"
 
 class TestAntPopupLifecycle : public QObject
@@ -215,10 +215,10 @@ void TestAntPopupLifecycle::targetDrivenPopupsCloseAndDestroySafely()
     QVERIFY(popoverGuard.isNull());
     QTest::mouseClick(&target, Qt::LeftButton, Qt::NoModifier, target.rect().center());
 
-    auto* tooltip = new AntTooltip(&host);
+    auto* tooltip = new AntToolTip(&host);
     tooltip->setTarget(&target);
     tooltip->setTitle(QStringLiteral("Tooltip"));
-    QPointer<AntTooltip> tooltipGuard(tooltip);
+    QPointer<AntToolTip> tooltipGuard(tooltip);
     tooltip->showTooltip();
     QVERIFY(waitUntil([&]() { return tooltip->isVisible(); }));
     tooltip->hideTooltip();

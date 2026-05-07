@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -8,7 +10,7 @@ class QEvent;
 class QMouseEvent;
 class QPaintEvent;
 
-class AntTag : public QWidget
+class QT_ANT_DESIGN_EXPORT AntTag : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QVector>
 #include <QWidget>
 
@@ -16,7 +18,7 @@ struct AntTimelineItem
     bool loading = false;
 };
 
-class AntTimeline : public QWidget
+class QT_ANT_DESIGN_EXPORT AntTimeline : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(Ant::TimelineMode mode READ mode WRITE setMode NOTIFY modeChanged)

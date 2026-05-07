@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
@@ -8,7 +10,7 @@
 class AntButton;
 class AntPopover;
 
-class AntPopconfirm : public QWidget
+class QT_ANT_DESIGN_EXPORT AntPopconfirm : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)

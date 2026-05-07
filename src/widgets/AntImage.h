@@ -1,9 +1,11 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 #include <QPixmap>
 
-class AntImage : public QWidget
+class QT_ANT_DESIGN_EXPORT AntImage : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString src READ src WRITE setSrc NOTIFY srcChanged)

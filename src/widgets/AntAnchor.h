@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QRectF>
 #include <QWidget>
 
@@ -7,7 +9,7 @@ class QScrollArea;
 class QVariantAnimation;
 class QVBoxLayout;
 
-class AntAnchor : public QWidget
+class QT_ANT_DESIGN_EXPORT AntAnchor : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int activeIndex READ activeIndex NOTIFY activeIndexChanged)

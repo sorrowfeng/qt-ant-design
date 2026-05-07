@@ -1,10 +1,12 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QSplitter>
 
 class AntSplitterHandle;
 
-class AntSplitter : public QSplitter
+class QT_ANT_DESIGN_EXPORT AntSplitter : public QSplitter
 {
     Q_OBJECT
 
@@ -16,7 +18,7 @@ protected:
     QSplitterHandle* createHandle() override;
 };
 
-class AntSplitterHandle : public QSplitterHandle
+class QT_ANT_DESIGN_EXPORT AntSplitterHandle : public QSplitterHandle
 {
     Q_OBJECT
 

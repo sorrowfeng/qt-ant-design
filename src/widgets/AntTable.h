@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QMap>
 #include <QStringList>
 #include <QVector>
@@ -33,7 +35,7 @@ struct AntTableRow
     bool disabled = false;
 };
 
-class AntTable : public QWidget
+class QT_ANT_DESIGN_EXPORT AntTable : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool bordered READ isBordered WRITE setBordered NOTIFY borderedChanged)

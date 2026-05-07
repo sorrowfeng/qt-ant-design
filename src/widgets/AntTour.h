@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QObject>
 #include <QList>
 
@@ -14,7 +16,7 @@ struct AntTourStep
     Qt::Alignment placement = Qt::AlignBottom;
 };
 
-class AntTour : public QObject
+class QT_ANT_DESIGN_EXPORT AntTour : public QObject
 {
     Q_OBJECT
 

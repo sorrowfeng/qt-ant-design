@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QVector>
 #include <QWidget>
 #include <QVariantAnimation>
@@ -15,7 +17,7 @@ struct AntSegmentedOption
     QString tooltip;
 };
 
-class AntSegmented : public QWidget
+class QT_ANT_DESIGN_EXPORT AntSegmented : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString value READ value WRITE setValue NOTIFY valueChanged)

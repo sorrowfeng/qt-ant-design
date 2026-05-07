@@ -1,5 +1,7 @@
 #pragma once
 
+#include "QtAntDesignExport.h"
+
 #include <QFont>
 #include <QStringList>
 
@@ -7,7 +9,7 @@
 
 class QApplication;
 
-class AntFont
+class QT_ANT_DESIGN_EXPORT AntFont
 {
 public:
     static QStringList families();

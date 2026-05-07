@@ -1,4 +1,4 @@
-#include "AntTooltip.h"
+#include "AntToolTip.h"
 
 #include <QApplication>
 #include <QFocusEvent>
@@ -11,7 +11,7 @@
 
 #include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
-#include "styles/AntTooltipStyle.h"
+#include "styles/AntToolTipStyle.h"
 
 namespace
 {
@@ -46,10 +46,10 @@ bool isBottomPlacement(Ant::TooltipPlacement placement)
 }
 }
 
-AntTooltip::AntTooltip(QWidget* parent)
+AntToolTip::AntToolTip(QWidget* parent)
     : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
 {
-    installAntStyle<AntTooltipStyle>(this);
+    installAntStyle<AntToolTipStyle>(this);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
     setAttribute(Qt::WA_DeleteOnClose, false);
@@ -66,17 +66,17 @@ AntTooltip::AntTooltip(QWidget* parent)
     });
 }
 
-AntTooltip::~AntTooltip()
+AntToolTip::~AntToolTip()
 {
     uninstallTarget();
 }
 
-QString AntTooltip::title() const
+QString AntToolTip::title() const
 {
     return m_title;
 }
 
-void AntTooltip::setTitle(const QString& title)
+void AntToolTip::setTitle(const QString& title)
 {
     if (m_title == title)
     {
@@ -88,17 +88,17 @@ void AntTooltip::setTitle(const QString& title)
     Q_EMIT titleChanged(m_title);
 }
 
-Ant::TooltipPlacement AntTooltip::placement() const
+Ant::TooltipPlacement AntToolTip::placement() const
 {
     return m_placement;
 }
 
-Ant::TooltipPlacement AntTooltip::renderPlacement() const
+Ant::TooltipPlacement AntToolTip::renderPlacement() const
 {
     return m_renderPlacement;
 }
 
-void AntTooltip::setPlacement(Ant::TooltipPlacement placement)
+void AntToolTip::setPlacement(Ant::TooltipPlacement placement)
 {
     if (m_placement == placement)
     {
@@ -114,12 +114,12 @@ void AntTooltip::setPlacement(Ant::TooltipPlacement placement)
     Q_EMIT placementChanged(m_placement);
 }
 
-QColor AntTooltip::color() const
+QColor AntToolTip::color() const
 {
     return m_color;
 }
 
-void AntTooltip::setColor(const QColor& color)
+void AntToolTip::setColor(const QColor& color)
 {
     if (m_color == color)
     {
@@ -130,12 +130,12 @@ void AntTooltip::setColor(const QColor& color)
     Q_EMIT colorChanged(m_color);
 }
 
-bool AntTooltip::arrowVisible() const
+bool AntToolTip::arrowVisible() const
 {
     return m_arrowVisible;
 }
 
-void AntTooltip::setArrowVisible(bool visible)
+void AntToolTip::setArrowVisible(bool visible)
 {
     if (m_arrowVisible == visible)
     {
@@ -147,12 +147,12 @@ void AntTooltip::setArrowVisible(bool visible)
     Q_EMIT arrowVisibleChanged(m_arrowVisible);
 }
 
-int AntTooltip::openDelay() const
+int AntToolTip::openDelay() const
 {
     return m_openDelay;
 }
 
-void AntTooltip::setOpenDelay(int delayMs)
+void AntToolTip::setOpenDelay(int delayMs)
 {
     delayMs = qMax(0, delayMs);
     if (m_openDelay == delayMs)
@@ -163,12 +163,12 @@ void AntTooltip::setOpenDelay(int delayMs)
     Q_EMIT openDelayChanged(m_openDelay);
 }
 
-QWidget* AntTooltip::target() const
+QWidget* AntToolTip::target() const
 {
     return m_target.data();
 }
 
-void AntTooltip::setTarget(QWidget* target)
+void AntToolTip::setTarget(QWidget* target)
 {
     if (m_target == target)
     {
@@ -178,7 +178,7 @@ void AntTooltip::setTarget(QWidget* target)
     installTarget(target);
 }
 
-void AntTooltip::showTooltip()
+void AntToolTip::showTooltip()
 {
     if (!m_target || m_title.trimmed().isEmpty())
     {
@@ -189,13 +189,13 @@ void AntTooltip::showTooltip()
     AntPopupMotion::show(this, AntPopupMotion::fromTooltipPlacement(m_renderPlacement));
 }
 
-void AntTooltip::hideTooltip()
+void AntToolTip::hideTooltip()
 {
     m_openTimer->stop();
     AntPopupMotion::hide(this, AntPopupMotion::fromTooltipPlacement(m_renderPlacement));
 }
 
-QSize AntTooltip::sizeHint() const
+QSize AntToolTip::sizeHint() const
 {
     const Metrics m = metrics();
     const auto& token = antTheme->tokens();
@@ -213,12 +213,12 @@ QSize AntTooltip::sizeHint() const
     return QSize(textRect.width() + m.paddingX * 2, textRect.height() + m.paddingY * 2 + arrow);
 }
 
-QSize AntTooltip::minimumSizeHint() const
+QSize AntToolTip::minimumSizeHint() const
 {
     return QSize(48, 28);
 }
 
-bool AntTooltip::eventFilter(QObject* watched, QEvent* event)
+bool AntToolTip::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_target)
     {
@@ -256,30 +256,30 @@ bool AntTooltip::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
-void AntTooltip::paintEvent(QPaintEvent* event)
+void AntToolTip::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
 }
 
-void AntTooltip::hideEvent(QHideEvent* event)
+void AntToolTip::hideEvent(QHideEvent* event)
 {
     m_openTimer->stop();
     QWidget::hideEvent(event);
 }
 
-void AntTooltip::mousePressEvent(QMouseEvent* event)
+void AntToolTip::mousePressEvent(QMouseEvent* event)
 {
     hideTooltip();
     QWidget::mousePressEvent(event);
 }
 
-AntTooltip::Metrics AntTooltip::metrics() const
+AntToolTip::Metrics AntToolTip::metrics() const
 {
     Metrics m;
     return m;
 }
 
-QRect AntTooltip::bubbleRect() const
+QRect AntToolTip::bubbleRect() const
 {
     const Metrics m = metrics();
     if (!m_arrowVisible)
@@ -301,7 +301,7 @@ QRect AntTooltip::bubbleRect() const
     return rect().adjusted(m.arrowSize, 0, 0, 0);
 }
 
-QPolygonF AntTooltip::arrowPolygon() const
+QPolygonF AntToolTip::arrowPolygon() const
 {
     const Metrics m = metrics();
     if (!m_arrowVisible)
@@ -348,7 +348,7 @@ QPolygonF AntTooltip::arrowPolygon() const
     }
 }
 
-QColor AntTooltip::bubbleColor() const
+QColor AntToolTip::bubbleColor() const
 {
     if (m_color.isValid())
     {
@@ -357,7 +357,7 @@ QColor AntTooltip::bubbleColor() const
     return antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626");
 }
 
-QColor AntTooltip::textColor() const
+QColor AntToolTip::textColor() const
 {
     if (m_color.isValid())
     {
@@ -366,7 +366,7 @@ QColor AntTooltip::textColor() const
     return QColor(Qt::white);
 }
 
-Ant::TooltipPlacement AntTooltip::resolvedPlacement(const QRect& targetRect, const QRect& screenRect) const
+Ant::TooltipPlacement AntToolTip::resolvedPlacement(const QRect& targetRect, const QRect& screenRect) const
 {
     const QSize tipSize = sizeHint();
     const int gap = metrics().gap;
@@ -409,7 +409,7 @@ Ant::TooltipPlacement AntTooltip::resolvedPlacement(const QRect& targetRect, con
     return m_placement;
 }
 
-QPoint AntTooltip::tooltipTopLeft(const QRect& targetRect,
+QPoint AntToolTip::tooltipTopLeft(const QRect& targetRect,
                                   const QSize& tooltipSize,
                                   Ant::TooltipPlacement placement) const
 {
@@ -436,7 +436,7 @@ QPoint AntTooltip::tooltipTopLeft(const QRect& targetRect,
     }
 }
 
-void AntTooltip::updatePosition()
+void AntToolTip::updatePosition()
 {
     if (!m_target)
     {
@@ -455,7 +455,7 @@ void AntTooltip::updatePosition()
     move(topLeft);
 }
 
-void AntTooltip::installTarget(QWidget* target)
+void AntToolTip::installTarget(QWidget* target)
 {
     m_target = target;
     if (m_target)
@@ -465,7 +465,7 @@ void AntTooltip::installTarget(QWidget* target)
     }
 }
 
-void AntTooltip::uninstallTarget()
+void AntToolTip::uninstallTarget()
 {
     if (m_target)
     {

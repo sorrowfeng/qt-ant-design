@@ -17,7 +17,7 @@
 #include "widgets/AntCard.h"
 #include "widgets/AntCarousel.h"
 #include "widgets/AntCascader.h"
-#include "widgets/AntCheckbox.h"
+#include "widgets/AntCheckBox.h"
 #include "widgets/AntCollapse.h"
 #include "widgets/AntColorPicker.h"
 #include "widgets/AntConfigProvider.h"
@@ -76,7 +76,7 @@
 #include "widgets/AntTimePicker.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntToolButton.h"
-#include "widgets/AntTooltip.h"
+#include "widgets/AntToolTip.h"
 #include "widgets/AntTour.h"
 #include "widgets/AntTransfer.h"
 #include "widgets/AntTree.h"
@@ -134,7 +134,7 @@ void TestAntObjectTree::parentOwnsWidgetsAndStyles()
     trackWidget(new AntCard(root), true);
     trackWidget(new AntCarousel(root), false);
     trackWidget(new AntCascader(root), true);
-    trackWidget(new AntCheckbox(root), true);
+    trackWidget(new AntCheckBox(root), true);
     trackWidget(new AntCollapsePanel(QStringLiteral("Panel"), root), false);
     trackWidget(new AntCollapse(root), false);
     trackWidget(new AntColorPicker(root), false);
@@ -204,7 +204,7 @@ void TestAntObjectTree::parentOwnsWidgetsAndStyles()
     trackWidget(new AntTimePicker(root), true);
     trackWidget(new AntToolBar(root), true);
     trackWidget(new AntToolButton(root), true);
-    trackWidget(new AntTooltip(root), true);
+    trackWidget(new AntToolTip(root), true);
     trackWidget(new AntTransfer(root), false);
     trackWidget(new AntTree(root), true);
     trackWidget(new AntTreeSelect(root), true);

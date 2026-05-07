@@ -1,8 +1,10 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include "core/AntStyleBase.h"
 
-class AntFloatButtonStyle : public AntStyleBase
+class QT_ANT_DESIGN_EXPORT AntFloatButtonStyle : public AntStyleBase
 {
     Q_OBJECT
 

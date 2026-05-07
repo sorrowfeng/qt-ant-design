@@ -7,6 +7,12 @@ endif()
 if(NOT DEFINED ANT_CONFIG OR ANT_CONFIG STREQUAL "")
     set(ANT_CONFIG Debug)
 endif()
+if(NOT DEFINED ANT_QT_PACKAGE OR ANT_QT_PACKAGE STREQUAL "")
+    set(ANT_QT_PACKAGE Qt6)
+endif()
+if(NOT DEFINED ANT_QT_PACKAGE_DIR)
+    set(ANT_QT_PACKAGE_DIR "")
+endif()
 
 set(work_dir "${ANT_TEST_BINARY_DIR}/install-consumer")
 set(prefix_dir "${work_dir}/prefix")
@@ -34,7 +40,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg)
+find_package(${ANT_QT_PACKAGE} REQUIRED COMPONENTS Core Widgets Svg)
 find_package(qt-ant-design CONFIG REQUIRED)
 
 add_executable(qt-ant-design-consumer main.cpp)
@@ -44,9 +50,53 @@ target_link_libraries(qt-ant-design-consumer PRIVATE qt-ant-design::qt-ant-desig
 file(WRITE "${consumer_source_dir}/main.cpp" [=[
 #include <QApplication>
 #include <QStringList>
+#include <type_traits>
 
+#include "widgets/AntCalendarWidget.h"
 #include "widgets/AntButton.h"
+#include "widgets/AntCheckBox.h"
+#include "widgets/AntComboBox.h"
+#include "widgets/AntDateEdit.h"
+#include "widgets/AntDialog.h"
+#include "widgets/AntDoubleSpinBox.h"
 #include "widgets/AntIcon.h"
+#include "widgets/AntLabel.h"
+#include "widgets/AntLineEdit.h"
+#include "widgets/AntListView.h"
+#include "widgets/AntListWidget.h"
+#include "widgets/AntMainWindow.h"
+#include "widgets/AntProgressBar.h"
+#include "widgets/AntPushButton.h"
+#include "widgets/AntRadioButton.h"
+#include "widgets/AntSpinBox.h"
+#include "widgets/AntTabWidget.h"
+#include "widgets/AntTableView.h"
+#include "widgets/AntTableWidget.h"
+#include "widgets/AntTimeEdit.h"
+#include "widgets/AntToolTip.h"
+#include "widgets/AntTreeView.h"
+#include "widgets/AntTreeWidget.h"
+
+static_assert(std::is_same_v<AntCalendarWidget, AntCalendar>);
+static_assert(std::is_same_v<AntComboBox, AntSelect>);
+static_assert(std::is_same_v<AntDateEdit, AntDatePicker>);
+static_assert(std::is_same_v<AntDialog, AntModal>);
+static_assert(std::is_same_v<AntDoubleSpinBox, AntInputNumber>);
+static_assert(std::is_same_v<AntLabel, AntTypography>);
+static_assert(std::is_same_v<AntLineEdit, AntInput>);
+static_assert(std::is_same_v<AntListView, AntList>);
+static_assert(std::is_same_v<AntListWidget, AntList>);
+static_assert(std::is_same_v<AntMainWindow, AntWindow>);
+static_assert(std::is_same_v<AntProgressBar, AntProgress>);
+static_assert(std::is_same_v<AntPushButton, AntButton>);
+static_assert(std::is_same_v<AntRadioButton, AntRadio>);
+static_assert(std::is_same_v<AntSpinBox, AntInputNumber>);
+static_assert(std::is_same_v<AntTabWidget, AntTabs>);
+static_assert(std::is_same_v<AntTableView, AntTable>);
+static_assert(std::is_same_v<AntTableWidget, AntTable>);
+static_assert(std::is_same_v<AntTimeEdit, AntTimePicker>);
+static_assert(std::is_same_v<AntTreeView, AntTree>);
+static_assert(std::is_same_v<AntTreeWidget, AntTree>);
 
 int main(int argc, char** argv)
 {
@@ -58,7 +108,12 @@ int main(int argc, char** argv)
     AntIcon icon;
     icon.setIconType(Ant::IconType::Search);
 
-    return button.text() == QStringLiteral("Install Consumer") ? 0 : 1;
+    AntLabel label(QStringLiteral("Alias Label"));
+    AntPushButton aliasButton(QStringLiteral("Alias Button"));
+
+    return button.text() == QStringLiteral("Install Consumer") &&
+           label.text() == QStringLiteral("Alias Label") &&
+           aliasButton.text() == QStringLiteral("Alias Button") ? 0 : 1;
 }
 ]=])
 
@@ -67,8 +122,12 @@ set(configure_args
     -S "${consumer_source_dir}"
     -B "${consumer_build_dir}"
     "-DCMAKE_PREFIX_PATH=${prefix_dir}"
-    "-DQt6_DIR=${ANT_QT6_DIR}"
+    "-DANT_QT_PACKAGE=${ANT_QT_PACKAGE}"
 )
+
+if(NOT ANT_QT_PACKAGE_DIR STREQUAL "")
+    list(APPEND configure_args "-D${ANT_QT_PACKAGE}_DIR=${ANT_QT_PACKAGE_DIR}")
+endif()
 
 if(DEFINED ANT_CMAKE_GENERATOR AND NOT ANT_CMAKE_GENERATOR STREQUAL "")
     list(APPEND configure_args -G "${ANT_CMAKE_GENERATOR}")

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
@@ -10,7 +12,7 @@ class QVBoxLayout;
 class QResizeEvent;
 class QPaintEvent;
 
-class AntResult : public QWidget
+class QT_ANT_DESIGN_EXPORT AntResult : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(Ant::AlertType status READ status WRITE setStatus NOTIFY statusChanged)

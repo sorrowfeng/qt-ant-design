@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
@@ -18,7 +20,7 @@ class QShowEvent;
 class QVariantAnimation;
 class QGraphicsOpacityEffect;
 
-class AntModal : public QWidget
+class QT_ANT_DESIGN_EXPORT AntModal : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)

@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 class QHBoxLayout;
 class QVBoxLayout;
 
-class AntFlex : public QWidget
+class QT_ANT_DESIGN_EXPORT AntFlex : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool vertical READ vertical WRITE setVertical NOTIFY verticalChanged)

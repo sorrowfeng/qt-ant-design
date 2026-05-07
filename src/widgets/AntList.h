@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QList>
 #include <QPointer>
 #include <QWidget>
@@ -10,7 +12,7 @@ class QVBoxLayout;
 class QHBoxLayout;
 class QLabel;
 
-class AntListItemMeta : public QWidget
+class QT_ANT_DESIGN_EXPORT AntListItemMeta : public QWidget
 {
     Q_OBJECT
 
@@ -42,7 +44,7 @@ private:
     QString m_description;
 };
 
-class AntListItem : public QWidget
+class QT_ANT_DESIGN_EXPORT AntListItem : public QWidget
 {
     Q_OBJECT
 
@@ -80,7 +82,7 @@ private:
     QList<QPointer<QWidget>> m_actions;
 };
 
-class AntList : public QWidget
+class QT_ANT_DESIGN_EXPORT AntList : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool bordered READ isBordered WRITE setBordered NOTIFY borderedChanged)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QStringList>
 #include <QWidget>
@@ -10,7 +12,7 @@ class AntMenu;
 class QFrame;
 class QTimer;
 
-class AntDropdown : public QWidget
+class QT_ANT_DESIGN_EXPORT AntDropdown : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QStringList itemLabels READ itemLabels WRITE setItemLabels NOTIFY itemLabelsChanged)

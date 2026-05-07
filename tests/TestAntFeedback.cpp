@@ -10,7 +10,7 @@
 #include "widgets/AntResult.h"
 #include "widgets/AntSkeleton.h"
 #include "widgets/AntSpin.h"
-#include "widgets/AntTooltip.h"
+#include "widgets/AntToolTip.h"
 #include "widgets/AntTour.h"
 
 class TestAntFeedback : public QObject
@@ -496,35 +496,35 @@ void TestAntFeedback::spin()
 
 void TestAntFeedback::tooltip()
 {
-    auto* w = new AntTooltip;
+    auto* w = new AntToolTip;
     QCOMPARE(w->title(), QString());
     QCOMPARE(w->placement(), Ant::TooltipPlacement::Top);
     QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Top);
     QCOMPARE(w->arrowVisible(), true);
     QCOMPARE(w->openDelay(), 120);
 
-    QSignalSpy titleSpy(w, &AntTooltip::titleChanged);
+    QSignalSpy titleSpy(w, &AntToolTip::titleChanged);
     w->setTitle("Tooltip text");
     QCOMPARE(w->title(), "Tooltip text");
     QCOMPARE(titleSpy.count(), 1);
 
-    QSignalSpy placeSpy(w, &AntTooltip::placementChanged);
+    QSignalSpy placeSpy(w, &AntToolTip::placementChanged);
     w->setPlacement(Ant::TooltipPlacement::Bottom);
     QCOMPARE(w->placement(), Ant::TooltipPlacement::Bottom);
     QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Bottom);
     QCOMPARE(placeSpy.count(), 1);
 
-    QSignalSpy colorSpy(w, &AntTooltip::colorChanged);
+    QSignalSpy colorSpy(w, &AntToolTip::colorChanged);
     w->setColor(Qt::red);
     QCOMPARE(w->color(), QColor(Qt::red));
     QCOMPARE(colorSpy.count(), 1);
 
-    QSignalSpy arrowSpy(w, &AntTooltip::arrowVisibleChanged);
+    QSignalSpy arrowSpy(w, &AntToolTip::arrowVisibleChanged);
     w->setArrowVisible(false);
     QCOMPARE(w->arrowVisible(), false);
     QCOMPARE(arrowSpy.count(), 1);
 
-    QSignalSpy delaySpy(w, &AntTooltip::openDelayChanged);
+    QSignalSpy delaySpy(w, &AntToolTip::openDelayChanged);
     w->setOpenDelay(200);
     QCOMPARE(w->openDelay(), 200);
     QCOMPARE(delaySpy.count(), 1);

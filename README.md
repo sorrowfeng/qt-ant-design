@@ -2,7 +2,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-`qt-ant-design` is a C++ component library built on Qt 6 Widgets that ports the Ant Design system to native desktop widgets.
+`qt-ant-design` is a C++ component library built on Qt Widgets that auto-detects Qt 6 or Qt 5 at configure time and ports the Ant Design system to native desktop widgets.
 
 The project focuses on:
 
@@ -22,7 +22,7 @@ The project focuses on:
 
 ## Features
 
-- Built on Qt 6 Widgets — lightweight, easy to embed, and consumable as a static library in existing projects
+- Built on Qt Widgets — lightweight, easy to embed, and consumable as either a static or shared library in existing projects
 - Built-in Design Token system with real-time light / dark theme switching
 - `82` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `12` Qt / desktop extension components)
 - `62` style-driven components are rendered through a `QProxyStyle` architecture
@@ -36,7 +36,7 @@ The project focuses on:
 - Status snapshot: [docs/project-status.md](docs/project-status.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
-- Latest full Debug verification: `34 / 34` CTest targets passed on `2026-05-01`
+- Current CTest target count: `37`; latest targeted build-system / install verification: `4 / 4` passed on `2026-05-08`
 
 ## Recent Ant Design Parity Updates
 
@@ -60,7 +60,7 @@ The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar p
 
 The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget conventions:
 
-- `AntInput`, `AntInputNumber`, `AntCheckbox`, `AntRadio`, `AntSlider`, `AntProgress`, and `AntStatusBar` expose more common Qt-style methods and signals.
+- `AntInput`, `AntInputNumber`, `AntCheckBox`, `AntRadio`, `AntSlider`, `AntProgress`, and `AntStatusBar` expose more common Qt-style methods and signals.
 - `AntSelect` supports QComboBox-style item management, lookup, `currentData`, `activated`, and highlighted signals.
 - `AntDatePicker` / `AntTimePicker` expose QDateEdit / QTimeEdit-style `date` / `time` aliases plus minimum / maximum range APIs.
 - `AntList`, `AntTable`, and `AntTree` expose more item/view-style helpers for count, item access, cell data, node lookup, clear, and key-based node state changes.
@@ -89,12 +89,13 @@ project(my-qt-app LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 
 add_subdirectory(third_party/qt-ant-design)
 
 add_executable(my-qt-app main.cpp)
-target_link_libraries(my-qt-app PRIVATE Qt6::Core Qt6::Widgets qt-ant-design)
+target_link_libraries(my-qt-app PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets qt-ant-design)
 ```
 
 ### Option 2: Install and use the CMake package
@@ -108,7 +109,8 @@ cmake --install build --config Release
 Then point your consumer project at the install prefix:
 
 ```cmake
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Svg)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Svg)
 find_package(qt-ant-design CONFIG REQUIRED)
 
 add_executable(my-qt-app main.cpp)
@@ -131,9 +133,11 @@ On Windows you can also run the example app from the install directory directly:
 git clone https://github.com/sorrowfeng/qt-ant-design.git
 cd qt-ant-design
 mkdir build && cd build
-cmake .. -DCMAKE_PREFIX_PATH=/path/to/Qt6
+cmake .. -DCMAKE_PREFIX_PATH=/path/to/Qt
 cmake --build .
 ```
+
+Use `-DBUILD_SHARED_LIBS=ON` to build `qt-ant-design` as a shared library; omit it or set it to `OFF` for the default static build.
 
 On Windows / multi-config generators, the recommended workflow is:
 
@@ -175,16 +179,22 @@ int main(int argc, char* argv[])
 
 Total public components implemented: `82`
 
-`src/widgets` currently contains `83` `Ant*.h` headers; `AntSelectPopup` is an internal popup helper and is not counted as a public component.
+`src/widgets` currently contains `103` `Ant*.h` headers: `82` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup`.
 
 Ant Design standard components are counted by the top-level directories under [`ant-design/ant-design`](https://github.com/ant-design/ant-design)'s `components/` directory, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
+
+### Qt-Style Aliases
+
+Several components can also be included with Qt-style names when the Ant Design name is not a natural match: `AntLabel` → `AntTypography`, `AntLineEdit` → `AntInput`, `AntComboBox` → `AntSelect`, `AntSpinBox` / `AntDoubleSpinBox` → `AntInputNumber`, `AntPushButton` → `AntButton`, `AntProgressBar` → `AntProgress`, `AntCalendarWidget` → `AntCalendar`, `AntTabWidget` → `AntTabs`, `AntDialog` → `AntModal`, `AntMainWindow` → `AntWindow`, plus list/table/tree view-style aliases.
+
+For names that only differ by casing from Qt, the Qt casing is canonical: use `AntCheckBox` and `AntToolTip`.
 
 | Category | Components | Rendering |
 | --- | --- | --- |
 | General | `AntButton` `AntFloatButton` `AntIcon` `AntTypography` | `QProxyStyle` |
 | Navigation | `AntAnchor` `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | Mixed (`QProxyStyle` / custom paint) |
-| Data Entry | `AntAutoComplete` `AntCascader` `AntCheckbox` `AntColorPicker` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntMentions` `AntRadio` `AntRate` `AntSegmented` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` `AntTransfer` `AntTreeSelect` `AntUpload` | Mixed (`QProxyStyle` / custom paint) |
-| Feedback | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntTooltip` `AntTour` `AntWatermark` | Mixed (`QProxyStyle` / custom paint) |
+| Data Entry | `AntAutoComplete` `AntCascader` `AntCheckBox` `AntColorPicker` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntMentions` `AntRadio` `AntRate` `AntSegmented` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` `AntTransfer` `AntTreeSelect` `AntUpload` | Mixed (`QProxyStyle` / custom paint) |
+| Feedback | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | Mixed (`QProxyStyle` / custom paint) |
 | Data Display | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | Mixed (`QProxyStyle` / custom paint) |
 | Layout & Misc | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | Mixed (`QProxyStyle` / custom paint / QObject helper) |
 | Qt / Desktop Extensions | `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | Mixed (`QProxyStyle` / custom paint) |
@@ -209,7 +219,7 @@ Ant Design standard components are counted by the top-level directories under [`
 - `AntPopover`: title, body, action, click / hover triggers, placement, arrow
 - `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement
 - `AntSkeleton`: moving `active` shimmer, avatar placeholder, title / paragraph configuration, rounded style, and `loading` toggle to swap in real content
-- `AntTooltip`: common `placement`, arrow, color, delayed display, auto flip
+- `AntToolTip`: common `placement`, arrow, color, delayed display, auto flip
 - `AntSlider`: horizontal / vertical, `reverse / dots / included`, drag value bubble
 - `AntSwitch`: `checked / loading / small / text`, click wave feedback
 - `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation

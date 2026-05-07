@@ -1,10 +1,12 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 class QGridLayout;
 
-class AntCol : public QWidget
+class QT_ANT_DESIGN_EXPORT AntCol : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int span READ span WRITE setSpan NOTIFY spanChanged)
@@ -28,7 +30,7 @@ private:
     int m_offset = 0;
 };
 
-class AntRow : public QWidget
+class QT_ANT_DESIGN_EXPORT AntRow : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int gutter READ gutter WRITE setGutter NOTIFY gutterChanged)

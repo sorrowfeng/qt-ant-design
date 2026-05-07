@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QColor>
 #include <QRect>
 #include <QWidget>
@@ -13,7 +15,7 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 
-class AntColorPicker : public QWidget
+class QT_ANT_DESIGN_EXPORT AntColorPicker : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QColor currentColor READ currentColor WRITE setCurrentColor NOTIFY currentColorChanged)

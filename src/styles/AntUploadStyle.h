@@ -1,10 +1,12 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include "core/AntStyleBase.h"
 
 struct AntUploadFile;
 
-class AntUploadStyle : public AntStyleBase
+class QT_ANT_DESIGN_EXPORT AntUploadStyle : public AntStyleBase
 {
     Q_OBJECT
 

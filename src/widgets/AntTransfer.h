@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 class QListWidget;
@@ -8,7 +10,7 @@ class QMouseEvent;
 class QPaintEvent;
 class QWheelEvent;
 
-class AntTransfer : public QWidget
+class QT_ANT_DESIGN_EXPORT AntTransfer : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QStringList sourceItems READ sourceItems NOTIFY itemsChanged)

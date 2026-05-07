@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QIcon>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
-class AntQRCode : public QWidget
+class QT_ANT_DESIGN_EXPORT AntQRCode : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString value READ value WRITE setValue NOTIFY valueChanged)

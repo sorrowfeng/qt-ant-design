@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 #include <QDate>
 
@@ -10,7 +12,7 @@ class QAbstractTableModel;
 class QStyledItemDelegate;
 class QResizeEvent;
 
-class AntCalendar : public QWidget
+class QT_ANT_DESIGN_EXPORT AntCalendar : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QDate selectedDate READ selectedDate WRITE setSelectedDate NOTIFY selectedDateChanged)

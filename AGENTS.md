@@ -2,11 +2,11 @@
 
 ## 项目定位
 
-`qt-ant-design` 是一个基于 Qt6 Widgets 的 C++ 组件库，目标是以 `QPainter` 手绘方式复刻 Ant Design 设计系统，并逐步将复杂控件的主绘制链路迁移到 `QProxyStyle` 架构。
+`qt-ant-design` 是一个基于 Qt Widgets 的 C++ 组件库，CMake 配置时自动识别 Qt6 或 Qt5，目标是以 `QPainter` 手绘方式复刻 Ant Design 设计系统，并逐步将复杂控件的主绘制链路迁移到 `QProxyStyle` 架构。
 
 当前仓库输出：
 
-- 静态库 `qt-ant-design`
+- 静态库或动态库 `qt-ant-design`（由 `BUILD_SHARED_LIBS` 控制）
 - 示例程序 `qt-ant-design-example`
 - 可安装头文件、CMake targets 和 Windows 下的运行依赖
 
@@ -24,19 +24,20 @@
 
 ## 项目状态
 
-- 同步日期：`2026-05-07`
+- 同步日期：`2026-05-08`
 - 状态总览：`docs/project-status.md`
-- 已实现公开组件总数：`82`（`src/widgets` 有 83 个 `Ant*.h`，其中 `AntSelectPopup` 是内部弹层 helper，不计入公开组件）
+- 已实现公开组件总数：`82`（`src/widgets` 有 `103` 个 `Ant*.h`，包含 `82` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`）
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
 - 子组件/变体完整度：`15 / 15`（100%）
 - Qt / 桌面扩展组件：`12`（AntWindow、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntPlainTextEdit、AntDockWidget、AntLog、AntNavItem）
 - 已迁移至 `QProxyStyle` 的组件数：`62` 个 `Ant*Style` 类
 - 不依赖独立 Style 类的组件：`AntAffix`、`AntAnchor`、`AntApp`、`AntCarousel`、`AntCollapse`、`AntColorPicker`、`AntConfigProvider`、`AntDockWidget`、`AntFlex`、`AntGrid`、`AntImage`、`AntLog`、`AntMasonry`、`AntMentions`、`AntNavItem`、`AntScrollArea`、`AntSplitter`、`AntTour`、`AntTransfer`、`AntWidget`
 - 示例程序覆盖：`82 / 82` 个公开组件，另有独立 `Showcase` 页面；所有公开组件均已提供独立示例页
+- Qt 风格别名：名字与常用 Qt 控件无法直观对应的组件提供轻量头文件别名（如 `AntLabel.h` → `AntTypography`）；仅大小写差异时以 Qt 命名为准（如 `AntCheckBox`、`AntToolTip`），不保留旧拼写兼容 alias。
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：`34 / 34` CTest 目标在 Debug 下通过（最近一次全量验证：`2026-05-01`）
+- 测试状态：当前 `37` 个 CTest 目标；最近一次 build-system / install targeted 验证 `4 / 4` 在 Debug 下通过（`2026-05-08`）
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -110,12 +111,12 @@
 
 - `AntTypography` 默认垂直居中，新增 alignment 策略、wordWrap 和 clear API。
 - `AntInput` 补齐常用 `QLineEdit` 风格 API/信号，包括 placeholder、readOnly、maxLength、echoMode、alignment、selection、clipboard、undo/redo、return/editing/selection/inputRejected 等。
-- `AntInputNumber` / `AntCheckbox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API，并增加对应属性/信号测试。
+- `AntInputNumber` / `AntCheckBox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API，并增加对应属性/信号测试。
 - `AntSelect` 补齐常用 `QComboBox` 风格 API/信号，包括 add/insert/remove/find、itemText/itemData、currentData、setCurrentText、activated/textActivated/highlighted/textHighlighted。
 - `AntDatePicker` / `AntTimePicker` 补齐 `QDateEdit` / `QTimeEdit` 风格 date/time 别名、minimum/maximum range API、range changed 信号，并对越界输入做边界收敛。
 - `AntList` / `AntTable` / `AntTree` 补齐 item/view 风格辅助 API，包括 count/item/take/clear、columnCount/headerLabels/cellData/setData、treeData/nodeCount/containsNode/setNodeExpanded/setNodeChecked。
 - `AntMenu` 接入 QWidget `QAction` 体系：`addAction/removeAction` 会同步自绘菜单项，action text/enabled/shortcut 变更会刷新显示，点击菜单项会触发对应 QAction；`AntToolButton` / `AntToolBar` 的默认 action 和 toolbar action 触发行为已有测试保护。
-- 相关 targeted 验证覆盖 `TestAntInput|TestAntCheckbox|TestAntDataEntryA|TestAntDataEntryB|TestAntDataDisplayB|TestAntFeedback|TestAntNavigation|TestAntQtExtensions|TestAntTypography|TestAntSelect|TestAntMetaProperties|TestAntRenderSmoke`。
+- 相关 targeted 验证覆盖 `TestAntInput|TestAntCheckBox|TestAntDataEntryA|TestAntDataEntryB|TestAntDataDisplayB|TestAntFeedback|TestAntNavigation|TestAntQtExtensions|TestAntTypography|TestAntSelect|TestAntMetaProperties|TestAntRenderSmoke`。
 
 ## 子组件/变体完整度（完成于 2026-04-26，状态复核 2026-04-30）
 
@@ -169,7 +170,7 @@
 | --- | --- | --- | --- | --- |
 | `AntAutoComplete` | `auto-complete` | `QProxyStyle` | 是 | 建议弹出、键盘导航 |
 | `AntCascader` | `cascader` | `QProxyStyle` | 是 | 多列弹出面板、点击/悬停展开 |
-| `AntCheckbox` | `checkbox` | `QProxyStyle` | 是 | |
+| `AntCheckBox` | `checkbox` | `QProxyStyle` | 是 | |
 | `AntColorPicker` | `color-picker` | 自绘 | 是 | inline trigger/showText、HS field、RGB/HSV、预设、static getColor() |
 | `AntDatePicker` | `date-picker` | `QProxyStyle` | 是 | 自绘日期弹层、RangePicker |
 | `AntDescriptions` | `descriptions` | `QProxyStyle` | 是 | 标题、extra、bordered、vertical |
@@ -203,7 +204,7 @@
 | `AntResult` | `result` | `QProxyStyle` | 是 | status/title/subTitle/extra |
 | `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | active shimmer、头像/标题/段落占位、Element 变体 |
 | `AntSpin` | `spin` | `QProxyStyle` | 是 | small/middle/large/percent/delay |
-| `AntTooltip` | `tooltip` | `QProxyStyle` | 是 | title/placement/color/arrow/delay |
+| `AntToolTip` | `tooltip` | `QProxyStyle` | 是 | title/placement/color/arrow/delay |
 | `AntWatermark` | `watermark` | `QProxyStyle` | 是 | 旋转文本平铺、多行、自定义间距 |
 | `AntTour` | `tour` | 自绘 | 是 | 遮罩式分步引导、目标高亮 |
 
@@ -226,7 +227,7 @@
 | `AntTable` | `table` | `QProxyStyle` | 是 | 排序、选择、分页、空态插画 |
 | `AntTag` | `tag` | `QProxyStyle` | 是 | 13 色预设、closable/checkable/variant |
 | `AntTimeline` | `timeline` | `QProxyStyle` | 是 | 垂直/水平、outlined/filled、颜色 |
-| `AntTooltip` | — | `QProxyStyle` | 是 | 已在反馈类 |
+| `AntToolTip` | — | `QProxyStyle` | 是 | 已在反馈类 |
 | `AntTree` | `tree` | `QProxyStyle` | 是 | 展开/收起、选择、复选框、连接线 |
 
 ### 布局及其他
@@ -264,8 +265,11 @@
 
 ## 开发规范
 
-- 仅支持 Qt6，CMake 使用：
-  - `find_package(Qt6 REQUIRED COMPONENTS Core Widgets)`
+- 支持 Qt6 / Qt5 自动识别，CMake 使用：
+  - `find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Svg)`
+  - `find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Svg)`
+- 库类型通过标准 `BUILD_SHARED_LIBS` 控制；默认静态库，传入 `-DBUILD_SHARED_LIBS=ON` 构建动态库
+- Windows 动态库使用 `core/QtAntDesignExport.h` 中的 `QT_ANT_DESIGN_EXPORT` 显式导出公开类
 - C++ 标准为 `C++17`
 - 所有核心视觉值优先从 `AntTheme` / `AntPalette` 获取，不直接散落硬编码
 - 组件公共枚举与通用类型统一放在 `src/core/AntTypes.h`
@@ -399,11 +403,11 @@ cmake --install build --config Debug
 
 项目使用 QTest 与 CTest 脚本进行自动化测试，覆盖所有 82 个公开组件的属性、getter/setter、信号验证、生命周期压力场景和安装消费方验证。
 
-- **测试框架**：Qt6::Test（QTest + QSignalSpy）
-- **测试数量**：34 个 CTest 目标（32 个 QTest 可执行文件 + 1 个安装消费方 CMake 脚本测试 + 1 个 example 压力退出测试）
+- **测试框架**：Qt Test（QTest + QSignalSpy，跟随自动检测到的 Qt 主版本）
+- **测试数量**：37 个 CTest 目标（33 个 QTest 可执行文件 + 1 个安装消费方 CMake 脚本测试 + 1 个 build-system CMake 脚本测试 + 1 个 example GUI subsystem 脚本测试 + 1 个 example 压力退出测试）
 - **覆盖组件**：82 个公开组件全部覆盖，内部 helper 随宿主组件测试
 - **运行方式**：`ctest -C Debug --output-on-failure`
-- **最近全量结果**：`34 / 34` 通过（Debug，2026-05-01）
+- **最近 targeted 结果**：`4 / 4` build-system / install 相关测试通过（Debug，2026-05-08）
 
 ### 测试文件结构
 
@@ -416,7 +420,7 @@ tests/
 ├── TestAntTypography.cpp       # Typography 属性/信号
 ├── TestAntFloatButton.cpp      # FloatButton 属性/信号
 ├── TestAntBadge.cpp            # Badge 属性/信号
-├── TestAntCheckbox.cpp         # Checkbox 属性/信号
+├── TestAntCheckBox.cpp         # Checkbox 属性/信号
 ├── TestAntSwitch.cpp           # Switch 属性/信号
 ├── TestAntSelect.cpp           # Select 单选/多选/标签
 ├── TestAntInput.cpp            # Input 属性/信号
@@ -430,6 +434,7 @@ tests/
 ├── TestAntNavigation.cpp       # Breadcrumb, Dropdown, Menu, Pagination, Steps, Tabs, Anchor
 ├── TestAntLayout.cpp           # Divider, Flex, Grid, Space, Layout, Masonry, Affix
 ├── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, NavItem, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker
+├── TestAntAliases.cpp          # Qt-style alias headers and type mapping coverage
 ├── TestAntObjectTree.cpp       # Public widget parent ownership, style ownership, and parent-driven destruction
 ├── TestAntChildOwnership.cpp   # Assigned child QWidget adoption and host-driven destruction coverage
 ├── TestAntThemeLifecycle.cpp   # Global theme switching, destruction, and open-popup theme lifecycle coverage
@@ -442,6 +447,8 @@ tests/
 ├── TestAntRenderSmoke.cpp      # Public widget render smoke coverage with nonblank checks for direct paint surfaces
 ├── TestAntVisualRegression.cpp # Token-color, input handler, data display, selection, tag/badge, feedback surface, navigation/layout/popup, and light/dark visual guards
 ├── TestAntInstallConsumer.cmake # Installed package can be found and linked by an external CMake consumer
+├── TestAntBuildSystem.cmake # Build options cover Qt major detection and static/shared library settings
+├── TestAntExampleGuiSubsystem.cmake # Windows example executable uses GUI subsystem, not console subsystem
 ├── TestAntExampleCloseStress   # Example executable theme-cycle and auto-close CTest target
 └── TestAntCoverageInventory.cpp # Public Ant*.h coverage guard for lifecycle and meta-property tests
 ```

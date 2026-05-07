@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QPointer>
 #include <QWidget>
 
@@ -11,7 +13,7 @@ class QMouseEvent;
 class QPaintEvent;
 class QVBoxLayout;
 
-class AntAlert : public QWidget
+class QT_ANT_DESIGN_EXPORT AntAlert : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)

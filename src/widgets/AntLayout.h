@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -7,7 +9,7 @@
 class QEvent;
 class QMouseEvent;
 
-class AntLayoutHeader : public QWidget
+class QT_ANT_DESIGN_EXPORT AntLayoutHeader : public QWidget
 {
     Q_OBJECT
 public:
@@ -19,7 +21,7 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 };
 
-class AntLayoutFooter : public QWidget
+class QT_ANT_DESIGN_EXPORT AntLayoutFooter : public QWidget
 {
     Q_OBJECT
 public:
@@ -31,7 +33,7 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 };
 
-class AntLayoutContent : public QWidget
+class QT_ANT_DESIGN_EXPORT AntLayoutContent : public QWidget
 {
     Q_OBJECT
 public:
@@ -43,7 +45,7 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 };
 
-class AntLayoutSider : public QWidget
+class QT_ANT_DESIGN_EXPORT AntLayoutSider : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool collapsed READ isCollapsed WRITE setCollapsed NOTIFY collapsedChanged)
@@ -110,7 +112,7 @@ private:
     QWidget* m_triggerWidget = nullptr;
 };
 
-class AntLayout : public QWidget
+class QT_ANT_DESIGN_EXPORT AntLayout : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool hasSider READ hasSider NOTIFY hasSiderChanged)

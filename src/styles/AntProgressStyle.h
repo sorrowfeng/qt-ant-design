@@ -1,8 +1,10 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include "core/AntStyleBase.h"
 
-class AntProgressStyle : public AntStyleBase
+class QT_ANT_DESIGN_EXPORT AntProgressStyle : public AntStyleBase
 {
     Q_OBJECT
 

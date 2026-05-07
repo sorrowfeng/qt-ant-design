@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/QtAntDesignExport.h"
+
 #include <QToolButton>
 
 #include "core/AntTypes.h"
@@ -7,7 +9,7 @@
 class AntMenu;
 class QPropertyAnimation;
 
-class AntToolButton : public QToolButton
+class QT_ANT_DESIGN_EXPORT AntToolButton : public QToolButton
 {
     Q_OBJECT
     Q_PROPERTY(Ant::ButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged)

@@ -2,7 +2,7 @@ set(CMAKE_AUTOMOC ON)
 
 function(add_ant_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
-    target_link_libraries(${TEST_NAME} PRIVATE qt-ant-design Qt6::Test)
+    target_link_libraries(${TEST_NAME} PRIVATE qt-ant-design Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endfunction()
 
@@ -24,7 +24,7 @@ add_ant_test(TestAntTypography)
 add_ant_test(TestAntFloatButton)
 
 # Data Entry A (6 widgets)
-add_ant_test(TestAntCheckbox)
+add_ant_test(TestAntCheckBox)
 add_ant_test(TestAntSwitch)
 add_ant_test(TestAntSelect)
 add_ant_test(TestAntInput)
@@ -53,6 +53,9 @@ add_ant_test(TestAntLayout)
 
 # Qt Extensions (18 widgets)
 add_ant_test(TestAntQtExtensions)
+
+# Qt-style widget aliases
+add_ant_test(TestAntAliases)
 
 # Object tree ownership
 add_ant_test(TestAntObjectTree)
@@ -91,7 +94,8 @@ add_test(NAME TestAntInstallConsumer
         -DANT_BINARY_DIR=${CMAKE_BINARY_DIR}
         -DANT_TEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
         -DANT_CONFIG=$<CONFIG>
-        -DANT_QT6_DIR=${Qt6_DIR}
+        -DANT_QT_PACKAGE=${QT_ANT_DESIGN_QT_PACKAGE}
+        -DANT_QT_PACKAGE_DIR=${${QT_ANT_DESIGN_QT_PACKAGE}_DIR}
         -DANT_CMAKE_GENERATOR=${CMAKE_GENERATOR}
         -DANT_CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
         -DANT_CMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
@@ -99,7 +103,22 @@ add_test(NAME TestAntInstallConsumer
         -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntInstallConsumer.cmake
 )
 
+# Build-system option coverage
+add_test(NAME TestAntBuildSystem
+    COMMAND ${CMAKE_COMMAND}
+        -DANT_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntBuildSystem.cmake
+)
+
 if(TARGET qt-ant-design-example)
+    if(WIN32)
+        add_test(NAME TestAntExampleGuiSubsystem
+            COMMAND ${CMAKE_COMMAND}
+                -DEXAMPLE_EXE=$<TARGET_FILE:qt-ant-design-example>
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntExampleGuiSubsystem.cmake
+        )
+    endif()
+
     add_test(NAME TestAntExampleCloseStress
         COMMAND $<TARGET_FILE:qt-ant-design-example>
             --stress-theme-cycles 16
