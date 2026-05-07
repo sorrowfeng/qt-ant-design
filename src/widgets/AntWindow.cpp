@@ -622,6 +622,15 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         const HWND hwnd = msg->hwnd;
         const UINT uMsg = msg->message;
         const LPARAM lParam = msg->lParam;
+        const auto titleBarButtonForNativeMouseMessage = [this](WPARAM hitTestCode, LPARAM messagePos) {
+            const QPoint globalPos(GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos));
+            const TitleBarButton buttonAtCursor = buttonAtPosition(mapFromGlobal(globalPos));
+            if (titleBarButtonForNativeHitTest(nativeHitTestForTitleBarButton(buttonAtCursor)) != TitleBarButton::None)
+            {
+                return buttonAtCursor;
+            }
+            return titleBarButtonForNativeHitTest(hitTestCode);
+        };
 
         switch (uMsg)
         {
@@ -724,12 +733,13 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         }
         case WM_NCMOUSEMOVE:
         {
-            const TitleBarButton button = titleBarButtonForNativeHitTest(msg->wParam);
+            const TitleBarButton button = titleBarButtonForNativeMouseMessage(msg->wParam, lParam);
             if (button != TitleBarButton::None)
             {
+                const WPARAM nativeHitTest = static_cast<WPARAM>(nativeHitTestForTitleBarButton(button));
                 m_hoveredButton = button;
                 update(titleBarButtonRect(button));
-                *result = ::DefWindowProcW(hwnd, uMsg, msg->wParam, lParam);
+                *result = ::DefWindowProcW(hwnd, uMsg, nativeHitTest, lParam);
                 return true;
             }
             break;
@@ -748,7 +758,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         }
         case WM_NCLBUTTONDOWN:
         {
-            const TitleBarButton button = titleBarButtonForNativeHitTest(msg->wParam);
+            const TitleBarButton button = titleBarButtonForNativeMouseMessage(msg->wParam, lParam);
             if (button != TitleBarButton::None)
             {
                 m_pressedButton = button;
@@ -760,7 +770,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         }
         case WM_NCLBUTTONUP:
         {
-            const TitleBarButton button = titleBarButtonForNativeHitTest(msg->wParam);
+            const TitleBarButton button = titleBarButtonForNativeMouseMessage(msg->wParam, lParam);
             if (button != TitleBarButton::None || m_pressedButton != TitleBarButton::None)
             {
                 const QPoint globalPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));

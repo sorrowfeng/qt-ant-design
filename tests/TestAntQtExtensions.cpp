@@ -695,6 +695,8 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     };
 
     const QPoint maximizePoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Maximize).center();
+    QCOMPARE(hitTest(maximizePoint), static_cast<qintptr>(HTZOOM));
+    QVERIFY(sendNonClientButtonMessage(WM_NCMOUSEMOVE, HTCLIENT, maximizePoint) != -1);
     QVERIFY(sendNonClientButtonMessage(WM_NCLBUTTONDOWN, HTZOOM, maximizePoint) != -1);
     QVERIFY(sendNonClientButtonMessage(WM_NCLBUTTONUP, HTZOOM, maximizePoint) != -1);
     QTRY_VERIFY(window.isMaximized());
