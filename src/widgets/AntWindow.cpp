@@ -1,16 +1,24 @@
 #include "AntWindow.h"
 
+#include <QAbstractAnimation>
+#include <QCoreApplication>
 #include <QCursor>
+#include <QEasingCurve>
 #include <QEvent>
+#include <QEventLoop>
 #include <QGuiApplication>
 #include <QHoverEvent>
+#include <QLineF>
 #include <QMetaType>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
+#include <QPixmap>
 #include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
 #include <QStyleHints>
+#include <QVariantAnimation>
 #include <QVBoxLayout>
 #include <QWindow>
 
@@ -30,6 +38,86 @@ constexpr AntWindow::TitleBarButton kTitleBarButtonsRightToLeft[] = {
     AntWindow::TitleBarButton::Minimize,
     AntWindow::TitleBarButton::Theme,
     AntWindow::TitleBarButton::Pin,
+};
+
+constexpr auto kThemeTransitionOverlayName = "AntWindowThemeTransitionOverlay";
+
+class AntWindowThemeTransitionOverlay : public QWidget
+{
+public:
+    AntWindowThemeTransitionOverlay(QWidget* parent, const QPixmap& oldFrame, const QPoint& origin)
+        : QWidget(parent)
+        , m_oldFrame(oldFrame)
+        , m_origin(origin)
+    {
+        setObjectName(QString::fromLatin1(kThemeTransitionOverlayName));
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setFocusPolicy(Qt::NoFocus);
+    }
+
+    void setProgress(qreal progress)
+    {
+        const qreal normalized = qBound<qreal>(0.0, progress, 1.0);
+        if (qFuzzyCompare(m_progress, normalized))
+        {
+            return;
+        }
+        m_progress = normalized;
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        if (m_oldFrame.isNull())
+        {
+            return;
+        }
+
+        const QRectF bounds(rect());
+        if (bounds.isEmpty())
+        {
+            return;
+        }
+
+        const qreal radius = transitionRadius();
+        QPainterPath oldFrameArea;
+        oldFrameArea.addRect(bounds);
+        QPainterPath revealArea;
+        revealArea.addEllipse(QPointF(m_origin), radius, radius);
+        oldFrameArea = oldFrameArea.subtracted(revealArea);
+
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setClipPath(oldFrameArea);
+        painter.setOpacity(qBound<qreal>(0.0, 1.0 - m_progress, 1.0));
+
+        const qreal dpr = qMax<qreal>(1.0, m_oldFrame.devicePixelRatio());
+        const QRectF sourceRect(0.0,
+                                0.0,
+                                static_cast<qreal>(m_oldFrame.width()) / dpr,
+                                static_cast<qreal>(m_oldFrame.height()) / dpr);
+        painter.drawPixmap(bounds, m_oldFrame, sourceRect);
+    }
+
+private:
+    qreal transitionRadius() const
+    {
+        const QRectF bounds(rect());
+        const QPointF origin(m_origin);
+        qreal radius = 0.0;
+        for (const QPointF corner : {bounds.topLeft(), bounds.topRight(), bounds.bottomLeft(), bounds.bottomRight()})
+        {
+            radius = qMax(radius, QLineF(origin, corner).length());
+        }
+        return radius * m_progress;
+    }
+
+    QPixmap m_oldFrame;
+    QPoint m_origin;
+    qreal m_progress = 0.0;
 };
 
 #ifdef Q_OS_WIN
@@ -637,6 +725,11 @@ void AntWindow::changeEvent(QEvent* event)
 void AntWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
+    if (m_themeTransitionOverlay)
+    {
+        m_themeTransitionOverlay->setGeometry(rect());
+        m_themeTransitionOverlay->raise();
+    }
 }
 
 void AntWindow::showEvent(QShowEvent* event)
@@ -1088,7 +1181,7 @@ void AntWindow::handleButtonClicked(TitleBarButton button)
         toggleAlwaysOnTop();
         break;
     case TitleBarButton::Theme:
-        antTheme->toggleThemeMode();
+        startThemeModeTransition();
         break;
     case TitleBarButton::Minimize:
         showMinimized();
@@ -1115,6 +1208,60 @@ void AntWindow::handleButtonClicked(TitleBarButton button)
     default:
         break;
     }
+}
+
+void AntWindow::startThemeModeTransition()
+{
+    if (m_themeTransitionOverlay)
+    {
+        m_themeTransitionOverlay->hide();
+        m_themeTransitionOverlay->deleteLater();
+        m_themeTransitionOverlay = nullptr;
+    }
+
+    if (!isVisible() || width() <= 0 || height() <= 0)
+    {
+        antTheme->toggleThemeMode();
+        return;
+    }
+
+    const QPixmap oldFrame = grab();
+    if (oldFrame.isNull())
+    {
+        antTheme->toggleThemeMode();
+        return;
+    }
+
+    auto* overlay = new AntWindowThemeTransitionOverlay(this,
+                                                        oldFrame,
+                                                        titleBarButtonRect(TitleBarButton::Theme).center());
+    m_themeTransitionOverlay = overlay;
+    overlay->setGeometry(rect());
+    overlay->raise();
+    overlay->show();
+    overlay->update();
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
+    antTheme->toggleThemeMode();
+    overlay->raise();
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
+    auto* animation = new QVariantAnimation(overlay);
+    animation->setDuration(240);
+    animation->setStartValue(0.0);
+    animation->setEndValue(1.0);
+    animation->setEasingCurve(QEasingCurve::OutCubic);
+    connect(animation, &QVariantAnimation::valueChanged, overlay, [overlay](const QVariant& value) {
+        overlay->setProgress(value.toReal());
+    });
+    connect(animation, &QVariantAnimation::finished, overlay, [this, overlay]() {
+        if (m_themeTransitionOverlay == overlay)
+        {
+            m_themeTransitionOverlay = nullptr;
+        }
+        overlay->deleteLater();
+    });
+    animation->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 void AntWindow::applyManualSnap(const QPoint& globalPos)

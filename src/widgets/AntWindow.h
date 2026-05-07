@@ -110,6 +110,7 @@ private:
     bool handleTitleBarMouseRelease(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button);
     bool handleTitleBarMouseDoubleClick(const QPoint& pos, Qt::MouseButton button);
     void handleButtonClicked(TitleBarButton button);
+    void startThemeModeTransition();
     void emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible);
     void applyManualSnap(const QPoint& globalPos);
     void applyNativeWindowFrame();
@@ -132,4 +133,5 @@ private:
     TitleBarButton m_hoveredButton = TitleBarButton::None;
     TitleBarButton m_pressedButton = TitleBarButton::None;
     QWidget* m_contentWidget = nullptr;
+    QWidget* m_themeTransitionOverlay = nullptr;
 };

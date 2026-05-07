@@ -53,6 +53,7 @@ private slots:
     void windowTitleBarButtonsHandleChildDeliveredClicks();
     void windowTitleBarButtonsTriggerOnRelease();
     void windowTitleBarHoverStateClearsOnLeave();
+    void windowThemeButtonShowsTransitionOverlay();
     void windowNativeHitTestSupportsSnapZones();
     void colorPicker();
 };
@@ -655,6 +656,32 @@ void TestAntQtExtensions::windowTitleBarHoverStateClearsOnLeave()
     QEvent contentLeave(QEvent::Leave);
     QCoreApplication::sendEvent(titleBarEventTarget, &contentLeave);
     QCOMPARE(window.hoveredTitleBarButton(), AntWindow::TitleBarButton::None);
+}
+
+void TestAntQtExtensions::windowThemeButtonShowsTransitionOverlay()
+{
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntWindow window;
+    window.resize(640, 420);
+    window.setCentralWidget(new QWidget);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QTest::mouseClick(&window,
+                      Qt::LeftButton,
+                      Qt::NoModifier,
+                      window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center());
+    QCOMPARE(antTheme->themeMode(), Ant::ThemeMode::Dark);
+
+    auto* overlay = window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay"));
+    QVERIFY(overlay != nullptr);
+    QVERIFY(overlay->isVisible());
+    QVERIFY(overlay->testAttribute(Qt::WA_TransparentForMouseEvents));
+    QCOMPARE(overlay->geometry(), window.rect());
+
+    QTRY_VERIFY(window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay")) == nullptr);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
 }
 
 void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
