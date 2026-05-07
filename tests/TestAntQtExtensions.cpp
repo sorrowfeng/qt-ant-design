@@ -56,6 +56,7 @@ private slots:
     void windowTitleBarHoverStateClearsOnLeave();
     void windowThemeButtonShowsTransitionOverlay();
     void windowThemeTransitionOverlayKeepsOldFrameScale();
+    void windowThemeTransitionRevealsNewFrameWithoutBlackHole();
     void windowNativeHitTestSupportsSnapZones();
     void colorPicker();
 };
@@ -685,6 +686,7 @@ void TestAntQtExtensions::windowThemeButtonShowsTransitionOverlay()
     QCOMPARE(overlay->property("transitionDurationMs").toInt(), 320);
     QCOMPARE(overlay->property("transitionMotionCurve").toString(), QStringLiteral("smootherstep"));
     QCOMPARE(overlay->property("transitionEdgeFeather").toInt(), 24);
+    QCOMPARE(overlay->property("transitionDrawsCapturedNewFrame").toBool(), true);
 
     QTRY_VERIFY(window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay")) == nullptr);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
@@ -742,6 +744,64 @@ void TestAntQtExtensions::windowThemeTransitionOverlayKeepsOldFrameScale()
                             .arg(rightSide.green())
                             .arg(rightSide.blue())
                             .arg(rightSide.alpha())));
+
+    QTRY_VERIFY(window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay")) == nullptr);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+}
+
+void TestAntQtExtensions::windowThemeTransitionRevealsNewFrameWithoutBlackHole()
+{
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    class ThemePaintWidget : public QWidget
+    {
+    public:
+        explicit ThemePaintWidget(QWidget* parent = nullptr)
+            : QWidget(parent)
+        {
+            setAutoFillBackground(false);
+            connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+        }
+
+    protected:
+        void paintEvent(QPaintEvent*) override
+        {
+            QPainter painter(this);
+            painter.fillRect(rect(),
+                             antTheme->themeMode() == Ant::ThemeMode::Dark
+                                 ? QColor(20, 100, 235)
+                                 : QColor(230, 45, 45));
+        }
+    };
+
+    AntWindow window;
+    window.resize(640, 420);
+    window.setCentralWidget(new ThemePaintWidget);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    const QPoint samplePoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center() + QPoint(0, 80);
+    QTest::mouseClick(&window,
+                      Qt::LeftButton,
+                      Qt::NoModifier,
+                      window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center());
+    auto* overlay = window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay"));
+    QVERIFY(overlay != nullptr);
+    QTest::qWait(140);
+
+    QImage rendered(overlay->size(), QImage::Format_ARGB32_Premultiplied);
+    rendered.fill(Qt::black);
+    QPainter painter(&rendered);
+    overlay->render(&painter);
+    painter.end();
+
+    const QColor revealed = rendered.pixelColor(samplePoint);
+    QVERIFY2(revealed.blue() > 160 && revealed.red() < 120,
+             qPrintable(QStringLiteral("Transition reveal exposed a black/transparent hole instead of the new frame: rgba(%1,%2,%3,%4)")
+                            .arg(revealed.red())
+                            .arg(revealed.green())
+                            .arg(revealed.blue())
+                            .arg(revealed.alpha())));
 
     QTRY_VERIFY(window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay")) == nullptr);
     antTheme->setThemeMode(Ant::ThemeMode::Default);

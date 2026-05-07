@@ -11,8 +11,8 @@
 #include <QMetaType>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPixmap>
-#include <QRadialGradient>
 #include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
@@ -66,9 +66,16 @@ public:
         setProperty("transitionDurationMs", kThemeTransitionDurationMs);
         setProperty("transitionMotionCurve", QStringLiteral("smootherstep"));
         setProperty("transitionEdgeFeather", kThemeTransitionEdgeFeather);
+        setProperty("transitionDrawsCapturedNewFrame", true);
         connect(&m_timer, &QTimer::timeout, this, [this]() {
             advanceAnimation();
         });
+    }
+
+    void setNewFrame(const QPixmap& newFrame)
+    {
+        m_newFrame = newFrame;
+        update();
     }
 
     void startTransition(int durationMs, std::function<void()> finished)
@@ -131,28 +138,14 @@ protected:
         const qreal radius = transitionRadius();
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing, true);
-        painter.setOpacity(qBound<qreal>(0.0, 1.0 - m_progress, 1.0));
+        drawFrame(&painter, m_oldFrame, 1.0);
 
-        const QRectF sourceRect(m_oldFrame.rect());
-        painter.drawPixmap(bounds, m_oldFrame, sourceRect);
-        if (radius <= 0.0)
+        if (m_newFrame.isNull() || radius <= 0.0)
         {
             return;
         }
 
-        const qreal feather = qMin<qreal>(kThemeTransitionEdgeFeather, qMax<qreal>(1.0, radius));
-        const qreal gradientRadius = radius + feather;
-        QRadialGradient revealGradient(QPointF(m_origin), gradientRadius);
-        revealGradient.setColorAt(0.0, QColor(0, 0, 0, 255));
-        revealGradient.setColorAt(qBound<qreal>(0.0, (radius - feather) / gradientRadius, 1.0), QColor(0, 0, 0, 255));
-        revealGradient.setColorAt(qBound<qreal>(0.0, radius / gradientRadius, 1.0), QColor(0, 0, 0, 210));
-        revealGradient.setColorAt(1.0, QColor(0, 0, 0, 0));
-
-        painter.setOpacity(1.0);
-        painter.setCompositionMode(QPainter::CompositionMode_DestinationOut);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(revealGradient);
-        painter.drawEllipse(QPointF(m_origin), gradientRadius, gradientRadius);
+        drawRevealedNewFrame(&painter, radius);
     }
 
     qreal transitionRadius() const
@@ -173,7 +166,50 @@ protected:
         return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
     }
 
+    void drawFrame(QPainter* painter, const QPixmap& frame, qreal opacity)
+    {
+        painter->save();
+        painter->setOpacity(opacity);
+        painter->drawPixmap(QRectF(rect()), frame, QRectF(frame.rect()));
+        painter->restore();
+    }
+
+    void drawRevealedNewFrame(QPainter* painter, qreal radius)
+    {
+        const qreal feather = qMin<qreal>(kThemeTransitionEdgeFeather, qMax<qreal>(1.0, radius));
+        const qreal solidRadius = qMax<qreal>(0.0, radius - feather);
+        const int featherSteps = qMax(1, qRound(feather));
+
+        painter->save();
+        QPainterPath solidPath;
+        solidPath.addEllipse(QPointF(m_origin), solidRadius, solidRadius);
+        painter->setClipPath(solidPath);
+        drawFrame(painter, m_newFrame, 1.0);
+        painter->restore();
+
+        for (int step = featherSteps; step >= 1; --step)
+        {
+            const qreal outerRadius = solidRadius + step;
+            const qreal innerRadius = qMax<qreal>(0.0, outerRadius - 1.0);
+            QPainterPath ring;
+            ring.addEllipse(QPointF(m_origin), outerRadius, outerRadius);
+            QPainterPath inner;
+            inner.addEllipse(QPointF(m_origin), innerRadius, innerRadius);
+            ring = ring.subtracted(inner);
+
+            const qreal alpha = qBound<qreal>(
+                0.0,
+                static_cast<qreal>(featherSteps - step + 1) / static_cast<qreal>(featherSteps + 1),
+                1.0);
+            painter->save();
+            painter->setClipPath(ring);
+            drawFrame(painter, m_newFrame, alpha * 0.9);
+            painter->restore();
+        }
+    }
+
     QPixmap m_oldFrame;
+    QPixmap m_newFrame;
     QPoint m_origin;
     QTimer m_timer;
     QElapsedTimer m_elapsed;
@@ -1307,6 +1343,12 @@ void AntWindow::startThemeModeTransition()
     antTheme->toggleThemeMode();
     overlay->raise();
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
+    overlay->hide();
+    const QPixmap newFrame = grab();
+    overlay->setNewFrame(newFrame);
+    overlay->show();
+    overlay->raise();
 
     overlay->startTransition(kThemeTransitionDurationMs, [this, overlay]() {
         if (m_themeTransitionOverlay == overlay)
