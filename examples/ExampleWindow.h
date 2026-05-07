@@ -4,7 +4,6 @@
 
 #include "widgets/AntWindow.h"
 
-class AntButton;
 class AntNavItem;
 class QStackedWidget;
 class QVBoxLayout;
@@ -33,7 +32,6 @@ private:
     QWidget* m_content = nullptr;
     QVBoxLayout* m_navLayout = nullptr;
     QStackedWidget* m_stack = nullptr;
-    AntButton* m_themeButton = nullptr;
     QVector<AntNavItem*> m_navItems;
     int m_activeIndex = 0;
 };

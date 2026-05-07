@@ -14,7 +14,6 @@
 #include "core/AntTypes.h"
 #include "pages/PageCommon.h"
 #include "pages/PageRegistry.h"
-#include "widgets/AntButton.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntScrollBar.h"
 #include "widgets/AntTypography.h"
@@ -24,6 +23,11 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     : AntWindow(parent)
 {
     setWindowTitle(QStringLiteral("Ant Design Qt Widgets"));
+    setPinButtonVisible(true);
+    setThemeButtonVisible(true);
+    setMinimizeButtonVisible(true);
+    setMaximizeButtonVisible(true);
+    setCloseButtonVisible(true);
 
     m_central = new AntWidget(this);
     auto* root = new QHBoxLayout(m_central);
@@ -68,13 +72,6 @@ void ExampleWindow::buildSidebar()
     brand->setTitle(true);
     brand->setTitleLevel(Ant::TypographyTitleLevel::H4);
     brandLayout->addWidget(brand);
-
-    m_themeButton = new AntButton(QStringLiteral("Dark"), brandArea);
-    m_themeButton->setButtonType(Ant::ButtonType::Default);
-    m_themeButton->setButtonShape(Ant::ButtonShape::Round);
-    m_themeButton->setButtonSize(Ant::Size::Small);
-    connect(m_themeButton, &AntButton::clicked, antTheme, &AntTheme::toggleThemeMode);
-    brandLayout->addWidget(m_themeButton);
 
     sideLayout->addWidget(brandArea);
 
@@ -169,9 +166,5 @@ QSize ExampleWindow::sizeHint() const
 
 void ExampleWindow::applyTheme()
 {
-    const bool isDark = antTheme->themeMode() == Ant::ThemeMode::Dark;
-
-    m_themeButton->setText(isDark ? QStringLiteral("Light") : QStringLiteral("Dark"));
-
     setActiveNav(m_activeIndex);
 }
