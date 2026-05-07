@@ -41,6 +41,7 @@ class TestAntVisualRegression : public QObject
 
 private slots:
     void primaryButtonKeepsTokenFill();
+    void iconOnlyTextButtonKeepsIconCentered();
     void alertSemanticBackgroundsStayVisible();
     void progressStatusColorsStayVisible();
     void navigationActiveIndicatorsStayPrimary();
@@ -145,6 +146,33 @@ int countNearColor(const QImage& image, const QColor& target, int tolerance = 28
     return count;
 }
 
+QRect nearColorBounds(const QImage& image, const QColor& target, int tolerance = 28)
+{
+    int left = image.width();
+    int top = image.height();
+    int right = -1;
+    int bottom = -1;
+    for (int y = 0; y < image.height(); ++y)
+    {
+        for (int x = 0; x < image.width(); ++x)
+        {
+            if (!nearColor(image.pixelColor(x, y), target, tolerance))
+            {
+                continue;
+            }
+            left = qMin(left, x);
+            top = qMin(top, y);
+            right = qMax(right, x);
+            bottom = qMax(bottom, y);
+        }
+    }
+    if (right < left || bottom < top)
+    {
+        return {};
+    }
+    return QRect(QPoint(left, top), QPoint(right, bottom));
+}
+
 qreal averageLuminance(const QImage& image)
 {
     qreal total = 0;
@@ -198,6 +226,24 @@ void TestAntVisualRegression::primaryButtonKeepsTokenFill()
              qPrintable(QStringLiteral("default button primary pixels: %1, primary button pixels: %2")
                             .arg(defaultPrimaryPixels)
                             .arg(primaryPixels)));
+}
+
+void TestAntVisualRegression::iconOnlyTextButtonKeepsIconCentered()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntButton closeButton;
+    closeButton.setButtonType(Ant::ButtonType::Text);
+    closeButton.setButtonIconType(Ant::IconType::Close);
+    closeButton.setFixedSize(28, 28);
+    const QImage image = renderWidget(&closeButton, QSize(28, 28));
+
+    const QRect iconBounds = nearColorBounds(image, antTheme->tokens().colorText, 36);
+    QVERIFY2(!iconBounds.isNull(), "close icon should render visible pixels");
+    const int centerX = iconBounds.center().x();
+    QVERIFY2(centerX >= 11 && centerX <= 17,
+             qPrintable(QStringLiteral("icon-only close button center x: %1").arg(centerX)));
 }
 
 void TestAntVisualRegression::alertSemanticBackgroundsStayVisible()

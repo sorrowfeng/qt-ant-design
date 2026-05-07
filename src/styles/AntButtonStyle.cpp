@@ -354,15 +354,21 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
     painter->setPen(colors.text);
     if (button->isLoading())
     {
-        QRectF spinnerRect(textRect.left(), textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
+        const bool spinnerOnly = button->text().isEmpty();
+        QRectF spinnerRect = spinnerOnly
+            ? QRectF(outer.center().x() - m.iconSize / 2.0, outer.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize)
+            : QRectF(textRect.left(), textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
         drawSpinner(*painter, spinnerRect, colors.text, button->spinnerAngle());
-        textRect.adjust(m.iconSize + 8, 0, 0, 0);
+        if (!spinnerOnly)
+        {
+            textRect.adjust(m.iconSize + 8, 0, 0, 0);
+        }
     }
     else if (button->buttonIconType() != Ant::IconType::None)
     {
         QRectF iconRect;
         const bool trailingIcon = button->buttonIconType() == Ant::IconType::Down && !button->text().isEmpty();
-        if (button->buttonShape() == Ant::ButtonShape::Circle && button->text().isEmpty())
+        if (button->text().isEmpty())
         {
             iconRect = QRectF(outer.center().x() - m.iconSize / 2.0, outer.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
         }
@@ -405,6 +411,9 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
         }
         painter->restore();
     }
-    painter->drawText(textRect, Qt::AlignCenter, button->text());
+    if (!button->text().isEmpty())
+    {
+        painter->drawText(textRect, Qt::AlignCenter, button->text());
+    }
     painter->restore();
 }
