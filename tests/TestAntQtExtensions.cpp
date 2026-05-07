@@ -489,6 +489,7 @@ void TestAntQtExtensions::window()
     QCOMPARE(w->isMinimizeButtonVisible(), true);
     QCOMPARE(w->isMaximizeButtonVisible(), true);
     QCOMPARE(w->isCloseButtonVisible(), true);
+    QCOMPARE(w->cornerRadius(), 8);
     QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Pin), true);
     QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Theme), true);
     QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Minimize), true);
@@ -546,6 +547,14 @@ void TestAntQtExtensions::window()
     QCOMPARE(w->isAlwaysOnTop(), false);
     QVERIFY(!w->windowFlags().testFlag(Qt::WindowStaysOnTopHint));
     QCOMPARE(alwaysOnTopSpy.count(), 2);
+
+    QSignalSpy cornerSpy(w, &AntWindow::cornerRadiusChanged);
+    w->setCornerRadius(12);
+    QCOMPARE(w->cornerRadius(), 12);
+    QCOMPARE(cornerSpy.count(), 1);
+    w->setCornerRadius(-1);
+    QCOMPARE(w->cornerRadius(), 0);
+    QCOMPARE(cornerSpy.count(), 2);
 
     const Ant::ThemeMode beforeClickMode = antTheme->themeMode();
     QTest::mouseClick(w, Qt::LeftButton, Qt::NoModifier, w->titleBarButtonRect(AntWindow::TitleBarButton::Theme).center());
@@ -656,16 +665,44 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     QCOMPARE(hitTest(QPoint(80, 2)), static_cast<qintptr>(HTTOP));
     QCOMPARE(hitTest(QPoint(80, window.height() - 3)), static_cast<qintptr>(HTBOTTOM));
     QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<qintptr>(HTCAPTION));
+    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Pin).center()), static_cast<qintptr>(HTCLIENT));
+    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center()), static_cast<qintptr>(HTCLIENT));
+    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Minimize).center()),
+             static_cast<qintptr>(HTREDUCE));
+    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Maximize).center()),
+             static_cast<qintptr>(HTZOOM));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Close).center()),
-             static_cast<qintptr>(HTCLIENT));
+             static_cast<qintptr>(HTCLOSE));
+
+    auto sendNonClientButtonMessage = [&](UINT message, WPARAM hitTestCode, const QPoint& localPos) -> qintptr {
+        MSG msg{};
+        msg.hwnd = hwnd;
+        msg.message = message;
+        msg.wParam = hitTestCode;
+        const QPoint globalPos = window.mapToGlobal(localPos);
+        msg.lParam = MAKELPARAM(globalPos.x(), globalPos.y());
+        qintptr result = 0;
+        if (!window.nativeEvent("windows_generic_MSG", &msg, &result))
+        {
+            return -1;
+        }
+        return result;
+    };
+
+    const QPoint maximizePoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Maximize).center();
+    QVERIFY(sendNonClientButtonMessage(WM_NCLBUTTONDOWN, HTZOOM, maximizePoint) != -1);
+    QVERIFY(sendNonClientButtonMessage(WM_NCLBUTTONUP, HTZOOM, maximizePoint) != -1);
+    QTRY_VERIFY(window.isMaximized());
 
     window.showMaximized();
     QVERIFY(QTest::qWaitForWindowExposed(&window));
     QCoreApplication::processEvents();
 
     QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<qintptr>(HTCAPTION));
+    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Maximize).center()),
+             static_cast<qintptr>(HTZOOM));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Close).center()),
-             static_cast<qintptr>(HTCLIENT));
+             static_cast<qintptr>(HTCLOSE));
 #endif
 }
 

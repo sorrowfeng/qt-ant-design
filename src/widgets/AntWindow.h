@@ -21,6 +21,7 @@ class AntWindow : public QMainWindow
     Q_PROPERTY(bool minimizeButtonVisible READ isMinimizeButtonVisible WRITE setMinimizeButtonVisible NOTIFY minimizeButtonVisibleChanged)
     Q_PROPERTY(bool maximizeButtonVisible READ isMaximizeButtonVisible WRITE setMaximizeButtonVisible NOTIFY maximizeButtonVisibleChanged)
     Q_PROPERTY(bool closeButtonVisible READ isCloseButtonVisible WRITE setCloseButtonVisible NOTIFY closeButtonVisibleChanged)
+    Q_PROPERTY(int cornerRadius READ cornerRadius WRITE setCornerRadius NOTIFY cornerRadiusChanged)
 
 public:
     enum class TitleBarButton
@@ -48,6 +49,8 @@ public:
     bool isAlwaysOnTop() const;
     void setAlwaysOnTop(bool on);
     void toggleAlwaysOnTop();
+    int cornerRadius() const;
+    void setCornerRadius(int radius);
 
     bool isTitleBarButtonVisible(TitleBarButton button) const;
     void setTitleBarButtonVisible(TitleBarButton button, bool visible);
@@ -74,6 +77,7 @@ Q_SIGNALS:
     void minimizeButtonVisibleChanged(bool visible);
     void maximizeButtonVisibleChanged(bool visible);
     void closeButtonVisibleChanged(bool visible);
+    void cornerRadiusChanged(int radius);
     void minimizeRequested();
     void maximizeRequested();
     void restoreRequested();
@@ -104,6 +108,7 @@ private:
     void handleButtonClicked(TitleBarButton button);
     void emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible);
     void applyManualSnap(const QPoint& globalPos);
+    void applyNativeWindowFrame();
     void syncTheme();
     void applyContentPalette(QWidget* widget);
 
@@ -119,6 +124,7 @@ private:
     bool m_minimizeButtonVisible = true;
     bool m_maximizeButtonVisible = true;
     bool m_closeButtonVisible = true;
+    int m_cornerRadius = 8;
     TitleBarButton m_hoveredButton = TitleBarButton::None;
     TitleBarButton m_pressedButton = TitleBarButton::None;
     QWidget* m_contentWidget = nullptr;

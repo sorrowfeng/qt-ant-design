@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QIcon>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyleOption>
 #include <QSvgRenderer>
 
@@ -122,11 +123,23 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
     const int titleBarH = AntWindow::TitleBarHeight;
     const int w = option->rect.width();
     const bool maximized = window->isMaximized();
+    const int cornerRadius = maximized ? 0 : window->cornerRadius();
+    const QRectF windowRect(option->rect);
+    QPainterPath windowPath;
+    if (cornerRadius > 0)
+    {
+        windowPath.addRoundedRect(windowRect, cornerRadius, cornerRadius);
+        painter->setClipPath(windowPath);
+    }
+    else
+    {
+        windowPath.addRect(windowRect);
+    }
 
     // ─── Draw window background ───
     painter->setPen(Qt::NoPen);
     painter->setBrush(token.colorBgContainer);
-    painter->drawRect(option->rect);
+    painter->drawPath(windowPath);
 
     // ─── Draw title bar background ───
     const QRect titleBarRect(0, 0, w, titleBarH);
@@ -276,7 +289,15 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
         painter->setPen(QPen(token.colorBorder, token.lineWidth));
         painter->setBrush(Qt::NoBrush);
         const qreal halfLine = token.lineWidth / 2.0;
-        painter->drawRect(QRectF(option->rect).adjusted(halfLine, halfLine, -halfLine, -halfLine));
+        const QRectF outlineRect = QRectF(option->rect).adjusted(halfLine, halfLine, -halfLine, -halfLine);
+        if (cornerRadius > 0)
+        {
+            painter->drawRoundedRect(outlineRect, cornerRadius, cornerRadius);
+        }
+        else
+        {
+            painter->drawRect(outlineRect);
+        }
     }
 
     painter->restore();

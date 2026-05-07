@@ -25,3 +25,11 @@ target_link_libraries(qt-ant-design-example
     PRIVATE
         qt-ant-design
 )
+
+if(MSVC)
+    target_link_options(qt-ant-design-example
+        PRIVATE
+            "/MANIFEST:EMBED"
+            "/MANIFESTINPUT:${CMAKE_CURRENT_SOURCE_DIR}/qt-ant-design-example.exe.manifest"
+    )
+endif()

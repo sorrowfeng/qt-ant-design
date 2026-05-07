@@ -50,6 +50,7 @@ qrc_*.cpp
 *.ilk
 *.exp
 *.manifest
+!examples/*.manifest
 
 # IDE
 .idea/

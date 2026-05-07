@@ -33,6 +33,24 @@ constexpr AntWindow::TitleBarButton kTitleBarButtonsRightToLeft[] = {
 #ifdef Q_OS_WIN
 using GetDpiForWindowFn = UINT(WINAPI*)(HWND);
 using GetSystemMetricsForDpiFn = int(WINAPI*)(int, UINT);
+using DwmSetWindowAttributeFn = HRESULT(WINAPI*)(HWND, DWORD, LPCVOID, DWORD);
+
+struct DwmMargins
+{
+    int cxLeftWidth;
+    int cxRightWidth;
+    int cyTopHeight;
+    int cyBottomHeight;
+};
+
+using DwmExtendFrameIntoClientAreaFn = HRESULT(WINAPI*)(HWND, const DwmMargins*);
+
+constexpr DWORD kDwmUseImmersiveDarkMode = 20;
+constexpr DWORD kDwmWindowCornerPreference = 33;
+constexpr DWORD kDwmBorderColor = 34;
+constexpr int kDwmCornerDoNotRound = 1;
+constexpr int kDwmCornerRound = 2;
+constexpr int kDwmCornerRoundSmall = 3;
 
 UINT dpiForWindow(HWND hwnd)
 {
@@ -70,6 +88,58 @@ int resizeBorderMetric(HWND hwnd, int frameMetric, int paddedMetric)
     const int frame = systemMetricForDpi(frameMetric, dpi);
     const int padded = systemMetricForDpi(paddedMetric, dpi);
     return qMax(8, frame + padded);
+}
+
+qintptr nativeHitTestForTitleBarButton(AntWindow::TitleBarButton button)
+{
+    switch (button)
+    {
+    case AntWindow::TitleBarButton::Minimize:
+        return HTREDUCE;
+    case AntWindow::TitleBarButton::Maximize:
+        return HTZOOM;
+    case AntWindow::TitleBarButton::Close:
+        return HTCLOSE;
+    default:
+        return HTCLIENT;
+    }
+}
+
+AntWindow::TitleBarButton titleBarButtonForNativeHitTest(WPARAM hitTestCode)
+{
+    switch (hitTestCode)
+    {
+    case HTREDUCE:
+        return AntWindow::TitleBarButton::Minimize;
+    case HTZOOM:
+        return AntWindow::TitleBarButton::Maximize;
+    case HTCLOSE:
+        return AntWindow::TitleBarButton::Close;
+    default:
+        return AntWindow::TitleBarButton::None;
+    }
+}
+
+bool resolveDwmApis(DwmSetWindowAttributeFn* setWindowAttribute, DwmExtendFrameIntoClientAreaFn* extendFrame)
+{
+    HMODULE dwmapi = ::LoadLibraryW(L"dwmapi.dll");
+    if (!dwmapi)
+    {
+        return false;
+    }
+
+    if (setWindowAttribute)
+    {
+        *setWindowAttribute =
+            reinterpret_cast<DwmSetWindowAttributeFn>(::GetProcAddress(dwmapi, "DwmSetWindowAttribute"));
+    }
+    if (extendFrame)
+    {
+        *extendFrame =
+            reinterpret_cast<DwmExtendFrameIntoClientAreaFn>(::GetProcAddress(dwmapi, "DwmExtendFrameIntoClientArea"));
+    }
+
+    return (setWindowAttribute && *setWindowAttribute) || (extendFrame && *extendFrame);
 }
 #endif
 }
@@ -182,6 +252,25 @@ void AntWindow::setAlwaysOnTop(bool on)
 void AntWindow::toggleAlwaysOnTop()
 {
     setAlwaysOnTop(!m_alwaysOnTop);
+}
+
+int AntWindow::cornerRadius() const
+{
+    return m_cornerRadius;
+}
+
+void AntWindow::setCornerRadius(int radius)
+{
+    const int normalizedRadius = qMax(0, radius);
+    if (m_cornerRadius == normalizedRadius)
+    {
+        return;
+    }
+
+    m_cornerRadius = normalizedRadius;
+    applyNativeWindowFrame();
+    update();
+    Q_EMIT cornerRadiusChanged(m_cornerRadius);
 }
 
 bool AntWindow::isTitleBarButtonVisible(TitleBarButton button) const
@@ -475,6 +564,7 @@ void AntWindow::changeEvent(QEvent* event)
     if (event->type() == QEvent::WindowStateChange)
     {
         m_windowMaximized = QMainWindow::isMaximized();
+        applyNativeWindowFrame();
         update();
     }
     QMainWindow::changeEvent(event);
@@ -489,6 +579,7 @@ void AntWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
     m_windowMaximized = QMainWindow::isMaximized();
+    applyNativeWindowFrame();
 }
 
 void AntWindow::paintEvent(QPaintEvent* event)
@@ -572,9 +663,10 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
 
             if (isTitleBarArea(widgetPos))
             {
-                if (buttonAtPosition(widgetPos) != TitleBarButton::None)
+                const TitleBarButton button = buttonAtPosition(widgetPos);
+                if (button != TitleBarButton::None)
                 {
-                    *result = HTCLIENT;
+                    *result = nativeHitTestForTitleBarButton(button);
                 }
                 else
                 {
@@ -585,6 +677,61 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
 
             *result = HTCLIENT;
             return true;
+        }
+        case WM_NCMOUSEMOVE:
+        {
+            const TitleBarButton button = titleBarButtonForNativeHitTest(msg->wParam);
+            if (button != TitleBarButton::None)
+            {
+                m_hoveredButton = button;
+                update(titleBarButtonRect(button));
+                *result = ::DefWindowProcW(hwnd, uMsg, msg->wParam, lParam);
+                return true;
+            }
+            break;
+        }
+        case WM_NCMOUSELEAVE:
+        {
+            if (m_hoveredButton == TitleBarButton::Minimize ||
+                m_hoveredButton == TitleBarButton::Maximize ||
+                m_hoveredButton == TitleBarButton::Close)
+            {
+                const TitleBarButton oldHovered = m_hoveredButton;
+                m_hoveredButton = TitleBarButton::None;
+                update(titleBarButtonRect(oldHovered));
+            }
+            break;
+        }
+        case WM_NCLBUTTONDOWN:
+        {
+            const TitleBarButton button = titleBarButtonForNativeHitTest(msg->wParam);
+            if (button != TitleBarButton::None)
+            {
+                m_pressedButton = button;
+                update(titleBarButtonRect(button));
+                *result = 0;
+                return true;
+            }
+            break;
+        }
+        case WM_NCLBUTTONUP:
+        {
+            const TitleBarButton button = titleBarButtonForNativeHitTest(msg->wParam);
+            if (button != TitleBarButton::None || m_pressedButton != TitleBarButton::None)
+            {
+                const QPoint globalPos(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+                const QPoint widgetPos = mapFromGlobal(globalPos);
+                const TitleBarButton pressedButton = m_pressedButton;
+                m_pressedButton = TitleBarButton::None;
+                if (pressedButton != TitleBarButton::None && buttonAtPosition(widgetPos) == pressedButton)
+                {
+                    handleButtonClicked(pressedButton);
+                }
+                update(titleBarRect());
+                *result = 0;
+                return true;
+            }
+            break;
         }
         case WM_GETMINMAXINFO:
         {
@@ -830,6 +977,11 @@ void AntWindow::handleButtonClicked(TitleBarButton button)
 
 void AntWindow::applyManualSnap(const QPoint& globalPos)
 {
+#ifdef Q_OS_WIN
+    Q_UNUSED(globalPos)
+    // Windows uses HTCAPTION/HTZOOM and the native window manager for Snap.
+    return;
+#else
     if (isFullScreen())
     {
         return;
@@ -905,6 +1057,70 @@ void AntWindow::applyManualSnap(const QPoint& globalPos)
             Q_EMIT restoreRequested();
         }
     }
+#endif
+}
+
+void AntWindow::applyNativeWindowFrame()
+{
+#ifdef Q_OS_WIN
+    if (!windowHandle())
+    {
+        return;
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(winId());
+    if (!hwnd)
+    {
+        return;
+    }
+
+    DwmSetWindowAttributeFn setWindowAttribute = nullptr;
+    DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
+    if (!resolveDwmApis(&setWindowAttribute, &extendFrame))
+    {
+        return;
+    }
+
+    if (extendFrame)
+    {
+        const DwmMargins margins{1, 1, 1, 1};
+        extendFrame(hwnd, &margins);
+    }
+
+    if (!setWindowAttribute)
+    {
+        return;
+    }
+
+    const int cornerPreference = [this]() {
+        if (isMaximized() || isFullScreen())
+        {
+            return kDwmCornerDoNotRound;
+        }
+        if (m_cornerRadius <= 0)
+        {
+            return kDwmCornerDoNotRound;
+        }
+        if (m_cornerRadius <= 6)
+        {
+            return kDwmCornerRoundSmall;
+        }
+        return kDwmCornerRound;
+    }();
+    setWindowAttribute(hwnd,
+                       kDwmWindowCornerPreference,
+                       &cornerPreference,
+                       sizeof(cornerPreference));
+
+    const auto& token = antTheme->tokens();
+    const COLORREF borderColor = RGB(token.colorBorder.red(), token.colorBorder.green(), token.colorBorder.blue());
+    setWindowAttribute(hwnd, kDwmBorderColor, &borderColor, sizeof(borderColor));
+
+    const BOOL darkMode = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    setWindowAttribute(hwnd, kDwmUseImmersiveDarkMode, &darkMode, sizeof(darkMode));
+#else
+    update();
+#endif
 }
 
 void AntWindow::emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible)
@@ -957,6 +1173,8 @@ void AntWindow::syncTheme()
             }
         }
     }
+
+    applyNativeWindowFrame();
 }
 
 void AntWindow::applyContentPalette(QWidget* widget)
