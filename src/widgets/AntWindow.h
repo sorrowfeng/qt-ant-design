@@ -81,6 +81,7 @@ Q_SIGNALS:
 
 protected:
     bool event(QEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -96,6 +97,10 @@ private:
     bool isButtonArea(const QPoint& pos) const;
     TitleBarButton buttonAtPosition(const QPoint& pos) const;
     QRect titleBarRect() const;
+    bool handleTitleBarMousePress(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button);
+    bool handleTitleBarMouseMove(const QPoint& pos, const QPoint& globalPos, Qt::MouseButtons buttons);
+    bool handleTitleBarMouseRelease(const QPoint& pos, Qt::MouseButton button);
+    bool handleTitleBarMouseDoubleClick(const QPoint& pos, Qt::MouseButton button);
     void handleButtonClicked(TitleBarButton button);
     void emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible);
     void syncTheme();
@@ -114,5 +119,6 @@ private:
     bool m_maximizeButtonVisible = true;
     bool m_closeButtonVisible = true;
     TitleBarButton m_hoveredButton = TitleBarButton::None;
+    TitleBarButton m_pressedButton = TitleBarButton::None;
     QWidget* m_contentWidget = nullptr;
 };

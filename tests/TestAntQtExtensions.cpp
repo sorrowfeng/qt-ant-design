@@ -44,6 +44,8 @@ private slots:
     void dockWidget();
     void widget();
     void window();
+    void windowTitleBarButtonsHandleChildDeliveredClicks();
+    void windowTitleBarButtonsTriggerOnRelease();
     void colorPicker();
 };
 
@@ -553,6 +555,56 @@ void TestAntQtExtensions::window()
 
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+}
+
+void TestAntQtExtensions::windowTitleBarButtonsHandleChildDeliveredClicks()
+{
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntWindow window;
+    window.resize(640, 400);
+    window.setCentralWidget(new QWidget);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    const QPoint themeGlobal = window.mapToGlobal(window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center());
+    QWidget* themeTarget = window.centralWidget();
+    QVERIFY(themeTarget != nullptr);
+    const Ant::ThemeMode beforeClickMode = antTheme->themeMode();
+    QTest::mouseClick(themeTarget, Qt::LeftButton, Qt::NoModifier, themeTarget->mapFromGlobal(themeGlobal));
+    QTRY_COMPARE(antTheme->themeMode(),
+                 beforeClickMode == Ant::ThemeMode::Dark ? Ant::ThemeMode::Default : Ant::ThemeMode::Dark);
+
+    const QPoint pinGlobal = window.mapToGlobal(window.titleBarButtonRect(AntWindow::TitleBarButton::Pin).center());
+    QWidget* pinTarget = window.centralWidget();
+    QVERIFY(pinTarget != nullptr);
+    QTest::mouseClick(pinTarget, Qt::LeftButton, Qt::NoModifier, pinTarget->mapFromGlobal(pinGlobal));
+    QTRY_COMPARE(window.isAlwaysOnTop(), true);
+
+    window.setAlwaysOnTop(false);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+}
+
+void TestAntQtExtensions::windowTitleBarButtonsTriggerOnRelease()
+{
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntWindow window;
+    window.resize(640, 400);
+    const QPoint themePoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center();
+    QTest::mousePress(&window, Qt::LeftButton, Qt::NoModifier, themePoint);
+    QCOMPARE(antTheme->themeMode(), Ant::ThemeMode::Default);
+    QTest::mouseRelease(&window, Qt::LeftButton, Qt::NoModifier, themePoint);
+    QCOMPARE(antTheme->themeMode(), Ant::ThemeMode::Dark);
+
+    const QPoint pinPoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Pin).center();
+    QTest::mousePress(&window, Qt::LeftButton, Qt::NoModifier, pinPoint);
+    QCOMPARE(window.isAlwaysOnTop(), false);
+    QTest::mouseRelease(&window, Qt::LeftButton, Qt::NoModifier, pinPoint);
+    QCOMPARE(window.isAlwaysOnTop(), true);
+
+    window.setAlwaysOnTop(false);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
 }
 

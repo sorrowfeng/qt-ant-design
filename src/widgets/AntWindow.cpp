@@ -42,6 +42,7 @@ AntWindow::AntWindow(QWidget* parent)
     syncTheme();
 
     m_contentWidget = new QWidget(this);
+    m_contentWidget->installEventFilter(this);
     auto* contentLayout = new QVBoxLayout(m_contentWidget);
     contentLayout->setContentsMargins(0, TitleBarHeight, 0, 0);
     contentLayout->setSpacing(0);
@@ -321,31 +322,68 @@ bool AntWindow::event(QEvent* event)
     return QMainWindow::event(event);
 }
 
+bool AntWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_contentWidget)
+    {
+        auto mapMousePosition = [this](QMouseEvent* mouseEvent) {
+            return m_contentWidget->mapTo(this, mouseEvent->position().toPoint());
+        };
+
+        switch (event->type())
+        {
+        case QEvent::MouseButtonPress:
+        {
+            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            if (handleTitleBarMousePress(mapMousePosition(mouseEvent),
+                                         mouseEvent->globalPosition().toPoint(),
+                                         mouseEvent->button()))
+            {
+                return true;
+            }
+            break;
+        }
+        case QEvent::MouseMove:
+        {
+            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            if (handleTitleBarMouseMove(mapMousePosition(mouseEvent),
+                                        mouseEvent->globalPosition().toPoint(),
+                                        mouseEvent->buttons()))
+            {
+                return true;
+            }
+            break;
+        }
+        case QEvent::MouseButtonRelease:
+        {
+            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            if (handleTitleBarMouseRelease(mapMousePosition(mouseEvent), mouseEvent->button()))
+            {
+                return true;
+            }
+            break;
+        }
+        case QEvent::MouseButtonDblClick:
+        {
+            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            if (handleTitleBarMouseDoubleClick(mapMousePosition(mouseEvent), mouseEvent->button()))
+            {
+                return true;
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    return QMainWindow::eventFilter(watched, event);
+}
+
 void AntWindow::mousePressEvent(QMouseEvent* event)
 {
-    if (event->button() != Qt::LeftButton)
+    if (handleTitleBarMousePress(event->pos(), event->globalPosition().toPoint(), event->button()))
     {
-        QMainWindow::mousePressEvent(event);
-        return;
-    }
-
-    const QPoint pos = event->pos();
-
-    if (isButtonArea(pos))
-    {
-        const TitleBarButton button = buttonAtPosition(pos);
-        handleButtonClicked(button);
-        event->accept();
-        return;
-    }
-
-    if (isTitleBarArea(pos))
-    {
-        m_dragging = true;
-        m_dragStartPosition = event->globalPosition().toPoint();
-        m_dragStartWindowPos = this->pos();
-        m_dragStartTitleXRatio = width() > 0 ? qBound<qreal>(0.0, static_cast<qreal>(pos.x()) / width(), 1.0) : 0.5;
-        m_dragStartTitleY = qBound(0, pos.y(), TitleBarHeight - 1);
         event->accept();
         return;
     }
@@ -355,28 +393,8 @@ void AntWindow::mousePressEvent(QMouseEvent* event)
 
 void AntWindow::mouseMoveEvent(QMouseEvent* event)
 {
-    if (m_dragging && (event->buttons() & Qt::LeftButton))
+    if (handleTitleBarMouseMove(event->pos(), event->globalPosition().toPoint(), event->buttons()))
     {
-        const QPoint delta = event->globalPosition().toPoint() - m_dragStartPosition;
-
-        if (isMaximized())
-        {
-            const QPoint globalPos = event->globalPosition().toPoint();
-            showNormal();
-            m_windowMaximized = false;
-
-            const QSize restoredSize = size();
-            const QPoint restoredOffset(qRound(m_dragStartTitleXRatio * restoredSize.width()), m_dragStartTitleY);
-            m_dragStartWindowPos = globalPos - restoredOffset;
-            m_dragStartPosition = globalPos;
-
-            move(m_dragStartWindowPos);
-        }
-        else
-        {
-            move(m_dragStartWindowPos + delta);
-        }
-
         event->accept();
         return;
     }
@@ -386,9 +404,8 @@ void AntWindow::mouseMoveEvent(QMouseEvent* event)
 
 void AntWindow::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (m_dragging && event->button() == Qt::LeftButton)
+    if (handleTitleBarMouseRelease(event->pos(), event->button()))
     {
-        m_dragging = false;
         event->accept();
         return;
     }
@@ -398,20 +415,8 @@ void AntWindow::mouseReleaseEvent(QMouseEvent* event)
 
 void AntWindow::mouseDoubleClickEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::LeftButton && isTitleBarArea(event->pos()) && !isButtonArea(event->pos()))
+    if (handleTitleBarMouseDoubleClick(event->pos(), event->button()))
     {
-        if (isMaximized())
-        {
-            showNormal();
-            m_windowMaximized = false;
-            Q_EMIT restoreRequested();
-        }
-        else
-        {
-            showMaximized();
-            m_windowMaximized = true;
-            Q_EMIT maximizeRequested();
-        }
         event->accept();
         return;
     }
@@ -608,6 +613,114 @@ AntWindow::TitleBarButton AntWindow::buttonAtPosition(const QPoint& pos) const
 QRect AntWindow::titleBarRect() const
 {
     return QRect(0, 0, width(), TitleBarHeight);
+}
+
+bool AntWindow::handleTitleBarMousePress(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button)
+{
+    if (button != Qt::LeftButton)
+    {
+        return false;
+    }
+
+    if (isButtonArea(pos))
+    {
+        m_pressedButton = buttonAtPosition(pos);
+        update(titleBarRect());
+        return true;
+    }
+
+    if (isTitleBarArea(pos))
+    {
+        m_dragging = true;
+        m_pressedButton = TitleBarButton::None;
+        m_dragStartPosition = globalPos;
+        m_dragStartWindowPos = this->pos();
+        m_dragStartTitleXRatio = width() > 0 ? qBound<qreal>(0.0, static_cast<qreal>(pos.x()) / width(), 1.0) : 0.5;
+        m_dragStartTitleY = qBound(0, pos.y(), TitleBarHeight - 1);
+        return true;
+    }
+
+    return false;
+}
+
+bool AntWindow::handleTitleBarMouseMove(const QPoint& pos, const QPoint& globalPos, Qt::MouseButtons buttons)
+{
+    Q_UNUSED(pos)
+    if (m_dragging && (buttons & Qt::LeftButton))
+    {
+        const QPoint delta = globalPos - m_dragStartPosition;
+
+        if (isMaximized())
+        {
+            showNormal();
+            m_windowMaximized = false;
+
+            const QSize restoredSize = size();
+            const QPoint restoredOffset(qRound(m_dragStartTitleXRatio * restoredSize.width()), m_dragStartTitleY);
+            m_dragStartWindowPos = globalPos - restoredOffset;
+            m_dragStartPosition = globalPos;
+
+            move(m_dragStartWindowPos);
+        }
+        else
+        {
+            move(m_dragStartWindowPos + delta);
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool AntWindow::handleTitleBarMouseRelease(const QPoint& pos, Qt::MouseButton button)
+{
+    if (button != Qt::LeftButton)
+    {
+        return false;
+    }
+
+    if (m_pressedButton != TitleBarButton::None)
+    {
+        const TitleBarButton pressedButton = m_pressedButton;
+        m_pressedButton = TitleBarButton::None;
+        if (buttonAtPosition(pos) == pressedButton)
+        {
+            handleButtonClicked(pressedButton);
+        }
+        update(titleBarRect());
+        return true;
+    }
+
+    if (m_dragging)
+    {
+        m_dragging = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool AntWindow::handleTitleBarMouseDoubleClick(const QPoint& pos, Qt::MouseButton button)
+{
+    if (button == Qt::LeftButton && isTitleBarArea(pos) && !isButtonArea(pos))
+    {
+        if (isMaximized())
+        {
+            showNormal();
+            m_windowMaximized = false;
+            Q_EMIT restoreRequested();
+        }
+        else
+        {
+            showMaximized();
+            m_windowMaximized = true;
+            Q_EMIT maximizeRequested();
+        }
+        return true;
+    }
+
+    return false;
 }
 
 void AntWindow::handleButtonClicked(TitleBarButton button)
