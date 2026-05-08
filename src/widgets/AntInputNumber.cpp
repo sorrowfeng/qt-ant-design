@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QPropertyAnimation>
 #include <QResizeEvent>
+#include <QSizePolicy>
 #include <QStyleOptionSpinBox>
 
 #include "../styles/AntInputNumberStyle.h"
@@ -114,6 +115,7 @@ AntInputNumber::AntInputNumber(QWidget* parent)
     setCorrectionMode(QAbstractSpinBox::CorrectToNearestValue);
     setDecimals(0);
     setRange(-999999, 999999);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     auto* inputStyle = new AntInputNumberStyle(style());
     inputStyle->setParent(this);

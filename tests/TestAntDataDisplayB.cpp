@@ -4,6 +4,7 @@
 #include <QColor>
 #include <QImage>
 #include <QPainter>
+#include <QVBoxLayout>
 #include "core/AntTheme.h"
 #include "widgets/AntList.h"
 #include "widgets/AntListWidget.h"
@@ -23,6 +24,7 @@ private slots:
     void propertiesAndSignals();
     void listWidgetCompatibilityApis();
     void listInternalScrolling();
+    void listUsesExpandingLayoutPolicy();
     void tableSelectionCompatibilityApis();
     void listSelectionHighlightUsesBalancedInset();
 };
@@ -527,6 +529,31 @@ void TestAntDataDisplayB::listInternalScrolling()
 
     list.scrollToItem(list.item(list.count() - 1));
     QVERIFY(list.visualItemRect(list.item(list.count() - 1)).bottom() <= list.rect().bottom());
+}
+
+void TestAntDataDisplayB::listUsesExpandingLayoutPolicy()
+{
+    QWidget host;
+    auto* layout = new QVBoxLayout(&host);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    auto* list = new AntList;
+    list->setBordered(true);
+    for (int i = 0; i < 8; ++i)
+    {
+        list->addItem(QStringLiteral("Item %1").arg(i + 1));
+    }
+    layout->addWidget(list, 1);
+
+    host.resize(260, 150);
+    host.show();
+    QCoreApplication::processEvents();
+
+    QCOMPARE(list->sizePolicy().horizontalPolicy(), QSizePolicy::Expanding);
+    QCOMPARE(list->sizePolicy().verticalPolicy(), QSizePolicy::Expanding);
+    QCOMPARE(list->width(), host.width());
+    QCOMPARE(list->height(), host.height());
+    QVERIFY(list->maximumScrollOffset() > 0);
 }
 
 void TestAntDataDisplayB::tableSelectionCompatibilityApis()

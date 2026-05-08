@@ -1,5 +1,6 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QVBoxLayout>
 
 #include "widgets/AntSelect.h"
 
@@ -9,6 +10,7 @@ class TestAntSelect : public QObject
 private slots:
     void propertiesAndSignals();
     void defaultsToFirstOptionWhenPopulated();
+    void layoutKeepsSelectControlHeight();
 };
 
 void TestAntSelect::propertiesAndSignals()
@@ -169,6 +171,26 @@ void TestAntSelect::defaultsToFirstOptionWhenPopulated()
     QCOMPARE(inserted.currentIndex(), 0);
     QCOMPARE(inserted.currentText(), QStringLiteral("Inserted"));
     QCOMPARE(inserted.currentValue().toString(), QStringLiteral("inserted"));
+}
+
+void TestAntSelect::layoutKeepsSelectControlHeight()
+{
+    QWidget host;
+    auto* layout = new QVBoxLayout(&host);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    auto* select = new AntSelect;
+    select->addItems({QStringLiteral("Alpha"), QStringLiteral("Beta")});
+    layout->addWidget(select, 1);
+
+    host.resize(260, 180);
+    host.show();
+    QCoreApplication::processEvents();
+
+    QCOMPARE(select->sizePolicy().horizontalPolicy(), QSizePolicy::Expanding);
+    QCOMPARE(select->sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
+    QCOMPARE(select->height(), select->sizeHint().height());
+    QCOMPARE(select->width(), host.width());
 }
 
 QTEST_MAIN(TestAntSelect)

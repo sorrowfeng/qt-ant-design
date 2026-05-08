@@ -2,6 +2,7 @@
 #include <QTest>
 #include <QCoreApplication>
 #include <QEnterEvent>
+#include <QHBoxLayout>
 #include <QLineEdit>
 #include <QPalette>
 #include "core/AntTheme.h"
@@ -18,6 +19,7 @@ class TestAntDataEntryA : public QObject
 private slots:
     void propertiesAndSignals();
     void inputNumberLineEditPaletteTracksDarkTheme();
+    void inputNumberUsesLayoutFriendlyPolicy();
 };
 
 void TestAntDataEntryA::propertiesAndSignals()
@@ -338,6 +340,26 @@ void TestAntDataEntryA::inputNumberLineEditPaletteTracksDarkTheme()
     QCOMPARE(edit->palette().color(QPalette::Disabled, QPalette::Text), token.colorTextDisabled);
 
     antTheme->setThemeMode(previousMode);
+}
+
+void TestAntDataEntryA::inputNumberUsesLayoutFriendlyPolicy()
+{
+    QWidget host;
+    auto* layout = new QHBoxLayout(&host);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    auto* input = new AntInputNumber;
+    input->setValue(42);
+    layout->addWidget(input, 1);
+
+    host.resize(260, 80);
+    host.show();
+    QCoreApplication::processEvents();
+
+    QCOMPARE(input->sizePolicy().horizontalPolicy(), QSizePolicy::Expanding);
+    QCOMPARE(input->sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
+    QCOMPARE(input->height(), input->sizeHint().height());
+    QCOMPARE(input->width(), host.width());
 }
 
 QTEST_MAIN(TestAntDataEntryA)

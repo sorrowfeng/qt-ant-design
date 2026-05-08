@@ -663,7 +663,7 @@ AntList::AntList(QWidget* parent)
     : QWidget(parent)
 {
     installAntStyle<AntListStyle>(this);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setFocusPolicy(Qt::StrongFocus);
 }
 
