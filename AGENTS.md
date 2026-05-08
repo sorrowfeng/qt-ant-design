@@ -111,7 +111,7 @@
 
 - `AntTypography` 默认垂直居中，新增 alignment 策略、wordWrap、clear 和 `setPixelSize()` API。
 - `AntInput` 补齐常用 `QLineEdit` 风格 API/信号，包括 placeholder、readOnly、maxLength、echoMode、alignment、selection、clipboard、undo/redo、return/editing/selection/inputRejected 等。
-- `AntInputNumber` / `AntCheckBox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API；`AntInputNumber` 默认对齐 `QDoubleSpinBox` 的 2 位小数，并让 `setDecimals()` 与 `precisionChanged` 同步；相关属性/信号均有测试。
+- `AntInputNumber` / `AntCheckBox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API；`AntInputNumber` 默认整数显示，通过 `setDecimals()` / `setPrecision()` 开启小数，并让 decimal value/range/step 与 `precisionChanged` 同步测试覆盖。
 - `AntSelect` 补齐常用 `QComboBox` / option 风格 API/信号，包括 add/insert/remove/find、setOptionText/removeOption/optionData/findData、itemText/itemData、currentData、setCurrentText、空列表首次加入数据默认选中首项、activated/textActivated/highlighted/textHighlighted。
 - Qt Layout 自适应策略按官方控件基准对齐：`AntInput` / `AntAutoComplete` / `AntMentions` 跟随 `QLineEdit` 横向扩展，`AntSelect` / `AntCascader` / `AntTreeSelect` 跟随 `QComboBox` 的 `Preferred/Fixed`，`AntInputNumber` / `AntDatePicker` / `AntTimePicker` 跟随 Spin/Date/Time 编辑器的 `Minimum/Fixed`，`AntList` / `AntTable` / `AntTree` 跟随 Qt view 双向扩展，`AntTypography` 跟随 `QLabel` 的 height-for-width 换行策略。
 - `AntDatePicker` / `AntTimePicker` 补齐 `QDateEdit` / `QTimeEdit` 风格 date/time 别名、minimum/maximum range API、range changed 信号，并对越界输入做边界收敛。

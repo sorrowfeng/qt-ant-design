@@ -60,7 +60,7 @@
 
 2026-05-07 的 API 批次增强了 Qt 对象树接入和常见 Qt 控件习惯：
 
-- `AntInput`、`AntInputNumber`、`AntCheckBox`、`AntRadio`、`AntSlider`、`AntProgress`、`AntStatusBar` 补充更多 Qt 风格常用方法和信号；`AntInputNumber` 默认保留 `QDoubleSpinBox` 风格的小数值。
+- `AntInput`、`AntInputNumber`、`AntCheckBox`、`AntRadio`、`AntSlider`、`AntProgress`、`AntStatusBar` 补充更多 Qt 风格常用方法和信号；`AntInputNumber` 默认整数显示，通过 `setDecimals()` 或 `setPrecision()` 开启 QDoubleSpinBox 风格的小数 value/range/step 行为。
 - `AntSelect` 支持 QComboBox 风格 item 管理，空列表首次加入数据时默认选中首项，并补充 `setOptionText`、`removeOption`、`optionData`、`findData`、`currentData`、`activated` 和 highlighted 信号。
 - Qt Layout 自适应行为已按官方控件基准对齐：LineEdit 类控件横向扩展，ComboBox 类选择器保持 `Preferred/Fixed`，Spin/Date/Time 编辑器保持 `Minimum/Fixed`，List/Table/Tree 等视图双向扩展，`AntTypography` 对齐 `QLabel` 的 height-for-width 换行策略。
 - `AntDatePicker` / `AntTimePicker` 支持 QDateEdit / QTimeEdit 风格的 `date` / `time` 别名，以及最小 / 最大范围 API。
