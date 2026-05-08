@@ -1,6 +1,8 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QAbstractItemView>
 #include "widgets/AntList.h"
+#include "widgets/AntListWidget.h"
 #include "widgets/AntTable.h"
 #include "widgets/AntTree.h"
 #include "widgets/AntTimeline.h"
@@ -15,6 +17,7 @@ class TestAntDataDisplayB : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void listWidgetCompatibilityApis();
 };
 
 void TestAntDataDisplayB::propertiesAndSignals()
@@ -428,6 +431,65 @@ void TestAntDataDisplayB::propertiesAndSignals()
     p->setExpanded(true);
     QCOMPARE(p->isExpanded(), true);
     QCOMPARE(expSpy.count(), 1);
+}
+
+void TestAntDataDisplayB::listWidgetCompatibilityApis()
+{
+    AntListWidget list;
+    list.addItem(QStringLiteral("Alpha"));
+    list.addItems({QStringLiteral("Beta"), QStringLiteral("Gamma")});
+    list.insertItem(1, QStringLiteral("Inserted"));
+
+    QCOMPARE(list.count(), 4);
+    QCOMPARE(list.item(0)->text(), QStringLiteral("Alpha"));
+    QCOMPARE(list.item(1)->text(), QStringLiteral("Inserted"));
+    QCOMPARE(list.row(list.item(2)), 2);
+    QCOMPARE(list.itemAt(2), list.item(2));
+
+    QSignalSpy itemChangedSpy(&list, &AntList::itemChanged);
+    list.item(0)->setData(Qt::UserRole, QStringLiteral("alpha-id"));
+    QCOMPARE(list.item(0)->data(Qt::UserRole).toString(), QStringLiteral("alpha-id"));
+    list.item(0)->setText(QStringLiteral("Alpha Prime"));
+    QCOMPARE(list.item(0)->text(), QStringLiteral("Alpha Prime"));
+    QVERIFY(itemChangedSpy.count() >= 2);
+
+    const QList<AntListItem*> found = list.findItems(QStringLiteral("Gamma"), Qt::MatchExactly);
+    QCOMPARE(found.size(), 1);
+    QCOMPARE(found.first(), list.item(3));
+
+    QSignalSpy currentItemSpy(&list, &AntList::currentItemChanged);
+    QSignalSpy currentRowSpy(&list, &AntList::currentRowChanged);
+    QSignalSpy selectionSpy(&list, &AntList::itemSelectionChanged);
+    list.setCurrentRow(2);
+    QCOMPARE(list.currentRow(), 2);
+    QCOMPARE(list.currentItem(), list.item(2));
+    QCOMPARE(list.selectedItems(), QList<AntListItem*>{list.item(2)});
+    QCOMPARE(currentItemSpy.count(), 1);
+    QCOMPARE(currentRowSpy.count(), 1);
+    QVERIFY(selectionSpy.count() >= 1);
+
+    list.setSelectionMode(QAbstractItemView::MultiSelection);
+    list.setItemSelected(list.item(0), true);
+    list.setItemSelected(list.item(2), true);
+    QCOMPARE(list.selectedItems().size(), 2);
+
+    list.sortItems(Qt::AscendingOrder);
+    QCOMPARE(list.item(0)->text(), QStringLiteral("Alpha Prime"));
+
+    list.resize(240, list.sizeHint().height());
+    list.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&list));
+
+    QSignalSpy clickedSpy(&list, &AntList::itemClicked);
+    QTest::mouseClick(&list, Qt::LeftButton, Qt::NoModifier, list.visualItemRect(list.item(0)).center());
+    QCOMPARE(clickedSpy.count(), 1);
+    QCOMPARE(clickedSpy.takeFirst().at(0).value<AntListItem*>(), list.item(0));
+
+    AntListItem* taken = list.takeItem(1);
+    QVERIFY(taken != nullptr);
+    QCOMPARE(taken->parentWidget(), nullptr);
+    delete taken;
+    QCOMPARE(list.count(), 3);
 }
 
 QTEST_MAIN(TestAntDataDisplayB)

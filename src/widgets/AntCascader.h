@@ -98,6 +98,7 @@ Q_SIGNALS:
     void openChanged(bool open);
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;

@@ -1,7 +1,9 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QCoreApplication>
+#include <QFrame>
 #include <QWheelEvent>
+#include <QWidget>
 #include "widgets/AntCascader.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntTimePicker.h"
@@ -15,6 +17,7 @@ class TestAntDataEntryB : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void cascaderPopupClosesOnOutsideClick();
 };
 
 void TestAntDataEntryB::propertiesAndSignals()
@@ -273,6 +276,46 @@ void TestAntDataEntryB::propertiesAndSignals()
 
     w7->setAccept(".jpg,.png");
     QCOMPARE(w7->accept(), ".jpg,.png");
+}
+
+void TestAntDataEntryB::cascaderPopupClosesOnOutsideClick()
+{
+    AntCascaderOption hangzhou;
+    hangzhou.value = QStringLiteral("hangzhou");
+    hangzhou.label = QStringLiteral("Hangzhou");
+    hangzhou.isLeaf = true;
+
+    AntCascaderOption zhejiang;
+    zhejiang.value = QStringLiteral("zhejiang");
+    zhejiang.label = QStringLiteral("Zhejiang");
+    zhejiang.children = {hangzhou};
+    zhejiang.isLeaf = false;
+
+    QWidget host;
+    host.resize(420, 260);
+
+    AntCascader cascader(&host);
+    cascader.setOptions({zhejiang});
+    cascader.resize(180, cascader.sizeHint().height());
+    cascader.move(16, 16);
+    cascader.show();
+
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    QSignalSpy openSpy(&cascader, &AntCascader::openChanged);
+
+    QTest::mouseClick(&cascader, Qt::LeftButton, Qt::NoModifier, cascader.rect().center());
+    QTRY_VERIFY_WITH_TIMEOUT(cascader.isOpen(), 300);
+
+    auto* popup = cascader.findChild<QFrame*>(QStringLiteral("CascaderPopup"));
+    QVERIFY(popup);
+    QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
+
+    QTest::mouseClick(&host, Qt::LeftButton, Qt::NoModifier, QPoint(360, 220));
+    QTRY_VERIFY_WITH_TIMEOUT(!cascader.isOpen(), 300);
+    QTRY_VERIFY_WITH_TIMEOUT(!popup->isVisible(), 500);
+    QVERIFY(openSpy.count() >= 2);
 }
 
 QTEST_MAIN(TestAntDataEntryB)

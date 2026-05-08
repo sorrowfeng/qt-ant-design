@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QFocusEvent>
 #include <QFrame>
+#include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -46,6 +47,10 @@ AntCascader::AntCascader(QWidget* parent)
 
 AntCascader::~AntCascader()
 {
+    if (qApp)
+    {
+        qApp->removeEventFilter(this);
+    }
     delete m_popup;
     m_popup = nullptr;
 }
@@ -193,6 +198,10 @@ void AntCascader::setOpen(bool open)
 
     if (m_open)
     {
+        if (qApp)
+        {
+            qApp->installEventFilter(this);
+        }
         auto* popup = static_cast<CascaderPopup*>(m_popup);
         popup->rebuildColumns();
         popup->updateSizeAndPosition();
@@ -200,6 +209,10 @@ void AntCascader::setOpen(bool open)
     }
     else
     {
+        if (qApp)
+        {
+            qApp->removeEventFilter(this);
+        }
         if (m_popup->isVisible())
         {
             AntPopupMotion::hide(m_popup);
@@ -257,6 +270,34 @@ QSize AntCascader::minimumSizeHint() const
 {
     const Metrics m = metrics();
     return QSize(120, m.height);
+}
+
+bool AntCascader::eventFilter(QObject* watched, QEvent* event)
+{
+    Q_UNUSED(watched)
+
+    if (m_open && event->type() == QEvent::MouseButtonPress)
+    {
+        auto* mouseEvent = static_cast<QMouseEvent*>(event);
+        const QPoint globalPos = mouseEvent->globalPos();
+        const bool insideControl = rect().contains(mapFromGlobal(globalPos));
+        const bool insidePopup = m_popup && m_popup->rect().contains(m_popup->mapFromGlobal(globalPos));
+        if (!insideControl && !insidePopup)
+        {
+            setOpen(false);
+        }
+    }
+    else if (m_open && event->type() == QEvent::KeyPress)
+    {
+        auto* keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Escape)
+        {
+            setOpen(false);
+            return true;
+        }
+    }
+
+    return QWidget::eventFilter(watched, event);
 }
 
 void AntCascader::enterEvent(QEnterEvent* event)

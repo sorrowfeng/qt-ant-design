@@ -63,7 +63,7 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 - `AntInput`, `AntInputNumber`, `AntCheckBox`, `AntRadio`, `AntSlider`, `AntProgress`, and `AntStatusBar` expose more common Qt-style methods and signals.
 - `AntSelect` supports QComboBox-style item management, lookup, `currentData`, `activated`, and highlighted signals.
 - `AntDatePicker` / `AntTimePicker` expose QDateEdit / QTimeEdit-style `date` / `time` aliases plus minimum / maximum range APIs.
-- `AntList`, `AntTable`, and `AntTree` expose more item/view-style helpers for count, item access, cell data, node lookup, clear, and key-based node state changes.
+- `AntList` / `AntListWidget` now cover common QListWidget-style flows: string item add/insert/find/sort, item text/icon/data/check state/flags, current row/item, selection mode, selected items, and item/current/selection signals. `AntTable` and `AntTree` expose matching table/tree helper APIs.
 - `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
 - `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, and clear controls.
 
@@ -214,7 +214,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 - `AntAlert`: `success / info / warning / error`, icon, description, closable, banner, custom action
 - `AntModal`: mask, title, body, custom content, custom footer, confirm / cancel, centered or top-offset layout
 - `AntResult`: status icons (success / error / warning / info), title, description, custom extra actions area
-- `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description) and an action area
+- `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description), action areas, and QListWidget-style text/data/selection helpers through the `AntListWidget` alias
 - `AntStatistic`: numeric display, thousands separators, prefix / suffix, precision control
 - `AntPopover`: title, body, action, click / hover triggers, placement, arrow
 - `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement

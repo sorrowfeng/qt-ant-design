@@ -1,7 +1,10 @@
 #include "AntList.h"
 
 #include <QFontMetrics>
+#include <QKeyEvent>
+#include <QMouseEvent>
 #include <QPainter>
+#include <QRegularExpression>
 #include <QResizeEvent>
 
 #include "../styles/AntListStyle.h"
@@ -211,6 +214,117 @@ AntListItem::AntListItem(QWidget* parent)
     });
 }
 
+void AntListItem::setText(const QString& text)
+{
+    if (m_text == text)
+    {
+        return;
+    }
+    m_text = text;
+    updateGeometry();
+    update();
+    Q_EMIT textChanged(m_text);
+    Q_EMIT changed();
+}
+
+QString AntListItem::text() const { return m_text; }
+
+void AntListItem::setIcon(const QIcon& icon)
+{
+    m_icon = icon;
+    updateGeometry();
+    update();
+    Q_EMIT iconChanged();
+    Q_EMIT changed();
+}
+
+QIcon AntListItem::icon() const { return m_icon; }
+
+void AntListItem::setData(int role, const QVariant& value)
+{
+    if (role == Qt::DisplayRole || role == Qt::EditRole)
+    {
+        setText(value.toString());
+        return;
+    }
+    if (role == Qt::DecorationRole && value.canConvert<QIcon>())
+    {
+        setIcon(value.value<QIcon>());
+        return;
+    }
+    if (role == Qt::CheckStateRole)
+    {
+        setCheckState(static_cast<Qt::CheckState>(value.toInt()));
+        return;
+    }
+
+    if (m_roleData.value(role) == value)
+    {
+        return;
+    }
+    m_roleData.insert(role, value);
+    Q_EMIT dataChanged(role, value);
+    Q_EMIT changed();
+}
+
+QVariant AntListItem::data(int role) const
+{
+    if (role == Qt::DisplayRole || role == Qt::EditRole)
+    {
+        return m_text;
+    }
+    if (role == Qt::DecorationRole)
+    {
+        return QVariant::fromValue(m_icon);
+    }
+    if (role == Qt::CheckStateRole)
+    {
+        return m_checkState;
+    }
+    return m_roleData.value(role);
+}
+
+void AntListItem::setCheckState(Qt::CheckState state)
+{
+    if (m_checkState == state)
+    {
+        return;
+    }
+    m_checkState = state;
+    update();
+    Q_EMIT checkStateChanged(m_checkState);
+    Q_EMIT changed();
+}
+
+Qt::CheckState AntListItem::checkState() const { return m_checkState; }
+
+void AntListItem::setFlags(Qt::ItemFlags flags)
+{
+    if (m_flags == flags)
+    {
+        return;
+    }
+    m_flags = flags;
+    update();
+    Q_EMIT flagsChanged(m_flags);
+    Q_EMIT changed();
+}
+
+Qt::ItemFlags AntListItem::flags() const { return m_flags; }
+
+void AntListItem::setSelected(bool selected)
+{
+    if (m_selected == selected)
+    {
+        return;
+    }
+    m_selected = selected;
+    update();
+    Q_EMIT selectedChanged(m_selected);
+}
+
+bool AntListItem::isSelected() const { return m_selected; }
+
 void AntListItem::setMeta(AntListItemMeta* meta)
 {
     if (m_meta == meta)
@@ -317,6 +431,10 @@ QSize AntListItem::sizeHint() const
     {
         contentHeight = m_meta->sizeHint().height();
     }
+    if (!m_text.isEmpty())
+    {
+        contentHeight = qMax(contentHeight, tokenLineHeight(token.fontSize));
+    }
     if (m_content)
     {
         contentHeight = qMax(contentHeight, m_content->sizeHint().height());
@@ -340,14 +458,63 @@ void AntListItem::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
 
+    const auto& token = antTheme->tokens();
+    QPainter painter(this);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+    if (m_selected)
+    {
+        const auto* list = parentListForItem(this);
+        const int paddingH = listItemPaddingH(list);
+        const QRectF selectedRect = rect().adjusted(paddingH + 4, 2, -paddingH - 4, -2);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(token.colorPrimaryBg);
+        painter.drawRoundedRect(selectedRect, token.borderRadiusSM, token.borderRadiusSM);
+    }
+
+    if (!m_text.isEmpty() && !m_meta && !m_content)
+    {
+        const auto* list = parentListForItem(this);
+        const int paddingV = listItemPaddingV(list);
+        const int paddingH = listItemPaddingH(list);
+        const int iconSize = m_icon.isNull() ? 0 : 16;
+        const int checkSize = m_checkState == Qt::Unchecked ? 0 : 14;
+        int x = paddingH + token.paddingSM;
+        const int centerY = height() / 2;
+
+        if (checkSize > 0)
+        {
+            const QRect checkRect(x, centerY - checkSize / 2, checkSize, checkSize);
+            painter.setPen(QPen(token.colorBorder, token.lineWidth));
+            painter.setBrush(m_checkState == Qt::Checked ? token.colorPrimary : token.colorBgContainer);
+            painter.drawRoundedRect(checkRect, token.borderRadiusSM / 2.0, token.borderRadiusSM / 2.0);
+            x += checkSize + token.paddingXS;
+        }
+
+        if (iconSize > 0)
+        {
+            const QRect iconRect(x, centerY - iconSize / 2, iconSize, iconSize);
+            m_icon.paint(&painter, iconRect);
+            x += iconSize + token.paddingXS;
+        }
+
+        QFont textFont = painter.font();
+        textFont.setPixelSize(token.fontSize);
+        painter.setFont(textFont);
+        painter.setPen(isEnabled() ? token.colorText : token.colorTextDisabled);
+        painter.drawText(QRect(x,
+                               paddingV,
+                               qMax(0, width() - x - paddingH - token.paddingSM),
+                               height() - paddingV * 2),
+                         Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine,
+                         m_text);
+    }
+
     if (m_actions.size() <= 1)
     {
         return;
     }
 
-    const auto& token = antTheme->tokens();
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
     painter.setPen(QPen(token.colorSplit, token.lineWidth));
 
     const QRect ar = actionsRect();
@@ -498,6 +665,7 @@ AntList::AntList(QWidget* parent)
 {
     installAntStyle<AntListStyle>(this);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 bool AntList::isBordered() const { return m_bordered; }
@@ -593,11 +761,26 @@ void AntList::addItem(AntListItem* item)
     {
         return;
     }
-    item->setParent(this);
+    adoptItem(item);
     m_items.append(item);
     syncLayout();
     updateGeometry();
     update();
+}
+
+void AntList::addItem(const QString& text)
+{
+    auto* listItem = new AntListItem;
+    listItem->setText(text);
+    addItem(listItem);
+}
+
+void AntList::addItems(const QStringList& labels)
+{
+    for (const QString& label : labels)
+    {
+        addItem(label);
+    }
 }
 
 void AntList::insertItem(int index, AntListItem* item)
@@ -607,11 +790,28 @@ void AntList::insertItem(int index, AntListItem* item)
         return;
     }
     index = qBound(0, index, m_items.size());
-    item->setParent(this);
+    adoptItem(item);
     m_items.insert(index, item);
     syncLayout();
     updateGeometry();
     update();
+}
+
+void AntList::insertItem(int index, const QString& text)
+{
+    auto* listItem = new AntListItem;
+    listItem->setText(text);
+    insertItem(index, listItem);
+}
+
+void AntList::insertItems(int index, const QStringList& labels)
+{
+    int insertIndex = qBound(0, index, m_items.size());
+    for (const QString& label : labels)
+    {
+        insertItem(insertIndex, label);
+        ++insertIndex;
+    }
 }
 
 void AntList::removeItem(AntListItem* item)
@@ -620,8 +820,10 @@ void AntList::removeItem(AntListItem* item)
     {
         return;
     }
-    m_items.removeAll(item);
-    item->setParent(nullptr);
+    if (m_items.removeAll(item) > 0)
+    {
+        detachItem(item);
+    }
     syncLayout();
     updateGeometry();
     update();
@@ -642,6 +844,126 @@ AntListItem* AntList::itemAt(int index) const
     return m_items.at(index).data();
 }
 
+AntListItem* AntList::item(int index) const
+{
+    return itemAt(index);
+}
+
+AntListItem* AntList::itemAt(const QPoint& pos) const
+{
+    for (const auto& item : m_items)
+    {
+        if (item && item->isVisible() && item->geometry().contains(pos))
+        {
+            return item.data();
+        }
+    }
+    return nullptr;
+}
+
+QRect AntList::visualItemRect(AntListItem* item) const
+{
+    if (!item || item->parentWidget() != this)
+    {
+        return {};
+    }
+    return item->geometry();
+}
+
+int AntList::row(const AntListItem* item) const
+{
+    if (!item)
+    {
+        return -1;
+    }
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        if (m_items.at(i).data() == item)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+QList<AntListItem*> AntList::findItems(const QString& text, Qt::MatchFlags flags) const
+{
+    QList<AntListItem*> result;
+    const Qt::CaseSensitivity cs = flags.testFlag(Qt::MatchCaseSensitive) ? Qt::CaseSensitive : Qt::CaseInsensitive;
+    const bool contains = flags.testFlag(Qt::MatchContains);
+    const bool startsWith = flags.testFlag(Qt::MatchStartsWith);
+    const bool endsWith = flags.testFlag(Qt::MatchEndsWith);
+    const bool wildcard = flags.testFlag(Qt::MatchWildcard);
+    bool regexp = flags.testFlag(Qt::MatchRegularExpression);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    regexp = regexp || flags.testFlag(Qt::MatchRegExp);
+#endif
+    QRegularExpression regularExpression;
+    if (regexp)
+    {
+        regularExpression = QRegularExpression(text, cs == Qt::CaseSensitive
+                                                       ? QRegularExpression::NoPatternOption
+                                                       : QRegularExpression::CaseInsensitiveOption);
+    }
+    else if (wildcard)
+    {
+        regularExpression = QRegularExpression(QRegularExpression::wildcardToRegularExpression(text),
+                                               cs == Qt::CaseSensitive
+                                                   ? QRegularExpression::NoPatternOption
+                                                   : QRegularExpression::CaseInsensitiveOption);
+    }
+
+    for (const auto& item : m_items)
+    {
+        if (!item)
+        {
+            continue;
+        }
+
+        const QString itemText = item->text();
+        bool match = false;
+        if (regexp || wildcard)
+        {
+            match = regularExpression.match(itemText).hasMatch();
+        }
+        else if (contains)
+        {
+            match = itemText.contains(text, cs);
+        }
+        else if (startsWith)
+        {
+            match = itemText.startsWith(text, cs);
+        }
+        else if (endsWith)
+        {
+            match = itemText.endsWith(text, cs);
+        }
+        else
+        {
+            match = itemText.compare(text, cs) == 0;
+        }
+
+        if (match)
+        {
+            result.append(item.data());
+        }
+    }
+    return result;
+}
+
+void AntList::sortItems(Qt::SortOrder order)
+{
+    std::stable_sort(m_items.begin(), m_items.end(), [order](const QPointer<AntListItem>& left, const QPointer<AntListItem>& right) {
+        const QString leftText = left ? left->text() : QString();
+        const QString rightText = right ? right->text() : QString();
+        const int cmp = QString::localeAwareCompare(leftText, rightText);
+        return order == Qt::AscendingOrder ? cmp < 0 : cmp > 0;
+    });
+    syncLayout();
+    updateGeometry();
+    update();
+}
+
 AntListItem* AntList::takeItem(int index)
 {
     if (index < 0 || index >= m_items.size())
@@ -652,7 +974,7 @@ AntListItem* AntList::takeItem(int index)
     AntListItem* item = m_items.takeAt(index).data();
     if (item)
     {
-        item->setParent(nullptr);
+        detachItem(item);
     }
     syncLayout();
     updateGeometry();
@@ -666,10 +988,11 @@ void AntList::clearItems()
     {
         if (item)
         {
-            item->setParent(nullptr);
+            detachItem(item.data());
         }
     }
     m_items.clear();
+    m_currentItem = nullptr;
     syncLayout();
     updateGeometry();
     update();
@@ -678,6 +1001,219 @@ void AntList::clearItems()
 void AntList::clear()
 {
     clearItems();
+}
+
+AntListItem* AntList::currentItem() const
+{
+    return m_currentItem.data();
+}
+
+int AntList::currentRow() const
+{
+    return row(m_currentItem.data());
+}
+
+void AntList::setCurrentItem(AntListItem* item)
+{
+    setCurrentItemInternal(item);
+}
+
+void AntList::setCurrentRow(int row)
+{
+    setCurrentItemInternal(itemAt(row));
+}
+
+QAbstractItemView::SelectionMode AntList::selectionMode() const
+{
+    return m_selectionMode;
+}
+
+void AntList::setSelectionMode(QAbstractItemView::SelectionMode mode)
+{
+    if (m_selectionMode == mode)
+    {
+        return;
+    }
+    m_selectionMode = mode;
+    if (m_selectionMode == QAbstractItemView::NoSelection)
+    {
+        if (clearSelectionExcept(nullptr))
+        {
+            Q_EMIT itemSelectionChanged();
+        }
+    }
+    else if (m_selectionMode == QAbstractItemView::SingleSelection && selectedItems().size() > 1)
+    {
+        if (clearSelectionExcept(m_currentItem.data()))
+        {
+            Q_EMIT itemSelectionChanged();
+        }
+    }
+}
+
+QList<AntListItem*> AntList::selectedItems() const
+{
+    QList<AntListItem*> selected;
+    for (const auto& item : m_items)
+    {
+        if (item && item->isSelected())
+        {
+            selected.append(item.data());
+        }
+    }
+    return selected;
+}
+
+void AntList::setItemSelected(AntListItem* item, bool selected)
+{
+    if (setItemSelectedInternal(item, selected, selected && m_selectionMode == QAbstractItemView::SingleSelection))
+    {
+        Q_EMIT itemSelectionChanged();
+    }
+}
+
+void AntList::adoptItem(AntListItem* item)
+{
+    if (!item)
+    {
+        return;
+    }
+    item->setParent(this);
+    item->show();
+    disconnect(item, &AntListItem::changed, this, nullptr);
+    connect(item, &AntListItem::changed, this, [this, item]() {
+        handleItemChanged(item);
+    });
+}
+
+void AntList::detachItem(AntListItem* item)
+{
+    if (!item)
+    {
+        return;
+    }
+    disconnect(item, &AntListItem::changed, this, nullptr);
+    const bool wasSelected = item->isSelected();
+    if (m_currentItem == item)
+    {
+        AntListItem* previous = m_currentItem.data();
+        m_currentItem = nullptr;
+        Q_EMIT currentItemChanged(nullptr, previous);
+        Q_EMIT currentRowChanged(-1);
+    }
+    if (wasSelected)
+    {
+        item->setSelected(false);
+        Q_EMIT itemSelectionChanged();
+    }
+    item->setParent(nullptr);
+}
+
+void AntList::handleItemChanged(AntListItem* item)
+{
+    if (!item || row(item) < 0)
+    {
+        return;
+    }
+    syncLayout();
+    updateGeometry();
+    update();
+    Q_EMIT itemChanged(item);
+}
+
+void AntList::setCurrentItemInternal(AntListItem* item)
+{
+    if (item && row(item) < 0)
+    {
+        item = nullptr;
+    }
+    if (m_currentItem == item)
+    {
+        if (item && m_selectionMode != QAbstractItemView::NoSelection && !item->isSelected())
+        {
+            setItemSelected(item, true);
+        }
+        return;
+    }
+
+    AntListItem* previous = m_currentItem.data();
+    m_currentItem = item;
+    bool selectionChanged = false;
+    if (m_selectionMode != QAbstractItemView::NoSelection && item)
+    {
+        selectionChanged = setItemSelectedInternal(item, true, m_selectionMode == QAbstractItemView::SingleSelection);
+    }
+    Q_EMIT currentItemChanged(item, previous);
+    Q_EMIT currentRowChanged(row(item));
+    if (selectionChanged)
+    {
+        Q_EMIT itemSelectionChanged();
+    }
+}
+
+bool AntList::setItemSelectedInternal(AntListItem* item, bool selected, bool clearOthers)
+{
+    if (!item || row(item) < 0 || m_selectionMode == QAbstractItemView::NoSelection)
+    {
+        return false;
+    }
+    if (selected && !(item->flags() & Qt::ItemIsSelectable))
+    {
+        return false;
+    }
+
+    bool changed = false;
+    if (selected && clearOthers)
+    {
+        changed = clearSelectionExcept(item);
+    }
+    if (item->isSelected() != selected)
+    {
+        item->setSelected(selected);
+        changed = true;
+    }
+    return changed;
+}
+
+bool AntList::clearSelectionExcept(AntListItem* keepItem)
+{
+    bool changed = false;
+    for (const auto& item : m_items)
+    {
+        if (item && item != keepItem && item->isSelected())
+        {
+            item->setSelected(false);
+            changed = true;
+        }
+    }
+    return changed;
+}
+
+AntListItem* AntList::enabledSelectableItem(int startRow, int direction) const
+{
+    if (m_items.isEmpty() || direction == 0)
+    {
+        return nullptr;
+    }
+
+    int index = qBound(0, startRow, m_items.size() - 1);
+    for (int step = 0; step < m_items.size(); ++step)
+    {
+        AntListItem* candidate = itemAt(index);
+        if (candidate && candidate->isVisible() &&
+            candidate->isEnabled() &&
+            (candidate->flags() & Qt::ItemIsEnabled) &&
+            (candidate->flags() & Qt::ItemIsSelectable))
+        {
+            return candidate;
+        }
+        index += direction;
+        if (index < 0 || index >= m_items.size())
+        {
+            return nullptr;
+        }
+    }
+    return nullptr;
 }
 
 QSize AntList::sizeHint() const
@@ -691,7 +1227,7 @@ QSize AntList::sizeHint() const
     }
     for (const auto& item : m_items)
     {
-        if (item)
+        if (item && !item->isHidden())
         {
             height += item->sizeHint().height();
         }
@@ -707,6 +1243,80 @@ QSize AntList::sizeHint() const
 QSize AntList::minimumSizeHint() const
 {
     return QSize(200, 60);
+}
+
+void AntList::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        AntListItem* clickedItem = itemAt(event->pos());
+        if (clickedItem && clickedItem->isEnabled() &&
+            (clickedItem->flags() & Qt::ItemIsEnabled))
+        {
+            setFocus(Qt::MouseFocusReason);
+            const bool wasSelected = clickedItem->isSelected();
+            setCurrentItemInternal(clickedItem);
+
+            if (m_selectionMode == QAbstractItemView::MultiSelection ||
+                (m_selectionMode == QAbstractItemView::ExtendedSelection && event->modifiers().testFlag(Qt::ControlModifier)))
+            {
+                setItemSelected(clickedItem, !wasSelected);
+            }
+            else if (m_selectionMode == QAbstractItemView::ExtendedSelection ||
+                     m_selectionMode == QAbstractItemView::ContiguousSelection)
+            {
+                if (setItemSelectedInternal(clickedItem, true, true))
+                {
+                    Q_EMIT itemSelectionChanged();
+                }
+            }
+
+            Q_EMIT itemClicked(clickedItem);
+            event->accept();
+            return;
+        }
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void AntList::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        AntListItem* clickedItem = itemAt(event->pos());
+        if (clickedItem && clickedItem->isEnabled() &&
+            (clickedItem->flags() & Qt::ItemIsEnabled))
+        {
+            setCurrentItemInternal(clickedItem);
+            Q_EMIT itemDoubleClicked(clickedItem);
+            Q_EMIT itemActivated(clickedItem);
+            event->accept();
+            return;
+        }
+    }
+    QWidget::mouseDoubleClickEvent(event);
+}
+
+void AntList::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Down || event->key() == Qt::Key_Up)
+    {
+        const int direction = event->key() == Qt::Key_Down ? 1 : -1;
+        const int start = currentRow() < 0 ? (direction > 0 ? 0 : m_items.size() - 1) : currentRow() + direction;
+        if (AntListItem* nextItem = enabledSelectableItem(start, direction))
+        {
+            setCurrentItemInternal(nextItem);
+            event->accept();
+            return;
+        }
+    }
+    if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && m_currentItem)
+    {
+        Q_EMIT itemActivated(m_currentItem.data());
+        event->accept();
+        return;
+    }
+    QWidget::keyPressEvent(event);
 }
 
 void AntList::paintEvent(QPaintEvent* event)
@@ -802,6 +1412,10 @@ void AntList::syncLayout()
     {
         if (item)
         {
+            if (item->isHidden())
+            {
+                continue;
+            }
             const int h = item->sizeHint().height();
             item->setGeometry(cr.left(), y, cr.width(), h);
             item->show();

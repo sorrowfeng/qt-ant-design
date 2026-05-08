@@ -114,7 +114,7 @@
 - `AntInputNumber` / `AntCheckBox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API，并增加对应属性/信号测试。
 - `AntSelect` 补齐常用 `QComboBox` 风格 API/信号，包括 add/insert/remove/find、itemText/itemData、currentData、setCurrentText、activated/textActivated/highlighted/textHighlighted。
 - `AntDatePicker` / `AntTimePicker` 补齐 `QDateEdit` / `QTimeEdit` 风格 date/time 别名、minimum/maximum range API、range changed 信号，并对越界输入做边界收敛。
-- `AntList` / `AntTable` / `AntTree` 补齐 item/view 风格辅助 API，包括 count/item/take/clear、columnCount/headerLabels/cellData/setData、treeData/nodeCount/containsNode/setNodeExpanded/setNodeChecked。
+- `AntList` / `AntListWidget` 补齐常用 `QListWidget` 风格 API/信号，包括字符串 add/insert/addItems/insertItems、item/text/icon/data/checkState/flags、findItems/sortItems、currentItem/currentRow、selectionMode/selectedItems/setItemSelected、itemClicked/itemDoubleClicked/itemActivated/itemChanged/current/itemSelection 信号；`AntTable` / `AntTree` 继续覆盖 table/tree 风格 helper。
 - `AntMenu` 接入 QWidget `QAction` 体系：`addAction/removeAction` 会同步自绘菜单项，action text/enabled/shortcut 变更会刷新显示，点击菜单项会触发对应 QAction；`AntToolButton` / `AntToolBar` 的默认 action 和 toolbar action 触发行为已有测试保护。
 - 相关 targeted 验证覆盖 `TestAntInput|TestAntCheckBox|TestAntDataEntryA|TestAntDataEntryB|TestAntDataDisplayB|TestAntFeedback|TestAntNavigation|TestAntQtExtensions|TestAntTypography|TestAntSelect|TestAntMetaProperties|TestAntRenderSmoke`。
 
@@ -220,7 +220,7 @@
 | `AntCollapse` | `collapse` | 自绘 | 是 | 折叠面板、accordion 模式、动画 |
 | `AntEmpty` | `empty` | `QProxyStyle` | 是 | 默认插画、simple 模式 |
 | `AntImage` | `image` | 自绘 | 是 | 图片展示、全屏预览、PreviewGroup |
-| `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size |
+| `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size，`AntListWidget` 覆盖常用 QListWidget-style API |
 | `AntPopover` | — | `QProxyStyle` | 是 | 已在反馈类 |
 | `AntQRCode` | `qr-code` | `QProxyStyle` | 是 | 嵌入式 QR 生成、状态叠加 |
 | `AntStatistic` | `statistic` | `QProxyStyle` | 是 | title/value/precision/prefix/suffix/Countdown |

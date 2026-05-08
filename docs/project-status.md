@@ -51,6 +51,8 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
   - Reworked title-bar hover state cleanup so hover colors clear reliably when leaving title/content/native areas.
   - Added a captured-frame `AntWindow` theme transition overlay with an 8 ms timer, 320 ms duration, smootherstep easing, high-DPI-safe captures, and a soft reveal that avoids black-hole artifacts.
   - Embedded the Windows 10/11 compatibility manifest in the example app so the native Snap Layout flyout can appear on the maximize button.
+- Expanded Qt-style compatibility for `AntList` / `AntListWidget` to cover common `QListWidget` workflows: string item insertion, lookup/sorting, item data roles, current row/item state, selection state, and item/current/selection signals.
+- Fixed issue-driven popup details for `AntMenu` horizontal submenu panel edges and `AntCascader` outside-click dismissal.
 
 ## Visual Audit State
 

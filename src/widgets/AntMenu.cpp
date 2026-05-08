@@ -28,6 +28,9 @@
 
 namespace
 {
+constexpr int kSubMenuPopupShadowMargin = 8;
+constexpr int kSubMenuPopupInnerPadding = 4;
+
 QColor withAlpha(QColor color, int alpha)
 {
     color.setAlpha(alpha);
@@ -111,7 +114,8 @@ public:
         setMouseTracking(true);
 
         auto* layout = new QVBoxLayout(this);
-        layout->setContentsMargins(8, 8, 8, 8);
+        const int popupMargin = kSubMenuPopupShadowMargin + kSubMenuPopupInnerPadding;
+        layout->setContentsMargins(popupMargin, popupMargin, popupMargin, popupMargin);
         layout->setSpacing(0);
 
         m_menu = new AntMenu(this);
@@ -165,7 +169,8 @@ public:
         const int popupMenuWidth = qBound(128, maxTextWidth + token.paddingLG * 2 + 32, 260);
         m_menu->setFixedWidth(popupMenuWidth);
         m_menu->adjustSize();
-        setFixedSize(popupMenuWidth + 16, m_menu->sizeHint().height() + 16);
+        const int popupMargin = kSubMenuPopupShadowMargin + kSubMenuPopupInnerPadding;
+        setFixedSize(popupMenuWidth + popupMargin * 2, m_menu->sizeHint().height() + popupMargin * 2);
         update();
     }
 
@@ -176,7 +181,10 @@ protected:
         const auto& token = antTheme->tokens();
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-        const QRect panel = rect().adjusted(8, 8, -8, -8);
+        const QRect panel = rect().adjusted(kSubMenuPopupShadowMargin,
+                                            kSubMenuPopupShadowMargin,
+                                            -kSubMenuPopupShadowMargin,
+                                            -kSubMenuPopupShadowMargin);
         antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.72);
         const QColor border = antTheme->themeMode() == Ant::ThemeMode::Dark
                                   ? AntPalette::alpha(token.colorTextLightSolid, 0.18)

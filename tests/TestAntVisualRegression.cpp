@@ -586,7 +586,7 @@ void TestAntVisualRegression::complexPopupSurfacesStayElevated()
     const auto& token = antTheme->tokens();
 
     AntMenu popupSource;
-    popupSource.setMode(Ant::MenuMode::Vertical);
+    popupSource.setMode(Ant::MenuMode::Horizontal);
     popupSource.addSubMenu(QStringLiteral("products"), QStringLiteral("Products"), Ant::IconType::Setting);
     popupSource.addSubItem(QStringLiteral("products"), QStringLiteral("analytics"), QStringLiteral("Analytics"));
     popupSource.addSubItem(QStringLiteral("products"), QStringLiteral("billing"), QStringLiteral("Billing"));
@@ -610,6 +610,15 @@ void TestAntVisualRegression::complexPopupSurfacesStayElevated()
     })(), 300);
     QWidget* popupPanel = popupMenu->parentWidget();
     QVERIFY(popupPanel != nullptr);
+    const QRect popupSurface = popupPanel->rect().adjusted(8, 8, -8, -8);
+    QVERIFY2(popupMenu->geometry().left() > popupSurface.left(),
+             "horizontal submenu content should leave the popup left edge visible");
+    QVERIFY2(popupMenu->geometry().top() > popupSurface.top(),
+             "horizontal submenu content should leave the popup top edge visible");
+    QVERIFY2(popupMenu->geometry().right() < popupSurface.right(),
+             "horizontal submenu content should leave the popup right edge visible");
+    QVERIFY2(popupMenu->geometry().bottom() < popupSurface.bottom(),
+             "horizontal submenu content should leave the popup bottom edge visible");
     QTest::qWait(180);
     const QImage submenuImage = renderCurrentWidget(popupPanel);
     assertNearColorPixels(submenuImage, token.colorBgElevated, 8500, "submenu popup elevated surface", 12);
