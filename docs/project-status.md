@@ -56,6 +56,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added `AntTypography::setPixelSize()` / `pixelSize()` for direct label-style font sizing while keeping theme-aware rendering.
 - Added `AntSelect` option-style list management helpers: `setOptionText()`, `removeOption()`, and `optionData()`, alongside the existing `findData()` lookup path.
 - Aligned `AntSelect` with `QComboBox` for the empty-to-populated path: the first enabled option added in single-select mode becomes the current item automatically.
+- Tuned `AntList` selected-row highlight geometry so left/right inset matches the existing top/bottom inset for a balanced row highlight.
 - Fixed `AntCard` title and Meta title label palettes after Light/Dark theme changes so dark-mode card headers stay legible.
 - Fixed issue-driven popup details for `AntMenu` horizontal submenu panel edges and `AntCascader` outside-click dismissal.
 

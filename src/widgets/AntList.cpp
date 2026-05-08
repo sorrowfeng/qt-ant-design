@@ -465,7 +465,7 @@ void AntListItem::paintEvent(QPaintEvent* event)
 
     if (m_selected)
     {
-        const QRectF selectedRect = rect().adjusted(0, 2, 0, -2);
+        const QRectF selectedRect = rect().adjusted(2, 2, -2, -2);
         painter.setPen(Qt::NoPen);
         painter.setBrush(token.colorPrimaryBg);
         painter.drawRoundedRect(selectedRect, token.borderRadiusSM, token.borderRadiusSM);

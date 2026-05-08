@@ -24,7 +24,7 @@ private slots:
     void listWidgetCompatibilityApis();
     void listInternalScrolling();
     void tableSelectionCompatibilityApis();
-    void listSelectionHighlightCoversFullRow();
+    void listSelectionHighlightUsesBalancedInset();
 };
 
 void TestAntDataDisplayB::propertiesAndSignals()
@@ -567,7 +567,7 @@ void TestAntDataDisplayB::tableSelectionCompatibilityApis()
     QCOMPARE(table.currentRowIndex(), -1);
 }
 
-void TestAntDataDisplayB::listSelectionHighlightCoversFullRow()
+void TestAntDataDisplayB::listSelectionHighlightUsesBalancedInset()
 {
     AntListWidget list;
     list.setBordered(true);
@@ -592,10 +592,23 @@ void TestAntDataDisplayB::listSelectionHighlightCoversFullRow()
                qAbs(actual.blue() - expected.blue()) <= 18;
     };
 
-    const QColor leftEdge = image.pixelColor(rowRect.left() + 3, rowRect.center().y());
-    const QColor rightEdge = image.pixelColor(rowRect.right() - 3, rowRect.center().y());
-    QVERIFY2(nearColor(leftEdge, selectedColor), "selected list row should fill the left edge");
-    QVERIFY2(nearColor(rightEdge, selectedColor), "selected list row should fill the right edge");
+    const QColor leftInset = image.pixelColor(rowRect.left() + 1, rowRect.center().y());
+    const QColor rightInset = image.pixelColor(rowRect.right() - 1, rowRect.center().y());
+    const QColor topInset = image.pixelColor(rowRect.center().x(), rowRect.top() + 1);
+    const QColor bottomInset = image.pixelColor(rowRect.center().x(), rowRect.bottom() - 1);
+    const QColor leftFill = image.pixelColor(rowRect.left() + 3, rowRect.center().y());
+    const QColor rightFill = image.pixelColor(rowRect.right() - 3, rowRect.center().y());
+    const QColor topFill = image.pixelColor(rowRect.center().x(), rowRect.top() + 3);
+    const QColor bottomFill = image.pixelColor(rowRect.center().x(), rowRect.bottom() - 3);
+
+    QVERIFY2(!nearColor(leftInset, selectedColor), "selected list row should leave the same left inset as the vertical inset");
+    QVERIFY2(!nearColor(rightInset, selectedColor), "selected list row should leave the same right inset as the vertical inset");
+    QVERIFY2(!nearColor(topInset, selectedColor), "selected list row should keep its top inset");
+    QVERIFY2(!nearColor(bottomInset, selectedColor), "selected list row should keep its bottom inset");
+    QVERIFY2(nearColor(leftFill, selectedColor), "selected list row should fill immediately inside the left inset");
+    QVERIFY2(nearColor(rightFill, selectedColor), "selected list row should fill immediately inside the right inset");
+    QVERIFY2(nearColor(topFill, selectedColor), "selected list row should fill immediately inside the top inset");
+    QVERIFY2(nearColor(bottomFill, selectedColor), "selected list row should fill immediately inside the bottom inset");
 }
 
 QTEST_MAIN(TestAntDataDisplayB)
