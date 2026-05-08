@@ -61,6 +61,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed issue-driven popup details for `AntMenu` horizontal submenu panel edges and `AntCascader` outside-click dismissal.
 - Audited Qt layout adaptivity against native widget baselines: line-edit-like controls, combo-like selectors, spin/date/time editors, slider/progress, list/table/tree views, scroll/text/status controls, and typography now carry native-like `QSizePolicy` / height-for-width behavior with targeted render-smoke coverage.
 - Aligned `AntInputNumber` with `QDoubleSpinBox` decimal usage: default decimals are 2, decimal values and quarter-step increments are preserved, and `setDecimals()` now updates the public `precision()` state with `precisionChanged`.
+- Fixed `AntSlider` marked and range interaction details: marked sliders reserve label height under Qt layouts, drag value bubbles anchor above the visual handle, and range drags no longer paint a phantom primary handle at the minimum edge.
 
 ## Visual Audit State
 
@@ -140,6 +141,14 @@ ctest --test-dir build -C Debug -R "TestAnt(RenderSmoke|Select|DataEntryA|Typogr
 Result: `4 / 4` targeted tests passed on `2026-05-08`.
 
 Latest targeted AntInputNumber decimal validation:
+
+```powershell
+ctest --test-dir build -C Debug -R "TestAntDataEntryA$" --output-on-failure
+```
+
+Result: `1 / 1` targeted test passed on `2026-05-08`.
+
+Latest targeted AntSlider layout / bubble / range validation:
 
 ```powershell
 ctest --test-dir build -C Debug -R "TestAntDataEntryA$" --output-on-failure

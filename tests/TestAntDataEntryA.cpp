@@ -4,7 +4,9 @@
 #include <QDoubleSpinBox>
 #include <QEnterEvent>
 #include <QHBoxLayout>
+#include <QImage>
 #include <QLineEdit>
+#include <QPainter>
 #include <QPalette>
 #include "core/AntTheme.h"
 #include "widgets/AntInputNumber.h"
@@ -22,7 +24,33 @@ private slots:
     void inputNumberSupportsQDoubleSpinBoxDecimals();
     void inputNumberLineEditPaletteTracksDarkTheme();
     void inputNumberUsesLayoutFriendlyPolicy();
+    void sliderMarksReserveLabelHeight();
+    void sliderBubbleFloatsAboveMarkedHandle();
+    void sliderRangeDragDoesNotPaintPhantomMinimumHandle();
 };
+
+namespace
+{
+QImage renderWidgetImage(QWidget& widget)
+{
+    widget.ensurePolished();
+    QCoreApplication::sendPostedEvents(&widget, QEvent::Polish);
+    QCoreApplication::processEvents();
+
+    QImage image(widget.size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    widget.render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
+    return image;
+}
+
+int sliderVisualHandleCenterY()
+{
+    const auto& token = antTheme->tokens();
+    const int handleSizeHover = token.controlHeightSM / 2;
+    return handleSizeHover / 2 + 2;
+}
+} // namespace
 
 void TestAntDataEntryA::propertiesAndSignals()
 {
@@ -393,6 +421,69 @@ void TestAntDataEntryA::inputNumberUsesLayoutFriendlyPolicy()
     QCOMPARE(input->sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
     QCOMPARE(input->height(), input->sizeHint().height());
     QCOMPARE(input->width(), host.width());
+}
+
+void TestAntDataEntryA::sliderMarksReserveLabelHeight()
+{
+    AntSlider slider;
+    slider.setSingleStep(25);
+    slider.setMarks({{0, QStringLiteral("A")}, {25, QStringLiteral("B")}, {50, QStringLiteral("C")},
+                     {75, QStringLiteral("D")}, {100, QStringLiteral("E")}});
+
+    QVERIFY(slider.sizeHint().height() > 0);
+    QVERIFY(slider.minimumSizeHint().height() >= slider.sizeHint().height());
+}
+
+void TestAntDataEntryA::sliderBubbleFloatsAboveMarkedHandle()
+{
+    QWidget host;
+    host.move(160, 160);
+    host.resize(460, 120);
+
+    AntSlider slider(&host);
+    slider.setSingleStep(25);
+    slider.setMarks({{0, QStringLiteral("A")}, {25, QStringLiteral("B")}, {50, QStringLiteral("C")},
+                     {75, QStringLiteral("D")}, {100, QStringLiteral("E")}});
+    slider.resize(400, slider.sizeHint().height());
+    slider.move(24, 48);
+    slider.show();
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    const QPoint visualHandleCenter(slider.width() / 2, sliderVisualHandleCenterY());
+    QTest::mousePress(&slider, Qt::LeftButton, Qt::NoModifier, visualHandleCenter);
+
+    auto* valueBubble = slider.findChild<QWidget*>(QStringLiteral("antSliderValueBubble"));
+    QVERIFY(valueBubble);
+    QTRY_VERIFY_WITH_TIMEOUT(valueBubble->isVisible(), 100);
+    const QPoint visualHandleGlobal = slider.mapToGlobal(visualHandleCenter);
+    QVERIFY(valueBubble->geometry().bottom() <= visualHandleGlobal.y() - 4);
+
+    QTest::mouseRelease(&slider, Qt::LeftButton, Qt::NoModifier, visualHandleCenter);
+}
+
+void TestAntDataEntryA::sliderRangeDragDoesNotPaintPhantomMinimumHandle()
+{
+    AntSlider slider;
+    slider.setRangeMode(true);
+    slider.setRangeValues(20, 60);
+    slider.resize(240, 44);
+    slider.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&slider));
+
+    const auto& token = antTheme->tokens();
+    const int handleSizeHover = token.controlHeightSM / 2;
+    const int phantomX = handleSizeHover / 2 + 2;
+    const QPoint endHandlePoint(phantomX + qRound((slider.width() - phantomX * 2) * 0.60), slider.height() / 2);
+
+    QTest::mousePress(&slider, Qt::LeftButton, Qt::NoModifier, endHandlePoint);
+    QVERIFY(slider.isPressedState());
+    const QImage image = renderWidgetImage(slider);
+    QTest::mouseRelease(&slider, Qt::LeftButton, Qt::NoModifier, endHandlePoint);
+
+    const QColor phantomPixel = image.pixelColor(phantomX, slider.height() / 2);
+    QVERIFY2(phantomPixel.blue() - phantomPixel.red() < 18,
+             "range drag should not paint a primary-colored pressed halo at the minimum edge");
 }
 
 QTEST_MAIN(TestAntDataEntryA)

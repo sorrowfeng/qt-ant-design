@@ -33,6 +33,7 @@ class QT_ANT_DESIGN_EXPORT AntSlider : public QWidget
     Q_PROPERTY(bool range READ isRangeMode WRITE setRangeMode NOTIFY rangeModeChanged)
     Q_PROPERTY(qreal handleScale READ handleScale WRITE setHandleScale)
     Q_PROPERTY(qreal focusProgress READ focusProgress WRITE setFocusProgress)
+    friend class AntSliderStyle;
 
 public:
     explicit AntSlider(QWidget* parent = nullptr);

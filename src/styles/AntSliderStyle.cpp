@@ -278,6 +278,9 @@ void AntSliderStyle::drawSlider(const QStyleOption* option, QPainter* painter, c
     const QRectF groove = grooveRectFor(slider, option->rect);
     const QRectF track = trackRectFor(slider, option->rect);
     const QRectF handle = handleRectFor(slider, option->rect);
+    const QRectF activeHandle = slider->isRangeMode()
+        ? handleRectForValue(slider, option->rect, slider->activeDisplayValue())
+        : handle;
     const bool interactive = option->state.testFlag(QStyle::State_Enabled);
     const bool active = interactive
         && (option->state.testFlag(QStyle::State_MouseOver)
@@ -318,7 +321,7 @@ void AntSliderStyle::drawSlider(const QStyleOption* option, QPainter* painter, c
         const QColor outline = AntPalette::alpha(token.colorPrimary, 0.20 * slider->focusProgress());
         painter->setPen(QPen(outline, 6 * slider->focusProgress(), Qt::SolidLine, Qt::RoundCap));
         painter->setBrush(Qt::NoBrush);
-        painter->drawEllipse(handle);
+        painter->drawEllipse(activeHandle);
     }
 
     auto drawHandle = [&](const QRectF& handleRect) {
@@ -341,7 +344,7 @@ void AntSliderStyle::drawSlider(const QStyleOption* option, QPainter* painter, c
     {
         painter->setPen(Qt::NoPen);
         painter->setBrush(AntPalette::alpha(token.colorPrimary, 0.14));
-        painter->drawEllipse(handle.adjusted(-5, -5, 5, 5));
+        painter->drawEllipse(activeHandle.adjusted(-5, -5, 5, 5));
     }
 
     painter->restore();

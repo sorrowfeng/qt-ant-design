@@ -221,7 +221,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 - `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement
 - `AntSkeleton`: moving `active` shimmer, avatar placeholder, title / paragraph configuration, rounded style, and `loading` toggle to swap in real content
 - `AntToolTip`: common `placement`, arrow, color, delayed display, auto flip
-- `AntSlider`: horizontal / vertical, `reverse / dots / included`, drag value bubble
+- `AntSlider`: horizontal / vertical, `reverse / dots / included`, range, marks, drag value bubble above the active handle
 - `AntSwitch`: `checked / loading / small / text`, click wave feedback
 - `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation
 - `AntDatePicker` / `AntTimePicker`: hand-painted popup pickers

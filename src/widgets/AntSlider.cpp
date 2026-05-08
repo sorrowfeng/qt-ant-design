@@ -381,6 +381,10 @@ QSize AntSlider::minimumSizeHint() const
     {
         return QSize(m.controlSize * 3, 96);
     }
+    if (!m_marks.isEmpty())
+    {
+        return QSize(96, sizeHint().height());
+    }
     return QSize(96, m.controlSize * 3);
 }
 
@@ -568,7 +572,10 @@ QRectF AntSlider::grooveRect(const Metrics& metrics) const
     }
 
     const qreal w = std::max<qreal>(0.0, width() - halfHandle * 2.0);
-    return QRectF(halfHandle, (height() - metrics.railSize) / 2.0, w, metrics.railSize);
+    const qreal y = !m_marks.isEmpty()
+        ? halfHandle - metrics.railSize / 2.0
+        : (height() - metrics.railSize) / 2.0;
+    return QRectF(halfHandle, y, w, metrics.railSize);
 }
 
 QRectF AntSlider::trackRect(const Metrics& metrics) const
