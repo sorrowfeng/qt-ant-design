@@ -21,6 +21,7 @@ class QT_ANT_DESIGN_EXPORT AntSegmented : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString value READ value WRITE setValue NOTIFY valueChanged)
+    Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(bool block READ isBlock WRITE setBlock NOTIFY blockChanged)
     Q_PROPERTY(Ant::Size segmentedSize READ segmentedSize WRITE setSegmentedSize NOTIFY segmentedSizeChanged)
     Q_PROPERTY(bool vertical READ isVertical WRITE setVertical NOTIFY verticalChanged)
@@ -34,6 +35,8 @@ public:
 
     QString value() const;
     void setValue(const QString& value);
+    int currentIndex() const;
+    void setCurrentIndex(int index);
     bool isBlock() const;
     void setBlock(bool block);
     Ant::Size segmentedSize() const;
@@ -55,6 +58,7 @@ public:
 
 Q_SIGNALS:
     void valueChanged(const QString& value);
+    void currentIndexChanged(int index);
     void blockChanged(bool block);
     void segmentedSizeChanged(Ant::Size size);
     void verticalChanged(bool vertical);

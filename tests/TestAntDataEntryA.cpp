@@ -214,6 +214,7 @@ void TestAntDataEntryA::propertiesAndSignals()
     // AntSegmented
     auto* w5 = new AntSegmented;
     QCOMPARE(w5->value(), QString());
+    QCOMPARE(w5->currentIndex(), -1);
     QCOMPARE(w5->isBlock(), false);
     QCOMPARE(w5->segmentedSize(), Ant::Size::Middle);
     QCOMPARE(w5->isVertical(), false);
@@ -222,11 +223,37 @@ void TestAntDataEntryA::propertiesAndSignals()
     QVector<AntSegmentedOption> opts = {{"A", "A"}, {"B", "B"}, {"C", "C"}};
     w5->setOptions(opts);
     QCOMPARE(w5->options().size(), 3);
+    QCOMPARE(w5->currentIndex(), 0);
+    QCOMPARE(w5->selectedIndex(), 0);
+
+    QSignalSpy currentIndexSpy5(w5, &AntSegmented::currentIndexChanged);
+    w5->setCurrentIndex(2);
+    QCOMPARE(w5->currentIndex(), 2);
+    QCOMPARE(w5->selectedIndex(), 2);
+    QCOMPARE(w5->value(), QStringLiteral("C"));
+    QCOMPARE(currentIndexSpy5.count(), 1);
+    QCOMPARE(currentIndexSpy5.last().at(0).toInt(), 2);
+
+    w5->setCurrentIndex(2);
+    QCOMPARE(currentIndexSpy5.count(), 1);
+    w5->setCurrentIndex(-1);
+    QCOMPARE(w5->currentIndex(), 2);
+    QCOMPARE(currentIndexSpy5.count(), 1);
+
+    AntSegmented disabledSegment;
+    disabledSegment.setOptions({{"A", "A"}, {"B", "B", QString(), true}});
+    QSignalSpy disabledIndexSpy(&disabledSegment, &AntSegmented::currentIndexChanged);
+    disabledSegment.setCurrentIndex(1);
+    QCOMPARE(disabledSegment.currentIndex(), 0);
+    QCOMPARE(disabledIndexSpy.count(), 0);
 
     QSignalSpy valueSpy5(w5, &AntSegmented::valueChanged);
     w5->setValue("B");
     QCOMPARE(w5->value(), "B");
+    QCOMPARE(w5->currentIndex(), 1);
     QCOMPARE(valueSpy5.count(), 1);
+    QCOMPARE(currentIndexSpy5.count(), 2);
+    QCOMPARE(currentIndexSpy5.last().at(0).toInt(), 1);
 
     w5->resize(w5->sizeHint());
     const QPoint thirdSegmentPoint(w5->width() - 8, w5->height() / 2);
@@ -236,7 +263,10 @@ void TestAntDataEntryA::propertiesAndSignals()
     QTest::mouseRelease(w5, Qt::LeftButton, Qt::NoModifier, thirdSegmentPoint);
     QCOMPARE(w5->pressedIndex(), -1);
     QCOMPARE(w5->value(), "C");
+    QCOMPARE(w5->currentIndex(), 2);
     QCOMPARE(valueSpy5.count(), 2);
+    QCOMPARE(currentIndexSpy5.count(), 3);
+    QCOMPARE(currentIndexSpy5.last().at(0).toInt(), 2);
 
     QSignalSpy blockSpy(w5, &AntSegmented::blockChanged);
     w5->setBlock(true);

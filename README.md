@@ -239,7 +239,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 - `AntDrawer`: sliding panel with Left / Right / Top / Bottom placement, animation, and mask
 - `AntStatusBar`: status bar with left / right items, separators, message area, and size grip
 - `AntScrollBar`: custom 8 px slim scrollbar with auto-hide and no arrow buttons
-- `AntSegmented`: segmented control with evenly distributed options, animated indicator, and icon / disabled / tooltip support
+- `AntSegmented`: segmented control with value and index selection APIs, evenly distributed options, animated indicator, and icon / disabled / tooltip support
 - `AntFloatButton`: floating action button — circle / square, Primary / Default, expandable Group, BackTop, Badge
 - `AntWatermark`: watermark overlay with rotated tiled text, multi-line content, and customizable font / color / spacing / offset / angle
 - `AntQRCode`: QR code display with embedded generator (no external dependency), status overlays (expired / loading / scanned), icon, no border

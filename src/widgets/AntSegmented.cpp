@@ -107,10 +107,25 @@ void AntSegmented::setValue(const QString& value)
             m_value = value;
             startThumbAnimation(i);
             update();
+            Q_EMIT currentIndexChanged(i);
             Q_EMIT valueChanged(m_value);
             return;
         }
     }
+}
+
+int AntSegmented::currentIndex() const
+{
+    return selectedIndex();
+}
+
+void AntSegmented::setCurrentIndex(int index)
+{
+    if (index < 0 || index >= m_options.size() || m_options[index].disabled)
+    {
+        return;
+    }
+    setValue(m_options[index].value);
 }
 
 bool AntSegmented::isBlock() const { return m_block; }
