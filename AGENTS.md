@@ -167,7 +167,7 @@
 | `AntDropdown` | `dropdown` | `QProxyStyle` | 是 | hover/click/contextMenu、placement、arrow |
 | `AntMenu` | `menu` | `QProxyStyle` | 是 | vertical/horizontal/inline、明暗主题 |
 | `AntPagination` | `pagination` | `QProxyStyle` | 是 | simple/showQuickJumper/showSizeChanger |
-| `AntSteps` | `steps` | `QProxyStyle` | 是 | 水平/垂直、当前步骤、错误态 |
+| `AntSteps` | `steps` | `QProxyStyle` | 是 | 水平/垂直、当前步骤、错误态，首个图标边缘不裁切 |
 | `AntTabs` | `tabs` | `QProxyStyle` | 是 | line/card/editable-card，内容页布局 helper |
 
 ### 数据录入

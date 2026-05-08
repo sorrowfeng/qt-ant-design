@@ -204,11 +204,12 @@ QVector<QRect> AntSteps::itemRects() const
 QRect AntSteps::iconRect(const QRect& itemRect) const
 {
     const Metrics m = metrics();
+    const int leftInset = m.tailThickness + 1;
     if (m_direction == Ant::Orientation::Horizontal)
     {
-        return QRect(itemRect.left(), 8, m.iconSize, m.iconSize);
+        return QRect(itemRect.left() + leftInset, 8, m.iconSize, m.iconSize);
     }
-    return QRect(itemRect.left(), itemRect.top() + 8, m.iconSize, m.iconSize);
+    return QRect(itemRect.left() + leftInset, itemRect.top() + 8, m.iconSize, m.iconSize);
 }
 
 QRect AntSteps::textRect(const QRect& itemRect) const

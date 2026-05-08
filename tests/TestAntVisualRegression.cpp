@@ -54,6 +54,7 @@ private slots:
     void feedbackPopupShadowsStaySubtle();
     void dataDisplayBordersAndSeparatorsStayVisible();
     void navigationAndLayoutStructureStayVisible();
+    void stepsFirstIconKeepsLeftBorderVisible();
     void complexPopupSurfacesStayElevated();
     void lightAndDarkThemesRenderDifferentSurfaces();
 };
@@ -659,6 +660,27 @@ void TestAntVisualRegression::navigationAndLayoutStructureStayVisible()
     assertNearColorPixels(layoutImage, token.colorBgLayout, 56000, "layout background and footer", 12);
     assertNearColorPixels(layoutImage, token.colorBgContainer, 45000, "layout content surface", 12);
     assertNearColorPixels(layoutImage, QColor(0, 21, 41), 34000, "layout header and sider dark surface", 12);
+}
+
+void TestAntVisualRegression::stepsFirstIconKeepsLeftBorderVisible()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const QColor primary = antTheme->tokens().colorPrimary;
+
+    AntSteps steps;
+    steps.addStep(QStringLiteral("First"));
+    steps.addStep(QStringLiteral("Second"));
+    steps.addStep(QStringLiteral("Third"));
+    steps.setCurrentIndex(0);
+
+    const QImage image = renderWidget(&steps, QSize(520, 96));
+    const QRect primaryBounds = nearColorBounds(image, primary, 28);
+    QVERIFY2(!primaryBounds.isNull(), "steps process icon should render primary pixels");
+    QVERIFY2(primaryBounds.left() >= 2,
+             qPrintable(QStringLiteral("first steps icon touches the widget edge at x=%1")
+                            .arg(primaryBounds.left())));
+    QCOMPARE(countNearColor(image, QRect(0, 0, 2, image.height()), primary, 28), 0);
 }
 
 void TestAntVisualRegression::complexPopupSurfacesStayElevated()

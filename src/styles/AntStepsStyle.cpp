@@ -118,11 +118,12 @@ QVector<QRect> stepsItemRects(const AntSteps* steps, const QRect& bounds)
 QRect stepsIconRect(const QRect& itemRect, Ant::Orientation direction)
 {
     const StepsMetrics m = stepsMetrics();
+    const int leftInset = m.tailThickness + 1;
     if (direction == Ant::Orientation::Horizontal)
     {
-        return QRect(itemRect.left(), 8, m.iconSize, m.iconSize);
+        return QRect(itemRect.left() + leftInset, 8, m.iconSize, m.iconSize);
     }
-    return QRect(itemRect.left(), itemRect.top() + 8, m.iconSize, m.iconSize);
+    return QRect(itemRect.left() + leftInset, itemRect.top() + 8, m.iconSize, m.iconSize);
 }
 
 QRect stepsTextRect(const QRect& itemRect, Ant::Orientation direction)

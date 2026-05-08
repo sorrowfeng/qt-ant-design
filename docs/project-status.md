@@ -73,6 +73,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed the `AntTour` example page so the Step 1 / 2 / 3 buttons launch the corresponding tour step through the new `AntTour::start(index)` path.
 - Fixed `AntResult` dark-mode status icon rendering so the icon is drawn directly with a transparent background instead of rendering an opaque widget tile.
 - Added an `AntNotification` example entry for loading notifications with a bottom countdown progress bar that closes automatically when the duration completes.
+- Fixed `AntSteps` icon geometry so the first circular step indicator keeps a small left inset and is no longer clipped by the widget edge.
 
 ## Visual Audit State
 
@@ -242,6 +243,16 @@ ctest --test-dir build -C Debug -R "TestAntFeedback$" --output-on-failure
 ```
 
 Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`.
+
+Latest targeted AntSteps edge-clip validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntNavigation TestAntVisualRegression qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAnt(Navigation|VisualRegression)$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: `2 / 2` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`.
 
 ## Remaining Notes
 
