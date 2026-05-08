@@ -204,7 +204,7 @@ cmake --build build --config Debug --target qt-ant-design-example
 .\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 
-Result: `6 / 6` targeted tests passed, example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-08`.
+Result: `6 / 6` targeted tests passed, example Debug build succeeded, the example smoke launch exited cleanly, and temporary visual captures for expanded/tab-animation/collapse/collapsed Ribbon states were checked on `2026-05-08`.
 
 ## Remaining Notes
 

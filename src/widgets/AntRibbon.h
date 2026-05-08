@@ -3,6 +3,7 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QIcon>
+#include <QRectF>
 #include <QVector>
 #include <QWidget>
 
@@ -15,6 +16,7 @@ class QFrame;
 class QHBoxLayout;
 class QMouseEvent;
 class QPaintEvent;
+class QPropertyAnimation;
 class QResizeEvent;
 class QScrollArea;
 class QStackedWidget;
@@ -118,6 +120,8 @@ class QT_ANT_DESIGN_EXPORT AntRibbon : public QWidget
     Q_PROPERTY(bool collapseButtonVisible READ isCollapseButtonVisible WRITE setCollapseButtonVisible NOTIFY collapseButtonVisibleChanged)
     Q_PROPERTY(int currentPageIndex READ currentPageIndex WRITE setCurrentPageIndex NOTIFY currentPageChanged)
     Q_PROPERTY(QString currentPageKey READ currentPageKey WRITE setCurrentPageKey NOTIFY currentPageKeyChanged)
+    Q_PROPERTY(QRectF indicatorRect READ indicatorRect WRITE setIndicatorRect)
+    Q_PROPERTY(qreal contentHeight READ contentHeight WRITE setContentHeight)
 
 public:
     explicit AntRibbon(QWidget* parent = nullptr);
@@ -139,6 +143,10 @@ public:
     void setCollapsed(bool collapsed);
     bool isCollapseButtonVisible() const;
     void setCollapseButtonVisible(bool visible);
+    QRectF indicatorRect() const;
+    void setIndicatorRect(const QRectF& rect);
+    qreal contentHeight() const;
+    void setContentHeight(qreal height);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -161,14 +169,17 @@ protected:
     void changeEvent(QEvent* event) override;
 
 private:
-    static constexpr int TabBarHeight = 40;
-    static constexpr int ContentHeight = 112;
+    static constexpr int TabBarHeight = 42;
+    static constexpr int ContentHeight = 148;
     static constexpr int CollapseButtonWidth = 36;
 
     QString normalizedKey(const QString& title, const QString& key) const;
     QVector<QRect> tabRects() const;
     QRect collapseButtonRect() const;
     int tabAt(const QPoint& pos) const;
+    QRectF targetIndicatorRect(int index) const;
+    void syncIndicatorRect();
+    void animateIndicator(const QRectF& from, const QRectF& to);
     void updatePageVisibility();
     void updateStackSize();
     void updateScrollAreaGeometry();
@@ -188,4 +199,9 @@ private:
     int m_currentPageIndex = -1;
     int m_hoveredTab = -1;
     bool m_collapseHovered = false;
+    QRectF m_indicatorRect;
+    bool m_indicatorReady = false;
+    qreal m_contentHeight = ContentHeight;
+    QPropertyAnimation* m_indicatorAnimation = nullptr;
+    QPropertyAnimation* m_contentAnimation = nullptr;
 };

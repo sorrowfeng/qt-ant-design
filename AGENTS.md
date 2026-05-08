@@ -258,7 +258,7 @@
 | `AntWindow` | `QProxyStyle` | 是 | 无边框窗口，自定义标题栏，Win11 Snap/DWM 圆角阴影，标题栏按钮 API，主题切换遮罩动画 |
 | `AntDockWidget` | 自绘 | 是 | 可停靠面板，Win32 resize |
 | `AntStatusBar` | `QProxyStyle` | 是 | 状态栏 |
-| `AntRibbon` | 自绘 | 是 | Ribbon 顶部命令区，Page/Group、大/小 action、嵌入 Ant/Qt 控件，支持折叠弹出并可接入 AntWindow |
+| `AntRibbon` | 自绘 | 是 | Ribbon 顶部命令区，Page/Group、大/小 action、嵌入 Ant/Qt 控件，支持 Tab 指示条/折叠动画、折叠弹出并可接入 AntWindow |
 | `AntScrollBar` | `QProxyStyle` | 是 | 8px 细滚动条，自动隐藏 |
 | `AntScrollArea` | — | 是 | QScrollArea + AntScrollBar + QScroller |
 | `AntMenuBar` | `QProxyStyle` | 是 | 菜单栏 |

@@ -529,9 +529,13 @@ void TestAntQtExtensions::ribbon()
 
     auto* edit = ribbon->addPage(QStringLiteral("Edit"), QStringLiteral("edit"));
     QVERIFY(edit != nullptr);
+    const QRectF fileIndicator = ribbon->indicatorRect();
     ribbon->setCurrentPageKey(QStringLiteral("edit"));
     QCOMPARE(ribbon->currentPageIndex(), 1);
     QCOMPARE(ribbon->currentPageKey(), QStringLiteral("edit"));
+    QVERIFY(ribbon->indicatorRect().isValid());
+    QVERIFY(qAbs(ribbon->indicatorRect().left() - fileIndicator.left()) < 0.5);
+    QTRY_VERIFY(qAbs(ribbon->indicatorRect().left() - fileIndicator.left()) > 1.0);
     ribbon->setCurrentPageIndex(0);
     QCOMPARE(ribbon->currentPageKey(), QStringLiteral("file"));
 
@@ -550,6 +554,10 @@ void TestAntQtExtensions::ribbon()
     group->addWidget(combo, Ant::RibbonItemSize::Small);
     group->addWidget(new QWidget, Ant::RibbonItemSize::Large);
     QCOMPARE(group->itemCount(), 4);
+    QVERIFY(group->sizeHint().height() >= 132);
+    QVERIFY(ribbon->sizeHint().height() >= 170);
+    QVERIFY(ribbon->property("indicatorRect").isValid());
+    QVERIFY(ribbon->property("contentHeight").isValid());
     pasteAction->trigger();
     QCOMPARE(groupActionSpy.count(), 1);
     QCOMPARE(ribbonActionSpy.count(), 1);
@@ -558,7 +566,16 @@ void TestAntQtExtensions::ribbon()
     ribbon->setCollapsed(true);
     QCOMPARE(ribbon->isCollapsed(), true);
     QCOMPARE(collapsedSpy.count(), 1);
-    QVERIFY(ribbon->sizeHint().height() < 80);
+    QVERIFY(ribbon->property("contentHeight").toReal() > 0.0);
+    QTRY_VERIFY(ribbon->sizeHint().height() < 80);
+    ribbon->setCollapsed(false);
+    QCOMPARE(ribbon->isCollapsed(), false);
+    QCOMPARE(collapsedSpy.count(), 2);
+    QVERIFY(ribbon->property("contentHeight").toReal() < 148.0);
+    QTRY_VERIFY(ribbon->sizeHint().height() >= 170);
+    ribbon->setCollapsed(true);
+    QCOMPARE(collapsedSpy.count(), 3);
+    QTRY_VERIFY(ribbon->sizeHint().height() < 80);
     ribbon->resize(640, ribbon->sizeHint().height());
     ribbon->show();
     QVERIFY(QTest::qWaitForWindowExposed(ribbon));

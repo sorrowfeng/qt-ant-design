@@ -1,12 +1,15 @@
 #include "AntRibbon.h"
 
 #include <QAction>
+#include <QAbstractAnimation>
+#include <QEasingCurve>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPropertyAnimation>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QStackedWidget>
@@ -15,17 +18,127 @@
 #include <QWidgetAction>
 
 #include "AntScrollBar.h"
-#include "AntToolButton.h"
 #include "core/AntTheme.h"
 
 namespace
 {
-constexpr int kGroupMinHeight = 104;
-constexpr int kGroupTitleHeight = 22;
-constexpr int kLargeButtonWidth = 76;
-constexpr int kLargeButtonHeight = 74;
-constexpr int kSmallButtonHeight = 26;
-constexpr int kSmallColumnWidth = 118;
+constexpr int kGroupMinHeight = 132;
+constexpr int kGroupTitleHeight = 24;
+constexpr int kLargeButtonWidth = 92;
+constexpr int kLargeButtonHeight = 92;
+constexpr int kSmallButtonHeight = 34;
+constexpr int kSmallColumnWidth = 156;
+constexpr int kButtonRadius = 6;
+
+class AntRibbonToolButton : public QToolButton
+{
+public:
+    AntRibbonToolButton(QAction* action, Ant::RibbonItemSize size, QWidget* parent)
+        : QToolButton(parent),
+          m_size(size)
+    {
+        setDefaultAction(action);
+        setCursor(Qt::PointingHandCursor);
+        setFocusPolicy(Qt::StrongFocus);
+        setMouseTracking(true);
+        setAttribute(Qt::WA_Hover, true);
+        setAutoRaise(false);
+        setToolButtonStyle(size == Ant::RibbonItemSize::Large ? Qt::ToolButtonTextUnderIcon
+                                                              : Qt::ToolButtonTextBesideIcon);
+        setIconSize(size == Ant::RibbonItemSize::Large ? QSize(28, 28) : QSize(16, 16));
+        setFixedSize(sizeHint());
+    }
+
+    QSize sizeHint() const override
+    {
+        return m_size == Ant::RibbonItemSize::Large ? QSize(kLargeButtonWidth, kLargeButtonHeight)
+                                                    : QSize(kSmallColumnWidth, kSmallButtonHeight);
+    }
+
+    QSize minimumSizeHint() const override
+    {
+        return sizeHint();
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event)
+
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+        const auto& token = antTheme->tokens();
+        const bool hovered = underMouse();
+        const bool pressed = isDown();
+        const bool enabled = isEnabled();
+
+        QColor bg = Qt::transparent;
+        QColor border = Qt::transparent;
+        QColor text = enabled ? token.colorText : token.colorTextDisabled;
+        if (hovered && enabled)
+        {
+            bg = token.colorFillTertiary;
+            border = token.colorBorderSecondary;
+            text = token.colorPrimaryHover;
+        }
+        if (pressed && enabled)
+        {
+            bg = token.colorFillSecondary;
+            border = token.colorPrimaryActive;
+            text = token.colorPrimaryActive;
+        }
+
+        const QRectF box = QRectF(rect()).adjusted(1.0, 1.0, -1.0, -1.0);
+        painter.setPen(border.alpha() == 0 ? Qt::NoPen : QPen(border, 1));
+        painter.setBrush(bg);
+        painter.drawRoundedRect(box, kButtonRadius, kButtonRadius);
+
+        QFont f = font();
+        f.setPixelSize(m_size == Ant::RibbonItemSize::Large ? token.fontSize : token.fontSizeSM);
+        painter.setFont(f);
+        painter.setPen(text);
+
+        const QString label = textForPaint();
+        const QIcon actionIcon = icon();
+        if (m_size == Ant::RibbonItemSize::Large)
+        {
+            QRect iconRect(rect().left() + 16, rect().top() + 14, rect().width() - 32, 30);
+            if (!actionIcon.isNull())
+            {
+                actionIcon.paint(&painter,
+                                 iconRect,
+                                 Qt::AlignCenter,
+                                 enabled ? QIcon::Normal : QIcon::Disabled,
+                                 QIcon::Off);
+            }
+            QRect textRect = rect().adjusted(8, 48, -8, -8);
+            painter.drawText(textRect, Qt::AlignCenter | Qt::TextWordWrap, label);
+        }
+        else
+        {
+            QRect content = rect().adjusted(9, 0, -9, 0);
+            if (!actionIcon.isNull())
+            {
+                const QRect iconRect(content.left(), content.center().y() - 8, 16, 16);
+                actionIcon.paint(&painter,
+                                 iconRect,
+                                 Qt::AlignCenter,
+                                 enabled ? QIcon::Normal : QIcon::Disabled,
+                                 QIcon::Off);
+                content.adjust(22, 0, 0, 0);
+            }
+            painter.drawText(content, Qt::AlignVCenter | Qt::AlignLeft, label);
+        }
+    }
+
+private:
+    QString textForPaint() const
+    {
+        return defaultAction() ? defaultAction()->text() : text();
+    }
+
+    Ant::RibbonItemSize m_size = Ant::RibbonItemSize::Large;
+};
 
 }
 
@@ -46,18 +159,18 @@ void AntRibbonGroup::init()
 {
     setObjectName(QStringLiteral("AntRibbonGroup"));
     setAttribute(Qt::WA_Hover, true);
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
     m_rootLayout = new QVBoxLayout(this);
-    m_rootLayout->setContentsMargins(6, 6, 6, 4);
-    m_rootLayout->setSpacing(2);
+    m_rootLayout->setContentsMargins(10, 8, 10, 6);
+    m_rootLayout->setSpacing(5);
 
     m_content = new QWidget(this);
     m_content->setAttribute(Qt::WA_TranslucentBackground, true);
-    m_content->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    m_content->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     m_contentLayout = new QHBoxLayout(m_content);
     m_contentLayout->setContentsMargins(0, 0, 0, 0);
-    m_contentLayout->setSpacing(4);
+    m_contentLayout->setSpacing(8);
 
     m_titleLabel = new QLabel(m_title, this);
     m_titleLabel->setAlignment(Qt::AlignCenter);
@@ -148,7 +261,7 @@ int AntRibbonGroup::itemCount() const
 
 QSize AntRibbonGroup::sizeHint() const
 {
-    return QSize(qMax(96, m_contentLayout ? m_contentLayout->sizeHint().width() + 12 : 96), kGroupMinHeight);
+    return QSize(qMax(112, m_contentLayout ? m_contentLayout->sizeHint().width() + 20 : 112), kGroupMinHeight);
 }
 
 QSize AntRibbonGroup::minimumSizeHint() const
@@ -192,24 +305,8 @@ void AntRibbonGroup::addActionInternal(QAction* action, Ant::RibbonItemSize size
         return;
     }
 
-    auto* button = new AntToolButton(this);
-    button->setDefaultAction(action);
+    auto* button = new AntRibbonToolButton(action, size, this);
     button->setPopupMode(QToolButton::InstantPopup);
-    button->setAutoRaise(false);
-    if (size == Ant::RibbonItemSize::Large)
-    {
-        button->setButtonSize(Ant::Size::Large);
-        button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-        button->setIconSize(QSize(26, 26));
-        button->setMinimumSize(kLargeButtonWidth, kLargeButtonHeight);
-    }
-    else
-    {
-        button->setButtonSize(Ant::Size::Small);
-        button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        button->setIconSize(QSize(16, 16));
-        button->setMinimumSize(kSmallColumnWidth, kSmallButtonHeight);
-    }
 
     connect(action, &QAction::triggered, this, [this, action]() {
         Q_EMIT actionTriggered(action);
@@ -265,9 +362,10 @@ QVBoxLayout* AntRibbonGroup::ensureSmallColumn()
         columnWidget = new QWidget(m_content);
         columnWidget->setProperty("antRibbonSmallCount", 0);
         columnWidget->setMinimumWidth(kSmallColumnWidth);
+        columnWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         auto* column = new QVBoxLayout(columnWidget);
         column->setContentsMargins(0, 0, 0, 0);
-        column->setSpacing(2);
+        column->setSpacing(5);
         m_contentLayout->addWidget(columnWidget, 0, Qt::AlignTop);
         m_smallColumns.append(columnWidget);
     }
@@ -326,8 +424,8 @@ void AntRibbonPage::init()
     setObjectName(QStringLiteral("AntRibbonPage"));
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     m_layout = new QHBoxLayout(this);
-    m_layout->setContentsMargins(8, 6, 8, 6);
-    m_layout->setSpacing(8);
+    m_layout->setContentsMargins(12, 8, 12, 8);
+    m_layout->setSpacing(10);
     m_layout->addStretch();
 }
 
@@ -452,6 +550,18 @@ AntRibbon::AntRibbon(QWidget* parent)
     popupLayout->setContentsMargins(0, 0, 0, 0);
     popupLayout->setSpacing(0);
 
+    m_indicatorAnimation = new QPropertyAnimation(this, "indicatorRect", this);
+    m_indicatorAnimation->setDuration(180);
+    m_indicatorAnimation->setEasingCurve(QEasingCurve::OutCubic);
+
+    m_contentAnimation = new QPropertyAnimation(this, "contentHeight", this);
+    m_contentAnimation->setDuration(220);
+    m_contentAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    connect(m_contentAnimation, &QPropertyAnimation::finished, this, [this]() {
+        updateScrollAreaGeometry();
+        updateGeometry();
+    });
+
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         syncTheme();
         update();
@@ -479,6 +589,7 @@ AntRibbonPage* AntRibbon::insertPage(int index, const QString& title, const QStr
     else if (index <= m_currentPageIndex)
     {
         ++m_currentPageIndex;
+        syncIndicatorRect();
     }
 
     updateStackSize();
@@ -499,6 +610,12 @@ void AntRibbon::removePage(const QString& key)
             if (m_pages.isEmpty())
             {
                 m_currentPageIndex = -1;
+                if (m_indicatorAnimation)
+                {
+                    m_indicatorAnimation->stop();
+                }
+                m_indicatorReady = false;
+                setIndicatorRect(QRectF());
                 Q_EMIT currentPageChanged(-1);
                 Q_EMIT currentPageKeyChanged(QString());
             }
@@ -509,6 +626,7 @@ void AntRibbon::removePage(const QString& key)
             else if (i == m_currentPageIndex)
             {
                 updatePageVisibility();
+                syncIndicatorRect();
                 Q_EMIT currentPageChanged(m_currentPageIndex);
                 Q_EMIT currentPageKeyChanged(currentPageKey());
             }
@@ -529,6 +647,12 @@ void AntRibbon::clearPages()
         page->deleteLater();
     }
     m_currentPageIndex = -1;
+    if (m_indicatorAnimation)
+    {
+        m_indicatorAnimation->stop();
+    }
+    m_indicatorReady = false;
+    setIndicatorRect(QRectF());
     hidePopup();
     updateStackSize();
     updateGeometry();
@@ -571,9 +695,12 @@ void AntRibbon::setCurrentPageIndex(int index)
         return;
     }
 
+    const QRectF previousIndicator =
+        m_indicatorReady ? m_indicatorRect : targetIndicatorRect(m_currentPageIndex);
     m_currentPageIndex = index;
     updatePageVisibility();
     updateStackSize();
+    animateIndicator(previousIndicator, targetIndicatorRect(m_currentPageIndex));
     update();
     Q_EMIT currentPageChanged(m_currentPageIndex);
     Q_EMIT currentPageKeyChanged(currentPageKey());
@@ -614,9 +741,23 @@ void AntRibbon::setCollapsed(bool collapsed)
     {
         hidePopup();
         restoreScrollAreaParent();
+        if (m_scrollArea)
+        {
+            m_scrollArea->setVisible(true);
+        }
     }
-    updateScrollAreaGeometry();
-    updateGeometry();
+
+    if (m_contentAnimation)
+    {
+        m_contentAnimation->stop();
+        m_contentAnimation->setStartValue(m_contentHeight);
+        m_contentAnimation->setEndValue(m_collapsed ? 0.0 : qreal(ContentHeight));
+        m_contentAnimation->start();
+    }
+    else
+    {
+        setContentHeight(m_collapsed ? 0.0 : qreal(ContentHeight));
+    }
     update();
     Q_EMIT collapsedChanged(m_collapsed);
 }
@@ -633,13 +774,47 @@ void AntRibbon::setCollapseButtonVisible(bool visible)
         return;
     }
     m_collapseButtonVisible = visible;
+    syncIndicatorRect();
     update();
     Q_EMIT collapseButtonVisibleChanged(m_collapseButtonVisible);
 }
 
+QRectF AntRibbon::indicatorRect() const
+{
+    return m_indicatorRect;
+}
+
+void AntRibbon::setIndicatorRect(const QRectF& rect)
+{
+    if (m_indicatorRect == rect)
+    {
+        return;
+    }
+    m_indicatorRect = rect;
+    update();
+}
+
+qreal AntRibbon::contentHeight() const
+{
+    return m_contentHeight;
+}
+
+void AntRibbon::setContentHeight(qreal height)
+{
+    const qreal normalized = qBound<qreal>(0.0, height, qreal(ContentHeight));
+    if (qFuzzyCompare(m_contentHeight + 1.0, normalized + 1.0))
+    {
+        return;
+    }
+    m_contentHeight = normalized;
+    updateScrollAreaGeometry();
+    updateGeometry();
+    update();
+}
+
 QSize AntRibbon::sizeHint() const
 {
-    return QSize(760, m_collapsed ? TabBarHeight : TabBarHeight + ContentHeight);
+    return QSize(760, TabBarHeight + qRound(m_contentHeight));
 }
 
 QSize AntRibbon::minimumSizeHint() const
@@ -668,9 +843,10 @@ void AntRibbon::paintEvent(QPaintEvent* event)
     painter.fillRect(QRect(0, 0, width(), TabBarHeight), token.colorBgElevated);
     painter.setPen(QPen(token.colorBorderSecondary, 1));
     painter.drawLine(0, TabBarHeight - 1, width(), TabBarHeight - 1);
-    if (!m_collapsed)
+    if (m_contentHeight > 0.5)
     {
-        painter.drawLine(0, height() - 1, width(), height() - 1);
+        const int contentBottom = TabBarHeight + qRound(m_contentHeight) - 1;
+        painter.drawLine(0, contentBottom, width(), contentBottom);
     }
 
     const QVector<QRect> tabs = tabRects();
@@ -693,11 +869,13 @@ void AntRibbon::paintEvent(QPaintEvent* event)
         painter.setFont(f);
         painter.drawText(rect.adjusted(12, 0, -12, 0), Qt::AlignCenter, m_pages.at(i)->title());
 
-        if (active)
-        {
-            painter.setPen(QPen(token.colorPrimary, 2));
-            painter.drawLine(rect.left() + 12, TabBarHeight - 2, rect.right() - 12, TabBarHeight - 2);
-        }
+    }
+
+    if (!m_indicatorRect.isNull() && m_indicatorRect.isValid())
+    {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(token.colorPrimary);
+        painter.drawRoundedRect(m_indicatorRect, 1.0, 1.0);
     }
 
     if (m_collapseButtonVisible)
@@ -729,6 +907,10 @@ void AntRibbon::resizeEvent(QResizeEvent* event)
     QWidget::resizeEvent(event);
     updateScrollAreaGeometry();
     updateStackSize();
+    if (!m_indicatorAnimation || m_indicatorAnimation->state() != QAbstractAnimation::Running)
+    {
+        syncIndicatorRect();
+    }
 }
 
 void AntRibbon::mouseMoveEvent(QMouseEvent* event)
@@ -842,6 +1024,57 @@ int AntRibbon::tabAt(const QPoint& pos) const
     return -1;
 }
 
+QRectF AntRibbon::targetIndicatorRect(int index) const
+{
+    const QVector<QRect> tabs = tabRects();
+    if (index < 0 || index >= tabs.size())
+    {
+        return QRectF();
+    }
+
+    const QRect tab = tabs.at(index);
+    const int inset = qMin(14, qMax(8, tab.width() / 5));
+    return QRectF(tab.left() + inset, TabBarHeight - 3, qMax(8, tab.width() - inset * 2), 2);
+}
+
+void AntRibbon::syncIndicatorRect()
+{
+    if (m_indicatorAnimation)
+    {
+        m_indicatorAnimation->stop();
+    }
+    const QRectF target = targetIndicatorRect(m_currentPageIndex);
+    m_indicatorReady = !target.isNull();
+    setIndicatorRect(target);
+}
+
+void AntRibbon::animateIndicator(const QRectF& from, const QRectF& to)
+{
+    if (to.isNull())
+    {
+        if (m_indicatorAnimation)
+        {
+            m_indicatorAnimation->stop();
+        }
+        m_indicatorReady = false;
+        setIndicatorRect(QRectF());
+        return;
+    }
+
+    if (!m_indicatorAnimation || !m_indicatorReady || from.isNull())
+    {
+        m_indicatorReady = true;
+        setIndicatorRect(to);
+        return;
+    }
+
+    m_indicatorAnimation->stop();
+    m_indicatorReady = true;
+    m_indicatorAnimation->setStartValue(from);
+    m_indicatorAnimation->setEndValue(to);
+    m_indicatorAnimation->start();
+}
+
 void AntRibbon::updatePageVisibility()
 {
     if (m_currentPageIndex >= 0 && m_currentPageIndex < m_stack->count())
@@ -865,8 +1098,9 @@ void AntRibbon::updateScrollAreaGeometry()
         return;
     }
     m_scrollArea->setParent(this);
-    m_scrollArea->setVisible(!m_collapsed);
-    m_scrollArea->setGeometry(0, TabBarHeight, width(), ContentHeight);
+    const int height = qRound(m_contentHeight);
+    m_scrollArea->setVisible(height > 0);
+    m_scrollArea->setGeometry(0, TabBarHeight, width(), height);
 }
 
 void AntRibbon::showCurrentPagePopup()
@@ -878,6 +1112,8 @@ void AntRibbon::showCurrentPagePopup()
 
     restoreScrollAreaParent();
     m_scrollArea->setParent(m_popup);
+    m_scrollArea->setMinimumHeight(ContentHeight);
+    m_scrollArea->setMaximumHeight(ContentHeight);
     auto* layout = qobject_cast<QVBoxLayout*>(m_popup->layout());
     layout->addWidget(m_scrollArea);
     m_scrollAreaInPopup = true;
@@ -912,6 +1148,8 @@ void AntRibbon::restoreScrollAreaParent()
         layout->removeWidget(m_scrollArea);
     }
     m_scrollArea->setParent(this);
+    m_scrollArea->setMinimumHeight(0);
+    m_scrollArea->setMaximumHeight(QWIDGETSIZE_MAX);
     m_scrollAreaInPopup = false;
     updateScrollAreaGeometry();
 }

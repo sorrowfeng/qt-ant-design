@@ -71,7 +71,7 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 - `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
 - `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, clear, and `setPixelSize()` controls; `setEnabled()` and `setDisabled()` stay synchronized with its disabled visual and interaction state.
 - `AntDesign::initialize(&app)` provides one-call startup for Qt resources, bundled fonts, and the theme singleton, so consumer apps no longer need separate `Q_INIT_RESOURCE`, `AntFont::applyToApplication`, and `AntTheme::instance` calls.
-- `AntRibbon` adds a lightweight Ribbon surface with pages, groups, large/small actions, embedded Ant/Qt widgets, collapsed popup mode, and `AntWindow::setRibbon()` integration.
+- `AntRibbon` adds a lightweight Ribbon surface with pages, groups, balanced large/small actions, embedded Ant/Qt widgets, animated tab/collapse transitions, collapsed popup mode, and `AntWindow::setRibbon()` integration.
 
 ## Installation & Integration
 
@@ -231,7 +231,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 - `AntSkeleton`: moving `active` shimmer, avatar placeholder, title / paragraph configuration, rounded style, and `loading` toggle to swap in real content
 - `AntToolTip`: common `placement`, arrow, color, delayed display, auto flip
 - `AntSlider`: horizontal / vertical, `reverse / dots / included`, range, marks, drag value bubble above the active handle
-- `AntRibbon`: pages and groups for large/small actions, embedded Ant/Qt widgets, collapsed popup mode, and `AntWindow` top-area integration
+- `AntRibbon`: pages and groups for large/small actions, embedded Ant/Qt widgets, animated tab/collapse transitions, collapsed popup mode, and `AntWindow` top-area integration
 - `AntSwitch`: `checked / loading / small / text`, click wave feedback
 - `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation
 - `AntDatePicker` / `AntTimePicker`: hand-painted popup pickers
