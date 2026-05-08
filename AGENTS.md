@@ -184,7 +184,7 @@
 | `AntInput` | `input` | `QProxyStyle` | 是 | 尺寸、状态、Password/Search、addon |
 | `AntInputNumber` | `input-number` | `QProxyStyle` | 是 | QDoubleSpinBox 风格小数/精度、小步进、前后缀 |
 | `AntMentions` | `mentions` | `QProxyStyle` | 是 | @提及输入，弹出建议 |
-| `AntRadio` | `radio` | `QProxyStyle` | 是 | Radio.Group |
+| `AntRadio` | `radio` | `QProxyStyle` | 是 | Radio.Group，ButtonStyle 点击边缘 Wave 扩散 |
 | `AntRate` | `rate` | `QProxyStyle` | 是 | count/value/allowHalf/hover 放大 |
 | `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 滑动指示器动画、图标/禁用、value/index 选中 API |
 | `AntSelect` | `select` | `QProxyStyle` | 是 | 尺寸、状态、变体、可编辑模式、Multiple/Tags，option 管理 API |

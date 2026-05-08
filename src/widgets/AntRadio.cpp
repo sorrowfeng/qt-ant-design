@@ -193,8 +193,7 @@ void AntRadio::mouseReleaseEvent(QMouseEvent* event)
             {
                 AntWave::triggerRect(this, rect().adjusted(1, 1, -1, -1),
                                      antTheme->tokens().colorPrimary,
-                                     antTheme->tokens().borderRadius,
-                                     true);
+                                     antTheme->tokens().borderRadius);
             }
             else if (!wasChecked && m_checked)
             {

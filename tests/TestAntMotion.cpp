@@ -91,6 +91,9 @@ void TestAntMotion::radioButtonStyleClickCreatesWave()
     QCOMPARE(clickedSpy.count(), 1);
     QCOMPARE(radio->isChecked(), true);
     QTRY_VERIFY_WITH_TIMEOUT(!host.findChildren<AntWave*>().isEmpty(), 100);
+    QTest::qWait(450);
+    QVERIFY2(!host.findChildren<AntWave*>().isEmpty(),
+             "Radio.ButtonStyle wave should use the same edge-expansion duration as AntButton");
 }
 
 QTEST_MAIN(TestAntMotion)
