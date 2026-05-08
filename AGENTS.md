@@ -24,7 +24,7 @@
 
 ## 项目状态
 
-- 同步日期：`2026-05-08`
+- 同步日期：`2026-05-09`
 - 状态总览：`docs/project-status.md`
 - 已实现公开组件总数：`83`（`src/widgets` 有 `104` 个 `Ant*.h`，包含 `83` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`）
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
@@ -185,7 +185,7 @@
 | `AntInputNumber` | `input-number` | `QProxyStyle` | 是 | QDoubleSpinBox 风格小数/精度、小步进、前后缀 |
 | `AntMentions` | `mentions` | `QProxyStyle` | 是 | @提及输入，弹出建议 |
 | `AntRadio` | `radio` | `QProxyStyle` | 是 | Radio.Group，ButtonStyle 点击边缘 Wave 扩散 |
-| `AntRate` | `rate` | `QProxyStyle` | 是 | count/value/allowHalf/hover 放大 |
+| `AntRate` | `rate` | `QProxyStyle` | 是 | count/value/allowHalf/hover 放大/选中星缩放动效 |
 | `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 滑动指示器动画、图标/禁用、value/index 选中 API |
 | `AntSelect` | `select` | `QProxyStyle` | 是 | 尺寸、状态、变体、可编辑模式、Multiple/Tags，option 管理 API |
 | `AntSlider` | `slider` | `QProxyStyle` | 是 | Range、marks、拖动浮窗 |

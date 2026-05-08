@@ -2,15 +2,22 @@
 
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QEasingCurve>
 #include <QSizePolicy>
 #include <QStyle>
 #include <QToolTip>
+#include <QVariantAnimation>
 
 #include <algorithm>
 #include <cmath>
 
 #include "../styles/AntRateStyle.h"
 #include "core/AntTheme.h"
+
+namespace
+{
+constexpr int kSelectionPadding = 4;
+}
 
 AntRate::AntRate(QWidget* parent)
     : QWidget(parent)
@@ -26,6 +33,23 @@ AntRate::AntRate(QWidget* parent)
         style()->unpolish(this);
         style()->polish(this);
         updateGeometry();
+        update();
+    });
+
+    m_selectionAnimation = new QVariantAnimation(this);
+    m_selectionAnimation->setObjectName(QStringLiteral("antRateSelectionScaleAnimation"));
+    m_selectionAnimation->setDuration(220);
+    m_selectionAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    m_selectionAnimation->setKeyValueAt(0.0, 1.0);
+    m_selectionAnimation->setKeyValueAt(0.45, 1.18);
+    m_selectionAnimation->setKeyValueAt(1.0, 1.0);
+    connect(m_selectionAnimation, &QVariantAnimation::valueChanged, this, [this](const QVariant& value) {
+        m_selectionScale = value.toReal();
+        update();
+    });
+    connect(m_selectionAnimation, &QVariantAnimation::finished, this, [this]() {
+        m_selectionAnimationIndex = -1;
+        m_selectionScale = 1.0;
         update();
     });
 
@@ -176,7 +200,7 @@ QSize AntRate::sizeHint() const
             break;
     }
     const int totalWidth = m_count * starSize + (m_count - 1) * token.marginXS;
-    return QSize(totalWidth, starSize + 4);
+    return QSize(totalWidth + kSelectionPadding * 2, starSize + kSelectionPadding * 2);
 }
 
 QSize AntRate::minimumSizeHint() const
@@ -240,6 +264,7 @@ void AntRate::mouseReleaseEvent(QMouseEvent* event)
             else
             {
                 setValue(clickedValue);
+                startSelectionAnimation(clickedValue);
             }
         }
         event->accept();
@@ -371,4 +396,19 @@ void AntRate::updateHoverValue(const QPoint& pos)
         Q_EMIT hoverChanged(m_hoverValue);
         update();
     }
+}
+
+void AntRate::startSelectionAnimation(double selectedValue)
+{
+    if (selectedValue <= 0.0 || m_disabled || !isEnabled())
+    {
+        return;
+    }
+
+    const int selectedIndex = std::clamp(static_cast<int>(std::ceil(selectedValue)) - 1, 0, m_count - 1);
+    m_selectionAnimationIndex = selectedIndex;
+    m_selectionScale = 1.0;
+    m_selectionAnimation->stop();
+    m_selectionAnimation->start();
+    update();
 }

@@ -333,7 +333,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntUpload`：文件上传，支持文本列表/图片列表/图片卡片三种模式
 - `AntCascader`：级联选择器，多列弹出面板，支持点击/悬停展开
 - `AntTreeSelect`：树形选择器，下拉框内展示树形结构
-- `AntRate`：评分组件，`count / value / allowHalf / allowClear / disabled / size`，hover 放大效果，键盘左右箭头操作
+- `AntRate`：评分组件，`count / value / allowHalf / allowClear / disabled / size`，hover 放大和选中星缩放动效，键盘左右箭头操作
 - `AntWidget`：基础 QWidget 子类，自动处理主题切换
 - `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略/对齐策略/像素字号
 - `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，DWM 圆角/边框阴影，以及平滑主题切换遮罩动画

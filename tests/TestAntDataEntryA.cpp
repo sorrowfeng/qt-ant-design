@@ -8,6 +8,7 @@
 #include <QLineEdit>
 #include <QPainter>
 #include <QPalette>
+#include <QVariantAnimation>
 #include "core/AntTheme.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntRadio.h"
@@ -27,6 +28,7 @@ private slots:
     void sliderMarksReserveLabelHeight();
     void sliderBubbleFloatsAboveMarkedHandle();
     void sliderRangeDragDoesNotPaintPhantomMinimumHandle();
+    void rateSelectionStartsScaleAnimation();
 };
 
 namespace
@@ -492,6 +494,29 @@ void TestAntDataEntryA::sliderRangeDragDoesNotPaintPhantomMinimumHandle()
     const QColor phantomPixel = image.pixelColor(phantomX, slider.height() / 2);
     QVERIFY2(phantomPixel.blue() - phantomPixel.red() < 18,
              "range drag should not paint a primary-colored pressed halo at the minimum edge");
+}
+
+void TestAntDataEntryA::rateSelectionStartsScaleAnimation()
+{
+    AntRate rate;
+    rate.resize(rate.sizeHint());
+    rate.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&rate));
+
+    const auto& token = antTheme->tokens();
+    const int starSize = static_cast<int>(std::round(token.controlHeight * 0.625));
+    const int gap = token.marginXS;
+    const QPoint thirdStarCenter((starSize + gap) * 2 + starSize / 2, rate.height() / 2);
+
+    QTest::mouseClick(&rate, Qt::LeftButton, Qt::NoModifier, thirdStarCenter);
+    QCOMPARE(rate.value(), 3.0);
+
+    auto* animation = rate.findChild<QVariantAnimation*>(QStringLiteral("antRateSelectionScaleAnimation"));
+    QVERIFY2(animation, "AntRate should start a scale pulse animation when a star is selected");
+    QTRY_VERIFY_WITH_TIMEOUT(animation->state() == QAbstractAnimation::Running, 80);
+    QTRY_VERIFY_WITH_TIMEOUT(animation->currentValue().toReal() > 1.0, 160);
+    QTRY_COMPARE_WITH_TIMEOUT(animation->state(), QAbstractAnimation::Stopped, 500);
+    QCOMPARE(animation->currentValue().toReal(), 1.0);
 }
 
 QTEST_MAIN(TestAntDataEntryA)

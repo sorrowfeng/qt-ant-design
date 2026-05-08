@@ -333,7 +333,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntUpload`: file upload supporting text list, picture list, and picture card modes
 - `AntCascader`: cascading selector with multi-column popup, click / hover expansion
 - `AntTreeSelect`: tree selector that renders a tree inside a dropdown
-- `AntRate`: rating component with `count / value / allowHalf / allowClear / disabled / size`, hover scaling, left / right keyboard control
+- `AntRate`: rating component with `count / value / allowHalf / allowClear / disabled / size`, hover scaling, selected-star scale pulse, left / right keyboard control
 - `AntWidget`: base QWidget subclass that handles theme switching automatically
 - `AntTypography`: theme-aware text component, Title (H1-H5) / Text / Paragraph, with type / decoration / copy / ellipsis / alignment / pixel-size support
 - `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, DWM rounded corners / border shadow, and a smooth theme transition overlay

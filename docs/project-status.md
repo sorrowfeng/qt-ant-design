@@ -1,6 +1,6 @@
 # Project Status
 
-Updated: `2026-05-08`
+Updated: `2026-05-09`
 
 This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, and README component screenshot gallery.
 
@@ -76,6 +76,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed `AntSteps` icon geometry so the first circular step indicator keeps a small left inset and is no longer clipped by the widget edge.
 - Fixed `AntColorPicker` trigger border geometry so normal gray and focused/active primary borders are drawn fully inside the widget frame instead of being clipped at the edges.
 - Aligned `AntRadio` ButtonStyle click feedback with `AntButton` by using the full edge-expansion Wave duration instead of the short indicator-style wave.
+- Added the missing `AntRate` selected-star scale pulse and a small internal paint inset so the animated star edge is not clipped.
 
 ## Visual Audit State
 
@@ -275,6 +276,16 @@ ctest --test-dir build -C Debug -R "TestAnt(Motion|DataEntryA)$" --output-on-fai
 ```
 
 Result: `2 / 2` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`.
+
+Latest targeted AntRate selected-star animation validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntDataEntryA qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAntDataEntryA$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`.
 
 ## Remaining Notes
 

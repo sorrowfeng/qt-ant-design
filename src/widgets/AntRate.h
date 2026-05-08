@@ -6,6 +6,8 @@
 
 #include "core/AntTypes.h"
 
+class QVariantAnimation;
+
 class QT_ANT_DESIGN_EXPORT AntRate : public QWidget
 {
     Q_OBJECT
@@ -64,8 +66,11 @@ protected:
     void changeEvent(QEvent* event) override;
 
 private:
+    friend class AntRateStyle;
+
     double starValueAt(const QPoint& pos) const;
     void updateHoverValue(const QPoint& pos);
+    void startSelectionAnimation(double selectedValue);
 
     double m_value = 0.0;
     double m_hoverValue = -1.0;
@@ -77,4 +82,7 @@ private:
     bool m_pressed = false;
     bool m_focused = false;
     Ant::Size m_rateSize = Ant::Size::Middle;
+    int m_selectionAnimationIndex = -1;
+    qreal m_selectionScale = 1.0;
+    QVariantAnimation* m_selectionAnimation = nullptr;
 };

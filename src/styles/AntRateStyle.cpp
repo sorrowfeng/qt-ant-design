@@ -45,7 +45,8 @@ RateMetrics metricsFor(const AntRate* rate)
 QRectF starRectFor(const AntRate* rate, int index, const QRect& rect)
 {
     const RateMetrics m = metricsFor(rate);
-    const qreal x = rect.left() + index * (m.starSize + m.margin);
+    const qreal startX = rect.left() + (rect.width() - m.totalWidth) / 2.0;
+    const qreal x = startX + index * (m.starSize + m.margin);
     const qreal y = rect.top() + (rect.height() - m.starSize) / 2.0;
     return QRectF(x, y, m.starSize, m.starSize);
 }
@@ -181,13 +182,16 @@ void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const
         QRectF rect = starRectFor(rate, i, option->rect);
         const double starFill = std::clamp(effectiveValue - i, 0.0, 1.0);
 
-        // Hover scale effect
         const bool isHoveredStar = (i == hoverIndex) && enabled;
-        if (isHoveredStar)
+        const bool isSelectionAnimatedStar = (i == rate->m_selectionAnimationIndex) && enabled;
+        const qreal scale = std::max(isHoveredStar ? 1.1 : 1.0,
+                                     isSelectionAnimatedStar ? rate->m_selectionScale : 1.0);
+        const bool isScaledStar = !qFuzzyCompare(scale, 1.0);
+        if (isScaledStar)
         {
             painter->save();
             painter->translate(rect.center());
-            painter->scale(1.1, 1.1);
+            painter->scale(scale, scale);
             painter->translate(-rect.center());
         }
 
@@ -218,7 +222,7 @@ void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const
             painter->restore();
         }
 
-        if (isHoveredStar)
+        if (isScaledStar)
         {
             painter->restore();
         }
@@ -228,7 +232,8 @@ void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const
     if (focused && enabled)
     {
         const QColor focusColor = AntPalette::alpha(token.colorPrimary, 0.22);
-        QRectF focusRect(option->rect.left(), option->rect.top() + (option->rect.height() - m.starSize) / 2.0 - 2,
+        const qreal startX = option->rect.left() + (option->rect.width() - m.totalWidth) / 2.0;
+        QRectF focusRect(startX, option->rect.top() + (option->rect.height() - m.starSize) / 2.0 - 2,
                          m.totalWidth, m.starSize + 4);
         AntStyleBase::drawCrispRoundedRect(painter, focusRect.toRect(),
             QPen(focusColor, token.controlOutlineWidth, Qt::DashLine), Qt::NoBrush,
