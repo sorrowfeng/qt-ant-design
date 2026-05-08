@@ -344,6 +344,38 @@ void TestAntVisualRegression::inputNumberHandlersStayVisible()
     assertNearColorPixels(darkImage, darkToken.colorBgContainer, 3500, "dark input number container surface", 18);
     assertNearColorPixels(darkImage, darkToken.colorText, 10, "dark input number value text", 36);
     assertNearColorPixels(darkImage, darkToken.colorTextTertiary, 20, "dark input number handler arrows", 36);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    QWidget page;
+    auto* pageLayout = new QVBoxLayout(&page);
+    pageLayout->setContentsMargins(32, 24, 32, 24);
+    pageLayout->setSpacing(16);
+    auto* card = new AntCard(QStringLiteral("Runtime Switch"));
+    auto* containedInput = new AntInputNumber;
+    containedInput->setValue(3);
+    containedInput->setControlsVisible(false);
+    containedInput->setFixedWidth(90);
+    card->bodyLayout()->addWidget(containedInput, 0, Qt::AlignLeft);
+    pageLayout->addWidget(card);
+    pageLayout->addStretch();
+    page.resize(360, 220);
+    page.show();
+    QCoreApplication::processEvents();
+    renderCurrentWidget(&page);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+    if (QWidget* focusWidget = QApplication::focusWidget())
+    {
+        focusWidget->clearFocus();
+    }
+    page.setFocus(Qt::OtherFocusReason);
+    QCoreApplication::processEvents();
+    const QImage runtimeDarkImage = renderCurrentWidget(&page);
+    const QRect inputRect(containedInput->mapTo(&page, QPoint(0, 0)), containedInput->size());
+    assertNearColorPixels(runtimeDarkImage.copy(inputRect), antTheme->tokens().colorText, 18,
+                          "dark input number value after runtime theme switch", 36);
+    page.hide();
 }
 
 void TestAntVisualRegression::selectionControlsKeepPrimaryStateFills()

@@ -127,9 +127,9 @@ AntInputNumber::AntInputNumber(QWidget* parent)
     m_controlsOverlay->hide();
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateEditStyle();
         style()->unpolish(this);
         style()->polish(this);
+        updateEditStyle();
         updateControlsOverlayGeometry();
         updateGeometry();
         update();
@@ -509,22 +509,34 @@ void AntInputNumber::updateEditStyle()
     lineEdit()->setFrame(false);
     lineEdit()->setAlignment(alignment());
 
-    QPalette lePalette = lineEdit()->palette();
-    const auto setEditColor = [&lePalette](QPalette::ColorRole role, const QColor& active, const QColor& disabled) {
-        lePalette.setColor(QPalette::Active, role, active);
-        lePalette.setColor(QPalette::Inactive, role, active);
-        lePalette.setColor(QPalette::Disabled, role, disabled);
+    const auto setControlColor = [](QPalette& target, QPalette::ColorRole role, const QColor& active, const QColor& disabled) {
+        target.setColor(QPalette::Active, role, active);
+        target.setColor(QPalette::Inactive, role, active);
+        target.setColor(QPalette::Disabled, role, disabled);
     };
-    setEditColor(QPalette::Base, Qt::transparent, Qt::transparent);
-    setEditColor(QPalette::Text, token.colorText, token.colorTextDisabled);
-    setEditColor(QPalette::WindowText, token.colorText, token.colorTextDisabled);
-    setEditColor(QPalette::ButtonText, token.colorText, token.colorTextDisabled);
-    setEditColor(QPalette::Highlight, token.colorPrimary, token.colorPrimary);
-    setEditColor(QPalette::HighlightedText, token.colorTextLightSolid, token.colorTextLightSolid);
+
+    QPalette controlPalette = palette();
+    setControlColor(controlPalette, QPalette::Base, Qt::transparent, Qt::transparent);
+    setControlColor(controlPalette, QPalette::Text, token.colorText, token.colorTextDisabled);
+    setControlColor(controlPalette, QPalette::WindowText, token.colorText, token.colorTextDisabled);
+    setControlColor(controlPalette, QPalette::ButtonText, token.colorText, token.colorTextDisabled);
+    setControlColor(controlPalette, QPalette::Highlight, token.colorPrimary, token.colorPrimary);
+    setControlColor(controlPalette, QPalette::HighlightedText, token.colorTextLightSolid, token.colorTextLightSolid);
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
-    setEditColor(QPalette::PlaceholderText, token.colorTextPlaceholder, token.colorTextDisabled);
+    setControlColor(controlPalette, QPalette::PlaceholderText, token.colorTextPlaceholder, token.colorTextDisabled);
 #endif
-    lineEdit()->setPalette(lePalette);
+    setPalette(controlPalette);
+
+    QPalette lePalette = lineEdit()->palette();
+    setControlColor(lePalette, QPalette::Base, Qt::transparent, Qt::transparent);
+    setControlColor(lePalette, QPalette::Text, token.colorText, token.colorTextDisabled);
+    setControlColor(lePalette, QPalette::WindowText, token.colorText, token.colorTextDisabled);
+    setControlColor(lePalette, QPalette::ButtonText, token.colorText, token.colorTextDisabled);
+    setControlColor(lePalette, QPalette::Highlight, token.colorPrimary, token.colorPrimary);
+    setControlColor(lePalette, QPalette::HighlightedText, token.colorTextLightSolid, token.colorTextLightSolid);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    setControlColor(lePalette, QPalette::PlaceholderText, token.colorTextPlaceholder, token.colorTextDisabled);
+#endif
     lineEdit()->setAttribute(Qt::WA_TranslucentBackground, true);
     lineEdit()->setStyleSheet(QStringLiteral(
         "QLineEdit {"
@@ -542,6 +554,7 @@ void AntInputNumber::updateEditStyle()
                  token.colorPrimary.name(QColor::HexRgb),
                  token.colorTextLightSolid.name(QColor::HexRgb),
                  token.colorTextDisabled.name(QColor::HexRgb)));
+    lineEdit()->setPalette(lePalette);
     lineEdit()->setTextMargins(0, 0, controlsInsetWidth(), 0);
 
     setMinimumHeight(m.height);
