@@ -340,11 +340,10 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 添加新组件时，推荐遵循以下流程：
 
 1. 阅读 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/<component>/` 的 API 与样式
-2. 需要时参考 [`Liniyous/ElaWidgetTools`](https://github.com/Liniyous/ElaWidgetTools) 中相似 Qt 控件的实现方式
-3. 新增 `src/widgets/Ant<Name>.h/.cpp`
-4. 如需样式解耦，新增 `src/styles/Ant<Name>Style.h/.cpp`
-5. 在 `examples/ExampleWindow.cpp` 中补齐展示页
-6. 更新 `AGENTS.md` 与 `README.md`
+2. 新增 `src/widgets/Ant<Name>.h/.cpp`
+3. 如需样式解耦，新增 `src/styles/Ant<Name>Style.h/.cpp`
+4. 在 `examples/ExampleWindow.cpp` 中补齐展示页
+5. 更新 `AGENTS.md` 与 `README.md`
 
 欢迎提交 Issue 和 PR。
 
