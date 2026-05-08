@@ -329,12 +329,21 @@ void TestAntVisualRegression::inputNumberHandlersStayVisible()
 {
     ThemeModeGuard guard;
     antTheme->setThemeMode(Ant::ThemeMode::Default);
-    const auto& token = antTheme->tokens();
 
     AntInputNumber inputNumber;
     inputNumber.setValue(24);
     inputNumber.setControlsProgress(1.0);
-    assertNearColorPixels(renderWidget(&inputNumber, QSize(220, 40)), token.colorTextTertiary, 20, "input number handler arrows", 36);
+    const QImage lightImage = renderWidget(&inputNumber, QSize(220, 40));
+    assertNearColorPixels(lightImage, antTheme->tokens().colorTextTertiary, 20, "light input number handler arrows", 36);
+    assertNearColorPixels(lightImage, antTheme->tokens().colorText, 10, "light input number value text", 36);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+    const auto& darkToken = antTheme->tokens();
+    const QImage darkImage = renderWidget(&inputNumber, QSize(220, 40));
+    assertNearColorPixels(darkImage, darkToken.colorBgContainer, 3500, "dark input number container surface", 18);
+    assertNearColorPixels(darkImage, darkToken.colorText, 10, "dark input number value text", 36);
+    assertNearColorPixels(darkImage, darkToken.colorTextTertiary, 20, "dark input number handler arrows", 36);
 }
 
 void TestAntVisualRegression::selectionControlsKeepPrimaryStateFills()

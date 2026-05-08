@@ -510,13 +510,38 @@ void AntInputNumber::updateEditStyle()
     lineEdit()->setAlignment(alignment());
 
     QPalette lePalette = lineEdit()->palette();
-    lePalette.setColor(QPalette::Base, Qt::transparent);
-    lePalette.setColor(QPalette::Text, isEnabled() ? token.colorText : token.colorTextDisabled);
-    lePalette.setColor(QPalette::Highlight, token.colorPrimary);
-    lePalette.setColor(QPalette::HighlightedText, token.colorTextLightSolid);
+    const auto setEditColor = [&lePalette](QPalette::ColorRole role, const QColor& active, const QColor& disabled) {
+        lePalette.setColor(QPalette::Active, role, active);
+        lePalette.setColor(QPalette::Inactive, role, active);
+        lePalette.setColor(QPalette::Disabled, role, disabled);
+    };
+    setEditColor(QPalette::Base, Qt::transparent, Qt::transparent);
+    setEditColor(QPalette::Text, token.colorText, token.colorTextDisabled);
+    setEditColor(QPalette::WindowText, token.colorText, token.colorTextDisabled);
+    setEditColor(QPalette::ButtonText, token.colorText, token.colorTextDisabled);
+    setEditColor(QPalette::Highlight, token.colorPrimary, token.colorPrimary);
+    setEditColor(QPalette::HighlightedText, token.colorTextLightSolid, token.colorTextLightSolid);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    setEditColor(QPalette::PlaceholderText, token.colorTextPlaceholder, token.colorTextDisabled);
+#endif
     lineEdit()->setPalette(lePalette);
     lineEdit()->setAttribute(Qt::WA_TranslucentBackground, true);
-    lineEdit()->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
+    lineEdit()->setStyleSheet(QStringLiteral(
+        "QLineEdit {"
+        " background: transparent;"
+        " border: none;"
+        " padding: 0;"
+        " color: %1;"
+        " selection-background-color: %2;"
+        " selection-color: %3;"
+        "}"
+        "QLineEdit:disabled {"
+        " color: %4;"
+        "}")
+            .arg(token.colorText.name(QColor::HexRgb),
+                 token.colorPrimary.name(QColor::HexRgb),
+                 token.colorTextLightSolid.name(QColor::HexRgb),
+                 token.colorTextDisabled.name(QColor::HexRgb)));
     lineEdit()->setTextMargins(0, 0, controlsInsetWidth(), 0);
 
     setMinimumHeight(m.height);

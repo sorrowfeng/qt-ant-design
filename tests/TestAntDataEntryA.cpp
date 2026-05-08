@@ -2,6 +2,9 @@
 #include <QTest>
 #include <QCoreApplication>
 #include <QEnterEvent>
+#include <QLineEdit>
+#include <QPalette>
+#include "core/AntTheme.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntRadio.h"
 #include "widgets/AntSlider.h"
@@ -14,6 +17,7 @@ class TestAntDataEntryA : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void inputNumberLineEditPaletteTracksDarkTheme();
 };
 
 void TestAntDataEntryA::propertiesAndSignals()
@@ -274,6 +278,36 @@ void TestAntDataEntryA::propertiesAndSignals()
 
     w6->clearSuggestions();
     QCOMPARE(w6->suggestionCount(), 0);
+}
+
+void TestAntDataEntryA::inputNumberLineEditPaletteTracksDarkTheme()
+{
+    const Ant::ThemeMode previousMode = antTheme->themeMode();
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+
+    AntInputNumber input;
+    input.setValue(24);
+    input.setPlaceholderText(QStringLiteral("Amount"));
+    QCoreApplication::processEvents();
+
+    auto* edit = input.findChild<QLineEdit*>();
+    QVERIFY(edit);
+
+    const auto& token = antTheme->tokens();
+    const QPalette palette = edit->palette();
+    QCOMPARE(palette.color(QPalette::Active, QPalette::Text), token.colorText);
+    QCOMPARE(palette.color(QPalette::Inactive, QPalette::Text), token.colorText);
+    QCOMPARE(palette.color(QPalette::Disabled, QPalette::Text), token.colorTextDisabled);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    QCOMPARE(palette.color(QPalette::Active, QPalette::PlaceholderText), token.colorTextPlaceholder);
+    QCOMPARE(palette.color(QPalette::Disabled, QPalette::PlaceholderText), token.colorTextDisabled);
+#endif
+
+    input.setEnabled(false);
+    QCoreApplication::processEvents();
+    QCOMPARE(edit->palette().color(QPalette::Disabled, QPalette::Text), token.colorTextDisabled);
+
+    antTheme->setThemeMode(previousMode);
 }
 
 QTEST_MAIN(TestAntDataEntryA)
