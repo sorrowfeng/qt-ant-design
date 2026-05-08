@@ -74,6 +74,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed `AntResult` dark-mode status icon rendering so the icon is drawn directly with a transparent background instead of rendering an opaque widget tile.
 - Added an `AntNotification` example entry for loading notifications with a bottom countdown progress bar that closes automatically when the duration completes.
 - Fixed `AntSteps` icon geometry so the first circular step indicator keeps a small left inset and is no longer clipped by the widget edge.
+- Fixed `AntColorPicker` trigger border geometry so normal gray and focused/active primary borders are drawn fully inside the widget frame instead of being clipped at the edges.
 
 ## Visual Audit State
 
@@ -249,6 +250,16 @@ Latest targeted AntSteps edge-clip validation:
 ```powershell
 cmake --build build --config Debug --target TestAntNavigation TestAntVisualRegression qt-ant-design-example
 ctest --test-dir build -C Debug -R "TestAnt(Navigation|VisualRegression)$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: `2 / 2` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`.
+
+Latest targeted AntColorPicker border validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntQtExtensions TestAntVisualRegression qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAnt(QtExtensions|VisualRegression)$" --output-on-failure
 .\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 

@@ -177,7 +177,7 @@
 | `AntAutoComplete` | `auto-complete` | `QProxyStyle` | 是 | 建议弹出、键盘导航 |
 | `AntCascader` | `cascader` | `QProxyStyle` | 是 | 多列弹出面板、点击/悬停展开 |
 | `AntCheckBox` | `checkbox` | `QProxyStyle` | 是 | |
-| `AntColorPicker` | `color-picker` | 自绘 | 是 | inline trigger/showText、HS field、RGB/HSV、预设、static getColor() |
+| `AntColorPicker` | `color-picker` | 自绘 | 是 | inline trigger/showText、HS field、RGB/HSV、预设、static getColor()，触发器边框内收防裁切 |
 | `AntDatePicker` | `date-picker` | `QProxyStyle` | 是 | 自绘日期弹层、RangePicker |
 | `AntDescriptions` | `descriptions` | `QProxyStyle` | 是 | 标题、extra、bordered、vertical |
 | `AntForm` | `form` | `QProxyStyle` | 是 | 横向/纵向/行内布局、校验提示、Provider、List |

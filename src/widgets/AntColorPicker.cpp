@@ -541,6 +541,7 @@ constexpr int SwatchSize = 22;
 constexpr int TriggerPadding = 5;
 constexpr int TextGap = 8;
 constexpr int TextRightPadding = 11;
+constexpr qreal TriggerBorderInset = 1.5;
 }
 
 AntColorPicker::AntColorPicker(QWidget* parent)
@@ -668,7 +669,10 @@ void AntColorPicker::paintEvent(QPaintEvent* /*event*/)
     QPainter painter(this);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    const QRectF frame = rect().adjusted(0.5, 0.5, -0.5, -0.5);
+    const QRectF frame = QRectF(rect()).adjusted(TriggerBorderInset,
+                                                TriggerBorderInset,
+                                                -TriggerBorderInset,
+                                                -TriggerBorderInset);
     painter.setPen(QPen(border, token.lineWidth));
     painter.setBrush(background);
     painter.drawRoundedRect(frame, token.borderRadius, token.borderRadius);

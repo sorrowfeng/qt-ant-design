@@ -15,6 +15,7 @@
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckBox.h"
+#include "widgets/AntColorPicker.h"
 #include "widgets/AntDescriptions.h"
 #include "widgets/AntDrawer.h"
 #include "widgets/AntInputNumber.h"
@@ -47,6 +48,7 @@ private slots:
     void progressStatusColorsStayVisible();
     void navigationActiveIndicatorsStayPrimary();
     void inputNumberHandlersStayVisible();
+    void colorPickerTriggerBordersStayInsideFrame();
     void selectionControlsKeepPrimaryStateFills();
     void tagAndBadgeStatusColorsStayVisible();
     void feedbackSurfacesKeepElevatedTokenFill();
@@ -165,6 +167,14 @@ int countNearColor(const QImage& image, const QRect& rect, const QColor& target,
         }
     }
     return count;
+}
+
+int countNearColorOnOuterEdge(const QImage& image, const QColor& target, int tolerance = 28)
+{
+    return countNearColor(image, QRect(0, 0, image.width(), 1), target, tolerance) +
+           countNearColor(image, QRect(0, image.height() - 1, image.width(), 1), target, tolerance) +
+           countNearColor(image, QRect(0, 0, 1, image.height()), target, tolerance) +
+           countNearColor(image, QRect(image.width() - 1, 0, 1, image.height()), target, tolerance);
 }
 
 QRect nearColorBounds(const QImage& image, const QColor& target, int tolerance = 28)
@@ -396,6 +406,49 @@ void TestAntVisualRegression::inputNumberHandlersStayVisible()
     assertNearColorPixels(runtimeDarkImage.copy(inputRect), antTheme->tokens().colorText, 18,
                           "dark input number value after runtime theme switch", 36);
     page.hide();
+}
+
+void TestAntVisualRegression::colorPickerTriggerBordersStayInsideFrame()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const auto& token = antTheme->tokens();
+
+    AntColorPicker normal(QColor(QStringLiteral("#1677ff")));
+    const QImage normalImage = renderWidget(&normal, QSize(32, 32));
+    QCOMPARE(countNearColorOnOuterEdge(normalImage, token.colorBorder, 30), 0);
+    const QRect normalBorderBounds = nearColorBounds(normalImage, token.colorBorder, 30);
+    QVERIFY2(!normalBorderBounds.isNull(), "normal ColorPicker border should render visible gray pixels");
+    QVERIFY2(normalBorderBounds.left() >= 1 && normalBorderBounds.top() >= 1 &&
+                 normalBorderBounds.right() <= normalImage.width() - 2 &&
+                 normalBorderBounds.bottom() <= normalImage.height() - 2,
+             qPrintable(QStringLiteral("normal ColorPicker border bounds: %1,%2 %3x%4")
+                            .arg(normalBorderBounds.x())
+                            .arg(normalBorderBounds.y())
+                            .arg(normalBorderBounds.width())
+                            .arg(normalBorderBounds.height())));
+
+    AntColorPicker focused(QColor(QStringLiteral("#1677ff")));
+    focused.resize(32, 32);
+    focused.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&focused));
+    focused.setFocus(Qt::OtherFocusReason);
+    QVERIFY(focused.hasFocus());
+    QCoreApplication::processEvents();
+
+    const QImage focusedImage = renderCurrentWidget(&focused);
+    QCOMPARE(countNearColorOnOuterEdge(focusedImage, token.colorPrimary, 30), 0);
+    const QRect focusedBorderBounds = nearColorBounds(focusedImage, token.colorPrimary, 30);
+    QVERIFY2(!focusedBorderBounds.isNull(), "focused ColorPicker border should render visible primary pixels");
+    QVERIFY2(focusedBorderBounds.left() >= 1 && focusedBorderBounds.top() >= 1 &&
+                 focusedBorderBounds.right() <= focusedImage.width() - 2 &&
+                 focusedBorderBounds.bottom() <= focusedImage.height() - 2,
+             qPrintable(QStringLiteral("focused ColorPicker border bounds: %1,%2 %3x%4")
+                            .arg(focusedBorderBounds.x())
+                            .arg(focusedBorderBounds.y())
+                            .arg(focusedBorderBounds.width())
+                            .arg(focusedBorderBounds.height())));
+    focused.hide();
 }
 
 void TestAntVisualRegression::selectionControlsKeepPrimaryStateFills()
