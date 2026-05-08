@@ -1,7 +1,9 @@
 #include "AntTable.h"
 
+#include <QHelpEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QToolTip>
 #include <QWheelEvent>
 
 #include <algorithm>
@@ -138,6 +140,14 @@ void AntTable::removeRow(int index)
     {
         return;
     }
+    if (sourceIndex == m_currentSourceRowIndex)
+    {
+        m_currentSourceRowIndex = -1;
+    }
+    else if (sourceIndex < m_currentSourceRowIndex)
+    {
+        --m_currentSourceRowIndex;
+    }
     m_rows.remove(sourceIndex);
     rebuildDisplayOrder();
     if (m_hoveredRow >= m_rows.size())
@@ -153,6 +163,7 @@ void AntTable::setRows(const QVector<AntTableRow>& rows)
     m_rows = rows;
     m_scrollY = 0;
     m_hoveredRow = -1;
+    m_currentSourceRowIndex = -1;
     rebuildDisplayOrder();
     update();
     Q_EMIT rowsChanged();
@@ -164,6 +175,7 @@ void AntTable::clearRows()
     m_displayOrder.clear();
     m_scrollY = 0;
     m_hoveredRow = -1;
+    m_currentSourceRowIndex = -1;
     update();
     Q_EMIT rowsChanged();
 }
@@ -181,6 +193,21 @@ AntTableRow AntTable::rowAt(int index) const
         return {};
     }
     return m_rows.at(sourceIndex);
+}
+
+QVector<AntTableRow> AntTable::rows() const
+{
+    QVector<AntTableRow> orderedRows;
+    orderedRows.reserve(m_rows.size());
+    for (int displayIndex = 0; displayIndex < m_rows.size(); ++displayIndex)
+    {
+        const int sourceIndex = sourceRowIndex(displayIndex);
+        if (sourceIndex >= 0 && sourceIndex < m_rows.size())
+        {
+            orderedRows.append(m_rows.at(sourceIndex));
+        }
+    }
+    return orderedRows;
 }
 
 QVariant AntTable::cellData(int row, const QString& dataIndex) const
@@ -272,6 +299,7 @@ void AntTable::setRowSelection(Ant::TableSelectionMode mode)
     {
         row.selected = false;
     }
+    m_currentSourceRowIndex = -1;
     update();
     Q_EMIT rowSelectionChanged(m_rowSelection);
 }
@@ -365,6 +393,46 @@ int AntTable::hoveredRow() const { return m_hoveredRow; }
 
 // ─── Selection helpers ───
 
+void AntTable::selectRow(int index)
+{
+    const int sourceIndex = sourceRowIndex(index);
+    if (sourceIndex < 0 || sourceIndex >= m_rows.size() || m_rows.at(sourceIndex).disabled)
+    {
+        return;
+    }
+
+    bool changed = false;
+    m_currentSourceRowIndex = sourceIndex;
+    if (m_rowSelection != Ant::TableSelectionMode::Checkbox)
+    {
+        for (int i = 0; i < m_rows.size(); ++i)
+        {
+            const bool selected = (i == sourceIndex);
+            if (m_rows.at(i).selected != selected)
+            {
+                m_rows[i].selected = selected;
+                changed = true;
+            }
+        }
+    }
+    else if (!m_rows.at(sourceIndex).selected)
+    {
+        m_rows[sourceIndex].selected = true;
+        changed = true;
+    }
+
+    update();
+    if (changed)
+    {
+        Q_EMIT selectionChanged(selectedRowKeys());
+    }
+}
+
+int AntTable::currentRowIndex() const
+{
+    return displayRowIndex(m_currentSourceRowIndex);
+}
+
 QStringList AntTable::selectedRowKeys() const
 {
     QStringList keys;
@@ -383,6 +451,30 @@ QStringList AntTable::selectedRowKeys() const
 }
 
 // ─── Events ───
+
+bool AntTable::event(QEvent* event)
+{
+    if (event->type() == QEvent::ToolTip)
+    {
+        auto* helpEvent = static_cast<QHelpEvent*>(event);
+        const int rowIndex = rowAtPos(helpEvent->pos());
+        if (rowIndex >= 0)
+        {
+            const AntTableRow row = rowAt(rowIndex);
+            if (!row.tooltip.isEmpty())
+            {
+                QToolTip::showText(helpEvent->globalPos(), row.tooltip, this);
+                event->accept();
+                return true;
+            }
+        }
+
+        QToolTip::hideText();
+        event->ignore();
+        return true;
+    }
+    return QWidget::event(event);
+}
 
 void AntTable::paintEvent(QPaintEvent* event)
 {
@@ -482,6 +574,15 @@ void AntTable::mousePressEvent(QMouseEvent* event)
         }
 
         // Row click
+        if (m_rowSelection == Ant::TableSelectionMode::Checkbox)
+        {
+            m_currentSourceRowIndex = sourceRowIndex(rowIdx);
+            update();
+        }
+        else
+        {
+            selectRow(rowIdx);
+        }
         Q_EMIT rowClicked(rowIdx);
     }
     event->accept();
@@ -763,6 +864,22 @@ int AntTable::sourceRowIndex(int displayIndex) const
     return m_displayOrder.at(displayIndex);
 }
 
+int AntTable::displayRowIndex(int sourceIndex) const
+{
+    if (sourceIndex < 0)
+    {
+        return -1;
+    }
+    for (int displayIndex = 0; displayIndex < m_displayOrder.size(); ++displayIndex)
+    {
+        if (m_displayOrder.at(displayIndex) == sourceIndex)
+        {
+            return displayIndex;
+        }
+    }
+    return -1;
+}
+
 QString AntTable::sortDataIndex() const
 {
     for (const auto& col : m_columns)
@@ -796,13 +913,26 @@ void AntTable::toggleSelectAll()
     const bool selectAll = !isAllSelected();
     const int start = pageStartIndex();
     const int end = pageEndIndex();
+    int firstSelectedSource = -1;
     for (int i = start; i < end; ++i)
     {
         const int sourceIndex = sourceRowIndex(i);
         if (sourceIndex >= 0 && sourceIndex < m_rows.size() && !m_rows.at(sourceIndex).disabled)
         {
             m_rows[sourceIndex].selected = selectAll;
+            if (selectAll && firstSelectedSource < 0)
+            {
+                firstSelectedSource = sourceIndex;
+            }
         }
+    }
+    if (selectAll)
+    {
+        m_currentSourceRowIndex = firstSelectedSource;
+    }
+    else if (displayRowIndex(m_currentSourceRowIndex) >= start && displayRowIndex(m_currentSourceRowIndex) < end)
+    {
+        m_currentSourceRowIndex = -1;
     }
     update();
     Q_EMIT selectionChanged(selectedRowKeys());
@@ -828,6 +958,7 @@ void AntTable::toggleRowSelection(int index)
     {
         m_rows[sourceIndex].selected = !m_rows.at(sourceIndex).selected;
     }
+    m_currentSourceRowIndex = sourceIndex;
     update();
     Q_EMIT selectionChanged(selectedRowKeys());
 }

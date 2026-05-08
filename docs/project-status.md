@@ -51,7 +51,9 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
   - Reworked title-bar hover state cleanup so hover colors clear reliably when leaving title/content/native areas.
   - Added a captured-frame `AntWindow` theme transition overlay with an 8 ms timer, 320 ms duration, smootherstep easing, high-DPI-safe captures, and a soft reveal that avoids black-hole artifacts.
   - Embedded the Windows 10/11 compatibility manifest in the example app so the native Snap Layout flyout can appear on the maximize button.
-- Expanded Qt-style compatibility for `AntList` / `AntListWidget` to cover common `QListWidget` workflows: string item insertion, lookup/sorting, item data roles, current row/item state, selection state, and item/current/selection signals.
+- Expanded Qt-style compatibility for `AntList` / `AntListWidget` to cover common `QListWidget` workflows: string item insertion, lookup/sorting, item data roles, current row/item state, selection state, internal scrolling, `scrollToItem`, and item/current/selection signals.
+- Expanded `AntTable` helper coverage with `rows()`, `selectRow()`, `currentRowIndex()`, and row-level tooltip data/display support.
+- Added `AntTypography::setPixelSize()` / `pixelSize()` for direct label-style font sizing while keeping theme-aware rendering.
 - Fixed issue-driven popup details for `AntMenu` horizontal submenu panel edges and `AntCascader` outside-click dismissal.
 
 ## Visual Audit State
@@ -106,6 +108,14 @@ ctest -C Debug -R "TestAntQtExtensions|TestAntExampleCloseStress" --output-on-fa
 ```
 
 Result: `2 / 2` targeted tests passed during the AntWindow desktop behavior pass.
+
+Latest targeted AntList / AntTable / AntTypography API validation:
+
+```powershell
+ctest -C Debug -R "TestAnt(DataDisplayB|Typography)$" --output-on-failure
+```
+
+Result: `2 / 2` targeted tests passed on `2026-05-08`.
 
 ## Remaining Notes
 

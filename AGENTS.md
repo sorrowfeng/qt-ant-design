@@ -109,12 +109,12 @@
 
 ## Qt 官方常用接口兼容批次（2026-05-07）
 
-- `AntTypography` 默认垂直居中，新增 alignment 策略、wordWrap 和 clear API。
+- `AntTypography` 默认垂直居中，新增 alignment 策略、wordWrap、clear 和 `setPixelSize()` API。
 - `AntInput` 补齐常用 `QLineEdit` 风格 API/信号，包括 placeholder、readOnly、maxLength、echoMode、alignment、selection、clipboard、undo/redo、return/editing/selection/inputRejected 等。
 - `AntInputNumber` / `AntCheckBox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API，并增加对应属性/信号测试。
 - `AntSelect` 补齐常用 `QComboBox` 风格 API/信号，包括 add/insert/remove/find、itemText/itemData、currentData、setCurrentText、activated/textActivated/highlighted/textHighlighted。
 - `AntDatePicker` / `AntTimePicker` 补齐 `QDateEdit` / `QTimeEdit` 风格 date/time 别名、minimum/maximum range API、range changed 信号，并对越界输入做边界收敛。
-- `AntList` / `AntListWidget` 补齐常用 `QListWidget` 风格 API/信号，包括字符串 add/insert/addItems/insertItems、item/text/icon/data/checkState/flags、findItems/sortItems、currentItem/currentRow、selectionMode/selectedItems/setItemSelected、itemClicked/itemDoubleClicked/itemActivated/itemChanged/current/itemSelection 信号；`AntTable` / `AntTree` 继续覆盖 table/tree 风格 helper。
+- `AntList` / `AntListWidget` 补齐常用 `QListWidget` 风格 API/信号，包括字符串 add/insert/addItems/insertItems、item/text/icon/data/checkState/flags、findItems/sortItems、currentItem/currentRow、selectionMode/selectedItems/setItemSelected、内部滚动、scrollToItem、itemClicked/itemDoubleClicked/itemActivated/itemChanged/current/itemSelection 信号；`AntTable` 补齐 rows/selectRow/currentRowIndex 和行级 tooltip；`AntTree` 继续覆盖 tree 风格 helper。
 - `AntMenu` 接入 QWidget `QAction` 体系：`addAction/removeAction` 会同步自绘菜单项，action text/enabled/shortcut 变更会刷新显示，点击菜单项会触发对应 QAction；`AntToolButton` / `AntToolBar` 的默认 action 和 toolbar action 触发行为已有测试保护。
 - 相关 targeted 验证覆盖 `TestAntInput|TestAntCheckBox|TestAntDataEntryA|TestAntDataEntryB|TestAntDataDisplayB|TestAntFeedback|TestAntNavigation|TestAntQtExtensions|TestAntTypography|TestAntSelect|TestAntMetaProperties|TestAntRenderSmoke`。
 
@@ -150,7 +150,7 @@
 | `AntButton` | `button` | `QProxyStyle` | 是 | 五种类型、三种尺寸、三种形状 |
 | `AntFloatButton` | `float-button` | `QProxyStyle` | 是 | 圆形/方形、Group/BackTop、Badge |
 | `AntIcon` | `icon` | `QProxyStyle` | 是 | 831 个官方 SVG 图标资源、字符串名称 API、Outlined/Filled/TwoTone、旋转、spin |
-| `AntTypography` | `typography` | `QProxyStyle` | 是 | Title(H1-H5)/Text/Paragraph/Link，对齐策略 |
+| `AntTypography` | `typography` | `QProxyStyle` | 是 | Title(H1-H5)/Text/Paragraph/Link，对齐策略，setPixelSize |
 
 ### 导航
 
@@ -220,11 +220,11 @@
 | `AntCollapse` | `collapse` | 自绘 | 是 | 折叠面板、accordion 模式、动画 |
 | `AntEmpty` | `empty` | `QProxyStyle` | 是 | 默认插画、simple 模式 |
 | `AntImage` | `image` | 自绘 | 是 | 图片展示、全屏预览、PreviewGroup |
-| `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size，`AntListWidget` 覆盖常用 QListWidget-style API |
+| `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size，内部滚动，`AntListWidget` 覆盖常用 QListWidget-style API |
 | `AntPopover` | — | `QProxyStyle` | 是 | 已在反馈类 |
 | `AntQRCode` | `qr-code` | `QProxyStyle` | 是 | 嵌入式 QR 生成、状态叠加 |
 | `AntStatistic` | `statistic` | `QProxyStyle` | 是 | title/value/precision/prefix/suffix/Countdown |
-| `AntTable` | `table` | `QProxyStyle` | 是 | 排序、选择、分页、空态插画 |
+| `AntTable` | `table` | `QProxyStyle` | 是 | 排序、选择、分页、行 tooltip、空态插画 |
 | `AntTag` | `tag` | `QProxyStyle` | 是 | 13 色预设、closable/checkable/variant |
 | `AntTimeline` | `timeline` | `QProxyStyle` | 是 | 垂直/水平、outlined/filled、颜色 |
 | `AntToolTip` | — | `QProxyStyle` | 是 | 已在反馈类 |

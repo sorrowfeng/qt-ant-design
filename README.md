@@ -63,9 +63,9 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 - `AntInput`, `AntInputNumber`, `AntCheckBox`, `AntRadio`, `AntSlider`, `AntProgress`, and `AntStatusBar` expose more common Qt-style methods and signals.
 - `AntSelect` supports QComboBox-style item management, lookup, `currentData`, `activated`, and highlighted signals.
 - `AntDatePicker` / `AntTimePicker` expose QDateEdit / QTimeEdit-style `date` / `time` aliases plus minimum / maximum range APIs.
-- `AntList` / `AntListWidget` now cover common QListWidget-style flows: string item add/insert/find/sort, item text/icon/data/check state/flags, current row/item, selection mode, selected items, and item/current/selection signals. `AntTable` and `AntTree` expose matching table/tree helper APIs.
+- `AntList` / `AntListWidget` now cover common QListWidget-style flows: string item add/insert/find/sort, item text/icon/data/check state/flags, current row/item, selection mode, selected items, internal scrolling, `scrollToItem`, and item/current/selection signals. `AntTable` exposes `rows()`, `selectRow()`, `currentRowIndex()`, and row tooltips; `AntTree` exposes matching tree helper APIs.
 - `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
-- `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, and clear controls.
+- `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, clear, and `setPixelSize()` controls.
 
 ## Installation & Integration
 
@@ -214,7 +214,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 - `AntAlert`: `success / info / warning / error`, icon, description, closable, banner, custom action
 - `AntModal`: mask, title, body, custom content, custom footer, confirm / cancel, centered or top-offset layout
 - `AntResult`: status icons (success / error / warning / info), title, description, custom extra actions area
-- `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description), action areas, and QListWidget-style text/data/selection helpers through the `AntListWidget` alias
+- `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description), action areas, internal scrolling, and QListWidget-style text/data/selection helpers through the `AntListWidget` alias
 - `AntStatistic`: numeric display, thousands separators, prefix / suffix, precision control
 - `AntPopover`: title, body, action, click / hover triggers, placement, arrow
 - `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement
@@ -227,14 +227,14 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 - `AntMessage` / `AntNotification`: global feedback components with elevated surfaces and enter / exit motion
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`: common display components
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`: navigation components
-- `AntTable`: data table with column sorting, row selection (checkbox / radio), pagination, loading state
+- `AntTable`: data table with column sorting, row selection (checkbox / radio), programmatic row selection, row tooltips, pagination, loading state
 - `AntTree`: tree control with expand / collapse, node selection, checkboxes, connector lines
 - `AntUpload`: file upload supporting text list, picture list, and picture card modes
 - `AntCascader`: cascading selector with multi-column popup, click / hover expansion
 - `AntTreeSelect`: tree selector that renders a tree inside a dropdown
 - `AntRate`: rating component with `count / value / allowHalf / allowClear / disabled / size`, hover scaling, left / right keyboard control
 - `AntWidget`: base QWidget subclass that handles theme switching automatically
-- `AntTypography`: theme-aware text component, Title (H1-H5) / Text / Paragraph, with type / decoration / copy / ellipsis / alignment support
+- `AntTypography`: theme-aware text component, Title (H1-H5) / Text / Paragraph, with type / decoration / copy / ellipsis / alignment / pixel-size support
 - `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, DWM rounded corners / border shadow, and a smooth theme transition overlay
 - `AntDrawer`: sliding panel with Left / Right / Top / Bottom placement, animation, and mask
 - `AntStatusBar`: status bar with left / right items, separators, message area, and size grip

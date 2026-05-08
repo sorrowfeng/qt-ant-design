@@ -63,9 +63,9 @@
 - `AntInput`、`AntInputNumber`、`AntCheckBox`、`AntRadio`、`AntSlider`、`AntProgress`、`AntStatusBar` 补充更多 Qt 风格常用方法和信号。
 - `AntSelect` 支持 QComboBox 风格的 item 增删插查、`currentData`、`activated` 和 highlighted 信号。
 - `AntDatePicker` / `AntTimePicker` 支持 QDateEdit / QTimeEdit 风格的 `date` / `time` 别名，以及最小 / 最大范围 API。
-- `AntList`、`AntTable`、`AntTree` 补充 count、item 访问、cell data、节点查找、clear 和按 key 修改节点状态等 item/view 风格辅助接口。
+- `AntList` / `AntListWidget` 补充字符串 add/insert/find/sort、item 数据、current/selection、内部滚动和 `scrollToItem` 等 `QListWidget` 风格接口；`AntTable` 补充 `rows()`、`selectRow()`、`currentRowIndex()` 和行级 tooltip；`AntTree` 继续覆盖 tree 风格辅助接口。
 - `AntMenu` 支持 QWidget `QAction` 的添加、变更、移除和触发流程同步；`AntToolButton` / `AntToolBar` 的继承 QAction 行为已加入测试覆盖。
-- `AntTypography` 默认垂直居中，并提供 alignment、word-wrap 和 clear 控制。
+- `AntTypography` 默认垂直居中，并提供 alignment、word-wrap、clear 和 `setPixelSize()` 控制。
 
 ## 安装与集成
 
@@ -214,7 +214,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntAlert`：`success / info / warning / error`、图标、描述、关闭、横幅、自定义 action
 - `AntModal`：遮罩层、标题、正文、自定义内容、自定义 footer、确认/取消、居中或顶部偏移布局
 - `AntResult`：状态图标（success / error / warning / info）、标题、描述、自定义 extra 操作区
-- `AntList`：`header / footer / bordered / split / size`，`AntListItem` 支持 `Meta`（头像、标题、描述）和操作区
+- `AntList`：`header / footer / bordered / split / size`，`AntListItem` 支持 `Meta`（头像、标题、描述）、操作区、内部滚动和 QListWidget 风格文本/数据/选择 helper
 - `AntStatistic`：数值展示、千分位分隔、前缀后缀、精度控制
 - `AntPopover`：标题、正文、action、点击/悬停触发、placement、箭头
 - `AntPopconfirm`：确认标题、说明、确认/取消按钮、禁用态、placement
@@ -227,14 +227,14 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntMessage` / `AntNotification`：带浮层阴影和进入/退出动效的全局反馈组件
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`：常用展示组件
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`：导航组件
-- `AntTable`：数据表格，支持列排序、行选择（复选框/单选框）、分页、加载状态
+- `AntTable`：数据表格，支持列排序、行选择（复选框/单选框）、程序化选中、行 tooltip、分页、加载状态
 - `AntTree`：树形控件，支持展开/收起、节点选择、复选框、连接线
 - `AntUpload`：文件上传，支持文本列表/图片列表/图片卡片三种模式
 - `AntCascader`：级联选择器，多列弹出面板，支持点击/悬停展开
 - `AntTreeSelect`：树形选择器，下拉框内展示树形结构
 - `AntRate`：评分组件，`count / value / allowHalf / allowClear / disabled / size`，hover 放大效果，键盘左右箭头操作
 - `AntWidget`：基础 QWidget 子类，自动处理主题切换
-- `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略/对齐策略
+- `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略/对齐策略/像素字号
 - `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，DWM 圆角/边框阴影，以及平滑主题切换遮罩动画
 - `AntDrawer`：滑动面板，支持 Left/Right/Top/Bottom 四个方向、动画、遮罩层
 - `AntStatusBar`：状态栏，左右项、分隔符、消息区、size grip

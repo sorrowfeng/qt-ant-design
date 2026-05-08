@@ -79,6 +79,8 @@ public:
     void setHref(const QString& href);
     Qt::Alignment alignment() const;
     void setAlignment(Qt::Alignment alignment);
+    int pixelSize() const;
+    void setPixelSize(int pixelSize);
 
     bool isPressed() const;
     bool isCopyHovered() const;
@@ -139,6 +141,7 @@ private:
     bool m_copyable = false;
     bool m_ellipsis = false;
     int m_ellipsisRows = 1;
+    int m_pixelSize = -1;
     Qt::Alignment m_alignment = Qt::AlignLeft | Qt::AlignVCenter;
     bool m_copyHovered = false;
     bool m_copyPressed = false;

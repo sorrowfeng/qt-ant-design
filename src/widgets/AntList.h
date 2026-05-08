@@ -15,6 +15,7 @@ class QKeyEvent;
 class QPaintEvent;
 class QMouseEvent;
 class QResizeEvent;
+class QWheelEvent;
 class QVBoxLayout;
 class QHBoxLayout;
 class QLabel;
@@ -185,6 +186,10 @@ public:
     void setSelectionMode(QAbstractItemView::SelectionMode mode);
     QList<AntListItem*> selectedItems() const;
     void setItemSelected(AntListItem* item, bool selected);
+    int verticalScrollOffset() const;
+    int maximumScrollOffset() const;
+    void setVerticalScrollOffset(int offset);
+    void scrollToItem(AntListItem* item);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -207,6 +212,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void wheelEvent(QWheelEvent* event) override;
 
 private:
     struct Metrics
@@ -224,6 +230,7 @@ private:
     QRect headerRect() const;
     QRect footerRect() const;
     QRect contentRect() const;
+    int itemsHeight() const;
     void syncLayout();
     void adoptItem(AntListItem* item);
     void detachItem(AntListItem* item);
@@ -241,4 +248,5 @@ private:
     QList<QPointer<AntListItem>> m_items;
     QPointer<AntListItem> m_currentItem;
     QAbstractItemView::SelectionMode m_selectionMode = QAbstractItemView::SingleSelection;
+    int m_verticalScrollOffset = 0;
 };

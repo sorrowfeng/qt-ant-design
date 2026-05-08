@@ -63,6 +63,10 @@ QFont buildFont(const AntTypography* typo, const QFont& baseFont)
     {
         f.setUnderline(true);
     }
+    if (typo->pixelSize() > 0)
+    {
+        f.setPixelSize(typo->pixelSize());
+    }
     return f;
 }
 

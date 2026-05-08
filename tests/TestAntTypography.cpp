@@ -45,6 +45,7 @@ class TestAntTypography : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void pixelSizeShortcut();
     void verticalAlignmentRendering();
     void copyInteractionState();
 };
@@ -158,6 +159,20 @@ void TestAntTypography::propertiesAndSignals()
 
     w->clear();
     QCOMPARE(w->text(), QString());
+}
+
+void TestAntTypography::pixelSizeShortcut()
+{
+    AntTypography label(QStringLiteral("Pixel text"));
+    label.setAttribute(Qt::WA_NoSystemBackground);
+    label.resize(220, 80);
+    const int defaultHeight = renderedInkBounds(label).height();
+
+    label.setPixelSize(28);
+    QCOMPARE(label.pixelSize(), 28);
+    QCOMPARE(label.font().pixelSize(), 28);
+    const int largerHeight = renderedInkBounds(label).height();
+    QVERIFY(largerHeight > defaultHeight);
 }
 
 void TestAntTypography::verticalAlignmentRendering()

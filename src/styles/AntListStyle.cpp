@@ -174,7 +174,6 @@ void AntListStyle::drawList(const QStyleOption* option, QPainter* painter, const
     {
         painter->setPen(QPen(token.colorSplit, token.lineWidth));
         const QRect cr = listContentRect(list, m);
-        int y = cr.top();
         QList<AntListItem*> visibleItems;
         for (int i = 0; i < list->itemCount(); ++i)
         {
@@ -190,8 +189,11 @@ void AntListStyle::drawList(const QStyleOption* option, QPainter* painter, const
             AntListItem* item = visibleItems.at(i);
             if (item)
             {
-                y += item->sizeHint().height();
-                painter->drawLine(cr.left(), y, cr.right(), y);
+                const int y = item->geometry().bottom() + 1;
+                if (y > cr.top() && y < cr.bottom())
+                {
+                    painter->drawLine(cr.left(), y, cr.right(), y);
+                }
             }
         }
     }

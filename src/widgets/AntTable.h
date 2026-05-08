@@ -30,6 +30,7 @@ struct AntTableColumn
 struct AntTableRow
 {
     QMap<QString, QVariant> data;
+    QString tooltip;
     bool selected = false;
     bool expanded = false;
     bool disabled = false;
@@ -64,6 +65,7 @@ public:
     void clearRows();
     int rowCount() const;
     AntTableRow rowAt(int index) const;
+    QVector<AntTableRow> rows() const;
     QVariant cellData(int row, const QString& dataIndex) const;
     void setData(int row, const QString& dataIndex, const QVariant& value);
 
@@ -95,6 +97,8 @@ public:
     int totalPages() const;
 
     // Selection helpers
+    void selectRow(int index);
+    int currentRowIndex() const;
     QStringList selectedRowKeys() const;
 
     QSize sizeHint() const override;
@@ -119,6 +123,7 @@ Q_SIGNALS:
     void cellDataChanged(int row, const QString& dataIndex, const QVariant& value);
 
 protected:
+    bool event(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -156,6 +161,7 @@ private:
     void toggleRowSelection(int index);
     void rebuildDisplayOrder();
     int sourceRowIndex(int displayIndex) const;
+    int displayRowIndex(int sourceIndex) const;
     QString sortDataIndex() const;
 
     QVector<AntTableColumn> m_columns;
@@ -174,6 +180,7 @@ private:
     int m_pageSize = 10;
     int m_scrollY = 0;
 
+    int m_currentSourceRowIndex = -1;
     int m_hoveredRow = -1;
     QString m_pressedColumn;
     int m_pressedPageButton = -1;

@@ -22,6 +22,8 @@ class TestAntDataDisplayB : public QObject
 private slots:
     void propertiesAndSignals();
     void listWidgetCompatibilityApis();
+    void listInternalScrolling();
+    void tableSelectionCompatibilityApis();
     void listSelectionHighlightCoversFullRow();
 };
 
@@ -495,6 +497,74 @@ void TestAntDataDisplayB::listWidgetCompatibilityApis()
     QCOMPARE(taken->parentWidget(), nullptr);
     delete taken;
     QCOMPARE(list.count(), 3);
+}
+
+void TestAntDataDisplayB::listInternalScrolling()
+{
+    AntListWidget list;
+    for (int i = 0; i < 12; ++i)
+    {
+        list.addItem(QStringLiteral("Item %1").arg(i));
+    }
+    list.resize(240, 96);
+    list.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&list));
+
+    QVERIFY(list.maximumScrollOffset() > 0);
+    QCOMPARE(list.verticalScrollOffset(), 0);
+
+    QWheelEvent wheelEvent(QPointF(list.rect().center()),
+                           QPointF(list.mapToGlobal(list.rect().center())),
+                           QPoint(),
+                           QPoint(0, -120),
+                           Qt::NoButton,
+                           Qt::NoModifier,
+                           Qt::NoScrollPhase,
+                           false);
+    QCoreApplication::sendEvent(&list, &wheelEvent);
+    QVERIFY(list.verticalScrollOffset() > 0);
+    QVERIFY(list.visualItemRect(list.item(0)).top() < 0);
+
+    list.scrollToItem(list.item(list.count() - 1));
+    QVERIFY(list.visualItemRect(list.item(list.count() - 1)).bottom() <= list.rect().bottom());
+}
+
+void TestAntDataDisplayB::tableSelectionCompatibilityApis()
+{
+    AntTable table;
+    table.addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 120});
+
+    QVector<AntTableRow> rows;
+    AntTableRow alice;
+    alice.data[QStringLiteral("name")] = QStringLiteral("Alice");
+    alice.tooltip = QStringLiteral("Firmware A - 12 KB");
+    rows.push_back(alice);
+    AntTableRow bob;
+    bob.data[QStringLiteral("name")] = QStringLiteral("Bob");
+    rows.push_back(bob);
+    table.setRows(rows);
+
+    QCOMPARE(table.rows().size(), 2);
+    QCOMPARE(table.rows().at(0).tooltip, QStringLiteral("Firmware A - 12 KB"));
+    QCOMPARE(table.currentRowIndex(), -1);
+
+    QSignalSpy selectionSpy(&table, &AntTable::selectionChanged);
+    table.selectRow(1);
+    QCOMPARE(table.currentRowIndex(), 1);
+    QCOMPARE(table.rowAt(1).selected, true);
+    QCOMPARE(table.rowAt(0).selected, false);
+    QCOMPARE(table.selectedRowKeys(), QStringList({QStringLiteral("Bob")}));
+    QCOMPARE(selectionSpy.count(), 1);
+
+    table.selectRow(0);
+    QCOMPARE(table.currentRowIndex(), 0);
+    QCOMPARE(table.rowAt(0).selected, true);
+    QCOMPARE(table.rowAt(1).selected, false);
+    QCOMPARE(table.selectedRowKeys(), QStringList({QStringLiteral("Alice")}));
+    QCOMPARE(selectionSpy.count(), 2);
+
+    table.setRows(rows);
+    QCOMPARE(table.currentRowIndex(), -1);
 }
 
 void TestAntDataDisplayB::listSelectionHighlightCoversFullRow()

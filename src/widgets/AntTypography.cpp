@@ -303,6 +303,23 @@ void AntTypography::setAlignment(Qt::Alignment alignment)
     Q_EMIT alignmentChanged(m_alignment);
 }
 
+int AntTypography::pixelSize() const { return m_pixelSize; }
+
+void AntTypography::setPixelSize(int pixelSize)
+{
+    pixelSize = qMax(1, pixelSize);
+    if (m_pixelSize == pixelSize)
+    {
+        return;
+    }
+    m_pixelSize = pixelSize;
+    QFont f = font();
+    f.setPixelSize(m_pixelSize);
+    setFont(f);
+    updateGeometry();
+    update();
+}
+
 bool AntTypography::isPressed() const { return m_pressed; }
 
 bool AntTypography::isCopyHovered() const { return m_copyHovered; }
@@ -501,6 +518,10 @@ QFont AntTypography::createFont() const
     if (m_underline)
     {
         f.setUnderline(true);
+    }
+    if (m_pixelSize > 0)
+    {
+        f.setPixelSize(m_pixelSize);
     }
 
     return f;

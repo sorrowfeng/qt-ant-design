@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QRegularExpression>
 #include <QResizeEvent>
+#include <QWheelEvent>
 
 #include "../styles/AntListStyle.h"
 #include "core/AntTheme.h"
@@ -991,6 +992,7 @@ void AntList::clearItems()
     }
     m_items.clear();
     m_currentItem = nullptr;
+    m_verticalScrollOffset = 0;
     syncLayout();
     updateGeometry();
     update();
@@ -1070,6 +1072,62 @@ void AntList::setItemSelected(AntListItem* item, bool selected)
     }
 }
 
+int AntList::verticalScrollOffset() const
+{
+    return m_verticalScrollOffset;
+}
+
+int AntList::maximumScrollOffset() const
+{
+    const int viewportHeight = qMax(0, contentRect().height());
+    return qMax(0, itemsHeight() - viewportHeight);
+}
+
+void AntList::setVerticalScrollOffset(int offset)
+{
+    const int nextOffset = qBound(0, offset, maximumScrollOffset());
+    if (m_verticalScrollOffset == nextOffset)
+    {
+        return;
+    }
+    m_verticalScrollOffset = nextOffset;
+    syncLayout();
+    update();
+}
+
+void AntList::scrollToItem(AntListItem* item)
+{
+    const int itemRow = row(item);
+    if (itemRow < 0)
+    {
+        return;
+    }
+
+    int itemTop = 0;
+    for (int i = 0; i < itemRow; ++i)
+    {
+        AntListItem* current = itemAt(i);
+        if (current && !current->isHidden())
+        {
+            itemTop += current->sizeHint().height();
+        }
+    }
+
+    const int itemHeight = item->sizeHint().height();
+    const int itemBottom = itemTop + itemHeight;
+    const int viewportHeight = qMax(0, contentRect().height());
+    int nextOffset = m_verticalScrollOffset;
+    if (itemTop < m_verticalScrollOffset)
+    {
+        nextOffset = itemTop;
+    }
+    else if (itemBottom > m_verticalScrollOffset + viewportHeight)
+    {
+        nextOffset = itemBottom - viewportHeight;
+    }
+    setVerticalScrollOffset(nextOffset);
+}
+
 void AntList::adoptItem(AntListItem* item)
 {
     if (!item)
@@ -1131,6 +1189,10 @@ void AntList::setCurrentItemInternal(AntListItem* item)
         {
             setItemSelected(item, true);
         }
+        if (item)
+        {
+            scrollToItem(item);
+        }
         return;
     }
 
@@ -1146,6 +1208,10 @@ void AntList::setCurrentItemInternal(AntListItem* item)
     if (selectionChanged)
     {
         Q_EMIT itemSelectionChanged();
+    }
+    if (item)
+    {
+        scrollToItem(item);
     }
 }
 
@@ -1317,6 +1383,33 @@ void AntList::keyPressEvent(QKeyEvent* event)
     QWidget::keyPressEvent(event);
 }
 
+void AntList::wheelEvent(QWheelEvent* event)
+{
+    const int maxOffset = maximumScrollOffset();
+    if (maxOffset <= 0)
+    {
+        QWidget::wheelEvent(event);
+        return;
+    }
+
+    int delta = event->pixelDelta().y();
+    if (delta == 0)
+    {
+        const int angleDelta = event->angleDelta().y();
+        if (angleDelta == 0)
+        {
+            QWidget::wheelEvent(event);
+            return;
+        }
+        const int wheelSteps = angleDelta / 120;
+        const int direction = wheelSteps != 0 ? wheelSteps : (angleDelta > 0 ? 1 : -1);
+        delta = direction * qMax(24, metrics().fontSize * 3);
+    }
+
+    setVerticalScrollOffset(m_verticalScrollOffset - delta);
+    event->accept();
+}
+
 void AntList::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
@@ -1390,6 +1483,19 @@ QRect AntList::contentRect() const
     return QRect(0, top, width(), bottom - top);
 }
 
+int AntList::itemsHeight() const
+{
+    int height = 0;
+    for (const auto& item : m_items)
+    {
+        if (item && !item->isHidden())
+        {
+            height += item->sizeHint().height();
+        }
+    }
+    return height;
+}
+
 void AntList::syncLayout()
 {
     if (m_header)
@@ -1404,7 +1510,8 @@ void AntList::syncLayout()
     }
 
     const QRect cr = contentRect();
-    int y = cr.top();
+    m_verticalScrollOffset = qBound(0, m_verticalScrollOffset, maximumScrollOffset());
+    int y = cr.top() - m_verticalScrollOffset;
 
     for (const auto& item : m_items)
     {
