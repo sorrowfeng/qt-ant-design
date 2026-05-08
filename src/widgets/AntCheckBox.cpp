@@ -3,6 +3,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QSizePolicy>
 
 #include "../styles/AntCheckBoxStyle.h"
 #include "core/AntTheme.h"
@@ -20,6 +21,7 @@ AntCheckBox::AntCheckBox(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     auto* checkboxStyle = new AntCheckBoxStyle(style());
     checkboxStyle->setParent(this);

@@ -115,7 +115,7 @@ AntInputNumber::AntInputNumber(QWidget* parent)
     setCorrectionMode(QAbstractSpinBox::CorrectToNearestValue);
     setDecimals(0);
     setRange(-999999, 999999);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     auto* inputStyle = new AntInputNumberStyle(style());
     inputStyle->setParent(this);

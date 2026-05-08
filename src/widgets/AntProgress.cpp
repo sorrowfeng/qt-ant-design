@@ -2,6 +2,7 @@
 
 #include <QHideEvent>
 #include <QPainter>
+#include <QSizePolicy>
 #include <QShowEvent>
 #include <QTimer>
 
@@ -54,6 +55,7 @@ AntProgress::AntProgress(QWidget* parent)
     : QWidget(parent)
 {
     installAntStyle<AntProgressStyle>(this);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_activeTimer = new QTimer(this);
     connect(m_activeTimer, &QTimer::timeout, this, [this]() {
         m_activeOffset = (m_activeOffset + 6) % 120;
@@ -142,6 +144,8 @@ void AntProgress::setProgressType(Ant::ProgressType type)
         return;
     }
     m_progressType = type;
+    setSizePolicy(m_progressType == Ant::ProgressType::Line ? QSizePolicy::Expanding : QSizePolicy::Fixed,
+                  QSizePolicy::Fixed);
     updateAnimationState();
     updateGeometry();
     update();

@@ -1,5 +1,6 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QComboBox>
 #include <QVBoxLayout>
 
 #include "widgets/AntSelect.h"
@@ -187,7 +188,8 @@ void TestAntSelect::layoutKeepsSelectControlHeight()
     host.show();
     QCoreApplication::processEvents();
 
-    QCOMPARE(select->sizePolicy().horizontalPolicy(), QSizePolicy::Expanding);
+    QComboBox nativeComboBox;
+    QCOMPARE(select->sizePolicy().horizontalPolicy(), nativeComboBox.sizePolicy().horizontalPolicy());
     QCOMPARE(select->sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
     QCOMPARE(select->height(), select->sizeHint().height());
     QCOMPARE(select->width(), host.width());

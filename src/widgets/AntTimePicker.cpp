@@ -6,6 +6,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QSizePolicy>
 #include <QStringList>
 #include <QWheelEvent>
 
@@ -312,6 +313,7 @@ AntTimePicker::AntTimePicker(QWidget* parent)
     setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     m_panelTime = QTime::currentTime();
     m_popup = new AntTimePickerPopup(this);

@@ -2,6 +2,7 @@
 
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QSizePolicy>
 #include <QStyle>
 #include <QToolTip>
 
@@ -19,6 +20,7 @@ AntRate::AntRate(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
         style()->unpolish(this);

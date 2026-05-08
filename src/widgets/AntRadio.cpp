@@ -3,6 +3,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QSizePolicy>
 
 #include "../styles/AntRadioStyle.h"
 #include "core/AntTheme.h"
@@ -20,6 +21,7 @@ AntRadio::AntRadio(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     auto* radioStyle = new AntRadioStyle(style());
     radioStyle->setParent(this);

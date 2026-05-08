@@ -1,4 +1,5 @@
 #include <QImage>
+#include <QLabel>
 #include <QPainter>
 #include <QSignalSpy>
 #include <QMouseEvent>
@@ -215,7 +216,9 @@ void TestAntTypography::wordWrapAdaptsToLayoutWidth()
     QCoreApplication::processEvents();
 
     QVERIFY(text->hasHeightForWidth());
-    QCOMPARE(text->sizePolicy().horizontalPolicy(), QSizePolicy::Expanding);
+    QLabel nativeWrappedLabel;
+    nativeWrappedLabel.setWordWrap(true);
+    QCOMPARE(text->sizePolicy().horizontalPolicy(), nativeWrappedLabel.sizePolicy().horizontalPolicy());
     QCOMPARE(text->width(), host.width());
     QVERIFY(text->heightForWidth(120) > text->heightForWidth(260));
     QVERIFY(text->height() >= text->heightForWidth(text->width()));

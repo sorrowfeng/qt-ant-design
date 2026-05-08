@@ -14,6 +14,7 @@
 #include <QPainterPath>
 #include <QRegularExpressionValidator>
 #include <QScreen>
+#include <QSizePolicy>
 #include <QVBoxLayout>
 
 #include "core/AntPopupMotion.h"
@@ -551,6 +552,7 @@ AntColorPicker::AntColorPicker(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     connect(antTheme, &AntTheme::themeModeChanged, this, [this]() {
         update();

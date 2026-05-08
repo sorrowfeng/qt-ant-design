@@ -393,8 +393,7 @@ QSize AntTypography::measuredSize(int width) const
 
 void AntTypography::updateSizePolicy()
 {
-    QSizePolicy policy(m_paragraph || m_ellipsis ? QSizePolicy::Expanding : QSizePolicy::Preferred,
-                       QSizePolicy::Preferred);
+    QSizePolicy policy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     policy.setHeightForWidth(m_paragraph || m_ellipsis);
     setSizePolicy(policy);
 }

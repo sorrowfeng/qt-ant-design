@@ -7,6 +7,7 @@
 #include <QPainterPath>
 #include <QResizeEvent>
 #include <QScrollBar>
+#include <QSizePolicy>
 #include <QVBoxLayout>
 
 #include "../styles/AntAutoCompleteStyle.h"
@@ -112,7 +113,7 @@ AntAutoComplete::AntAutoComplete(QWidget* parent)
     s->setParent(this);
     setStyle(s);
 
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFixedHeight(antTheme->tokens().controlHeight);
     setMouseTracking(true);
 

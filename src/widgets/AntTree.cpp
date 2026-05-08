@@ -5,6 +5,7 @@
 
 #include <QMouseEvent>
 #include <QPainter>
+#include <QSizePolicy>
 #include <QWheelEvent>
 
 #include "../styles/AntTreeStyle.h"
@@ -28,6 +29,7 @@ AntTree::AntTree(QWidget* parent)
     installAntStyle<AntTreeStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setMinimumWidth(120);
 }
 

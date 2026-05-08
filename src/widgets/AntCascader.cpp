@@ -10,6 +10,7 @@
 #include <QPropertyAnimation>
 #include <QScreen>
 #include <QScrollBar>
+#include <QSizePolicy>
 
 #include <algorithm>
 
@@ -26,6 +27,7 @@ AntCascader::AntCascader(QWidget* parent)
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
     m_popup = new CascaderPopup(this);
 

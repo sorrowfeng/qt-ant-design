@@ -6,6 +6,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QSizePolicy>
 #include <QStringList>
 
 #include "../styles/AntDatePickerStyle.h"
@@ -317,6 +318,7 @@ AntDatePicker::AntDatePicker(QWidget* parent)
     setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     m_panelDate = QDate::currentDate();
     m_popup = new AntDatePickerPopup(this);

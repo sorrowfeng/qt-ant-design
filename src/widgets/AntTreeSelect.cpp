@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QSizePolicy>
 #include <QVBoxLayout>
 #include <QLineEdit>
 
@@ -155,7 +156,7 @@ AntTreeSelect::AntTreeSelect(QWidget* parent)
     auto* s = new AntTreeSelectStyle(style());
     s->setParent(this);
     setStyle(s);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 
 AntTreeSelect::~AntTreeSelect()

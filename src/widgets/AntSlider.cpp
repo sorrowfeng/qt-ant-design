@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QScreen>
+#include <QSizePolicy>
 
 #include <algorithm>
 #include <cmath>
@@ -86,6 +87,7 @@ AntSlider::AntSlider(QWidget* parent)
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     m_handleAnimation = new QPropertyAnimation(this, "handleScale", this);
     m_handleAnimation->setDuration(140);
@@ -111,6 +113,8 @@ AntSlider::AntSlider(Qt::Orientation orientation, QWidget* parent)
     : AntSlider(parent)
 {
     m_orientation = orientation;
+    setSizePolicy(m_orientation == Qt::Horizontal ? QSizePolicy::Expanding : QSizePolicy::Fixed,
+                  m_orientation == Qt::Horizontal ? QSizePolicy::Fixed : QSizePolicy::Expanding);
 }
 
 int AntSlider::minimum() const { return m_minimum; }
@@ -209,6 +213,8 @@ void AntSlider::setOrientation(Qt::Orientation orientation)
     }
 
     m_orientation = orientation;
+    setSizePolicy(m_orientation == Qt::Horizontal ? QSizePolicy::Expanding : QSizePolicy::Fixed,
+                  m_orientation == Qt::Horizontal ? QSizePolicy::Fixed : QSizePolicy::Expanding);
     updateGeometry();
     update();
     Q_EMIT orientationChanged(m_orientation);

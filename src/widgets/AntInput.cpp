@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QPainter>
 #include <QPainterPath>
+#include <QSizePolicy>
 
 #include "../styles/AntInputStyle.h"
 #include "core/AntTheme.h"
@@ -121,6 +122,7 @@ AntInput::AntInput(QWidget* parent)
     setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     auto* inputStyle = new AntInputStyle(style());
     inputStyle->setParent(this);

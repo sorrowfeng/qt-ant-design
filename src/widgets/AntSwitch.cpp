@@ -2,6 +2,7 @@
 
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QSizePolicy>
 #include <QTimer>
 
 #include <algorithm>
@@ -18,6 +19,7 @@ AntSwitch::AntSwitch(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::PointingHandCursor);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     m_progressAnimation = new QPropertyAnimation(this, "handleProgress", this);
     m_progressAnimation->setDuration(180);

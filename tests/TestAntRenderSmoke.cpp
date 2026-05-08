@@ -1,10 +1,27 @@
 #include <QColor>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QDateEdit>
+#include <QDoubleSpinBox>
 #include <QFile>
 #include <QImage>
 #include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
 #include <QPainter>
+#include <QPlainTextEdit>
+#include <QProgressBar>
+#include <QPushButton>
+#include <QRadioButton>
+#include <QScrollArea>
 #include <QSignalSpy>
+#include <QSlider>
+#include <QStatusBar>
+#include <QTableWidget>
 #include <QTest>
+#include <QTimeEdit>
+#include <QToolButton>
+#include <QTreeWidget>
 #include <QWidget>
 
 #include <functional>
@@ -98,6 +115,7 @@ class TestAntRenderSmoke : public QObject
 
 private slots:
     void everyVisualWidgetRendersNonBlank();
+    void qtAnalogWidgetsFollowNativeLayoutPolicies();
 };
 
 namespace
@@ -149,6 +167,24 @@ int changedPixelCount(const QImage& image)
         }
     }
     return changed;
+}
+
+void expectSameLayoutPolicy(const char* name, const QWidget& actual, const QWidget& expected)
+{
+    const QSizePolicy actualPolicy = actual.sizePolicy();
+    const QSizePolicy expectedPolicy = expected.sizePolicy();
+
+    QByteArray context = QByteArray(name) + " horizontal policy";
+    QVERIFY2(actualPolicy.horizontalPolicy() == expectedPolicy.horizontalPolicy(), context.constData());
+
+    context = QByteArray(name) + " vertical policy";
+    QVERIFY2(actualPolicy.verticalPolicy() == expectedPolicy.verticalPolicy(), context.constData());
+
+    context = QByteArray(name) + " sizePolicy height-for-width";
+    QVERIFY2(actualPolicy.hasHeightForWidth() == expectedPolicy.hasHeightForWidth(), context.constData());
+
+    context = QByteArray(name) + " widget height-for-width";
+    QVERIFY2(actual.hasHeightForWidth() == expected.hasHeightForWidth(), context.constData());
 }
 
 QImage renderWidget(QWidget* widget)
@@ -535,6 +571,117 @@ void TestAntRenderSmoke::everyVisualWidgetRendersNonBlank()
             QVERIFY2(changedPixelCount(image) > 0, renderCase.name);
         }
     }
+}
+
+void TestAntRenderSmoke::qtAnalogWidgetsFollowNativeLayoutPolicies()
+{
+    QPushButton nativeButton(QStringLiteral("Button"));
+    AntButton button(QStringLiteral("Button"));
+    expectSameLayoutPolicy("AntButton", button, nativeButton);
+    button.setBlock(true);
+    QCOMPARE(button.sizePolicy().horizontalPolicy(), QSizePolicy::Expanding);
+    QCOMPARE(button.sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
+
+    QToolButton nativeToolButton;
+    AntToolButton toolButton(QStringLiteral("Tool"));
+    expectSameLayoutPolicy("AntToolButton", toolButton, nativeToolButton);
+
+    QLineEdit nativeLineEdit;
+    AntInput input;
+    AntAutoComplete autoComplete;
+    AntMentions mentions;
+    expectSameLayoutPolicy("AntInput", input, nativeLineEdit);
+    expectSameLayoutPolicy("AntAutoComplete", autoComplete, nativeLineEdit);
+    expectSameLayoutPolicy("AntMentions", mentions, nativeLineEdit);
+
+    QComboBox nativeComboBox;
+    AntSelect select;
+    AntCascader cascader;
+    AntTreeSelect treeSelect;
+    expectSameLayoutPolicy("AntSelect", select, nativeComboBox);
+    expectSameLayoutPolicy("AntCascader", cascader, nativeComboBox);
+    expectSameLayoutPolicy("AntTreeSelect", treeSelect, nativeComboBox);
+
+    QDoubleSpinBox nativeDoubleSpinBox;
+    AntInputNumber inputNumber;
+    expectSameLayoutPolicy("AntInputNumber", inputNumber, nativeDoubleSpinBox);
+
+    QDateEdit nativeDateEdit;
+    AntDatePicker datePicker;
+    expectSameLayoutPolicy("AntDatePicker", datePicker, nativeDateEdit);
+
+    QTimeEdit nativeTimeEdit;
+    AntTimePicker timePicker;
+    expectSameLayoutPolicy("AntTimePicker", timePicker, nativeTimeEdit);
+
+    QCheckBox nativeCheckBox;
+    AntCheckBox checkBox;
+    expectSameLayoutPolicy("AntCheckBox", checkBox, nativeCheckBox);
+
+    QRadioButton nativeRadioButton;
+    AntRadio radio;
+    expectSameLayoutPolicy("AntRadio", radio, nativeRadioButton);
+
+    QSlider nativeHorizontalSlider(Qt::Horizontal);
+    AntSlider horizontalSlider(Qt::Horizontal);
+    expectSameLayoutPolicy("AntSlider horizontal", horizontalSlider, nativeHorizontalSlider);
+
+    QSlider nativeVerticalSlider(Qt::Vertical);
+    AntSlider verticalSlider(Qt::Vertical);
+    expectSameLayoutPolicy("AntSlider vertical", verticalSlider, nativeVerticalSlider);
+
+    QProgressBar nativeProgressBar;
+    AntProgress progress;
+    expectSameLayoutPolicy("AntProgress", progress, nativeProgressBar);
+    progress.setProgressType(Ant::ProgressType::Circle);
+    QCOMPARE(progress.sizePolicy().horizontalPolicy(), QSizePolicy::Fixed);
+    QCOMPARE(progress.sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
+
+    QListWidget nativeListWidget;
+    AntList list;
+    expectSameLayoutPolicy("AntList", list, nativeListWidget);
+
+    QTableWidget nativeTableWidget;
+    AntTable table;
+    expectSameLayoutPolicy("AntTable", table, nativeTableWidget);
+
+    QTreeWidget nativeTreeWidget;
+    AntTree tree;
+    expectSameLayoutPolicy("AntTree", tree, nativeTreeWidget);
+
+    QPlainTextEdit nativePlainTextEdit;
+    AntPlainTextEdit plainTextEdit;
+    expectSameLayoutPolicy("AntPlainTextEdit", plainTextEdit, nativePlainTextEdit);
+
+    QScrollArea nativeScrollArea;
+    AntScrollArea scrollArea;
+    expectSameLayoutPolicy("AntScrollArea", scrollArea, nativeScrollArea);
+
+    QStatusBar nativeStatusBar;
+    AntStatusBar statusBar;
+    expectSameLayoutPolicy("AntStatusBar", statusBar, nativeStatusBar);
+
+    QLabel nativeLabel(QStringLiteral("Text"));
+    AntTypography typography(QStringLiteral("Text"));
+    expectSameLayoutPolicy("AntTypography", typography, nativeLabel);
+
+    QLabel nativeWrappedLabel(QStringLiteral("Long wrapped text"));
+    nativeWrappedLabel.setWordWrap(true);
+    AntTypography paragraph(QStringLiteral("Long wrapped text"));
+    paragraph.setWordWrap(true);
+    expectSameLayoutPolicy("AntTypography wordWrap", paragraph, nativeWrappedLabel);
+
+    AntColorPicker colorPicker;
+    QCOMPARE(colorPicker.sizePolicy().horizontalPolicy(), QSizePolicy::Minimum);
+    QCOMPARE(colorPicker.sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
+
+    AntRate rate;
+    QCOMPARE(rate.sizePolicy().horizontalPolicy(), QSizePolicy::Minimum);
+    QCOMPARE(rate.sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
+
+    AntSwitch sw;
+    QCOMPARE(sw.sizePolicy().horizontalPolicy(), QSizePolicy::Minimum);
+    QCOMPARE(sw.sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
 }
 
 QTEST_MAIN(TestAntRenderSmoke)

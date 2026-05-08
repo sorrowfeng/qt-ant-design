@@ -1,6 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QCoreApplication>
+#include <QDoubleSpinBox>
 #include <QEnterEvent>
 #include <QHBoxLayout>
 #include <QLineEdit>
@@ -356,7 +357,8 @@ void TestAntDataEntryA::inputNumberUsesLayoutFriendlyPolicy()
     host.show();
     QCoreApplication::processEvents();
 
-    QCOMPARE(input->sizePolicy().horizontalPolicy(), QSizePolicy::Expanding);
+    QDoubleSpinBox nativeDoubleSpinBox;
+    QCOMPARE(input->sizePolicy().horizontalPolicy(), nativeDoubleSpinBox.sizePolicy().horizontalPolicy());
     QCOMPARE(input->sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
     QCOMPARE(input->height(), input->sizeHint().height());
     QCOMPARE(input->width(), host.width());

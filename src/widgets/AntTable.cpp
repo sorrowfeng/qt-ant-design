@@ -3,6 +3,7 @@
 #include <QHelpEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QSizePolicy>
 #include <QToolTip>
 #include <QWheelEvent>
 
@@ -49,6 +50,7 @@ AntTable::AntTable(QWidget* parent)
     installAntStyle<AntTableStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
 // ─── Column management ───

@@ -7,6 +7,7 @@
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QSizePolicy>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -102,7 +103,7 @@ AntMentions::AntMentions(QWidget* parent)
     s->setParent(this);
     setStyle(s);
 
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFixedHeight(sizeHint().height());
 
     m_lineEdit = new QLineEdit(this);

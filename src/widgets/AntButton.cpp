@@ -128,7 +128,7 @@ void AntButton::setBlock(bool block)
     if (m_block == block)
         return;
     m_block = block;
-    setSizePolicy(block ? QSizePolicy::Expanding : QSizePolicy::Preferred, QSizePolicy::Fixed);
+    setSizePolicy(block ? QSizePolicy::Expanding : QSizePolicy::Minimum, QSizePolicy::Fixed);
     updateGeometry();
     Q_EMIT blockChanged(m_block);
 }
@@ -358,7 +358,7 @@ void AntButton::updateGeometryFromState()
     const int totalHeight = m.height + focusPaddingFor() * 2;
     setMinimumHeight(totalHeight);
     setMaximumHeight(totalHeight);
-    setSizePolicy(m_block ? QSizePolicy::Expanding : QSizePolicy::Preferred, QSizePolicy::Fixed);
+    setSizePolicy(m_block ? QSizePolicy::Expanding : QSizePolicy::Minimum, QSizePolicy::Fixed);
     updateGeometry();
 }
 
