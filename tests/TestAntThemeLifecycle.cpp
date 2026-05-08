@@ -73,6 +73,7 @@
 #include "widgets/AntSplitter.h"
 #include "widgets/AntStatistic.h"
 #include "widgets/AntStatusBar.h"
+#include "widgets/AntRibbon.h"
 #include "widgets/AntSteps.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTable.h"
@@ -212,6 +213,9 @@ QList<ObjectCase> objectCases()
         {"AntSplitter", [](QWidget* parent) { return new AntSplitter(parent); }},
         {"AntStatistic", [](QWidget* parent) { return new AntStatistic(parent); }},
         {"AntStatusBar", [](QWidget* parent) { return new AntStatusBar(parent); }},
+        {"AntRibbon", [](QWidget* parent) { return new AntRibbon(parent); }},
+        {"AntRibbonPage", [](QWidget* parent) { return new AntRibbonPage(QStringLiteral("Page"), QStringLiteral("page"), parent); }},
+        {"AntRibbonGroup", [](QWidget* parent) { return new AntRibbonGroup(QStringLiteral("Group"), parent); }},
         {"AntSteps", [](QWidget* parent) { return new AntSteps(parent); }},
         {"AntSwitch", [](QWidget* parent) { return new AntSwitch(parent); }},
         {"AntTable", [](QWidget* parent) { return new AntTable(parent); }},

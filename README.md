@@ -24,9 +24,9 @@ The project focuses on:
 
 - Built on Qt Widgets — lightweight, easy to embed, and consumable as either a static or shared library in existing projects
 - Built-in Design Token system with real-time light / dark theme switching
-- `82` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `12` Qt / desktop extension components)
+- `83` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `13` Qt / desktop extension components)
 - `62` style-driven components are rendered through a `QProxyStyle` architecture
-- The example app currently demos `82 / 82` public components, plus a standalone Ant Design homepage-style `Showcase`
+- The example app currently demos `83 / 83` public components, plus a standalone Ant Design homepage-style `Showcase`
 - `AntIcon` bundles `831` official SVG resources from `@ant-design/icons-svg@4.4.2`
 - Comparable standard components are tracked as visual-audit `Pass`; Qt-only desktop extensions are tracked as `Local Pass`
 - Clean code structure — `core / styles / widgets / examples` layering keeps the project easy to extend
@@ -71,6 +71,7 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 - `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
 - `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, clear, and `setPixelSize()` controls; `setEnabled()` and `setDisabled()` stay synchronized with its disabled visual and interaction state.
 - `AntDesign::initialize(&app)` provides one-call startup for Qt resources, bundled fonts, and the theme singleton, so consumer apps no longer need separate `Q_INIT_RESOURCE`, `AntFont::applyToApplication`, and `AntTheme::instance` calls.
+- `AntRibbon` adds a lightweight Ribbon surface with pages, groups, large/small actions, embedded Ant/Qt widgets, collapsed popup mode, and `AntWindow::setRibbon()` integration.
 
 ## Installation & Integration
 
@@ -186,9 +187,9 @@ int main(int argc, char* argv[])
 
 ## Ported Components
 
-Total public components implemented: `82`
+Total public components implemented: `83`
 
-`src/widgets` currently contains `103` `Ant*.h` headers: `82` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup`.
+`src/widgets` currently contains `104` `Ant*.h` headers: `83` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup`.
 
 Ant Design standard components are counted by the top-level directories under [`ant-design/ant-design`](https://github.com/ant-design/ant-design)'s `components/` directory, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
 
@@ -206,7 +207,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 | Feedback | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | Mixed (`QProxyStyle` / custom paint) |
 | Data Display | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | Mixed (`QProxyStyle` / custom paint) |
 | Layout & Misc | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | Mixed (`QProxyStyle` / custom paint / QObject helper) |
-| Qt / Desktop Extensions | `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | Mixed (`QProxyStyle` / custom paint) |
+| Qt / Desktop Extensions | `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | Mixed (`QProxyStyle` / custom paint) |
 
 ### Component Highlights
 
@@ -230,6 +231,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 - `AntSkeleton`: moving `active` shimmer, avatar placeholder, title / paragraph configuration, rounded style, and `loading` toggle to swap in real content
 - `AntToolTip`: common `placement`, arrow, color, delayed display, auto flip
 - `AntSlider`: horizontal / vertical, `reverse / dots / included`, range, marks, drag value bubble above the active handle
+- `AntRibbon`: pages and groups for large/small actions, embedded Ant/Qt widgets, collapsed popup mode, and `AntWindow` top-area integration
 - `AntSwitch`: `checked / loading / small / text`, click wave feedback
 - `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation
 - `AntDatePicker` / `AntTimePicker`: hand-painted popup pickers

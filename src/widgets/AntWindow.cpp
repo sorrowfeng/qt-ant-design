@@ -26,6 +26,7 @@
 #include <utility>
 
 #include "../styles/AntWindowStyle.h"
+#include "AntRibbon.h"
 #include "core/AntTheme.h"
 
 #ifdef Q_OS_WIN
@@ -502,21 +503,80 @@ void AntWindow::setCentralWidget(QWidget* widget)
         return;
     }
 
-    QLayout* layout = m_contentWidget->layout();
-    while (QLayoutItem* item = layout->takeAt(0))
+    auto* layout = qobject_cast<QVBoxLayout*>(m_contentWidget->layout());
+    if (!layout)
     {
-        if (QWidget* w = item->widget())
-        {
-            w->setParent(nullptr);
-        }
-        delete item;
+        return;
+    }
+    if (m_centralContentWidget)
+    {
+        layout->removeWidget(m_centralContentWidget);
+        m_centralContentWidget->setParent(nullptr);
+        m_centralContentWidget = nullptr;
     }
 
     if (widget)
     {
         applyContentPalette(widget);
-        layout->addWidget(widget);
+        m_centralContentWidget = widget;
+        layout->addWidget(widget, 1);
     }
+}
+
+void AntWindow::setRibbon(AntRibbon* ribbon)
+{
+    if (!m_contentWidget || m_ribbon == ribbon)
+    {
+        return;
+    }
+
+    auto* layout = qobject_cast<QVBoxLayout*>(m_contentWidget->layout());
+    if (!layout)
+    {
+        return;
+    }
+    if (m_ribbon)
+    {
+        layout->removeWidget(m_ribbon);
+        m_ribbon->setParent(nullptr);
+    }
+
+    m_ribbon = ribbon;
+    if (m_ribbon)
+    {
+        applyContentPalette(m_ribbon);
+        m_ribbon->setParent(m_contentWidget);
+        layout->insertWidget(0, m_ribbon);
+        m_ribbon->setVisible(m_ribbonVisible);
+    }
+    updateGeometry();
+    update();
+}
+
+AntRibbon* AntWindow::ribbon() const
+{
+    return m_ribbon;
+}
+
+void AntWindow::setRibbonVisible(bool visible)
+{
+    if (m_ribbonVisible == visible)
+    {
+        return;
+    }
+
+    m_ribbonVisible = visible;
+    if (m_ribbon)
+    {
+        m_ribbon->setVisible(m_ribbonVisible);
+    }
+    updateGeometry();
+    update();
+}
+
+bool AntWindow::isRibbonVisible() const
+{
+    return m_ribbonVisible;
 }
 
 bool AntWindow::isMaximized() const

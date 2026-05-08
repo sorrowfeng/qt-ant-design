@@ -67,6 +67,7 @@
 #include "widgets/AntSplitter.h"
 #include "widgets/AntStatistic.h"
 #include "widgets/AntStatusBar.h"
+#include "widgets/AntRibbon.h"
 #include "widgets/AntSteps.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTable.h"
@@ -195,6 +196,9 @@ void TestAntObjectTree::parentOwnsWidgetsAndStyles()
     trackWidget(new AntSplitter(root), false);
     trackWidget(new AntStatistic(root), true);
     trackWidget(new AntStatusBar(root), true);
+    trackWidget(new AntRibbon(root), false);
+    trackWidget(new AntRibbonPage(QStringLiteral("Page"), QStringLiteral("page"), root), false);
+    trackWidget(new AntRibbonGroup(QStringLiteral("Group"), root), false);
     trackWidget(new AntSteps(root), true);
     trackWidget(new AntSwitch(root), true);
     trackWidget(new AntTable(root), true);

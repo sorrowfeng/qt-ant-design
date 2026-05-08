@@ -1,12 +1,16 @@
 #include "Pages.h"
 
+#include <QAction>
+#include <QComboBox>
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QLineEdit>
 #include <QList>
 #include <QMenu>
 #include <QPainter>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QSpinBox>
 #include <QString>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -22,8 +26,11 @@
 #include "widgets/AntMenuBar.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntPlainTextEdit.h"
+#include "widgets/AntInputNumber.h"
+#include "widgets/AntRibbon.h"
 #include "widgets/AntScrollArea.h"
 #include "widgets/AntScrollBar.h"
+#include "widgets/AntSelect.h"
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntToolButton.h"
@@ -535,6 +542,137 @@ QWidget* createToolBarPage(QWidget* /*owner*/)
         layout->addWidget(card);
     }
 
+    layout->addStretch();
+    return page;
+}
+
+AntRibbon* createSampleRibbon(QWidget* parent)
+{
+    auto* ribbon = new AntRibbon(parent);
+
+    auto* file = ribbon->addPage(QStringLiteral("File"), QStringLiteral("file"));
+    auto* fileGroup = file->addGroup(QStringLiteral("File"));
+    fileGroup->addLargeAction(new QAction(QStringLiteral("New"), ribbon));
+    fileGroup->addLargeAction(new QAction(QStringLiteral("Open"), ribbon));
+    fileGroup->addSmallAction(new QAction(QStringLiteral("Save"), ribbon));
+    fileGroup->addSmallAction(new QAction(QStringLiteral("Export"), ribbon));
+    fileGroup->addSmallAction(new QAction(QStringLiteral("Print"), ribbon));
+
+    auto* edit = ribbon->addPage(QStringLiteral("Edit"), QStringLiteral("edit"));
+    auto* clipboard = edit->addGroup(QStringLiteral("Clipboard"));
+    clipboard->addLargeAction(new QAction(QStringLiteral("Paste"), ribbon));
+    clipboard->addSmallAction(new QAction(QStringLiteral("Cut"), ribbon));
+    clipboard->addSmallAction(new QAction(QStringLiteral("Copy"), ribbon));
+    clipboard->addSmallAction(new QAction(QStringLiteral("Format"), ribbon));
+
+    auto* controls = edit->addGroup(QStringLiteral("Ant Controls"));
+    auto* modeSelect = new AntSelect();
+    modeSelect->addOption(QStringLiteral("Normal"), QStringLiteral("normal"));
+    modeSelect->addOption(QStringLiteral("Advanced"), QStringLiteral("advanced"));
+    modeSelect->setCurrentIndex(0);
+    controls->addWidget(modeSelect, Ant::RibbonItemSize::Small);
+
+    auto* stepper = new AntInputNumber();
+    stepper->setRange(0, 100);
+    stepper->setValue(42);
+    controls->addWidget(stepper, Ant::RibbonItemSize::Small);
+
+    auto* applyButton = new AntButton(QStringLiteral("Apply"));
+    applyButton->setButtonType(Ant::ButtonType::Primary);
+    controls->addWidget(applyButton, Ant::RibbonItemSize::Large);
+
+    auto* view = ribbon->addPage(QStringLiteral("View"), QStringLiteral("view"));
+    auto* native = view->addGroup(QStringLiteral("Qt Widgets"));
+    auto* combo = new QComboBox();
+    combo->addItems({QStringLiteral("Compact"), QStringLiteral("Comfortable")});
+    native->addWidget(combo, Ant::RibbonItemSize::Small);
+
+    auto* search = new QLineEdit();
+    search->setPlaceholderText(QStringLiteral("Search"));
+    native->addWidget(search, Ant::RibbonItemSize::Small);
+
+    auto* spin = new QSpinBox();
+    spin->setRange(1, 12);
+    spin->setValue(6);
+    native->addWidget(spin, Ant::RibbonItemSize::Small);
+    native->addSmallAction(new QAction(QStringLiteral("Refresh"), ribbon));
+    native->addLargeAction(new QAction(QStringLiteral("Preview"), ribbon));
+
+    return ribbon;
+}
+
+QWidget* createRibbonPage(QWidget* owner)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    auto* card = new AntCard(QStringLiteral("AntRibbon - Current Window"));
+    auto* cl = card->bodyLayout();
+
+    auto* desc = new AntTypography(QStringLiteral("Use this page to attach a Ribbon to the current AntWindow, "
+                                                  "toggle its visibility, and inspect mixed Ant/Qt controls."));
+    desc->setParagraph(true);
+    cl->addWidget(desc);
+
+    auto* targetWindow = qobject_cast<AntWindow*>(owner);
+    auto* actionRow = new QHBoxLayout();
+    actionRow->setSpacing(12);
+
+    auto* addRibbon = new AntButton(QStringLiteral("Add Ribbon to Current Window"));
+    addRibbon->setButtonType(Ant::ButtonType::Primary);
+    auto* showRibbon = new AntButton(QStringLiteral("Show Ribbon"));
+    auto* hideRibbon = new AntButton(QStringLiteral("Hide Ribbon"));
+    auto* collapseRibbon = new AntButton(QStringLiteral("Collapse/Expand"));
+    actionRow->addWidget(addRibbon);
+    actionRow->addWidget(showRibbon);
+    actionRow->addWidget(hideRibbon);
+    actionRow->addWidget(collapseRibbon);
+    actionRow->addStretch();
+    cl->addLayout(actionRow);
+
+    if (!targetWindow)
+    {
+        addRibbon->setEnabled(false);
+        showRibbon->setEnabled(false);
+        hideRibbon->setEnabled(false);
+        collapseRibbon->setEnabled(false);
+    }
+    else
+    {
+        QObject::connect(addRibbon, &AntButton::clicked, targetWindow, [targetWindow]() {
+            if (!targetWindow->ribbon())
+            {
+                targetWindow->setRibbon(createSampleRibbon(targetWindow));
+            }
+            targetWindow->setRibbonVisible(true);
+        });
+        QObject::connect(showRibbon, &AntButton::clicked, targetWindow, [targetWindow]() {
+            if (!targetWindow->ribbon())
+            {
+                targetWindow->setRibbon(createSampleRibbon(targetWindow));
+            }
+            targetWindow->setRibbonVisible(true);
+        });
+        QObject::connect(hideRibbon, &AntButton::clicked, targetWindow, [targetWindow]() {
+            targetWindow->setRibbonVisible(false);
+        });
+        QObject::connect(collapseRibbon, &AntButton::clicked, targetWindow, [targetWindow]() {
+            if (!targetWindow->ribbon())
+            {
+                targetWindow->setRibbon(createSampleRibbon(targetWindow));
+            }
+            targetWindow->ribbon()->setCollapsed(!targetWindow->ribbon()->isCollapsed());
+            targetWindow->setRibbonVisible(true);
+        });
+    }
+
+    auto* previewCard = new AntCard(QStringLiteral("Standalone Preview"));
+    previewCard->bodyLayout()->addWidget(createSampleRibbon(previewCard));
+
+    layout->addWidget(card);
+    layout->addWidget(previewCard);
     layout->addStretch();
     return page;
 }

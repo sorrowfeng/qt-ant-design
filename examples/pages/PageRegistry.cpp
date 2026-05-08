@@ -108,6 +108,7 @@ QVector<PageEntry> buildPageRegistry()
     add(kQtExtensions, QStringLiteral("ScrollArea"), &createScrollAreaPage);
     add(kQtExtensions, QStringLiteral("ScrollBar"), &createScrollBarPage);
     add(kQtExtensions, QStringLiteral("StatusBar"), &createStatusBarPage);
+    add(kQtExtensions, QStringLiteral("Ribbon"), &createRibbonPage);
     add(kQtExtensions, QStringLiteral("MenuBar"), &createMenuBarPage);
     add(kQtExtensions, QStringLiteral("ToolBar"), &createToolBarPage);
     add(kQtExtensions, QStringLiteral("ToolButton"), &createToolButtonPage);

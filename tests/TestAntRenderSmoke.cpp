@@ -89,6 +89,7 @@
 #include "widgets/AntSplitter.h"
 #include "widgets/AntStatistic.h"
 #include "widgets/AntStatusBar.h"
+#include "widgets/AntRibbon.h"
 #include "widgets/AntSteps.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTable.h"
@@ -466,6 +467,20 @@ QList<RenderCase> renderCases()
              status->setMessage(QStringLiteral("Ready"));
              status->addPermanentItem(QStringLiteral("Ln 1"));
          }},
+        {"AntRibbon", [](QWidget* p) { return new AntRibbon(p); }, [](QWidget* w) {
+             auto* ribbon = qobject_cast<AntRibbon*>(w);
+             auto* page = ribbon->addPage(QStringLiteral("File"), QStringLiteral("file"));
+             auto* group = page->addGroup(QStringLiteral("Actions"));
+             group->addLargeAction(new QAction(QStringLiteral("Paste"), ribbon));
+             group->addSmallAction(new QAction(QStringLiteral("Copy"), ribbon));
+             group->addWidget(new QComboBox, Ant::RibbonItemSize::Small);
+         }, QSize(520, 150), false},
+        {"AntRibbonPage", [](QWidget* p) { return new AntRibbonPage(QStringLiteral("Page"), QStringLiteral("page"), p); }, [](QWidget* w) {
+             qobject_cast<AntRibbonPage*>(w)->addGroup(QStringLiteral("Group"));
+         }, QSize(280, 100), false},
+        {"AntRibbonGroup", [](QWidget* p) { return new AntRibbonGroup(QStringLiteral("Group"), p); }, [](QWidget* w) {
+             qobject_cast<AntRibbonGroup*>(w)->addSmallAction(new QAction(QStringLiteral("Action"), w));
+         }, QSize(180, 100), false},
         {"AntSteps", [](QWidget* p) { return new AntSteps(p); }, [](QWidget* w) {
              auto* steps = qobject_cast<AntSteps*>(w);
              steps->addStep(QStringLiteral("One"));

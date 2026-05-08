@@ -12,6 +12,7 @@ class QPaintEvent;
 class QResizeEvent;
 class QShowEvent;
 class QWidget;
+class AntRibbon;
 
 class QT_ANT_DESIGN_EXPORT AntWindow : public QMainWindow
 {
@@ -42,6 +43,10 @@ public:
 
     void setWindowTitle(const QString& title);
     void setCentralWidget(QWidget* widget);
+    void setRibbon(AntRibbon* ribbon);
+    AntRibbon* ribbon() const;
+    void setRibbonVisible(bool visible);
+    bool isRibbonVisible() const;
     void moveToCenter();
 
     static constexpr int TitleBarHeight = 40;
@@ -135,5 +140,8 @@ private:
     TitleBarButton m_hoveredButton = TitleBarButton::None;
     TitleBarButton m_pressedButton = TitleBarButton::None;
     QWidget* m_contentWidget = nullptr;
+    QWidget* m_centralContentWidget = nullptr;
+    AntRibbon* m_ribbon = nullptr;
+    bool m_ribbonVisible = true;
     QWidget* m_themeTransitionOverlay = nullptr;
 };

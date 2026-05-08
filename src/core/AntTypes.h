@@ -53,6 +53,13 @@ enum class Orientation
 };
 Q_ENUM_NS(Orientation)
 
+enum class RibbonItemSize
+{
+    Large,
+    Small,
+};
+Q_ENUM_NS(RibbonItemSize)
+
 enum class Trigger
 {
     Click,

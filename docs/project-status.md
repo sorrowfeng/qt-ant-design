@@ -9,11 +9,11 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Area | Status |
 | --- | --- |
 | Ant Design standard coverage | `70 / 70` top-level components covered |
-| Public Qt component count | `82` public components |
-| Widget headers | `103` headers in `src/widgets`: `82` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup` |
-| Qt / desktop extensions | `12` components |
+| Public Qt component count | `83` public components |
+| Widget headers | `104` headers in `src/widgets`: `83` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup` |
+| Qt / desktop extensions | `13` components |
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
-| Example coverage | `82 / 82` public components, plus the standalone `Showcase` page |
+| Example coverage | `83 / 83` public components, plus the standalone `Showcase` page |
 | Dedicated examples intentionally absent | None |
 | Tests | `37` CTest targets configured; latest build-system / install targeted verification passed in Debug on `2026-05-08` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
@@ -67,6 +67,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Aligned `AntInputNumber` with the desired integer-first decimal flow: the default display remains integer (`decimals() == 0`), while `setDecimals()` / `setPrecision()` enables decimal value/range/step behavior, preserves quarter-step increments, and updates the public `precision()` state with `precisionChanged`.
 - Fixed `AntSlider` marked and range interaction details: marked sliders reserve label height under Qt layouts, drag value bubbles anchor above the visual handle, and range drags no longer paint a phantom primary handle at the minimum edge.
 - Added `AntDesign::initialize(&app)` as the one-call consumer startup path for `qt_ant_design` resource registration, bundled font application, and theme singleton initialization.
+- Added `AntRibbon` as a lightweight Ribbon component with pages, groups, large/small actions, embedded Ant/Qt widgets, collapsed popup mode, and `AntWindow` top-area integration.
 
 ## Visual Audit State
 
@@ -193,6 +194,17 @@ ctest --test-dir build -C Debug -R "TestAntInstallConsumer$" --output-on-failure
 ```
 
 Result: example Debug build succeeded and `1 / 1` targeted install-consumer test passed on `2026-05-08`.
+
+Latest targeted AntRibbon validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntQtExtensions TestAntObjectTree TestAntMetaProperties TestAntThemeLifecycle TestAntRenderSmoke TestAntCoverageInventory
+ctest --test-dir build -C Debug -R "TestAnt(QtExtensions|ObjectTree|MetaProperties|ThemeLifecycle|RenderSmoke|CoverageInventory)$" --output-on-failure
+cmake --build build --config Debug --target qt-ant-design-example
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: `6 / 6` targeted tests passed, example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-08`.
 
 ## Remaining Notes
 

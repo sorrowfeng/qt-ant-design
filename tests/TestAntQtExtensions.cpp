@@ -1,6 +1,7 @@
 #include <QPalette>
 #include <QPainter>
 #include <QPlainTextEdit>
+#include <QComboBox>
 #include <QAction>
 #include <QHideEvent>
 #include <QSignalSpy>
@@ -18,6 +19,7 @@
 #include "widgets/AntScrollBar.h"
 #include "widgets/AntSplitter.h"
 #include "widgets/AntStatusBar.h"
+#include "widgets/AntRibbon.h"
 #include "widgets/AntToolButton.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntMenuBar.h"
@@ -78,6 +80,7 @@ private slots:
     void scrollBar();
     void splitter();
     void statusBar();
+    void ribbon();
     void toolButton();
     void toolBar();
     void menuBar();
@@ -499,6 +502,86 @@ void TestAntQtExtensions::toolBar()
 
     auto* w2 = new AntToolBar("My Toolbar");
     QVERIFY(w2 != nullptr);
+}
+
+void TestAntQtExtensions::ribbon()
+{
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    auto* ribbon = new AntRibbon;
+    QCOMPARE(ribbon->pageCount(), 0);
+    QCOMPARE(ribbon->currentPageIndex(), -1);
+    QCOMPARE(ribbon->currentPageKey(), QString());
+    QCOMPARE(ribbon->isCollapsed(), false);
+    QCOMPARE(ribbon->isCollapseButtonVisible(), true);
+
+    QSignalSpy currentSpy(ribbon, &AntRibbon::currentPageChanged);
+    QSignalSpy currentKeySpy(ribbon, &AntRibbon::currentPageKeyChanged);
+    auto* file = ribbon->addPage(QStringLiteral("File"), QStringLiteral("file"));
+    QVERIFY(file != nullptr);
+    QCOMPARE(ribbon->pageCount(), 1);
+    QCOMPARE(ribbon->pageAt(0), file);
+    QCOMPARE(ribbon->pageByKey(QStringLiteral("file")), file);
+    QCOMPARE(ribbon->currentPageIndex(), 0);
+    QCOMPARE(ribbon->currentPageKey(), QStringLiteral("file"));
+    QCOMPARE(currentSpy.count(), 1);
+    QCOMPARE(currentKeySpy.count(), 1);
+
+    auto* edit = ribbon->addPage(QStringLiteral("Edit"), QStringLiteral("edit"));
+    QVERIFY(edit != nullptr);
+    ribbon->setCurrentPageKey(QStringLiteral("edit"));
+    QCOMPARE(ribbon->currentPageIndex(), 1);
+    QCOMPARE(ribbon->currentPageKey(), QStringLiteral("edit"));
+    ribbon->setCurrentPageIndex(0);
+    QCOMPARE(ribbon->currentPageKey(), QStringLiteral("file"));
+
+    auto* group = file->addGroup(QStringLiteral("Clipboard"));
+    QVERIFY(group != nullptr);
+    QCOMPARE(file->groupCount(), 1);
+    QCOMPARE(file->groupAt(0), group);
+
+    QSignalSpy groupActionSpy(group, &AntRibbonGroup::actionTriggered);
+    QSignalSpy ribbonActionSpy(ribbon, &AntRibbon::actionTriggered);
+    auto* pasteAction = new QAction(QIcon(), QStringLiteral("Paste"), ribbon);
+    group->addLargeAction(pasteAction);
+    group->addSmallAction(new QAction(QStringLiteral("Copy"), ribbon));
+    auto* combo = new QComboBox;
+    combo->addItem(QStringLiteral("Mode A"));
+    group->addWidget(combo, Ant::RibbonItemSize::Small);
+    group->addWidget(new QWidget, Ant::RibbonItemSize::Large);
+    QCOMPARE(group->itemCount(), 4);
+    pasteAction->trigger();
+    QCOMPARE(groupActionSpy.count(), 1);
+    QCOMPARE(ribbonActionSpy.count(), 1);
+
+    QSignalSpy collapsedSpy(ribbon, &AntRibbon::collapsedChanged);
+    ribbon->setCollapsed(true);
+    QCOMPARE(ribbon->isCollapsed(), true);
+    QCOMPARE(collapsedSpy.count(), 1);
+    QVERIFY(ribbon->sizeHint().height() < 80);
+    ribbon->resize(640, ribbon->sizeHint().height());
+    ribbon->show();
+    QVERIFY(QTest::qWaitForWindowExposed(ribbon));
+    QTest::mouseClick(ribbon, Qt::LeftButton, Qt::NoModifier, QPoint(28, 20));
+    auto* popup = ribbon->findChild<QWidget*>(QStringLiteral("AntRibbonPopup"));
+    QVERIFY(popup != nullptr);
+    QTRY_VERIFY(popup->isVisible());
+    popup->hide();
+    ribbon->hide();
+
+    AntWindow window;
+    window.resize(700, 420);
+    auto* windowRibbon = new AntRibbon;
+    window.setRibbon(windowRibbon);
+    QCOMPARE(window.ribbon(), windowRibbon);
+    QCOMPARE(window.isRibbonVisible(), true);
+    window.setRibbonVisible(false);
+    QCOMPARE(window.isRibbonVisible(), false);
+    QVERIFY(!windowRibbon->isVisible());
+    window.setCentralWidget(new QWidget);
+    QCOMPARE(window.ribbon(), windowRibbon);
+    window.setRibbonVisible(true);
+    QCOMPARE(window.isRibbonVisible(), true);
 }
 
 void TestAntQtExtensions::menuBar()
