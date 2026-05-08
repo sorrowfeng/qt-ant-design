@@ -308,6 +308,22 @@ bool supportsNativeCaptionSnapLayouts()
     return windowsBuildNumber() >= kWindows11Build;
 }
 
+void setNativeTopMost(HWND hwnd, bool topMost)
+{
+    if (!hwnd)
+    {
+        return;
+    }
+
+    ::SetWindowPos(hwnd,
+                   topMost ? HWND_TOPMOST : HWND_NOTOPMOST,
+                   0,
+                   0,
+                   0,
+                   0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+}
+
 QPoint nativeMessageLocalPoint(HWND hwnd, LPARAM messagePos, qreal devicePixelRatio)
 {
     POINT nativePoint{GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
@@ -521,6 +537,26 @@ void AntWindow::setAlwaysOnTop(bool on)
     }
 
     m_alwaysOnTop = on;
+#ifdef Q_OS_WIN
+    if (isVisible() && windowHandle())
+    {
+        Qt::WindowFlags flags = windowFlags();
+        if (on)
+        {
+            flags |= Qt::WindowStaysOnTopHint;
+        }
+        else
+        {
+            flags &= ~Qt::WindowStaysOnTopHint;
+        }
+        overrideWindowFlags(flags);
+        setNativeTopMost(reinterpret_cast<HWND>(winId()), on);
+        update(titleBarRect());
+        Q_EMIT alwaysOnTopChanged(m_alwaysOnTop);
+        return;
+    }
+#endif
+
     const bool wasVisible = isVisible();
     const QRect oldGeometry = geometry();
     const Qt::WindowStates oldState = windowState();

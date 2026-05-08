@@ -2,6 +2,7 @@
 #include <QPainter>
 #include <QPlainTextEdit>
 #include <QAction>
+#include <QHideEvent>
 #include <QSignalSpy>
 #include <QHoverEvent>
 #include <QTest>
@@ -85,6 +86,7 @@ private slots:
     void window();
     void windowTitleBarButtonsHandleChildDeliveredClicks();
     void windowTitleBarButtonsTriggerOnRelease();
+    void windowAlwaysOnTopDoesNotRecreateVisibleWindow();
     void windowTitleBarHoverStateClearsOnLeave();
     void windowThemeButtonShowsTransitionOverlay();
     void windowThemeTransitionOverlayKeepsOldFrameScale();
@@ -680,6 +682,61 @@ void TestAntQtExtensions::windowTitleBarButtonsTriggerOnRelease()
 
     window.setAlwaysOnTop(false);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
+}
+
+void TestAntQtExtensions::windowAlwaysOnTopDoesNotRecreateVisibleWindow()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows topmost behavior is verified through native SetWindowPos.");
+#else
+    class VisibleStateWindow : public AntWindow
+    {
+    public:
+        int showEvents = 0;
+        int hideEvents = 0;
+
+    protected:
+        void showEvent(QShowEvent* event) override
+        {
+            ++showEvents;
+            AntWindow::showEvent(event);
+        }
+
+        void hideEvent(QHideEvent* event) override
+        {
+            ++hideEvents;
+            QMainWindow::hideEvent(event);
+        }
+    };
+
+    VisibleStateWindow window;
+    window.resize(640, 420);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    const HWND hwnd = reinterpret_cast<HWND>(window.winId());
+    QVERIFY(hwnd != nullptr);
+    window.showEvents = 0;
+    window.hideEvents = 0;
+
+    QSignalSpy alwaysOnTopSpy(&window, &AntWindow::alwaysOnTopChanged);
+    window.setAlwaysOnTop(true);
+    QCoreApplication::processEvents();
+    QCOMPARE(window.isAlwaysOnTop(), true);
+    QCOMPARE(alwaysOnTopSpy.count(), 1);
+    QCOMPARE(window.showEvents, 0);
+    QCOMPARE(window.hideEvents, 0);
+    QVERIFY(window.isVisible());
+    QVERIFY((::GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0);
+
+    window.setAlwaysOnTop(false);
+    QCoreApplication::processEvents();
+    QCOMPARE(window.isAlwaysOnTop(), false);
+    QCOMPARE(alwaysOnTopSpy.count(), 2);
+    QCOMPARE(window.showEvents, 0);
+    QCOMPARE(window.hideEvents, 0);
+    QVERIFY(window.isVisible());
+    QVERIFY((::GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST) == 0);
+#endif
 }
 
 void TestAntQtExtensions::windowTitleBarHoverStateClearsOnLeave()
