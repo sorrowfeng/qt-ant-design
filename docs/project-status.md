@@ -52,7 +52,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
   - Reworked title-bar hover state cleanup so hover colors clear reliably when leaving title/content/native areas.
   - Added a captured-frame `AntWindow` theme transition overlay with an 8 ms timer, 320 ms duration, smootherstep easing, high-DPI-safe captures, and a soft reveal that avoids black-hole artifacts.
   - Embedded the Windows 10/11 compatibility manifest in the example app so the native Snap Layout flyout can appear on the maximize button.
-  - Split the Windows native frame policy by OS build: Windows 11 keeps the caption-backed Snap Layout path, while Windows 10 removes `WS_CAPTION`, uses a legacy rounded mask for non-maximized corners, and leaves maximized `WM_NCCALCSIZE` rectangles unshrunk so the work area is fully covered.
+  - Split the Windows native frame policy by OS build: Windows 11 keeps the caption-backed Snap Layout path, while Windows 10 removes `WS_CAPTION`, uses a legacy rounded mask for non-maximized corners, preserves a 1 px DWM extended frame for the outer shadow, and leaves maximized `WM_NCCALCSIZE` rectangles unshrunk so the work area is fully covered.
   - Reworked visible Windows topmost toggles to use native `SetWindowPos(HWND_TOPMOST/HWND_NOTOPMOST)`, preserving the Qt window flags without forcing a hide/show cycle.
 - Expanded Qt-style compatibility for `AntList` / `AntListWidget` to cover common `QListWidget` workflows: string item insertion, lookup/sorting, item data roles, current row/item state, selection state, internal scrolling, `scrollToItem`, and item/current/selection signals.
 - Expanded `AntTable` helper coverage with `rows()`, `selectRow()`, `currentRowIndex()`, and row-level tooltip data/display support.
@@ -78,6 +78,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Aligned `AntRadio` ButtonStyle click feedback with `AntButton` by using the full edge-expansion Wave duration instead of the short indicator-style wave.
 - Added the missing `AntRate` selected-star scale pulse and a small internal paint inset so the animated star edge is not clipped.
 - Reworked the `AntSlider` drag value bubble as a single rounded-rect-plus-arrow path so the arrow no longer appears visually separated from the body.
+- Restored the `AntWindow` outer DWM shadow on the Windows 10 no-caption path by keeping a 1 px extended frame while preserving the legacy rounded mask.
 
 ## Visual Audit State
 
@@ -128,10 +129,12 @@ Result: `4 / 4` targeted tests passed.
 Latest targeted AntWindow verification:
 
 ```powershell
-ctest -C Debug -R "TestAntQtExtensions|TestAntExampleCloseStress" --output-on-failure
+cmake --build build --config Debug --target TestAntQtExtensions qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAntQtExtensions$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 
-Result: `2 / 2` targeted tests passed on `2026-05-08`, including the Windows 10 frame-policy regression for maximized `WM_NCCALCSIZE` and visible topmost toggles without hide/show recreation.
+Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`, including the Windows 10 no-caption DWM shadow-margin regression, maximized `WM_NCCALCSIZE`, and visible topmost toggles without hide/show recreation.
 
 Latest targeted AntList / AntTable / AntTypography API validation:
 

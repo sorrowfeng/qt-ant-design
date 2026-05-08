@@ -2,6 +2,7 @@
 #include <QPainter>
 #include <QImage>
 #include <QLabel>
+#include <QMargins>
 #include <QPlainTextEdit>
 #include <QComboBox>
 #include <QAction>
@@ -135,6 +136,7 @@ private slots:
     void windowThemeTransitionOverlayKeepsOldFrameScale();
     void windowThemeTransitionRevealsNewFrameWithoutBlackHole();
     void windowNativeHitTestSupportsSnapZones();
+    void windowDwmFrameMarginsPreserveShadow();
     void windowMaximizedNcCalcKeepsFullWorkArea();
     void colorPicker();
 };
@@ -1190,6 +1192,35 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
              static_cast<qintptr>(HTZOOM));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Close).center()),
              static_cast<qintptr>(HTCLOSE));
+#endif
+}
+
+void TestAntQtExtensions::windowDwmFrameMarginsPreserveShadow()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows DWM frame margins are only available on Windows.");
+#else
+    AntWindow window;
+    window.resize(640, 420);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    const QVariant usesNativeCaption = window.property("antWindowUsesNativeCaptionFrame");
+    QVERIFY2(usesNativeCaption.isValid(), "AntWindow should expose the active native caption frame policy for diagnostics");
+    QCOMPARE(usesNativeCaption.toBool(), supportsNativeCaptionSnapLayoutsForTest());
+
+    const QVariant frameMarginsProperty = window.property("antWindowDwmFrameMargins");
+    QVERIFY2(frameMarginsProperty.isValid(), "AntWindow should expose the DWM frame margins applied to the native window");
+    const QMargins margins = frameMarginsProperty.value<QMargins>();
+    QCOMPARE(margins, QMargins(1, 1, 1, 1));
+
+    const HWND hwnd = reinterpret_cast<HWND>(window.winId());
+    QVERIFY(hwnd != nullptr);
+    const LONG_PTR nativeStyle = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
+    if (!supportsNativeCaptionSnapLayoutsForTest())
+    {
+        QVERIFY2((nativeStyle & WS_CAPTION) == 0, "Windows 10 must keep the no-caption path to avoid native title buttons");
+    }
 #endif
 }
 

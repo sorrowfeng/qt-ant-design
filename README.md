@@ -53,7 +53,7 @@ The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar p
 
 - Windows 11 Snap support for frameless windows: resize edges/corners, draggable title bar, maximize-button Snap Layout hover, edge snapping, and drag-to-restore.
 - DWM-backed rounded corners, border/shadow integration, and a `cornerRadius` API for Windows builds while keeping platform-specific code behind Qt/Win32 guards.
-- Windows 10 uses a no-caption native frame path plus a legacy rounded mask, so maximized/restored windows do not expose native title buttons or a square border under the custom title bar.
+- Windows 10 uses a no-caption native frame path plus a legacy rounded mask, while preserving a 1 px DWM frame so maximized/restored windows do not expose native title buttons and normal windows keep their outer shadow.
 - Topmost toggles on visible Windows windows now use native `SetWindowPos` in place, avoiding the hide/show cycle that caused a visible flash.
 - Title-bar pin and light/dark theme buttons use bundled official Ant Design icons, and every title-bar button can be shown or hidden through public APIs.
 - The built-in theme button uses a captured-frame overlay with a soft reveal animation so full-window light/dark switching feels continuous.
@@ -336,7 +336,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntRate`: rating component with `count / value / allowHalf / allowClear / disabled / size`, hover scaling, selected-star scale pulse, left / right keyboard control
 - `AntWidget`: base QWidget subclass that handles theme switching automatically
 - `AntTypography`: theme-aware text component, Title (H1-H5) / Text / Paragraph, with type / decoration / copy / ellipsis / alignment / pixel-size support
-- `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, DWM rounded corners / border shadow, and a smooth theme transition overlay
+- `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, Windows 10/11 DWM border shadow, and a smooth theme transition overlay
 - `AntDrawer`: sliding panel with Left / Right / Top / Bottom placement, animation, and mask
 - `AntStatusBar`: status bar with left / right items, separators, message area, and size grip
 - `AntScrollBar`: custom 8 px slim scrollbar with auto-hide and no arrow buttons

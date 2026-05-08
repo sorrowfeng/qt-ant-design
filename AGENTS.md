@@ -103,7 +103,7 @@
 - `AntWindow` 标题栏新增置顶和 Light/Dark 一键切换按钮，图标使用内置官方 Ant Design SVG；pin/theme/minimize/maximize/close 按钮均提供公开显示隐藏 API。
 - Windows 下通过 `nativeEvent` + Win32/DWM 路径支持无边框窗口缩放命中测试、标题栏拖拽、最大化按钮 Windows 11 Snap Layout hover、拖拽到屏幕边缘吸附、最大化后标题栏拖拽还原，并用平台宏隔离非 Windows 构建。
 - Windows 下接入 DWM 圆角、边框颜色和阴影，新增 `cornerRadius` API 控制窗口圆角大小。
-- Windows 10 下 `AntWindow` 使用无 `WS_CAPTION` 的 native style，避免最大化/吸附还原后露出原生最小化/最大化/关闭按钮；非最大化时使用 legacy rounded mask 裁掉直角窗口边界，最大化 `WM_NCCALCSIZE` 不再重复扣除 resize border。
+- Windows 10 下 `AntWindow` 使用无 `WS_CAPTION` 的 native style，避免最大化/吸附还原后露出原生最小化/最大化/关闭按钮；非最大化时使用 legacy rounded mask 裁掉直角窗口边界，并保留 1px DWM 扩展帧以恢复整体阴影；最大化 `WM_NCCALCSIZE` 不再重复扣除 resize border。
 - `AntWindow` 在 Windows 已显示状态下切换置顶/取消置顶时使用 `SetWindowPos(HWND_TOPMOST/HWND_NOTOPMOST)` 原地更新，避免 `setWindowFlag(Qt::WindowStaysOnTopHint)` 触发 hide/show 导致闪烁。
 - 标题栏按钮 hover 状态改为 `AntWindow` 统一维护，content/title/native leave 均会清理旧 hover，避免 hover 或离开主窗口后颜色残留。
 - 主题按钮切换 Light/Dark 时使用全窗口截图 overlay、captured new-frame 和 smootherstep 圆形软揭示动画，避免全量主题刷新期间卡顿、高 DPI 放大、黑色圆洞或生硬的纯色扩散。
@@ -256,7 +256,7 @@
 | 组件 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- |
 | `AntWidget` | — | 是 | 基础 QWidget，自动主题切换 |
-| `AntWindow` | `QProxyStyle` | 是 | 无边框窗口，自定义标题栏，Win11 Snap/DWM 圆角阴影，标题栏按钮 API，主题切换遮罩动画 |
+| `AntWindow` | `QProxyStyle` | 是 | 无边框窗口，自定义标题栏，Win11 Snap/Win10 DWM 阴影，标题栏按钮 API，主题切换遮罩动画 |
 | `AntDockWidget` | 自绘 | 是 | 可停靠面板，Win32 resize |
 | `AntStatusBar` | `QProxyStyle` | 是 | 状态栏 |
 | `AntRibbon` | 自绘 | 是 | Ribbon 顶部命令区，Page/Group、大/小 action、嵌入 Ant/Qt 控件，支持 Tab 指示条/折叠动画、折叠弹出并可接入 AntWindow |

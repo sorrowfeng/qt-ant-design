@@ -53,7 +53,7 @@
 
 - 无边框窗口支持 Windows 11 Snap：四边/四角缩放、标题栏拖拽、最大化按钮 Snap Layout hover、边缘吸附和最大化后拖拽还原。
 - Windows 下接入 DWM 圆角、边框/阴影，并提供 `cornerRadius` API；平台相关实现均通过 Qt/Win32 宏隔离。
-- Windows 10 走无 native caption 的窗口样式，并使用 legacy rounded mask 裁切圆角，避免最大化/还原后露出原生标题栏按钮或自绘圆角下方的直角边框。
+- Windows 10 走无 native caption 的窗口样式，并使用 legacy rounded mask 裁切圆角，同时保留 1px DWM 扩展帧，避免最大化/还原后露出原生标题栏按钮，并让普通窗口保持整体阴影。
 - Windows 已显示窗口切换置顶/取消置顶时改用 native `SetWindowPos` 原地更新，避免 Qt flags 重建窗口造成可见闪烁。
 - 标题栏新增置顶和亮暗主题切换按钮，使用内置官方 Ant Design 图标；所有标题栏按钮均可通过公开 API 控制显示或隐藏。
 - 内置主题按钮使用全窗口截图 overlay 和柔和揭示动画，让 Light/Dark 全局切换更连续。
@@ -336,7 +336,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntRate`：评分组件，`count / value / allowHalf / allowClear / disabled / size`，hover 放大和选中星缩放动效，键盘左右箭头操作
 - `AntWidget`：基础 QWidget 子类，自动处理主题切换
 - `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略/对齐策略/像素字号
-- `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，DWM 圆角/边框阴影，以及平滑主题切换遮罩动画
+- `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，Windows 10/11 DWM 边框阴影，以及平滑主题切换遮罩动画
 - `AntDrawer`：滑动面板，支持 Left/Right/Top/Bottom 四个方向、动画、遮罩层
 - `AntStatusBar`：状态栏，左右项、分隔符、消息区、size grip
 - `AntScrollBar`：自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮

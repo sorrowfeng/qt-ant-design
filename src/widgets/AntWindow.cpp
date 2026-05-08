@@ -8,6 +8,7 @@
 #include <QGuiApplication>
 #include <QHoverEvent>
 #include <QLineF>
+#include <QMargins>
 #include <QMetaType>
 #include <QMouseEvent>
 #include <QPainter>
@@ -307,6 +308,12 @@ bool supportsNativeCaptionSnapLayouts()
 {
     constexpr int kWindows11Build = 22000;
     return windowsBuildNumber() >= kWindows11Build;
+}
+
+DwmMargins shadowPreservingDwmMargins(bool useNativeCaption)
+{
+    Q_UNUSED(useNativeCaption)
+    return DwmMargins{1, 1, 1, 1};
 }
 
 void setNativeTopMost(HWND hwnd, bool topMost)
@@ -1604,6 +1611,7 @@ void AntWindow::applyNativeWindowFrame()
     const bool useNativeCaption = supportsNativeCaptionSnapLayouts();
     ensureNativeWindowStyle(hwnd, useNativeCaption);
     applyLegacyRoundedMask(this, m_cornerRadius);
+    setProperty("antWindowUsesNativeCaptionFrame", useNativeCaption);
 
     DwmSetWindowAttributeFn setWindowAttribute = nullptr;
     DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
@@ -1614,7 +1622,12 @@ void AntWindow::applyNativeWindowFrame()
 
     if (extendFrame)
     {
-        const DwmMargins margins = useNativeCaption ? DwmMargins{1, 1, 1, 1} : DwmMargins{0, 0, 0, 0};
+        const DwmMargins margins = shadowPreservingDwmMargins(useNativeCaption);
+        setProperty("antWindowDwmFrameMargins",
+                    QVariant::fromValue(QMargins(margins.cxLeftWidth,
+                                                 margins.cyTopHeight,
+                                                 margins.cxRightWidth,
+                                                 margins.cyBottomHeight)));
         extendFrame(hwnd, &margins);
     }
 
