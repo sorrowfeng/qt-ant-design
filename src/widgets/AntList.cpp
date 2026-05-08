@@ -464,9 +464,7 @@ void AntListItem::paintEvent(QPaintEvent* event)
 
     if (m_selected)
     {
-        const auto* list = parentListForItem(this);
-        const int paddingH = listItemPaddingH(list);
-        const QRectF selectedRect = rect().adjusted(paddingH + 4, 2, -paddingH - 4, -2);
+        const QRectF selectedRect = rect().adjusted(0, 2, 0, -2);
         painter.setPen(Qt::NoPen);
         painter.setBrush(token.colorPrimaryBg);
         painter.drawRoundedRect(selectedRect, token.borderRadiusSM, token.borderRadiusSM);

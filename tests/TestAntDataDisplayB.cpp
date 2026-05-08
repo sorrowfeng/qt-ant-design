@@ -1,6 +1,10 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QAbstractItemView>
+#include <QColor>
+#include <QImage>
+#include <QPainter>
+#include "core/AntTheme.h"
 #include "widgets/AntList.h"
 #include "widgets/AntListWidget.h"
 #include "widgets/AntTable.h"
@@ -18,6 +22,7 @@ class TestAntDataDisplayB : public QObject
 private slots:
     void propertiesAndSignals();
     void listWidgetCompatibilityApis();
+    void listSelectionHighlightCoversFullRow();
 };
 
 void TestAntDataDisplayB::propertiesAndSignals()
@@ -490,6 +495,37 @@ void TestAntDataDisplayB::listWidgetCompatibilityApis()
     QCOMPARE(taken->parentWidget(), nullptr);
     delete taken;
     QCOMPARE(list.count(), 3);
+}
+
+void TestAntDataDisplayB::listSelectionHighlightCoversFullRow()
+{
+    AntListWidget list;
+    list.setBordered(true);
+    list.addItems({QStringLiteral("Alpha"), QStringLiteral("Beta"), QStringLiteral("Gamma")});
+    list.setCurrentRow(1);
+    list.resize(260, list.sizeHint().height());
+    list.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&list));
+
+    QImage image(list.size(), QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        list.render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
+    }
+
+    const QRect rowRect = list.visualItemRect(list.item(1));
+    const QColor selectedColor = antTheme->tokens().colorPrimaryBg;
+    auto nearColor = [](const QColor& actual, const QColor& expected) {
+        return qAbs(actual.red() - expected.red()) <= 18 &&
+               qAbs(actual.green() - expected.green()) <= 18 &&
+               qAbs(actual.blue() - expected.blue()) <= 18;
+    };
+
+    const QColor leftEdge = image.pixelColor(rowRect.left() + 3, rowRect.center().y());
+    const QColor rightEdge = image.pixelColor(rowRect.right() - 3, rowRect.center().y());
+    QVERIFY2(nearColor(leftEdge, selectedColor), "selected list row should fill the left edge");
+    QVERIFY2(nearColor(rightEdge, selectedColor), "selected list row should fill the right edge");
 }
 
 QTEST_MAIN(TestAntDataDisplayB)
