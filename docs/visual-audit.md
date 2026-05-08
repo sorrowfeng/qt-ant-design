@@ -45,6 +45,8 @@ Use this loop for one component at a time.
 - Qt `offscreen` capture may render text as square glyphs on Windows. Use the native Windows platform for capture when this happens.
 - Temporary Qt capture programs may hit the known QProxyStyle destructor crash on process teardown. Save the PNG first, then exit the helper process immediately if needed.
 - Build artifacts and screenshots belong under `build/` and should remain untracked.
+- README gallery screenshots are the exception: committed light/dark thumbnails live under `resources/images/components/` and cover every public component.
+- For README gallery captures, popup/feedback controls should show representative open or active states (for example ColorPicker, Drawer, Message, Modal, Notification, Popconfirm, Popover, Dropdown, Select, DatePicker, TimePicker, TreeSelect, Tooltip, and Tour) instead of only their trigger buttons.
 
 ## Shared Criteria
 

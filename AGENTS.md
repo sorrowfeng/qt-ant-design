@@ -36,6 +36,7 @@
 - Qt 风格别名：名字与常用 Qt 控件无法直观对应的组件提供轻量头文件别名（如 `AntLabel.h` → `AntTypography`）；仅大小写差异时以 Qt 命名为准（如 `AntCheckBox`、`AntToolTip`），不保留旧拼写兼容 alias。
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
+- README 组件截图画廊：`resources/images/components/` 提交 `166` 张 Light/Dark PNG，覆盖 `83` 个公开组件；弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
 - 测试状态：当前 `37` 个 CTest 目标；最近一次 build-system / install targeted 验证 `4 / 4` 在 Debug 下通过（`2026-05-08`）
 
@@ -382,6 +383,7 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 - 参考页截图使用 Playwright，例如：
   - `npx playwright screenshot --wait-for-timeout=4000 --viewport-size "1280,900" "file:///D:/Project/GitProject/qt-ant-design/docs/ant-design-reference.html" build/<component>-reference-full.png`
 - Qt 侧截图优先使用 `build/visual-capture/` 下的临时 helper 输出 `build/<component>-qt.png`；截图 helper、PNG、拼图都属于 `build/` 产物，不提交
+- README 组件截图画廊除外：`resources/images/components/` 下的 Light/Dark PNG 是文档资产，需要提交；弹层/反馈控件应截取打开或激活态，而不是只展示触发按钮
 - Windows 下 Qt `offscreen` 平台可能把文字渲染成方块；遇到时使用原生 Windows 平台截图。
 - 差异必须先归因：控件本体问题在当前控件修；容器、页面边距、卡片留白等归到对应组件审查；参考示例缺状态则先补示例/记录 `Needs fix`
 - 状态含义：`Pass` 表示已截图对比且无控件本体差异；`Needs visual QA` 表示状态已覆盖但待截图确认；`Needs fix` 表示仍有控件差异；`Blocked` 表示无法截图或参考缺失

@@ -2,7 +2,7 @@
 
 Updated: `2026-05-08`
 
-This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, and lifecycle stress coverage.
+This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, and README component screenshot gallery.
 
 ## Summary
 
@@ -17,6 +17,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Dedicated examples intentionally absent | None |
 | Tests | `37` CTest targets configured; latest build-system / install targeted verification passed in Debug on `2026-05-08` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
+| README component gallery | `166` committed PNGs: light/dark screenshots for all `83` public components |
 
 ## Recent Completed Work
 
@@ -68,6 +69,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed `AntSlider` marked and range interaction details: marked sliders reserve label height under Qt layouts, drag value bubbles anchor above the visual handle, and range drags no longer paint a phantom primary handle at the minimum edge.
 - Added `AntDesign::initialize(&app)` as the one-call consumer startup path for `qt_ant_design` resource registration, bundled font application, and theme singleton initialization.
 - Added `AntRibbon` as a lightweight Ribbon component with pages, groups, large/small actions, embedded Ant/Qt widgets, collapsed popup mode, and `AntWindow` top-area integration.
+- Added a README component screenshot gallery with light/dark thumbnails for all public components, and refreshed popup/feedback-heavy controls to show representative open or active states instead of only trigger buttons.
 
 ## Visual Audit State
 
@@ -77,6 +79,7 @@ The component visual audit matrix in `docs/visual-audit.md` is current:
 - Qt-only desktop extensions are marked `Local Pass`.
 - `TestAntVisualRegression` now guards stable pixel-level regressions across token fills, semantic status colors, selection controls, feedback surfaces, data-display structure, navigation/layout structure, popup surfaces, and light/dark surface contrast.
 - The homepage Showcase audit is marked `Pass` against the isolated local HTML and Qt control pages.
+- README gallery screenshots are committed under `resources/images/components/`; popup and feedback controls use representative open/active captures while single-component audit scratch captures remain under `build/`.
 - Future visual work should be issue-driven: when a mismatch is found, re-run the single-component capture loop documented in `docs/visual-audit.md`.
 
 ## Icon State
@@ -206,9 +209,21 @@ cmake --build build --config Debug --target qt-ant-design-example
 
 Result: `2 / 2` targeted tests passed, example Debug build succeeded, the example smoke launch exited cleanly, and temporary visual captures for expanded/hover-tab/tab-animation/collapse/collapsed Ribbon states were checked on `2026-05-08`.
 
+Latest README component gallery validation:
+
+```powershell
+# Validate every committed gallery PNG is present and 960x540.
+Add-Type -AssemblyName System.Drawing
+# Validate every README / README.zh-CN image reference resolves.
+Select-String -Path README.md,README.zh-CN.md -Pattern 'resources/images/components/[^" ]+\.png' -AllMatches
+```
+
+Result: `166` committed PNG screenshots validated at `960x540`, and `166` unique README image references resolved on `2026-05-08`.
+
 ## Remaining Notes
 
 - `build/` contains temporary capture helpers and screenshots only; keep those untracked.
+- README gallery image assets live in `resources/images/components/` and are intentionally tracked.
 - `docs/ant-design-reference.html` remains the stable component comparison reference.
 - The official `https://ant.design/index-cn` homepage was useful for the Showcase target, but it produced hydration/resource errors during capture on `2026-04-29`; repeatable audits use the local HTML reference instead.
 - Exact pixel parity is not guaranteed forever; component fixes should continue to use the documented screenshot comparison loop.
