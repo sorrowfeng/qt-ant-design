@@ -7,6 +7,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QResizeEvent>
+#include <QSizePolicy>
 #include <QTimer>
 #include <QUrl>
 
@@ -44,6 +45,7 @@ AntTypography::AntTypography(QWidget* parent)
 {
     installAntStyle<AntTypographyStyle>(this);
     setMouseTracking(true);
+    updateSizePolicy();
 }
 
 AntTypography::AntTypography(const QString& text, QWidget* parent)
@@ -125,6 +127,7 @@ void AntTypography::setParagraph(bool paragraph)
         return;
     }
     m_paragraph = paragraph;
+    updateSizePolicy();
     updateGeometry();
     update();
     Q_EMIT paragraphChanged(m_paragraph);
@@ -254,6 +257,7 @@ void AntTypography::setEllipsis(bool ellipsis)
         return;
     }
     m_ellipsis = ellipsis;
+    updateSizePolicy();
     updateGeometry();
     update();
     Q_EMIT ellipsisChanged(m_ellipsis);
@@ -330,6 +334,29 @@ bool AntTypography::isCopied() const { return m_copied; }
 
 QSize AntTypography::sizeHint() const
 {
+    const int referenceWidth = width() > 0 ? width() : 400;
+    return measuredSize(referenceWidth);
+}
+
+QSize AntTypography::minimumSizeHint() const
+{
+    QFont f = createFont();
+    QFontMetrics fm(f);
+    return QSize(40, fm.height() + 4);
+}
+
+bool AntTypography::hasHeightForWidth() const
+{
+    return m_paragraph || m_ellipsis;
+}
+
+int AntTypography::heightForWidth(int width) const
+{
+    return measuredSize(width).height();
+}
+
+QSize AntTypography::measuredSize(int width) const
+{
     const auto& token = antTheme->tokens();
     QFont f = createFont();
     QFontMetrics fm(f);
@@ -348,8 +375,8 @@ QSize AntTypography::sizeHint() const
 
     if (m_paragraph || m_ellipsis)
     {
-        const int availWidth = qMax(200, width() > 0 ? width() : 400);
-        QRect textRect(0, 0, availWidth - copyBtnWidth, QWIDGETSIZE_MAX);
+        const int availWidth = qMax(1, width > 0 ? width : 400);
+        QRect textRect(0, 0, qMax(1, availWidth - copyBtnWidth), QWIDGETSIZE_MAX);
         int flags = Qt::TextWordWrap;
         if (m_ellipsis)
         {
@@ -364,11 +391,12 @@ QSize AntTypography::sizeHint() const
     return QSize(qMax(60, textW), qMax(24, textH));
 }
 
-QSize AntTypography::minimumSizeHint() const
+void AntTypography::updateSizePolicy()
 {
-    QFont f = createFont();
-    QFontMetrics fm(f);
-    return QSize(40, fm.height() + 4);
+    QSizePolicy policy(m_paragraph || m_ellipsis ? QSizePolicy::Expanding : QSizePolicy::Preferred,
+                       QSizePolicy::Preferred);
+    policy.setHeightForWidth(m_paragraph || m_ellipsis);
+    setSizePolicy(policy);
 }
 
 void AntTypography::paintEvent(QPaintEvent* event)

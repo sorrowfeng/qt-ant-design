@@ -89,6 +89,8 @@ public:
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
+    bool hasHeightForWidth() const override;
+    int heightForWidth(int width) const override;
 
 Q_SIGNALS:
     void textChanged(const QString& text);
@@ -123,6 +125,8 @@ private:
     int fontSizeForLevel() const;
     QFont createFont() const;
     QColor textColor() const;
+    QSize measuredSize(int width) const;
+    void updateSizePolicy();
     QRect textDrawRect() const;
     QRect copyButtonRect() const;
 

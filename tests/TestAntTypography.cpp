@@ -3,6 +3,7 @@
 #include <QSignalSpy>
 #include <QMouseEvent>
 #include <QTest>
+#include <QVBoxLayout>
 #include "widgets/AntTypography.h"
 
 namespace
@@ -47,6 +48,7 @@ private slots:
     void propertiesAndSignals();
     void pixelSizeShortcut();
     void verticalAlignmentRendering();
+    void wordWrapAdaptsToLayoutWidth();
     void copyInteractionState();
 };
 
@@ -194,6 +196,29 @@ void TestAntTypography::verticalAlignmentRendering()
     QVERIFY(bottomInk.isValid());
     QVERIFY(bottomInk.top() > centeredInk.top());
     QVERIFY(bottomInk.center().y() > bottom.height() * 2 / 3);
+}
+
+void TestAntTypography::wordWrapAdaptsToLayoutWidth()
+{
+    QWidget host;
+    auto* layout = new QVBoxLayout(&host);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    auto* text = new AntTypography(QStringLiteral("A long typography paragraph should wrap cleanly when a Qt layout gives it a narrow width."));
+    text->setWordWrap(true);
+    layout->addWidget(text);
+    layout->addStretch();
+
+    host.resize(180, 220);
+    host.show();
+    QCoreApplication::processEvents();
+
+    QVERIFY(text->hasHeightForWidth());
+    QCOMPARE(text->sizePolicy().horizontalPolicy(), QSizePolicy::Expanding);
+    QCOMPARE(text->width(), host.width());
+    QVERIFY(text->heightForWidth(120) > text->heightForWidth(260));
+    QVERIFY(text->height() >= text->heightForWidth(text->width()));
 }
 
 void TestAntTypography::copyInteractionState()
