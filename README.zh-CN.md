@@ -62,6 +62,7 @@
 
 - `AntInput`、`AntInputNumber`、`AntCheckBox`、`AntRadio`、`AntSlider`、`AntProgress`、`AntStatusBar` 补充更多 Qt 风格常用方法和信号。
 - `AntSelect` 支持 QComboBox 风格 item 管理，空列表首次加入数据时默认选中首项，并补充 `setOptionText`、`removeOption`、`optionData`、`findData`、`currentData`、`activated` 和 highlighted 信号。
+- Qt Layout 自适应行为已按官方控件基准对齐：LineEdit 类控件横向扩展，ComboBox 类选择器保持 `Preferred/Fixed`，Spin/Date/Time 编辑器保持 `Minimum/Fixed`，List/Table/Tree 等视图双向扩展，`AntTypography` 对齐 `QLabel` 的 height-for-width 换行策略。
 - `AntDatePicker` / `AntTimePicker` 支持 QDateEdit / QTimeEdit 风格的 `date` / `time` 别名，以及最小 / 最大范围 API。
 - `AntList` / `AntListWidget` 补充字符串 add/insert/find/sort、item 数据、current/selection、内部滚动和 `scrollToItem` 等 `QListWidget` 风格接口；`AntTable` 补充 `rows()`、`selectRow()`、`currentRowIndex()` 和行级 tooltip；`AntTree` 继续覆盖 tree 风格辅助接口。
 - `AntMenu` 支持 QWidget `QAction` 的添加、变更、移除和触发流程同步；`AntToolButton` / `AntToolBar` 的继承 QAction 行为已加入测试覆盖。
