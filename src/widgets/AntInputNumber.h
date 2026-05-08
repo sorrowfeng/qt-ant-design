@@ -52,6 +52,7 @@ public:
     void setAddonAfterText(const QString& text);
     int precision() const;
     void setPrecision(int decimals);
+    void setDecimals(int decimals);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

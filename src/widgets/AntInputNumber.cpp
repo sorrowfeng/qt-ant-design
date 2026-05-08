@@ -113,7 +113,7 @@ AntInputNumber::AntInputNumber(QWidget* parent)
     setFrame(false);
     setAccelerated(true);
     setCorrectionMode(QAbstractSpinBox::CorrectToNearestValue);
-    setDecimals(0);
+    setDecimals(2);
     setRange(-999999, 999999);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
@@ -310,18 +310,26 @@ void AntInputNumber::setAddonAfterText(const QString& text)
 
 int AntInputNumber::precision() const
 {
-    return decimals();
+    return QDoubleSpinBox::decimals();
 }
 
 void AntInputNumber::setPrecision(int decimals)
 {
+    setDecimals(decimals);
+}
+
+void AntInputNumber::setDecimals(int decimals)
+{
     decimals = qMax(0, decimals);
-    if (this->decimals() == decimals)
+    if (QDoubleSpinBox::decimals() == decimals)
     {
         return;
     }
-    setDecimals(decimals);
-    Q_EMIT precisionChanged(this->decimals());
+    QDoubleSpinBox::setDecimals(decimals);
+    updateEditStyle();
+    updateGeometry();
+    update();
+    Q_EMIT precisionChanged(QDoubleSpinBox::decimals());
 }
 
 QSize AntInputNumber::sizeHint() const

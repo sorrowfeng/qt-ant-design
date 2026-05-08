@@ -19,6 +19,7 @@ class TestAntDataEntryA : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void inputNumberSupportsQDoubleSpinBoxDecimals();
     void inputNumberLineEditPaletteTracksDarkTheme();
     void inputNumberUsesLayoutFriendlyPolicy();
 };
@@ -65,9 +66,9 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(suffixSpy1.count(), 1);
 
     QSignalSpy precisionSpy1(w1, &AntInputNumber::precisionChanged);
-    w1->setPrecision(2);
-    QCOMPARE(w1->precision(), 2);
-    QCOMPARE(w1->decimals(), 2);
+    w1->setPrecision(3);
+    QCOMPARE(w1->precision(), 3);
+    QCOMPARE(w1->decimals(), 3);
     QCOMPARE(precisionSpy1.count(), 1);
 
     w1->setRange(-5.0, 5.0);
@@ -311,6 +312,36 @@ void TestAntDataEntryA::propertiesAndSignals()
 
     w6->clearSuggestions();
     QCOMPARE(w6->suggestionCount(), 0);
+}
+
+void TestAntDataEntryA::inputNumberSupportsQDoubleSpinBoxDecimals()
+{
+    QDoubleSpinBox native;
+    AntInputNumber input;
+    QCOMPARE(input.decimals(), native.decimals());
+    QCOMPARE(input.precision(), native.decimals());
+
+    QSignalSpy valueSpy(&input, qOverload<double>(&QDoubleSpinBox::valueChanged));
+    input.setRange(-10.0, 10.0);
+    input.setSingleStep(0.25);
+    input.setValue(1.25);
+    QCOMPARE(input.value(), 1.25);
+    QCOMPARE(input.cleanText(), QStringLiteral("1.25"));
+    QCOMPARE(valueSpy.count(), 1);
+
+    input.stepBy(1);
+    QCOMPARE(input.value(), 1.5);
+    QCOMPARE(input.cleanText(), QStringLiteral("1.50"));
+
+    QSignalSpy precisionSpy(&input, &AntInputNumber::precisionChanged);
+    input.setDecimals(3);
+    QCOMPARE(input.decimals(), 3);
+    QCOMPARE(input.precision(), 3);
+    QCOMPARE(precisionSpy.count(), 1);
+
+    input.setValue(1.125);
+    QCOMPARE(input.value(), 1.125);
+    QCOMPARE(input.cleanText(), QStringLiteral("1.125"));
 }
 
 void TestAntDataEntryA::inputNumberLineEditPaletteTracksDarkTheme()

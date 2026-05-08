@@ -60,7 +60,7 @@ The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar p
 
 The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget conventions:
 
-- `AntInput`, `AntInputNumber`, `AntCheckBox`, `AntRadio`, `AntSlider`, `AntProgress`, and `AntStatusBar` expose more common Qt-style methods and signals.
+- `AntInput`, `AntInputNumber`, `AntCheckBox`, `AntRadio`, `AntSlider`, `AntProgress`, and `AntStatusBar` expose more common Qt-style methods and signals; `AntInputNumber` now preserves `QDoubleSpinBox`-style decimal values by default.
 - `AntSelect` supports QComboBox-style item management, default first-item selection when an empty select receives data, plus option-style helpers such as `setOptionText`, `removeOption`, `optionData`, `findData`, `currentData`, `activated`, and highlighted signals.
 - Qt layout behavior now follows native widget baselines: line-edit-like controls expand horizontally, combo-like selectors stay `Preferred/Fixed`, spin/date/time editors stay `Minimum/Fixed`, view widgets expand in both directions, and `AntTypography` mirrors `QLabel` height-for-width word wrapping.
 - `AntDatePicker` / `AntTimePicker` expose QDateEdit / QTimeEdit-style `date` / `time` aliases plus minimum / maximum range APIs.
@@ -205,7 +205,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 - `AntButton`: five types, three sizes, three shapes, `loading / danger / ghost / block`
 - `AntIcon`: `831` official SVG icons, string-name API, `Outlined / Filled / TwoTone`, rotation, spin, custom paths
 - `AntInput`: sizes, states, `addonBefore / addonAfter / allowClear / password`
-- `AntInputNumber`: sizes, states, variants, prefix/suffix, precision, fine-grained step, optional control buttons
+- `AntInputNumber`: sizes, states, variants, prefix/suffix, QDoubleSpinBox-style decimals/precision, fine-grained step, optional control buttons
 - `AntDescriptions`: title, extra, columns, bordered, vertical, custom value widgets
 - `AntForm`: `AntForm / AntFormItem`, horizontal / vertical / inline layouts, label alignment, required marker, help and validation hints
 - `AntEmpty`: default illustration, `simple` mode, description text, custom illustration size and extra action
