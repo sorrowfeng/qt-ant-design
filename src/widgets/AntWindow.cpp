@@ -13,6 +13,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
+#include <QRegion>
 #include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
@@ -232,6 +233,7 @@ struct DwmMargins
 };
 
 using DwmExtendFrameIntoClientAreaFn = HRESULT(WINAPI*)(HWND, const DwmMargins*);
+using RtlGetVersionFn = LONG(WINAPI*)(OSVERSIONINFOW*);
 
 constexpr DWORD kDwmUseImmersiveDarkMode = 20;
 constexpr DWORD kDwmWindowCornerPreference = 33;
@@ -276,6 +278,34 @@ int resizeBorderMetric(HWND hwnd, int frameMetric, int paddedMetric)
     const int frame = systemMetricForDpi(frameMetric, dpi);
     const int padded = systemMetricForDpi(paddedMetric, dpi);
     return qMax(8, frame + padded);
+}
+
+int windowsBuildNumber()
+{
+    static const int buildNumber = []() {
+        if (HMODULE ntdll = ::GetModuleHandleW(L"ntdll.dll"))
+        {
+            auto* rtlGetVersion = reinterpret_cast<RtlGetVersionFn>(::GetProcAddress(ntdll, "RtlGetVersion"));
+            if (rtlGetVersion)
+            {
+                OSVERSIONINFOW version{};
+                version.dwOSVersionInfoSize = sizeof(version);
+                if (rtlGetVersion(&version) == 0)
+                {
+                    return static_cast<int>(version.dwBuildNumber);
+                }
+            }
+        }
+
+        return 0;
+    }();
+    return buildNumber;
+}
+
+bool supportsNativeCaptionSnapLayouts()
+{
+    constexpr int kWindows11Build = 22000;
+    return windowsBuildNumber() >= kWindows11Build;
 }
 
 QPoint nativeMessageLocalPoint(HWND hwnd, LPARAM messagePos, qreal devicePixelRatio)
@@ -361,11 +391,19 @@ void triggerFrameChange(HWND hwnd)
                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 }
 
-void ensureNativeSnapWindowStyle(HWND hwnd)
+void ensureNativeWindowStyle(HWND hwnd, bool useNativeCaption)
 {
     LONG_PTR style = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
-    const LONG_PTR snapStyle = WS_THICKFRAME | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU;
-    const LONG_PTR newStyle = style | snapStyle;
+    const LONG_PTR baseStyle = WS_THICKFRAME | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU;
+    LONG_PTR newStyle = style | baseStyle;
+    if (useNativeCaption)
+    {
+        newStyle |= WS_CAPTION;
+    }
+    else
+    {
+        newStyle &= ~WS_CAPTION;
+    }
     if (newStyle == style)
     {
         return;
@@ -373,6 +411,31 @@ void ensureNativeSnapWindowStyle(HWND hwnd)
 
     ::SetWindowLongPtrW(hwnd, GWL_STYLE, newStyle);
     triggerFrameChange(hwnd);
+}
+
+void applyLegacyRoundedMask(QWidget* widget, int radius)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    if (supportsNativeCaptionSnapLayouts() || widget->isMaximized() || widget->isFullScreen() || radius <= 0)
+    {
+        widget->clearMask();
+        return;
+    }
+
+    const QRect bounds = widget->rect();
+    if (bounds.isEmpty())
+    {
+        widget->clearMask();
+        return;
+    }
+
+    QPainterPath path;
+    path.addRoundedRect(QRectF(bounds), radius, radius);
+    widget->setMask(QRegion(path.toFillPolygon().toPolygon()));
 }
 #endif
 }
@@ -823,6 +886,9 @@ void AntWindow::changeEvent(QEvent* event)
 void AntWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
+#ifdef Q_OS_WIN
+    applyLegacyRoundedMask(this, m_cornerRadius);
+#endif
     if (m_themeTransitionOverlay)
     {
         m_themeTransitionOverlay->setGeometry(rect());
@@ -865,19 +931,6 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         {
         case WM_NCCALCSIZE:
         {
-            if (msg->wParam == TRUE && lParam)
-            {
-                auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam);
-                if (isMaximized() && !isFullScreen())
-                {
-                    const int borderWidth = resizeBorderMetric(hwnd, SM_CXSIZEFRAME, SM_CXPADDEDBORDER);
-                    const int borderHeight = resizeBorderMetric(hwnd, SM_CYSIZEFRAME, SM_CXPADDEDBORDER);
-                    params->rgrc[0].left += borderWidth;
-                    params->rgrc[0].right -= borderWidth;
-                    params->rgrc[0].top += borderHeight;
-                    params->rgrc[0].bottom -= borderHeight;
-                }
-            }
             *result = 0;
             return true;
         }
@@ -1452,7 +1505,9 @@ void AntWindow::applyNativeWindowFrame()
         return;
     }
 
-    ensureNativeSnapWindowStyle(hwnd);
+    const bool useNativeCaption = supportsNativeCaptionSnapLayouts();
+    ensureNativeWindowStyle(hwnd, useNativeCaption);
+    applyLegacyRoundedMask(this, m_cornerRadius);
 
     DwmSetWindowAttributeFn setWindowAttribute = nullptr;
     DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
@@ -1463,7 +1518,7 @@ void AntWindow::applyNativeWindowFrame()
 
     if (extendFrame)
     {
-        const DwmMargins margins{1, 1, 1, 1};
+        const DwmMargins margins = useNativeCaption ? DwmMargins{1, 1, 1, 1} : DwmMargins{0, 0, 0, 0};
         extendFrame(hwnd, &margins);
     }
 
@@ -1472,25 +1527,28 @@ void AntWindow::applyNativeWindowFrame()
         return;
     }
 
-    const int cornerPreference = [this]() {
-        if (isMaximized() || isFullScreen())
-        {
-            return kDwmCornerDoNotRound;
-        }
-        if (m_cornerRadius <= 0)
-        {
-            return kDwmCornerDoNotRound;
-        }
-        if (m_cornerRadius <= 6)
-        {
-            return kDwmCornerRoundSmall;
-        }
-        return kDwmCornerRound;
-    }();
-    setWindowAttribute(hwnd,
-                       kDwmWindowCornerPreference,
-                       &cornerPreference,
-                       sizeof(cornerPreference));
+    if (useNativeCaption)
+    {
+        const int cornerPreference = [this]() {
+            if (isMaximized() || isFullScreen())
+            {
+                return kDwmCornerDoNotRound;
+            }
+            if (m_cornerRadius <= 0)
+            {
+                return kDwmCornerDoNotRound;
+            }
+            if (m_cornerRadius <= 6)
+            {
+                return kDwmCornerRoundSmall;
+            }
+            return kDwmCornerRound;
+        }();
+        setWindowAttribute(hwnd,
+                           kDwmWindowCornerPreference,
+                           &cornerPreference,
+                           sizeof(cornerPreference));
+    }
 
     const auto& token = antTheme->tokens();
     const COLORREF borderColor = RGB(token.colorBorder.red(), token.colorBorder.green(), token.colorBorder.blue());

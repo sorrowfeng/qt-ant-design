@@ -102,6 +102,7 @@
 - `AntWindow` 标题栏新增置顶和 Light/Dark 一键切换按钮，图标使用内置官方 Ant Design SVG；pin/theme/minimize/maximize/close 按钮均提供公开显示隐藏 API。
 - Windows 下通过 `nativeEvent` + Win32/DWM 路径支持无边框窗口缩放命中测试、标题栏拖拽、最大化按钮 Windows 11 Snap Layout hover、拖拽到屏幕边缘吸附、最大化后标题栏拖拽还原，并用平台宏隔离非 Windows 构建。
 - Windows 下接入 DWM 圆角、边框颜色和阴影，新增 `cornerRadius` API 控制窗口圆角大小。
+- Windows 10 下 `AntWindow` 使用无 `WS_CAPTION` 的 native style，避免最大化/吸附还原后露出原生最小化/最大化/关闭按钮；非最大化时使用 legacy rounded mask 裁掉直角窗口边界，最大化 `WM_NCCALCSIZE` 不再重复扣除 resize border。
 - 标题栏按钮 hover 状态改为 `AntWindow` 统一维护，content/title/native leave 均会清理旧 hover，避免 hover 或离开主窗口后颜色残留。
 - 主题按钮切换 Light/Dark 时使用全窗口截图 overlay、captured new-frame 和 smootherstep 圆形软揭示动画，避免全量主题刷新期间卡顿、高 DPI 放大、黑色圆洞或生硬的纯色扩散。
 - 示例程序嵌入 Windows 10/11 manifest，并在 `ExampleWindow` 中启用全部标题栏按钮，去掉独立 dark 切换按钮。

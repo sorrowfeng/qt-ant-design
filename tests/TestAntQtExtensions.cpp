@@ -30,6 +30,37 @@
 #include <windowsx.h>
 #endif
 
+namespace
+{
+#ifdef Q_OS_WIN
+using RtlGetVersionFn = LONG(WINAPI*)(OSVERSIONINFOW*);
+
+int windowsBuildNumberForTest()
+{
+    if (HMODULE ntdll = ::GetModuleHandleW(L"ntdll.dll"))
+    {
+        auto* rtlGetVersion = reinterpret_cast<RtlGetVersionFn>(::GetProcAddress(ntdll, "RtlGetVersion"));
+        if (rtlGetVersion)
+        {
+            OSVERSIONINFOW version{};
+            version.dwOSVersionInfoSize = sizeof(version);
+            if (rtlGetVersion(&version) == 0)
+            {
+                return static_cast<int>(version.dwBuildNumber);
+            }
+        }
+    }
+    return 0;
+}
+
+bool supportsNativeCaptionSnapLayoutsForTest()
+{
+    constexpr int kWindows11Build = 22000;
+    return windowsBuildNumberForTest() >= kWindows11Build;
+}
+#endif
+} // namespace
+
 class TestAntQtExtensions : public QObject
 {
     Q_OBJECT
@@ -59,6 +90,7 @@ private slots:
     void windowThemeTransitionOverlayKeepsOldFrameScale();
     void windowThemeTransitionRevealsNewFrameWithoutBlackHole();
     void windowNativeHitTestSupportsSnapZones();
+    void windowMaximizedNcCalcKeepsFullWorkArea();
     void colorPicker();
 };
 
@@ -848,7 +880,14 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     QVERIFY(hwnd != nullptr);
     const LONG_PTR nativeStyle = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
     QVERIFY((nativeStyle & WS_THICKFRAME) != 0);
-    QVERIFY((nativeStyle & WS_CAPTION) != 0);
+    if (supportsNativeCaptionSnapLayoutsForTest())
+    {
+        QVERIFY((nativeStyle & WS_CAPTION) != 0);
+    }
+    else
+    {
+        QVERIFY((nativeStyle & WS_CAPTION) == 0);
+    }
     QVERIFY((nativeStyle & WS_MAXIMIZEBOX) != 0);
     QVERIFY((nativeStyle & WS_MINIMIZEBOX) != 0);
 
@@ -927,6 +966,45 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
              static_cast<qintptr>(HTZOOM));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Close).center()),
              static_cast<qintptr>(HTCLOSE));
+#endif
+}
+
+void TestAntQtExtensions::windowMaximizedNcCalcKeepsFullWorkArea()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows native frame sizing is only available on Windows.");
+#else
+    class NativeFrameWindow : public AntWindow
+    {
+    public:
+        using AntWindow::nativeEvent;
+    };
+
+    NativeFrameWindow window;
+    window.resize(640, 420);
+    window.setWindowState(window.windowState() | Qt::WindowMaximized);
+    QVERIFY(window.isMaximized());
+
+    const HWND hwnd = reinterpret_cast<HWND>(window.winId());
+    QVERIFY(hwnd != nullptr);
+
+    NCCALCSIZE_PARAMS params{};
+    params.rgrc[0] = RECT{100, 120, 900, 760};
+    const RECT before = params.rgrc[0];
+
+    MSG msg{};
+    msg.hwnd = hwnd;
+    msg.message = WM_NCCALCSIZE;
+    msg.wParam = TRUE;
+    msg.lParam = reinterpret_cast<LPARAM>(&params);
+
+    qintptr result = -1;
+    QVERIFY(window.nativeEvent("windows_generic_MSG", &msg, &result));
+    QCOMPARE(result, static_cast<qintptr>(0));
+    QCOMPARE(params.rgrc[0].left, before.left);
+    QCOMPARE(params.rgrc[0].top, before.top);
+    QCOMPARE(params.rgrc[0].right, before.right);
+    QCOMPARE(params.rgrc[0].bottom, before.bottom);
 #endif
 }
 

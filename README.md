@@ -53,6 +53,7 @@ The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar p
 
 - Windows 11 Snap support for frameless windows: resize edges/corners, draggable title bar, maximize-button Snap Layout hover, edge snapping, and drag-to-restore.
 - DWM-backed rounded corners, border/shadow integration, and a `cornerRadius` API for Windows builds while keeping platform-specific code behind Qt/Win32 guards.
+- Windows 10 uses a no-caption native frame path plus a legacy rounded mask, so maximized/restored windows do not expose native title buttons or a square border under the custom title bar.
 - Title-bar pin and light/dark theme buttons use bundled official Ant Design icons, and every title-bar button can be shown or hidden through public APIs.
 - The built-in theme button uses a captured-frame overlay with a soft reveal animation so full-window light/dark switching feels continuous.
 
