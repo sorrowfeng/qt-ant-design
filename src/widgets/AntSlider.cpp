@@ -54,12 +54,25 @@ protected:
 
         const auto& token = antTheme->tokens();
         const QRectF bubble = rect().adjusted(0.5, 0.5, -0.5, -6.5);
-        const qreal arrowCenter = rect().center().x();
+        const qreal radius = token.borderRadiusSM;
+        const qreal arrowHalfWidth = 5.0;
+        const qreal arrowCenter = qBound(bubble.left() + radius + arrowHalfWidth,
+                                         static_cast<qreal>(rect().center().x()),
+                                         bubble.right() - radius - arrowHalfWidth);
+        const qreal arrowTipY = rect().bottom() - 1.0;
         QPainterPath path;
-        path.addRoundedRect(bubble, token.borderRadiusSM, token.borderRadiusSM);
-        path.moveTo(arrowCenter - 5, bubble.bottom() - 1);
-        path.lineTo(arrowCenter + 5, bubble.bottom() - 1);
-        path.lineTo(arrowCenter, rect().bottom() - 1);
+        path.moveTo(bubble.left() + radius, bubble.top());
+        path.lineTo(bubble.right() - radius, bubble.top());
+        path.quadTo(bubble.right(), bubble.top(), bubble.right(), bubble.top() + radius);
+        path.lineTo(bubble.right(), bubble.bottom() - radius);
+        path.quadTo(bubble.right(), bubble.bottom(), bubble.right() - radius, bubble.bottom());
+        path.lineTo(arrowCenter + arrowHalfWidth, bubble.bottom());
+        path.lineTo(arrowCenter, arrowTipY);
+        path.lineTo(arrowCenter - arrowHalfWidth, bubble.bottom());
+        path.lineTo(bubble.left() + radius, bubble.bottom());
+        path.quadTo(bubble.left(), bubble.bottom(), bubble.left(), bubble.bottom() - radius);
+        path.lineTo(bubble.left(), bubble.top() + radius);
+        path.quadTo(bubble.left(), bubble.top(), bubble.left() + radius, bubble.top());
         path.closeSubpath();
 
         QColor bg = antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626");

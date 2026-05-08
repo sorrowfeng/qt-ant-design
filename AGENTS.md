@@ -87,7 +87,7 @@
 - `AntButton`：loading spinner 改为顺时针旋转，并将可见弧段调整到约 30%。
 - `AntPlainTextEdit`：补齐 TextArea 式右下角拖拽缩放。
 - `AntInputNumber`：鼠标进入/聚焦时上下箭头控制区以动画显示。
-- `AntSlider`：拖动时在当前 handle 上方显示数值浮标并跟随 handle，marks 场景保留标签高度，Range 拖动不再在最左侧绘制多余 pressed/focus 滑块。
+- `AntSlider`：拖动时在当前 handle 上方显示数值浮标并跟随 handle，浮窗箭头与圆角面板使用一体化轮廓绘制，marks 场景保留标签高度，Range 拖动不再在最左侧绘制多余 pressed/focus 滑块。
 - `AntSwitch`：点击时触发灰色 Wave 边缘动效。
 - `AntTransfer`：修复列表滚动、滚动后行点击和顶部全选。
 - `AntCarousel`：补齐轮播图滑动切换动效。
@@ -188,7 +188,7 @@
 | `AntRate` | `rate` | `QProxyStyle` | 是 | count/value/allowHalf/hover 放大/选中星缩放动效 |
 | `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 滑动指示器动画、图标/禁用、value/index 选中 API |
 | `AntSelect` | `select` | `QProxyStyle` | 是 | 尺寸、状态、变体、可编辑模式、Multiple/Tags，option 管理 API |
-| `AntSlider` | `slider` | `QProxyStyle` | 是 | Range、marks、拖动浮窗 |
+| `AntSlider` | `slider` | `QProxyStyle` | 是 | Range、marks、拖动浮窗一体化箭头 |
 | `AntSwitch` | `switch` | `QProxyStyle` | 是 | |
 | `AntTimePicker` | `time-picker` | `QProxyStyle` | 是 | 自绘时间弹层、RangePicker |
 | `AntTransfer` | `transfer` | 自绘 | 是 | 穿梭框、双列表 |

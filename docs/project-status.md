@@ -77,6 +77,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed `AntColorPicker` trigger border geometry so normal gray and focused/active primary borders are drawn fully inside the widget frame instead of being clipped at the edges.
 - Aligned `AntRadio` ButtonStyle click feedback with `AntButton` by using the full edge-expansion Wave duration instead of the short indicator-style wave.
 - Added the missing `AntRate` selected-star scale pulse and a small internal paint inset so the animated star edge is not clipped.
+- Reworked the `AntSlider` drag value bubble as a single rounded-rect-plus-arrow path so the arrow no longer appears visually separated from the body.
 
 ## Visual Audit State
 
@@ -175,10 +176,12 @@ Result: `1 / 1` targeted test passed on `2026-05-08`.
 Latest targeted AntSlider layout / bubble / range validation:
 
 ```powershell
+cmake --build build --config Debug --target TestAntDataEntryA qt-ant-design-example
 ctest --test-dir build -C Debug -R "TestAntDataEntryA$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 
-Result: `1 / 1` targeted test passed on `2026-05-08`.
+Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`.
 
 Latest targeted AntTabs content layout / AntTypography multiline validation:
 

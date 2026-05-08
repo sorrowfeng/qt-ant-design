@@ -320,7 +320,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntPopconfirm`：确认标题、说明、确认/取消按钮、禁用态、placement
 - `AntSkeleton`：支持动态 `active` shimmer、头像占位、标题/段落配置、圆角风格以及 `loading` 切换真实内容
 - `AntToolTip`：常用 `placement`、箭头、颜色、延迟显示、自动翻转
-- `AntSlider`：横竖向、`reverse / dots / included`、Range、marks、拖动时在当前 handle 上方显示数值浮标
+- `AntSlider`：横竖向、`reverse / dots / included`、Range、marks、拖动时在当前 handle 上方显示一体化箭头浮标
 - `AntRibbon`：Page / Group 结构，支持大/小 action、嵌入 Ant/Qt 控件、折叠弹出模式和 `AntWindow` 顶部集成
 - `AntSwitch`：`checked / loading / small / text`、点击 Wave 反馈
 - `AntSpin`：`small / middle / large / percent / delay`、更平滑的高频动画

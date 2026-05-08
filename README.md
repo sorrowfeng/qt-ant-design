@@ -320,7 +320,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement
 - `AntSkeleton`: moving `active` shimmer, avatar placeholder, title / paragraph configuration, rounded style, and `loading` toggle to swap in real content
 - `AntToolTip`: common `placement`, arrow, color, delayed display, auto flip
-- `AntSlider`: horizontal / vertical, `reverse / dots / included`, range, marks, drag value bubble above the active handle
+- `AntSlider`: horizontal / vertical, `reverse / dots / included`, range, marks, drag value bubble above the active handle with a one-piece arrow surface
 - `AntRibbon`: pages and groups for large/small actions, embedded Ant/Qt widgets, animated tab/collapse transitions, collapsed popup mode, and `AntWindow` top-area integration
 - `AntSwitch`: `checked / loading / small / text`, click wave feedback
 - `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation

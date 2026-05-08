@@ -27,6 +27,7 @@ private slots:
     void inputNumberUsesLayoutFriendlyPolicy();
     void sliderMarksReserveLabelHeight();
     void sliderBubbleFloatsAboveMarkedHandle();
+    void sliderBubbleArrowJoinsSurface();
     void sliderRangeDragDoesNotPaintPhantomMinimumHandle();
     void rateSelectionStartsScaleAnimation();
 };
@@ -470,6 +471,44 @@ void TestAntDataEntryA::sliderBubbleFloatsAboveMarkedHandle()
     QVERIFY(valueBubble->geometry().bottom() <= visualHandleGlobal.y() - 4);
 
     QTest::mouseRelease(&slider, Qt::LeftButton, Qt::NoModifier, visualHandleCenter);
+}
+
+void TestAntDataEntryA::sliderBubbleArrowJoinsSurface()
+{
+    QWidget host;
+    host.move(160, 160);
+    host.resize(360, 120);
+
+    AntSlider slider(&host);
+    slider.resize(280, slider.sizeHint().height());
+    slider.move(40, 52);
+    slider.show();
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    QTest::mousePress(&slider, Qt::LeftButton, Qt::NoModifier, QPoint(slider.width() / 2, slider.height() / 2));
+
+    auto* valueBubble = slider.findChild<QWidget*>(QStringLiteral("antSliderValueBubble"));
+    QVERIFY(valueBubble);
+    QTRY_VERIFY_WITH_TIMEOUT(valueBubble->isVisible(), 100);
+
+    const QImage image = renderWidgetImage(*valueBubble);
+    QTest::mouseRelease(&slider, Qt::LeftButton, Qt::NoModifier, QPoint(slider.width() / 2, slider.height() / 2));
+
+    const int centerX = image.width() / 2;
+    const int joinY = image.height() - 7;
+    const QColor body = image.pixelColor(centerX, joinY - 3);
+    QVERIFY2(body.alpha() > 240, "value bubble body should be opaque at the arrow center");
+
+    for (int dx = -4; dx <= 4; ++dx)
+    {
+        const QColor join = image.pixelColor(centerX + dx, joinY);
+        QVERIFY2(join.alpha() > 240, "arrow and rounded rectangle should share an opaque joined surface");
+        QVERIFY2(qAbs(join.red() - body.red()) <= 2
+                     && qAbs(join.green() - body.green()) <= 2
+                     && qAbs(join.blue() - body.blue()) <= 2,
+                 "arrow join pixels should match the bubble body color without a visible divider");
+    }
 }
 
 void TestAntDataEntryA::sliderRangeDragDoesNotPaintPhantomMinimumHandle()
