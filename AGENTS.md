@@ -215,7 +215,7 @@
 | `AntAvatar` | `avatar` | `QProxyStyle` | 是 | 文本、图标、图片头像、Group |
 | `AntBadge` | `badge` | `QProxyStyle` | 是 | count/dot/status/processing/Ribbon |
 | `AntCalendar` | `calendar` | `QProxyStyle` | 是 | Day/Month/Year 三态 |
-| `AntCard` | `card` | `QProxyStyle` | 是 | 封面、extra、action 区、loading、Meta、Grid |
+| `AntCard` | `card` | `QProxyStyle` | 是 | 封面、extra、action 区、loading、Meta、Grid，主题切换标题 palette |
 | `AntCarousel` | `carousel` | 自绘 | 是 | 自动播放、圆点指示器 |
 | `AntCollapse` | `collapse` | 自绘 | 是 | 折叠面板、accordion 模式、动画 |
 | `AntEmpty` | `empty` | `QProxyStyle` | 是 | 默认插画、simple 模式 |

@@ -55,6 +55,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Expanded `AntTable` helper coverage with `rows()`, `selectRow()`, `currentRowIndex()`, and row-level tooltip data/display support.
 - Added `AntTypography::setPixelSize()` / `pixelSize()` for direct label-style font sizing while keeping theme-aware rendering.
 - Added `AntSelect` option-style list management helpers: `setOptionText()`, `removeOption()`, and `optionData()`, alongside the existing `findData()` lookup path.
+- Fixed `AntCard` title and Meta title label palettes after Light/Dark theme changes so dark-mode card headers stay legible.
 - Fixed issue-driven popup details for `AntMenu` horizontal submenu panel edges and `AntCascader` outside-click dismissal.
 
 ## Visual Audit State
@@ -122,6 +123,14 @@ Latest targeted AntSelect API validation:
 
 ```powershell
 ctest -C Debug -R "TestAntSelect$" --output-on-failure
+```
+
+Result: `1 / 1` targeted test passed on `2026-05-08`.
+
+Latest targeted AntCard theme validation:
+
+```powershell
+ctest -C Debug -R "TestAntDataDisplayA$" --output-on-failure
 ```
 
 Result: `1 / 1` targeted test passed on `2026-05-08`.

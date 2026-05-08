@@ -1,5 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QLabel>
+#include "core/AntTheme.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntStatistic.h"
@@ -12,6 +14,7 @@ class TestAntDataDisplayA : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void cardTitlePaletteTracksTheme();
 };
 
 void TestAntDataDisplayA::propertiesAndSignals()
@@ -262,6 +265,40 @@ void TestAntDataDisplayA::propertiesAndSignals()
     e->setImageSize(QSize(100, 100));
     QCOMPARE(e->imageSize(), QSize(100, 100));
     QCOMPARE(eSizeSpy.count(), 1);
+}
+
+void TestAntDataDisplayA::cardTitlePaletteTracksTheme()
+{
+    const Ant::ThemeMode previousMode = antTheme->themeMode();
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntCard card(QStringLiteral("Card Title"));
+    card.setMetaTitle(QStringLiteral("Meta Title"));
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+
+    const auto labels = card.findChildren<QLabel*>();
+    QLabel* titleLabel = nullptr;
+    QLabel* metaTitleLabel = nullptr;
+    for (QLabel* label : labels)
+    {
+        if (label->text() == QStringLiteral("Card Title"))
+        {
+            titleLabel = label;
+        }
+        else if (label->text() == QStringLiteral("Meta Title"))
+        {
+            metaTitleLabel = label;
+        }
+    }
+
+    QVERIFY(titleLabel != nullptr);
+    QVERIFY(metaTitleLabel != nullptr);
+    QCOMPARE(titleLabel->palette().color(QPalette::WindowText), antTheme->tokens().colorText);
+    QCOMPARE(metaTitleLabel->palette().color(QPalette::WindowText), antTheme->tokens().colorText);
+
+    antTheme->setThemeMode(previousMode);
 }
 
 QTEST_MAIN(TestAntDataDisplayA)

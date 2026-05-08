@@ -72,6 +72,11 @@ AntCard::AntCard(QWidget* parent)
         m_spinnerAngle = (m_spinnerAngle + 30) % 360;
         update();
     });
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updateTheme();
+        updateGeometry();
+        update();
+    });
 
     rebuildChrome();
     updateTheme();
