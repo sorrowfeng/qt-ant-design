@@ -66,6 +66,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added `AntTabs` content-page layout margin normalization: pages added with default Qt root-layout margins are reset to zero to avoid double spacing with Ant containers, explicit custom margins are preserved, and `AntTabs::useTabContentLayout()` is available for forced tab-pane layout setup.
 - Aligned `AntInputNumber` with the desired integer-first decimal flow: the default display remains integer (`decimals() == 0`), while `setDecimals()` / `setPrecision()` enables decimal value/range/step behavior, preserves quarter-step increments, and updates the public `precision()` state with `precisionChanged`.
 - Fixed `AntSlider` marked and range interaction details: marked sliders reserve label height under Qt layouts, drag value bubbles anchor above the visual handle, and range drags no longer paint a phantom primary handle at the minimum edge.
+- Added `AntDesign::initialize(&app)` as the one-call consumer startup path for `qt_ant_design` resource registration, bundled font application, and theme singleton initialization.
 
 ## Visual Audit State
 
@@ -183,6 +184,15 @@ ctest -C Debug -R "TestAntDataDisplayA$" --output-on-failure
 ```
 
 Result: `1 / 1` targeted test passed on `2026-05-08`.
+
+Latest targeted one-call initialization validation:
+
+```powershell
+cmake --build build --config Debug --target qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAntInstallConsumer$" --output-on-failure
+```
+
+Result: example Debug build succeeded and `1 / 1` targeted install-consumer test passed on `2026-05-08`.
 
 ## Remaining Notes
 

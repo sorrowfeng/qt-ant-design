@@ -52,6 +52,7 @@ file(WRITE "${consumer_source_dir}/main.cpp" [=[
 #include <QStringList>
 #include <type_traits>
 
+#include "core/AntDesign.h"
 #include "widgets/AntCalendarWidget.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCheckBox.h"
@@ -101,17 +102,20 @@ static_assert(std::is_same_v<AntTreeWidget, AntTree>);
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
+    AntDesign::initialize(&app);
 
     AntButton button(QStringLiteral("Install Consumer"));
     button.setButtonType(Ant::ButtonType::Primary);
 
     AntIcon icon;
     icon.setIconType(Ant::IconType::Search);
+    const bool resourcesAvailable = AntIcon::builtinIconNames().contains(QStringLiteral("GithubFilled"));
 
     AntLabel label(QStringLiteral("Alias Label"));
     AntPushButton aliasButton(QStringLiteral("Alias Button"));
 
     return button.text() == QStringLiteral("Install Consumer") &&
+           resourcesAvailable &&
            label.text() == QStringLiteral("Alias Label") &&
            aliasButton.text() == QStringLiteral("Alias Button") ? 0 : 1;
 }

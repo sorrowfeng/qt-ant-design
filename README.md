@@ -70,6 +70,7 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 - `AntList` / `AntListWidget` now cover common QListWidget-style flows: string item add/insert/find/sort, item text/icon/data/check state/flags, current row/item, selection mode, selected items, internal scrolling, `scrollToItem`, and item/current/selection signals. `AntTable` exposes `rows()`, `selectRow()`, `currentRowIndex()`, and row tooltips; `AntTree` exposes matching tree helper APIs.
 - `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
 - `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, clear, and `setPixelSize()` controls; `setEnabled()` and `setDisabled()` stay synchronized with its disabled visual and interaction state.
+- `AntDesign::initialize(&app)` provides one-call startup for Qt resources, bundled fonts, and the theme singleton, so consumer apps no longer need separate `Q_INIT_RESOURCE`, `AntFont::applyToApplication`, and `AntTheme::instance` calls.
 
 ## Installation & Integration
 
@@ -154,16 +155,20 @@ cmake --install build --config Debug
 
 ### Your first `AntButton`
 
+Call `AntDesign::initialize(&app)` once after creating `QApplication` and before creating Ant widgets.
+
 ```cpp
 #include <QApplication>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "core/AntDesign.h"
 #include "widgets/AntButton.h"
 
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    AntDesign::initialize(&app);
 
     QWidget window;
     auto* layout = new QVBoxLayout(&window);

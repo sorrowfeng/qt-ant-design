@@ -70,6 +70,7 @@
 - `AntList` / `AntListWidget` 补充字符串 add/insert/find/sort、item 数据、current/selection、内部滚动和 `scrollToItem` 等 `QListWidget` 风格接口；`AntTable` 补充 `rows()`、`selectRow()`、`currentRowIndex()` 和行级 tooltip；`AntTree` 继续覆盖 tree 风格辅助接口。
 - `AntMenu` 支持 QWidget `QAction` 的添加、变更、移除和触发流程同步；`AntToolButton` / `AntToolBar` 的继承 QAction 行为已加入测试覆盖。
 - `AntTypography` 默认垂直居中，并提供 alignment、word-wrap、clear 和 `setPixelSize()` 控制；`setEnabled()` / `setDisabled()` 会同步 Typography 的 disabled 视觉与交互状态。
+- `AntDesign::initialize(&app)` 提供统一启动入口，一次性完成 Qt 资源注册、内置字体应用和主题单例初始化，外部项目不再需要分别调用 `Q_INIT_RESOURCE`、`AntFont::applyToApplication` 和 `AntTheme::instance`。
 
 ## 安装与集成
 
@@ -154,16 +155,20 @@ cmake --install build --config Debug
 
 ### 第一个 `AntButton`
 
+创建 `QApplication` 后、创建 Ant 控件前调用一次 `AntDesign::initialize(&app)` 即可。
+
 ```cpp
 #include <QApplication>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "core/AntDesign.h"
 #include "widgets/AntButton.h"
 
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    AntDesign::initialize(&app);
 
     QWidget window;
     auto* layout = new QVBoxLayout(&window);

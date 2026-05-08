@@ -120,6 +120,7 @@
 - `AntDatePicker` / `AntTimePicker` 补齐 `QDateEdit` / `QTimeEdit` 风格 date/time 别名、minimum/maximum range API、range changed 信号，并对越界输入做边界收敛。
 - `AntList` / `AntListWidget` 补齐常用 `QListWidget` 风格 API/信号，包括字符串 add/insert/addItems/insertItems、item/text/icon/data/checkState/flags、findItems/sortItems、currentItem/currentRow、selectionMode/selectedItems/setItemSelected、内部滚动、scrollToItem、itemClicked/itemDoubleClicked/itemActivated/itemChanged/current/itemSelection 信号；`AntTable` 补齐 rows/selectRow/currentRowIndex 和行级 tooltip；`AntTree` 继续覆盖 tree 风格 helper。
 - `AntMenu` 接入 QWidget `QAction` 体系：`addAction/removeAction` 会同步自绘菜单项，action text/enabled/shortcut 变更会刷新显示，点击菜单项会触发对应 QAction；`AntToolButton` / `AntToolBar` 的默认 action 和 toolbar action 触发行为已有测试保护。
+- `AntDesign::initialize(&app)` 作为外部项目统一初始化入口，一次性注册 `qt_ant_design` 资源、应用内置字体并初始化主题单例，替代分散的 `Q_INIT_RESOURCE` / `AntFont::applyToApplication` / `AntTheme::instance` 调用。
 - 相关 targeted 验证覆盖 `TestAntInput|TestAntCheckBox|TestAntDataEntryA|TestAntDataEntryB|TestAntDataDisplayB|TestAntFeedback|TestAntNavigation|TestAntQtExtensions|TestAntTypography|TestAntSelect|TestAntMetaProperties|TestAntRenderSmoke`。
 
 ## 子组件/变体完整度（完成于 2026-04-26，状态复核 2026-04-30）
