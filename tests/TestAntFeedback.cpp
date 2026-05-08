@@ -1,4 +1,5 @@
 #include <QSignalSpy>
+#include <QPointer>
 #include <QTest>
 #include "widgets/AntAlert.h"
 #include "widgets/AntButton.h"
@@ -22,6 +23,7 @@ private slots:
     void drawer();
     void message();
     void notification();
+    void notificationLoadingProgressAutoCloses();
     void popconfirm();
     void popover();
     void progress();
@@ -207,6 +209,31 @@ void TestAntFeedback::notification()
     w->setClosable(false);
     QCOMPARE(w->isClosable(), false);
     QCOMPARE(closeSpy.count(), 1);
+}
+
+void TestAntFeedback::notificationLoadingProgressAutoCloses()
+{
+    QWidget anchor;
+    anchor.resize(480, 320);
+    anchor.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&anchor));
+
+    QPointer<AntNotification> notification = AntNotification::open(QStringLiteral("Loading"),
+                                                                    QStringLiteral("Processing request"),
+                                                                    Ant::MessageType::Loading,
+                                                                    &anchor,
+                                                                    600,
+                                                                    Ant::Placement::TopRight);
+    QVERIFY(notification);
+    notification->setPauseOnHover(false);
+    notification->setShowProgress(true);
+
+    QTRY_VERIFY_WITH_TIMEOUT(notification && notification->isVisible(), 300);
+    QCOMPARE(notification->notificationType(), Ant::MessageType::Loading);
+    QCOMPARE(notification->showProgress(), true);
+    QVERIFY(notification->progressRatio() <= 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(notification && notification->progressRatio() < 0.98, 350);
+    QTRY_VERIFY_WITH_TIMEOUT(notification.isNull(), 1600);
 }
 
 void TestAntFeedback::popconfirm()

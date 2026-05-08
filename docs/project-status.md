@@ -72,6 +72,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added a README component screenshot gallery with light/dark thumbnails for all public components, and refreshed popup/feedback-heavy controls to show representative open or active states instead of only trigger buttons.
 - Fixed the `AntTour` example page so the Step 1 / 2 / 3 buttons launch the corresponding tour step through the new `AntTour::start(index)` path.
 - Fixed `AntResult` dark-mode status icon rendering so the icon is drawn directly with a transparent background instead of rendering an opaque widget tile.
+- Added an `AntNotification` example entry for loading notifications with a bottom countdown progress bar that closes automatically when the duration completes.
 
 ## Visual Audit State
 
@@ -231,6 +232,16 @@ ctest --test-dir build -C Debug -R "TestAnt(Feedback|VisualRegression)$" --outpu
 ```
 
 Result: `2 / 2` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-08`.
+
+Latest targeted AntNotification loading-progress example validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntFeedback qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAntFeedback$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`.
 
 ## Remaining Notes
 

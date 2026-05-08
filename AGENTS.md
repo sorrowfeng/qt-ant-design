@@ -203,7 +203,7 @@
 | `AntDrawer` | `drawer` | `QProxyStyle` | 是 | Left/Right/Top/Bottom、动画、遮罩 |
 | `AntMessage` | `message` | `QProxyStyle` | 是 | Qt::ToolTip 浮层消息、6 种 placement |
 | `AntModal` | `modal` | `QProxyStyle` | 是 | 遮罩层、标题/正文、自定义 footer、命令式 API |
-| `AntNotification` | `notification` | `QProxyStyle` | 是 | 多 placement 通知 |
+| `AntNotification` | `notification` | `QProxyStyle` | 是 | 多 placement 通知，loading + 进度条倒计时 |
 | `AntPopconfirm` | `popconfirm` | `QProxyStyle` | 是 | title/description/ok/cancel/placement |
 | `AntPopover` | `popover` | `QProxyStyle` | 是 | title/content/action/hover/click/placement |
 | `AntProgress` | `progress` | `QProxyStyle` | 是 | line/circle/dashboard |

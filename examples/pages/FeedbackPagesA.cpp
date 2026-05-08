@@ -242,6 +242,8 @@ QWidget* createNotificationPage(QWidget* owner)
         basicRow->setSpacing(12);
         auto* open = new AntButton(QStringLiteral("Open"));
         auto* success = new AntButton(QStringLiteral("Success"));
+        auto* loadingProgress = new AntButton(QStringLiteral("Loading Progress"));
+        loadingProgress->setObjectName(QStringLiteral("notificationLoadingProgressButton"));
         QObject::connect(open, &AntButton::clicked, owner, [owner]() {
             AntNotification::open(QStringLiteral("Notification Title"),
                                   QStringLiteral("Notification description."),
@@ -252,8 +254,17 @@ QWidget* createNotificationPage(QWidget* owner)
                                      QStringLiteral("Success notification."),
                                      owner);
         });
+        QObject::connect(loadingProgress, &AntButton::clicked, owner, [owner]() {
+            auto* notification = AntNotification::open(QStringLiteral("Loading"),
+                                                       QStringLiteral("Processing request..."),
+                                                       Ant::MessageType::Loading,
+                                                       owner,
+                                                       4500);
+            notification->setShowProgress(true);
+        });
         basicRow->addWidget(open);
         basicRow->addWidget(success);
+        basicRow->addWidget(loadingProgress);
         basicRow->addStretch();
         cl->addLayout(basicRow);
         layout->addWidget(card);
