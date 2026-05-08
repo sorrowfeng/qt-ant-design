@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QDesktopServices>
+#include <QEvent>
 #include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
@@ -82,7 +83,7 @@ void AntTypography::setType(Ant::TypographyType type)
         return;
     }
     m_type = type;
-    setCursor(m_disabled ? Qt::ForbiddenCursor : (m_type == Ant::TypographyType::Link ? Qt::PointingHandCursor : Qt::ArrowCursor));
+    updateInteractionCursor();
     update();
     Q_EMIT typeChanged(m_type);
 }
@@ -144,12 +145,22 @@ bool AntTypography::isDisabled() const { return m_disabled; }
 
 void AntTypography::setDisabled(bool disabled)
 {
+    if (isEnabled() != !disabled)
+    {
+        QWidget::setEnabled(!disabled);
+    }
+    syncDisabledState(disabled);
+}
+
+void AntTypography::syncDisabledState(bool disabled)
+{
     if (m_disabled == disabled)
     {
+        updateInteractionCursor();
         return;
     }
     m_disabled = disabled;
-    setCursor(m_disabled ? Qt::ForbiddenCursor : (m_type == Ant::TypographyType::Link ? Qt::PointingHandCursor : Qt::ArrowCursor));
+    updateInteractionCursor();
     update();
     Q_EMIT disabledChanged(m_disabled);
 }
@@ -492,6 +503,21 @@ void AntTypography::leaveEvent(QEvent* event)
 void AntTypography::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
+}
+
+void AntTypography::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::EnabledChange)
+    {
+        syncDisabledState(!isEnabled());
+    }
+    QWidget::changeEvent(event);
+}
+
+void AntTypography::updateInteractionCursor()
+{
+    setCursor(m_disabled ? Qt::ForbiddenCursor
+                         : (m_type == Ant::TypographyType::Link ? Qt::PointingHandCursor : Qt::ArrowCursor));
 }
 
 int AntTypography::fontSizeForLevel() const

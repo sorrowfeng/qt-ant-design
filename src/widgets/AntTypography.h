@@ -120,6 +120,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private:
     int fontSizeForLevel() const;
@@ -127,6 +128,8 @@ private:
     QColor textColor() const;
     QSize measuredSize(int width) const;
     void updateSizePolicy();
+    void updateInteractionCursor();
+    void syncDisabledState(bool disabled);
     QRect textDrawRect() const;
     QRect copyButtonRect() const;
 

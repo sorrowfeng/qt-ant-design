@@ -111,7 +111,7 @@
 
 ## Qt 官方常用接口兼容批次（2026-05-07）
 
-- `AntTypography` 默认垂直居中，新增 alignment 策略、wordWrap、clear 和 `setPixelSize()` API。
+- `AntTypography` 默认垂直居中，新增 alignment 策略、wordWrap、clear 和 `setPixelSize()` API，并让 `setEnabled()` / `setDisabled()` 双向同步 disabled 视觉与交互状态。
 - `AntInput` 补齐常用 `QLineEdit` 风格 API/信号，包括 placeholder、readOnly、maxLength、echoMode、alignment、selection、clipboard、undo/redo、return/editing/selection/inputRejected 等。
 - `AntInputNumber` / `AntCheckBox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API；`AntInputNumber` 默认整数显示，通过 `setDecimals()` / `setPrecision()` 开启小数，并让 decimal value/range/step 与 `precisionChanged` 同步测试覆盖。
 - `AntSelect` 补齐常用 `QComboBox` / option 风格 API/信号，包括 add/insert/remove/find、setOptionText/removeOption/optionData/findData、itemText/itemData、currentData、setCurrentText、空列表首次加入数据默认选中首项、activated/textActivated/highlighted/textHighlighted。

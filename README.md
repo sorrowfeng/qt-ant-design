@@ -69,7 +69,7 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 - `AntDatePicker` / `AntTimePicker` expose QDateEdit / QTimeEdit-style `date` / `time` aliases plus minimum / maximum range APIs.
 - `AntList` / `AntListWidget` now cover common QListWidget-style flows: string item add/insert/find/sort, item text/icon/data/check state/flags, current row/item, selection mode, selected items, internal scrolling, `scrollToItem`, and item/current/selection signals. `AntTable` exposes `rows()`, `selectRow()`, `currentRowIndex()`, and row tooltips; `AntTree` exposes matching tree helper APIs.
 - `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
-- `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, clear, and `setPixelSize()` controls.
+- `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, clear, and `setPixelSize()` controls; `setEnabled()` and `setDisabled()` stay synchronized with its disabled visual and interaction state.
 
 ## Installation & Integration
 

@@ -48,6 +48,7 @@ class TestAntTypography : public QObject
 private slots:
     void propertiesAndSignals();
     void pixelSizeShortcut();
+    void enabledStateSync();
     void verticalAlignmentRendering();
     void wordWrapAdaptsToLayoutWidth();
     void copyInteractionState();
@@ -176,6 +177,34 @@ void TestAntTypography::pixelSizeShortcut()
     QCOMPARE(label.font().pixelSize(), 28);
     const int largerHeight = renderedInkBounds(label).height();
     QVERIFY(largerHeight > defaultHeight);
+}
+
+void TestAntTypography::enabledStateSync()
+{
+    AntTypography label(QStringLiteral("Disabled text"));
+    QSignalSpy disabledSpy(&label, &AntTypography::disabledChanged);
+
+    label.setEnabled(false);
+    QCOMPARE(label.isEnabled(), false);
+    QCOMPARE(label.isDisabled(), true);
+    QCOMPARE(label.cursor().shape(), Qt::ForbiddenCursor);
+    QCOMPARE(disabledSpy.count(), 1);
+
+    label.setEnabled(true);
+    QCOMPARE(label.isEnabled(), true);
+    QCOMPARE(label.isDisabled(), false);
+    QCOMPARE(label.cursor().shape(), Qt::ArrowCursor);
+    QCOMPARE(disabledSpy.count(), 2);
+
+    label.setDisabled(true);
+    QCOMPARE(label.isEnabled(), false);
+    QCOMPARE(label.isDisabled(), true);
+    QCOMPARE(disabledSpy.count(), 3);
+
+    label.setDisabled(false);
+    QCOMPARE(label.isEnabled(), true);
+    QCOMPARE(label.isDisabled(), false);
+    QCOMPARE(disabledSpy.count(), 4);
 }
 
 void TestAntTypography::verticalAlignmentRendering()

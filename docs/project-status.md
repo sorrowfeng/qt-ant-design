@@ -56,6 +56,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Expanded Qt-style compatibility for `AntList` / `AntListWidget` to cover common `QListWidget` workflows: string item insertion, lookup/sorting, item data roles, current row/item state, selection state, internal scrolling, `scrollToItem`, and item/current/selection signals.
 - Expanded `AntTable` helper coverage with `rows()`, `selectRow()`, `currentRowIndex()`, and row-level tooltip data/display support.
 - Added `AntTypography::setPixelSize()` / `pixelSize()` for direct label-style font sizing while keeping theme-aware rendering.
+- Aligned `AntTypography` enabled state with Qt conventions: `setEnabled(false)` now drives Typography's disabled palette/interaction state, and `setDisabled()` keeps QWidget enabled state in sync.
 - Added `AntSelect` option-style list management helpers: `setOptionText()`, `removeOption()`, and `optionData()`, alongside the existing `findData()` lookup path.
 - Aligned `AntSelect` with `QComboBox` for the empty-to-populated path: the first enabled option added in single-select mode becomes the current item automatically.
 - Tuned `AntList` selected-row highlight geometry so left/right inset matches the existing top/bottom inset for a balanced row highlight.
@@ -126,6 +127,14 @@ ctest -C Debug -R "TestAnt(DataDisplayB|Typography)$" --output-on-failure
 ```
 
 Result: `2 / 2` targeted tests passed on `2026-05-08`.
+
+Latest targeted AntTypography enabled-state validation:
+
+```powershell
+ctest --test-dir build -C Debug -R "TestAntTypography$" --output-on-failure
+```
+
+Result: `1 / 1` targeted test passed on `2026-05-08`.
 
 Latest targeted AntSelect API validation:
 

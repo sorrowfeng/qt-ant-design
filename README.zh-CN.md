@@ -69,7 +69,7 @@
 - `AntDatePicker` / `AntTimePicker` 支持 QDateEdit / QTimeEdit 风格的 `date` / `time` 别名，以及最小 / 最大范围 API。
 - `AntList` / `AntListWidget` 补充字符串 add/insert/find/sort、item 数据、current/selection、内部滚动和 `scrollToItem` 等 `QListWidget` 风格接口；`AntTable` 补充 `rows()`、`selectRow()`、`currentRowIndex()` 和行级 tooltip；`AntTree` 继续覆盖 tree 风格辅助接口。
 - `AntMenu` 支持 QWidget `QAction` 的添加、变更、移除和触发流程同步；`AntToolButton` / `AntToolBar` 的继承 QAction 行为已加入测试覆盖。
-- `AntTypography` 默认垂直居中，并提供 alignment、word-wrap、clear 和 `setPixelSize()` 控制。
+- `AntTypography` 默认垂直居中，并提供 alignment、word-wrap、clear 和 `setPixelSize()` 控制；`setEnabled()` / `setDisabled()` 会同步 Typography 的 disabled 视觉与交互状态。
 
 ## 安装与集成
 
