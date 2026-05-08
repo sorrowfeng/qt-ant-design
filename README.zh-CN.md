@@ -211,7 +211,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 
 ### 组件截图
 
-以下 Light / Dark 缩略图由示例页生成。
+以下 Light / Dark 缩略图由示例页生成；涉及弹层或反馈态的控件会截取代表性的打开/激活状态。
 
 | 分类 | 组件 | Light | Dark |
 | --- | --- | --- | --- |

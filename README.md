@@ -211,7 +211,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 
 ### Component Screenshots
 
-Light and dark thumbnails are generated from the example pages.
+Light and dark thumbnails are generated from the example pages; interactive controls capture a representative open/active state where useful.
 
 | Category | Component | Light | Dark |
 | --- | --- | --- | --- |
