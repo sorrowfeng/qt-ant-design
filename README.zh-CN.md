@@ -61,7 +61,7 @@
 2026-05-07 的 API 批次增强了 Qt 对象树接入和常见 Qt 控件习惯：
 
 - `AntInput`、`AntInputNumber`、`AntCheckBox`、`AntRadio`、`AntSlider`、`AntProgress`、`AntStatusBar` 补充更多 Qt 风格常用方法和信号。
-- `AntSelect` 支持 QComboBox 风格的 item 增删插查、`currentData`、`activated` 和 highlighted 信号。
+- `AntSelect` 支持 QComboBox 风格 item 管理，并补充 `setOptionText`、`removeOption`、`optionData`、`findData`、`currentData`、`activated` 和 highlighted 信号。
 - `AntDatePicker` / `AntTimePicker` 支持 QDateEdit / QTimeEdit 风格的 `date` / `time` 别名，以及最小 / 最大范围 API。
 - `AntList` / `AntListWidget` 补充字符串 add/insert/find/sort、item 数据、current/selection、内部滚动和 `scrollToItem` 等 `QListWidget` 风格接口；`AntTable` 补充 `rows()`、`selectRow()`、`currentRowIndex()` 和行级 tooltip；`AntTree` 继续覆盖 tree 风格辅助接口。
 - `AntMenu` 支持 QWidget `QAction` 的添加、变更、移除和触发流程同步；`AntToolButton` / `AntToolBar` 的继承 QAction 行为已加入测试覆盖。
@@ -210,7 +210,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntEmpty`：默认插画、`simple` 模式、描述文案、自定义插画尺寸和 extra action
 - `AntDropdown`：`hover / click / contextMenu` 触发、placement、箭头、自动翻转
 - `AntSteps`：水平/垂直布局、当前步骤、错误态、点击切换、标题/说明/副标题
-- `AntSelect`：尺寸、状态、变体、`allowClear / loading / popup`
+- `AntSelect`：尺寸、状态、变体、`allowClear / loading / popup`、option 文本/数据管理
 - `AntAlert`：`success / info / warning / error`、图标、描述、关闭、横幅、自定义 action
 - `AntModal`：遮罩层、标题、正文、自定义内容、自定义 footer、确认/取消、居中或顶部偏移布局
 - `AntResult`：状态图标（success / error / warning / info）、标题、描述、自定义 extra 操作区

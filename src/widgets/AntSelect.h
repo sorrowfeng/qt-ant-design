@@ -85,6 +85,9 @@ public:
     void addOption(const QString& label, const QVariant& value = QVariant(), bool disabled = false);
     void addOptions(const QStringList& labels);
     void clearOptions();
+    void setOptionText(int index, const QString& text);
+    void removeOption(int index);
+    QVariant optionData(int index, int role = Qt::UserRole) const;
     void addItem(const QString& text, const QVariant& userData = QVariant());
     void addItems(const QStringList& texts);
     void insertItem(int index, const QString& text, const QVariant& userData = QVariant());

@@ -99,11 +99,15 @@ void TestAntSelect::propertiesAndSignals()
     QCOMPARE(combo->itemData(1).toInt(), 99);
     QCOMPARE(combo->findText(QStringLiteral("Two")), 2);
     QCOMPARE(combo->findData(99), 1);
+    QCOMPARE(combo->optionData(1).toInt(), 99);
 
+    combo->setOptionText(1, QStringLiteral("Option Renamed"));
+    QCOMPARE(combo->itemText(1), QStringLiteral("Option Renamed"));
     combo->setItemText(1, QStringLiteral("Renamed"));
     combo->setItemData(1, 100);
     QCOMPARE(combo->itemText(1), QStringLiteral("Renamed"));
     QCOMPARE(combo->itemData(1).toInt(), 100);
+    QCOMPARE(combo->optionData(1).toInt(), 100);
 
     QSignalSpy comboIndexSpy(combo, &AntSelect::currentIndexChanged);
     combo->setCurrentText(QStringLiteral("Three"));
@@ -111,7 +115,7 @@ void TestAntSelect::propertiesAndSignals()
     QCOMPARE(combo->currentData().toString(), QStringLiteral("Three"));
     QCOMPARE(comboIndexSpy.count(), 1);
 
-    combo->removeItem(3);
+    combo->removeOption(3);
     QCOMPARE(combo->count(), 3);
     QCOMPARE(combo->findText(QStringLiteral("Three")), -1);
 

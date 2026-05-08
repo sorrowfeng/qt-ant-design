@@ -450,6 +450,21 @@ void AntSelect::clearOptions()
     Q_EMIT currentValueChanged(QVariant());
 }
 
+void AntSelect::setOptionText(int index, const QString& text)
+{
+    setItemText(index, text);
+}
+
+void AntSelect::removeOption(int index)
+{
+    removeItem(index);
+}
+
+QVariant AntSelect::optionData(int index, int role) const
+{
+    return itemData(index, role);
+}
+
 void AntSelect::addItem(const QString& text, const QVariant& userData)
 {
     addOption(text, userData);
