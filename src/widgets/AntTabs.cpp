@@ -2,12 +2,15 @@
 
 #include <QEasingCurve>
 #include <QKeyEvent>
+#include <QLayout>
+#include <QMargins>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPropertyAnimation>
 #include <QResizeEvent>
 #include <QStackedWidget>
+#include <QStyle>
 
 #include <algorithm>
 
@@ -43,6 +46,33 @@ QPainterPath cardTabPath(const QRectF& rect, Ant::TabsPlacement placement, qreal
     }
     path.addRoundedRect(rect, radius, radius);
     return path;
+}
+
+QMargins defaultLayoutMargins(QWidget* widget)
+{
+    if (!widget || !widget->style())
+    {
+        return {};
+    }
+    auto* style = widget->style();
+    return QMargins(style->pixelMetric(QStyle::PM_LayoutLeftMargin, nullptr, widget),
+                    style->pixelMetric(QStyle::PM_LayoutTopMargin, nullptr, widget),
+                    style->pixelMetric(QStyle::PM_LayoutRightMargin, nullptr, widget),
+                    style->pixelMetric(QStyle::PM_LayoutBottomMargin, nullptr, widget));
+}
+
+void clearDefaultPageLayoutMargins(QWidget* page)
+{
+    if (!page || !page->layout())
+    {
+        return;
+    }
+
+    QLayout* layout = page->layout();
+    if (layout->contentsMargins() == defaultLayoutMargins(page))
+    {
+        AntTabs::useTabContentLayout(layout);
+    }
 }
 } // namespace
 
@@ -204,6 +234,7 @@ int AntTabs::addTab(QWidget* page,
     item.page = page;
     item.disabled = disabled;
     item.closable = closable;
+    clearDefaultPageLayoutMargins(page);
     m_tabs.append(item);
     m_stack->addWidget(page);
 
@@ -215,6 +246,24 @@ int AntTabs::addTab(QWidget* page,
     syncIndicatorRect();
     update();
     return m_tabs.size() - 1;
+}
+
+void AntTabs::useTabContentLayout(QWidget* page)
+{
+    if (!page)
+    {
+        return;
+    }
+    useTabContentLayout(page->layout());
+}
+
+void AntTabs::useTabContentLayout(QLayout* layout)
+{
+    if (!layout)
+    {
+        return;
+    }
+    layout->setContentsMargins(0, 0, 0, 0);
 }
 
 void AntTabs::removeTab(const QString& key)

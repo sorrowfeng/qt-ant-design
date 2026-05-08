@@ -114,6 +114,7 @@
 - `AntInputNumber` / `AntCheckBox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API；`AntInputNumber` 默认整数显示，通过 `setDecimals()` / `setPrecision()` 开启小数，并让 decimal value/range/step 与 `precisionChanged` 同步测试覆盖。
 - `AntSelect` 补齐常用 `QComboBox` / option 风格 API/信号，包括 add/insert/remove/find、setOptionText/removeOption/optionData/findData、itemText/itemData、currentData、setCurrentText、空列表首次加入数据默认选中首项、activated/textActivated/highlighted/textHighlighted。
 - Qt Layout 自适应策略按官方控件基准对齐：`AntInput` / `AntAutoComplete` / `AntMentions` 跟随 `QLineEdit` 横向扩展，`AntSelect` / `AntCascader` / `AntTreeSelect` 跟随 `QComboBox` 的 `Preferred/Fixed`，`AntInputNumber` / `AntDatePicker` / `AntTimePicker` 跟随 Spin/Date/Time 编辑器的 `Minimum/Fixed`，`AntList` / `AntTable` / `AntTree` 跟随 Qt view 双向扩展，`AntTypography` 跟随 `QLabel` 的 height-for-width 换行策略。
+- `AntTabs` 添加页面时会自动清理页面根布局的 Qt 默认 margins，避免 Tab 内容页与 `AntCard` / `AntWidget` 内部 padding 形成双重间距；显式设置的自定义 margins 会保留，需要强制清零时可调用 `AntTabs::useTabContentLayout()`。
 - `AntDatePicker` / `AntTimePicker` 补齐 `QDateEdit` / `QTimeEdit` 风格 date/time 别名、minimum/maximum range API、range changed 信号，并对越界输入做边界收敛。
 - `AntList` / `AntListWidget` 补齐常用 `QListWidget` 风格 API/信号，包括字符串 add/insert/addItems/insertItems、item/text/icon/data/checkState/flags、findItems/sortItems、currentItem/currentRow、selectionMode/selectedItems/setItemSelected、内部滚动、scrollToItem、itemClicked/itemDoubleClicked/itemActivated/itemChanged/current/itemSelection 信号；`AntTable` 补齐 rows/selectRow/currentRowIndex 和行级 tooltip；`AntTree` 继续覆盖 tree 风格 helper。
 - `AntMenu` 接入 QWidget `QAction` 体系：`addAction/removeAction` 会同步自绘菜单项，action text/enabled/shortcut 变更会刷新显示，点击菜单项会触发对应 QAction；`AntToolButton` / `AntToolBar` 的默认 action 和 toolbar action 触发行为已有测试保护。
@@ -163,7 +164,7 @@
 | `AntMenu` | `menu` | `QProxyStyle` | 是 | vertical/horizontal/inline、明暗主题 |
 | `AntPagination` | `pagination` | `QProxyStyle` | 是 | simple/showQuickJumper/showSizeChanger |
 | `AntSteps` | `steps` | `QProxyStyle` | 是 | 水平/垂直、当前步骤、错误态 |
-| `AntTabs` | `tabs` | `QProxyStyle` | 是 | line/card/editable-card |
+| `AntTabs` | `tabs` | `QProxyStyle` | 是 | line/card/editable-card，内容页布局 helper |
 
 ### 数据录入
 

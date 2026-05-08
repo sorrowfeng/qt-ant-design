@@ -1,6 +1,9 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QAction>
+#include <QMargins>
+#include <QStyle>
+#include <QVBoxLayout>
 #include "widgets/AntBreadcrumb.h"
 #include "widgets/AntDropdown.h"
 #include "widgets/AntMenu.h"
@@ -14,6 +17,7 @@ class TestAntNavigation : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void tabsNormalizePageLayoutMargins();
 };
 
 void TestAntNavigation::propertiesAndSignals()
@@ -254,6 +258,45 @@ void TestAntNavigation::propertiesAndSignals()
     anchor->addLink("Section 2", 100);
     QSignalSpy activeIdxSpy(anchor, &AntAnchor::activeIndexChanged);
     Q_UNUSED(activeIdxSpy);
+}
+
+void TestAntNavigation::tabsNormalizePageLayoutMargins()
+{
+    AntTabs tabs;
+    const QMargins zeroMargins(0, 0, 0, 0);
+
+    auto styleMarginsFor = [](QWidget* widget) {
+        QStyle* style = widget->style();
+        return QMargins(style->pixelMetric(QStyle::PM_LayoutLeftMargin, nullptr, widget),
+                        style->pixelMetric(QStyle::PM_LayoutTopMargin, nullptr, widget),
+                        style->pixelMetric(QStyle::PM_LayoutRightMargin, nullptr, widget),
+                        style->pixelMetric(QStyle::PM_LayoutBottomMargin, nullptr, widget));
+    };
+
+    auto* defaultPage = new QWidget;
+    auto* defaultLayout = new QVBoxLayout(defaultPage);
+    defaultLayout->setContentsMargins(styleMarginsFor(defaultPage));
+    QVERIFY(defaultLayout->contentsMargins() != zeroMargins);
+
+    QCOMPARE(tabs.addTab(defaultPage, QStringLiteral("default"), QStringLiteral("Default")), 0);
+    QCOMPARE(defaultLayout->contentsMargins(), zeroMargins);
+
+    auto* customPage = new QWidget;
+    auto* customLayout = new QVBoxLayout(customPage);
+    const QMargins customMargins(21, 22, 23, 24);
+    customLayout->setContentsMargins(customMargins);
+
+    QCOMPARE(tabs.addTab(customPage, QStringLiteral("custom"), QStringLiteral("Custom")), 1);
+    QCOMPARE(customLayout->contentsMargins(), customMargins);
+
+    AntTabs::useTabContentLayout(customPage);
+    QCOMPARE(customLayout->contentsMargins(), zeroMargins);
+
+    auto* detachedLayout = new QVBoxLayout;
+    detachedLayout->setContentsMargins(8, 9, 10, 11);
+    AntTabs::useTabContentLayout(detachedLayout);
+    QCOMPARE(detachedLayout->contentsMargins(), zeroMargins);
+    delete detachedLayout;
 }
 
 QTEST_MAIN(TestAntNavigation)

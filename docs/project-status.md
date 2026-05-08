@@ -60,6 +60,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed `AntCard` title and Meta title label palettes after Light/Dark theme changes so dark-mode card headers stay legible.
 - Fixed issue-driven popup details for `AntMenu` horizontal submenu panel edges and `AntCascader` outside-click dismissal.
 - Audited Qt layout adaptivity against native widget baselines: line-edit-like controls, combo-like selectors, spin/date/time editors, slider/progress, list/table/tree views, scroll/text/status controls, and typography now carry native-like `QSizePolicy` / height-for-width behavior with targeted render-smoke coverage.
+- Added `AntTabs` content-page layout margin normalization: pages added with default Qt root-layout margins are reset to zero to avoid double spacing with Ant containers, explicit custom margins are preserved, and `AntTabs::useTabContentLayout()` is available for forced tab-pane layout setup.
 - Aligned `AntInputNumber` with the desired integer-first decimal flow: the default display remains integer (`decimals() == 0`), while `setDecimals()` / `setPrecision()` enables decimal value/range/step behavior, preserves quarter-step increments, and updates the public `precision()` state with `precisionChanged`.
 - Fixed `AntSlider` marked and range interaction details: marked sliders reserve label height under Qt layouts, drag value bubbles anchor above the visual handle, and range drags no longer paint a phantom primary handle at the minimum edge.
 
@@ -155,6 +156,14 @@ ctest --test-dir build -C Debug -R "TestAntDataEntryA$" --output-on-failure
 ```
 
 Result: `1 / 1` targeted test passed on `2026-05-08`.
+
+Latest targeted AntTabs content layout / AntTypography multiline validation:
+
+```powershell
+ctest --test-dir build -C Debug -R "TestAnt(Navigation|Typography)$" --output-on-failure
+```
+
+Result: `2 / 2` targeted tests passed on `2026-05-08`.
 
 Latest targeted AntCard theme validation:
 

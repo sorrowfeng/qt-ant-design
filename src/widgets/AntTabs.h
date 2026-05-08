@@ -15,6 +15,7 @@ class QPaintEvent;
 class QPropertyAnimation;
 class QResizeEvent;
 class QStackedWidget;
+class QLayout;
 
 struct AntTabItem
 {
@@ -74,6 +75,8 @@ public:
                const QString& iconText = QString(),
                bool disabled = false,
                bool closable = true);
+    static void useTabContentLayout(QWidget* page);
+    static void useTabContentLayout(QLayout* layout);
     void removeTab(const QString& key);
     void clearTabs();
     void setTabText(const QString& key, const QString& label);
