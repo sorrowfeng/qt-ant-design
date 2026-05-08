@@ -165,7 +165,10 @@ AntSelect::AntSelect(QWidget* parent)
 
     m_popup = new AntSelectPopup(this);
     m_popupLayout = new QVBoxLayout(m_popup);
-    m_popupLayout->setContentsMargins(8, 8, 8, 8);
+    m_popupLayout->setContentsMargins(AntSelectPopup::ShadowMargin,
+                                      AntSelectPopup::ShadowMargin,
+                                      AntSelectPopup::ShadowMargin,
+                                      AntSelectPopup::ShadowMargin);
     m_popupLayout->setSpacing(0);
 
     m_arrowAnimation = new QPropertyAnimation(this, "arrowRotation", this);
@@ -988,9 +991,9 @@ void AntSelect::updatePopupGeometry()
     const Metrics m = metrics();
     const int optionCount = static_cast<int>(m_options.size());
     const int visibleCount = std::min(std::max(1, optionCount), m_maxVisibleItems);
-    const int popupWidth = width();
-    const int popupHeight = visibleCount * m.optionHeight + 16;
-    const QPoint globalPos = mapToGlobal(QPoint(0, height() + 4));
+    const int popupWidth = width() + AntSelectPopup::ShadowMargin * 2;
+    const int popupHeight = visibleCount * m.optionHeight + AntSelectPopup::ShadowMargin * 2;
+    const QPoint globalPos = mapToGlobal(QPoint(-AntSelectPopup::ShadowMargin, height() + 4));
     m_popup->setGeometry(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
 }
 

@@ -54,6 +54,7 @@ private slots:
     void feedbackSurfacesKeepElevatedTokenFill();
     void resultStatusIconKeepsTransparentBackground();
     void feedbackPopupShadowsStaySubtle();
+    void popupEffectShadowPaintsOutsidePanel();
     void dataDisplayBordersAndSeparatorsStayVisible();
     void navigationAndLayoutStructureStayVisible();
     void stepsFirstIconKeepsLeftBorderVisible();
@@ -583,6 +584,48 @@ void TestAntVisualRegression::feedbackPopupShadowsStaySubtle()
     assertNotificationShadow(Ant::ThemeMode::Default, 36);
     assertMessageShadow(Ant::ThemeMode::Dark, 44);
     assertNotificationShadow(Ant::ThemeMode::Dark, 50);
+}
+
+void TestAntVisualRegression::popupEffectShadowPaintsOutsidePanel()
+{
+    ThemeModeGuard guard;
+
+    auto assertPopupShadow = [](Ant::ThemeMode mode) {
+        antTheme->setThemeMode(mode);
+        const auto& token = antTheme->tokens();
+
+        QImage image(QSize(112, 80), QImage::Format_ARGB32);
+        image.fill(Qt::transparent);
+
+        const QRect panel(24, 20, 64, 36);
+        {
+            QPainter painter(&image);
+            painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+            antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.75);
+            painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+            painter.setBrush(token.colorBgElevated);
+            painter.drawRoundedRect(QRectF(panel), token.borderRadiusLG, token.borderRadiusLG);
+        }
+
+        int shadowPixels = 0;
+        const QRect shadowBounds = panel.adjusted(-12, -12, 12, 12).intersected(image.rect());
+        for (int y = shadowBounds.top(); y <= shadowBounds.bottom(); ++y)
+        {
+            for (int x = shadowBounds.left(); x <= shadowBounds.right(); ++x)
+            {
+                if (!panel.contains(x, y) && image.pixelColor(x, y).alpha() > 0)
+                {
+                    ++shadowPixels;
+                }
+            }
+        }
+
+        QVERIFY2(shadowPixels > 220,
+                 qPrintable(QStringLiteral("popup outside-shadow pixels: %1").arg(shadowPixels)));
+    };
+
+    assertPopupShadow(Ant::ThemeMode::Default);
+    assertPopupShadow(Ant::ThemeMode::Dark);
 }
 
 void TestAntVisualRegression::dataDisplayBordersAndSeparatorsStayVisible()

@@ -19,6 +19,8 @@ class QPaintEvent;
 class QT_ANT_DESIGN_EXPORT AntSelectPopup : public QFrame
 {
 public:
+    static constexpr int ShadowMargin = 8;
+
     explicit AntSelectPopup(AntSelect* owner)
         : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
           m_owner(owner)
@@ -35,9 +37,12 @@ protected:
         const auto& token = antTheme->tokens();
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-        antTheme->drawEffectShadow(&painter, rect().adjusted(2, 2, -2, -2), 10, token.borderRadiusLG, 0.55);
 
-        QRectF panel = rect().adjusted(4, 4, -4, -4);
+        const QRectF panel = QRectF(rect()).adjusted(ShadowMargin,
+                                                     ShadowMargin,
+                                                     -ShadowMargin,
+                                                     -ShadowMargin);
+        antTheme->drawEffectShadow(&painter, panel.toAlignedRect(), 10, token.borderRadiusLG, 0.55);
         painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
         painter.setBrush(token.colorBgElevated);
         painter.drawRoundedRect(panel, token.borderRadiusLG, token.borderRadiusLG);

@@ -15,7 +15,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `83 / 83` public components, plus the standalone `Showcase` page |
 | Dedicated examples intentionally absent | None |
-| Tests | `37` CTest targets configured; latest build-system / install targeted verification passed in Debug on `2026-05-08` |
+| Tests | `37` CTest targets configured; latest popup-shadow targeted verification passed in Debug on `2026-05-09` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for all `83` public components |
 
@@ -79,6 +79,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added the missing `AntRate` selected-star scale pulse and a small internal paint inset so the animated star edge is not clipped.
 - Reworked the `AntSlider` drag value bubble as a single rounded-rect-plus-arrow path so the arrow no longer appears visually separated from the body.
 - Restored the `AntWindow` outer DWM shadow on the Windows 10 no-caption path by keeping a 1 px extended frame while preserving the legacy rounded mask.
+- Fixed shared popup elevation shadows by making `AntTheme::drawEffectShadow()` paint outside the panel body, and aligned `AntSelect`, `AntDatePicker`, and `AntTimePicker` popup shadow margins so Dropdown/Menu/Cascader/ColorPicker-style floating panels keep visible light/dark elevation.
 
 ## Visual Audit State
 
@@ -86,7 +87,7 @@ The component visual audit matrix in `docs/visual-audit.md` is current:
 
 - Comparable Ant Design standard components are marked `Pass`.
 - Qt-only desktop extensions are marked `Local Pass`.
-- `TestAntVisualRegression` now guards stable pixel-level regressions across token fills, semantic status colors, selection controls, feedback surfaces, data-display structure, navigation/layout structure, popup surfaces, and light/dark surface contrast.
+- `TestAntVisualRegression` now guards stable pixel-level regressions across token fills, semantic status colors, selection controls, feedback surfaces, data-display structure, navigation/layout structure, popup surfaces, shared external popup shadows, and light/dark surface contrast.
 - The homepage Showcase audit is marked `Pass` against the isolated local HTML and Qt control pages.
 - README gallery screenshots are committed under `resources/images/components/`; popup and feedback controls use representative open/active captures while single-component audit scratch captures remain under `build/`.
 - Future visual work should be issue-driven: when a mismatch is found, re-run the single-component capture loop documented in `docs/visual-audit.md`.
@@ -125,6 +126,16 @@ ctest --test-dir build -C Debug -R "TestAntBuildSystem|TestAntInstallConsumer|Te
 ```
 
 Result: `4 / 4` targeted tests passed.
+
+Latest targeted popup shadow validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntSelect TestAntDataEntryB TestAntNavigation TestAntQtExtensions TestAntFeedback TestAntVisualRegression TestAntDataDisplayA qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAnt(Select|DataEntryB|Navigation|QtExtensions|Feedback|VisualRegression|DataDisplayA)$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: `7 / 7` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`.
 
 Latest targeted AntWindow verification:
 

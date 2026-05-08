@@ -40,8 +40,8 @@ protected:
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-        antTheme->drawEffectShadow(&painter, rect().adjusted(2, 2, -2, -2), 12, token.borderRadiusLG, 0.55);
         const QRectF panel = panelRect();
+        antTheme->drawEffectShadow(&painter, panel.toAlignedRect(), 12, token.borderRadiusLG, 0.55);
         painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
         painter.setBrush(token.colorBgElevated);
         painter.drawRoundedRect(panel, token.borderRadiusLG, token.borderRadiusLG);

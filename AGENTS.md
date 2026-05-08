@@ -38,7 +38,7 @@
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - README 组件截图画廊：`resources/images/components/` 提交 `166` 张 Light/Dark PNG，覆盖 `83` 个公开组件；弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：当前 `37` 个 CTest 目标；最近一次 build-system / install targeted 验证 `4 / 4` 在 Debug 下通过（`2026-05-08`）
+- 测试状态：当前 `37` 个 CTest 目标；最近一次 popup-shadow targeted 验证 `7 / 7` 在 Debug 下通过（`2026-05-09`）
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -88,6 +88,7 @@
 - `AntPlainTextEdit`：补齐 TextArea 式右下角拖拽缩放。
 - `AntInputNumber`：鼠标进入/聚焦时上下箭头控制区以动画显示。
 - `AntSlider`：拖动时在当前 handle 上方显示数值浮标并跟随 handle，浮窗箭头与圆角面板使用一体化轮廓绘制，marks 场景保留标签高度，Range 拖动不再在最左侧绘制多余 pressed/focus 滑块。
+- 弹层阴影：`AntTheme::drawEffectShadow()` 改为围绕面板向外绘制阴影，并让 `AntSelect` / `AntDatePicker` / `AntTimePicker` 弹层按面板本体预留阴影边距；Dropdown、Menu、Cascader、ColorPicker 等弹出面板在 Light/Dark 下都有可见层级。
 - `AntSwitch`：点击时触发灰色 Wave 边缘动效。
 - `AntTransfer`：修复列表滚动、滚动后行点击和顶部全选。
 - `AntCarousel`：补齐轮播图滑动切换动效。

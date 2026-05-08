@@ -81,8 +81,8 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
     const bool hovered = option->state & QStyle::State_MouseOver;
     if (card->isHoverable() && hovered)
     {
-        antTheme->drawEffectShadow(painter, option->rect, 12, radius, 1.35);
         cardRect.adjust(2, 2, -2, -2);
+        antTheme->drawEffectShadow(painter, cardRect, 12, radius, 1.35);
     }
 
     // Card border and background

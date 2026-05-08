@@ -90,22 +90,48 @@ QColor AntTheme::disabledColor(const QColor& foreground) const
 
 void AntTheme::drawEffectShadow(QPainter* painter, const QRect& rect, int shadowWidth, int radius, qreal strength) const
 {
-    if (!painter || shadowWidth <= 0)
+    if (!painter || shadowWidth <= 0 || rect.isEmpty())
     {
         return;
     }
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
-    QColor shadow = tokens().colorShadow;
-    for (int i = 0; i < shadowWidth; ++i)
+
+    const QRectF panelRect(rect);
+    const int panelRadius = qMax(0, radius);
+    const QColor shadowBase = tokens().colorShadow;
+    QPainterPath panelPath;
+    panelPath.addRoundedRect(panelRect, panelRadius, panelRadius);
+
+    for (int distance = shadowWidth; distance > 0; --distance)
     {
-        const qreal progress = 1.0 - static_cast<qreal>(i) / shadowWidth;
-        shadow.setAlphaF(std::clamp(0.08 * progress * strength, 0.0, 0.35));
-        painter->setPen(QPen(shadow, 1));
-        painter->setBrush(Qt::NoBrush);
-        const QRectF layer = rect.adjusted(shadowWidth - i, shadowWidth - i, -(shadowWidth - i), -(shadowWidth - i));
-        painter->drawRoundedRect(layer, radius + i, radius + i);
+        const qreal progress = 1.0 - static_cast<qreal>(distance - 1) / shadowWidth;
+        QColor shadow = shadowBase;
+        shadow.setAlphaF(std::clamp(0.12 * progress * strength, 0.0, 0.35));
+
+        QPainterPath outerPath;
+        const QRectF outerRect = panelRect.adjusted(-distance, -distance, distance, distance);
+        outerPath.addRoundedRect(outerRect, panelRadius + distance, panelRadius + distance);
+
+        QPainterPath innerPath;
+        if (distance == 1)
+        {
+            innerPath = panelPath;
+        }
+        else
+        {
+            const int innerDistance = distance - 1;
+            const QRectF innerRect = panelRect.adjusted(-innerDistance,
+                                                        -innerDistance,
+                                                        innerDistance,
+                                                        innerDistance);
+            innerPath.addRoundedRect(innerRect,
+                                     panelRadius + innerDistance,
+                                     panelRadius + innerDistance);
+        }
+
+        painter->fillPath(outerPath.subtracted(innerPath), shadow);
     }
     painter->restore();
 }

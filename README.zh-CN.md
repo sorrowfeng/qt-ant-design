@@ -43,6 +43,7 @@
 2026-04-30 的交互与动效对齐批次补齐了多处用户可见细节：
 
 - 弹层反馈：`AntPopover`、`AntMessage`、`AntNotification` 的悬停/关闭行为更稳定，阴影层级更清晰，并补齐了按 placement 进入/退出的动效。
+- 弹层外壳：共享弹层阴影改为围绕面板向外绘制，`AntDropdown`、`AntMenu`、选择类弹层、`AntColorPicker`、`AntDatePicker`、`AntTimePicker` 在亮色/暗色主题下都保留可见的 token 阴影。
 - 动效表现：`AntCarousel`、`AntTabs`、`AntSkeleton`、`AntSpin`、`AntInputNumber`、`AntSwitch` 和 loading button 的方向、节奏、状态反馈更贴近 Ant Design。
 - 数据交互：`AntTransfer` 支持正常滚动和顶部全选，`AntTable` 表头排序点击会真正重排行数据。
 - 输入反馈：`AntPlainTextEdit` 支持 TextArea 式右下角拖拽缩放，`AntSlider` 拖动时显示数值浮标。
