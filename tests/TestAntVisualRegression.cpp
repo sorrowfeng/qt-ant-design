@@ -29,6 +29,7 @@
 #include "widgets/AntPopover.h"
 #include "widgets/AntProgress.h"
 #include "widgets/AntRadio.h"
+#include "widgets/AntResult.h"
 #include "widgets/AntSteps.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTabs.h"
@@ -49,6 +50,7 @@ private slots:
     void selectionControlsKeepPrimaryStateFills();
     void tagAndBadgeStatusColorsStayVisible();
     void feedbackSurfacesKeepElevatedTokenFill();
+    void resultStatusIconKeepsTransparentBackground();
     void feedbackPopupShadowsStaySubtle();
     void dataDisplayBordersAndSeparatorsStayVisible();
     void navigationAndLayoutStructureStayVisible();
@@ -137,6 +139,23 @@ int countNearColor(const QImage& image, const QColor& target, int tolerance = 28
     for (int y = 0; y < image.height(); ++y)
     {
         for (int x = 0; x < image.width(); ++x)
+        {
+            if (nearColor(image.pixelColor(x, y), target, tolerance))
+            {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
+int countNearColor(const QImage& image, const QRect& rect, const QColor& target, int tolerance = 28)
+{
+    int count = 0;
+    const QRect clipped = rect.intersected(image.rect());
+    for (int y = clipped.top(); y <= clipped.bottom(); ++y)
+    {
+        for (int x = clipped.left(); x <= clipped.right(); ++x)
         {
             if (nearColor(image.pixelColor(x, y), target, tolerance))
             {
@@ -451,6 +470,28 @@ void TestAntVisualRegression::feedbackSurfacesKeepElevatedTokenFill()
     const QImage notificationImage = renderWidget(&notification, QSize(420, 140));
     assertNearColorPixels(notificationImage, token.colorBgElevated, 18000, "notification elevated surface", 12);
     assertNearColorPixels(notificationImage, token.colorPrimary, 80, "notification primary accent");
+}
+
+void TestAntVisualRegression::resultStatusIconKeepsTransparentBackground()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+
+    AntResult result(QStringLiteral("Done"));
+    result.setStatus(Ant::AlertType::Success);
+    result.setSubTitle(QStringLiteral("The status icon should not paint an opaque tile."));
+    const QImage image = renderWidget(&result, QSize(320, 220));
+    const QRect iconRect((image.width() - 72) / 2, 32, 72, 72);
+    const int cornerSize = 12;
+    const int whitePixels =
+        countNearColor(image, QRect(iconRect.topLeft(), QSize(cornerSize, cornerSize)), QColor(255, 255, 255), 24) +
+        countNearColor(image, QRect(iconRect.topRight() - QPoint(cornerSize - 1, 0), QSize(cornerSize, cornerSize)), QColor(255, 255, 255), 24) +
+        countNearColor(image, QRect(iconRect.bottomLeft() - QPoint(0, cornerSize - 1), QSize(cornerSize, cornerSize)), QColor(255, 255, 255), 24) +
+        countNearColor(image, QRect(iconRect.bottomRight() - QPoint(cornerSize - 1, cornerSize - 1), QSize(cornerSize, cornerSize)), QColor(255, 255, 255), 24);
+
+    QVERIFY2(whitePixels < 16,
+             qPrintable(QStringLiteral("AntResult dark icon corners contain %1 near-white pixels")
+                            .arg(whitePixels)));
 }
 
 void TestAntVisualRegression::feedbackPopupShadowsStaySubtle()

@@ -1,6 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
 #include "widgets/AntAlert.h"
+#include "widgets/AntButton.h"
 #include "widgets/AntDrawer.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntNotification.h"
@@ -532,12 +533,39 @@ void TestAntFeedback::tooltip()
 
 void TestAntFeedback::tour()
 {
-    auto* w = new AntTour;
+    QWidget host;
+    host.resize(360, 180);
+    AntButton step1(QStringLiteral("Step 1"), &host);
+    AntButton step2(QStringLiteral("Step 2"), &host);
+    AntButton step3(QStringLiteral("Step 3"), &host);
+    step1.move(24, 48);
+    step2.move(124, 48);
+    step3.move(224, 48);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    auto* w = new AntTour(&host);
+    w->addStep({&step1, QStringLiteral("Step 1"), QStringLiteral("First step")});
+    w->addStep({&step2, QStringLiteral("Step 2"), QStringLiteral("Second step")});
+    w->addStep({&step3, QStringLiteral("Step 3"), QStringLiteral("Third step")});
+
     QSignalSpy finishedSpy(w, &AntTour::finished);
     QSignalSpy stepSpy(w, &AntTour::stepChanged);
-    Q_UNUSED(finishedSpy);
-    Q_UNUSED(stepSpy);
-    // Tour is step-based, just verify it instantiates
+
+    w->start(1);
+    QCOMPARE(stepSpy.count(), 1);
+    QCOMPARE(stepSpy.takeFirst().at(0).toInt(), 1);
+
+    w->next();
+    QCOMPARE(stepSpy.count(), 1);
+    QCOMPARE(stepSpy.takeFirst().at(0).toInt(), 2);
+
+    w->prev();
+    QCOMPARE(stepSpy.count(), 1);
+    QCOMPARE(stepSpy.takeFirst().at(0).toInt(), 1);
+
+    w->close();
+    QCOMPARE(finishedSpy.count(), 1);
 }
 
 QTEST_MAIN(TestAntFeedback)

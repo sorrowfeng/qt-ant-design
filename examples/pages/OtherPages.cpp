@@ -315,9 +315,19 @@ QWidget* createTourPage(QWidget* /*owner*/)
         auto* desc = makeSecondaryText(QStringLiteral("Tour component requires step-by-step interaction. Click the buttons below to see the demo."), page);
         auto* stepRow = new QHBoxLayout();
         stepRow->setSpacing(12);
-        stepRow->addWidget(new AntButton(QStringLiteral("Step 1")));
-        stepRow->addWidget(new AntButton(QStringLiteral("Step 2")));
-        stepRow->addWidget(new AntButton(QStringLiteral("Step 3")));
+        auto* step1 = new AntButton(QStringLiteral("Step 1"));
+        auto* step2 = new AntButton(QStringLiteral("Step 2"));
+        auto* step3 = new AntButton(QStringLiteral("Step 3"));
+        auto* tour = new AntTour(page);
+        tour->addStep({step1, QStringLiteral("Step 1"), QStringLiteral("Create the first item.")});
+        tour->addStep({step2, QStringLiteral("Step 2"), QStringLiteral("Review the second item.")});
+        tour->addStep({step3, QStringLiteral("Step 3"), QStringLiteral("Finish the guided action.")});
+        QObject::connect(step1, &AntButton::clicked, tour, [tour]() { tour->start(0); });
+        QObject::connect(step2, &AntButton::clicked, tour, [tour]() { tour->start(1); });
+        QObject::connect(step3, &AntButton::clicked, tour, [tour]() { tour->start(2); });
+        stepRow->addWidget(step1);
+        stepRow->addWidget(step2);
+        stepRow->addWidget(step3);
         stepRow->addStretch();
 
         cl->addWidget(desc);

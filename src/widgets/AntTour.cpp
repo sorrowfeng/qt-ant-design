@@ -159,9 +159,17 @@ AntTour::AntTour(QObject* parent) : QObject(parent) {}
 
 void AntTour::addStep(const AntTourStep& step) { m_steps.append(step); }
 
-void AntTour::start()
+void AntTour::start(int index)
 {
     if (m_steps.isEmpty()) return;
+    if (index < 0 || index >= m_steps.size()) return;
+    if (m_overlay)
+    {
+        showStep(index);
+        m_overlay->raise();
+        return;
+    }
+
     auto* topWidget = QApplication::activeWindow();
     if (!topWidget) { for (auto* w : QApplication::topLevelWidgets()) { if (w->isWindow()) { topWidget = w; break; } } }
     if (!topWidget) return;
@@ -174,7 +182,7 @@ void AntTour::start()
     connect(dynamic_cast<TourOverlay*>(m_overlay)->nextBtn, &QPushButton::clicked, this, &AntTour::next);
     connect(dynamic_cast<TourOverlay*>(m_overlay)->closeBtn, &QPushButton::clicked, this, &AntTour::close);
 
-    showStep(0);
+    showStep(index);
     m_overlay->show();
 }
 

@@ -24,7 +24,7 @@ public:
     explicit AntTour(QObject* parent = nullptr);
 
     void addStep(const AntTourStep& step);
-    void start();
+    void start(int index = 0);
     void next();
     void prev();
     void close();

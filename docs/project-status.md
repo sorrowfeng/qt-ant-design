@@ -70,6 +70,8 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added `AntDesign::initialize(&app)` as the one-call consumer startup path for `qt_ant_design` resource registration, bundled font application, and theme singleton initialization.
 - Added `AntRibbon` as a lightweight Ribbon component with pages, groups, large/small actions, embedded Ant/Qt widgets, collapsed popup mode, and `AntWindow` top-area integration.
 - Added a README component screenshot gallery with light/dark thumbnails for all public components, and refreshed popup/feedback-heavy controls to show representative open or active states instead of only trigger buttons.
+- Fixed the `AntTour` example page so the Step 1 / 2 / 3 buttons launch the corresponding tour step through the new `AntTour::start(index)` path.
+- Fixed `AntResult` dark-mode status icon rendering so the icon is drawn directly with a transparent background instead of rendering an opaque widget tile.
 
 ## Visual Audit State
 
@@ -219,6 +221,16 @@ Select-String -Path README.md,README.zh-CN.md -Pattern 'resources/images/compone
 ```
 
 Result: `166` committed PNG screenshots validated at `960x540`, and `166` unique README image references resolved on `2026-05-08`.
+
+Latest targeted AntTour / AntResult issue validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntFeedback TestAntVisualRegression qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAnt(Feedback|VisualRegression)$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: `2 / 2` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-08`.
 
 ## Remaining Notes
 

@@ -5,7 +5,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
-#include "widgets/AntIcon.h"
+#include "styles/AntIconPainter.h"
 #include "widgets/AntResult.h"
 
 namespace
@@ -180,18 +180,12 @@ void AntResultStyle::drawResult(const QStyleOption* option, QPainter* painter, c
     if (result->isIconVisible())
     {
         const QRect ir = resultIconRect(option->rect);
-        AntIcon icon(resultIconTypeForStatus(result));
-        icon.setIconTheme(Ant::IconTheme::Filled);
-        icon.setColor(resultIconColor(result));
-        icon.setIconSize(m.iconSize);
-        icon.resize(ir.size());
-
-        const qreal dpr = widget->devicePixelRatioF();
-        QPixmap pixmap(ir.size() * dpr);
-        pixmap.setDevicePixelRatio(dpr);
-        pixmap.fill(Qt::transparent);
-        icon.render(&pixmap);
-        painter->drawPixmap(ir.topLeft(), pixmap);
+        AntIconPainter::drawIcon(*painter,
+                                 resultIconTypeForStatus(result),
+                                 QRectF(ir),
+                                 resultIconColor(result),
+                                 Ant::IconTheme::Filled,
+                                 token.colorTextLightSolid);
     }
 
     QFont titleFont = widgetFont;

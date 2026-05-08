@@ -207,12 +207,12 @@
 | `AntPopconfirm` | `popconfirm` | `QProxyStyle` | 是 | title/description/ok/cancel/placement |
 | `AntPopover` | `popover` | `QProxyStyle` | 是 | title/content/action/hover/click/placement |
 | `AntProgress` | `progress` | `QProxyStyle` | 是 | line/circle/dashboard |
-| `AntResult` | `result` | `QProxyStyle` | 是 | status/title/subTitle/extra |
+| `AntResult` | `result` | `QProxyStyle` | 是 | status/title/subTitle/extra，暗色透明状态图标 |
 | `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | active shimmer、头像/标题/段落占位、Element 变体 |
 | `AntSpin` | `spin` | `QProxyStyle` | 是 | small/middle/large/percent/delay |
 | `AntToolTip` | `tooltip` | `QProxyStyle` | 是 | title/placement/color/arrow/delay |
 | `AntWatermark` | `watermark` | `QProxyStyle` | 是 | 旋转文本平铺、多行、自定义间距 |
-| `AntTour` | `tour` | 自绘 | 是 | 遮罩式分步引导、目标高亮 |
+| `AntTour` | `tour` | 自绘 | 是 | 遮罩式分步引导、目标高亮，支持从指定步骤启动 |
 
 ### 数据展示
 

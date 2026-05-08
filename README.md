@@ -313,7 +313,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntSelect`: sizes, states, variants, `allowClear / loading / popup`, option text/data management
 - `AntAlert`: `success / info / warning / error`, icon, description, closable, banner, custom action
 - `AntModal`: mask, title, body, custom content, custom footer, confirm / cancel, centered or top-offset layout
-- `AntResult`: status icons (success / error / warning / info), title, description, custom extra actions area
+- `AntResult`: status icons (success / error / warning / info), transparent icon background in dark mode, title, description, custom extra actions area
 - `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description), action areas, internal scrolling, and QListWidget-style text/data/selection helpers through the `AntListWidget` alias
 - `AntStatistic`: numeric display, thousands separators, prefix / suffix, precision control
 - `AntPopover`: title, body, action, click / hover triggers, placement, arrow
@@ -352,7 +352,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntColorPicker`: inline color trigger with optional text, plus popup HS field + value slider + RGB / HSV inputs, preset and custom colors
 - `AntImage`: image display with placeholder fallback and click-to-fullscreen preview
 - `AntTransfer`: transfer component with two scrollable lists, header select-all, and batch movement
-- `AntTour`: masked step-by-step guide with target highlighting and Prev / Next / Finish
+- `AntTour`: masked step-by-step guide with target highlighting, direct step launch, and Prev / Next / Finish
 - `AntMentions`: `@` mentions input that pops suggestions on `@`
 - `AntGrid` (Row/Col): 24-column grid with span / offset / gutter
 - `AntFlex`: flex layout container with gap / wrap / vertical

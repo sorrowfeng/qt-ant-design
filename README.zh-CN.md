@@ -313,7 +313,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntSelect`：尺寸、状态、变体、`allowClear / loading / popup`、option 文本/数据管理
 - `AntAlert`：`success / info / warning / error`、图标、描述、关闭、横幅、自定义 action
 - `AntModal`：遮罩层、标题、正文、自定义内容、自定义 footer、确认/取消、居中或顶部偏移布局
-- `AntResult`：状态图标（success / error / warning / info）、标题、描述、自定义 extra 操作区
+- `AntResult`：状态图标（success / error / warning / info）、暗色透明图标背景、标题、描述、自定义 extra 操作区
 - `AntList`：`header / footer / bordered / split / size`，`AntListItem` 支持 `Meta`（头像、标题、描述）、操作区、内部滚动和 QListWidget 风格文本/数据/选择 helper
 - `AntStatistic`：数值展示、千分位分隔、前缀后缀、精度控制
 - `AntPopover`：标题、正文、action、点击/悬停触发、placement、箭头
@@ -352,7 +352,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntColorPicker`：内联颜色触发器，可显示文本，弹窗内提供 HS field + value slider + RGB/HSV 输入、预设/自定义颜色
 - `AntImage`：图片展示，placeholder fallback，点击全屏预览
 - `AntTransfer`：穿梭框，双列表滚动、顶部全选、批量转移
-- `AntTour`：遮罩式分步引导，目标高亮，Prev/Next/Finish
+- `AntTour`：遮罩式分步引导，目标高亮，支持指定步骤启动，Prev/Next/Finish
 - `AntMentions`：@提及输入，输入 @ 弹出建议
 - `AntGrid` (Row/Col)：24 列栅格布局，span/offset/gutter
 - `AntFlex`：弹性布局容器，gap/wrap/vertical
