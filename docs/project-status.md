@@ -198,13 +198,13 @@ Result: example Debug build succeeded and `1 / 1` targeted install-consumer test
 Latest targeted AntRibbon validation:
 
 ```powershell
-cmake --build build --config Debug --target TestAntQtExtensions TestAntObjectTree TestAntMetaProperties TestAntThemeLifecycle TestAntRenderSmoke TestAntCoverageInventory
-ctest --test-dir build -C Debug -R "TestAnt(QtExtensions|ObjectTree|MetaProperties|ThemeLifecycle|RenderSmoke|CoverageInventory)$" --output-on-failure
+cmake --build build --config Debug --target TestAntQtExtensions TestAntRenderSmoke qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAnt(QtExtensions|RenderSmoke)$" --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 .\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 
-Result: `6 / 6` targeted tests passed, example Debug build succeeded, the example smoke launch exited cleanly, and temporary visual captures for expanded/tab-animation/collapse/collapsed Ribbon states were checked on `2026-05-08`.
+Result: `2 / 2` targeted tests passed, example Debug build succeeded, the example smoke launch exited cleanly, and temporary visual captures for expanded/hover-tab/tab-animation/collapse/collapsed Ribbon states were checked on `2026-05-08`.
 
 ## Remaining Notes
 

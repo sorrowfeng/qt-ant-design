@@ -22,8 +22,13 @@
 
 namespace
 {
-constexpr int kGroupMinHeight = 132;
+constexpr int kGroupMinHeight = 158;
 constexpr int kGroupTitleHeight = 24;
+constexpr int kGroupTopMargin = 8;
+constexpr int kGroupBottomMargin = 8;
+constexpr int kGroupTitleSpacing = 5;
+constexpr int kGroupContentHeight =
+    kGroupMinHeight - kGroupTopMargin - kGroupBottomMargin - kGroupTitleSpacing - kGroupTitleHeight;
 constexpr int kLargeButtonWidth = 92;
 constexpr int kLargeButtonHeight = 92;
 constexpr int kSmallButtonHeight = 34;
@@ -162,12 +167,13 @@ void AntRibbonGroup::init()
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
     m_rootLayout = new QVBoxLayout(this);
-    m_rootLayout->setContentsMargins(10, 8, 10, 6);
-    m_rootLayout->setSpacing(5);
+    m_rootLayout->setContentsMargins(10, kGroupTopMargin, 10, kGroupBottomMargin);
+    m_rootLayout->setSpacing(kGroupTitleSpacing);
 
     m_content = new QWidget(this);
     m_content->setAttribute(Qt::WA_TranslucentBackground, true);
     m_content->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    m_content->setFixedHeight(kGroupContentHeight);
     m_contentLayout = new QHBoxLayout(m_content);
     m_contentLayout->setContentsMargins(0, 0, 0, 0);
     m_contentLayout->setSpacing(8);
@@ -176,7 +182,7 @@ void AntRibbonGroup::init()
     m_titleLabel->setAlignment(Qt::AlignCenter);
     m_titleLabel->setFixedHeight(kGroupTitleHeight);
 
-    m_rootLayout->addWidget(m_content, 1);
+    m_rootLayout->addWidget(m_content);
     m_rootLayout->addWidget(m_titleLabel);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -282,9 +288,10 @@ void AntRibbonGroup::paintEvent(QPaintEvent* event)
     painter.setBrush(token.colorBgContainer);
     painter.drawRoundedRect(bounds, token.borderRadiusSM, token.borderRadiusSM);
 
-    const QRect titleRect(6, height() - kGroupTitleHeight - 4, width() - 12, kGroupTitleHeight);
+    const int separatorY = m_titleLabel ? qMax(1, m_titleLabel->geometry().top() - 3)
+                                        : height() - kGroupTitleHeight - 6;
     painter.setPen(token.colorBorderSecondary);
-    painter.drawLine(titleRect.topLeft(), titleRect.topRight());
+    painter.drawLine(QPointF(8.0, separatorY + 0.5), QPointF(width() - 8.0, separatorY + 0.5));
 }
 
 void AntRibbonGroup::changeEvent(QEvent* event)
@@ -855,14 +862,7 @@ void AntRibbon::paintEvent(QPaintEvent* event)
         const QRect rect = tabs.at(i);
         const bool active = i == m_currentPageIndex;
         const bool hovered = i == m_hoveredTab;
-        if (active || hovered)
-        {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(active ? token.colorBgContainer : token.colorFillSecondary);
-            painter.drawRoundedRect(QRectF(rect).adjusted(0.5, 6.5, -0.5, 4.5), token.borderRadiusSM, token.borderRadiusSM);
-        }
-
-        painter.setPen(active ? token.colorPrimary : token.colorText);
+        painter.setPen(active ? token.colorPrimary : (hovered ? token.colorPrimaryHover : token.colorText));
         QFont f = painter.font();
         f.setPixelSize(token.fontSize);
         f.setWeight(active ? QFont::DemiBold : QFont::Normal);

@@ -170,7 +170,7 @@ protected:
 
 private:
     static constexpr int TabBarHeight = 42;
-    static constexpr int ContentHeight = 148;
+    static constexpr int ContentHeight = 176;
     static constexpr int CollapseButtonWidth = 36;
 
     QString normalizedKey(const QString& title, const QString& key) const;

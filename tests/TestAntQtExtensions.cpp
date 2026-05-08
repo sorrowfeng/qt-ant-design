@@ -1,5 +1,7 @@
 #include <QPalette>
 #include <QPainter>
+#include <QImage>
+#include <QLabel>
 #include <QPlainTextEdit>
 #include <QComboBox>
 #include <QAction>
@@ -35,6 +37,44 @@
 
 namespace
 {
+bool colorNearForExtensionTest(const QColor& actual, const QColor& expected, int tolerance = 12)
+{
+    return std::abs(actual.red() - expected.red()) <= tolerance &&
+           std::abs(actual.green() - expected.green()) <= tolerance &&
+           std::abs(actual.blue() - expected.blue()) <= tolerance;
+}
+
+QString colorStringForExtensionTest(const QColor& color)
+{
+    return QStringLiteral("rgba(%1,%2,%3,%4)")
+        .arg(color.red())
+        .arg(color.green())
+        .arg(color.blue())
+        .arg(color.alpha());
+}
+
+QImage renderForExtensionTest(QWidget* widget)
+{
+    QImage image(widget->size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    widget->render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
+    return image;
+}
+
+QLabel* ribbonTitleLabelForExtensionTest(AntRibbonGroup* group, const QString& text)
+{
+    const auto labels = group->findChildren<QLabel*>();
+    for (QLabel* label : labels)
+    {
+        if (label && label->text() == text)
+        {
+            return label;
+        }
+    }
+    return nullptr;
+}
+
 #ifdef Q_OS_WIN
 using RtlGetVersionFn = LONG(WINAPI*)(OSVERSIONINFOW*);
 
@@ -554,13 +594,42 @@ void TestAntQtExtensions::ribbon()
     group->addWidget(combo, Ant::RibbonItemSize::Small);
     group->addWidget(new QWidget, Ant::RibbonItemSize::Large);
     QCOMPARE(group->itemCount(), 4);
-    QVERIFY(group->sizeHint().height() >= 132);
-    QVERIFY(ribbon->sizeHint().height() >= 170);
+
+    auto* controls = file->addGroup(QStringLiteral("Ant Controls"));
+    QVERIFY(controls != nullptr);
+    auto* modeSelect = new QComboBox;
+    modeSelect->addItem(QStringLiteral("Advanced"));
+    controls->addWidget(modeSelect, Ant::RibbonItemSize::Small);
+    controls->addWidget(new QComboBox, Ant::RibbonItemSize::Small);
+    controls->addWidget(new QWidget, Ant::RibbonItemSize::Large);
+    QCOMPARE(file->groupCount(), 2);
+    QVERIFY(group->sizeHint().height() >= 158);
+    QVERIFY(ribbon->sizeHint().height() >= 210);
     QVERIFY(ribbon->property("indicatorRect").isValid());
     QVERIFY(ribbon->property("contentHeight").isValid());
     pasteAction->trigger();
     QCOMPARE(groupActionSpy.count(), 1);
     QCOMPARE(ribbonActionSpy.count(), 1);
+
+    ribbon->resize(640, ribbon->sizeHint().height());
+    ribbon->show();
+    QVERIFY(QTest::qWaitForWindowExposed(ribbon));
+    auto* clipboardTitle = ribbonTitleLabelForExtensionTest(group, QStringLiteral("Clipboard"));
+    auto* controlsTitle = ribbonTitleLabelForExtensionTest(controls, QStringLiteral("Ant Controls"));
+    QVERIFY(clipboardTitle != nullptr);
+    QVERIFY(controlsTitle != nullptr);
+    QCOMPARE(clipboardTitle->mapTo(ribbon, QPoint(0, 0)).y(), controlsTitle->mapTo(ribbon, QPoint(0, 0)).y());
+    ribbon->setCurrentPageIndex(1);
+    QTRY_COMPARE(ribbon->currentPageIndex(), 1);
+    QTest::mouseMove(ribbon, QPoint(28, 20));
+    QCoreApplication::processEvents();
+    const QImage hoverImage = renderForExtensionTest(ribbon);
+    const QColor hoveredTabBackground = hoverImage.pixelColor(18, 14);
+    QVERIFY2(colorNearForExtensionTest(hoveredTabBackground, antTheme->tokens().colorBgElevated),
+             qPrintable(QStringLiteral("Hovered tab painted a filled background: sampled %1 expected near %2")
+                            .arg(colorStringForExtensionTest(hoveredTabBackground),
+                                 colorStringForExtensionTest(antTheme->tokens().colorBgElevated))));
+    ribbon->setCurrentPageIndex(0);
 
     QSignalSpy collapsedSpy(ribbon, &AntRibbon::collapsedChanged);
     ribbon->setCollapsed(true);
@@ -571,14 +640,12 @@ void TestAntQtExtensions::ribbon()
     ribbon->setCollapsed(false);
     QCOMPARE(ribbon->isCollapsed(), false);
     QCOMPARE(collapsedSpy.count(), 2);
-    QVERIFY(ribbon->property("contentHeight").toReal() < 148.0);
-    QTRY_VERIFY(ribbon->sizeHint().height() >= 170);
+    QVERIFY(ribbon->property("contentHeight").toReal() < 176.0);
+    QTRY_VERIFY(ribbon->sizeHint().height() >= 210);
     ribbon->setCollapsed(true);
     QCOMPARE(collapsedSpy.count(), 3);
     QTRY_VERIFY(ribbon->sizeHint().height() < 80);
     ribbon->resize(640, ribbon->sizeHint().height());
-    ribbon->show();
-    QVERIFY(QTest::qWaitForWindowExposed(ribbon));
     QTest::mouseClick(ribbon, Qt::LeftButton, Qt::NoModifier, QPoint(28, 20));
     auto* popup = ribbon->findChild<QWidget*>(QStringLiteral("AntRibbonPopup"));
     QVERIFY(popup != nullptr);
