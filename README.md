@@ -209,6 +209,96 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 | Layout & Misc | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | Mixed (`QProxyStyle` / custom paint / QObject helper) |
 | Qt / Desktop Extensions | `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | Mixed (`QProxyStyle` / custom paint) |
 
+### Component Screenshots
+
+Light and dark thumbnails are generated from the example pages.
+
+| Category | Component | Light | Dark |
+| --- | --- | --- | --- |
+| General | `AntButton` | <img src="resources/images/components/ant-button-light.png" width="360"> | <img src="resources/images/components/ant-button-dark.png" width="360"> |
+| General | `AntIcon` | <img src="resources/images/components/ant-icon-light.png" width="360"> | <img src="resources/images/components/ant-icon-dark.png" width="360"> |
+| General | `AntTypography` | <img src="resources/images/components/ant-typography-light.png" width="360"> | <img src="resources/images/components/ant-typography-dark.png" width="360"> |
+| Layout | `AntDivider` | <img src="resources/images/components/ant-divider-light.png" width="360"> | <img src="resources/images/components/ant-divider-dark.png" width="360"> |
+| Layout | `AntFlex` | <img src="resources/images/components/ant-flex-light.png" width="360"> | <img src="resources/images/components/ant-flex-dark.png" width="360"> |
+| Layout | `AntGrid` | <img src="resources/images/components/ant-grid-light.png" width="360"> | <img src="resources/images/components/ant-grid-dark.png" width="360"> |
+| Layout | `AntLayout` | <img src="resources/images/components/ant-layout-light.png" width="360"> | <img src="resources/images/components/ant-layout-dark.png" width="360"> |
+| Layout | `AntSpace` | <img src="resources/images/components/ant-space-light.png" width="360"> | <img src="resources/images/components/ant-space-dark.png" width="360"> |
+| Layout | `AntSplitter` | <img src="resources/images/components/ant-splitter-light.png" width="360"> | <img src="resources/images/components/ant-splitter-dark.png" width="360"> |
+| Navigation | `AntAffix` | <img src="resources/images/components/ant-affix-light.png" width="360"> | <img src="resources/images/components/ant-affix-dark.png" width="360"> |
+| Navigation | `AntAnchor` | <img src="resources/images/components/ant-anchor-light.png" width="360"> | <img src="resources/images/components/ant-anchor-dark.png" width="360"> |
+| Navigation | `AntBreadcrumb` | <img src="resources/images/components/ant-breadcrumb-light.png" width="360"> | <img src="resources/images/components/ant-breadcrumb-dark.png" width="360"> |
+| Navigation | `AntDropdown` | <img src="resources/images/components/ant-dropdown-light.png" width="360"> | <img src="resources/images/components/ant-dropdown-dark.png" width="360"> |
+| Navigation | `AntMenu` | <img src="resources/images/components/ant-menu-light.png" width="360"> | <img src="resources/images/components/ant-menu-dark.png" width="360"> |
+| Navigation | `AntPagination` | <img src="resources/images/components/ant-pagination-light.png" width="360"> | <img src="resources/images/components/ant-pagination-dark.png" width="360"> |
+| Navigation | `AntSteps` | <img src="resources/images/components/ant-steps-light.png" width="360"> | <img src="resources/images/components/ant-steps-dark.png" width="360"> |
+| Data Entry | `AntAutoComplete` | <img src="resources/images/components/ant-auto-complete-light.png" width="360"> | <img src="resources/images/components/ant-auto-complete-dark.png" width="360"> |
+| Data Entry | `AntCascader` | <img src="resources/images/components/ant-cascader-light.png" width="360"> | <img src="resources/images/components/ant-cascader-dark.png" width="360"> |
+| Data Entry | `AntCheckBox` | <img src="resources/images/components/ant-checkbox-light.png" width="360"> | <img src="resources/images/components/ant-checkbox-dark.png" width="360"> |
+| Data Entry | `AntColorPicker` | <img src="resources/images/components/ant-color-picker-light.png" width="360"> | <img src="resources/images/components/ant-color-picker-dark.png" width="360"> |
+| Data Entry | `AntDatePicker` | <img src="resources/images/components/ant-date-picker-light.png" width="360"> | <img src="resources/images/components/ant-date-picker-dark.png" width="360"> |
+| Data Entry | `AntForm` | <img src="resources/images/components/ant-form-light.png" width="360"> | <img src="resources/images/components/ant-form-dark.png" width="360"> |
+| Data Entry | `AntInput` | <img src="resources/images/components/ant-input-light.png" width="360"> | <img src="resources/images/components/ant-input-dark.png" width="360"> |
+| Data Entry | `AntInputNumber` | <img src="resources/images/components/ant-input-number-light.png" width="360"> | <img src="resources/images/components/ant-input-number-dark.png" width="360"> |
+| Data Entry | `AntMentions` | <img src="resources/images/components/ant-mentions-light.png" width="360"> | <img src="resources/images/components/ant-mentions-dark.png" width="360"> |
+| Data Entry | `AntRadio` | <img src="resources/images/components/ant-radio-light.png" width="360"> | <img src="resources/images/components/ant-radio-dark.png" width="360"> |
+| Data Entry | `AntRate` | <img src="resources/images/components/ant-rate-light.png" width="360"> | <img src="resources/images/components/ant-rate-dark.png" width="360"> |
+| Data Entry | `AntSelect` | <img src="resources/images/components/ant-select-light.png" width="360"> | <img src="resources/images/components/ant-select-dark.png" width="360"> |
+| Data Entry | `AntSlider` | <img src="resources/images/components/ant-slider-light.png" width="360"> | <img src="resources/images/components/ant-slider-dark.png" width="360"> |
+| Data Entry | `AntSwitch` | <img src="resources/images/components/ant-switch-light.png" width="360"> | <img src="resources/images/components/ant-switch-dark.png" width="360"> |
+| Data Entry | `AntTimePicker` | <img src="resources/images/components/ant-time-picker-light.png" width="360"> | <img src="resources/images/components/ant-time-picker-dark.png" width="360"> |
+| Data Entry | `AntTransfer` | <img src="resources/images/components/ant-transfer-light.png" width="360"> | <img src="resources/images/components/ant-transfer-dark.png" width="360"> |
+| Data Entry | `AntTreeSelect` | <img src="resources/images/components/ant-tree-select-light.png" width="360"> | <img src="resources/images/components/ant-tree-select-dark.png" width="360"> |
+| Data Entry | `AntUpload` | <img src="resources/images/components/ant-upload-light.png" width="360"> | <img src="resources/images/components/ant-upload-dark.png" width="360"> |
+| Data Display | `AntAvatar` | <img src="resources/images/components/ant-avatar-light.png" width="360"> | <img src="resources/images/components/ant-avatar-dark.png" width="360"> |
+| Data Display | `AntBadge` | <img src="resources/images/components/ant-badge-light.png" width="360"> | <img src="resources/images/components/ant-badge-dark.png" width="360"> |
+| Data Display | `AntCalendar` | <img src="resources/images/components/ant-calendar-light.png" width="360"> | <img src="resources/images/components/ant-calendar-dark.png" width="360"> |
+| Data Display | `AntCard` | <img src="resources/images/components/ant-card-light.png" width="360"> | <img src="resources/images/components/ant-card-dark.png" width="360"> |
+| Data Display | `AntCarousel` | <img src="resources/images/components/ant-carousel-light.png" width="360"> | <img src="resources/images/components/ant-carousel-dark.png" width="360"> |
+| Data Display | `AntCollapse` | <img src="resources/images/components/ant-collapse-light.png" width="360"> | <img src="resources/images/components/ant-collapse-dark.png" width="360"> |
+| Data Display | `AntDescriptions` | <img src="resources/images/components/ant-descriptions-light.png" width="360"> | <img src="resources/images/components/ant-descriptions-dark.png" width="360"> |
+| Data Display | `AntEmpty` | <img src="resources/images/components/ant-empty-light.png" width="360"> | <img src="resources/images/components/ant-empty-dark.png" width="360"> |
+| Data Display | `AntImage` | <img src="resources/images/components/ant-image-light.png" width="360"> | <img src="resources/images/components/ant-image-dark.png" width="360"> |
+| Data Display | `AntList` | <img src="resources/images/components/ant-list-light.png" width="360"> | <img src="resources/images/components/ant-list-dark.png" width="360"> |
+| Data Display | `AntPopover` | <img src="resources/images/components/ant-popover-light.png" width="360"> | <img src="resources/images/components/ant-popover-dark.png" width="360"> |
+| Data Display | `AntQRCode` | <img src="resources/images/components/ant-qr-code-light.png" width="360"> | <img src="resources/images/components/ant-qr-code-dark.png" width="360"> |
+| Data Display | `AntSegmented` | <img src="resources/images/components/ant-segmented-light.png" width="360"> | <img src="resources/images/components/ant-segmented-dark.png" width="360"> |
+| Data Display | `AntStatistic` | <img src="resources/images/components/ant-statistic-light.png" width="360"> | <img src="resources/images/components/ant-statistic-dark.png" width="360"> |
+| Data Display | `AntTable` | <img src="resources/images/components/ant-table-light.png" width="360"> | <img src="resources/images/components/ant-table-dark.png" width="360"> |
+| Data Display | `AntTabs` | <img src="resources/images/components/ant-tabs-light.png" width="360"> | <img src="resources/images/components/ant-tabs-dark.png" width="360"> |
+| Data Display | `AntTag` | <img src="resources/images/components/ant-tag-light.png" width="360"> | <img src="resources/images/components/ant-tag-dark.png" width="360"> |
+| Data Display | `AntTimeline` | <img src="resources/images/components/ant-timeline-light.png" width="360"> | <img src="resources/images/components/ant-timeline-dark.png" width="360"> |
+| Data Display | `AntToolTip` | <img src="resources/images/components/ant-tooltip-light.png" width="360"> | <img src="resources/images/components/ant-tooltip-dark.png" width="360"> |
+| Data Display | `AntTree` | <img src="resources/images/components/ant-tree-light.png" width="360"> | <img src="resources/images/components/ant-tree-dark.png" width="360"> |
+| Feedback | `AntAlert` | <img src="resources/images/components/ant-alert-light.png" width="360"> | <img src="resources/images/components/ant-alert-dark.png" width="360"> |
+| Feedback | `AntDrawer` | <img src="resources/images/components/ant-drawer-light.png" width="360"> | <img src="resources/images/components/ant-drawer-dark.png" width="360"> |
+| Feedback | `AntMessage` | <img src="resources/images/components/ant-message-light.png" width="360"> | <img src="resources/images/components/ant-message-dark.png" width="360"> |
+| Feedback | `AntModal` | <img src="resources/images/components/ant-modal-light.png" width="360"> | <img src="resources/images/components/ant-modal-dark.png" width="360"> |
+| Feedback | `AntNotification` | <img src="resources/images/components/ant-notification-light.png" width="360"> | <img src="resources/images/components/ant-notification-dark.png" width="360"> |
+| Feedback | `AntPopconfirm` | <img src="resources/images/components/ant-popconfirm-light.png" width="360"> | <img src="resources/images/components/ant-popconfirm-dark.png" width="360"> |
+| Feedback | `AntProgress` | <img src="resources/images/components/ant-progress-light.png" width="360"> | <img src="resources/images/components/ant-progress-dark.png" width="360"> |
+| Feedback | `AntResult` | <img src="resources/images/components/ant-result-light.png" width="360"> | <img src="resources/images/components/ant-result-dark.png" width="360"> |
+| Feedback | `AntSkeleton` | <img src="resources/images/components/ant-skeleton-light.png" width="360"> | <img src="resources/images/components/ant-skeleton-dark.png" width="360"> |
+| Feedback | `AntSpin` | <img src="resources/images/components/ant-spin-light.png" width="360"> | <img src="resources/images/components/ant-spin-dark.png" width="360"> |
+| Feedback | `AntTour` | <img src="resources/images/components/ant-tour-light.png" width="360"> | <img src="resources/images/components/ant-tour-dark.png" width="360"> |
+| Feedback | `AntWatermark` | <img src="resources/images/components/ant-watermark-light.png" width="360"> | <img src="resources/images/components/ant-watermark-dark.png" width="360"> |
+| Other | `AntApp` | <img src="resources/images/components/ant-app-light.png" width="360"> | <img src="resources/images/components/ant-app-dark.png" width="360"> |
+| Other | `AntConfigProvider` | <img src="resources/images/components/ant-config-provider-light.png" width="360"> | <img src="resources/images/components/ant-config-provider-dark.png" width="360"> |
+| Other | `AntFloatButton` | <img src="resources/images/components/ant-float-button-light.png" width="360"> | <img src="resources/images/components/ant-float-button-dark.png" width="360"> |
+| Qt Extensions | `AntWindow` | <img src="resources/images/components/ant-window-light.png" width="360"> | <img src="resources/images/components/ant-window-dark.png" width="360"> |
+| Qt Extensions | `AntWidget` | <img src="resources/images/components/ant-widget-light.png" width="360"> | <img src="resources/images/components/ant-widget-dark.png" width="360"> |
+| Qt Extensions | `AntScrollArea` | <img src="resources/images/components/ant-scroll-area-light.png" width="360"> | <img src="resources/images/components/ant-scroll-area-dark.png" width="360"> |
+| Qt Extensions | `AntScrollBar` | <img src="resources/images/components/ant-scroll-bar-light.png" width="360"> | <img src="resources/images/components/ant-scroll-bar-dark.png" width="360"> |
+| Qt Extensions | `AntStatusBar` | <img src="resources/images/components/ant-status-bar-light.png" width="360"> | <img src="resources/images/components/ant-status-bar-dark.png" width="360"> |
+| Qt Extensions | `AntRibbon` | <img src="resources/images/components/ant-ribbon-light.png" width="360"> | <img src="resources/images/components/ant-ribbon-dark.png" width="360"> |
+| Qt Extensions | `AntMenuBar` | <img src="resources/images/components/ant-menu-bar-light.png" width="360"> | <img src="resources/images/components/ant-menu-bar-dark.png" width="360"> |
+| Qt Extensions | `AntToolBar` | <img src="resources/images/components/ant-tool-bar-light.png" width="360"> | <img src="resources/images/components/ant-tool-bar-dark.png" width="360"> |
+| Qt Extensions | `AntToolButton` | <img src="resources/images/components/ant-tool-button-light.png" width="360"> | <img src="resources/images/components/ant-tool-button-dark.png" width="360"> |
+| Qt Extensions | `AntDockWidget` | <img src="resources/images/components/ant-dock-widget-light.png" width="360"> | <img src="resources/images/components/ant-dock-widget-dark.png" width="360"> |
+| Qt Extensions | `AntPlainTextEdit` | <img src="resources/images/components/ant-plain-text-edit-light.png" width="360"> | <img src="resources/images/components/ant-plain-text-edit-dark.png" width="360"> |
+| Qt Extensions | `AntLog` | <img src="resources/images/components/ant-log-light.png" width="360"> | <img src="resources/images/components/ant-log-dark.png" width="360"> |
+| Qt Extensions | `AntNavItem` | <img src="resources/images/components/ant-nav-item-light.png" width="360"> | <img src="resources/images/components/ant-nav-item-dark.png" width="360"> |
+| Qt Extensions | `AntMasonry` | <img src="resources/images/components/ant-masonry-light.png" width="360"> | <img src="resources/images/components/ant-masonry-dark.png" width="360"> |
+
 ### Component Highlights
 
 - `AntButton`: five types, three sizes, three shapes, `loading / danger / ghost / block`

@@ -209,6 +209,96 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 | 布局与其他 | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | 混合（`QProxyStyle` / 自绘 / QObject 工具） |
 | Qt / 桌面扩展 | `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | 混合（`QProxyStyle` / 自绘） |
 
+### 组件截图
+
+以下 Light / Dark 缩略图由示例页生成。
+
+| 分类 | 组件 | Light | Dark |
+| --- | --- | --- | --- |
+| 通用 | `AntButton` | <img src="resources/images/components/ant-button-light.png" width="360"> | <img src="resources/images/components/ant-button-dark.png" width="360"> |
+| 通用 | `AntIcon` | <img src="resources/images/components/ant-icon-light.png" width="360"> | <img src="resources/images/components/ant-icon-dark.png" width="360"> |
+| 通用 | `AntTypography` | <img src="resources/images/components/ant-typography-light.png" width="360"> | <img src="resources/images/components/ant-typography-dark.png" width="360"> |
+| 布局 | `AntDivider` | <img src="resources/images/components/ant-divider-light.png" width="360"> | <img src="resources/images/components/ant-divider-dark.png" width="360"> |
+| 布局 | `AntFlex` | <img src="resources/images/components/ant-flex-light.png" width="360"> | <img src="resources/images/components/ant-flex-dark.png" width="360"> |
+| 布局 | `AntGrid` | <img src="resources/images/components/ant-grid-light.png" width="360"> | <img src="resources/images/components/ant-grid-dark.png" width="360"> |
+| 布局 | `AntLayout` | <img src="resources/images/components/ant-layout-light.png" width="360"> | <img src="resources/images/components/ant-layout-dark.png" width="360"> |
+| 布局 | `AntSpace` | <img src="resources/images/components/ant-space-light.png" width="360"> | <img src="resources/images/components/ant-space-dark.png" width="360"> |
+| 布局 | `AntSplitter` | <img src="resources/images/components/ant-splitter-light.png" width="360"> | <img src="resources/images/components/ant-splitter-dark.png" width="360"> |
+| 导航 | `AntAffix` | <img src="resources/images/components/ant-affix-light.png" width="360"> | <img src="resources/images/components/ant-affix-dark.png" width="360"> |
+| 导航 | `AntAnchor` | <img src="resources/images/components/ant-anchor-light.png" width="360"> | <img src="resources/images/components/ant-anchor-dark.png" width="360"> |
+| 导航 | `AntBreadcrumb` | <img src="resources/images/components/ant-breadcrumb-light.png" width="360"> | <img src="resources/images/components/ant-breadcrumb-dark.png" width="360"> |
+| 导航 | `AntDropdown` | <img src="resources/images/components/ant-dropdown-light.png" width="360"> | <img src="resources/images/components/ant-dropdown-dark.png" width="360"> |
+| 导航 | `AntMenu` | <img src="resources/images/components/ant-menu-light.png" width="360"> | <img src="resources/images/components/ant-menu-dark.png" width="360"> |
+| 导航 | `AntPagination` | <img src="resources/images/components/ant-pagination-light.png" width="360"> | <img src="resources/images/components/ant-pagination-dark.png" width="360"> |
+| 导航 | `AntSteps` | <img src="resources/images/components/ant-steps-light.png" width="360"> | <img src="resources/images/components/ant-steps-dark.png" width="360"> |
+| 数据录入 | `AntAutoComplete` | <img src="resources/images/components/ant-auto-complete-light.png" width="360"> | <img src="resources/images/components/ant-auto-complete-dark.png" width="360"> |
+| 数据录入 | `AntCascader` | <img src="resources/images/components/ant-cascader-light.png" width="360"> | <img src="resources/images/components/ant-cascader-dark.png" width="360"> |
+| 数据录入 | `AntCheckBox` | <img src="resources/images/components/ant-checkbox-light.png" width="360"> | <img src="resources/images/components/ant-checkbox-dark.png" width="360"> |
+| 数据录入 | `AntColorPicker` | <img src="resources/images/components/ant-color-picker-light.png" width="360"> | <img src="resources/images/components/ant-color-picker-dark.png" width="360"> |
+| 数据录入 | `AntDatePicker` | <img src="resources/images/components/ant-date-picker-light.png" width="360"> | <img src="resources/images/components/ant-date-picker-dark.png" width="360"> |
+| 数据录入 | `AntForm` | <img src="resources/images/components/ant-form-light.png" width="360"> | <img src="resources/images/components/ant-form-dark.png" width="360"> |
+| 数据录入 | `AntInput` | <img src="resources/images/components/ant-input-light.png" width="360"> | <img src="resources/images/components/ant-input-dark.png" width="360"> |
+| 数据录入 | `AntInputNumber` | <img src="resources/images/components/ant-input-number-light.png" width="360"> | <img src="resources/images/components/ant-input-number-dark.png" width="360"> |
+| 数据录入 | `AntMentions` | <img src="resources/images/components/ant-mentions-light.png" width="360"> | <img src="resources/images/components/ant-mentions-dark.png" width="360"> |
+| 数据录入 | `AntRadio` | <img src="resources/images/components/ant-radio-light.png" width="360"> | <img src="resources/images/components/ant-radio-dark.png" width="360"> |
+| 数据录入 | `AntRate` | <img src="resources/images/components/ant-rate-light.png" width="360"> | <img src="resources/images/components/ant-rate-dark.png" width="360"> |
+| 数据录入 | `AntSelect` | <img src="resources/images/components/ant-select-light.png" width="360"> | <img src="resources/images/components/ant-select-dark.png" width="360"> |
+| 数据录入 | `AntSlider` | <img src="resources/images/components/ant-slider-light.png" width="360"> | <img src="resources/images/components/ant-slider-dark.png" width="360"> |
+| 数据录入 | `AntSwitch` | <img src="resources/images/components/ant-switch-light.png" width="360"> | <img src="resources/images/components/ant-switch-dark.png" width="360"> |
+| 数据录入 | `AntTimePicker` | <img src="resources/images/components/ant-time-picker-light.png" width="360"> | <img src="resources/images/components/ant-time-picker-dark.png" width="360"> |
+| 数据录入 | `AntTransfer` | <img src="resources/images/components/ant-transfer-light.png" width="360"> | <img src="resources/images/components/ant-transfer-dark.png" width="360"> |
+| 数据录入 | `AntTreeSelect` | <img src="resources/images/components/ant-tree-select-light.png" width="360"> | <img src="resources/images/components/ant-tree-select-dark.png" width="360"> |
+| 数据录入 | `AntUpload` | <img src="resources/images/components/ant-upload-light.png" width="360"> | <img src="resources/images/components/ant-upload-dark.png" width="360"> |
+| 数据展示 | `AntAvatar` | <img src="resources/images/components/ant-avatar-light.png" width="360"> | <img src="resources/images/components/ant-avatar-dark.png" width="360"> |
+| 数据展示 | `AntBadge` | <img src="resources/images/components/ant-badge-light.png" width="360"> | <img src="resources/images/components/ant-badge-dark.png" width="360"> |
+| 数据展示 | `AntCalendar` | <img src="resources/images/components/ant-calendar-light.png" width="360"> | <img src="resources/images/components/ant-calendar-dark.png" width="360"> |
+| 数据展示 | `AntCard` | <img src="resources/images/components/ant-card-light.png" width="360"> | <img src="resources/images/components/ant-card-dark.png" width="360"> |
+| 数据展示 | `AntCarousel` | <img src="resources/images/components/ant-carousel-light.png" width="360"> | <img src="resources/images/components/ant-carousel-dark.png" width="360"> |
+| 数据展示 | `AntCollapse` | <img src="resources/images/components/ant-collapse-light.png" width="360"> | <img src="resources/images/components/ant-collapse-dark.png" width="360"> |
+| 数据展示 | `AntDescriptions` | <img src="resources/images/components/ant-descriptions-light.png" width="360"> | <img src="resources/images/components/ant-descriptions-dark.png" width="360"> |
+| 数据展示 | `AntEmpty` | <img src="resources/images/components/ant-empty-light.png" width="360"> | <img src="resources/images/components/ant-empty-dark.png" width="360"> |
+| 数据展示 | `AntImage` | <img src="resources/images/components/ant-image-light.png" width="360"> | <img src="resources/images/components/ant-image-dark.png" width="360"> |
+| 数据展示 | `AntList` | <img src="resources/images/components/ant-list-light.png" width="360"> | <img src="resources/images/components/ant-list-dark.png" width="360"> |
+| 数据展示 | `AntPopover` | <img src="resources/images/components/ant-popover-light.png" width="360"> | <img src="resources/images/components/ant-popover-dark.png" width="360"> |
+| 数据展示 | `AntQRCode` | <img src="resources/images/components/ant-qr-code-light.png" width="360"> | <img src="resources/images/components/ant-qr-code-dark.png" width="360"> |
+| 数据展示 | `AntSegmented` | <img src="resources/images/components/ant-segmented-light.png" width="360"> | <img src="resources/images/components/ant-segmented-dark.png" width="360"> |
+| 数据展示 | `AntStatistic` | <img src="resources/images/components/ant-statistic-light.png" width="360"> | <img src="resources/images/components/ant-statistic-dark.png" width="360"> |
+| 数据展示 | `AntTable` | <img src="resources/images/components/ant-table-light.png" width="360"> | <img src="resources/images/components/ant-table-dark.png" width="360"> |
+| 数据展示 | `AntTabs` | <img src="resources/images/components/ant-tabs-light.png" width="360"> | <img src="resources/images/components/ant-tabs-dark.png" width="360"> |
+| 数据展示 | `AntTag` | <img src="resources/images/components/ant-tag-light.png" width="360"> | <img src="resources/images/components/ant-tag-dark.png" width="360"> |
+| 数据展示 | `AntTimeline` | <img src="resources/images/components/ant-timeline-light.png" width="360"> | <img src="resources/images/components/ant-timeline-dark.png" width="360"> |
+| 数据展示 | `AntToolTip` | <img src="resources/images/components/ant-tooltip-light.png" width="360"> | <img src="resources/images/components/ant-tooltip-dark.png" width="360"> |
+| 数据展示 | `AntTree` | <img src="resources/images/components/ant-tree-light.png" width="360"> | <img src="resources/images/components/ant-tree-dark.png" width="360"> |
+| 反馈 | `AntAlert` | <img src="resources/images/components/ant-alert-light.png" width="360"> | <img src="resources/images/components/ant-alert-dark.png" width="360"> |
+| 反馈 | `AntDrawer` | <img src="resources/images/components/ant-drawer-light.png" width="360"> | <img src="resources/images/components/ant-drawer-dark.png" width="360"> |
+| 反馈 | `AntMessage` | <img src="resources/images/components/ant-message-light.png" width="360"> | <img src="resources/images/components/ant-message-dark.png" width="360"> |
+| 反馈 | `AntModal` | <img src="resources/images/components/ant-modal-light.png" width="360"> | <img src="resources/images/components/ant-modal-dark.png" width="360"> |
+| 反馈 | `AntNotification` | <img src="resources/images/components/ant-notification-light.png" width="360"> | <img src="resources/images/components/ant-notification-dark.png" width="360"> |
+| 反馈 | `AntPopconfirm` | <img src="resources/images/components/ant-popconfirm-light.png" width="360"> | <img src="resources/images/components/ant-popconfirm-dark.png" width="360"> |
+| 反馈 | `AntProgress` | <img src="resources/images/components/ant-progress-light.png" width="360"> | <img src="resources/images/components/ant-progress-dark.png" width="360"> |
+| 反馈 | `AntResult` | <img src="resources/images/components/ant-result-light.png" width="360"> | <img src="resources/images/components/ant-result-dark.png" width="360"> |
+| 反馈 | `AntSkeleton` | <img src="resources/images/components/ant-skeleton-light.png" width="360"> | <img src="resources/images/components/ant-skeleton-dark.png" width="360"> |
+| 反馈 | `AntSpin` | <img src="resources/images/components/ant-spin-light.png" width="360"> | <img src="resources/images/components/ant-spin-dark.png" width="360"> |
+| 反馈 | `AntTour` | <img src="resources/images/components/ant-tour-light.png" width="360"> | <img src="resources/images/components/ant-tour-dark.png" width="360"> |
+| 反馈 | `AntWatermark` | <img src="resources/images/components/ant-watermark-light.png" width="360"> | <img src="resources/images/components/ant-watermark-dark.png" width="360"> |
+| 其他 | `AntApp` | <img src="resources/images/components/ant-app-light.png" width="360"> | <img src="resources/images/components/ant-app-dark.png" width="360"> |
+| 其他 | `AntConfigProvider` | <img src="resources/images/components/ant-config-provider-light.png" width="360"> | <img src="resources/images/components/ant-config-provider-dark.png" width="360"> |
+| 其他 | `AntFloatButton` | <img src="resources/images/components/ant-float-button-light.png" width="360"> | <img src="resources/images/components/ant-float-button-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntWindow` | <img src="resources/images/components/ant-window-light.png" width="360"> | <img src="resources/images/components/ant-window-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntWidget` | <img src="resources/images/components/ant-widget-light.png" width="360"> | <img src="resources/images/components/ant-widget-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntScrollArea` | <img src="resources/images/components/ant-scroll-area-light.png" width="360"> | <img src="resources/images/components/ant-scroll-area-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntScrollBar` | <img src="resources/images/components/ant-scroll-bar-light.png" width="360"> | <img src="resources/images/components/ant-scroll-bar-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntStatusBar` | <img src="resources/images/components/ant-status-bar-light.png" width="360"> | <img src="resources/images/components/ant-status-bar-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntRibbon` | <img src="resources/images/components/ant-ribbon-light.png" width="360"> | <img src="resources/images/components/ant-ribbon-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntMenuBar` | <img src="resources/images/components/ant-menu-bar-light.png" width="360"> | <img src="resources/images/components/ant-menu-bar-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntToolBar` | <img src="resources/images/components/ant-tool-bar-light.png" width="360"> | <img src="resources/images/components/ant-tool-bar-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntToolButton` | <img src="resources/images/components/ant-tool-button-light.png" width="360"> | <img src="resources/images/components/ant-tool-button-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntDockWidget` | <img src="resources/images/components/ant-dock-widget-light.png" width="360"> | <img src="resources/images/components/ant-dock-widget-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntPlainTextEdit` | <img src="resources/images/components/ant-plain-text-edit-light.png" width="360"> | <img src="resources/images/components/ant-plain-text-edit-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntLog` | <img src="resources/images/components/ant-log-light.png" width="360"> | <img src="resources/images/components/ant-log-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntNavItem` | <img src="resources/images/components/ant-nav-item-light.png" width="360"> | <img src="resources/images/components/ant-nav-item-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntMasonry` | <img src="resources/images/components/ant-masonry-light.png" width="360"> | <img src="resources/images/components/ant-masonry-dark.png" width="360"> |
+
 ### 组件概览
 
 - `AntButton`：五种类型、三种尺寸、三种形状、`loading / danger / ghost / block`
