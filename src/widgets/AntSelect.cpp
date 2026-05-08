@@ -422,6 +422,11 @@ AntSelectOption AntSelect::optionAt(int index) const
 void AntSelect::addOption(const QString& label, const QVariant& value, bool disabled)
 {
     m_options.push_back({label, value.isValid() ? value : QVariant(label), disabled});
+    if (m_currentIndex == -1 && !disabled && m_selectMode == Ant::SelectMode::Single)
+    {
+        setCurrentIndex(m_options.size() - 1);
+        return;
+    }
     if (m_currentIndex == -1 && !disabled)
     {
         m_highlightedIndex = m_options.size() - 1;
@@ -481,6 +486,7 @@ void AntSelect::addItems(const QStringList& texts)
 void AntSelect::insertItem(int index, const QString& text, const QVariant& userData)
 {
     index = qBound(0, index, m_options.size());
+    const bool shouldSelectInserted = m_currentIndex == -1 && m_selectMode == Ant::SelectMode::Single;
 
     m_options.insert(index, {text, userData.isValid() ? userData : QVariant(text), false});
     for (int& selectedIndex : m_selectedIndices)
@@ -497,6 +503,11 @@ void AntSelect::insertItem(int index, const QString& text, const QVariant& userD
     if (m_highlightedIndex >= index)
     {
         ++m_highlightedIndex;
+    }
+    if (shouldSelectInserted)
+    {
+        setCurrentIndex(index);
+        return;
     }
 
     rebuildPopup();

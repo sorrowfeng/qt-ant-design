@@ -8,6 +8,7 @@ class TestAntSelect : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void defaultsToFirstOptionWhenPopulated();
 };
 
 void TestAntSelect::propertiesAndSignals()
@@ -142,6 +143,32 @@ void TestAntSelect::propertiesAndSignals()
     QSize hint = sel->sizeHint();
     QVERIFY(hint.width() > 0);
     QVERIFY(hint.height() > 0);
+}
+
+void TestAntSelect::defaultsToFirstOptionWhenPopulated()
+{
+    AntSelect added;
+    QSignalSpy addedIndexSpy(&added, &AntSelect::currentIndexChanged);
+    QSignalSpy addedTextSpy(&added, &AntSelect::currentTextChanged);
+    QSignalSpy addedValueSpy(&added, &AntSelect::currentValueChanged);
+
+    added.addOption(QStringLiteral("First"), QStringLiteral("first"));
+    QCOMPARE(added.currentIndex(), 0);
+    QCOMPARE(added.currentText(), QStringLiteral("First"));
+    QCOMPARE(added.currentValue().toString(), QStringLiteral("first"));
+    QCOMPARE(addedIndexSpy.count(), 1);
+    QCOMPARE(addedTextSpy.count(), 1);
+    QCOMPARE(addedValueSpy.count(), 1);
+
+    added.addOption(QStringLiteral("Second"), QStringLiteral("second"));
+    QCOMPARE(added.currentIndex(), 0);
+    QCOMPARE(addedIndexSpy.count(), 1);
+
+    AntSelect inserted;
+    inserted.insertItem(0, QStringLiteral("Inserted"), QStringLiteral("inserted"));
+    QCOMPARE(inserted.currentIndex(), 0);
+    QCOMPARE(inserted.currentText(), QStringLiteral("Inserted"));
+    QCOMPARE(inserted.currentValue().toString(), QStringLiteral("inserted"));
 }
 
 QTEST_MAIN(TestAntSelect)

@@ -112,7 +112,7 @@
 - `AntTypography` 默认垂直居中，新增 alignment 策略、wordWrap、clear 和 `setPixelSize()` API。
 - `AntInput` 补齐常用 `QLineEdit` 风格 API/信号，包括 placeholder、readOnly、maxLength、echoMode、alignment、selection、clipboard、undo/redo、return/editing/selection/inputRejected 等。
 - `AntInputNumber` / `AntCheckBox` / `AntRadio` / `AntSlider` / `AntProgress` / `AntStatusBar` 补齐常用 Qt 风格状态、交互和消息 API，并增加对应属性/信号测试。
-- `AntSelect` 补齐常用 `QComboBox` / option 风格 API/信号，包括 add/insert/remove/find、setOptionText/removeOption/optionData/findData、itemText/itemData、currentData、setCurrentText、activated/textActivated/highlighted/textHighlighted。
+- `AntSelect` 补齐常用 `QComboBox` / option 风格 API/信号，包括 add/insert/remove/find、setOptionText/removeOption/optionData/findData、itemText/itemData、currentData、setCurrentText、空列表首次加入数据默认选中首项、activated/textActivated/highlighted/textHighlighted。
 - `AntDatePicker` / `AntTimePicker` 补齐 `QDateEdit` / `QTimeEdit` 风格 date/time 别名、minimum/maximum range API、range changed 信号，并对越界输入做边界收敛。
 - `AntList` / `AntListWidget` 补齐常用 `QListWidget` 风格 API/信号，包括字符串 add/insert/addItems/insertItems、item/text/icon/data/checkState/flags、findItems/sortItems、currentItem/currentRow、selectionMode/selectedItems/setItemSelected、内部滚动、scrollToItem、itemClicked/itemDoubleClicked/itemActivated/itemChanged/current/itemSelection 信号；`AntTable` 补齐 rows/selectRow/currentRowIndex 和行级 tooltip；`AntTree` 继续覆盖 tree 风格 helper。
 - `AntMenu` 接入 QWidget `QAction` 体系：`addAction/removeAction` 会同步自绘菜单项，action text/enabled/shortcut 变更会刷新显示，点击菜单项会触发对应 QAction；`AntToolButton` / `AntToolBar` 的默认 action 和 toolbar action 触发行为已有测试保护。

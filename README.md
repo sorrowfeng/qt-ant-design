@@ -61,7 +61,7 @@ The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar p
 The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget conventions:
 
 - `AntInput`, `AntInputNumber`, `AntCheckBox`, `AntRadio`, `AntSlider`, `AntProgress`, and `AntStatusBar` expose more common Qt-style methods and signals.
-- `AntSelect` supports QComboBox-style item management plus option-style helpers such as `setOptionText`, `removeOption`, `optionData`, `findData`, `currentData`, `activated`, and highlighted signals.
+- `AntSelect` supports QComboBox-style item management, default first-item selection when an empty select receives data, plus option-style helpers such as `setOptionText`, `removeOption`, `optionData`, `findData`, `currentData`, `activated`, and highlighted signals.
 - `AntDatePicker` / `AntTimePicker` expose QDateEdit / QTimeEdit-style `date` / `time` aliases plus minimum / maximum range APIs.
 - `AntList` / `AntListWidget` now cover common QListWidget-style flows: string item add/insert/find/sort, item text/icon/data/check state/flags, current row/item, selection mode, selected items, internal scrolling, `scrollToItem`, and item/current/selection signals. `AntTable` exposes `rows()`, `selectRow()`, `currentRowIndex()`, and row tooltips; `AntTree` exposes matching tree helper APIs.
 - `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
