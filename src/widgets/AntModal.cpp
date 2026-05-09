@@ -24,6 +24,10 @@
 
 namespace
 {
+constexpr int kModalShadowMargin = 44;
+constexpr int kModalShadowWidth = 18;
+constexpr int kModalVisibleTopOffset = 100;
+
 class ModalPanel : public QWidget
 {
 public:
@@ -38,11 +42,14 @@ protected:
     {
         Q_UNUSED(event)
         const auto& token = antTheme->tokens();
-        const QRect card = rect().adjusted(12, 12, -12, -12);
+        const QRect card = rect().adjusted(kModalShadowMargin,
+                                           kModalShadowMargin,
+                                           -kModalShadowMargin,
+                                           -kModalShadowMargin);
 
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-        antTheme->drawEffectShadow(&painter, card, 18, token.borderRadiusLG, 0.75);
+        antTheme->drawEffectShadow(&painter, card, kModalShadowWidth, token.borderRadiusLG, 0.75);
         painter.setPen(Qt::NoPen);
         painter.setBrush(token.colorBgElevated);
         painter.drawRoundedRect(card, token.borderRadiusLG, token.borderRadiusLG);
@@ -684,7 +691,10 @@ void AntModal::syncTheme()
 
     if (auto* dialogLayout = qobject_cast<QVBoxLayout*>(m_dialog->layout()))
     {
-        dialogLayout->setContentsMargins(token.paddingLG + 12, token.paddingMD + 12, token.paddingLG + 12, token.paddingMD + 12);
+        dialogLayout->setContentsMargins(token.paddingLG + kModalShadowMargin,
+                                         token.paddingMD + kModalShadowMargin,
+                                         token.paddingLG + kModalShadowMargin,
+                                         token.paddingMD + kModalShadowMargin);
         dialogLayout->setSpacing(token.marginSM);
     }
 
@@ -753,11 +763,11 @@ void AntModal::updateDialogGeometry()
     const int maxWidth = qMax(360, width() - horizontalMargin * 2);
     const int targetWidth = qMin(m_dialogWidth, maxWidth);
 
-    m_dialog->setFixedWidth(targetWidth + 24);
+    m_dialog->setFixedWidth(targetWidth + kModalShadowMargin * 2);
     m_dialog->adjustSize();
 
     QSize dialogSize = m_dialog->sizeHint();
-    dialogSize.setWidth(targetWidth + 24);
+    dialogSize.setWidth(targetWidth + kModalShadowMargin * 2);
     dialogSize.setHeight(qMin(dialogSize.height(), qMax(220, height() - 48)));
     m_dialog->resize(dialogSize);
 
@@ -769,8 +779,8 @@ void AntModal::updateDialogGeometry()
     }
     else
     {
-        // The dialog widget keeps a 12px transparent shadow margin, so 88px yields a 100px visible panel top.
-        y = qMin(88, qMax(16, height() - m_dialog->height() - 16));
+        // Keep the visible panel top aligned to AntD's 100px offset while the widget owns a transparent shadow margin.
+        y = qMin(kModalVisibleTopOffset - kModalShadowMargin, qMax(16, height() - m_dialog->height() - 16));
     }
     m_dialog->move(qMax(16, x), qMax(16, y));
 }

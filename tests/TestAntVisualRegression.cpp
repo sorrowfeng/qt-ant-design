@@ -54,6 +54,7 @@ private slots:
     void feedbackSurfacesKeepElevatedTokenFill();
     void resultStatusIconKeepsTransparentBackground();
     void feedbackPopupShadowsStaySubtle();
+    void modalShadowFadesBeforeDialogEdge();
     void popconfirmArrowSurfaceHasNoInternalSeam();
     void popupEffectShadowPaintsOutsidePanel();
     void dataDisplayBordersAndSeparatorsStayVisible();
@@ -585,6 +586,65 @@ void TestAntVisualRegression::feedbackPopupShadowsStaySubtle()
     assertNotificationShadow(Ant::ThemeMode::Default, 36);
     assertMessageShadow(Ant::ThemeMode::Dark, 44);
     assertNotificationShadow(Ant::ThemeMode::Dark, 50);
+}
+
+void TestAntVisualRegression::modalShadowFadesBeforeDialogEdge()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const auto& token = antTheme->tokens();
+
+    QWidget host;
+    prepareHost(host, QSize(640, 420), token.colorBgLayout);
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    AntModal modal(&host);
+    modal.setTitle(QStringLiteral("Delete item"));
+    modal.setContent(QStringLiteral("This modal shadow should fade smoothly before the dialog widget edge."));
+    modal.setOpen(true);
+    QTest::qWait(300);
+
+    QWidget* dialog = nullptr;
+    const auto children = modal.findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (QWidget* child : children)
+    {
+        if (child && child->isVisible())
+        {
+            dialog = child;
+            break;
+        }
+    }
+    QVERIFY(dialog != nullptr);
+
+    const QImage image = renderCurrentWidget(&host);
+    const QColor maskColor = image.pixelColor(4, 4);
+    auto colorDelta = [](const QColor& a, const QColor& b) {
+        return qMax(std::abs(a.red() - b.red()),
+                    qMax(std::abs(a.green() - b.green()), std::abs(a.blue() - b.blue())));
+    };
+    auto maxDeltaIn = [&](const QRect& rect) {
+        int maxDelta = 0;
+        const QRect clipped = rect.intersected(image.rect());
+        for (int y = clipped.top(); y <= clipped.bottom(); ++y)
+        {
+            for (int x = clipped.left(); x <= clipped.right(); ++x)
+            {
+                maxDelta = qMax(maxDelta, colorDelta(image.pixelColor(x, y), maskColor));
+            }
+        }
+        return maxDelta;
+    };
+
+    const QRect dialogRect = dialog->geometry();
+    const int edgeDelta = qMax(maxDeltaIn(QRect(dialogRect.left(), dialogRect.top(), 2, dialogRect.height())),
+                               qMax(maxDeltaIn(QRect(dialogRect.right() - 1, dialogRect.top(), 2, dialogRect.height())),
+                                    qMax(maxDeltaIn(QRect(dialogRect.left(), dialogRect.top(), dialogRect.width(), 2)),
+                                         maxDeltaIn(QRect(dialogRect.left(), dialogRect.bottom() - 1, dialogRect.width(), 2)))));
+    QVERIFY2(edgeDelta <= 4,
+             qPrintable(QStringLiteral("modal shadow should fade before the dialog widget edge; edge delta: %1")
+                            .arg(edgeDelta)));
+
+    modal.setOpen(false);
 }
 
 void TestAntVisualRegression::popconfirmArrowSurfaceHasNoInternalSeam()

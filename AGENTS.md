@@ -38,7 +38,7 @@
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - README 组件截图画廊：`resources/images/components/` 提交 `166` 张 Light/Dark PNG，覆盖 `83` 个公开组件；弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：当前 `37` 个 CTest 目标；最近一次 popup-shadow targeted 验证 `7 / 7` 在 Debug 下通过（`2026-05-09`）
+- 测试状态：当前 `37` 个 CTest 目标；最近一次 Modal 阴影 targeted 验证在 Debug 下通过（`2026-05-09`）
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -88,7 +88,7 @@
 - `AntPlainTextEdit`：补齐 TextArea 式右下角拖拽缩放。
 - `AntInputNumber`：鼠标进入/聚焦时上下箭头控制区以动画显示。
 - `AntSlider`：拖动时在当前 handle 上方显示数值浮标并跟随 handle，浮窗箭头与圆角面板使用一体化轮廓绘制，marks 场景保留标签高度，Range 拖动不再在最左侧绘制多余 pressed/focus 滑块。
-- 弹层阴影：`AntTheme::drawEffectShadow()` 改为围绕面板向外绘制柔和多层羽化阴影，并扩大 Dropdown、Menu、Cascader、ColorPicker、Select、DatePicker、TimePicker 等弹层的透明留白，避免阴影在 popup 边缘被裁出边界线。
+- 弹层阴影：`AntTheme::drawEffectShadow()` 改为围绕面板向外绘制柔和多层羽化阴影，并扩大 Dropdown、Menu、Cascader、ColorPicker、Select、DatePicker、TimePicker 等弹层的透明留白，`AntModal` 也保留足够透明阴影边距，避免阴影在弹层边缘被裁出边界线。
 - `AntSwitch`：点击时触发灰色 Wave 边缘动效。
 - `AntTransfer`：修复列表滚动、滚动后行点击和顶部全选。
 - `AntCarousel`：补齐轮播图滑动切换动效。
@@ -203,7 +203,7 @@
 | `AntAlert` | `alert` | `QProxyStyle` | 是 | type/icon/description/closable/banner |
 | `AntDrawer` | `drawer` | `QProxyStyle` | 是 | Left/Right/Top/Bottom、动画、遮罩 |
 | `AntMessage` | `message` | `QProxyStyle` | 是 | Qt::ToolTip 浮层消息、6 种 placement |
-| `AntModal` | `modal` | `QProxyStyle` | 是 | 遮罩层、标题/正文、自定义 footer、命令式 API |
+| `AntModal` | `modal` | `QProxyStyle` | 是 | 遮罩层、标题/正文、自定义 footer、命令式 API，柔和外阴影无裁切边界 |
 | `AntNotification` | `notification` | `QProxyStyle` | 是 | 多 placement 通知，loading + 进度条倒计时 |
 | `AntPopconfirm` | `popconfirm` | `QProxyStyle` | 是 | title/description/ok/cancel/placement，箭头与弹层主体一体化绘制 |
 | `AntPopover` | `popover` | `QProxyStyle` | 是 | title/content/action/hover/click/placement |

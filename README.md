@@ -43,7 +43,7 @@ The project focuses on:
 The 2026-04-30 interaction and motion pass tightened several user-visible details:
 
 - Popup feedback: `AntPopover`, `AntMessage`, and `AntNotification` now have more stable hover/close behavior, stronger elevation, and placement-aware enter/exit motion.
-- Popup shells: shared popup elevation now uses a softer multi-layer feather outside the panel body, so `AntDropdown`, `AntMenu`, selector popups, `AntColorPicker`, `AntDatePicker`, and `AntTimePicker` keep AntD-like shadows in light and dark themes.
+- Popup shells: shared popup elevation now uses a softer multi-layer feather outside the panel body, so `AntDropdown`, `AntMenu`, selector popups, `AntColorPicker`, `AntDatePicker`, `AntTimePicker`, and `AntModal` keep AntD-like shadows in light and dark themes.
 - Motion: `AntCarousel`, `AntTabs`, `AntSkeleton`, `AntSpin`, `AntInputNumber`, `AntSwitch`, and loading buttons now better match Ant Design timing, direction, and state feedback.
 - Data interaction: `AntTransfer` now supports scrolling and header select-all correctly, while `AntTable` sorter clicks reorder rows instead of only changing the icon state.
 - Input feedback: `AntPlainTextEdit` supports TextArea-style bottom-right resizing, and `AntSlider` shows a value bubble while dragging.
@@ -313,7 +313,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntSteps`: horizontal / vertical layout, current step, error state, click to switch, title / description / subtitle
 - `AntSelect`: sizes, states, variants, `allowClear / loading / popup`, option text/data management
 - `AntAlert`: `success / info / warning / error`, icon, description, closable, banner, custom action
-- `AntModal`: mask, title, body, custom content, custom footer, confirm / cancel, centered or top-offset layout
+- `AntModal`: mask, title, body, custom content, custom footer, confirm / cancel, centered or top-offset layout, and a soft outer shadow that fades before the dialog edge
 - `AntResult`: status icons (success / error / warning / info), transparent icon background in dark mode, title, description, custom extra actions area
 - `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description), action areas, internal scrolling, and QListWidget-style text/data/selection helpers through the `AntListWidget` alias
 - `AntStatistic`: numeric display, thousands separators, prefix / suffix, precision control

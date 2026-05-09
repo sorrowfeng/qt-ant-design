@@ -43,7 +43,7 @@
 2026-04-30 的交互与动效对齐批次补齐了多处用户可见细节：
 
 - 弹层反馈：`AntPopover`、`AntMessage`、`AntNotification` 的悬停/关闭行为更稳定，阴影层级更清晰，并补齐了按 placement 进入/退出的动效。
-- 弹层外壳：共享弹层阴影改为围绕面板向外绘制柔和多层羽化，`AntDropdown`、`AntMenu`、选择类弹层、`AntColorPicker`、`AntDatePicker`、`AntTimePicker` 在亮色/暗色主题下都保留接近 AntD 的阴影层级。
+- 弹层外壳：共享弹层阴影改为围绕面板向外绘制柔和多层羽化，`AntDropdown`、`AntMenu`、选择类弹层、`AntColorPicker`、`AntDatePicker`、`AntTimePicker`、`AntModal` 在亮色/暗色主题下都保留接近 AntD 的阴影层级。
 - 动效表现：`AntCarousel`、`AntTabs`、`AntSkeleton`、`AntSpin`、`AntInputNumber`、`AntSwitch` 和 loading button 的方向、节奏、状态反馈更贴近 Ant Design。
 - 数据交互：`AntTransfer` 支持正常滚动和顶部全选，`AntTable` 表头排序点击会真正重排行数据。
 - 输入反馈：`AntPlainTextEdit` 支持 TextArea 式右下角拖拽缩放，`AntSlider` 拖动时显示数值浮标。
@@ -313,7 +313,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntSteps`：水平/垂直布局、当前步骤、错误态、点击切换、标题/说明/副标题
 - `AntSelect`：尺寸、状态、变体、`allowClear / loading / popup`、option 文本/数据管理
 - `AntAlert`：`success / info / warning / error`、图标、描述、关闭、横幅、自定义 action
-- `AntModal`：遮罩层、标题、正文、自定义内容、自定义 footer、确认/取消、居中或顶部偏移布局
+- `AntModal`：遮罩层、标题、正文、自定义内容、自定义 footer、确认/取消、居中或顶部偏移布局，以及不会在对话框边缘被裁切的柔和外阴影
 - `AntResult`：状态图标（success / error / warning / info）、暗色透明图标背景、标题、描述、自定义 extra 操作区
 - `AntList`：`header / footer / bordered / split / size`，`AntListItem` 支持 `Meta`（头像、标题、描述）、操作区、内部滚动和 QListWidget 风格文本/数据/选择 helper
 - `AntStatistic`：数值展示、千分位分隔、前缀后缀、精度控制
