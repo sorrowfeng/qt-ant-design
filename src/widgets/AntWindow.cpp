@@ -54,7 +54,7 @@ constexpr int kThemeTransitionDurationMs = 320;
 constexpr int kThemeTransitionEdgeFeather = 24;
 constexpr auto kLegacySoftwareShadowObjectName = "AntWindowLegacySoftwareShadow";
 constexpr int kLegacySoftwareShadowMargin = 18;
-constexpr int kLegacySoftwareShadowInnerClearance = 3;
+constexpr int kLegacySoftwareShadowInnerClearance = 0;
 
 class AntWindowThemeTransitionOverlay : public QWidget
 {
@@ -240,6 +240,7 @@ public:
         setAttribute(Qt::WA_ShowWithoutActivating, true);
         setFocusPolicy(Qt::NoFocus);
         setProperty("shadowMargin", kLegacySoftwareShadowMargin);
+        setProperty("shadowInnerClearance", kLegacySoftwareShadowInnerClearance);
     }
 
     void setCornerRadius(int radius)
@@ -1913,6 +1914,7 @@ void AntWindow::updateLegacySoftwareShadow()
 
     setProperty("antWindowLegacySoftwareShadowEnabled", enabled);
     setProperty("antWindowLegacySoftwareShadowMargin", kLegacySoftwareShadowMargin);
+    setProperty("antWindowLegacySoftwareShadowInnerClearance", kLegacySoftwareShadowInnerClearance);
 
     if (!enabled)
     {

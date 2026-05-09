@@ -1244,6 +1244,8 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     QCOMPARE(window.property("antWindowLegacyClassDropShadowEnabled").toBool(), false);
     QTRY_COMPARE(window.property("antWindowLegacySoftwareShadowEnabled").toBool(), true);
     QCOMPARE(window.property("antWindowLegacySoftwareShadowMargin").toInt(), 18);
+    QVERIFY(window.property("antWindowLegacySoftwareShadowInnerClearance").isValid());
+    QCOMPARE(window.property("antWindowLegacySoftwareShadowInnerClearance").toInt(), 0);
     const QRect initialShadowGeometry = window.property("antWindowLegacySoftwareShadowGeometry").toRect();
     QVERIFY(initialShadowGeometry.contains(window.geometry()));
     QVERIFY(initialShadowGeometry.left() < window.geometry().left());
@@ -1280,6 +1282,16 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
                              shadowImage.height() - shadowMargin,
                              shadowImage.width() - shadowMargin * 2,
                              shadowMargin)) > 0);
+    QVERIFY(maxAlphaIn(shadowImage,
+                       QRect(shadowMargin - 2,
+                             shadowMargin,
+                             2,
+                             shadowImage.height() - shadowMargin * 2)) > 4);
+    QVERIFY(maxAlphaIn(shadowImage,
+                       QRect(shadowMargin,
+                             shadowMargin - 2,
+                             shadowImage.width() - shadowMargin * 2,
+                             2)) > 4);
     QVERIFY(maxAlphaIn(shadowImage, QRect(0, 0, shadowMargin, shadowMargin)) <= 32);
     QVERIFY(maxAlphaIn(shadowImage, QRect(shadowImage.width() - shadowMargin, 0, shadowMargin, shadowMargin)) <= 32);
     QVERIFY(maxAlphaIn(shadowImage, QRect(0, shadowImage.height() - shadowMargin, shadowMargin, shadowMargin)) <= 32);

@@ -81,7 +81,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed `AntPagination` More Options quick jumper so the input box is backed by a real `QLineEdit`, accepts page numbers, clamps to the valid page range, and emits the normal page-change signals.
 - Reworked the Popover surface path used by `AntPopconfirm` so the arrow and rounded panel are painted as one joined shape without an internal seam.
 - Expanded `AntModal`'s transparent dialog shadow margin so the multi-layer feather fades out before the dialog widget edge instead of leaving a clipped boundary line.
-- Reworked the `AntWindow` outer shadow on the Windows 10 no-caption path to use a transparent software shadow host behind the main window, with a light 18px Win11-like feather, a small clear band near the white window corner, capped corner opacity, symmetric shadow pixels on all four sides, and geometry that tracks visible resizes consistently.
+- Reworked the `AntWindow` outer shadow on the Windows 10 no-caption path to use a transparent software shadow host behind the main window, with a light 18px Win11-like feather that starts directly at the window edge, capped corner opacity, symmetric shadow pixels on all four sides, and geometry that tracks visible resizes consistently.
 - Fixed shared popup elevation shadows by making `AntTheme::drawEffectShadow()` paint a softer multi-layer feather outside the panel body, and widened popup transparent margins for Dropdown/Menu/Cascader/ColorPicker/Select/DatePicker/TimePicker-style panels so the shadow fades before the popup edge instead of being visibly clipped.
 
 ## Visual Audit State
@@ -148,7 +148,7 @@ ctest --test-dir build -C Debug -R "TestAntQtExtensions$" --output-on-failure
 .\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 
-Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`, including the Windows 10 no-caption software shadow host, 18px Win11-like shadow margin, low near-edge alpha, capped corner alpha, four-sided shadow pixel coverage, resize-following shadow geometry, maximized `WM_NCCALCSIZE`, and visible topmost toggles without hide/show recreation.
+Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`, including the Windows 10 no-caption software shadow host, 18px Win11-like shadow margin, zero inner clear band, capped corner alpha, four-sided shadow pixel coverage, resize-following shadow geometry, maximized `WM_NCCALCSIZE`, and visible topmost toggles without hide/show recreation.
 
 Latest targeted AntList / AntTable / AntTypography API validation:
 
