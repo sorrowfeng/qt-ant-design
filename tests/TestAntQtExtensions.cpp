@@ -1243,7 +1243,7 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     QCOMPARE(window.property("antWindowDwmFrameMargins").value<QMargins>(), QMargins(0, 0, 0, 0));
     QCOMPARE(window.property("antWindowLegacyClassDropShadowEnabled").toBool(), false);
     QTRY_COMPARE(window.property("antWindowLegacySoftwareShadowEnabled").toBool(), true);
-    QVERIFY(window.property("antWindowLegacySoftwareShadowMargin").toInt() >= 18);
+    QCOMPARE(window.property("antWindowLegacySoftwareShadowMargin").toInt(), 18);
     const QRect initialShadowGeometry = window.property("antWindowLegacySoftwareShadowGeometry").toRect();
     QVERIFY(initialShadowGeometry.contains(window.geometry()));
     QVERIFY(initialShadowGeometry.left() < window.geometry().left());
@@ -1280,6 +1280,14 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
                              shadowImage.height() - shadowMargin,
                              shadowImage.width() - shadowMargin * 2,
                              shadowMargin)) > 0);
+    QVERIFY(maxAlphaIn(shadowImage, QRect(0, 0, shadowMargin, shadowMargin)) <= 32);
+    QVERIFY(maxAlphaIn(shadowImage, QRect(shadowImage.width() - shadowMargin, 0, shadowMargin, shadowMargin)) <= 32);
+    QVERIFY(maxAlphaIn(shadowImage, QRect(0, shadowImage.height() - shadowMargin, shadowMargin, shadowMargin)) <= 32);
+    QVERIFY(maxAlphaIn(shadowImage,
+                       QRect(shadowImage.width() - shadowMargin,
+                             shadowImage.height() - shadowMargin,
+                             shadowMargin,
+                             shadowMargin)) <= 32);
 
     const int frameApplyCount = window.property("antWindowDwmFrameApplyCount").toInt();
     QVERIFY2(frameApplyCount > 0, "legacy frame policy should apply a shadow-preserving DWM frame");

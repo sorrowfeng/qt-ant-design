@@ -53,7 +53,7 @@ constexpr int kThemeTransitionFrameIntervalMs = 8;
 constexpr int kThemeTransitionDurationMs = 320;
 constexpr int kThemeTransitionEdgeFeather = 24;
 constexpr auto kLegacySoftwareShadowObjectName = "AntWindowLegacySoftwareShadow";
-constexpr int kLegacySoftwareShadowMargin = 28;
+constexpr int kLegacySoftwareShadowMargin = 18;
 
 class AntWindowThemeTransitionOverlay : public QWidget
 {
@@ -267,7 +267,7 @@ protected:
         }
 
         QColor shadowBase = antTheme->tokens().colorShadow;
-        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.18 : 0.16;
+        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.13 : 0.105;
         for (int distance = shadowWidth; distance >= 1; --distance)
         {
             const qreal t = qBound<qreal>(0.0,
@@ -283,14 +283,16 @@ protected:
             QColor shadow = shadowBase;
             shadow.setAlphaF(opacity);
 
+            const qreal radiusGrowth = static_cast<qreal>(distance) * 0.72;
             QPainterPath outerPath;
             const QRectF outer = panelRect.adjusted(-distance, -distance, distance, distance);
-            outerPath.addRoundedRect(outer, m_cornerRadius + distance, m_cornerRadius + distance);
+            outerPath.addRoundedRect(outer, m_cornerRadius + radiusGrowth, m_cornerRadius + radiusGrowth);
 
             QPainterPath innerPath;
             const int innerDistance = distance - 1;
+            const qreal innerRadiusGrowth = static_cast<qreal>(innerDistance) * 0.72;
             const QRectF inner = panelRect.adjusted(-innerDistance, -innerDistance, innerDistance, innerDistance);
-            innerPath.addRoundedRect(inner, m_cornerRadius + innerDistance, m_cornerRadius + innerDistance);
+            innerPath.addRoundedRect(inner, m_cornerRadius + innerRadiusGrowth, m_cornerRadius + innerRadiusGrowth);
 
             painter.fillPath(outerPath.subtracted(innerPath), shadow);
         }
