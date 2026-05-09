@@ -1,12 +1,16 @@
 #include "AntPagination.h"
 
 #include <QEvent>
+#include <QIntValidator>
 #include <QKeyEvent>
+#include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QResizeEvent>
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "../styles/AntPaginationStyle.h"
 #include "core/AntTheme.h"
@@ -18,6 +22,11 @@ AntPagination::AntPagination(QWidget* parent)
     installAntStyle<AntPaginationStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    ensureQuickJumperEdit();
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        syncQuickJumperEdit();
+    });
+    syncQuickJumperEdit();
 }
 
 int AntPagination::current() const { return m_current; }
@@ -30,6 +39,7 @@ void AntPagination::setCurrent(int current)
         return;
     }
     m_current = next;
+    syncQuickJumperEdit();
     update();
     Q_EMIT currentChanged(m_current);
     Q_EMIT change(m_current, m_pageSize);
@@ -78,6 +88,7 @@ void AntPagination::setDisabled(bool disabled)
         return;
     }
     m_disabled = disabled;
+    syncQuickJumperEdit();
     update();
     Q_EMIT disabledChanged(m_disabled);
 }
@@ -244,6 +255,12 @@ void AntPagination::keyPressEvent(QKeyEvent* event)
         return;
     }
     QWidget::keyPressEvent(event);
+}
+
+void AntPagination::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    syncQuickJumperEdit();
 }
 
 QVector<AntPagination::PageItem> AntPagination::pageItems() const
@@ -468,6 +485,12 @@ void AntPagination::activateItem(const PageItem& item)
     }
     if (item.kind == ItemKind::QuickJumper && item.text.isEmpty())
     {
+        syncQuickJumperEdit();
+        if (m_quickJumperEdit && m_quickJumperEdit->isVisible())
+        {
+            m_quickJumperEdit->setFocus(Qt::MouseFocusReason);
+            m_quickJumperEdit->selectAll();
+        }
         return;
     }
     setCurrent(item.page);
@@ -481,4 +504,121 @@ void AntPagination::normalizeCurrent()
 void AntPagination::updatePaginationGeometry()
 {
     updateGeometry();
+    syncQuickJumperEdit();
+}
+
+void AntPagination::ensureQuickJumperEdit()
+{
+    if (m_quickJumperEdit)
+    {
+        return;
+    }
+
+    m_quickJumperEdit = new QLineEdit(this);
+    m_quickJumperEdit->setObjectName(QStringLiteral("AntPaginationQuickJumper"));
+    m_quickJumperEdit->setFrame(false);
+    m_quickJumperEdit->setAlignment(Qt::AlignCenter);
+    m_quickJumperEdit->setClearButtonEnabled(false);
+    m_quickJumperEdit->setAttribute(Qt::WA_TranslucentBackground, true);
+    m_quickJumperEdit->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
+    m_quickJumperEdit->setMouseTracking(true);
+
+    m_quickJumperValidator = new QIntValidator(1, std::numeric_limits<int>::max(), m_quickJumperEdit);
+    m_quickJumperEdit->setValidator(m_quickJumperValidator);
+
+    connect(m_quickJumperEdit, &QLineEdit::returnPressed, this, &AntPagination::submitQuickJumper);
+    connect(m_quickJumperEdit, &QLineEdit::editingFinished, this, &AntPagination::submitQuickJumper);
+    m_quickJumperEdit->hide();
+}
+
+QRect AntPagination::quickJumperInputRect() const
+{
+    const auto items = pageItems();
+    QRect simpleRect;
+    for (const auto& item : items)
+    {
+        if (item.kind != ItemKind::QuickJumper)
+        {
+            continue;
+        }
+        if (m_showQuickJumper && item.text.isEmpty())
+        {
+            return item.rect;
+        }
+        if (m_simple && simpleRect.isNull())
+        {
+            simpleRect = item.rect;
+        }
+    }
+    return m_showQuickJumper ? QRect() : simpleRect;
+}
+
+void AntPagination::syncQuickJumperEdit()
+{
+    ensureQuickJumperEdit();
+    if (!m_quickJumperEdit)
+    {
+        return;
+    }
+
+    const QRect inputRect = quickJumperInputRect();
+    const bool visible = inputRect.isValid() && (m_showQuickJumper || m_simple);
+    m_quickJumperEdit->setVisible(visible);
+    if (!visible)
+    {
+        m_quickJumperEdit->clear();
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    QFont f = font();
+    f.setPixelSize(fontSize());
+    m_quickJumperEdit->setFont(f);
+    m_quickJumperEdit->setGeometry(inputRect);
+    m_quickJumperEdit->setTextMargins(token.paddingXXS, 0, token.paddingXXS, 0);
+    m_quickJumperEdit->setEnabled(!m_disabled);
+    m_quickJumperEdit->raise();
+
+    QPalette palette = m_quickJumperEdit->palette();
+    palette.setColor(QPalette::Base, Qt::transparent);
+    palette.setColor(QPalette::Text, m_disabled ? token.colorTextDisabled : token.colorText);
+    palette.setColor(QPalette::PlaceholderText, token.colorTextPlaceholder);
+    palette.setColor(QPalette::Highlight, token.colorPrimary);
+    palette.setColor(QPalette::HighlightedText, Qt::white);
+    m_quickJumperEdit->setPalette(palette);
+
+    const bool simpleInput = m_simple && !m_showQuickJumper;
+    if (simpleInput && !m_quickJumperEdit->hasFocus())
+    {
+        m_quickJumperEdit->setText(QString::number(m_current));
+    }
+}
+
+void AntPagination::submitQuickJumper()
+{
+    if (!m_quickJumperEdit || m_disabled || !m_quickJumperEdit->isVisible() || (!m_showQuickJumper && !m_simple))
+    {
+        return;
+    }
+
+    bool ok = false;
+    const int requestedPage = m_quickJumperEdit->text().trimmed().toInt(&ok);
+    if (!ok)
+    {
+        if (m_simple && !m_showQuickJumper)
+        {
+            m_quickJumperEdit->setText(QString::number(m_current));
+        }
+        return;
+    }
+
+    setCurrent(std::clamp(requestedPage, 1, pageCount()));
+    if (m_showQuickJumper)
+    {
+        m_quickJumperEdit->clear();
+    }
+    else
+    {
+        m_quickJumperEdit->setText(QString::number(m_current));
+    }
 }

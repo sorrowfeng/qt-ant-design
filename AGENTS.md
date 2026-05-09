@@ -167,7 +167,7 @@
 | `AntBreadcrumb` | `breadcrumb` | `QProxyStyle` | 是 | 路径项、分隔符、禁用项 |
 | `AntDropdown` | `dropdown` | `QProxyStyle` | 是 | hover/click/contextMenu、placement、arrow |
 | `AntMenu` | `menu` | `QProxyStyle` | 是 | vertical/horizontal/inline、明暗主题 |
-| `AntPagination` | `pagination` | `QProxyStyle` | 是 | simple/showQuickJumper/showSizeChanger |
+| `AntPagination` | `pagination` | `QProxyStyle` | 是 | simple/showQuickJumper/showSizeChanger，More Options quick jumper 支持输入页码跳转 |
 | `AntSteps` | `steps` | `QProxyStyle` | 是 | 水平/垂直、当前步骤、错误态，首个图标边缘不裁切 |
 | `AntTabs` | `tabs` | `QProxyStyle` | 是 | line/card/editable-card，内容页布局 helper |
 

@@ -8,9 +8,12 @@
 #include "core/AntTypes.h"
 
 class QEvent;
+class QIntValidator;
 class QKeyEvent;
+class QLineEdit;
 class QMouseEvent;
 class QPaintEvent;
+class QResizeEvent;
 
 class QT_ANT_DESIGN_EXPORT AntPagination : public QWidget
 {
@@ -84,6 +87,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     enum class ItemKind
@@ -121,6 +125,10 @@ private:
     void activateItem(const PageItem& item);
     void normalizeCurrent();
     void updatePaginationGeometry();
+    void ensureQuickJumperEdit();
+    QRect quickJumperInputRect() const;
+    void syncQuickJumperEdit();
+    void submitQuickJumper();
 
     int m_current = 1;
     int m_pageSize = 10;
@@ -133,4 +141,6 @@ private:
     bool m_showSizeChanger = false;
     Ant::Size m_paginationSize = Ant::Size::Middle;
     int m_hoveredIndex = -1;
+    QLineEdit* m_quickJumperEdit = nullptr;
+    QIntValidator* m_quickJumperValidator = nullptr;
 };

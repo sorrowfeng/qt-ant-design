@@ -2,6 +2,7 @@
 
 #include <QEvent>
 #include <QFontMetrics>
+#include <QLineEdit>
 #include <QPainter>
 #include <QStyleOption>
 
@@ -302,15 +303,23 @@ void AntPaginationStyle::drawPagination(const QStyleOption* option, QPainter* pa
     painter->setFont(f);
 
     const auto items = buildPageItems(pagination);
+    const auto* quickJumper = pagination->findChild<QLineEdit*>(QStringLiteral("AntPaginationQuickJumper"));
     for (int i = 0; i < items.size(); ++i)
     {
         const PageItem& item = items.at(i);
+        const bool quickJumperOwnsItem = item.kind == PageItemKind::QuickJumper && quickJumper && quickJumper->isVisible()
+            && quickJumper->geometry() == item.rect;
         if (item.kind != PageItemKind::Text)
         {
             AntStyleBase::drawCrispRoundedRect(painter, item.rect,
-                QPen(item.active ? token.colorPrimary : token.colorBorder, token.lineWidth),
+                QPen((item.active || (quickJumperOwnsItem && quickJumper->hasFocus())) ? token.colorPrimary : token.colorBorder,
+                    token.lineWidth),
                 paginationItemBackgroundColor(item, false, pagination->isDisabled()),
                 token.borderRadius, token.borderRadius);
+        }
+        if (quickJumperOwnsItem)
+        {
+            continue;
         }
         const QColor itemColor = paginationItemTextColor(item, false);
         if (!drawPaginationItemIcon(painter, item, itemColor))

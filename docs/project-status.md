@@ -15,7 +15,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `83 / 83` public components, plus the standalone `Showcase` page |
 | Dedicated examples intentionally absent | None |
-| Tests | `37` CTest targets configured; latest popup-shadow targeted verification passed in Debug on `2026-05-09` |
+| Tests | `37` CTest targets configured; latest Pagination quick-jumper targeted verification passed in Debug on `2026-05-09` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for all `83` public components |
 
@@ -78,6 +78,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Aligned `AntRadio` ButtonStyle click feedback with `AntButton` by using the full edge-expansion Wave duration instead of the short indicator-style wave.
 - Added the missing `AntRate` selected-star scale pulse and a small internal paint inset so the animated star edge is not clipped.
 - Reworked the `AntSlider` drag value bubble as a single rounded-rect-plus-arrow path so the arrow no longer appears visually separated from the body.
+- Fixed `AntPagination` More Options quick jumper so the input box is backed by a real `QLineEdit`, accepts page numbers, clamps to the valid page range, and emits the normal page-change signals.
 - Restored the `AntWindow` outer DWM shadow on the Windows 10 no-caption path by keeping a 1 px extended frame while preserving the legacy rounded mask.
 - Fixed shared popup elevation shadows by making `AntTheme::drawEffectShadow()` paint a softer multi-layer feather outside the panel body, and widened popup transparent margins for Dropdown/Menu/Cascader/ColorPicker/Select/DatePicker/TimePicker-style panels so the shadow fades before the popup edge instead of being visibly clipped.
 

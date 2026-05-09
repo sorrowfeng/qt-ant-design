@@ -328,7 +328,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntDatePicker` / `AntTimePicker`: hand-painted popup pickers
 - `AntMessage` / `AntNotification`: global feedback components with elevated surfaces, enter / exit motion, and Notification loading progress countdown
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`: common display components
-- `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`: navigation components; `AntTabs` includes tab-pane layout margin normalization helpers
+- `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`: navigation components; `AntPagination` includes editable quick-jumper paging, and `AntTabs` includes tab-pane layout margin normalization helpers
 - `AntTable`: data table with column sorting, row selection (checkbox / radio), programmatic row selection, row tooltips, pagination, loading state
 - `AntTree`: tree control with expand / collapse, node selection, checkboxes, connector lines
 - `AntUpload`: file upload supporting text list, picture list, and picture card modes

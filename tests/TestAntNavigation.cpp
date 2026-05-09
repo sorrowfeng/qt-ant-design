@@ -1,6 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QAction>
+#include <QLineEdit>
 #include <QMargins>
 #include <QStyle>
 #include <QVBoxLayout>
@@ -17,6 +18,7 @@ class TestAntNavigation : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void paginationQuickJumperEditsCurrentPage();
     void tabsNormalizePageLayoutMargins();
 };
 
@@ -258,6 +260,38 @@ void TestAntNavigation::propertiesAndSignals()
     anchor->addLink("Section 2", 100);
     QSignalSpy activeIdxSpy(anchor, &AntAnchor::activeIndexChanged);
     Q_UNUSED(activeIdxSpy);
+}
+
+void TestAntNavigation::paginationQuickJumperEditsCurrentPage()
+{
+    AntPagination pagination;
+    pagination.setTotal(200);
+    pagination.setPageSize(10);
+    pagination.setShowQuickJumper(true);
+    pagination.resize(pagination.sizeHint());
+    pagination.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pagination));
+
+    auto* jumper = pagination.findChild<QLineEdit*>(QStringLiteral("AntPaginationQuickJumper"));
+    QVERIFY(jumper);
+    QTRY_VERIFY(jumper->isVisible());
+
+    QSignalSpy currentSpy(&pagination, &AntPagination::currentChanged);
+    QSignalSpy changeSpy(&pagination, &AntPagination::change);
+
+    QTest::mouseClick(jumper, Qt::LeftButton);
+    QTest::keyClicks(jumper, "12");
+    QTest::keyClick(jumper, Qt::Key_Return);
+
+    QCOMPARE(pagination.current(), 12);
+    QCOMPARE(currentSpy.count(), 1);
+    QCOMPARE(changeSpy.count(), 1);
+
+    jumper->clear();
+    QTest::keyClicks(jumper, "999");
+    QTest::keyClick(jumper, Qt::Key_Return);
+
+    QCOMPARE(pagination.current(), pagination.pageCount());
 }
 
 void TestAntNavigation::tabsNormalizePageLayoutMargins()
