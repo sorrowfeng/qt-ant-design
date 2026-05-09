@@ -36,7 +36,7 @@
 - 状态总览：[docs/project-status.md](docs/project-status.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
-- 当前 CTest 目标数：`37`；最近一次 build-system / install targeted 验证：`4 / 4` 通过（`2026-05-08`）
+- 当前 CTest 目标数：`37`；最近一次 AntWindow targeted 验证：`1 / 1` 通过（`2026-05-09`）
 
 ## 最近 Ant Design 对齐更新
 
@@ -54,7 +54,7 @@
 
 - 无边框窗口支持 Windows 11 Snap：四边/四角缩放、标题栏拖拽、最大化按钮 Snap Layout hover、边缘吸附和最大化后拖拽还原。
 - Windows 下接入 DWM 圆角、边框/阴影，并提供 `cornerRadius` API；平台相关实现均通过 Qt/Win32 宏隔离。
-- Windows 10 走无 native caption 的窗口样式，并使用 legacy rounded mask 裁切圆角，同时保留 1px DWM 扩展帧，避免最大化/还原后露出原生标题栏按钮，并让普通窗口保持整体阴影。
+- Windows 10 走无 native caption 的窗口样式，legacy rounded mask 会给 1px DWM 扩展帧留出边界并在 resize 后重刷，避免最大化/还原后露出原生标题栏按钮，同时让普通窗口保持圆角和整体阴影。
 - Windows 已显示窗口切换置顶/取消置顶时改用 native `SetWindowPos` 原地更新，避免 Qt flags 重建窗口造成可见闪烁。
 - 标题栏新增置顶和亮暗主题切换按钮，使用内置官方 Ant Design 图标；所有标题栏按钮均可通过公开 API 控制显示或隐藏。
 - 内置主题按钮使用全窗口截图 overlay 和柔和揭示动画，让 Light/Dark 全局切换更连续。

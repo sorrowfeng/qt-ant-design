@@ -15,7 +15,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `83 / 83` public components, plus the standalone `Showcase` page |
 | Dedicated examples intentionally absent | None |
-| Tests | `37` CTest targets configured; latest Modal shadow targeted verification passed in Debug on `2026-05-09` |
+| Tests | `37` CTest targets configured; latest AntWindow Win10 legacy-frame targeted verification passed in Debug on `2026-05-09` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for all `83` public components |
 
@@ -81,7 +81,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed `AntPagination` More Options quick jumper so the input box is backed by a real `QLineEdit`, accepts page numbers, clamps to the valid page range, and emits the normal page-change signals.
 - Reworked the Popover surface path used by `AntPopconfirm` so the arrow and rounded panel are painted as one joined shape without an internal seam.
 - Expanded `AntModal`'s transparent dialog shadow margin so the multi-layer feather fades out before the dialog widget edge instead of leaving a clipped boundary line.
-- Restored the `AntWindow` outer DWM shadow on the Windows 10 no-caption path by keeping a 1 px extended frame while preserving the legacy rounded mask.
+- Restored the `AntWindow` outer DWM shadow on the Windows 10 no-caption path by keeping a 1 px extended frame, leaving a mask inset for that frame, and reapplying the DWM frame after visible resizes so the rounded corner does not gain a sharp outer artifact.
 - Fixed shared popup elevation shadows by making `AntTheme::drawEffectShadow()` paint a softer multi-layer feather outside the panel body, and widened popup transparent margins for Dropdown/Menu/Cascader/ColorPicker/Select/DatePicker/TimePicker-style panels so the shadow fades before the popup edge instead of being visibly clipped.
 
 ## Visual Audit State
@@ -148,7 +148,7 @@ ctest --test-dir build -C Debug -R "TestAntQtExtensions$" --output-on-failure
 .\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 
-Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`, including the Windows 10 no-caption DWM shadow-margin regression, maximized `WM_NCCALCSIZE`, and visible topmost toggles without hide/show recreation.
+Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`, including the Windows 10 no-caption DWM shadow resize regression, legacy rounded-mask frame inset, maximized `WM_NCCALCSIZE`, and visible topmost toggles without hide/show recreation.
 
 Latest targeted AntList / AntTable / AntTypography API validation:
 

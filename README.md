@@ -36,7 +36,7 @@ The project focuses on:
 - Status snapshot: [docs/project-status.md](docs/project-status.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
-- Current CTest target count: `37`; latest targeted build-system / install verification: `4 / 4` passed on `2026-05-08`
+- Current CTest target count: `37`; latest targeted AntWindow verification: `1 / 1` passed on `2026-05-09`
 
 ## Recent Ant Design Parity Updates
 
@@ -54,7 +54,7 @@ The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar p
 
 - Windows 11 Snap support for frameless windows: resize edges/corners, draggable title bar, maximize-button Snap Layout hover, edge snapping, and drag-to-restore.
 - DWM-backed rounded corners, border/shadow integration, and a `cornerRadius` API for Windows builds while keeping platform-specific code behind Qt/Win32 guards.
-- Windows 10 uses a no-caption native frame path plus a legacy rounded mask, while preserving a 1 px DWM frame so maximized/restored windows do not expose native title buttons and normal windows keep their outer shadow.
+- Windows 10 uses a no-caption native frame path plus a legacy rounded mask that leaves room for the 1 px DWM frame and reapplies it after resize, so maximized/restored windows do not expose native title buttons and normal windows keep rounded corners with their outer shadow.
 - Topmost toggles on visible Windows windows now use native `SetWindowPos` in place, avoiding the hide/show cycle that caused a visible flash.
 - Title-bar pin and light/dark theme buttons use bundled official Ant Design icons, and every title-bar button can be shown or hidden through public APIs.
 - The built-in theme button uses a captured-frame overlay with a soft reveal animation so full-window light/dark switching feels continuous.

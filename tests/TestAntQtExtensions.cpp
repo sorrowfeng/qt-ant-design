@@ -137,6 +137,7 @@ private slots:
     void windowThemeTransitionRevealsNewFrameWithoutBlackHole();
     void windowNativeHitTestSupportsSnapZones();
     void windowDwmFrameMarginsPreserveShadow();
+    void windowLegacyFramePolicyRestoresShadowAfterResize();
     void windowMaximizedNcCalcKeepsFullWorkArea();
     void colorPicker();
 };
@@ -1221,6 +1222,34 @@ void TestAntQtExtensions::windowDwmFrameMarginsPreserveShadow()
     {
         QVERIFY2((nativeStyle & WS_CAPTION) == 0, "Windows 10 must keep the no-caption path to avoid native title buttons");
     }
+#endif
+}
+
+void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows legacy frame policy is only available on Windows.");
+#else
+    AntWindow window;
+    window.setProperty("antWindowForceLegacyFramePolicy", true);
+    window.resize(640, 420);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QCOMPARE(window.property("antWindowUsesNativeCaptionFrame").toBool(), false);
+    QCOMPARE(window.property("antWindowLegacyRoundedMaskApplied").toBool(), true);
+    QCOMPARE(window.property("antWindowLegacyRoundedMaskFrameInset").toInt(), 1);
+    QCOMPARE(window.property("antWindowDwmFrameMargins").value<QMargins>(), QMargins(1, 1, 1, 1));
+
+    const int frameApplyCount = window.property("antWindowDwmFrameApplyCount").toInt();
+    QVERIFY2(frameApplyCount > 0, "legacy frame policy should apply a shadow-preserving DWM frame");
+
+    window.resize(700, 460);
+    QCoreApplication::processEvents();
+
+    QVERIFY2(window.property("antWindowDwmFrameApplyCount").toInt() > frameApplyCount,
+             "resizing a Win10 legacy-frame AntWindow should reapply the DWM frame after updating the mask");
+    QCOMPARE(window.property("antWindowDwmFrameLastReason").toString(), QStringLiteral("resize"));
 #endif
 }
 

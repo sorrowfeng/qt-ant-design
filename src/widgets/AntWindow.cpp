@@ -243,6 +243,14 @@ constexpr DWORD kDwmBorderColor = 34;
 constexpr int kDwmCornerDoNotRound = 1;
 constexpr int kDwmCornerRound = 2;
 constexpr int kDwmCornerRoundSmall = 3;
+constexpr int kLegacyRoundedMaskFrameInset = 1;
+constexpr auto kForceLegacyFramePolicyProperty = "antWindowForceLegacyFramePolicy";
+constexpr auto kUsesNativeCaptionFrameProperty = "antWindowUsesNativeCaptionFrame";
+constexpr auto kDwmFrameMarginsProperty = "antWindowDwmFrameMargins";
+constexpr auto kDwmFrameApplyCountProperty = "antWindowDwmFrameApplyCount";
+constexpr auto kDwmFrameLastReasonProperty = "antWindowDwmFrameLastReason";
+constexpr auto kLegacyRoundedMaskAppliedProperty = "antWindowLegacyRoundedMaskApplied";
+constexpr auto kLegacyRoundedMaskFrameInsetProperty = "antWindowLegacyRoundedMaskFrameInset";
 
 UINT dpiForWindow(HWND hwnd)
 {
@@ -308,6 +316,12 @@ bool supportsNativeCaptionSnapLayouts()
 {
     constexpr int kWindows11Build = 22000;
     return windowsBuildNumber() >= kWindows11Build;
+}
+
+bool usesNativeCaptionFrameForWidget(const QWidget* widget)
+{
+    const bool forceLegacyFrame = widget && widget->property(kForceLegacyFramePolicyProperty).toBool();
+    return supportsNativeCaptionSnapLayouts() && !forceLegacyFrame;
 }
 
 DwmMargins shadowPreservingDwmMargins(bool useNativeCaption)
@@ -384,7 +398,11 @@ AntWindow::TitleBarButton titleBarButtonForNativeHitTest(WPARAM hitTestCode)
 
 bool resolveDwmApis(DwmSetWindowAttributeFn* setWindowAttribute, DwmExtendFrameIntoClientAreaFn* extendFrame)
 {
-    HMODULE dwmapi = ::LoadLibraryW(L"dwmapi.dll");
+    HMODULE dwmapi = ::GetModuleHandleW(L"dwmapi.dll");
+    if (!dwmapi)
+    {
+        dwmapi = ::LoadLibraryW(L"dwmapi.dll");
+    }
     if (!dwmapi)
     {
         return false;
@@ -402,6 +420,44 @@ bool resolveDwmApis(DwmSetWindowAttributeFn* setWindowAttribute, DwmExtendFrameI
     }
 
     return (setWindowAttribute && *setWindowAttribute) || (extendFrame && *extendFrame);
+}
+
+bool applyDwmFrameMargins(QWidget* widget,
+                          HWND hwnd,
+                          bool useNativeCaption,
+                          DwmExtendFrameIntoClientAreaFn extendFrame,
+                          const char* reason)
+{
+    if (!widget || !hwnd || !extendFrame)
+    {
+        return false;
+    }
+
+    const DwmMargins margins = shadowPreservingDwmMargins(useNativeCaption);
+    widget->setProperty(kDwmFrameMarginsProperty,
+                        QVariant::fromValue(QMargins(margins.cxLeftWidth,
+                                                     margins.cyTopHeight,
+                                                     margins.cxRightWidth,
+                                                     margins.cyBottomHeight)));
+    if (FAILED(extendFrame(hwnd, &margins)))
+    {
+        return false;
+    }
+
+    widget->setProperty(kDwmFrameApplyCountProperty, widget->property(kDwmFrameApplyCountProperty).toInt() + 1);
+    widget->setProperty(kDwmFrameLastReasonProperty, QString::fromLatin1(reason ? reason : ""));
+    return true;
+}
+
+bool reapplyDwmFrameMargins(QWidget* widget, HWND hwnd, bool useNativeCaption, const char* reason)
+{
+    DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
+    if (!resolveDwmApis(nullptr, &extendFrame) || !extendFrame)
+    {
+        return false;
+    }
+
+    return applyDwmFrameMargins(widget, hwnd, useNativeCaption, extendFrame, reason);
 }
 
 void triggerFrameChange(HWND hwnd)
@@ -444,8 +500,11 @@ void applyLegacyRoundedMask(QWidget* widget, int radius)
         return;
     }
 
-    if (supportsNativeCaptionSnapLayouts() || widget->isMaximized() || widget->isFullScreen() || radius <= 0)
+    widget->setProperty(kLegacyRoundedMaskFrameInsetProperty, kLegacyRoundedMaskFrameInset);
+
+    if (usesNativeCaptionFrameForWidget(widget) || widget->isMaximized() || widget->isFullScreen() || radius <= 0)
     {
+        widget->setProperty(kLegacyRoundedMaskAppliedProperty, false);
         widget->clearMask();
         return;
     }
@@ -453,13 +512,24 @@ void applyLegacyRoundedMask(QWidget* widget, int radius)
     const QRect bounds = widget->rect();
     if (bounds.isEmpty())
     {
+        widget->setProperty(kLegacyRoundedMaskAppliedProperty, false);
+        widget->clearMask();
+        return;
+    }
+
+    const QRectF maskRect =
+        QRectF(bounds).adjusted(0.0, 0.0, -kLegacyRoundedMaskFrameInset, -kLegacyRoundedMaskFrameInset);
+    if (maskRect.isEmpty())
+    {
+        widget->setProperty(kLegacyRoundedMaskAppliedProperty, false);
         widget->clearMask();
         return;
     }
 
     QPainterPath path;
-    path.addRoundedRect(QRectF(bounds), radius, radius);
+    path.addRoundedRect(maskRect, radius + kLegacyRoundedMaskFrameInset, radius + kLegacyRoundedMaskFrameInset);
     widget->setMask(QRegion(path.toFillPolygon().toPolygon()));
+    widget->setProperty(kLegacyRoundedMaskAppliedProperty, true);
 }
 #endif
 }
@@ -991,6 +1061,11 @@ void AntWindow::resizeEvent(QResizeEvent* event)
     QMainWindow::resizeEvent(event);
 #ifdef Q_OS_WIN
     applyLegacyRoundedMask(this, m_cornerRadius);
+    if (isVisible() && !usesNativeCaptionFrameForWidget(this) && !isMaximized() && !isFullScreen())
+    {
+        const HWND hwnd = reinterpret_cast<HWND>(winId());
+        reapplyDwmFrameMargins(this, hwnd, false, "resize");
+    }
 #endif
     if (m_themeTransitionOverlay)
     {
@@ -1608,10 +1683,10 @@ void AntWindow::applyNativeWindowFrame()
         return;
     }
 
-    const bool useNativeCaption = supportsNativeCaptionSnapLayouts();
+    const bool useNativeCaption = usesNativeCaptionFrameForWidget(this);
     ensureNativeWindowStyle(hwnd, useNativeCaption);
     applyLegacyRoundedMask(this, m_cornerRadius);
-    setProperty("antWindowUsesNativeCaptionFrame", useNativeCaption);
+    setProperty(kUsesNativeCaptionFrameProperty, useNativeCaption);
 
     DwmSetWindowAttributeFn setWindowAttribute = nullptr;
     DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
@@ -1622,13 +1697,7 @@ void AntWindow::applyNativeWindowFrame()
 
     if (extendFrame)
     {
-        const DwmMargins margins = shadowPreservingDwmMargins(useNativeCaption);
-        setProperty("antWindowDwmFrameMargins",
-                    QVariant::fromValue(QMargins(margins.cxLeftWidth,
-                                                 margins.cyTopHeight,
-                                                 margins.cxRightWidth,
-                                                 margins.cyBottomHeight)));
-        extendFrame(hwnd, &margins);
+        applyDwmFrameMargins(this, hwnd, useNativeCaption, extendFrame, "frame");
     }
 
     if (!setWindowAttribute)
