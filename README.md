@@ -43,7 +43,7 @@ The project focuses on:
 The 2026-04-30 interaction and motion pass tightened several user-visible details:
 
 - Popup feedback: `AntPopover`, `AntMessage`, and `AntNotification` now have more stable hover/close behavior, stronger elevation, and placement-aware enter/exit motion.
-- Popup shells: shared popup elevation now paints outside the panel body, so `AntDropdown`, `AntMenu`, selector popups, `AntColorPicker`, `AntDatePicker`, and `AntTimePicker` keep visible token shadows in light and dark themes.
+- Popup shells: shared popup elevation now uses a softer multi-layer feather outside the panel body, so `AntDropdown`, `AntMenu`, selector popups, `AntColorPicker`, `AntDatePicker`, and `AntTimePicker` keep AntD-like shadows in light and dark themes.
 - Motion: `AntCarousel`, `AntTabs`, `AntSkeleton`, `AntSpin`, `AntInputNumber`, `AntSwitch`, and loading buttons now better match Ant Design timing, direction, and state feedback.
 - Data interaction: `AntTransfer` now supports scrolling and header select-all correctly, while `AntTable` sorter clicks reorder rows instead of only changing the icon state.
 - Input feedback: `AntPlainTextEdit` supports TextArea-style bottom-right resizing, and `AntSlider` shows a value bubble while dragging.

@@ -79,7 +79,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added the missing `AntRate` selected-star scale pulse and a small internal paint inset so the animated star edge is not clipped.
 - Reworked the `AntSlider` drag value bubble as a single rounded-rect-plus-arrow path so the arrow no longer appears visually separated from the body.
 - Restored the `AntWindow` outer DWM shadow on the Windows 10 no-caption path by keeping a 1 px extended frame while preserving the legacy rounded mask.
-- Fixed shared popup elevation shadows by making `AntTheme::drawEffectShadow()` paint outside the panel body, and aligned `AntSelect`, `AntDatePicker`, and `AntTimePicker` popup shadow margins so Dropdown/Menu/Cascader/ColorPicker-style floating panels keep visible light/dark elevation.
+- Fixed shared popup elevation shadows by making `AntTheme::drawEffectShadow()` paint a softer multi-layer feather outside the panel body, and widened popup transparent margins for Dropdown/Menu/Cascader/ColorPicker/Select/DatePicker/TimePicker-style panels so the shadow fades before the popup edge instead of being visibly clipped.
 
 ## Visual Audit State
 
@@ -87,7 +87,7 @@ The component visual audit matrix in `docs/visual-audit.md` is current:
 
 - Comparable Ant Design standard components are marked `Pass`.
 - Qt-only desktop extensions are marked `Local Pass`.
-- `TestAntVisualRegression` now guards stable pixel-level regressions across token fills, semantic status colors, selection controls, feedback surfaces, data-display structure, navigation/layout structure, popup surfaces, shared external popup shadows, and light/dark surface contrast.
+- `TestAntVisualRegression` now guards stable pixel-level regressions across token fills, semantic status colors, selection controls, feedback surfaces, data-display structure, navigation/layout structure, popup surfaces, shared external popup shadows, clipped popup-shadow edges, and light/dark surface contrast.
 - The homepage Showcase audit is marked `Pass` against the isolated local HTML and Qt control pages.
 - README gallery screenshots are committed under `resources/images/components/`; popup and feedback controls use representative open/active captures while single-component audit scratch captures remain under `build/`.
 - Future visual work should be issue-driven: when a mismatch is found, re-run the single-component capture loop documented in `docs/visual-audit.md`.

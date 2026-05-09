@@ -88,7 +88,7 @@
 - `AntPlainTextEdit`：补齐 TextArea 式右下角拖拽缩放。
 - `AntInputNumber`：鼠标进入/聚焦时上下箭头控制区以动画显示。
 - `AntSlider`：拖动时在当前 handle 上方显示数值浮标并跟随 handle，浮窗箭头与圆角面板使用一体化轮廓绘制，marks 场景保留标签高度，Range 拖动不再在最左侧绘制多余 pressed/focus 滑块。
-- 弹层阴影：`AntTheme::drawEffectShadow()` 改为围绕面板向外绘制阴影，并让 `AntSelect` / `AntDatePicker` / `AntTimePicker` 弹层按面板本体预留阴影边距；Dropdown、Menu、Cascader、ColorPicker 等弹出面板在 Light/Dark 下都有可见层级。
+- 弹层阴影：`AntTheme::drawEffectShadow()` 改为围绕面板向外绘制柔和多层羽化阴影，并扩大 Dropdown、Menu、Cascader、ColorPicker、Select、DatePicker、TimePicker 等弹层的透明留白，避免阴影在 popup 边缘被裁出边界线。
 - `AntSwitch`：点击时触发灰色 Wave 边缘动效。
 - `AntTransfer`：修复列表滚动、滚动后行点击和顶部全选。
 - `AntCarousel`：补齐轮播图滑动切换动效。
