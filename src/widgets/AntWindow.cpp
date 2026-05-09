@@ -53,7 +53,7 @@ constexpr int kThemeTransitionFrameIntervalMs = 8;
 constexpr int kThemeTransitionDurationMs = 320;
 constexpr int kThemeTransitionEdgeFeather = 24;
 constexpr auto kLegacySoftwareShadowObjectName = "AntWindowLegacySoftwareShadow";
-constexpr int kLegacySoftwareShadowMargin = 18;
+constexpr int kLegacySoftwareShadowMargin = 14;
 constexpr int kLegacySoftwareShadowInnerClearance = 0;
 
 class AntWindowThemeTransitionOverlay : public QWidget
@@ -269,7 +269,7 @@ protected:
         }
 
         QColor shadowBase = antTheme->tokens().colorShadow;
-        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.065 : 0.045;
+        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.046 : 0.032;
         const qreal effectiveSpread = qMax<qreal>(1.0, shadowWidth - kLegacySoftwareShadowInnerClearance);
         for (int distance = shadowWidth; distance > kLegacySoftwareShadowInnerClearance; --distance)
         {
