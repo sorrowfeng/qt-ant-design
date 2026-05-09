@@ -1214,7 +1214,7 @@ void TestAntQtExtensions::windowDwmFrameMarginsPreserveShadow()
     QVERIFY2(frameMarginsProperty.isValid(), "AntWindow should expose the DWM frame margins applied to the native window");
     const QMargins margins = frameMarginsProperty.value<QMargins>();
     QCOMPARE(margins,
-             supportsNativeCaptionSnapLayoutsForTest() ? QMargins(1, 1, 1, 1) : QMargins(1, 0, 0, 0));
+             supportsNativeCaptionSnapLayoutsForTest() ? QMargins(1, 1, 1, 1) : QMargins(0, 0, 0, 0));
 
     const HWND hwnd = reinterpret_cast<HWND>(window.winId());
     QVERIFY(hwnd != nullptr);
@@ -1240,8 +1240,46 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     QCOMPARE(window.property("antWindowUsesNativeCaptionFrame").toBool(), false);
     QCOMPARE(window.property("antWindowLegacyRoundedMaskApplied").toBool(), true);
     QCOMPARE(window.property("antWindowLegacyRoundedMaskFrameInset").toInt(), 1);
-    QCOMPARE(window.property("antWindowDwmFrameMargins").value<QMargins>(), QMargins(1, 0, 0, 0));
-    QCOMPARE(window.property("antWindowLegacyClassDropShadowEnabled").toBool(), true);
+    QCOMPARE(window.property("antWindowDwmFrameMargins").value<QMargins>(), QMargins(0, 0, 0, 0));
+    QCOMPARE(window.property("antWindowLegacyClassDropShadowEnabled").toBool(), false);
+    QTRY_COMPARE(window.property("antWindowLegacySoftwareShadowEnabled").toBool(), true);
+    QVERIFY(window.property("antWindowLegacySoftwareShadowMargin").toInt() >= 18);
+    const QRect initialShadowGeometry = window.property("antWindowLegacySoftwareShadowGeometry").toRect();
+    QVERIFY(initialShadowGeometry.contains(window.geometry()));
+    QVERIFY(initialShadowGeometry.left() < window.geometry().left());
+    QVERIFY(initialShadowGeometry.top() < window.geometry().top());
+    QVERIFY(initialShadowGeometry.right() > window.geometry().right());
+    QVERIFY(initialShadowGeometry.bottom() > window.geometry().bottom());
+    auto* shadowWidget = window.findChild<QWidget*>(QStringLiteral("AntWindowLegacySoftwareShadow"));
+    QVERIFY(shadowWidget);
+    QTRY_VERIFY(shadowWidget->isVisible());
+
+    auto maxAlphaIn = [](const QImage& image, const QRect& sampleRect) {
+        int maxAlpha = 0;
+        const QRect clipped = sampleRect.intersected(image.rect());
+        for (int y = clipped.top(); y <= clipped.bottom(); ++y)
+        {
+            for (int x = clipped.left(); x <= clipped.right(); ++x)
+            {
+                maxAlpha = qMax(maxAlpha, qAlpha(image.pixel(x, y)));
+            }
+        }
+        return maxAlpha;
+    };
+    const int shadowMargin = window.property("antWindowLegacySoftwareShadowMargin").toInt();
+    const QImage shadowImage = shadowWidget->grab().toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QVERIFY(maxAlphaIn(shadowImage, QRect(0, shadowMargin, shadowMargin, shadowImage.height() - shadowMargin * 2)) > 0);
+    QVERIFY(maxAlphaIn(shadowImage, QRect(shadowMargin, 0, shadowImage.width() - shadowMargin * 2, shadowMargin)) > 0);
+    QVERIFY(maxAlphaIn(shadowImage,
+                       QRect(shadowImage.width() - shadowMargin,
+                             shadowMargin,
+                             shadowMargin,
+                             shadowImage.height() - shadowMargin * 2)) > 0);
+    QVERIFY(maxAlphaIn(shadowImage,
+                       QRect(shadowMargin,
+                             shadowImage.height() - shadowMargin,
+                             shadowImage.width() - shadowMargin * 2,
+                             shadowMargin)) > 0);
 
     const int frameApplyCount = window.property("antWindowDwmFrameApplyCount").toInt();
     QVERIFY2(frameApplyCount > 0, "legacy frame policy should apply a shadow-preserving DWM frame");
@@ -1253,6 +1291,14 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     QTRY_VERIFY2(window.property("antWindowDwmFrameApplyCount").toInt() >= frameApplyCount + 2,
                  "resizing a Win10 legacy-frame AntWindow should queue a second DWM frame refresh after native resize settles");
     QCOMPARE(window.property("antWindowDwmFrameLastReason").toString(), QStringLiteral("resize-deferred"));
+
+    const QRect resizedShadowGeometry = window.property("antWindowLegacySoftwareShadowGeometry").toRect();
+    QVERIFY(resizedShadowGeometry.contains(window.geometry()));
+    QCOMPARE(resizedShadowGeometry.marginsRemoved(QMargins(window.property("antWindowLegacySoftwareShadowMargin").toInt(),
+                                                          window.property("antWindowLegacySoftwareShadowMargin").toInt(),
+                                                          window.property("antWindowLegacySoftwareShadowMargin").toInt(),
+                                                          window.property("antWindowLegacySoftwareShadowMargin").toInt())),
+             window.geometry());
 #endif
 }
 

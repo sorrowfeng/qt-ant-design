@@ -54,7 +54,7 @@
 
 - 无边框窗口支持 Windows 11 Snap：四边/四角缩放、标题栏拖拽、最大化按钮 Snap Layout hover、边缘吸附和最大化后拖拽还原。
 - Windows 下接入 DWM 圆角、边框/阴影，并提供 `cornerRadius` API；平台相关实现均通过 Qt/Win32 宏隔离。
-- Windows 10 走无 native caption 的窗口样式，并使用 legacy rounded mask、左侧 1px DWM 阴影触发、`CS_DROPSHADOW` 和 resize 后的延迟 frame 重刷，避免最大化/还原后露出原生标题栏按钮，同时让普通窗口保持圆角和整体阴影。
+- Windows 10 走无 native caption 的窗口样式，并使用 legacy rounded mask 与透明软件阴影宿主窗口，避免最大化/还原后露出原生标题栏按钮，同时让普通窗口在缩放前后都保持更柔和的四周阴影。
 - Windows 已显示窗口切换置顶/取消置顶时改用 native `SetWindowPos` 原地更新，避免 Qt flags 重建窗口造成可见闪烁。
 - 标题栏新增置顶和亮暗主题切换按钮，使用内置官方 Ant Design 图标；所有标题栏按钮均可通过公开 API 控制显示或隐藏。
 - 内置主题按钮使用全窗口截图 overlay 和柔和揭示动画，让 Light/Dark 全局切换更连续。

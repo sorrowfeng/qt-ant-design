@@ -6,11 +6,13 @@
 #include <QEvent>
 #include <QEventLoop>
 #include <QGuiApplication>
+#include <QHideEvent>
 #include <QHoverEvent>
 #include <QLineF>
 #include <QMargins>
 #include <QMetaType>
 #include <QMouseEvent>
+#include <QMoveEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
@@ -50,6 +52,8 @@ constexpr auto kThemeTransitionOverlayName = "AntWindowThemeTransitionOverlay";
 constexpr int kThemeTransitionFrameIntervalMs = 8;
 constexpr int kThemeTransitionDurationMs = 320;
 constexpr int kThemeTransitionEdgeFeather = 24;
+constexpr auto kLegacySoftwareShadowObjectName = "AntWindowLegacySoftwareShadow";
+constexpr int kLegacySoftwareShadowMargin = 28;
 
 class AntWindowThemeTransitionOverlay : public QWidget
 {
@@ -222,6 +226,80 @@ protected:
     qreal m_progress = 0.0;
 };
 
+class AntWindowLegacySoftwareShadow : public QWidget
+{
+public:
+    explicit AntWindowLegacySoftwareShadow(QWidget* owner)
+        : QWidget(owner, Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint | Qt::WindowDoesNotAcceptFocus)
+    {
+        setObjectName(QString::fromLatin1(kLegacySoftwareShadowObjectName));
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        setAttribute(Qt::WA_ShowWithoutActivating, true);
+        setFocusPolicy(Qt::NoFocus);
+        setProperty("shadowMargin", kLegacySoftwareShadowMargin);
+    }
+
+    void setCornerRadius(int radius)
+    {
+        m_cornerRadius = qMax(0, radius);
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.setCompositionMode(QPainter::CompositionMode_Source);
+        painter.fillRect(rect(), Qt::transparent);
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+
+        const int shadowWidth = kLegacySoftwareShadowMargin;
+        const QRectF panelRect = QRectF(rect()).adjusted(shadowWidth,
+                                                        shadowWidth,
+                                                        -shadowWidth,
+                                                        -shadowWidth);
+        if (panelRect.isEmpty())
+        {
+            return;
+        }
+
+        QColor shadowBase = antTheme->tokens().colorShadow;
+        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.18 : 0.16;
+        for (int distance = shadowWidth; distance >= 1; --distance)
+        {
+            const qreal t = qBound<qreal>(0.0,
+                                          1.0 - static_cast<qreal>(distance - 1) / static_cast<qreal>(shadowWidth),
+                                          1.0);
+            const qreal eased = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+            const qreal opacity = qBound<qreal>(0.0, maxOpacity * eased, 0.22);
+            if (opacity <= 0.0)
+            {
+                continue;
+            }
+
+            QColor shadow = shadowBase;
+            shadow.setAlphaF(opacity);
+
+            QPainterPath outerPath;
+            const QRectF outer = panelRect.adjusted(-distance, -distance, distance, distance);
+            outerPath.addRoundedRect(outer, m_cornerRadius + distance, m_cornerRadius + distance);
+
+            QPainterPath innerPath;
+            const int innerDistance = distance - 1;
+            const QRectF inner = panelRect.adjusted(-innerDistance, -innerDistance, innerDistance, innerDistance);
+            innerPath.addRoundedRect(inner, m_cornerRadius + innerDistance, m_cornerRadius + innerDistance);
+
+            painter.fillPath(outerPath.subtracted(innerPath), shadow);
+        }
+    }
+
+private:
+    int m_cornerRadius = 8;
+};
+
 #ifdef Q_OS_WIN
 using GetDpiForWindowFn = UINT(WINAPI*)(HWND);
 using GetSystemMetricsForDpiFn = int(WINAPI*)(int, UINT);
@@ -329,7 +407,7 @@ bool usesNativeCaptionFrameForWidget(const QWidget* widget)
 
 DwmMargins shadowPreservingDwmMargins(bool useNativeCaption)
 {
-    return useNativeCaption ? DwmMargins{1, 1, 1, 1} : DwmMargins{1, 0, 0, 0};
+    return useNativeCaption ? DwmMargins{1, 1, 1, 1} : DwmMargins{0, 0, 0, 0};
 }
 
 void setNativeTopMost(HWND hwnd, bool topMost)
@@ -528,14 +606,14 @@ void applyLegacyClassDropShadow(QWidget* widget, HWND hwnd, bool useNativeCaptio
         return;
     }
 
-    if (!hwnd || useNativeCaption)
+    if (!hwnd)
     {
         widget->setProperty(kLegacyClassDropShadowEnabledProperty, false);
         return;
     }
 
     const LONG_PTR classStyle = ::GetClassLongPtrW(hwnd, GCL_STYLE);
-    const LONG_PTR newClassStyle = classStyle | CS_DROPSHADOW;
+    const LONG_PTR newClassStyle = useNativeCaption ? classStyle : (classStyle & ~static_cast<LONG_PTR>(CS_DROPSHADOW));
     if (newClassStyle != classStyle)
     {
         ::SetClassLongPtrW(hwnd, GCL_STYLE, newClassStyle);
@@ -739,6 +817,7 @@ void AntWindow::setAlwaysOnTop(bool on)
         }
         overrideWindowFlags(flags);
         setNativeTopMost(reinterpret_cast<HWND>(winId()), on);
+        updateLegacySoftwareShadow();
         update(titleBarRect());
         Q_EMIT alwaysOnTopChanged(m_alwaysOnTop);
         return;
@@ -1102,9 +1181,22 @@ void AntWindow::changeEvent(QEvent* event)
     {
         m_windowMaximized = QMainWindow::isMaximized();
         applyNativeWindowFrame();
+        updateLegacySoftwareShadow();
         update();
     }
     QMainWindow::changeEvent(event);
+}
+
+void AntWindow::moveEvent(QMoveEvent* event)
+{
+    QMainWindow::moveEvent(event);
+    updateLegacySoftwareShadow();
+}
+
+void AntWindow::hideEvent(QHideEvent* event)
+{
+    hideLegacySoftwareShadow();
+    QMainWindow::hideEvent(event);
 }
 
 void AntWindow::resizeEvent(QResizeEvent* event)
@@ -1119,6 +1211,10 @@ void AntWindow::resizeEvent(QResizeEvent* event)
         queueLegacyDwmFrameRefresh(this, "resize-deferred");
     }
 #endif
+    if (m_legacySoftwareShadow || (windowHandle() && windowHandle()->isExposed()))
+    {
+        updateLegacySoftwareShadow();
+    }
     if (m_themeTransitionOverlay)
     {
         m_themeTransitionOverlay->setGeometry(rect());
@@ -1131,6 +1227,9 @@ void AntWindow::showEvent(QShowEvent* event)
     QMainWindow::showEvent(event);
     m_windowMaximized = QMainWindow::isMaximized();
     applyNativeWindowFrame();
+    QTimer::singleShot(16, this, [this]() {
+        updateLegacySoftwareShadow();
+    });
 #ifdef Q_OS_WIN
     if (!usesNativeCaptionFrameForWidget(this))
     {
@@ -1796,6 +1895,79 @@ void AntWindow::applyNativeWindowFrame()
 #else
     update();
 #endif
+}
+
+void AntWindow::updateLegacySoftwareShadow()
+{
+#ifdef Q_OS_WIN
+    const bool enabled = isVisible()
+        && windowHandle()
+        && !usesNativeCaptionFrameForWidget(this)
+        && !isMaximized()
+        && !isFullScreen()
+        && !isMinimized();
+
+    setProperty("antWindowLegacySoftwareShadowEnabled", enabled);
+    setProperty("antWindowLegacySoftwareShadowMargin", kLegacySoftwareShadowMargin);
+
+    if (!enabled)
+    {
+        hideLegacySoftwareShadow();
+        return;
+    }
+
+    if (!m_legacySoftwareShadow)
+    {
+        auto* shadow = new AntWindowLegacySoftwareShadow(this);
+        m_legacySoftwareShadow = shadow;
+        connect(antTheme, &AntTheme::themeChanged, shadow, qOverload<>(&QWidget::update));
+    }
+
+    auto* shadow = static_cast<AntWindowLegacySoftwareShadow*>(m_legacySoftwareShadow);
+    if (shadow)
+    {
+        shadow->setCornerRadius(m_cornerRadius);
+    }
+
+    const QRect shadowGeometry = geometry().adjusted(-kLegacySoftwareShadowMargin,
+                                                     -kLegacySoftwareShadowMargin,
+                                                     kLegacySoftwareShadowMargin,
+                                                     kLegacySoftwareShadowMargin);
+    m_legacySoftwareShadow->setGeometry(shadowGeometry);
+    setProperty("antWindowLegacySoftwareShadowGeometry", shadowGeometry);
+    if (!m_legacySoftwareShadow->isVisible())
+    {
+        m_legacySoftwareShadow->show();
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(winId());
+    const HWND shadowHwnd = reinterpret_cast<HWND>(m_legacySoftwareShadow->winId());
+    if (shadowHwnd && hwnd)
+    {
+        ::SetWindowPos(shadowHwnd,
+                       hwnd,
+                       shadowGeometry.x(),
+                       shadowGeometry.y(),
+                       shadowGeometry.width(),
+                       shadowGeometry.height(),
+                       SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
+    }
+    else
+    {
+        m_legacySoftwareShadow->show();
+    }
+#else
+    hideLegacySoftwareShadow();
+#endif
+}
+
+void AntWindow::hideLegacySoftwareShadow()
+{
+    setProperty("antWindowLegacySoftwareShadowEnabled", false);
+    if (m_legacySoftwareShadow)
+    {
+        m_legacySoftwareShadow->hide();
+    }
 }
 
 void AntWindow::emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible)

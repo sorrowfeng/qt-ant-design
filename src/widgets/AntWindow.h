@@ -7,7 +7,9 @@
 #include "core/AntTypes.h"
 
 class QEvent;
+class QHideEvent;
 class QMouseEvent;
+class QMoveEvent;
 class QPaintEvent;
 class QResizeEvent;
 class QShowEvent;
@@ -99,6 +101,8 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void moveEvent(QMoveEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
@@ -121,6 +125,8 @@ private:
     void emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible);
     void applyManualSnap(const QPoint& globalPos);
     void applyNativeWindowFrame();
+    void updateLegacySoftwareShadow();
+    void hideLegacySoftwareShadow();
     void syncTheme();
     void applyContentPalette(QWidget* widget);
 
@@ -144,4 +150,5 @@ private:
     AntRibbon* m_ribbon = nullptr;
     bool m_ribbonVisible = true;
     QWidget* m_themeTransitionOverlay = nullptr;
+    QWidget* m_legacySoftwareShadow = nullptr;
 };
