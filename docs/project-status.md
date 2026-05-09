@@ -81,7 +81,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed `AntPagination` More Options quick jumper so the input box is backed by a real `QLineEdit`, accepts page numbers, clamps to the valid page range, and emits the normal page-change signals.
 - Reworked the Popover surface path used by `AntPopconfirm` so the arrow and rounded panel are painted as one joined shape without an internal seam.
 - Expanded `AntModal`'s transparent dialog shadow margin so the multi-layer feather fades out before the dialog widget edge instead of leaving a clipped boundary line.
-- Restored the `AntWindow` outer DWM shadow on the Windows 10 no-caption path by keeping a 1 px extended frame, leaving a mask inset for that frame, and reapplying the DWM frame after visible resizes so the rounded corner does not gain a sharp outer artifact.
+- Restored the `AntWindow` outer shadow on the Windows 10 no-caption path by switching the legacy DWM trigger to a left-edge 1 px margin, enabling `CS_DROPSHADOW`, and queueing a second DWM frame refresh after visible resizes so the rounded corner and shadow survive the native resize sequence together.
 - Fixed shared popup elevation shadows by making `AntTheme::drawEffectShadow()` paint a softer multi-layer feather outside the panel body, and widened popup transparent margins for Dropdown/Menu/Cascader/ColorPicker/Select/DatePicker/TimePicker-style panels so the shadow fades before the popup edge instead of being visibly clipped.
 
 ## Visual Audit State
@@ -148,7 +148,7 @@ ctest --test-dir build -C Debug -R "TestAntQtExtensions$" --output-on-failure
 .\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 
-Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`, including the Windows 10 no-caption DWM shadow resize regression, legacy rounded-mask frame inset, maximized `WM_NCCALCSIZE`, and visible topmost toggles without hide/show recreation.
+Result: `1 / 1` targeted test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-09`, including the Windows 10 no-caption left-edge DWM shadow trigger, `CS_DROPSHADOW`, deferred resize refresh, maximized `WM_NCCALCSIZE`, and visible topmost toggles without hide/show recreation.
 
 Latest targeted AntList / AntTable / AntTypography API validation:
 

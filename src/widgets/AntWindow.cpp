@@ -14,6 +14,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
+#include <QPointer>
 #include <QRegion>
 #include <QResizeEvent>
 #include <QScreen>
@@ -251,6 +252,8 @@ constexpr auto kDwmFrameApplyCountProperty = "antWindowDwmFrameApplyCount";
 constexpr auto kDwmFrameLastReasonProperty = "antWindowDwmFrameLastReason";
 constexpr auto kLegacyRoundedMaskAppliedProperty = "antWindowLegacyRoundedMaskApplied";
 constexpr auto kLegacyRoundedMaskFrameInsetProperty = "antWindowLegacyRoundedMaskFrameInset";
+constexpr auto kLegacyClassDropShadowEnabledProperty = "antWindowLegacyClassDropShadowEnabled";
+constexpr auto kDwmFrameRefreshQueuedProperty = "antWindowDwmFrameRefreshQueued";
 
 UINT dpiForWindow(HWND hwnd)
 {
@@ -326,8 +329,7 @@ bool usesNativeCaptionFrameForWidget(const QWidget* widget)
 
 DwmMargins shadowPreservingDwmMargins(bool useNativeCaption)
 {
-    Q_UNUSED(useNativeCaption)
-    return DwmMargins{1, 1, 1, 1};
+    return useNativeCaption ? DwmMargins{1, 1, 1, 1} : DwmMargins{1, 0, 0, 0};
 }
 
 void setNativeTopMost(HWND hwnd, bool topMost)
@@ -460,6 +462,32 @@ bool reapplyDwmFrameMargins(QWidget* widget, HWND hwnd, bool useNativeCaption, c
     return applyDwmFrameMargins(widget, hwnd, useNativeCaption, extendFrame, reason);
 }
 
+void queueLegacyDwmFrameRefresh(QWidget* widget, const char* reason)
+{
+    if (!widget || widget->property(kDwmFrameRefreshQueuedProperty).toBool())
+    {
+        return;
+    }
+
+    widget->setProperty(kDwmFrameRefreshQueuedProperty, true);
+    QPointer<QWidget> guard(widget);
+    QTimer::singleShot(0, widget, [guard, reason]() {
+        if (!guard)
+        {
+            return;
+        }
+
+        guard->setProperty(kDwmFrameRefreshQueuedProperty, false);
+        if (!guard->isVisible() || usesNativeCaptionFrameForWidget(guard.data()) || guard->isMaximized() || guard->isFullScreen())
+        {
+            return;
+        }
+
+        const HWND hwnd = reinterpret_cast<HWND>(guard->winId());
+        reapplyDwmFrameMargins(guard.data(), hwnd, false, reason);
+    });
+}
+
 void triggerFrameChange(HWND hwnd)
 {
     ::SetWindowPos(hwnd,
@@ -491,6 +519,29 @@ void ensureNativeWindowStyle(HWND hwnd, bool useNativeCaption)
 
     ::SetWindowLongPtrW(hwnd, GWL_STYLE, newStyle);
     triggerFrameChange(hwnd);
+}
+
+void applyLegacyClassDropShadow(QWidget* widget, HWND hwnd, bool useNativeCaption)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    if (!hwnd || useNativeCaption)
+    {
+        widget->setProperty(kLegacyClassDropShadowEnabledProperty, false);
+        return;
+    }
+
+    const LONG_PTR classStyle = ::GetClassLongPtrW(hwnd, GCL_STYLE);
+    const LONG_PTR newClassStyle = classStyle | CS_DROPSHADOW;
+    if (newClassStyle != classStyle)
+    {
+        ::SetClassLongPtrW(hwnd, GCL_STYLE, newClassStyle);
+    }
+    widget->setProperty(kLegacyClassDropShadowEnabledProperty,
+                        (::GetClassLongPtrW(hwnd, GCL_STYLE) & CS_DROPSHADOW) == CS_DROPSHADOW);
 }
 
 void applyLegacyRoundedMask(QWidget* widget, int radius)
@@ -1065,6 +1116,7 @@ void AntWindow::resizeEvent(QResizeEvent* event)
     {
         const HWND hwnd = reinterpret_cast<HWND>(winId());
         reapplyDwmFrameMargins(this, hwnd, false, "resize");
+        queueLegacyDwmFrameRefresh(this, "resize-deferred");
     }
 #endif
     if (m_themeTransitionOverlay)
@@ -1079,6 +1131,12 @@ void AntWindow::showEvent(QShowEvent* event)
     QMainWindow::showEvent(event);
     m_windowMaximized = QMainWindow::isMaximized();
     applyNativeWindowFrame();
+#ifdef Q_OS_WIN
+    if (!usesNativeCaptionFrameForWidget(this))
+    {
+        queueLegacyDwmFrameRefresh(this, "show-deferred");
+    }
+#endif
 }
 
 void AntWindow::paintEvent(QPaintEvent* event)
@@ -1685,6 +1743,7 @@ void AntWindow::applyNativeWindowFrame()
 
     const bool useNativeCaption = usesNativeCaptionFrameForWidget(this);
     ensureNativeWindowStyle(hwnd, useNativeCaption);
+    applyLegacyClassDropShadow(this, hwnd, useNativeCaption);
     applyLegacyRoundedMask(this, m_cornerRadius);
     setProperty(kUsesNativeCaptionFrameProperty, useNativeCaption);
 

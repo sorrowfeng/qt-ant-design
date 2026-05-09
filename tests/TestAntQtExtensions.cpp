@@ -1213,7 +1213,8 @@ void TestAntQtExtensions::windowDwmFrameMarginsPreserveShadow()
     const QVariant frameMarginsProperty = window.property("antWindowDwmFrameMargins");
     QVERIFY2(frameMarginsProperty.isValid(), "AntWindow should expose the DWM frame margins applied to the native window");
     const QMargins margins = frameMarginsProperty.value<QMargins>();
-    QCOMPARE(margins, QMargins(1, 1, 1, 1));
+    QCOMPARE(margins,
+             supportsNativeCaptionSnapLayoutsForTest() ? QMargins(1, 1, 1, 1) : QMargins(1, 0, 0, 0));
 
     const HWND hwnd = reinterpret_cast<HWND>(window.winId());
     QVERIFY(hwnd != nullptr);
@@ -1239,17 +1240,19 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     QCOMPARE(window.property("antWindowUsesNativeCaptionFrame").toBool(), false);
     QCOMPARE(window.property("antWindowLegacyRoundedMaskApplied").toBool(), true);
     QCOMPARE(window.property("antWindowLegacyRoundedMaskFrameInset").toInt(), 1);
-    QCOMPARE(window.property("antWindowDwmFrameMargins").value<QMargins>(), QMargins(1, 1, 1, 1));
+    QCOMPARE(window.property("antWindowDwmFrameMargins").value<QMargins>(), QMargins(1, 0, 0, 0));
+    QCOMPARE(window.property("antWindowLegacyClassDropShadowEnabled").toBool(), true);
 
     const int frameApplyCount = window.property("antWindowDwmFrameApplyCount").toInt();
     QVERIFY2(frameApplyCount > 0, "legacy frame policy should apply a shadow-preserving DWM frame");
 
     window.resize(700, 460);
-    QCoreApplication::processEvents();
 
     QVERIFY2(window.property("antWindowDwmFrameApplyCount").toInt() > frameApplyCount,
              "resizing a Win10 legacy-frame AntWindow should reapply the DWM frame after updating the mask");
-    QCOMPARE(window.property("antWindowDwmFrameLastReason").toString(), QStringLiteral("resize"));
+    QTRY_VERIFY2(window.property("antWindowDwmFrameApplyCount").toInt() >= frameApplyCount + 2,
+                 "resizing a Win10 legacy-frame AntWindow should queue a second DWM frame refresh after native resize settles");
+    QCOMPARE(window.property("antWindowDwmFrameLastReason").toString(), QStringLiteral("resize-deferred"));
 #endif
 }
 
