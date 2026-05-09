@@ -993,7 +993,8 @@ void AntSelect::updatePopupGeometry()
     const int visibleCount = std::min(std::max(1, optionCount), m_maxVisibleItems);
     const int popupWidth = width() + AntSelectPopup::ShadowMargin * 2;
     const int popupHeight = visibleCount * m.optionHeight + AntSelectPopup::ShadowMargin * 2;
-    const QPoint globalPos = mapToGlobal(QPoint(-AntSelectPopup::ShadowMargin, height() + 4));
+    const QPoint globalPos = mapToGlobal(QPoint(-AntSelectPopup::ShadowMargin,
+                                                height() + 4 - AntSelectPopup::ShadowMargin));
     m_popup->setGeometry(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
 }
 

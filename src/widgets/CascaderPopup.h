@@ -20,7 +20,7 @@ constexpr int kColumnWidth = 112;
 constexpr int kMaxVisibleItems = 8;
 constexpr int kPopupHPadding = 4;
 constexpr int kPopupVPadding = 4;
-constexpr int kPopupShadowMargin = 8;
+constexpr int kPopupShadowMargin = 32;
 constexpr int kMinPopupPanelHeight = 180;
 constexpr int kOptionHPadding = 12;
 constexpr int kArrowSize = 16;
@@ -119,7 +119,8 @@ public:
         int popupHeight = std::max(kMinPopupPanelHeight, maxItemsInAnyCol * optionHeight + kPopupVPadding * 2)
             + kPopupShadowMargin * 2;
 
-        QPoint globalPos = m_owner->mapToGlobal(QPoint(0, m_owner->height() + 4));
+        QPoint globalPos = m_owner->mapToGlobal(QPoint(-kPopupShadowMargin,
+                                                       m_owner->height() + 4 - kPopupShadowMargin));
 
         QScreen* screen = QApplication::screenAt(globalPos);
         if (!screen)
@@ -138,7 +139,7 @@ public:
         }
         if (globalPos.y() + popupHeight > screenGeom.bottom())
         {
-            globalPos.setY(m_owner->mapToGlobal(QPoint(0, -popupHeight - 4)).y());
+            globalPos.setY(m_owner->mapToGlobal(QPoint(0, -popupHeight + kPopupShadowMargin - 4)).y());
         }
         if (globalPos.y() < screenGeom.top())
         {

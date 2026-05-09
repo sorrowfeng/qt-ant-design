@@ -19,7 +19,7 @@
 
 namespace
 {
-constexpr int kPopupShadowMargin = 8;
+constexpr int kPopupShadowMargin = 32;
 constexpr int kPopupInnerPadding = 4;
 constexpr int kOptionHeight = 32;
 
@@ -251,7 +251,7 @@ void AntMentions::checkForPrefix()
                 lay->addWidget(item);
             }
 
-            const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4));
+            const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4 - kPopupShadowMargin));
             m_popup->setGeometry(pos.x(), pos.y(), width() + kPopupShadowMargin * 2,
                                  count * kOptionHeight + kPopupInnerPadding * 2 + kPopupShadowMargin * 2);
             if (m_open)

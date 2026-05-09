@@ -18,7 +18,7 @@
 
 namespace
 {
-constexpr int kPopupShadowMargin = 8;
+constexpr int kPopupShadowMargin = 32;
 constexpr int kPopupInnerPadding = 4;
 constexpr int kTreeRowHeight = 28;
 
@@ -441,7 +441,7 @@ void AntTreeSelect::showPopup()
     }
 
     m_popup->refreshSize();
-    const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4));
+    const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4 - kPopupShadowMargin));
     m_popup->move(pos);
     AntPopupMotion::show(m_popup);
     const bool wasOpen = m_open;

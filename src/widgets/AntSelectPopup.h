@@ -19,7 +19,7 @@ class QPaintEvent;
 class QT_ANT_DESIGN_EXPORT AntSelectPopup : public QFrame
 {
 public:
-    static constexpr int ShadowMargin = 8;
+    static constexpr int ShadowMargin = 32;
 
     explicit AntSelectPopup(AntSelect* owner)
         : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),

@@ -17,6 +17,14 @@
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
+namespace
+{
+constexpr int kTimePickerPopupShadowMargin = 32;
+constexpr int kTimePickerPopupTopMargin = 12;
+constexpr int kTimePickerPopupPanelWidth = 168;
+constexpr int kTimePickerPopupPanelHeight = 274;
+}
+
 class AntTimePickerPopup : public QFrame
 {
 public:
@@ -26,7 +34,8 @@ public:
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
         setMouseTracking(true);
-        resize(184, 286);
+        resize(kTimePickerPopupPanelWidth + kTimePickerPopupShadowMargin * 2,
+               kTimePickerPopupPanelHeight + kTimePickerPopupTopMargin + kTimePickerPopupShadowMargin);
     }
 
 protected:
@@ -167,7 +176,10 @@ protected:
 private:
     QRectF panelRect() const
     {
-        return rect().adjusted(8, 4, -8, -8);
+        return rect().adjusted(kTimePickerPopupShadowMargin,
+                               kTimePickerPopupTopMargin,
+                               -kTimePickerPopupShadowMargin,
+                               -kTimePickerPopupShadowMargin);
     }
 
     QRectF columnsRect() const
@@ -851,7 +863,8 @@ void AntTimePicker::updatePopupGeometry()
     {
         return;
     }
-    m_popup->move(mapToGlobal(QPoint(0, height() + 4)));
+    m_popup->move(mapToGlobal(QPoint(-kTimePickerPopupShadowMargin,
+                                     height() + 4 - kTimePickerPopupShadowMargin)));
 }
 
 void AntTimePicker::setPanelTime(const QTime& time)

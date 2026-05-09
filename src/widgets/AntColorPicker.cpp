@@ -21,6 +21,14 @@
 #include "core/AntTheme.h"
 #include "styles/AntPalette.h"
 
+namespace
+{
+constexpr int kColorPickerPopupShadowMargin = 40;
+constexpr int kColorPickerPopupPanelPadding = 12;
+constexpr int kColorPickerPopupContentWidth = 234;
+constexpr int kColorPickerPopupContentHeight = 248;
+}
+
 // ---- HueSatField ----
 
 class HueSatField : public QWidget
@@ -372,7 +380,10 @@ private:
     {
         Q_UNUSED(event)
         const auto& token = antTheme->tokens();
-        const QRectF panel = QRectF(rect()).adjusted(10.5, 10.5, -10.5, -10.5);
+        const QRectF panel = QRectF(rect()).adjusted(kColorPickerPopupShadowMargin + 0.5,
+                                                     kColorPickerPopupShadowMargin + 0.5,
+                                                     -kColorPickerPopupShadowMargin - 0.5,
+                                                     -kColorPickerPopupShadowMargin - 0.5);
         const QPointF arrowCenter(panel.left() + 22.0, panel.top());
 
         QPainter painter(this);
@@ -417,10 +428,12 @@ private:
 
 void ColorPickerPopup::setupUi()
 {
-    setFixedSize(278, 292);
+    const int outerPadding = kColorPickerPopupShadowMargin + kColorPickerPopupPanelPadding;
+    setFixedSize(kColorPickerPopupContentWidth + outerPadding * 2,
+                 kColorPickerPopupContentHeight + outerPadding * 2);
 
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(22, 22, 22, 22);
+    mainLayout->setContentsMargins(outerPadding, outerPadding, outerPadding, outerPadding);
     mainLayout->setSpacing(8);
 
     m_hsField = new HueSatField(this);
@@ -768,7 +781,8 @@ void AntColorPicker::updatePopupGeometry()
     const QSize popupSize = m_popup->sizeHint().isValid() ? m_popup->sizeHint() : m_popup->size();
     m_popup->resize(popupSize);
 
-    QPoint globalPos = mapToGlobal(QPoint(0, height() + 4));
+    QPoint globalPos = mapToGlobal(QPoint(-kColorPickerPopupShadowMargin,
+                                          height() + 4 - kColorPickerPopupShadowMargin));
     QRect available = QGuiApplication::primaryScreen() ? QGuiApplication::primaryScreen()->availableGeometry()
                                                        : QRect(globalPos, QSize(1280, 720));
     if (QScreen* screen = QGuiApplication::screenAt(mapToGlobal(rect().center())))
@@ -782,7 +796,8 @@ void AntColorPicker::updatePopupGeometry()
     }
     if (globalPos.y() + m_popup->height() > available.bottom())
     {
-        globalPos.setY(mapToGlobal(QPoint(0, -m_popup->height() - 4)).y());
+        globalPos.setY(mapToGlobal(QPoint(-kColorPickerPopupShadowMargin,
+                                          -m_popup->height() + kColorPickerPopupShadowMargin - 4)).y());
     }
     m_popup->move(globalPos);
 }

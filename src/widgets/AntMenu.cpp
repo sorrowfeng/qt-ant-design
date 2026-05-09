@@ -28,7 +28,7 @@
 
 namespace
 {
-constexpr int kSubMenuPopupShadowMargin = 8;
+constexpr int kSubMenuPopupShadowMargin = 32;
 constexpr int kSubMenuPopupInnerPadding = 4;
 
 QColor withAlpha(QColor color, int alpha)
@@ -1201,11 +1201,17 @@ QRect AntMenu::popupGeometryForItem(int itemIndex, const QSize& popupSize) const
     QRect geometry;
     if (m_mode == Ant::MenuMode::Horizontal)
     {
-        geometry = QRect(globalItemRect.left(), globalItemRect.bottom() + 4, popupSize.width(), popupSize.height());
+        geometry = QRect(globalItemRect.left() - kSubMenuPopupShadowMargin,
+                         globalItemRect.bottom() + 4 - kSubMenuPopupShadowMargin,
+                         popupSize.width(),
+                         popupSize.height());
     }
     else
     {
-        geometry = QRect(globalItemRect.right() + 4, globalItemRect.top(), popupSize.width(), popupSize.height());
+        geometry = QRect(globalItemRect.right() + 4 - kSubMenuPopupShadowMargin,
+                         globalItemRect.top() - kSubMenuPopupShadowMargin,
+                         popupSize.width(),
+                         popupSize.height());
     }
 
     const QRect screenRect = availableScreenGeometryFor(this);

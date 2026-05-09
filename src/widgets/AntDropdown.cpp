@@ -21,6 +21,9 @@
 
 namespace
 {
+constexpr int kDropdownPopupShadowMargin = 32;
+constexpr int kDropdownPopupArrowReserve = 8;
+
 QRect availableScreenGeometryFor(const QWidget* widget)
 {
     if (widget)
@@ -65,13 +68,18 @@ protected:
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
         const Ant::DropdownPlacement placement = m_owner->m_renderPlacement;
-        QRect body = rect().adjusted(8, m_owner->m_arrowVisible && placement != Ant::DropdownPlacement::Top &&
+        QRect body = rect().adjusted(kDropdownPopupShadowMargin,
+                                     m_owner->m_arrowVisible && placement != Ant::DropdownPlacement::Top &&
                                            placement != Ant::DropdownPlacement::TopLeft &&
-                                           placement != Ant::DropdownPlacement::TopRight ? 14 : 8,
-                                     -8,
+                                           placement != Ant::DropdownPlacement::TopRight
+                                         ? kDropdownPopupShadowMargin + kDropdownPopupArrowReserve
+                                         : kDropdownPopupShadowMargin,
+                                     -kDropdownPopupShadowMargin,
                                      m_owner->m_arrowVisible && (placement == Ant::DropdownPlacement::Top ||
                                                                  placement == Ant::DropdownPlacement::TopLeft ||
-                                                                 placement == Ant::DropdownPlacement::TopRight) ? -14 : -8);
+                                                                 placement == Ant::DropdownPlacement::TopRight)
+                                         ? -(kDropdownPopupShadowMargin + kDropdownPopupArrowReserve)
+                                         : -kDropdownPopupShadowMargin);
 
         antTheme->drawEffectShadow(&painter, body, 12, token.borderRadiusLG, 0.55);
         painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
@@ -95,13 +103,13 @@ protected:
             {
                 arrow << QPointF(centerX - 8, body.bottom())
                       << QPointF(centerX + 8, body.bottom())
-                      << QPointF(centerX, rect().bottom() - 8);
+                      << QPointF(centerX, rect().bottom() - kDropdownPopupShadowMargin);
             }
             else
             {
                 arrow << QPointF(centerX - 8, body.top())
                       << QPointF(centerX + 8, body.top())
-                      << QPointF(centerX, 8);
+                      << QPointF(centerX, kDropdownPopupShadowMargin);
             }
 
             painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
@@ -149,7 +157,10 @@ AntDropdown::AntDropdown(QWidget* parent)
     installAntStyle<AntDropdownStyle>(this);
     m_popup = new PopupFrame(this);
     auto* layout = new QVBoxLayout(m_popup);
-    layout->setContentsMargins(12, 12, 12, 12);
+    layout->setContentsMargins(kDropdownPopupShadowMargin + 4,
+                               kDropdownPopupShadowMargin + 4,
+                               kDropdownPopupShadowMargin + 4,
+                               kDropdownPopupShadowMargin + 4);
     layout->setSpacing(0);
 
     m_menu = new AntMenu(m_popup);
@@ -442,9 +453,9 @@ bool AntDropdown::eventFilter(QObject* watched, QEvent* event)
 
 QRect AntDropdown::popupGeometry(const QRect& targetRect, const QSize& popupSize, Ant::DropdownPlacement placement) const
 {
-    // PopupFrame keeps an 8px transparent shadow margin. A negative window gap
+    // PopupFrame keeps a transparent shadow margin. A negative window gap
     // gives the painted panel the AntD-like 4px visual distance from target.
-    const int gap = -4;
+    const int gap = 4 - kDropdownPopupShadowMargin;
     switch (placement)
     {
     case Ant::DropdownPlacement::Top:
@@ -533,16 +544,24 @@ void AntDropdown::updatePopupGeometry(const QPoint& contextPos)
     const bool topPlacement = m_placement == Ant::DropdownPlacement::Top ||
                               m_placement == Ant::DropdownPlacement::TopLeft ||
                               m_placement == Ant::DropdownPlacement::TopRight;
-    const int topMargin = m_arrowVisible && !topPlacement ? 14 : 8;
-    const int bottomMargin = m_arrowVisible && topPlacement ? 14 : 8;
+    const int topMargin = m_arrowVisible && !topPlacement
+                              ? kDropdownPopupShadowMargin + kDropdownPopupArrowReserve
+                              : kDropdownPopupShadowMargin;
+    const int bottomMargin = m_arrowVisible && topPlacement
+                                 ? kDropdownPopupShadowMargin + kDropdownPopupArrowReserve
+                                 : kDropdownPopupShadowMargin;
     if (auto* box = qobject_cast<QVBoxLayout*>(m_popup->layout()))
     {
-        box->setContentsMargins(12, topMargin + 4, 12, bottomMargin + 4);
+        box->setContentsMargins(kDropdownPopupShadowMargin + 4,
+                                topMargin + 4,
+                                kDropdownPopupShadowMargin + 4,
+                                bottomMargin + 4);
     }
     m_menu->setFixedWidth(popupContentWidth());
     m_popup->adjustSize();
     const QSize popupSize = m_popup->sizeHint().expandedTo(
-        QSize(m_menu->width() + 24, m_menu->sizeHint().height() + topMargin + bottomMargin + 8));
+        QSize(m_menu->width() + (kDropdownPopupShadowMargin + 4) * 2,
+              m_menu->sizeHint().height() + topMargin + bottomMargin + 8));
     QRect targetRect(m_target->mapToGlobal(QPoint(0, 0)), m_target->size());
     if (m_trigger == Ant::DropdownTrigger::ContextMenu && !contextPos.isNull())
     {

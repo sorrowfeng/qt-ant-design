@@ -590,14 +590,27 @@ void TestAntVisualRegression::popupEffectShadowPaintsOutsidePanel()
 {
     ThemeModeGuard guard;
 
+    auto maxAlphaInStrip = [](const QImage& image, const QRect& strip) {
+        int maxAlpha = 0;
+        const QRect clipped = strip.intersected(image.rect());
+        for (int y = clipped.top(); y <= clipped.bottom(); ++y)
+        {
+            for (int x = clipped.left(); x <= clipped.right(); ++x)
+            {
+                maxAlpha = qMax(maxAlpha, image.pixelColor(x, y).alpha());
+            }
+        }
+        return maxAlpha;
+    };
+
     auto assertPopupShadow = [](Ant::ThemeMode mode) {
         antTheme->setThemeMode(mode);
         const auto& token = antTheme->tokens();
 
-        QImage image(QSize(112, 80), QImage::Format_ARGB32);
+        QImage image(QSize(152, 112), QImage::Format_ARGB32);
         image.fill(Qt::transparent);
 
-        const QRect panel(24, 20, 64, 36);
+        const QRect panel(32, 28, 72, 44);
         {
             QPainter painter(&image);
             painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
@@ -608,7 +621,7 @@ void TestAntVisualRegression::popupEffectShadowPaintsOutsidePanel()
         }
 
         int shadowPixels = 0;
-        const QRect shadowBounds = panel.adjusted(-12, -12, 12, 12).intersected(image.rect());
+        const QRect shadowBounds = panel.adjusted(-22, -22, 22, 22).intersected(image.rect());
         for (int y = shadowBounds.top(); y <= shadowBounds.bottom(); ++y)
         {
             for (int x = shadowBounds.left(); x <= shadowBounds.right(); ++x)
@@ -624,8 +637,62 @@ void TestAntVisualRegression::popupEffectShadowPaintsOutsidePanel()
                  qPrintable(QStringLiteral("popup outside-shadow pixels: %1").arg(shadowPixels)));
     };
 
+    auto assertSoftFeather = [maxAlphaInStrip](Ant::ThemeMode mode) {
+        antTheme->setThemeMode(mode);
+        const auto& token = antTheme->tokens();
+
+        QImage image(QSize(176, 120), QImage::Format_ARGB32);
+        image.fill(Qt::transparent);
+
+        const QRect panel(36, 30, 78, 46);
+        {
+            QPainter painter(&image);
+            painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+            antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.75);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(token.colorBgElevated);
+            painter.drawRoundedRect(QRectF(panel), token.borderRadiusLG, token.borderRadiusLG);
+        }
+
+        const QRect sampleBand(panel.right() + 1, panel.top() + 8, 24, panel.height() - 16);
+        const int nearAlpha = maxAlphaInStrip(image, QRect(sampleBand.left(), sampleBand.top(), 3, sampleBand.height()));
+        const int midAlpha = maxAlphaInStrip(image, QRect(sampleBand.left() + 8, sampleBand.top(), 3, sampleBand.height()));
+        const int farAlpha = maxAlphaInStrip(image, QRect(sampleBand.left() + 18, sampleBand.top(), 3, sampleBand.height()));
+
+        QVERIFY2(nearAlpha > midAlpha,
+                 qPrintable(QStringLiteral("popup shadow near/mid alpha: %1/%2").arg(nearAlpha).arg(midAlpha)));
+        QVERIFY2(midAlpha > farAlpha,
+                 qPrintable(QStringLiteral("popup shadow mid/far alpha: %1/%2").arg(midAlpha).arg(farAlpha)));
+        QVERIFY2(farAlpha <= 4,
+                 qPrintable(QStringLiteral("popup shadow should be almost transparent at the feather edge; far alpha: %1")
+                                .arg(farAlpha)));
+
+        QImage popupImage(QSize(160, 140), QImage::Format_ARGB32);
+        popupImage.fill(Qt::transparent);
+        const QRect popupPanel(40, 40, 80, 48);
+        {
+            QPainter painter(&popupImage);
+            painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+            antTheme->drawEffectShadow(&painter, popupPanel, 16, token.borderRadiusLG, 0.75);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(token.colorBgElevated);
+            painter.drawRoundedRect(QRectF(popupPanel), token.borderRadiusLG, token.borderRadiusLG);
+        }
+
+        const int clippedEdgeAlpha =
+            qMax(maxAlphaInStrip(popupImage, QRect(0, 0, popupImage.width(), 2)),
+                 qMax(maxAlphaInStrip(popupImage, QRect(0, popupImage.height() - 2, popupImage.width(), 2)),
+                      qMax(maxAlphaInStrip(popupImage, QRect(0, 0, 2, popupImage.height())),
+                           maxAlphaInStrip(popupImage, QRect(popupImage.width() - 2, 0, 2, popupImage.height())))));
+        QVERIFY2(clippedEdgeAlpha <= 1,
+                 qPrintable(QStringLiteral("popup shadow should fade before the popup edge; edge alpha: %1")
+                                .arg(clippedEdgeAlpha)));
+    };
+
     assertPopupShadow(Ant::ThemeMode::Default);
     assertPopupShadow(Ant::ThemeMode::Dark);
+    assertSoftFeather(Ant::ThemeMode::Default);
+    assertSoftFeather(Ant::ThemeMode::Dark);
 }
 
 void TestAntVisualRegression::dataDisplayBordersAndSeparatorsStayVisible()

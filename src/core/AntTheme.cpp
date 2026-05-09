@@ -3,6 +3,9 @@
 #include <QPainter>
 #include <QPainterPath>
 
+#include <algorithm>
+#include <cmath>
+
 #include "styles/AntPalette.h"
 
 namespace
@@ -99,39 +102,76 @@ void AntTheme::drawEffectShadow(QPainter* painter, const QRect& rect, int shadow
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     const QRectF panelRect(rect);
-    const int panelRadius = qMax(0, radius);
+    const qreal panelRadius = qMax(0, radius);
     const QColor shadowBase = tokens().colorShadow;
-    QPainterPath panelPath;
-    panelPath.addRoundedRect(panelRect, panelRadius, panelRadius);
 
-    for (int distance = shadowWidth; distance > 0; --distance)
+    auto paintFeatherLayer = [&](const QRectF& sourceRect,
+                                 qreal yOffset,
+                                 qreal spread,
+                                 qreal maxOpacity,
+                                 qreal falloff) {
+        if (spread <= 0.0 || maxOpacity <= 0.0)
+        {
+            return;
+        }
+
+        const QRectF layerRect = sourceRect.translated(0.0, yOffset);
+        const int steps = qMax(1, static_cast<int>(std::ceil(spread * 4.0)));
+        const qreal stepSize = spread / steps;
+
+        for (int step = steps; step > 0; --step)
+        {
+            const qreal outerDistance = step * stepSize;
+            const qreal innerDistance = (step - 1) * stepSize;
+            const qreal centerDistance = (outerDistance + innerDistance) * 0.5;
+            const qreal proximity = std::clamp(1.0 - centerDistance / spread, 0.0, 1.0);
+            const qreal eased = proximity * proximity * proximity * (proximity * (proximity * 6.0 - 15.0) + 10.0);
+            const qreal opacity = std::clamp(maxOpacity * std::pow(eased, falloff) * strength, 0.0, 0.35);
+            if (opacity <= 0.0)
+            {
+                continue;
+            }
+
+            QColor shadow = shadowBase;
+            shadow.setAlphaF(opacity);
+
+            QPainterPath outerPath;
+            const QRectF outerRect = layerRect.adjusted(-outerDistance,
+                                                        -outerDistance,
+                                                        outerDistance,
+                                                        outerDistance);
+            outerPath.addRoundedRect(outerRect,
+                                     panelRadius + outerDistance,
+                                     panelRadius + outerDistance);
+
+            QPainterPath innerPath;
+            if (innerDistance <= 0.0)
+            {
+                innerPath.addRoundedRect(layerRect, panelRadius, panelRadius);
+            }
+            else
+            {
+                const QRectF innerRect = layerRect.adjusted(-innerDistance,
+                                                            -innerDistance,
+                                                            innerDistance,
+                                                            innerDistance);
+                innerPath.addRoundedRect(innerRect,
+                                         panelRadius + innerDistance,
+                                         panelRadius + innerDistance);
+            }
+
+            painter->fillPath(outerPath.subtracted(innerPath), shadow);
+        }
+    };
+
+    const qreal baseWidth = static_cast<qreal>(shadowWidth);
+    paintFeatherLayer(panelRect, baseWidth * 0.38, baseWidth * 1.90, 0.030, 1.65);
+    paintFeatherLayer(panelRect, baseWidth * 0.18, baseWidth * 1.45, 0.050, 1.75);
+    paintFeatherLayer(panelRect, baseWidth * 0.06, baseWidth * 0.75, 0.055, 1.35);
+
+    if (shadowWidth <= 2)
     {
-        const qreal progress = 1.0 - static_cast<qreal>(distance - 1) / shadowWidth;
-        QColor shadow = shadowBase;
-        shadow.setAlphaF(std::clamp(0.12 * progress * strength, 0.0, 0.35));
-
-        QPainterPath outerPath;
-        const QRectF outerRect = panelRect.adjusted(-distance, -distance, distance, distance);
-        outerPath.addRoundedRect(outerRect, panelRadius + distance, panelRadius + distance);
-
-        QPainterPath innerPath;
-        if (distance == 1)
-        {
-            innerPath = panelPath;
-        }
-        else
-        {
-            const int innerDistance = distance - 1;
-            const QRectF innerRect = panelRect.adjusted(-innerDistance,
-                                                        -innerDistance,
-                                                        innerDistance,
-                                                        innerDistance);
-            innerPath.addRoundedRect(innerRect,
-                                     panelRadius + innerDistance,
-                                     panelRadius + innerDistance);
-        }
-
-        painter->fillPath(outerPath.subtracted(innerPath), shadow);
+        paintFeatherLayer(panelRect, 0.0, baseWidth, 0.08, 1.0);
     }
     painter->restore();
 }

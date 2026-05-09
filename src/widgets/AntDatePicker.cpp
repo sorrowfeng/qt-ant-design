@@ -15,6 +15,14 @@
 #include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 
+namespace
+{
+constexpr int kDatePickerPopupShadowMargin = 32;
+constexpr int kDatePickerPopupTopMargin = 12;
+constexpr int kDatePickerPopupPanelWidth = 288;
+constexpr int kDatePickerPopupPanelHeight = 332;
+}
+
 class AntDatePickerPopup : public QFrame
 {
 public:
@@ -24,7 +32,8 @@ public:
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
         setMouseTracking(true);
-        resize(304, 344);
+        resize(kDatePickerPopupPanelWidth + kDatePickerPopupShadowMargin * 2,
+               kDatePickerPopupPanelHeight + kDatePickerPopupTopMargin + kDatePickerPopupShadowMargin);
     }
 
 protected:
@@ -126,7 +135,10 @@ protected:
 private:
     QRectF panelRect() const
     {
-        return rect().adjusted(8, 4, -8, -8);
+        return rect().adjusted(kDatePickerPopupShadowMargin,
+                               kDatePickerPopupTopMargin,
+                               -kDatePickerPopupShadowMargin,
+                               -kDatePickerPopupShadowMargin);
     }
 
     QRectF previousRect() const
@@ -815,7 +827,8 @@ void AntDatePicker::updatePopupGeometry()
     {
         return;
     }
-    const QPoint globalPos = mapToGlobal(QPoint(0, height() + 4));
+    const QPoint globalPos = mapToGlobal(QPoint(-kDatePickerPopupShadowMargin,
+                                                height() + 4 - kDatePickerPopupShadowMargin));
     m_popup->move(globalPos);
 }
 

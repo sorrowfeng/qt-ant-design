@@ -16,7 +16,7 @@
 
 namespace
 {
-constexpr int kPopupShadowMargin = 8;
+constexpr int kPopupShadowMargin = 32;
 constexpr int kPopupInnerPadding = 4;
 constexpr int kOptionHeight = 32;
 
@@ -291,7 +291,7 @@ void AntAutoComplete::updatePopupGeometry()
 {
     int count = std::min(static_cast<int>(m_filtered.size()), m_maxVisibleItems);
     const int h = count * kOptionHeight + kPopupInnerPadding * 2 + kPopupShadowMargin * 2;
-    const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4));
+    const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4 - kPopupShadowMargin));
     m_popup->setGeometry(pos.x(), pos.y(), width() + kPopupShadowMargin * 2, h);
 }
 
