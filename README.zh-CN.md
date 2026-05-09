@@ -318,7 +318,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntList`：`header / footer / bordered / split / size`，`AntListItem` 支持 `Meta`（头像、标题、描述）、操作区、内部滚动和 QListWidget 风格文本/数据/选择 helper
 - `AntStatistic`：数值展示、千分位分隔、前缀后缀、精度控制
 - `AntPopover`：标题、正文、action、点击/悬停触发、placement、箭头
-- `AntPopconfirm`：确认标题、说明、确认/取消按钮、禁用态、placement
+- `AntPopconfirm`：确认标题、说明、确认/取消按钮、禁用态、placement，以及箭头与弹层主体一体化绘制
 - `AntSkeleton`：支持动态 `active` shimmer、头像占位、标题/段落配置、圆角风格以及 `loading` 切换真实内容
 - `AntToolTip`：常用 `placement`、箭头、颜色、延迟显示、自动翻转
 - `AntSlider`：横竖向、`reverse / dots / included`、Range、marks、拖动时在当前 handle 上方显示一体化箭头浮标

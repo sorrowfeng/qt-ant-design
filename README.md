@@ -318,7 +318,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description), action areas, internal scrolling, and QListWidget-style text/data/selection helpers through the `AntListWidget` alias
 - `AntStatistic`: numeric display, thousands separators, prefix / suffix, precision control
 - `AntPopover`: title, body, action, click / hover triggers, placement, arrow
-- `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement
+- `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement, and a one-piece popup arrow surface
 - `AntSkeleton`: moving `active` shimmer, avatar placeholder, title / paragraph configuration, rounded style, and `loading` toggle to swap in real content
 - `AntToolTip`: common `placement`, arrow, color, delayed display, auto flip
 - `AntSlider`: horizontal / vertical, `reverse / dots / included`, range, marks, drag value bubble above the active handle with a one-piece arrow surface

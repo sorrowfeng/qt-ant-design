@@ -54,6 +54,7 @@ private slots:
     void feedbackSurfacesKeepElevatedTokenFill();
     void resultStatusIconKeepsTransparentBackground();
     void feedbackPopupShadowsStaySubtle();
+    void popconfirmArrowSurfaceHasNoInternalSeam();
     void popupEffectShadowPaintsOutsidePanel();
     void dataDisplayBordersAndSeparatorsStayVisible();
     void navigationAndLayoutStructureStayVisible();
@@ -584,6 +585,27 @@ void TestAntVisualRegression::feedbackPopupShadowsStaySubtle()
     assertNotificationShadow(Ant::ThemeMode::Default, 36);
     assertMessageShadow(Ant::ThemeMode::Dark, 44);
     assertNotificationShadow(Ant::ThemeMode::Dark, 50);
+}
+
+void TestAntVisualRegression::popconfirmArrowSurfaceHasNoInternalSeam()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const QColor elevated = antTheme->tokens().colorBgElevated;
+
+    AntPopover popover;
+    popover.setTitle(QStringLiteral("Delete the task?"));
+    popover.setTitleIconType(Ant::IconType::ExclamationCircle);
+    popover.setContent(QStringLiteral("This action cannot be undone."));
+    popover.setPlacement(Ant::TooltipPlacement::Bottom);
+    popover.setArrowVisible(true);
+
+    const QImage image = renderWidget(&popover, QSize(280, 132));
+    const QRect bubble = image.rect().adjusted(8, 16, -8, -8);
+    const QRect arrowJoin(bubble.center().x() - 5, bubble.top(), 11, 1);
+    const int joinedPixels = countNearColor(image, arrowJoin, elevated, 4);
+
+    QCOMPARE(joinedPixels, arrowJoin.width() * arrowJoin.height());
 }
 
 void TestAntVisualRegression::popupEffectShadowPaintsOutsidePanel()

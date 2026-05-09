@@ -66,48 +66,49 @@ QPolygonF computeArrowPolygon(const QRect& bubble, const Metrics& m, Ant::Toolti
     {
         return {};
     }
+    constexpr qreal joinOverlap = 1.0;
     switch (placement)
     {
     case Ant::TooltipPlacement::Top:
         return QPolygonF()
-            << QPointF(bubble.center().x() - m.arrowSize, bubble.bottom())
-            << QPointF(bubble.center().x() + m.arrowSize, bubble.bottom())
+            << QPointF(bubble.center().x() - m.arrowSize, bubble.bottom() - joinOverlap)
+            << QPointF(bubble.center().x() + m.arrowSize, bubble.bottom() - joinOverlap)
             << QPointF(bubble.center().x(), bubble.bottom() + m.arrowSize);
     case Ant::TooltipPlacement::TopLeft:
         return QPolygonF()
-            << QPointF(bubble.left() + 24 - m.arrowSize, bubble.bottom())
-            << QPointF(bubble.left() + 24 + m.arrowSize, bubble.bottom())
+            << QPointF(bubble.left() + 24 - m.arrowSize, bubble.bottom() - joinOverlap)
+            << QPointF(bubble.left() + 24 + m.arrowSize, bubble.bottom() - joinOverlap)
             << QPointF(bubble.left() + 24, bubble.bottom() + m.arrowSize);
     case Ant::TooltipPlacement::TopRight:
         return QPolygonF()
-            << QPointF(bubble.right() - 24 - m.arrowSize, bubble.bottom())
-            << QPointF(bubble.right() - 24 + m.arrowSize, bubble.bottom())
+            << QPointF(bubble.right() - 24 - m.arrowSize, bubble.bottom() - joinOverlap)
+            << QPointF(bubble.right() - 24 + m.arrowSize, bubble.bottom() - joinOverlap)
             << QPointF(bubble.right() - 24, bubble.bottom() + m.arrowSize);
     case Ant::TooltipPlacement::Bottom:
         return QPolygonF()
-            << QPointF(bubble.center().x() - m.arrowSize, bubble.top())
-            << QPointF(bubble.center().x() + m.arrowSize, bubble.top())
+            << QPointF(bubble.center().x() - m.arrowSize, bubble.top() + joinOverlap)
+            << QPointF(bubble.center().x() + m.arrowSize, bubble.top() + joinOverlap)
             << QPointF(bubble.center().x(), bubble.top() - m.arrowSize);
     case Ant::TooltipPlacement::BottomLeft:
         return QPolygonF()
-            << QPointF(bubble.left() + 24 - m.arrowSize, bubble.top())
-            << QPointF(bubble.left() + 24 + m.arrowSize, bubble.top())
+            << QPointF(bubble.left() + 24 - m.arrowSize, bubble.top() + joinOverlap)
+            << QPointF(bubble.left() + 24 + m.arrowSize, bubble.top() + joinOverlap)
             << QPointF(bubble.left() + 24, bubble.top() - m.arrowSize);
     case Ant::TooltipPlacement::BottomRight:
         return QPolygonF()
-            << QPointF(bubble.right() - 24 - m.arrowSize, bubble.top())
-            << QPointF(bubble.right() - 24 + m.arrowSize, bubble.top())
+            << QPointF(bubble.right() - 24 - m.arrowSize, bubble.top() + joinOverlap)
+            << QPointF(bubble.right() - 24 + m.arrowSize, bubble.top() + joinOverlap)
             << QPointF(bubble.right() - 24, bubble.top() - m.arrowSize);
     case Ant::TooltipPlacement::Left:
         return QPolygonF()
-            << QPointF(bubble.right(), bubble.center().y() - m.arrowSize)
-            << QPointF(bubble.right(), bubble.center().y() + m.arrowSize)
+            << QPointF(bubble.right() - joinOverlap, bubble.center().y() - m.arrowSize)
+            << QPointF(bubble.right() - joinOverlap, bubble.center().y() + m.arrowSize)
             << QPointF(bubble.right() + m.arrowSize, bubble.center().y());
     case Ant::TooltipPlacement::Right:
     default:
         return QPolygonF()
-            << QPointF(bubble.left(), bubble.center().y() - m.arrowSize)
-            << QPointF(bubble.left(), bubble.center().y() + m.arrowSize)
+            << QPointF(bubble.left() + joinOverlap, bubble.center().y() - m.arrowSize)
+            << QPointF(bubble.left() + joinOverlap, bubble.center().y() + m.arrowSize)
             << QPointF(bubble.left() - m.arrowSize, bubble.center().y());
     }
 }
@@ -153,7 +154,10 @@ QPainterPath popoverSurfacePath(const QRect& bubble, const QPolygonF& arrow, int
     path.addRoundedRect(QRectF(bubble), radius, radius);
     if (!arrow.isEmpty())
     {
-        path.addPolygon(arrow);
+        QPainterPath arrowPath;
+        arrowPath.addPolygon(arrow);
+        arrowPath.closeSubpath();
+        path = path.united(arrowPath);
     }
     return path;
 }
