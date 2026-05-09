@@ -54,6 +54,7 @@ constexpr int kThemeTransitionDurationMs = 320;
 constexpr int kThemeTransitionEdgeFeather = 24;
 constexpr auto kLegacySoftwareShadowObjectName = "AntWindowLegacySoftwareShadow";
 constexpr int kLegacySoftwareShadowMargin = 18;
+constexpr int kLegacySoftwareShadowInnerClearance = 3;
 
 class AntWindowThemeTransitionOverlay : public QWidget
 {
@@ -267,11 +268,12 @@ protected:
         }
 
         QColor shadowBase = antTheme->tokens().colorShadow;
-        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.13 : 0.105;
-        for (int distance = shadowWidth; distance >= 1; --distance)
+        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.065 : 0.045;
+        const qreal effectiveSpread = qMax<qreal>(1.0, shadowWidth - kLegacySoftwareShadowInnerClearance);
+        for (int distance = shadowWidth; distance > kLegacySoftwareShadowInnerClearance; --distance)
         {
             const qreal t = qBound<qreal>(0.0,
-                                          1.0 - static_cast<qreal>(distance - 1) / static_cast<qreal>(shadowWidth),
+                                          1.0 - static_cast<qreal>(distance - kLegacySoftwareShadowInnerClearance - 1) / effectiveSpread,
                                           1.0);
             const qreal eased = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
             const qreal opacity = qBound<qreal>(0.0, maxOpacity * eased, 0.22);
@@ -283,14 +285,14 @@ protected:
             QColor shadow = shadowBase;
             shadow.setAlphaF(opacity);
 
-            const qreal radiusGrowth = static_cast<qreal>(distance) * 0.72;
+            const qreal radiusGrowth = static_cast<qreal>(distance) * 0.55;
             QPainterPath outerPath;
             const QRectF outer = panelRect.adjusted(-distance, -distance, distance, distance);
             outerPath.addRoundedRect(outer, m_cornerRadius + radiusGrowth, m_cornerRadius + radiusGrowth);
 
             QPainterPath innerPath;
-            const int innerDistance = distance - 1;
-            const qreal innerRadiusGrowth = static_cast<qreal>(innerDistance) * 0.72;
+            const int innerDistance = qMax(kLegacySoftwareShadowInnerClearance, distance - 1);
+            const qreal innerRadiusGrowth = static_cast<qreal>(innerDistance) * 0.55;
             const QRectF inner = panelRect.adjusted(-innerDistance, -innerDistance, innerDistance, innerDistance);
             innerPath.addRoundedRect(inner, m_cornerRadius + innerRadiusGrowth, m_cornerRadius + innerRadiusGrowth);
 

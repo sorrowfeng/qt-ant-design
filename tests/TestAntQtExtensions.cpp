@@ -1288,6 +1288,24 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
                              shadowImage.height() - shadowMargin,
                              shadowMargin,
                              shadowMargin)) <= 32);
+    QVERIFY(maxAlphaIn(shadowImage,
+                       QRect(shadowMargin - 2,
+                             shadowMargin,
+                             2,
+                             shadowImage.height() - shadowMargin * 2)) <= 16);
+    QVERIFY(maxAlphaIn(shadowImage,
+                       QRect(shadowMargin,
+                             shadowMargin - 2,
+                             shadowImage.width() - shadowMargin * 2,
+                             2)) <= 16);
+    QVERIFY(maxAlphaIn(shadowImage, QRect(0, 0, shadowMargin, shadowMargin)) <= 20);
+    QVERIFY(maxAlphaIn(shadowImage, QRect(shadowImage.width() - shadowMargin, 0, shadowMargin, shadowMargin)) <= 20);
+    QVERIFY(maxAlphaIn(shadowImage, QRect(0, shadowImage.height() - shadowMargin, shadowMargin, shadowMargin)) <= 20);
+    QVERIFY(maxAlphaIn(shadowImage,
+                       QRect(shadowImage.width() - shadowMargin,
+                             shadowImage.height() - shadowMargin,
+                             shadowMargin,
+                             shadowMargin)) <= 20);
 
     const int frameApplyCount = window.property("antWindowDwmFrameApplyCount").toInt();
     QVERIFY2(frameApplyCount > 0, "legacy frame policy should apply a shadow-preserving DWM frame");
