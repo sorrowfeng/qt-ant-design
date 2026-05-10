@@ -29,6 +29,7 @@ private slots:
     void sliderBubbleFloatsAboveMarkedHandle();
     void sliderBubbleArrowJoinsSurface();
     void sliderRangeDragDoesNotPaintPhantomMinimumHandle();
+    void segmentedClicksUseFullVisualTrack();
     void rateSelectionStartsScaleAnimation();
 };
 
@@ -533,6 +534,48 @@ void TestAntDataEntryA::sliderRangeDragDoesNotPaintPhantomMinimumHandle()
     const QColor phantomPixel = image.pixelColor(phantomX, slider.height() / 2);
     QVERIFY2(phantomPixel.blue() - phantomPixel.red() < 18,
              "range drag should not paint a primary-colored pressed halo at the minimum edge");
+}
+
+void TestAntDataEntryA::segmentedClicksUseFullVisualTrack()
+{
+    AntSegmented segmented;
+    segmented.setOptions({{QStringLiteral("daily"), QStringLiteral("Daily")},
+                          {QStringLiteral("weekly"), QStringLiteral("Weekly")},
+                          {QStringLiteral("monthly"), QStringLiteral("Monthly")}});
+    segmented.resize(segmented.sizeHint());
+    segmented.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&segmented));
+
+    QSignalSpy indexSpy(&segmented, &AntSegmented::currentIndexChanged);
+    QSignalSpy valueSpy(&segmented, &AntSegmented::valueChanged);
+    const auto rects = segmented.segmentRects();
+    QCOMPARE(rects.size(), 3);
+
+    const QPoint topTrackPoint(qRound(rects[1].center().x()), 1);
+    QTest::mouseClick(&segmented, Qt::LeftButton, Qt::NoModifier, topTrackPoint);
+
+    QCOMPARE(segmented.currentIndex(), 1);
+    QCOMPARE(segmented.value(), QStringLiteral("weekly"));
+    QCOMPARE(indexSpy.count(), 1);
+    QCOMPARE(indexSpy.takeFirst().at(0).toInt(), 1);
+    QCOMPARE(valueSpy.count(), 1);
+    QCOMPARE(valueSpy.takeFirst().at(0).toString(), QStringLiteral("weekly"));
+
+    segmented.setVertical(true);
+    segmented.resize(segmented.sizeHint());
+    QCoreApplication::processEvents();
+
+    const auto verticalRects = segmented.segmentRects();
+    QCOMPARE(verticalRects.size(), 3);
+    const QPoint leftTrackPoint(1, qRound(verticalRects[2].center().y()));
+    QTest::mouseClick(&segmented, Qt::LeftButton, Qt::NoModifier, leftTrackPoint);
+
+    QCOMPARE(segmented.currentIndex(), 2);
+    QCOMPARE(segmented.value(), QStringLiteral("monthly"));
+    QCOMPARE(indexSpy.count(), 1);
+    QCOMPARE(indexSpy.takeFirst().at(0).toInt(), 2);
+    QCOMPARE(valueSpy.count(), 1);
+    QCOMPARE(valueSpy.takeFirst().at(0).toString(), QStringLiteral("monthly"));
 }
 
 void TestAntDataEntryA::rateSelectionStartsScaleAnimation()

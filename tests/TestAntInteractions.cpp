@@ -53,12 +53,25 @@ QWidget* directVisibleFrameChild(QWidget* owner)
 
 QPoint cascaderCellCenter(int column, int row)
 {
-    constexpr int shadowMargin = 8;
+    constexpr int shadowMargin = 32;
     constexpr int popupPadding = 4;
     constexpr int columnWidth = 112;
     constexpr int optionHeight = 32;
     return QPoint(shadowMargin + popupPadding + column * columnWidth + columnWidth / 2,
                   shadowMargin + popupPadding + row * optionHeight + optionHeight / 2);
+}
+
+QPoint datePickerCellCenter(int column, int row)
+{
+    constexpr int shadowMargin = 32;
+    constexpr int topMargin = 12;
+    constexpr int panelWidth = 288;
+    constexpr int gridLeftInset = 14;
+    constexpr int gridTopInset = 88;
+    constexpr qreal cellWidth = (panelWidth - gridLeftInset * 2) / 7.0;
+    constexpr qreal cellHeight = 34.0;
+    return QPoint(qRound(shadowMargin + gridLeftInset + (column + 0.5) * cellWidth),
+                  qRound(topMargin + gridTopInset + (row + 0.5) * cellHeight));
 }
 
 bool writeTempFile(const QString& path, const QByteArray& data)
@@ -230,7 +243,7 @@ void TestAntInteractions::datePickerPopupSelection()
     QVERIFY(popup);
 
     // 2026-04-15 is row 2, column 3 in the April 2026 panel.
-    QTest::mouseClick(popup, Qt::LeftButton, Qt::NoModifier, QPoint(152, 177));
+    QTest::mouseClick(popup, Qt::LeftButton, Qt::NoModifier, datePickerCellCenter(3, 2));
     QCOMPARE(picker.selectedDate(), QDate(2026, 4, 15));
     QCOMPARE(picker.dateString(), QStringLiteral("2026-04-15"));
     QCOMPARE(picker.isOpen(), false);

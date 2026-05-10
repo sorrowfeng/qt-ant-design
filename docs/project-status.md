@@ -15,7 +15,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `83 / 83` public components, plus the standalone `Showcase` page |
 | Dedicated examples intentionally absent | None |
-| Tests | `37` CTest targets configured; latest AntWindow Win10 legacy-frame targeted verification passed in Debug on `2026-05-09` |
+| Tests | `37` CTest targets configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-10` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for all `83` public components |
 
@@ -83,6 +83,8 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Expanded `AntModal`'s transparent dialog shadow margin so the multi-layer feather fades out before the dialog widget edge instead of leaving a clipped boundary line.
 - Reworked the `AntWindow` outer shadow on the Windows 10 no-caption path to use a transparent software shadow host behind the main window, with a lightweight 14px Win11-like feather that starts directly at the window edge, capped corner opacity, symmetric shadow pixels on all four sides, and geometry that tracks visible resizes consistently.
 - Fixed shared popup elevation shadows by making `AntTheme::drawEffectShadow()` paint a softer multi-layer feather outside the panel body, and widened popup transparent margins for Dropdown/Menu/Cascader/ColorPicker/Select/DatePicker/TimePicker-style panels so the shadow fades before the popup edge instead of being visibly clipped.
+- Fixed `AntSegmented` click hit testing so the whole visible segmented track, including its padded edge pixels, maps to the intended option in horizontal and vertical modes; added signal/API assertions for the real mouse-click path.
+- Stabilized interaction reliability tests for Cascader and DatePicker popup selection by deriving click points from the current popup geometry instead of stale pre-shadow coordinates.
 
 ## Visual Audit State
 
@@ -121,6 +123,16 @@ ctest -C Debug --output-on-failure
 ```
 
 Configured tests after alias, build-system, and example subsystem guards: `37`.
+
+Latest full component reliability validation:
+
+```powershell
+cmake --build build --config Debug
+ctest --test-dir build -C Debug --output-on-failure
+cmake --build build --config Debug --target qt-ant-design-example
+```
+
+Result: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded on `2026-05-10`, including public component API / getter-setter / signal coverage, real mouse/keyboard/popup interactions, lifecycle ownership, theme lifecycle, render smoke, visual regression guards, install consumer, build-system, and example subsystem checks.
 
 Latest build-system / install targeted validation:
 

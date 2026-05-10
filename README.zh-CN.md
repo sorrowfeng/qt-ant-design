@@ -36,7 +36,7 @@
 - 状态总览：[docs/project-status.md](docs/project-status.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
-- 当前 CTest 目标数：`37`；最近一次 AntWindow targeted 验证：`1 / 1` 通过（`2026-05-09`）
+- 当前 CTest 目标数：`37`；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-10`）
 
 ## 最近 Ant Design 对齐更新
 
@@ -341,7 +341,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntDrawer`：滑动面板，支持 Left/Right/Top/Bottom 四个方向、动画、遮罩层
 - `AntStatusBar`：状态栏，左右项、分隔符、消息区、size grip
 - `AntScrollBar`：自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮
-- `AntSegmented`：分段控制器，选项块均衡分布，滑动指示器动画，支持图标/禁用/提示
+- `AntSegmented`：分段控制器，选项块均衡分布，滑动指示器动画，支持图标/禁用/提示，并补齐完整视觉轨道点击命中
 - `AntFloatButton`：浮动操作按钮，圆形/方形，Primary/Default，Group 展开/收起,BackTop 返回顶部，Badge
 - `AntWatermark`：水印叠加层，旋转文本平铺，多行内容，自定义字体/颜色/间距/偏移/角度
 - `AntQRCode`：二维码展示，嵌入式 QR 生成器（无外部依赖），状态叠加层（过期/加载/已扫描），图标，无边框

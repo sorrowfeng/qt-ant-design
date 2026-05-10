@@ -340,6 +340,19 @@ int AntSegmented::segmentIndexAt(const QPoint& pos) const
     {
         if (rects[i].contains(pos)) return i;
     }
+
+    if (!rect().contains(pos))
+    {
+        return -1;
+    }
+
+    for (int i = 0; i < rects.size(); ++i)
+    {
+        if (rects[i].adjusted(-kTrackPadding, -kTrackPadding, kTrackPadding, kTrackPadding).contains(pos))
+        {
+            return i;
+        }
+    }
     return -1;
 }
 

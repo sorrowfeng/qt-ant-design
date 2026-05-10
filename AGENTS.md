@@ -38,7 +38,7 @@
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - README 组件截图画廊：`resources/images/components/` 提交 `166` 张 Light/Dark PNG，覆盖 `83` 个公开组件；弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：当前 `37` 个 CTest 目标；最近一次 AntWindow Win10 legacy frame targeted 验证在 Debug 下通过（`2026-05-09`）
+- 测试状态：当前 `37` 个 CTest 目标；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-10`）
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -187,7 +187,7 @@
 | `AntMentions` | `mentions` | `QProxyStyle` | 是 | @提及输入，弹出建议 |
 | `AntRadio` | `radio` | `QProxyStyle` | 是 | Radio.Group，ButtonStyle 点击边缘 Wave 扩散 |
 | `AntRate` | `rate` | `QProxyStyle` | 是 | count/value/allowHalf/hover 放大/选中星缩放动效 |
-| `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 滑动指示器动画、图标/禁用、value/index 选中 API |
+| `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 滑动指示器动画、图标/禁用、value/index 选中 API，完整视觉轨道点击命中 |
 | `AntSelect` | `select` | `QProxyStyle` | 是 | 尺寸、状态、变体、可编辑模式、Multiple/Tags，option 管理 API |
 | `AntSlider` | `slider` | `QProxyStyle` | 是 | Range、marks、拖动浮窗一体化箭头 |
 | `AntSwitch` | `switch` | `QProxyStyle` | 是 | |
@@ -416,7 +416,7 @@ cmake --install build --config Debug
 - **测试数量**：37 个 CTest 目标（33 个 QTest 可执行文件 + 1 个安装消费方 CMake 脚本测试 + 1 个 build-system CMake 脚本测试 + 1 个 example GUI subsystem 脚本测试 + 1 个 example 压力退出测试）
 - **覆盖组件**：83 个公开组件全部覆盖，内部 helper 随宿主组件测试
 - **运行方式**：`ctest -C Debug --output-on-failure`
-- **最近 targeted 结果**：`4 / 4` build-system / install 相关测试通过（Debug，2026-05-08）
+- **最近全量结果**：`37 / 37` CTest 目标通过（Debug，2026-05-10），覆盖公开组件 API / getter-setter / 信号、真实鼠标键盘交互、生命周期、主题切换、渲染烟测、安装消费方和 example 子系统
 
 ### 测试文件结构
 
