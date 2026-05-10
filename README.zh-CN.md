@@ -34,6 +34,7 @@
 ## 当前状态
 
 - 状态总览：[docs/project-status.md](docs/project-status.md)
+- 逐控件可靠性覆盖：[docs/reliability-coverage.md](docs/reliability-coverage.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
 - 当前 CTest 目标数：`37`；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-10`）

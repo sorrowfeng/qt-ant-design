@@ -39,6 +39,7 @@
 - README 组件截图画廊：`resources/images/components/` 提交 `166` 张 Light/Dark PNG，覆盖 `83` 个公开组件；弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
 - 测试状态：当前 `37` 个 CTest 目标；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-10`）
+- 逐控件可靠性覆盖矩阵：`docs/reliability-coverage.md`，列出 83 个公开组件的专项行为/API、生命周期、Meta 属性、主题切换和渲染烟测覆盖情况
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -414,7 +415,7 @@ cmake --install build --config Debug
 
 - **测试框架**：Qt Test（QTest + QSignalSpy，跟随自动检测到的 Qt 主版本）
 - **测试数量**：37 个 CTest 目标（33 个 QTest 可执行文件 + 1 个安装消费方 CMake 脚本测试 + 1 个 build-system CMake 脚本测试 + 1 个 example GUI subsystem 脚本测试 + 1 个 example 压力退出测试）
-- **覆盖组件**：83 个公开组件全部覆盖，内部 helper 随宿主组件测试
+- **覆盖组件**：83 个公开组件全部覆盖，内部 helper 随宿主组件测试；逐控件覆盖矩阵见 `docs/reliability-coverage.md`
 - **运行方式**：`ctest -C Debug --output-on-failure`
 - **最近全量结果**：`37 / 37` CTest 目标通过（Debug，2026-05-10），覆盖公开组件 API / getter-setter / 信号、真实鼠标键盘交互、生命周期、主题切换、渲染烟测、安装消费方和 example 子系统
 

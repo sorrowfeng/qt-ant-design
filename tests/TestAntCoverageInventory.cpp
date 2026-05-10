@@ -19,6 +19,7 @@ class TestAntCoverageInventory : public QObject
 
 private slots:
     void publicWidgetHeadersAreInCoverageTests();
+    void publicWidgetHeadersAreInBehaviorReliabilityTests();
     void qtCasingWidgetHeadersUseCanonicalNames();
     void qtCasingAliasesDoNotKeepLegacyTypeNames();
 };
@@ -108,6 +109,36 @@ void TestAntCoverageInventory::publicWidgetHeadersAreInCoverageTests()
     QCOMPARE(missingMetaProperties, QStringList());
     QCOMPARE(missingThemeLifecycle, QStringList());
     QCOMPARE(missingRenderSmoke, QStringList());
+}
+
+void TestAntCoverageInventory::publicWidgetHeadersAreInBehaviorReliabilityTests()
+{
+    const QSet<QString> publicHeaders = publicWidgetHeaders();
+    QVERIFY(!publicHeaders.isEmpty());
+
+    const QSet<QString> broadCoverageFiles = {
+        QStringLiteral("TestAntCoverageInventory.cpp"),
+        QStringLiteral("TestAntMetaProperties.cpp"),
+        QStringLiteral("TestAntObjectTree.cpp"),
+        QStringLiteral("TestAntRenderSmoke.cpp"),
+        QStringLiteral("TestAntThemeLifecycle.cpp"),
+    };
+
+    QSet<QString> behaviorHeaders;
+    const QDir testsDir(QStringLiteral(ANT_TESTS_DIR));
+    const QFileInfoList files = testsDir.entryInfoList({QStringLiteral("TestAnt*.cpp")}, QDir::Files, QDir::Name);
+    for (const QFileInfo& file : files)
+    {
+        if (broadCoverageFiles.contains(file.fileName()))
+        {
+            continue;
+        }
+        behaviorHeaders.unite(includedWidgetHeaders(file.fileName()));
+    }
+
+    QStringList missingBehaviorCoverage = (publicHeaders - behaviorHeaders).values();
+    missingBehaviorCoverage.sort();
+    QCOMPARE(missingBehaviorCoverage, QStringList());
 }
 
 void TestAntCoverageInventory::qtCasingWidgetHeadersUseCanonicalNames()

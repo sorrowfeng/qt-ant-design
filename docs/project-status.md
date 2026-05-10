@@ -18,6 +18,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Tests | `37` CTest targets configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-10` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for all `83` public components |
+| Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
 
 ## Recent Completed Work
 
@@ -85,6 +86,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed shared popup elevation shadows by making `AntTheme::drawEffectShadow()` paint a softer multi-layer feather outside the panel body, and widened popup transparent margins for Dropdown/Menu/Cascader/ColorPicker/Select/DatePicker/TimePicker-style panels so the shadow fades before the popup edge instead of being visibly clipped.
 - Fixed `AntSegmented` click hit testing so the whole visible segmented track, including its padded edge pixels, maps to the intended option in horizontal and vertical modes; added signal/API assertions for the real mouse-click path.
 - Stabilized interaction reliability tests for Cascader and DatePicker popup selection by deriving click points from the current popup geometry instead of stale pre-shadow coordinates.
+- Added `docs/reliability-coverage.md` and a `TestAntCoverageInventory` guard so every public component must remain covered by at least one component-specific behavior/API test in addition to lifecycle, meta-property, theme-lifecycle, and render-smoke coverage.
 
 ## Visual Audit State
 
