@@ -1,5 +1,13 @@
 # qt-ant-design
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Qt](https://img.shields.io/badge/Qt-6%20%7C%205-green.svg)](https://www.qt.io)
+[![CMake](https://img.shields.io/badge/CMake-3.16+-blue.svg)](https://cmake.org)
+[![C++](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com)
+[![GitHub Stars](https://img.shields.io/github/stars/sorrowfeng/qt-ant-design?style=social)](https://github.com/sorrowfeng/qt-ant-design/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/sorrowfeng/qt-ant-design)](https://github.com/sorrowfeng/qt-ant-design/commits/main)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sorrowfeng/qt-ant-design)
+
 [English](README.md) | 简体中文
 
 `qt-ant-design` 是一个基于 Qt Widgets 的 C++ 组件库，配置时可自动识别 Qt6 或 Qt5，目标是将 Ant Design 设计系统移植到原生桌面组件中。
@@ -440,6 +448,16 @@ AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 5. 更新 `AGENTS.md` 与 `README.md`
 
 欢迎提交 Issue 和 PR。
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=sorrowfeng%2Fqt-ant-design&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=sorrowfeng/qt-ant-design&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=sorrowfeng/qt-ant-design&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=sorrowfeng/qt-ant-design&type=date&legend=top-left" />
+ </picture>
+</a>
 
 ## 致谢
 
