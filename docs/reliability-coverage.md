@@ -22,7 +22,7 @@ ctest --test-dir build -C Debug --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 ```
 
-Result on `2026-05-10`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Latest targeted `AntMessage` / `AntSegmented` click-through validation on `2026-05-15`: `TestAntAdvancedInteractions`, `TestAntFeedback`, and `TestAntDataEntryA` passed, with the example Debug build and smoke launch succeeding.
+Result on `2026-05-10`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Latest targeted passive-overlay hit-test validation on `2026-05-15`: `TestAntAdvancedInteractions`, `TestAntDataEntryA`, `TestAntDataDisplayB`, `TestAntFeedback`, and `TestAntPopupLifecycle` passed, with the example Debug build and smoke launch succeeding.
 
 | Component | Behavior/API tests | Lifecycle | Meta | Theme | Render |
 | --- | --- | --- | --- | --- | --- |
@@ -99,13 +99,13 @@ Result on `2026-05-10`: `37 / 37` CTest targets passed and `qt-ant-design-exampl
 | `AntTimePicker` | `TestAntAliases`, `TestAntDataEntryB`, `TestAntInteractions`, `TestAntPopupLifecycle`, `TestAntStressLifecycle` | Yes | Yes | Yes | Yes |
 | `AntToolBar` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntToolButton` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
-| `AntToolTip` | `TestAntAliases`, `TestAntFeedback`, `TestAntPopupLifecycle` | Yes | Yes | Yes | Yes |
+| `AntToolTip` | `TestAntAdvancedInteractions`, `TestAntAliases`, `TestAntFeedback`, `TestAntPopupLifecycle` | Yes | Yes | Yes | Yes |
 | `AntTour` | `TestAntFeedback` | Yes | Yes | Yes | Yes |
 | `AntTransfer` | `TestAntDataEntryB` | Yes | Yes | Yes | Yes |
 | `AntTree` | `TestAntAdvancedInteractions`, `TestAntAliases`, `TestAntDataDisplayB` | Yes | Yes | Yes | Yes |
 | `AntTreeSelect` | `TestAntDataEntryB`, `TestAntPopupLifecycle`, `TestAntStressLifecycle` | Yes | Yes | Yes | Yes |
 | `AntTypography` | `TestAntAliases`, `TestAntTypography` | Yes | Yes | Yes | Yes |
 | `AntUpload` | `TestAntDataEntryB`, `TestAntInteractions` | Yes | Yes | Yes | Yes |
-| `AntWatermark` | `TestAntDataDisplayB` | Yes | Yes | Yes | Yes |
+| `AntWatermark` | `TestAntAdvancedInteractions`, `TestAntDataDisplayB` | Yes | Yes | Yes | Yes |
 | `AntWidget` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntWindow` | `TestAntAliases`, `TestAntChildOwnership`, `TestAntQtExtensions` | Yes | Yes | Yes | Yes |

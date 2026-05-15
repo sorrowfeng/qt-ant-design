@@ -88,17 +88,18 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Stabilized interaction reliability tests for Cascader and DatePicker popup selection by deriving click points from the current popup geometry instead of stale pre-shadow coordinates.
 - Added `docs/reliability-coverage.md` and a `TestAntCoverageInventory` guard so every public component must remain covered by at least one component-specific behavior/API test in addition to lifecycle, meta-property, theme-lifecycle, and render-smoke coverage.
 - Fixed `AntMessage` so a toast that visually covers controls still closes on click while forwarding that click to the underlying anchor widget, preventing covered controls such as `AntSegmented` from missing the selection change.
+- Completed a passive-overlay hit-test audit: interactive popups keep their normal input capture, while non-interactive overlays no longer steal covered-control clicks. `AntToolTip`, `AntWatermark`, and the `AntSlider` drag value bubble are mouse-transparent, and `AntNotification` cleanup now guards relayout against a destroyed anchor.
 
-Latest targeted AntMessage / AntSegmented click-through validation:
+Latest targeted passive-overlay hit-test validation:
 
 ```powershell
-cmake --build build --config Debug --target TestAntAdvancedInteractions TestAntFeedback TestAntDataEntryA
-ctest --test-dir build -C Debug -R "TestAnt(AdvancedInteractions|Feedback|DataEntryA)$" --output-on-failure
+cmake --build build --config Debug --target TestAntAdvancedInteractions TestAntDataEntryA TestAntDataDisplayB TestAntFeedback TestAntPopupLifecycle
+ctest --test-dir build -C Debug -R "TestAnt(AdvancedInteractions|DataEntryA|DataDisplayB|Feedback|PopupLifecycle)$" --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 .\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 
-Result: `3 / 3` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-15`.
+Result: `5 / 5` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-15`.
 
 ## Visual Audit State
 

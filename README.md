@@ -51,7 +51,7 @@ The project focuses on:
 
 The 2026-04-30 interaction and motion pass tightened several user-visible details:
 
-- Popup feedback: `AntPopover`, `AntMessage`, and `AntNotification` now have more stable hover/close behavior, stronger elevation, and placement-aware enter/exit motion.
+- Popup feedback: `AntPopover`, `AntMessage`, and `AntNotification` now have more stable hover/close behavior, stronger elevation, and placement-aware enter/exit motion. Passive overlays avoid stealing covered-control clicks: Message forwards its click, while Tooltip, Slider value bubbles, and Watermark are mouse-transparent.
 - Popup shells: shared popup elevation now uses a softer multi-layer feather outside the panel body, so `AntDropdown`, `AntMenu`, selector popups, `AntColorPicker`, `AntDatePicker`, `AntTimePicker`, and `AntModal` keep AntD-like shadows in light and dark themes.
 - Motion: `AntCarousel`, `AntTabs`, `AntSkeleton`, `AntSpin`, `AntInputNumber`, `AntSwitch`, and loading buttons now better match Ant Design timing, direction, and state feedback.
 - Data interaction: `AntTransfer` now supports scrolling and header select-all correctly, while `AntTable` sorter clicks reorder rows instead of only changing the icon state.
@@ -329,8 +329,8 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntPopover`: title, body, action, click / hover triggers, placement, arrow
 - `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement, and a one-piece popup arrow surface
 - `AntSkeleton`: moving `active` shimmer, avatar placeholder, title / paragraph configuration, rounded style, and `loading` toggle to swap in real content
-- `AntToolTip`: common `placement`, arrow, color, delayed display, auto flip
-- `AntSlider`: horizontal / vertical, `reverse / dots / included`, range, marks, drag value bubble above the active handle with a one-piece arrow surface
+- `AntToolTip`: common `placement`, arrow, color, delayed display, auto flip, and mouse-transparent passive display
+- `AntSlider`: horizontal / vertical, `reverse / dots / included`, range, marks, drag value bubble above the active handle with a one-piece arrow surface that does not block pointer input
 - `AntRibbon`: pages and groups for large/small actions, embedded Ant/Qt widgets, animated tab/collapse transitions, collapsed popup mode, and `AntWindow` top-area integration
 - `AntSwitch`: `checked / loading / small / text`, click wave feedback
 - `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation
@@ -352,7 +352,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntScrollBar`: custom 8 px slim scrollbar with auto-hide and no arrow buttons
 - `AntSegmented`: segmented control with value and index selection APIs, evenly distributed options, animated indicator, icon / disabled / tooltip support, and reliable full-track click hit testing
 - `AntFloatButton`: floating action button — circle / square, Primary / Default, expandable Group, BackTop, Badge
-- `AntWatermark`: watermark overlay with rotated tiled text, multi-line content, and customizable font / color / spacing / offset / angle
+- `AntWatermark`: mouse-transparent watermark overlay with rotated tiled text, multi-line content, and customizable font / color / spacing / offset / angle
 - `AntQRCode`: QR code display with embedded generator (no external dependency), status overlays (expired / loading / scanned), icon, no border
 - `AntAffix`: pin helper — a QObject utility that watches the scroll container and auto-pins / un-pins while preserving layout
 - `AntAutoComplete`: autocomplete input with popup suggestions and keyboard navigation

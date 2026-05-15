@@ -88,15 +88,15 @@
 - `AntButton`：loading spinner 改为顺时针旋转，并将可见弧段调整到约 30%。
 - `AntPlainTextEdit`：补齐 TextArea 式右下角拖拽缩放。
 - `AntInputNumber`：鼠标进入/聚焦时上下箭头控制区以动画显示。
-- `AntSlider`：拖动时在当前 handle 上方显示数值浮标并跟随 handle，浮窗箭头与圆角面板使用一体化轮廓绘制，marks 场景保留标签高度，Range 拖动不再在最左侧绘制多余 pressed/focus 滑块。
+- `AntSlider`：拖动时在当前 handle 上方显示数值浮标并跟随 handle，浮窗箭头与圆角面板使用一体化轮廓绘制且鼠标透明，marks 场景保留标签高度，Range 拖动不再在最左侧绘制多余 pressed/focus 滑块。
 - 弹层阴影：`AntTheme::drawEffectShadow()` 改为围绕面板向外绘制柔和多层羽化阴影，并扩大 Dropdown、Menu、Cascader、ColorPicker、Select、DatePicker、TimePicker 等弹层的透明留白，`AntModal` 也保留足够透明阴影边距，避免阴影在弹层边缘被裁出边界线。
 - `AntSwitch`：点击时触发灰色 Wave 边缘动效。
 - `AntTransfer`：修复列表滚动、滚动后行点击和顶部全选。
 - `AntCarousel`：补齐轮播图滑动切换动效。
 - `AntTable`：表头排序点击会真正按列重排行数据，并支持升序/降序/取消排序。
 - `AntTabs`：Line/Card 样式和 active indicator 动效贴近官方 Ant Design。
-- `AntNotification`：增强浮层阴影，补齐按 placement 进入/退出动效。
-- `AntMessage`：补齐 AntD-like move-up/move-down 显示与消失动效，并强化气泡阴影。
+- `AntNotification`：增强浮层阴影，补齐按 placement 进入/退出动效，并在销毁清理时保护已销毁 anchor。
+- `AntMessage`：补齐 AntD-like move-up/move-down 显示与消失动效，强化气泡阴影，并在点击关闭时透传到底层控件。
 - `AntSkeleton`：修复 shimmer 偏移量未参与绘制导致占位符不动的问题。
 - `AntSpin`：使用 16ms precise timer 和小角度步进提升动画流畅度。
 
@@ -190,7 +190,7 @@
 | `AntRate` | `rate` | `QProxyStyle` | 是 | count/value/allowHalf/hover 放大/选中星缩放动效 |
 | `AntSegmented` | `segmented` | `QProxyStyle` | 是 | 滑动指示器动画、图标/禁用、value/index 选中 API，完整视觉轨道点击命中 |
 | `AntSelect` | `select` | `QProxyStyle` | 是 | 尺寸、状态、变体、可编辑模式、Multiple/Tags，option 管理 API |
-| `AntSlider` | `slider` | `QProxyStyle` | 是 | Range、marks、拖动浮窗一体化箭头 |
+| `AntSlider` | `slider` | `QProxyStyle` | 是 | Range、marks、拖动浮窗一体化箭头且鼠标透明 |
 | `AntSwitch` | `switch` | `QProxyStyle` | 是 | |
 | `AntTimePicker` | `time-picker` | `QProxyStyle` | 是 | 自绘时间弹层、RangePicker |
 | `AntTransfer` | `transfer` | 自绘 | 是 | 穿梭框、双列表 |
@@ -212,8 +212,8 @@
 | `AntResult` | `result` | `QProxyStyle` | 是 | status/title/subTitle/extra，暗色透明状态图标 |
 | `AntSkeleton` | `skeleton` | `QProxyStyle` | 是 | active shimmer、头像/标题/段落占位、Element 变体 |
 | `AntSpin` | `spin` | `QProxyStyle` | 是 | small/middle/large/percent/delay |
-| `AntToolTip` | `tooltip` | `QProxyStyle` | 是 | title/placement/color/arrow/delay |
-| `AntWatermark` | `watermark` | `QProxyStyle` | 是 | 旋转文本平铺、多行、自定义间距 |
+| `AntToolTip` | `tooltip` | `QProxyStyle` | 是 | title/placement/color/arrow/delay，提示浮层鼠标透明 |
+| `AntWatermark` | `watermark` | `QProxyStyle` | 是 | 旋转文本平铺、多行、自定义间距，鼠标透明覆盖层 |
 | `AntTour` | `tour` | 自绘 | 是 | 遮罩式分步引导、目标高亮，支持从指定步骤启动 |
 
 ### 数据展示

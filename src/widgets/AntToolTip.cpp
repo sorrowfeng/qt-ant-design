@@ -53,6 +53,7 @@ AntToolTip::AntToolTip(QWidget* parent)
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
     setAttribute(Qt::WA_DeleteOnClose, false);
+    setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
     m_openTimer = new QTimer(this);
     m_openTimer->setSingleShot(true);

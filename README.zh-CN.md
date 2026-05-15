@@ -51,7 +51,7 @@
 
 2026-04-30 的交互与动效对齐批次补齐了多处用户可见细节：
 
-- 弹层反馈：`AntPopover`、`AntMessage`、`AntNotification` 的悬停/关闭行为更稳定，阴影层级更清晰，并补齐了按 placement 进入/退出的动效。
+- 弹层反馈：`AntPopover`、`AntMessage`、`AntNotification` 的悬停/关闭行为更稳定，阴影层级更清晰，并补齐了按 placement 进入/退出的动效。被动浮层不会抢走下层控件点击：Message 点击时转发到底层控件，Tooltip、Slider 数值浮标和 Watermark 保持鼠标透明。
 - 弹层外壳：共享弹层阴影改为围绕面板向外绘制柔和多层羽化，`AntDropdown`、`AntMenu`、选择类弹层、`AntColorPicker`、`AntDatePicker`、`AntTimePicker`、`AntModal` 在亮色/暗色主题下都保留接近 AntD 的阴影层级。
 - 动效表现：`AntCarousel`、`AntTabs`、`AntSkeleton`、`AntSpin`、`AntInputNumber`、`AntSwitch` 和 loading button 的方向、节奏、状态反馈更贴近 Ant Design。
 - 数据交互：`AntTransfer` 支持正常滚动和顶部全选，`AntTable` 表头排序点击会真正重排行数据。
@@ -329,8 +329,8 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntPopover`：标题、正文、action、点击/悬停触发、placement、箭头
 - `AntPopconfirm`：确认标题、说明、确认/取消按钮、禁用态、placement，以及箭头与弹层主体一体化绘制
 - `AntSkeleton`：支持动态 `active` shimmer、头像占位、标题/段落配置、圆角风格以及 `loading` 切换真实内容
-- `AntToolTip`：常用 `placement`、箭头、颜色、延迟显示、自动翻转
-- `AntSlider`：横竖向、`reverse / dots / included`、Range、marks、拖动时在当前 handle 上方显示一体化箭头浮标
+- `AntToolTip`：常用 `placement`、箭头、颜色、延迟显示、自动翻转，以及鼠标透明的被动提示显示
+- `AntSlider`：横竖向、`reverse / dots / included`、Range、marks、拖动时在当前 handle 上方显示一体化箭头浮标且不阻挡指针输入
 - `AntRibbon`：Page / Group 结构，支持大/小 action、嵌入 Ant/Qt 控件、折叠弹出模式和 `AntWindow` 顶部集成
 - `AntSwitch`：`checked / loading / small / text`、点击 Wave 反馈
 - `AntSpin`：`small / middle / large / percent / delay`、更平滑的高频动画
@@ -352,7 +352,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntScrollBar`：自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮
 - `AntSegmented`：分段控制器，选项块均衡分布，滑动指示器动画，支持图标/禁用/提示，并补齐完整视觉轨道点击命中
 - `AntFloatButton`：浮动操作按钮，圆形/方形，Primary/Default，Group 展开/收起,BackTop 返回顶部，Badge
-- `AntWatermark`：水印叠加层，旋转文本平铺，多行内容，自定义字体/颜色/间距/偏移/角度
+- `AntWatermark`：鼠标透明的水印叠加层，旋转文本平铺，多行内容，自定义字体/颜色/间距/偏移/角度
 - `AntQRCode`：二维码展示，嵌入式 QR 生成器（无外部依赖），状态叠加层（过期/加载/已扫描），图标，无边框
 - `AntAffix`：固钉工具，QObject 辅助类，监听滚动容器，自动吸附/解除，占位保持布局
 - `AntAutoComplete`：自动完成输入，弹出建议列表，键盘导航

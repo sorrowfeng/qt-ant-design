@@ -468,6 +468,7 @@ void TestAntDataEntryA::sliderBubbleFloatsAboveMarkedHandle()
     auto* valueBubble = slider.findChild<QWidget*>(QStringLiteral("antSliderValueBubble"));
     QVERIFY(valueBubble);
     QTRY_VERIFY_WITH_TIMEOUT(valueBubble->isVisible(), 100);
+    QVERIFY(valueBubble->testAttribute(Qt::WA_TransparentForMouseEvents));
     const QPoint visualHandleGlobal = slider.mapToGlobal(visualHandleCenter);
     QVERIFY(valueBubble->geometry().bottom() <= visualHandleGlobal.y() - 4);
 

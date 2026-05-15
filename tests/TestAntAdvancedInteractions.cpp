@@ -14,7 +14,9 @@
 #include "widgets/AntSegmented.h"
 #include "widgets/AntTable.h"
 #include "widgets/AntTabs.h"
+#include "widgets/AntToolTip.h"
 #include "widgets/AntTree.h"
+#include "widgets/AntWatermark.h"
 
 class TestAntAdvancedInteractions : public QObject
 {
@@ -26,6 +28,8 @@ private slots:
     void tableSortSelectionAndPaginationFlow();
     void tabsKeyboardAddAndCloseFlow();
     void messageClickPassesThroughToSegmented();
+    void tooltipDoesNotBlockCoveredControls();
+    void watermarkDoesNotBlockCoveredControls();
     void messageAndNotificationManualDismissFlow();
 };
 
@@ -298,6 +302,90 @@ void TestAntAdvancedInteractions::messageClickPassesThroughToSegmented()
     {
         message->close();
     }
+}
+
+void TestAntAdvancedInteractions::tooltipDoesNotBlockCoveredControls()
+{
+    QWidget host;
+    host.resize(480, 180);
+
+    AntSegmented segmented(&host);
+    segmented.setOptions({{QStringLiteral("daily"), QStringLiteral("Daily")},
+                          {QStringLiteral("weekly"), QStringLiteral("Weekly")},
+                          {QStringLiteral("monthly"), QStringLiteral("Monthly")}});
+    segmented.resize(segmented.sizeHint());
+    segmented.show();
+
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    AntToolTip tooltip;
+    tooltip.setTarget(&segmented);
+    tooltip.setTitle(QStringLiteral("Choose cadence"));
+    tooltip.showTooltip();
+    QTRY_VERIFY_WITH_TIMEOUT(tooltip.isVisible(), 300);
+
+    const auto rects = segmented.segmentRects();
+    QCOMPARE(rects.size(), 3);
+    const QPoint secondSegmentPoint(qRound(rects[1].center().x()), qRound(rects[1].center().y()));
+    const QPoint globalClickPoint = segmented.mapToGlobal(secondSegmentPoint);
+    tooltip.move(globalClickPoint - tooltip.rect().center());
+    QCoreApplication::processEvents();
+    QVERIFY2(tooltip.geometry().contains(globalClickPoint), "test setup should place AntToolTip above the segmented target");
+
+    QSignalSpy indexSpy(&segmented, &AntSegmented::currentIndexChanged);
+    QSignalSpy valueSpy(&segmented, &AntSegmented::valueChanged);
+    QVERIFY(tooltip.testAttribute(Qt::WA_TransparentForMouseEvents));
+    QTest::mouseClick(&segmented, Qt::LeftButton, Qt::NoModifier, secondSegmentPoint);
+
+    QCOMPARE(segmented.currentIndex(), 1);
+    QCOMPARE(segmented.value(), QStringLiteral("weekly"));
+    QCOMPARE(indexSpy.count(), 1);
+    QCOMPARE(valueSpy.count(), 1);
+
+    tooltip.hideTooltip();
+}
+
+void TestAntAdvancedInteractions::watermarkDoesNotBlockCoveredControls()
+{
+    QWidget host;
+    host.resize(480, 180);
+
+    AntSegmented segmented(&host);
+    segmented.setOptions({{QStringLiteral("daily"), QStringLiteral("Daily")},
+                          {QStringLiteral("weekly"), QStringLiteral("Weekly")},
+                          {QStringLiteral("monthly"), QStringLiteral("Monthly")}});
+    segmented.resize(segmented.sizeHint());
+    segmented.move(24, 24);
+    segmented.show();
+
+    AntWatermark watermark(&host);
+    watermark.setContent(QStringLiteral("Internal"));
+    watermark.setGeometry(host.rect());
+    watermark.raise();
+    watermark.show();
+
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    const auto rects = segmented.segmentRects();
+    QCOMPARE(rects.size(), 3);
+    const QPoint secondSegmentPoint(qRound(rects[1].center().x()), qRound(rects[1].center().y()));
+    const QPoint globalClickPoint = segmented.mapToGlobal(secondSegmentPoint);
+    QVERIFY2(watermark.geometry().contains(host.mapFromGlobal(globalClickPoint)),
+             "test setup should place AntWatermark above the segmented target");
+
+    QSignalSpy indexSpy(&segmented, &AntSegmented::currentIndexChanged);
+    QSignalSpy valueSpy(&segmented, &AntSegmented::valueChanged);
+    QVERIFY(watermark.testAttribute(Qt::WA_TransparentForMouseEvents));
+    QWidget* topWidget = QApplication::widgetAt(globalClickPoint);
+    QVERIFY(topWidget);
+    QTest::mouseClick(topWidget, Qt::LeftButton, Qt::NoModifier, topWidget->mapFromGlobal(globalClickPoint));
+
+    QCOMPARE(segmented.currentIndex(), 1);
+    QCOMPARE(segmented.value(), QStringLiteral("weekly"));
+    QCOMPARE(indexSpy.count(), 1);
+    QCOMPARE(valueSpy.count(), 1);
 }
 
 void TestAntAdvancedInteractions::messageAndNotificationManualDismissFlow()

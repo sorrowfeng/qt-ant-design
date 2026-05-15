@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPointer>
 #include <QScreen>
 #include <QShowEvent>
 #include <QTextOption>
@@ -117,9 +118,10 @@ AntNotification* AntNotification::create(const QString& title,
     notification->adjustSize();
     activeNotifications().append(notification);
 
-    QObject::connect(notification, &QObject::destroyed, [notification, anchor]() {
+    QPointer<QWidget> anchorGuard(anchor);
+    QObject::connect(notification, &QObject::destroyed, qApp, [notification, anchorGuard]() {
         activeNotifications().removeAll(notification);
-        relayoutNotifications(anchor);
+        relayoutNotifications(anchorGuard.data());
     });
 
     relayoutNotifications(anchor);

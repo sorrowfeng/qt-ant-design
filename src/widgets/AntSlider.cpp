@@ -26,6 +26,7 @@ public:
         setObjectName(QStringLiteral("antSliderValueBubble"));
         setAttribute(Qt::WA_TranslucentBackground, true);
         setAttribute(Qt::WA_ShowWithoutActivating, true);
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
     }
 
     void setText(const QString& text)
