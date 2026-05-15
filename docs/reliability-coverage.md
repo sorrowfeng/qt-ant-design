@@ -1,6 +1,6 @@
 # Component Reliability Coverage
 
-Last verified: `2026-05-10`
+Last verified: `2026-05-15`
 
 This inventory tracks reliability coverage for every public `Ant*` widget header, excluding Qt-style alias headers and the internal `AntSelectPopup` helper.
 
@@ -22,7 +22,7 @@ ctest --test-dir build -C Debug --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 ```
 
-Result on `2026-05-10`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded.
+Result on `2026-05-10`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Latest targeted `AntMessage` / `AntSegmented` click-through validation on `2026-05-15`: `TestAntAdvancedInteractions`, `TestAntFeedback`, and `TestAntDataEntryA` passed, with the example Debug build and smoke launch succeeding.
 
 | Component | Behavior/API tests | Lifecycle | Meta | Theme | Render |
 | --- | --- | --- | --- | --- | --- |
@@ -81,7 +81,7 @@ Result on `2026-05-10`: `37 / 37` CTest targets passed and `qt-ant-design-exampl
 | `AntRibbon` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntScrollArea` | `TestAntChildOwnership`, `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntScrollBar` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
-| `AntSegmented` | `TestAntDataEntryA` | Yes | Yes | Yes | Yes |
+| `AntSegmented` | `TestAntDataEntryA`, `TestAntAdvancedInteractions` | Yes | Yes | Yes | Yes |
 | `AntSelect` | `TestAntAliases`, `TestAntInteractions`, `TestAntPopupLifecycle`, `TestAntSelect`, `TestAntStressLifecycle` | Yes | Yes | Yes | Yes |
 | `AntSkeleton` | `TestAntChildOwnership`, `TestAntFeedback` | Yes | Yes | Yes | Yes |
 | `AntSlider` | `TestAntDataEntryA` | Yes | Yes | Yes | Yes |

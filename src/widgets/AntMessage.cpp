@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPointer>
 #include <QScreen>
 #include <QShowEvent>
 #include <QTimer>
@@ -32,6 +33,73 @@ AntPopupMotion::Placement messageMotionPlacement(Ant::Placement placement)
     return isBottomMessagePlacement(placement)
                ? AntPopupMotion::Placement::Top
                : AntPopupMotion::Placement::Bottom;
+}
+
+QWidget* widgetBelowMessageAt(QWidget* anchor, QWidget* message, const QPoint& globalPos)
+{
+    auto widgetAtInWindow = [globalPos](QWidget* window) -> QWidget* {
+        if (!window || !window->isVisible() || !window->geometry().contains(globalPos))
+        {
+            return nullptr;
+        }
+
+        QWidget* target = window->childAt(window->mapFromGlobal(globalPos));
+        return target ? target : window;
+    };
+
+    if (QWidget* target = widgetAtInWindow(anchor ? anchor->window() : nullptr))
+    {
+        if (target != message && target->window() != message)
+        {
+            return target;
+        }
+    }
+
+    const auto topLevels = QApplication::topLevelWidgets();
+    for (QWidget* window : topLevels)
+    {
+        if (!window || window == message || window->window() == message)
+        {
+            continue;
+        }
+        if (QWidget* target = widgetAtInWindow(window))
+        {
+            return target;
+        }
+    }
+
+    return nullptr;
+}
+
+void sendMouseClick(QWidget* target, const QPoint& globalPos, Qt::KeyboardModifiers modifiers)
+{
+    if (!target || !target->isEnabled())
+    {
+        return;
+    }
+
+    QPointer<QWidget> guard(target);
+    const QPoint localPos = target->mapFromGlobal(globalPos);
+    QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                           QPointF(localPos),
+                           QPointF(globalPos),
+                           Qt::LeftButton,
+                           Qt::LeftButton,
+                           modifiers);
+    QApplication::sendEvent(target, &pressEvent);
+
+    if (!guard)
+    {
+        return;
+    }
+
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                             QPointF(localPos),
+                             QPointF(globalPos),
+                             Qt::LeftButton,
+                             Qt::NoButton,
+                             modifiers);
+    QApplication::sendEvent(target, &releaseEvent);
 }
 } // namespace
 
@@ -68,9 +136,10 @@ AntMessage* AntMessage::open(const QString& text, Ant::MessageType type, QWidget
     message->adjustSize();
     activeMessages().append(message);
 
-    QObject::connect(message, &QObject::destroyed, message, [message, anchor]() {
+    QPointer<QWidget> anchorGuard(anchor);
+    QObject::connect(message, &QObject::destroyed, qApp, [message, anchorGuard]() {
         activeMessages().removeAll(message);
-        relayoutMessages(anchor);
+        relayoutMessages(anchorGuard.data());
     });
 
     relayoutMessages(anchor);
@@ -218,6 +287,9 @@ void AntMessage::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
+        sendMouseClick(widgetBelowMessageAt(m_anchor, this, event->globalPosition().toPoint()),
+                       event->globalPosition().toPoint(),
+                       event->modifiers());
         AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
         event->accept();
         return;

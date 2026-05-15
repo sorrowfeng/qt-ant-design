@@ -203,7 +203,7 @@
 | --- | --- | --- | --- | --- |
 | `AntAlert` | `alert` | `QProxyStyle` | 是 | type/icon/description/closable/banner |
 | `AntDrawer` | `drawer` | `QProxyStyle` | 是 | Left/Right/Top/Bottom、动画、遮罩 |
-| `AntMessage` | `message` | `QProxyStyle` | 是 | Qt::ToolTip 浮层消息、6 种 placement |
+| `AntMessage` | `message` | `QProxyStyle` | 是 | Qt::ToolTip 浮层消息、6 种 placement，点击关闭时透传到底层控件 |
 | `AntModal` | `modal` | `QProxyStyle` | 是 | 遮罩层、标题/正文、自定义 footer、命令式 API，柔和外阴影无裁切边界 |
 | `AntNotification` | `notification` | `QProxyStyle` | 是 | 多 placement 通知，loading + 进度条倒计时 |
 | `AntPopconfirm` | `popconfirm` | `QProxyStyle` | 是 | title/description/ok/cancel/placement，箭头与弹层主体一体化绘制 |

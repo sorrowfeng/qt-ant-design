@@ -1,4 +1,6 @@
 #include <QFrame>
+#include <QApplication>
+#include <QCoreApplication>
 #include <QLineEdit>
 #include <QPointer>
 #include <QSignalSpy>
@@ -9,6 +11,7 @@
 #include "widgets/AntColorPicker.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntNotification.h"
+#include "widgets/AntSegmented.h"
 #include "widgets/AntTable.h"
 #include "widgets/AntTabs.h"
 #include "widgets/AntTree.h"
@@ -22,6 +25,7 @@ private slots:
     void treeExpandCheckAndSelectFlow();
     void tableSortSelectionAndPaginationFlow();
     void tabsKeyboardAddAndCloseFlow();
+    void messageClickPassesThroughToSegmented();
     void messageAndNotificationManualDismissFlow();
 };
 
@@ -245,6 +249,55 @@ void TestAntAdvancedInteractions::tabsKeyboardAddAndCloseFlow()
     QCOMPARE(closeSpy.count(), 1);
     QCOMPARE(closeSpy.takeFirst().at(0).toString(), QStringLiteral("one"));
     QCOMPARE(tabs.activeKey(), QStringLiteral("three"));
+}
+
+void TestAntAdvancedInteractions::messageClickPassesThroughToSegmented()
+{
+    QWidget host;
+    host.resize(480, 180);
+
+    AntSegmented segmented(&host);
+    segmented.setOptions({{QStringLiteral("daily"), QStringLiteral("Daily")},
+                          {QStringLiteral("weekly"), QStringLiteral("Weekly")},
+                          {QStringLiteral("monthly"), QStringLiteral("Monthly")}});
+    segmented.resize(segmented.sizeHint());
+    segmented.show();
+
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    QPointer<AntMessage> message = AntMessage::success(QStringLiteral("Saved"), &host, 0, Ant::Placement::Top);
+    QVERIFY(message);
+    QTRY_VERIFY_WITH_TIMEOUT(message->isVisible(), 300);
+
+    const auto rects = segmented.segmentRects();
+    QCOMPARE(rects.size(), 3);
+    const QPoint secondSegmentPoint(qRound(rects[1].center().x()), qRound(rects[1].center().y()));
+    segmented.move(host.mapFromGlobal(message->geometry().center()) - secondSegmentPoint);
+    QCoreApplication::processEvents();
+
+    const QPoint globalClickPoint = segmented.mapToGlobal(secondSegmentPoint);
+    QVERIFY2(message->geometry().contains(globalClickPoint), "test setup should place AntMessage above the segmented target");
+
+    QSignalSpy indexSpy(&segmented, &AntSegmented::currentIndexChanged);
+    QSignalSpy valueSpy(&segmented, &AntSegmented::valueChanged);
+    QCOMPARE(segmented.currentIndex(), 0);
+
+    QWidget* topWidget = QApplication::widgetAt(globalClickPoint);
+    QVERIFY(topWidget);
+    QTest::mouseClick(topWidget, Qt::LeftButton, Qt::NoModifier, topWidget->mapFromGlobal(globalClickPoint));
+
+    QCOMPARE(segmented.currentIndex(), 1);
+    QCOMPARE(segmented.value(), QStringLiteral("weekly"));
+    QCOMPARE(indexSpy.count(), 1);
+    QCOMPARE(indexSpy.takeFirst().at(0).toInt(), 1);
+    QCOMPARE(valueSpy.count(), 1);
+    QCOMPARE(valueSpy.takeFirst().at(0).toString(), QStringLiteral("weekly"));
+
+    if (message)
+    {
+        message->close();
+    }
 }
 
 void TestAntAdvancedInteractions::messageAndNotificationManualDismissFlow()
