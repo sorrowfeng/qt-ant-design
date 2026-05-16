@@ -353,7 +353,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntSegmented`: segmented control with value and index selection APIs, evenly distributed options, animated indicator, icon / disabled / tooltip support, and reliable full-track click hit testing
 - `AntFloatButton`: floating action button — circle / square, Primary / Default, expandable Group, BackTop, Badge
 - `AntWatermark`: mouse-transparent watermark overlay with rotated tiled text, multi-line content, and customizable font / color / spacing / offset / angle
-- `AntQRCode`: QR code display with embedded generator (no external dependency), status overlays (expired / loading / scanned), icon, no border
+- `AntQRCode`: QR code display with embedded generator (no external dependency), default repository URL payload, status overlays (expired / loading / scanned), icon, no border
 - `AntAffix`: pin helper — a QObject utility that watches the scroll container and auto-pins / un-pins while preserving layout
 - `AntAutoComplete`: autocomplete input with popup suggestions and keyboard navigation
 - `AntCalendar`: calendar panel with Day / Month / Year mode switching and date selection

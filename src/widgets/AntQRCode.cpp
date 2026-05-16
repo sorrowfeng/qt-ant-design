@@ -7,10 +7,17 @@
 #include "core/AntTheme.h"
 #include "styles/AntQRCodeStyle.h"
 
+namespace
+{
+const QString kDefaultQRCodeValue = QStringLiteral("https://github.com/sorrowfeng/qt-ant-design");
+}
+
 AntQRCode::AntQRCode(QWidget* parent)
     : QWidget(parent)
 {
     installAntStyle<AntQRCodeStyle>(this);
+    m_value = kDefaultQRCodeValue;
+    regenerateMatrix();
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 }

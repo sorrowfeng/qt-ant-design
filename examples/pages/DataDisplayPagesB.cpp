@@ -77,7 +77,7 @@ QWidget* createQRCodePage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* qr1 = new AntQRCode();
-        qr1->setValue(QStringLiteral("https://ant.design"));
+        qr1->setValue(QStringLiteral("https://github.com/sorrowfeng/qt-ant-design"));
         qr1->setFixedSize(160, 160);
         cl->addWidget(qr1);
         layout->addWidget(card);

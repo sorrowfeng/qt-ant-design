@@ -307,7 +307,8 @@ void TestAntDataDisplayB::propertiesAndSignals()
 
     // AntQRCode
     auto* qr = new AntQRCode;
-    QCOMPARE(qr->value(), QString());
+    QCOMPARE(qr->value(), QStringLiteral("https://github.com/sorrowfeng/qt-ant-design"));
+    QVERIFY(!qr->qrMatrix().isEmpty());
     QCOMPARE(qr->qrSize(), 160);
     QCOMPARE(qr->errorLevel(), Ant::QRCodeErrorLevel::M);
     QCOMPARE(qr->iconSize(), 40);

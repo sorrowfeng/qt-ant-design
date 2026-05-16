@@ -91,6 +91,17 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Completed a passive-overlay hit-test audit: interactive popups keep their normal input capture, while non-interactive overlays no longer steal covered-control clicks. `AntToolTip`, `AntWatermark`, and the `AntSlider` drag value bubble are mouse-transparent, and `AntNotification` cleanup now guards relayout against a destroyed anchor.
 - Refreshed the README dark thumbnails for `AntResult`, `AntSpin`, and `AntTour`; `AntResult` now shows transparent dark-mode status icons, `AntSpin` uses a token-driven dark content surface, and `AntTour` captures the active Step 1 overlay state.
 - Refreshed and corrected the README dark thumbnails for `AntCalendar`, `AntAnchor`, `AntSplitter`, `AntLayout`, and `AntScrollBar`; `AntCalendar` now themes its internal `QTableView` viewport, `AntLayoutFooter` uses `colorBgLayout`, and the Anchor/Splitter/ScrollBar demo surfaces no longer keep hard-coded light fills in dark mode.
+- Updated `AntQRCode`'s default value, example, and README light/dark thumbnails so the default QR code scans to the repository URL: `https://github.com/sorrowfeng/qt-ant-design`.
+
+Latest targeted QRCode default payload validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntDataDisplayB TestAntRenderSmoke qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAnt(DataDisplayB|RenderSmoke)$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: `2 / 2` targeted tests passed, the example Debug build succeeded, the example smoke launch exited cleanly, and the README `AntQRCode` light/dark thumbnails were regenerated at `960x540` on `2026-05-17`.
 
 Latest targeted passive-overlay hit-test validation:
 
