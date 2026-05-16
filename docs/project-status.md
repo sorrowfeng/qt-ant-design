@@ -89,6 +89,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added `docs/reliability-coverage.md` and a `TestAntCoverageInventory` guard so every public component must remain covered by at least one component-specific behavior/API test in addition to lifecycle, meta-property, theme-lifecycle, and render-smoke coverage.
 - Fixed `AntMessage` so a toast that visually covers controls still closes on click while forwarding that click to the underlying anchor widget, preventing covered controls such as `AntSegmented` from missing the selection change.
 - Completed a passive-overlay hit-test audit: interactive popups keep their normal input capture, while non-interactive overlays no longer steal covered-control clicks. `AntToolTip`, `AntWatermark`, and the `AntSlider` drag value bubble are mouse-transparent, and `AntNotification` cleanup now guards relayout against a destroyed anchor.
+- Refreshed the README dark thumbnails for `AntResult`, `AntSpin`, and `AntTour`; `AntResult` now shows transparent dark-mode status icons, `AntSpin` uses a token-driven dark content surface, and `AntTour` captures the active Step 1 overlay state.
 
 Latest targeted passive-overlay hit-test validation:
 
@@ -273,6 +274,16 @@ Select-String -Path README.md,README.zh-CN.md -Pattern 'resources/images/compone
 ```
 
 Result: `166` committed PNG screenshots validated at `960x540`, and `166` unique README image references resolved on `2026-05-08`.
+
+Latest targeted README dark thumbnail refresh validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntFeedback qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAntFeedback$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: `AntResult`, `AntSpin`, and `AntTour` dark thumbnails were regenerated at `960x540`, `1 / 1` targeted feedback test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-17`.
 
 Latest targeted AntTour / AntResult issue validation:
 

@@ -88,12 +88,13 @@ class SpinContentSurface : public RoundedDemoSurface
 {
 public:
     explicit SpinContentSurface(QWidget* parent = nullptr)
-        : RoundedDemoSurface(QStringLiteral("Content"), QColor(QStringLiteral("#f5f5f5")), QColor(), parent)
+        : RoundedDemoSurface(QStringLiteral("Content"), QColor(), QColor(), parent)
         , m_spinner(new AntSpin(this))
     {
         setFixedHeight(82);
         m_spinner->setDescription(QStringLiteral("Loading..."));
         m_spinner->resize(120, 64);
+        connect(antTheme, &AntTheme::themeChanged, this, qOverload<>(&QWidget::update));
     }
 
 protected:
@@ -106,7 +107,7 @@ protected:
         const QRectF r = rect().adjusted(0.5, 0.5, -0.5, -0.5);
         QPainterPath path;
         path.addRoundedRect(r, 8, 8);
-        painter.fillPath(path, QColor(QStringLiteral("#f5f5f5")));
+        painter.fillPath(path, antTheme->tokens().colorFillSecondary);
 
         painter.setPen(antTheme->tokens().colorText);
         painter.drawText(rect().adjusted(30, 30, -30, -30), Qt::AlignLeft | Qt::AlignTop, QStringLiteral("Content"));
