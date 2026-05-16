@@ -230,7 +230,7 @@
 | `AntImage` | `image` | 自绘 | 是 | 图片展示、全屏预览、PreviewGroup |
 | `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size，内部滚动，平衡选中高亮 inset，`AntListWidget` 覆盖常用 QListWidget-style API |
 | `AntPopover` | — | `QProxyStyle` | 是 | 已在反馈类 |
-| `AntQRCode` | `qr-code` | `QProxyStyle` | 是 | 嵌入式 QR 生成、默认仓库地址、状态叠加 |
+| `AntQRCode` | `qr-code` | `QProxyStyle` | 是 | 内置 byte-mode + Reed-Solomon QR 生成、默认仓库地址、示例可编辑重生成、状态叠加 |
 | `AntStatistic` | `statistic` | `QProxyStyle` | 是 | title/value/precision/prefix/suffix/Countdown |
 | `AntTable` | `table` | `QProxyStyle` | 是 | 排序、选择、分页、行 tooltip、空态插画 |
 | `AntTag` | `tag` | `QProxyStyle` | 是 | 13 色预设、closable/checkable/variant |

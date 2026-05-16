@@ -353,7 +353,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntSegmented`：分段控制器，选项块均衡分布，滑动指示器动画，支持图标/禁用/提示，并补齐完整视觉轨道点击命中
 - `AntFloatButton`：浮动操作按钮，圆形/方形，Primary/Default，Group 展开/收起,BackTop 返回顶部，Badge
 - `AntWatermark`：鼠标透明的水印叠加层，旋转文本平铺，多行内容，自定义字体/颜色/间距/偏移/角度
-- `AntQRCode`：二维码展示，嵌入式 QR 生成器（无外部依赖），默认内容指向仓库地址，状态叠加层（过期/加载/已扫描），图标，无边框
+- `AntQRCode`：二维码展示，内置 byte-mode + Reed-Solomon QR 生成器（无外部依赖），默认内容指向仓库地址，示例支持编辑内容后重新生成，状态叠加层（过期/加载/已扫描），图标，无边框
 - `AntAffix`：固钉工具，QObject 辅助类，监听滚动容器，自动吸附/解除，占位保持布局
 - `AntAutoComplete`：自动完成输入，弹出建议列表，键盘导航
 - `AntCalendar`：日历面板，Day/Month/Year 三态切换，日期选择

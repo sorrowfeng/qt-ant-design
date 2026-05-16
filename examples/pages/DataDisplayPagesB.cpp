@@ -14,6 +14,7 @@
 #include "core/AntTypes.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
+#include "widgets/AntInput.h"
 #include "widgets/AntPopover.h"
 #include "widgets/AntQRCode.h"
 #include "widgets/AntSegmented.h"
@@ -77,9 +78,30 @@ QWidget* createQRCodePage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* qr1 = new AntQRCode();
-        qr1->setValue(QStringLiteral("https://github.com/sorrowfeng/qt-ant-design"));
         qr1->setFixedSize(160, 160);
-        cl->addWidget(qr1);
+        cl->addWidget(qr1, 0, Qt::AlignLeft);
+
+        auto* controlRow = new QHBoxLayout();
+        controlRow->setSpacing(8);
+
+        auto* valueInput = new AntInput();
+        valueInput->setText(qr1->value());
+        valueInput->setPlaceholderText(QStringLiteral("QR code content"));
+        valueInput->setMinimumWidth(360);
+
+        auto* regenerate = new AntButton(QStringLiteral("Regenerate"));
+        regenerate->setButtonType(Ant::ButtonType::Primary);
+
+        auto regenerateQRCode = [qr1, valueInput]() {
+            qr1->setValue(valueInput->text());
+        };
+        QObject::connect(regenerate, &AntButton::clicked, qr1, regenerateQRCode);
+        QObject::connect(valueInput, &AntInput::returnPressed, qr1, regenerateQRCode);
+
+        controlRow->addWidget(valueInput);
+        controlRow->addWidget(regenerate);
+        controlRow->addStretch();
+        cl->addLayout(controlRow);
         layout->addWidget(card);
     }
 

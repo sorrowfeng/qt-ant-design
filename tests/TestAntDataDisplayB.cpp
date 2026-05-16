@@ -316,8 +316,10 @@ void TestAntDataDisplayB::propertiesAndSignals()
     QCOMPARE(qr->status(), Ant::QRCodeStatus::Active);
 
     QSignalSpy valSpy(qr, &AntQRCode::valueChanged);
+    const auto defaultMatrix = qr->qrMatrix();
     qr->setValue("https://example.com");
     QCOMPARE(qr->value(), "https://example.com");
+    QVERIFY(qr->qrMatrix() != defaultMatrix);
     QCOMPARE(valSpy.count(), 1);
 
     QSignalSpy qrSizeSpy(qr, &AntQRCode::qrSizeChanged);
