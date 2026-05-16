@@ -91,7 +91,20 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Completed a passive-overlay hit-test audit: interactive popups keep their normal input capture, while non-interactive overlays no longer steal covered-control clicks. `AntToolTip`, `AntWatermark`, and the `AntSlider` drag value bubble are mouse-transparent, and `AntNotification` cleanup now guards relayout against a destroyed anchor.
 - Refreshed the README dark thumbnails for `AntResult`, `AntSpin`, and `AntTour`; `AntResult` now shows transparent dark-mode status icons, `AntSpin` uses a token-driven dark content surface, and `AntTour` captures the active Step 1 overlay state.
 - Refreshed and corrected the README dark thumbnails for `AntCalendar`, `AntAnchor`, `AntSplitter`, `AntLayout`, and `AntScrollBar`; `AntCalendar` now themes its internal `QTableView` viewport, `AntLayoutFooter` uses `colorBgLayout`, and the Anchor/Splitter/ScrollBar demo surfaces no longer keep hard-coded light fills in dark mode.
+- Replaced the shared `image-basic` demo asset and refreshed the affected README component thumbnails for `AntAvatar` and `AntImage` in both light and dark modes.
 - Updated `AntQRCode`'s default value, example, and README light/dark thumbnails so the default QR code scans to the repository URL: `https://github.com/sorrowfeng/qt-ant-design`; the QRCode example now also exposes an editable `AntInput` and primary Regenerate button that call `AntQRCode::setValue()` to rebuild the embedded byte-mode + Reed-Solomon QR matrix.
+
+Latest targeted `image-basic` asset validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntDataDisplayA TestAntRenderSmoke qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAnt(DataDisplayA|RenderSmoke)$" --output-on-failure
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+cmake --build build\visual-capture-build --config Debug --target readme_dark_capture
+.\build\visual-capture-build\Debug\readme_dark_capture.exe resources\images\components
+```
+
+Result: `2 / 2` targeted tests passed, the example Debug build succeeded, the example smoke launch exited cleanly, and the `AntAvatar` / `AntImage` README light/dark thumbnails were regenerated at `960x540` on `2026-05-17`.
 
 Latest targeted QRCode editable example validation:
 

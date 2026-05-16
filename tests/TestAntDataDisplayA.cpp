@@ -238,7 +238,7 @@ void TestAntDataDisplayA::propertiesAndSignals()
     auto* loadedImg = new AntImage;
     loadedImg->setSrc(QStringLiteral(":/qt-ant-design/images/image-basic.png"));
     loadedImg->setImgWidth(100);
-    QCOMPARE(loadedImg->sizeHint(), QSize(100, 98));
+    QCOMPARE(loadedImg->sizeHint(), QSize(100, 100));
 
     // AntEmpty
     auto* e = new AntEmpty;
