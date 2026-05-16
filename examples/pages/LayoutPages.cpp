@@ -9,6 +9,7 @@
 
 #include "core/AntTheme.h"
 #include "core/AntTypes.h"
+#include "styles/AntPalette.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntDivider.h"
@@ -67,17 +68,20 @@ public:
             setMinimumHeight(h);
             setMaximumHeight(h);
         }
+        connect(antTheme, &AntTheme::themeChanged, this, qOverload<>(&QWidget::update));
         setSizePolicy(QSizePolicy::Expanding, h > 0 ? QSizePolicy::Fixed : QSizePolicy::Expanding);
     }
 
 protected:
     void paintEvent(QPaintEvent*) override
     {
+        const auto& token = antTheme->tokens();
         QPainter p(this);
-        p.fillRect(rect(), m_bg);
+        const QColor fill = m_bg.isValid() ? m_bg : token.colorBgContainer;
+        p.fillRect(rect(), fill);
         if (m_bottomBorder)
         {
-            p.setPen(QPen(QColor(QStringLiteral("#f0f0f0")), 1));
+            p.setPen(QPen(token.colorSplit, 1));
             p.drawLine(rect().bottomLeft(), rect().bottomRight());
         }
     }
@@ -115,6 +119,7 @@ public:
     explicit SplitterPanel(const QString& text, const QColor& bg, QWidget* parent = nullptr)
         : QFrame(parent), m_bg(bg)
     {
+        connect(antTheme, &AntTheme::themeChanged, this, qOverload<>(&QWidget::update));
         auto* layout = new QHBoxLayout(this);
         layout->setContentsMargins(16, 16, 16, 16);
         layout->addStretch();
@@ -125,8 +130,12 @@ public:
 protected:
     void paintEvent(QPaintEvent*) override
     {
+        const auto& token = antTheme->tokens();
         QPainter p(this);
-        p.fillRect(rect(), m_bg);
+        const QColor fill = antTheme->themeMode() == Ant::ThemeMode::Dark
+            ? AntPalette::mix(token.colorBgContainer, m_bg, 0.16)
+            : m_bg;
+        p.fillRect(rect(), fill);
     }
 
 private:
@@ -385,10 +394,10 @@ QWidget* createLayoutPage(QWidget* /*owner*/)
         auto* contentStack = new QVBoxLayout(siderContent);
         contentStack->setContentsMargins(0, 0, 0, 0);
         contentStack->setSpacing(0);
-        auto* whiteHeader = new LayoutPanel(QColor(QStringLiteral("#ffffff")), 64, true, siderContent);
+        auto* whiteHeader = new LayoutPanel(QColor(), 64, true, siderContent);
         addText(whiteHeader, QStringLiteral("Header"));
         contentStack->addWidget(whiteHeader);
-        auto* whiteContent = new LayoutPanel(QColor(QStringLiteral("#ffffff")), 80, false, siderContent);
+        auto* whiteContent = new LayoutPanel(QColor(), 80, false, siderContent);
         auto* whiteContentLayout = new QHBoxLayout(whiteContent);
         whiteContentLayout->setContentsMargins(24, 24, 24, 24);
         whiteContentLayout->addWidget(new AntTypography(QStringLiteral("Content"), whiteContent));

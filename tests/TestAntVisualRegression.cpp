@@ -13,6 +13,7 @@
 #include "widgets/AntAlert.h"
 #include "widgets/AntBadge.h"
 #include "widgets/AntButton.h"
+#include "widgets/AntCalendar.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntCheckBox.h"
 #include "widgets/AntColorPicker.h"
@@ -847,6 +848,16 @@ void TestAntVisualRegression::dataDisplayBordersAndSeparatorsStayVisible()
     assertNearColorPixels(descriptionsImage, token.colorFillQuaternary, 7000, "descriptions label cells", 18);
     assertNearColorPixels(descriptionsImage, token.colorBgContainer, 12000, "descriptions content cells", 12);
     assertNearColorPixels(descriptionsImage, token.colorSplit, 1000, "descriptions cell borders", 18);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    const auto& darkToken = antTheme->tokens();
+    AntCalendar calendar;
+    const QImage calendarImage = renderWidget(&calendar, QSize(460, 340));
+    assertNearColorPixels(calendarImage, darkToken.colorBgElevated, 80000, "dark calendar elevated surface", 16);
+    const int staleLightCalendarPixels = countNearColor(calendarImage, QColor(QStringLiteral("#bfbfbf")), 18);
+    QVERIFY2(staleLightCalendarPixels < 1200,
+             qPrintable(QStringLiteral("dark calendar should not keep stale light viewport pixels: %1")
+                            .arg(staleLightCalendarPixels)));
 }
 
 void TestAntVisualRegression::navigationAndLayoutStructureStayVisible()
@@ -905,6 +916,20 @@ void TestAntVisualRegression::navigationAndLayoutStructureStayVisible()
     assertNearColorPixels(layoutImage, token.colorBgLayout, 56000, "layout background and footer", 12);
     assertNearColorPixels(layoutImage, token.colorBgContainer, 45000, "layout content surface", 12);
     assertNearColorPixels(layoutImage, QColor(0, 21, 41), 34000, "layout header and sider dark surface", 12);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    const auto& darkToken = antTheme->tokens();
+    AntLayout darkLayout;
+    darkLayout.setBorderRadius(8);
+    darkLayout.setHeader(new AntLayoutHeader);
+    darkLayout.setContent(new AntLayoutContent);
+    darkLayout.setFooter(new AntLayoutFooter);
+    const QImage darkLayoutImage = renderWidget(&darkLayout, QSize(480, 260));
+    assertNearColorPixels(darkLayoutImage, darkToken.colorBgLayout, 30000, "dark layout footer surface", 12);
+    const int staleLightFooterPixels = countNearColor(darkLayoutImage, QColor(QStringLiteral("#f0f2f5")), 18);
+    QVERIFY2(staleLightFooterPixels < 800,
+             qPrintable(QStringLiteral("dark layout should not keep stale light footer pixels: %1")
+                            .arg(staleLightFooterPixels)));
 }
 
 void TestAntVisualRegression::stepsFirstIconKeepsLeftBorderVisible()

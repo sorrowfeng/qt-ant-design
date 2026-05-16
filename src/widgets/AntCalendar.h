@@ -51,6 +51,7 @@ private:
     void rebuildModel();
     void updateHeaderText();
     void updateViewMetrics();
+    void applyThemePalette();
     void navigateToMonth(int year, int month);
     void handleDayClick(int dayIndex);
     void handleMonthClick(int monthIndex);

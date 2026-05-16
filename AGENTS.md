@@ -164,7 +164,7 @@
 
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
-| `AntAnchor` | `anchor` | 自绘 | 是 | 滚动锚点，active 高亮 |
+| `AntAnchor` | `anchor` | 自绘 | 是 | 滚动锚点，active 高亮，暗色示例内容块跟随主题 |
 | `AntBreadcrumb` | `breadcrumb` | `QProxyStyle` | 是 | 路径项、分隔符、禁用项 |
 | `AntDropdown` | `dropdown` | `QProxyStyle` | 是 | hover/click/contextMenu、placement、arrow |
 | `AntMenu` | `menu` | `QProxyStyle` | 是 | vertical/horizontal/inline、明暗主题 |
@@ -222,7 +222,7 @@
 | --- | --- | --- | --- | --- |
 | `AntAvatar` | `avatar` | `QProxyStyle` | 是 | 文本、图标、图片头像、Group |
 | `AntBadge` | `badge` | `QProxyStyle` | 是 | count/dot/status/processing/Ribbon |
-| `AntCalendar` | `calendar` | `QProxyStyle` | 是 | Day/Month/Year 三态 |
+| `AntCalendar` | `calendar` | `QProxyStyle` | 是 | Day/Month/Year 三态，内部 QTableView viewport 跟随主题 |
 | `AntCard` | `card` | `QProxyStyle` | 是 | 封面、extra、action 区、loading、Meta、Grid，主题切换标题 palette |
 | `AntCarousel` | `carousel` | 自绘 | 是 | 自动播放、圆点指示器 |
 | `AntCollapse` | `collapse` | 自绘 | 是 | 折叠面板、accordion 模式、动画 |
@@ -248,10 +248,10 @@
 | `AntDivider` | `divider` | `QProxyStyle` | 是 | 水平/垂直、带标题、虚线 |
 | `AntFlex` | `flex` | 自绘 | 是 | 弹性布局、gap/wrap/vertical |
 | `AntGrid` (Row/Col) | `grid` | 自绘 | 是 | 24 列栅格、span/offset |
-| `AntLayout` | `layout` | `QProxyStyle` | 是 | Header/Footer/Content/Sider |
+| `AntLayout` | `layout` | `QProxyStyle` | 是 | Header/Footer/Content/Sider，Footer 跟随 layout 背景 token |
 | `AntMasonry` | `masonry` | 自绘 | 是 | 瀑布流、最短列优先 |
 | `AntSpace` | `space` | `QProxyStyle` | 是 | 水平/垂直间距容器 |
-| `AntSplitter` | `splitter` | 自绘 | 是 | 可拖拽分割面板 |
+| `AntSplitter` | `splitter` | 自绘 | 是 | 可拖拽分割面板，暗色示例面板使用主题 tint |
 
 ### Qt / 桌面扩展组件
 
@@ -262,7 +262,7 @@
 | `AntDockWidget` | 自绘 | 是 | 可停靠面板，Win32 resize |
 | `AntStatusBar` | `QProxyStyle` | 是 | 状态栏 |
 | `AntRibbon` | 自绘 | 是 | Ribbon 顶部命令区，Page/Group、大/小 action、嵌入 Ant/Qt 控件，支持 Tab 指示条/折叠动画、折叠弹出并可接入 AntWindow |
-| `AntScrollBar` | `QProxyStyle` | 是 | 8px 细滚动条，自动隐藏 |
+| `AntScrollBar` | `QProxyStyle` | 是 | 8px 细滚动条，自动隐藏，示例 QScrollArea 暗色 surface 跟随主题 |
 | `AntScrollArea` | — | 是 | QScrollArea + AntScrollBar + QScroller |
 | `AntMenuBar` | `QProxyStyle` | 是 | 菜单栏 |
 | `AntToolBar` | `QProxyStyle` | 是 | 工具栏 |

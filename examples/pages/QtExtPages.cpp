@@ -8,6 +8,7 @@
 #include <QList>
 #include <QMenu>
 #include <QPainter>
+#include <QPalette>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSpinBox>
@@ -454,6 +455,22 @@ QWidget* createScrollBarPage(QWidget* /*owner*/)
 
         auto* scrollArea = new QScrollArea(page);
         scrollArea->setWidgetResizable(true);
+        auto applyScrollSurface = [scrollArea]() {
+            const auto& token = antTheme->tokens();
+            QPalette palette = scrollArea->palette();
+            palette.setColor(QPalette::Base, token.colorBgContainer);
+            palette.setColor(QPalette::Window, token.colorBgContainer);
+            palette.setColor(QPalette::Text, token.colorText);
+            palette.setColor(QPalette::WindowText, token.colorText);
+            scrollArea->setPalette(palette);
+            if (scrollArea->viewport())
+            {
+                scrollArea->viewport()->setPalette(palette);
+                scrollArea->viewport()->setAutoFillBackground(true);
+            }
+        };
+        applyScrollSurface();
+        QObject::connect(antTheme, &AntTheme::themeChanged, scrollArea, applyScrollSurface);
         auto* verticalBar = new AntScrollBar(Qt::Vertical);
         verticalBar->setAutoHide(false);
         scrollArea->setVerticalScrollBar(verticalBar);
@@ -462,6 +479,16 @@ QWidget* createScrollBarPage(QWidget* /*owner*/)
         scrollArea->setHorizontalScrollBar(horizontalBar);
 
         auto* scrollContent = new QWidget();
+        auto applyContentSurface = [scrollContent]() {
+            const auto& token = antTheme->tokens();
+            QPalette palette = scrollContent->palette();
+            palette.setColor(QPalette::Window, token.colorBgContainer);
+            palette.setColor(QPalette::WindowText, token.colorText);
+            scrollContent->setPalette(palette);
+            scrollContent->setAutoFillBackground(true);
+        };
+        applyContentSurface();
+        QObject::connect(antTheme, &AntTheme::themeChanged, scrollContent, applyContentSurface);
         auto* scrollLayout = new QVBoxLayout(scrollContent);
         scrollLayout->setContentsMargins(8, 8, 8, 8);
         scrollLayout->setSpacing(8);

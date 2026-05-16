@@ -8,6 +8,8 @@
 #include <QWidget>
 
 #include "core/AntTypes.h"
+#include "core/AntTheme.h"
+#include "styles/AntPalette.h"
 #include "widgets/AntAffix.h"
 #include "widgets/AntAnchor.h"
 #include "widgets/AntBreadcrumb.h"
@@ -29,6 +31,7 @@ public:
     {
         setFixedHeight(100);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        connect(antTheme, &AntTheme::themeChanged, this, qOverload<>(&QWidget::update));
         auto* layout = new QHBoxLayout(this);
         layout->setContentsMargins(16, 16, 16, 16);
         layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
@@ -41,7 +44,11 @@ protected:
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
         p.setPen(Qt::NoPen);
-        p.setBrush(m_bg);
+        const auto& token = antTheme->tokens();
+        const QColor fill = antTheme->themeMode() == Ant::ThemeMode::Dark
+            ? AntPalette::mix(token.colorBgContainer, m_bg, 0.18)
+            : m_bg;
+        p.setBrush(fill);
         p.drawRoundedRect(rect().adjusted(0, 0, -1, -1), 4, 4);
     }
 

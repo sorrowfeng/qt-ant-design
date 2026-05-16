@@ -63,7 +63,7 @@ void AntLayoutFooter::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
     QPainter painter(this);
-    painter.fillRect(rect(), QColor(QStringLiteral("#f0f2f5")));
+    painter.fillRect(rect(), antTheme->tokens().colorBgLayout);
 }
 
 // ─── AntLayoutContent ───

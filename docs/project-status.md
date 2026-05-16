@@ -90,6 +90,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Fixed `AntMessage` so a toast that visually covers controls still closes on click while forwarding that click to the underlying anchor widget, preventing covered controls such as `AntSegmented` from missing the selection change.
 - Completed a passive-overlay hit-test audit: interactive popups keep their normal input capture, while non-interactive overlays no longer steal covered-control clicks. `AntToolTip`, `AntWatermark`, and the `AntSlider` drag value bubble are mouse-transparent, and `AntNotification` cleanup now guards relayout against a destroyed anchor.
 - Refreshed the README dark thumbnails for `AntResult`, `AntSpin`, and `AntTour`; `AntResult` now shows transparent dark-mode status icons, `AntSpin` uses a token-driven dark content surface, and `AntTour` captures the active Step 1 overlay state.
+- Refreshed and corrected the README dark thumbnails for `AntCalendar`, `AntAnchor`, `AntSplitter`, `AntLayout`, and `AntScrollBar`; `AntCalendar` now themes its internal `QTableView` viewport, `AntLayoutFooter` uses `colorBgLayout`, and the Anchor/Splitter/ScrollBar demo surfaces no longer keep hard-coded light fills in dark mode.
 
 Latest targeted passive-overlay hit-test validation:
 
@@ -284,6 +285,17 @@ ctest --test-dir build -C Debug -R "TestAntFeedback$" --output-on-failure
 ```
 
 Result: `AntResult`, `AntSpin`, and `AntTour` dark thumbnails were regenerated at `960x540`, `1 / 1` targeted feedback test passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-17`.
+
+Latest targeted Calendar / Anchor / Splitter / Layout / ScrollBar dark thumbnail validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntDataDisplayA TestAntNavigation TestAntLayout TestAntQtExtensions TestAntVisualRegression qt-ant-design-example
+ctest --test-dir build -C Debug -R "TestAnt(DataDisplayA|Navigation|Layout|VisualRegression)$" --output-on-failure
+.\build\tests\Debug\TestAntQtExtensions.exe scrollBar splitter
+.\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
+```
+
+Result: the five dark thumbnails were regenerated at `960x540`; `TestAntDataDisplayA`, `TestAntNavigation`, `TestAntLayout`, targeted `TestAntQtExtensions::scrollBar/splitter`, and `TestAntVisualRegression` passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-17`.
 
 Latest targeted AntTour / AntResult issue validation:
 

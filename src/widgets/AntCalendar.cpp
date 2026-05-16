@@ -4,6 +4,7 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QPainter>
+#include <QPalette>
 #include <QResizeEvent>
 #include <QSizePolicy>
 #include <QStyledItemDelegate>
@@ -287,6 +288,7 @@ AntCalendar::AntCalendar(QWidget* parent)
     m_view->setFocusPolicy(Qt::NoFocus);
     m_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_view->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    applyThemePalette();
     mainLayout->addWidget(m_view, 1);
 
     setMinimumSize(312, 340);
@@ -306,6 +308,7 @@ AntCalendar::AntCalendar(QWidget* parent)
                 }
             }
         }
+        applyThemePalette();
         update();
     });
 
@@ -398,6 +401,27 @@ void AntCalendar::setCalendarMode(Ant::CalendarMode mode)
 }
 
 QSize AntCalendar::sizeHint() const { return QSize(312, 340); }
+
+void AntCalendar::applyThemePalette()
+{
+    if (!m_view)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    QPalette palette = m_view->palette();
+    palette.setColor(QPalette::Base, token.colorBgElevated);
+    palette.setColor(QPalette::Window, token.colorBgElevated);
+    palette.setColor(QPalette::Text, token.colorText);
+    palette.setColor(QPalette::WindowText, token.colorText);
+    palette.setColor(QPalette::Highlight, token.colorPrimary);
+    palette.setColor(QPalette::HighlightedText, token.colorTextLightSolid);
+    m_view->setPalette(palette);
+    m_view->viewport()->setPalette(palette);
+    m_view->viewport()->setAutoFillBackground(true);
+    m_view->viewport()->update();
+}
 
 void AntCalendar::resizeEvent(QResizeEvent* event)
 {
