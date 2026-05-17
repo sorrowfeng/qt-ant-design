@@ -251,7 +251,7 @@ QWidget* createDockWidgetPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("AntDockWidget"));
         auto* cl = card->bodyLayout();
 
-        auto* infoLabel = makeParagraph(QStringLiteral("AntDockManager provides a themed docking workspace with a custom splitter/tab dock tree, translucent draggable AntDockWidget panels, and toggleable center/edge drop guide squares."), page);
+        auto* infoLabel = makeParagraph(QStringLiteral("AntDockManager provides a themed docking workspace with a custom splitter/tab dock tree, draggable tabs, context menus, saved perspectives, translucent draggable AntDockWidget panels, and toggleable center/edge drop guide squares."), page);
         cl->addWidget(infoLabel);
 
         auto* manager = new AntDockManager(page);

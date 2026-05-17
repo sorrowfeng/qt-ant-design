@@ -1,6 +1,7 @@
 #include <QPalette>
 #include <QPainter>
 #include <QCoreApplication>
+#include <QContextMenuEvent>
 #include <QGraphicsOpacityEffect>
 #include <QImage>
 #include <QLabel>
@@ -743,6 +744,7 @@ void TestAntQtExtensions::dockWidget()
 void TestAntQtExtensions::dockManager()
 {
     qRegisterMetaType<AntDockWidget*>("AntDockWidget*");
+    qRegisterMetaType<AntDockManager::DockPlacement>("AntDockManager::DockPlacement");
     antTheme->setThemeMode(Ant::ThemeMode::Default);
 
     auto* manager = new AntDockManager;
@@ -789,6 +791,44 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(propertiesArea != nullptr);
     QVERIFY(propertiesArea != inspectorArea);
 
+    QSignalSpy featureSpy(manager, &AntDockManager::dockWidgetFeatureChanged);
+    QSignalSpy tabMovedSpy(manager, &AntDockManager::dockWidgetTabMoved);
+    QSignalSpy contextMenuSpy(manager, &AntDockManager::dockWidgetContextMenuRequested);
+    QSignalSpy floatedSpy(manager, &AntDockManager::dockWidgetFloated);
+    QSignalSpy dockedSpy(manager, &AntDockManager::dockWidgetDocked);
+    QSignalSpy layoutSpy(manager, &AntDockManager::dockLayoutChanged);
+
+    QVERIFY(manager->isDockWidgetClosable(explorer));
+    manager->setDockWidgetClosable(explorer, false);
+    QCOMPARE(manager->isDockWidgetClosable(explorer), false);
+    manager->setDockWidgetClosable(explorer, true);
+    QCOMPARE(manager->isDockWidgetClosable(explorer), true);
+    QCOMPARE(featureSpy.count(), 2);
+
+    QVERIFY(manager->isDockWidgetFloatable(preview));
+    manager->setDockWidgetFloatable(preview, false);
+    QCOMPARE(manager->isDockWidgetFloatable(preview), false);
+    manager->setDockWidgetFloating(preview, true);
+    QVERIFY(!manager->isDockWidgetFloating(preview));
+    manager->setDockWidgetFloatable(preview, true);
+    QCOMPARE(manager->isDockWidgetFloatable(preview), true);
+
+    QVERIFY(manager->isDockWidgetMovable(preview));
+    manager->setDockWidgetMovable(preview, false);
+    QCOMPARE(manager->isDockWidgetMovable(preview), false);
+    QVERIFY(!manager->moveDockWidgetTab(preview, 0));
+    manager->setDockWidgetMovable(preview, true);
+    QCOMPARE(manager->isDockWidgetMovable(preview), true);
+    QCOMPARE(featureSpy.count(), 6);
+
+    QVERIFY(manager->moveDockWidgetTab(preview, 0));
+    QCOMPARE(manager->dockWidgetTabIndex(preview), 0);
+    QCOMPARE(tabMovedSpy.count(), 1);
+    QVERIFY(manager->moveDockWidgetTab(inspector, 0));
+    QCOMPARE(manager->dockWidgetTabIndex(inspector), 0);
+    QCOMPARE(tabMovedSpy.count(), 2);
+    QVERIFY(layoutSpy.count() >= 2);
+
     QSignalSpy guideEnabledSpy(manager, &AntDockManager::dropGuideEnabledChanged);
     QSignalSpy guideVisibleSpy(manager, &AntDockManager::dropGuideVisibleChanged);
     manager->setDropGuideEnabled(false);
@@ -809,8 +849,18 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(savedSpy.count(), 1);
     QVERIFY(manager->perspectiveNames().contains(QStringLiteral("default")));
     QVERIFY(!manager->perspectiveState(QStringLiteral("default")).isEmpty());
+    manager->addDockWidget(properties, inspector, AntDockManager::DockPlacement::Center);
+    QTRY_VERIFY(manager->tabifiedDockWidgets(inspector).contains(properties));
+    QTRY_VERIFY(dockAreaForExtensionTest(properties) == dockAreaForExtensionTest(inspector));
     QVERIFY(manager->restorePerspective(QStringLiteral("default")));
     QCOMPARE(restoredSpy.count(), 1);
+    inspectorArea = dockAreaForExtensionTest(inspector);
+    propertiesArea = dockAreaForExtensionTest(properties);
+    QVERIFY(inspectorArea != nullptr);
+    QVERIFY(propertiesArea != nullptr);
+    QVERIFY(propertiesArea != inspectorArea);
+    QVERIFY(manager->tabifiedDockWidgets(inspector).contains(preview));
+    QVERIFY(!manager->tabifiedDockWidgets(inspector).contains(properties));
     QVERIFY(manager->removePerspective(QStringLiteral("default")));
     QCOMPARE(removedPerspectiveSpy.count(), 1);
     QVERIFY(!manager->perspectiveNames().contains(QStringLiteral("default")));
@@ -828,6 +878,50 @@ void TestAntQtExtensions::dockManager()
     QTabBar* explorerTabBar = dockTabBarForExtensionTest(explorer);
     QVERIFY(explorerTabBar != nullptr);
     QSignalSpy previewVisibleSpy(manager, &AntDockManager::dropPreviewVisibleChanged);
+
+    QTabBar* inspectorTabBar = dockTabBarForExtensionTest(inspector);
+    QVERIFY(inspectorTabBar != nullptr);
+    const QPoint inspectorTabPoint = dockTabCenterForExtensionTest(inspector);
+    QVERIFY(!inspectorTabPoint.isNull());
+    QContextMenuEvent contextEvent(QContextMenuEvent::Mouse,
+                                   inspectorTabPoint,
+                                   inspectorTabBar->mapToGlobal(inspectorTabPoint));
+    QCoreApplication::sendEvent(inspectorTabBar, &contextEvent);
+    QCOMPARE(contextMenuSpy.count(), 1);
+    if (QWidget* popup = QApplication::activePopupWidget())
+    {
+        popup->close();
+    }
+
+    const QPoint previewTabPoint = dockTabCenterForExtensionTest(preview);
+    QVERIFY(!previewTabPoint.isNull());
+    const QPoint previewTabGlobal = inspectorTabBar->mapToGlobal(previewTabPoint);
+    QMouseEvent tabReorderPress(QEvent::MouseButtonPress,
+                                QPointF(previewTabPoint),
+                                QPointF(previewTabGlobal),
+                                Qt::LeftButton,
+                                Qt::LeftButton,
+                                Qt::NoModifier);
+    QCoreApplication::sendEvent(inspectorTabBar, &tabReorderPress);
+    QMouseEvent tabReorderMove(QEvent::MouseMove,
+                               QPointF(inspectorTabPoint),
+                               QPointF(inspectorTabBar->mapToGlobal(inspectorTabPoint)),
+                               Qt::NoButton,
+                               Qt::LeftButton,
+                               Qt::NoModifier);
+    QCoreApplication::sendEvent(inspectorTabBar, &tabReorderMove);
+    QMouseEvent tabReorderRelease(QEvent::MouseButtonRelease,
+                                  QPointF(inspectorTabPoint),
+                                  QPointF(inspectorTabBar->mapToGlobal(inspectorTabPoint)),
+                                  Qt::LeftButton,
+                                  Qt::NoButton,
+                                  Qt::NoModifier);
+    QCoreApplication::sendEvent(inspectorTabBar, &tabReorderRelease);
+    QTRY_COMPARE(manager->dockWidgetTabIndex(preview), 0);
+    QVERIFY(!manager->isDropPreviewVisible());
+    QVERIFY(tabMovedSpy.count() >= 3);
+    QVERIFY(manager->moveDockWidgetTab(inspector, 0));
+    QCOMPARE(manager->dockWidgetTabIndex(inspector), 0);
 
     const QPoint dragStart = dockTabCenterForExtensionTest(explorer);
     QVERIFY(!dragStart.isNull());
@@ -1051,9 +1145,29 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(explorer->property("antDockFloatingNativeOwnedByManager").toBool(), true);
 #endif
     QVERIFY(dockAreaForExtensionTest(explorer) == nullptr);
+    QVERIFY(manager->isDockWidgetFloating(explorer));
+    QVERIFY(manager->floatingDockWidgets().contains(explorer));
     const QSize floatingResize = explorer->size().expandedTo(QSize(280, 180));
-    explorer->resize(floatingResize);
+    explorer->setGeometry(QRect(manager->mapToGlobal(QPoint(64, 64)), floatingResize));
     QCOMPARE(explorer->size(), floatingResize);
+    QVERIFY(manager->savePerspective(QStringLiteral("floating")));
+    const QRect savedFloatingGeometry = explorer->geometry();
+    dragFloatingDockBack(explorer, inspector);
+    QTRY_VERIFY(!explorer->isFloating());
+    QVERIFY(manager->restorePerspective(QStringLiteral("floating")));
+    QTRY_VERIFY(explorer->isFloating());
+    QCOMPARE(explorer->geometry().size(), savedFloatingGeometry.size());
+    QVERIFY((explorer->geometry().topLeft() - savedFloatingGeometry.topLeft()).manhattanLength() <= 4);
+    QVERIFY(manager->removePerspective(QStringLiteral("floating")));
+    QVERIFY(floatedSpy.count() >= 1);
+
+    manager->setDockWidgetFloating(explorer, false);
+    QTRY_VERIFY(!manager->isDockWidgetFloating(explorer));
+    QVERIFY(dockAreaForExtensionTest(explorer) != nullptr);
+    QVERIFY(dockedSpy.count() >= 1);
+    manager->setDockWidgetFloating(explorer, true, savedFloatingGeometry);
+    QTRY_VERIFY(manager->isDockWidgetFloating(explorer));
+    QCOMPARE(explorer->geometry().size(), savedFloatingGeometry.size());
 
     QWidget* floatingTitleBar = explorer->titleBarWidget();
     QVERIFY(floatingTitleBar != nullptr);

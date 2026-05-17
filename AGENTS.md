@@ -49,7 +49,7 @@
 - `AntPlainTextEdit` — QPlainTextEdit + eventFilter Style，3 变体
 - `AntMenuBar` — QMenuBar + drawControl Style
 - `AntToolBar` — QToolBar + drawControl Style，浮动阴影
-- `AntDockWidget` — QDockWidget，自定义标题栏，Win32 resize；`AntDockManager` 使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，提供中心标签页停靠、命名布局快照、超过拖动阈值后激活的半透明拖动预览、可通过 `setDropGuideEnabled()` 开关的中心/边缘停靠小方格、按引导位置确定落位、manager-owned 浮动 Dock 原生窗口、AntWindow-style Windows native frame/DWM 圆角阴影和拖回布局
+- `AntDockWidget` — QDockWidget，自定义标题栏，Win32 resize；`AntDockManager` 使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，提供中心标签页停靠、可序列化保存/恢复 splitter、tab 和浮窗状态的命名布局快照、tab 拖动排序、tab/标题栏右键菜单、浮动和 Dock 特性的程序化 API、超过拖动阈值后激活的半透明拖动预览、可通过 `setDropGuideEnabled()` 开关的中心/边缘停靠小方格、按引导位置确定落位、manager-owned 浮动 Dock 原生窗口、AntWindow-style Windows native frame/DWM 圆角阴影和拖回布局
 - `AntAutoComplete` — QWidget 组合，弹出建议，键盘导航
 - `AntCalendar` — QTableView + Model/View，Day/Month/Year 三态
 - `AntColorPicker` — inline trigger + 弹窗编辑器，showText，HS field，RGB/HSV，预设/自定义颜色
@@ -259,7 +259,7 @@
 | --- | --- | --- | --- |
 | `AntWidget` | — | 是 | 基础 QWidget，自动主题切换 |
 | `AntWindow` | `QProxyStyle` | 是 | 无边框窗口，自定义标题栏，Win11 Snap/Win10 DWM 阴影与圆角 mask 同步，标题栏按钮 API，主题切换遮罩动画 |
-| `AntDockWidget` | 自绘 | 是 | 可停靠面板，Win32 resize；配套 `AntDockManager` 使用自研 splitter/tab 停靠树，提供中心标签页停靠、阈值激活的半透明拖动预览、可开关的中心/边缘停靠小方格、按引导位置确定落位、manager-owned 浮动 Dock 原生窗口、AntWindow-style Windows native frame/DWM 圆角阴影、拖回布局和命名布局快照 |
+| `AntDockWidget` | 自绘 | 是 | 可停靠面板，Win32 resize；配套 `AntDockManager` 使用自研 splitter/tab 停靠树，提供中心标签页停靠、可序列化命名布局快照、tab 拖动排序、tab/标题栏右键菜单、程序化浮动和 Dock 特性 API、阈值激活的半透明拖动预览、可开关的中心/边缘停靠小方格、按引导位置确定落位、manager-owned 浮动 Dock 原生窗口、AntWindow-style Windows native frame/DWM 圆角阴影和拖回布局 |
 | `AntStatusBar` | `QProxyStyle` | 是 | 状态栏 |
 | `AntRibbon` | 自绘 | 是 | Ribbon 顶部命令区，Page/Group、大/小 action、嵌入 Ant/Qt 控件，支持 Tab 指示条/折叠动画、折叠弹出并可接入 AntWindow |
 | `AntScrollBar` | `QProxyStyle` | 是 | 8px 细滚动条，自动隐藏，示例 QScrollArea 暗色 surface 跟随主题 |

@@ -498,7 +498,10 @@ protected:
                 m_dock->isMaximized() ? m_dock->showNormal() : m_dock->showMaximized();
                 break;
             case Role::Close:
-                m_dock->close();
+                if (m_dock->features().testFlag(QDockWidget::DockWidgetClosable))
+                {
+                    m_dock->close();
+                }
                 break;
             }
             event->accept();
@@ -817,7 +820,7 @@ void AntDockWidget::updateTheme()
 
 void AntDockWidget::updateFloatingFrame()
 {
-    const bool floating = isFloating();
+    const bool floating = isFloating() && !property("antDockEmbeddedByManager").toBool();
     const int shadowMargin = 0;
     const int cornerRadius = floating ? floatingCornerRadius() : 0;
     setProperty("antDockFloatingFrame", floating);

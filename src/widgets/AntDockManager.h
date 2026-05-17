@@ -3,6 +3,7 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QByteArray>
+#include <QDockWidget>
 #include <QList>
 #include <QHash>
 #include <QMainWindow>
@@ -54,6 +55,19 @@ public:
     void removeDockWidget(AntDockWidget* dockWidget);
 
     QList<AntDockWidget*> dockWidgets() const;
+    QList<AntDockWidget*> floatingDockWidgets() const;
+    bool isDockWidgetFloating(AntDockWidget* dockWidget) const;
+    void setDockWidgetFloating(AntDockWidget* dockWidget, bool floating, const QRect& globalGeometry = QRect());
+
+    bool isDockWidgetClosable(AntDockWidget* dockWidget) const;
+    void setDockWidgetClosable(AntDockWidget* dockWidget, bool closable);
+    bool isDockWidgetFloatable(AntDockWidget* dockWidget) const;
+    void setDockWidgetFloatable(AntDockWidget* dockWidget, bool floatable);
+    bool isDockWidgetMovable(AntDockWidget* dockWidget) const;
+    void setDockWidgetMovable(AntDockWidget* dockWidget, bool movable);
+
+    int dockWidgetTabIndex(AntDockWidget* dockWidget) const;
+    bool moveDockWidgetTab(AntDockWidget* dockWidget, int index);
 
     QWidget* centralContent() const;
     void setCentralContent(QWidget* widget);
@@ -80,6 +94,12 @@ public:
 Q_SIGNALS:
     void dockWidgetAdded(AntDockWidget* dockWidget);
     void dockWidgetRemoved(AntDockWidget* dockWidget);
+    void dockWidgetDocked(AntDockWidget* dockWidget, AntDockManager::DockPlacement placement);
+    void dockWidgetFloated(AntDockWidget* dockWidget);
+    void dockWidgetTabMoved(AntDockWidget* dockWidget, int from, int to);
+    void dockWidgetFeatureChanged(AntDockWidget* dockWidget);
+    void dockWidgetContextMenuRequested(AntDockWidget* dockWidget, const QPoint& globalPos);
+    void dockLayoutChanged();
     void placeholderVisibleChanged(bool visible);
     void dropGuideEnabledChanged(bool enabled);
     void dropGuideVisibleChanged(bool visible);
@@ -122,6 +142,9 @@ private:
     void stopDockDragTracking();
     void applyDropTarget(AntDockWidget* dockWidget, AntDockWidget* targetDock, DockPlacement placement, bool containerDrop);
     void floatDockWidget(AntDockWidget* dockWidget, const QRect& globalGeometry);
+    bool dockWidgetFeatureEnabled(AntDockWidget* dockWidget, QDockWidget::DockWidgetFeature feature) const;
+    void setDockWidgetFeatureEnabled(AntDockWidget* dockWidget, QDockWidget::DockWidgetFeature feature, bool enabled);
+    void showDockContextMenu(AntDockWidget* dockWidget, const QPoint& globalPos);
     QRect floatingGeometryForDock(AntDockWidget* dockWidget, const QPoint& globalPos) const;
     void setDraggedDockTranslucent(bool translucent);
     void showDropGuideAt(const QPoint& globalPos);
@@ -159,6 +182,8 @@ private:
     QGraphicsOpacityEffect* m_draggedDockOpacityEffect = nullptr;
     bool m_draggedDockOpacityChanged = false;
     bool m_hasLastDropGuideGlobal = false;
+    DockArea* m_tabReorderArea = nullptr;
+    int m_tabReorderIndex = -1;
     bool m_hasLastDropTarget = false;
     bool m_lastDropTargetIsContainer = false;
     AntDockWidget* m_lastDropTargetDock = nullptr;

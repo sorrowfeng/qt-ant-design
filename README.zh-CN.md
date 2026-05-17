@@ -374,7 +374,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntToolButton`：QToolButton + QProxyStyle，dropdown 箭头动画
 - `AntMenuBar`：QMenuBar 主题化
 - `AntToolBar`：QToolBar 主题化，浮动阴影
-- `AntDockWidget` / `AntDockManager`：主题化停靠面板，自定义标题栏，使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，支持中心标签页停靠、命名布局快照、可通过 `setDropGuideEnabled()` 开关的中心/边缘停靠小方格、按引导位置确定落位、超过拖动阈值后才激活的半透明拖动预览、由 manager 归属的浮动 Dock 原生窗口、AntWindow 风格 Windows native frame / DWM 圆角阴影、双击最大化/还原，以及从浮窗拖回布局
+- `AntDockWidget` / `AntDockManager`：主题化停靠面板，自定义标题栏，使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，支持中心标签页停靠、可序列化保存/恢复 splitter、tab 和浮窗状态的命名布局快照、tab 拖动排序、tab/标题栏右键菜单、浮动和 Dock 特性的程序化 API、可通过 `setDropGuideEnabled()` 开关的中心/边缘停靠小方格、按引导位置确定落位、超过拖动阈值后才激活的半透明拖动预览、由 manager 归属的浮动 Dock 原生窗口、AntWindow 风格 Windows native frame / DWM 圆角阴影、双击最大化/还原，以及从浮窗拖回布局
 - `AntScrollArea`：QScrollArea + AntScrollBar + QScroller 手势滚动
 - `AntPlainTextEdit`：多行文本编辑器，3 种变体，TextArea 式右下角缩放柄，上下文菜单
 - `AntLog`：5 级别彩色日志输出（Debug/Info/Success/Warning/Error），时间戳
