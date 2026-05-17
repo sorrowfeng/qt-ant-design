@@ -49,6 +49,19 @@ QPoint mouseGlobalPosition(QMouseEvent* event)
     return event->globalPos();
 #endif
 }
+
+void setEmbeddedDockTitleBarVisible(AntDockWidget* dockWidget, bool visible)
+{
+    if (!dockWidget) return;
+
+    QWidget* titleBar = dockWidget->titleBarWidget();
+    if (!titleBar) return;
+
+    titleBar->setVisible(visible);
+    titleBar->setMaximumHeight(visible ? QWIDGETSIZE_MAX : 0);
+    titleBar->updateGeometry();
+    dockWidget->updateGeometry();
+}
 } // namespace
 
 struct AntDockManager::DropTarget
@@ -209,6 +222,7 @@ public:
         }
 
         dockWidget->setParent(this);
+        setEmbeddedDockTitleBarVisible(dockWidget, false);
         dockWidget->setVisible(true);
         const int index = addTab(dockWidget, dockWidget->windowIcon(), dockWidget->windowTitle());
         setCurrentIndex(index);
@@ -227,6 +241,7 @@ public:
         const int index = indexOf(dockWidget);
         if (index < 0) return;
         removeTab(index);
+        setEmbeddedDockTitleBarVisible(dockWidget, true);
         dockWidget->setParent(nullptr);
     }
 
