@@ -46,6 +46,7 @@
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDescriptions.h"
 #include "widgets/AntDivider.h"
+#include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntDrawer.h"
 #include "widgets/AntDropdown.h"
@@ -284,6 +285,15 @@ QList<RenderCase> renderCases()
              descriptions->addItem(QStringLiteral("Name"), QStringLiteral("Alice"));
          }, QSize(320, 160)},
         {"AntDivider", [](QWidget* p) { return new AntDivider(QStringLiteral("OR"), p); }, nullptr},
+        {"AntDockManager", [](QWidget* p) { return new AntDockManager(p); }, [](QWidget* w) {
+             auto* manager = qobject_cast<AntDockManager*>(w);
+             auto* left = new AntDockWidget(QStringLiteral("Explorer"));
+             left->setWidget(coloredBox(left));
+             auto* right = new AntDockWidget(QStringLiteral("Preview"));
+             right->setWidget(coloredBox(right, QColor(0x52, 0xc4, 0x1a)));
+             manager->addDockWidget(Qt::LeftDockWidgetArea, left);
+             manager->addDockWidget(right, left, AntDockManager::DockPlacement::Center);
+         }, QSize(360, 220)},
         {"AntDockWidget", [](QWidget* p) { return new AntDockWidget(QStringLiteral("Dock"), p); }, [](QWidget* w) {
              qobject_cast<AntDockWidget*>(w)->setWidget(coloredBox(w));
          }, QSize(260, 160)},

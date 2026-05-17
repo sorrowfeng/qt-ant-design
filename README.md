@@ -32,9 +32,9 @@ The project focuses on:
 
 - Built on Qt Widgets — lightweight, easy to embed, and consumable as either a static or shared library in existing projects
 - Built-in Design Token system with real-time light / dark theme switching
-- `83` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `13` Qt / desktop extension components)
+- `84` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `14` Qt / desktop extension components)
 - `62` style-driven components are rendered through a `QProxyStyle` architecture
-- The example app currently demos `83 / 83` public components, plus a standalone Ant Design homepage-style `Showcase`
+- The example app currently demos `84 / 84` public components, plus a standalone Ant Design homepage-style `Showcase`
 - `AntIcon` bundles `831` official SVG resources from `@ant-design/icons-svg@4.4.2`
 - Comparable standard components are tracked as visual-audit `Pass`; Qt-only desktop extensions are tracked as `Local Pass`
 - Clean code structure — `core / styles / widgets / examples` layering keeps the project easy to extend
@@ -197,9 +197,9 @@ int main(int argc, char* argv[])
 
 ## Ported Components
 
-Total public components implemented: `83`
+Total public components implemented: `84`
 
-`src/widgets` currently contains `104` `Ant*.h` headers: `83` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup`.
+`src/widgets` currently contains `105` `Ant*.h` headers: `84` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup`.
 
 Ant Design standard components are counted by the top-level directories under [`ant-design/ant-design`](https://github.com/ant-design/ant-design)'s `components/` directory, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
 
@@ -217,7 +217,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 | Feedback | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | Mixed (`QProxyStyle` / custom paint) |
 | Data Display | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | Mixed (`QProxyStyle` / custom paint) |
 | Layout & Misc | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | Mixed (`QProxyStyle` / custom paint / QObject helper) |
-| Qt / Desktop Extensions | `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | Mixed (`QProxyStyle` / custom paint) |
+| Qt / Desktop Extensions | `AntDockManager` `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | Mixed (`QProxyStyle` / custom paint) |
 
 ### Component Screenshots
 
@@ -374,7 +374,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntToolButton`: QToolButton + QProxyStyle with dropdown arrow animation
 - `AntMenuBar`: themed QMenuBar
 - `AntToolBar`: themed QToolBar with floating shadow
-- `AntDockWidget`: dockable panel with custom title bar and Win32 resize edges
+- `AntDockWidget` / `AntDockManager`: themed dock panels with custom title bars, a custom splitter/tab dock tree, center tab placement, serialized splitter/tab/floating layout perspectives, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, toggleable center / edge drop guide squares (`setDropGuideEnabled()`), deterministic guided drop placement that does not rely on Qt's native dock layout, threshold-activated translucent drag previews, manager-owned floating dock windows with AntWindow-style Windows native frame / DWM rounded corners and shadow handling, double-click maximize / restore, and drag-back-to-layout support
 - `AntScrollArea`: QScrollArea + AntScrollBar + QScroller gesture scrolling
 - `AntPlainTextEdit`: multi-line text editor with 3 variants, TextArea-style resize grip, and a context menu
 - `AntLog`: 5-level colored log output (Debug / Info / Success / Warning / Error) with timestamps

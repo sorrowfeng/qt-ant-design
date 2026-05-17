@@ -30,6 +30,7 @@
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDescriptions.h"
 #include "widgets/AntDivider.h"
+#include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntDrawer.h"
 #include "widgets/AntDropdown.h"
@@ -160,6 +161,7 @@ QList<ObjectCase> objectCases()
         {"AntDescriptionsItem", [](QWidget* parent) { return new AntDescriptionsItem(parent); }},
         {"AntDescriptions", [](QWidget* parent) { return new AntDescriptions(parent); }},
         {"AntDivider", [](QWidget* parent) { return new AntDivider(parent); }},
+        {"AntDockManager", [](QWidget* parent) { return new AntDockManager(parent); }},
         {"AntDockWidget", [](QWidget* parent) { return new AntDockWidget(parent); }},
         {"AntDrawer", [](QWidget* parent) { return new AntDrawer(parent); }},
         {"AntDropdown", [](QWidget* parent) { return new AntDropdown(parent); }},

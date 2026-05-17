@@ -24,6 +24,7 @@
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDescriptions.h"
 #include "widgets/AntDivider.h"
+#include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntDrawer.h"
 #include "widgets/AntDropdown.h"
@@ -143,6 +144,7 @@ void TestAntObjectTree::parentOwnsWidgetsAndStyles()
     trackWidget(new AntDescriptionsItem(root), false);
     trackWidget(new AntDescriptions(root), true);
     trackWidget(new AntDivider(root), true);
+    trackWidget(new AntDockManager(root), false);
     trackWidget(new AntDockWidget(root), false);
     trackWidget(new AntDrawer(root), true);
     trackWidget(new AntDropdown(root), true);
