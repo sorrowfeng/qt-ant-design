@@ -18,6 +18,7 @@
 #include <QHoverEvent>
 #include <QTest>
 #include <QToolButton>
+#include <QWindow>
 #include "core/AntTheme.h"
 #include "widgets/AntApp.h"
 #include "widgets/AntConfigProvider.h"
@@ -1040,9 +1041,14 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(explorer->windowType(), Qt::Window);
     QVERIFY(explorer->windowFlags().testFlag(Qt::FramelessWindowHint));
     QVERIFY(!explorer->testAttribute(Qt::WA_TranslucentBackground));
+    QVERIFY(explorer->windowHandle() != nullptr);
+    QVERIFY(manager->windowHandle() != nullptr);
+    QCOMPARE(explorer->windowHandle()->transientParent(), manager->windowHandle());
+    QCOMPARE(explorer->property("antDockFloatingOwnedByManager").toBool(), true);
 #if defined(Q_OS_WIN)
     QTRY_VERIFY(explorer->property("antDockNativeWindowFrameEnabled").toBool());
     QVERIFY(explorer->property("antDockDwmFrameApplyCount").toInt() > 0);
+    QCOMPARE(explorer->property("antDockFloatingNativeOwnedByManager").toBool(), true);
 #endif
     QVERIFY(dockAreaForExtensionTest(explorer) == nullptr);
     const QSize floatingResize = explorer->size().expandedTo(QSize(280, 180));
@@ -1054,6 +1060,7 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(dockAreaForExtensionTest(explorer) != nullptr);
     QTRY_VERIFY(!explorer->titleBarWidget()->isVisible());
     QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), false);
+    QCOMPARE(explorer->property("antDockFloatingOwnedByManager").toBool(), false);
 
     QTabBar* doubleClickTabBar = dockTabBarForExtensionTest(explorer);
     QVERIFY(doubleClickTabBar != nullptr);
@@ -1074,9 +1081,14 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(explorer->windowType(), Qt::Window);
     QVERIFY(explorer->windowFlags().testFlag(Qt::FramelessWindowHint));
     QVERIFY(!explorer->testAttribute(Qt::WA_TranslucentBackground));
+    QVERIFY(explorer->windowHandle() != nullptr);
+    QVERIFY(manager->windowHandle() != nullptr);
+    QCOMPARE(explorer->windowHandle()->transientParent(), manager->windowHandle());
+    QCOMPARE(explorer->property("antDockFloatingOwnedByManager").toBool(), true);
 #if defined(Q_OS_WIN)
     QTRY_VERIFY(explorer->property("antDockNativeWindowFrameEnabled").toBool());
     QVERIFY(explorer->property("antDockDwmFrameApplyCount").toInt() > 0);
+    QCOMPARE(explorer->property("antDockFloatingNativeOwnedByManager").toBool(), true);
 #endif
 
     dragFloatingDockBack(explorer, inspector);
@@ -1084,6 +1096,7 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(dockAreaForExtensionTest(explorer) != nullptr);
     QTRY_VERIFY(!explorer->titleBarWidget()->isVisible());
     QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), false);
+    QCOMPARE(explorer->property("antDockFloatingOwnedByManager").toBool(), false);
 
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     QCOMPARE(manager->palette().color(QPalette::Window), antTheme->tokens().colorBgLayout);

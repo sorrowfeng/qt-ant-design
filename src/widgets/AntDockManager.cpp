@@ -19,9 +19,14 @@
 #include <QTabWidget>
 #include <QTimer>
 #include <QVBoxLayout>
+#include <QWindow>
 
 #include "AntDockWidget.h"
 #include "core/AntTheme.h"
+
+#if defined(Q_OS_WIN)
+#include <windows.h>
+#endif
 
 namespace
 {
@@ -61,6 +66,77 @@ void setEmbeddedDockTitleBarVisible(AntDockWidget* dockWidget, bool visible)
     titleBar->setMaximumHeight(visible ? QWIDGETSIZE_MAX : 0);
     titleBar->updateGeometry();
     dockWidget->updateGeometry();
+}
+
+void setFloatingDockOwner(AntDockWidget* dockWidget, QWidget* ownerWidget)
+{
+    if (!dockWidget) return;
+
+    QWindow* ownerWindow = nullptr;
+    if (ownerWidget)
+    {
+        if (!ownerWidget->windowHandle())
+        {
+            ownerWidget->winId();
+        }
+        ownerWindow = ownerWidget->windowHandle();
+    }
+
+    if (!dockWidget->windowHandle() && dockWidget->isWindow())
+    {
+        dockWidget->winId();
+    }
+    if (QWindow* dockWindow = dockWidget->windowHandle())
+    {
+        dockWindow->setTransientParent(ownerWindow);
+    }
+
+    dockWidget->setProperty("antDockFloatingOwnedByManager", ownerWindow != nullptr);
+
+#if defined(Q_OS_WIN)
+    HWND ownerHwnd = nullptr;
+    if (ownerWidget)
+    {
+        ownerHwnd = reinterpret_cast<HWND>(ownerWidget->winId());
+    }
+
+    HWND dockHwnd = reinterpret_cast<HWND>(dockWidget->winId());
+    if (dockHwnd)
+    {
+        ::SetWindowLongPtrW(dockHwnd, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(ownerHwnd));
+        if (ownerHwnd)
+        {
+            ::SetWindowPos(dockHwnd,
+                           HWND_TOP,
+                           0,
+                           0,
+                           0,
+                           0,
+                           SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+        }
+    }
+    dockWidget->setProperty("antDockFloatingNativeOwnedByManager", ownerHwnd != nullptr);
+#endif
+}
+
+void clearFloatingDockOwner(AntDockWidget* dockWidget)
+{
+    if (!dockWidget) return;
+
+    if (QWindow* dockWindow = dockWidget->windowHandle())
+    {
+        dockWindow->setTransientParent(nullptr);
+    }
+
+    dockWidget->setProperty("antDockFloatingOwnedByManager", false);
+
+#if defined(Q_OS_WIN)
+    if (const WId dockId = dockWidget->internalWinId())
+    {
+        ::SetWindowLongPtrW(reinterpret_cast<HWND>(dockId), GWLP_HWNDPARENT, 0);
+    }
+    dockWidget->setProperty("antDockFloatingNativeOwnedByManager", false);
+#endif
 }
 } // namespace
 
@@ -1012,6 +1088,7 @@ void AntDockManager::removeDockWidget(AntDockWidget* dockWidget)
 
     const bool known = m_docks.contains(dockWidget);
     m_docks.remove(dockWidget);
+    clearFloatingDockOwner(dockWidget);
     removeDockFromArea(dockWidget, true);
     removeDockEventFilters(dockWidget);
     updatePlaceholderState();
@@ -1403,6 +1480,7 @@ void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targe
 {
     if (!dockWidget) return;
     if (placement == DockPlacement::None) placement = DockPlacement::Left;
+    clearFloatingDockOwner(dockWidget);
 
     const bool added = prepareDockWidget(dockWidget);
     DockArea* oldArea = areaForDock(dockWidget);
@@ -1912,7 +1990,9 @@ void AntDockManager::floatDockWidget(AntDockWidget* dockWidget, const QRect& glo
     dockWidget->setFloating(true);
     dockWidget->setMinimumSize(QSize(180, 120));
     dockWidget->setGeometry(targetGeometry);
+    setFloatingDockOwner(dockWidget, this);
     dockWidget->show();
+    setFloatingDockOwner(dockWidget, this);
     dockWidget->raise();
     dockWidget->activateWindow();
     installDockEventFilters(dockWidget);
