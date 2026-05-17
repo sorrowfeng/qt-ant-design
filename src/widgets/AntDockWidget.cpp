@@ -2,6 +2,7 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPalette>
 
@@ -29,9 +30,11 @@ public:
 
         m_iconLabel = new QLabel(this);
         m_iconLabel->setFixedSize(16, 16);
+        m_iconLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
         layout->addWidget(m_iconLabel);
 
         m_titleLabel = new QLabel(this);
+        m_titleLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
         QFont f = m_titleLabel->font();
         f.setBold(true);
         m_titleLabel->setFont(f);
@@ -88,6 +91,47 @@ public:
     }
 
 protected:
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        if (event->button() == Qt::LeftButton)
+        {
+            event->accept();
+            return;
+        }
+        QWidget::mousePressEvent(event);
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override
+    {
+        if (event->buttons() & Qt::LeftButton)
+        {
+            event->accept();
+            return;
+        }
+        QWidget::mouseMoveEvent(event);
+    }
+
+    void mouseReleaseEvent(QMouseEvent* event) override
+    {
+        if (event->button() == Qt::LeftButton)
+        {
+            event->accept();
+            return;
+        }
+        QWidget::mouseReleaseEvent(event);
+    }
+
+    void mouseDoubleClickEvent(QMouseEvent* event) override
+    {
+        if (event->button() == Qt::LeftButton)
+        {
+            m_dock->setFloating(!m_dock->isFloating());
+            event->accept();
+            return;
+        }
+        QWidget::mouseDoubleClickEvent(event);
+    }
+
     void paintEvent(QPaintEvent*) override
     {
         const auto& token = antTheme->tokens();

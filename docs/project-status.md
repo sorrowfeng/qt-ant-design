@@ -1,6 +1,6 @@
 # Project Status
 
-Updated: `2026-05-09`
+Updated: `2026-05-17`
 
 This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, and README component screenshot gallery.
 
@@ -9,19 +9,20 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Area | Status |
 | --- | --- |
 | Ant Design standard coverage | `70 / 70` top-level components covered |
-| Public Qt component count | `83` public components |
-| Widget headers | `104` headers in `src/widgets`: `83` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup` |
-| Qt / desktop extensions | `13` components |
+| Public Qt component count | `84` public components |
+| Widget headers | `105` headers in `src/widgets`: `84` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup` |
+| Qt / desktop extensions | `14` components |
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
-| Example coverage | `83 / 83` public components, plus the standalone `Showcase` page |
+| Example coverage | `84 / 84` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
 | Dedicated examples intentionally absent | None |
 | Tests | `37` CTest targets configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-10` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
-| README component gallery | `166` committed PNGs: light/dark screenshots for all `83` public components |
+| README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
 
 ## Recent Completed Work
 
+- Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, named perspectives, translucent drag windows, ADS-like center/edge drop guide squares, deterministic guided drop placement, and a floating drop preview window that marks the target layout region while dragging.
 - Added a pure-control Showcase page matching the Ant Design homepage showcase without the website shell, theme sidebar, or decorative background.
 - Reworked `AntColorPicker` from a modal editor to an AntD-like click-open popup panel.
 - Added a non-maximized `AntWindow` outline so frameless windows remain distinguishable on similarly colored desktop backgrounds.

@@ -32,9 +32,9 @@
 
 - 基于 Qt Widgets，轻量、易集成，可作为静态库或动态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
-- 当前已移植 `83` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `13` 个 Qt / 桌面扩展组件）
+- 当前已移植 `84` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `14` 个 Qt / 桌面扩展组件）
 - 当前 `62` 个组件使用 `QProxyStyle` 架构绘制
-- 示例程序当前覆盖 `83 / 83` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
+- 示例程序当前覆盖 `84 / 84` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
 - `AntIcon` 已内置 `831` 个来自 `@ant-design/icons-svg@4.4.2` 的官方 SVG 资源
 - 可对比的标准组件已在视觉审计矩阵中标记为 `Pass`，Qt-only 桌面扩展标记为 `Local Pass`
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
@@ -197,9 +197,9 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现公开组件总数：`83`
+当前已实现公开组件总数：`84`
 
-`src/widgets` 当前包含 `104` 个 `Ant*.h` 头文件：`83` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`。
+`src/widgets` 当前包含 `105` 个 `Ant*.h` 头文件：`84` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`。
 
 Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
 
@@ -217,7 +217,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 | 反馈 | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | 混合（`QProxyStyle` / 自绘） |
 | 数据展示 | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | 混合（`QProxyStyle` / 自绘） |
 | 布局与其他 | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | 混合（`QProxyStyle` / 自绘 / QObject 工具） |
-| Qt / 桌面扩展 | `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | 混合（`QProxyStyle` / 自绘） |
+| Qt / 桌面扩展 | `AntDockManager` `AntDockWidget` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStatusBar` `AntToolBar` `AntToolButton` | 混合（`QProxyStyle` / 自绘） |
 
 ### 组件截图
 
@@ -374,7 +374,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntToolButton`：QToolButton + QProxyStyle，dropdown 箭头动画
 - `AntMenuBar`：QMenuBar 主题化
 - `AntToolBar`：QToolBar 主题化，浮动阴影
-- `AntDockWidget`：可停靠面板，自定义标题栏，Win32 resize 边缘
+- `AntDockWidget` / `AntDockManager`：主题化停靠面板，自定义标题栏，使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，支持中心标签页停靠、命名布局快照、拖动窗体半透明、ADS-like 中心/边缘停靠小方格、按引导位置确定落位、拖动浮动预览窗口和 Win32 resize 边缘
 - `AntScrollArea`：QScrollArea + AntScrollBar + QScroller 手势滚动
 - `AntPlainTextEdit`：多行文本编辑器，3 种变体，TextArea 式右下角缩放柄，上下文菜单
 - `AntLog`：5 级别彩色日志输出（Debug/Info/Success/Warning/Error），时间戳

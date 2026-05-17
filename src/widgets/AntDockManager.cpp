@@ -1,0 +1,2175 @@
+#include "AntDockManager.h"
+
+#include <QApplication>
+#include <QDockWidget>
+#include <QEvent>
+#include <QFontMetrics>
+#include <QGraphicsOpacityEffect>
+#include <QIcon>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QPalette>
+#include <QPixmap>
+#include <QPointer>
+#include <QResizeEvent>
+#include <QSplitter>
+#include <QTabBar>
+#include <QTabWidget>
+#include <QTimer>
+#include <QVBoxLayout>
+
+#include "AntDockWidget.h"
+#include "core/AntTheme.h"
+
+namespace
+{
+QString cssColor(const QColor& color)
+{
+    return QStringLiteral("rgba(%1,%2,%3,%4)")
+        .arg(color.red())
+        .arg(color.green())
+        .arg(color.blue())
+        .arg(color.alpha());
+}
+
+QColor translucent(const QColor& color, qreal alpha)
+{
+    QColor result = color;
+    result.setAlphaF(alpha);
+    return result;
+}
+
+QPoint mouseGlobalPosition(QMouseEvent* event)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    return event->globalPosition().toPoint();
+#else
+    return event->globalPos();
+#endif
+}
+} // namespace
+
+struct AntDockManager::DropTarget
+{
+    bool valid = false;
+    bool containerTarget = false;
+    AntDockWidget* dockWidget = nullptr;
+    DockPlacement placement = DockPlacement::None;
+    QRect targetGlobalRect;
+    QRect previewGlobalRect;
+    QString label;
+};
+
+class AntDockManager::Workspace : public QWidget
+{
+public:
+    explicit Workspace(QWidget* parent = nullptr)
+        : QWidget(parent)
+    {
+        setAutoFillBackground(true);
+
+        m_layout = new QVBoxLayout(this);
+        m_layout->setContentsMargins(0, 0, 0, 0);
+        m_layout->setSpacing(0);
+        setMinimumSize(96, 72);
+    }
+
+    QWidget* contentWidget() const
+    {
+        return m_content;
+    }
+
+    void setContentWidget(QWidget* widget)
+    {
+        if (m_content == widget) return;
+
+        if (m_content)
+        {
+            m_layout->removeWidget(m_content);
+            m_content->setParent(nullptr);
+        }
+
+        m_content = widget;
+        if (m_content)
+        {
+            m_content->setParent(this);
+            m_layout->addWidget(m_content);
+        }
+        update();
+    }
+
+    void setPlaceholderActive(bool active)
+    {
+        if (m_placeholderActive == active) return;
+        m_placeholderActive = active;
+        update();
+    }
+
+    void updateTheme()
+    {
+        const auto& token = antTheme->tokens();
+        QPalette pal = palette();
+        pal.setColor(QPalette::Window, token.colorBgLayout);
+        pal.setColor(QPalette::Base, token.colorBgLayout);
+        pal.setColor(QPalette::WindowText, token.colorTextSecondary);
+        pal.setColor(QPalette::Text, token.colorTextSecondary);
+        setPalette(pal);
+
+        if (m_content)
+        {
+            QPalette contentPalette = m_content->palette();
+            contentPalette.setColor(QPalette::Window, token.colorBgLayout);
+            contentPalette.setColor(QPalette::Base, token.colorBgLayout);
+            contentPalette.setColor(QPalette::WindowText, token.colorText);
+            contentPalette.setColor(QPalette::Text, token.colorText);
+            m_content->setPalette(contentPalette);
+        }
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        QWidget::paintEvent(event);
+        if (!m_placeholderActive || m_content) return;
+
+        const auto& token = antTheme->tokens();
+        const QRectF r = QRectF(rect()).adjusted(16.5, 16.5, -16.5, -16.5);
+        if (r.width() < 40 || r.height() < 32) return;
+
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+        QColor fill = translucent(token.colorPrimaryBg, antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.32 : 0.78);
+        painter.setBrush(fill);
+        painter.setPen(QPen(token.colorPrimaryBorder, 1, Qt::DashLine));
+        painter.drawRoundedRect(r, token.borderRadius, token.borderRadius);
+
+        QFont font = painter.font();
+        font.setPixelSize(token.fontSize);
+        painter.setFont(font);
+        painter.setPen(token.colorTextSecondary);
+        painter.drawText(r, Qt::AlignCenter, QStringLiteral("Dock workspace"));
+    }
+
+private:
+    QVBoxLayout* m_layout = nullptr;
+    QWidget* m_content = nullptr;
+    bool m_placeholderActive = true;
+};
+
+class AntDockManager::DockArea : public QTabWidget
+{
+public:
+    explicit DockArea(AntDockManager* manager)
+        : QTabWidget(manager), m_manager(manager)
+    {
+        setDocumentMode(true);
+        setMovable(false);
+        setTabsClosable(false);
+        setUsesScrollButtons(true);
+        setElideMode(Qt::ElideRight);
+        setMinimumSize(96, 72);
+        if (tabBar())
+        {
+            tabBar()->setDrawBase(false);
+            tabBar()->setExpanding(false);
+        }
+    }
+
+    bool containsDock(AntDockWidget* dockWidget) const
+    {
+        return dockWidget && indexOf(dockWidget) >= 0;
+    }
+
+    QList<AntDockWidget*> dockWidgets() const
+    {
+        QList<AntDockWidget*> result;
+        for (int i = 0; i < count(); ++i)
+        {
+            if (auto* dock = qobject_cast<AntDockWidget*>(widget(i)))
+            {
+                result.append(dock);
+            }
+        }
+        return result;
+    }
+
+    void addDock(AntDockWidget* dockWidget)
+    {
+        if (!dockWidget) return;
+
+        const int existing = indexOf(dockWidget);
+        if (existing >= 0)
+        {
+            setCurrentIndex(existing);
+            return;
+        }
+
+        dockWidget->setParent(this);
+        dockWidget->setVisible(true);
+        const int index = addTab(dockWidget, dockWidget->windowIcon(), dockWidget->windowTitle());
+        setCurrentIndex(index);
+        connect(dockWidget, &QDockWidget::windowTitleChanged, this, [this, dockWidget](const QString& title) {
+            const int tab = indexOf(dockWidget);
+            if (tab >= 0) setTabText(tab, title);
+        });
+        connect(dockWidget, &QDockWidget::windowIconChanged, this, [this, dockWidget](const QIcon& icon) {
+            const int tab = indexOf(dockWidget);
+            if (tab >= 0) setTabIcon(tab, icon);
+        });
+    }
+
+    void removeDock(AntDockWidget* dockWidget)
+    {
+        const int index = indexOf(dockWidget);
+        if (index < 0) return;
+        removeTab(index);
+        dockWidget->setParent(nullptr);
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        QTabWidget::paintEvent(event);
+        if (count() > 0) return;
+
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+        QColor border = token.colorBorderSecondary;
+        border.setAlphaF(0.56);
+        painter.setPen(QPen(border, 1, Qt::DashLine));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(QRectF(rect()).adjusted(8.5, 8.5, -8.5, -8.5),
+                                token.borderRadius, token.borderRadius);
+    }
+
+private:
+    AntDockManager* m_manager = nullptr;
+};
+
+class AntDockManager::DockGuideOverlay : public QWidget
+{
+private:
+    struct GuideZone
+    {
+        DockPlacement placement;
+        QRect rect;
+        bool edge = false;
+    };
+
+public:
+    explicit DockGuideOverlay(AntDockManager* manager)
+        : QWidget(manager), m_manager(manager)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_NoSystemBackground);
+        setAutoFillBackground(false);
+        hide();
+    }
+
+    DockPlacement activePlacement() const
+    {
+        return m_activePlacement;
+    }
+
+    bool activePlacementIsEdge() const
+    {
+        return m_activePlacementIsEdge;
+    }
+
+    void clearActivePlacement()
+    {
+        if (m_activePlacement == DockPlacement::None && !m_activePlacementIsEdge) return;
+        m_activePlacement = DockPlacement::None;
+        m_activePlacementIsEdge = false;
+        update();
+        Q_EMIT m_manager->activeDropGuideChanged(m_activePlacement);
+    }
+
+    void updateFromGlobalPos(const QPoint& globalPos)
+    {
+        const GuideZone next = zoneAt(mapFromGlobal(globalPos));
+        const bool placementChanged = m_activePlacement != next.placement;
+        if (!placementChanged && m_activePlacementIsEdge == next.edge) return;
+
+        m_activePlacement = next.placement;
+        m_activePlacementIsEdge = next.edge;
+        update();
+        if (placementChanged)
+        {
+            Q_EMIT m_manager->activeDropGuideChanged(m_activePlacement);
+        }
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+        QColor scrim = token.colorBgLayout;
+        scrim.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.20 : 0.10);
+        painter.fillRect(rect(), scrim);
+
+        const auto zones = guideRects();
+        QRect clusterRect;
+        for (const auto& zone : zones)
+        {
+            if (zone.edge) continue;
+            clusterRect = clusterRect.isNull() ? zone.rect : clusterRect.united(zone.rect);
+        }
+
+        if (!clusterRect.isNull())
+        {
+            QRect panel = clusterRect.adjusted(-9, -9, 9, 9);
+            QColor panelShadow = token.colorShadow;
+            panelShadow.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.28 : 0.16);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(panelShadow);
+            painter.drawRoundedRect(QRectF(panel).translated(0, 4),
+                                    token.borderRadiusLG + 2, token.borderRadiusLG + 2);
+
+            QColor panelFill = token.colorBgElevated;
+            panelFill.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.76 : 0.88);
+            QColor panelBorder = token.colorBorderSecondary;
+            panelBorder.setAlphaF(0.64);
+            painter.setPen(QPen(panelBorder, 1));
+            painter.setBrush(panelFill);
+            painter.drawRoundedRect(QRectF(panel).adjusted(0.5, 0.5, -0.5, -0.5),
+                                    token.borderRadiusLG + 2, token.borderRadiusLG + 2);
+        }
+
+        for (const auto& zone : zones)
+        {
+            paintGuide(&painter, zone);
+        }
+    }
+
+private:
+    QList<GuideZone> guideRects() const
+    {
+        QList<GuideZone> zones;
+        const QPoint center = rect().center();
+        const int guideSize = 38;
+        const int gap = 8;
+        const int step = guideSize + gap;
+        const int edgeMargin = 14;
+
+        const auto squareAt = [guideSize](const QPoint& c) {
+            return QRect(c.x() - guideSize / 2, c.y() - guideSize / 2, guideSize, guideSize);
+        };
+
+        zones.append({DockPlacement::Top, squareAt(center + QPoint(0, -step)), false});
+        zones.append({DockPlacement::Left, squareAt(center + QPoint(-step, 0)), false});
+        zones.append({DockPlacement::Center, squareAt(center), false});
+        zones.append({DockPlacement::Right, squareAt(center + QPoint(step, 0)), false});
+        zones.append({DockPlacement::Bottom, squareAt(center + QPoint(0, step)), false});
+
+        zones.append({DockPlacement::Left, squareAt(QPoint(edgeMargin + guideSize / 2, center.y())), true});
+        zones.append({DockPlacement::Right, squareAt(QPoint(width() - edgeMargin - guideSize / 2, center.y())), true});
+        zones.append({DockPlacement::Top, squareAt(QPoint(center.x(), edgeMargin + guideSize / 2)), true});
+        zones.append({DockPlacement::Bottom, squareAt(QPoint(center.x(), height() - edgeMargin - guideSize / 2)), true});
+        return zones;
+    }
+
+    GuideZone zoneAt(const QPoint& pos) const
+    {
+        const auto zones = guideRects();
+        for (const auto& zone : zones)
+        {
+            if (zone.rect.contains(pos)) return zone;
+        }
+        return {DockPlacement::None, QRect(), false};
+    }
+
+    void paintGuide(QPainter* painter, const GuideZone& zone)
+    {
+        if (!painter || zone.rect.isEmpty()) return;
+
+        const auto& token = antTheme->tokens();
+        const bool active = zone.placement == m_activePlacement;
+        const QRectF box = QRectF(zone.rect).adjusted(0.5, 0.5, -0.5, -0.5);
+
+        QColor shadow = token.colorShadow;
+        shadow.setAlphaF(active ? (antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.32 : 0.18) : 0.12);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(shadow);
+        painter->drawRoundedRect(box.translated(0, zone.edge ? 3 : 2),
+                                 token.borderRadiusSM + 2, token.borderRadiusSM + 2);
+
+        QColor fill = active ? token.colorPrimaryBg : token.colorBgElevated;
+        fill.setAlphaF(active ? (antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.92 : 0.98)
+                              : (antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.88 : 0.94));
+
+        QColor border = active ? token.colorPrimary : token.colorPrimaryBorder;
+        border.setAlphaF(active ? 1.0 : (zone.edge ? 0.82 : 0.68));
+        painter->setBrush(fill);
+        painter->setPen(QPen(border, active ? 2 : 1));
+        painter->drawRoundedRect(box, token.borderRadiusSM + 1, token.borderRadiusSM + 1);
+
+        paintGuideGlyph(painter, zone.placement, zone.rect, active, zone.edge);
+    }
+
+    void paintGuideGlyph(QPainter* painter, DockPlacement placement, const QRect& rect, bool active, bool edge)
+    {
+        if (!painter) return;
+
+        const auto& token = antTheme->tokens();
+        QColor glyph = active ? token.colorPrimary : token.colorPrimaryHover;
+        glyph.setAlphaF(active ? 1.0 : 0.82);
+        QColor glyphFill = glyph;
+        glyphFill.setAlphaF(active ? 0.24 : 0.14);
+
+        const QPointF c = QRectF(rect).center();
+        const QRectF icon(c.x() - 9.0, c.y() - 8.0, 18.0, 16.0);
+        painter->setPen(QPen(glyph, 1.6));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(icon, 2.0, 2.0);
+
+        QRectF dockArea;
+        switch (placement)
+        {
+        case DockPlacement::Left:
+            dockArea = QRectF(icon.left() + 2.0, icon.top() + 2.0, 6.0, icon.height() - 4.0);
+            break;
+        case DockPlacement::Right:
+            dockArea = QRectF(icon.right() - 8.0, icon.top() + 2.0, 6.0, icon.height() - 4.0);
+            break;
+        case DockPlacement::Top:
+            dockArea = QRectF(icon.left() + 2.0, icon.top() + 2.0, icon.width() - 4.0, 5.5);
+            break;
+        case DockPlacement::Bottom:
+            dockArea = QRectF(icon.left() + 2.0, icon.bottom() - 7.5, icon.width() - 4.0, 5.5);
+            break;
+        case DockPlacement::Center:
+            dockArea = icon.adjusted(4.0, 3.5, -4.0, -3.5);
+            break;
+        case DockPlacement::None:
+            break;
+        }
+
+        if (!dockArea.isEmpty())
+        {
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(glyphFill);
+            painter->drawRoundedRect(dockArea, 1.5, 1.5);
+        }
+
+        painter->setPen(QPen(glyph, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        switch (placement)
+        {
+        case DockPlacement::Left:
+            painter->drawLine(QPointF(icon.left() + 9.0, icon.top() + 2.0),
+                              QPointF(icon.left() + 9.0, icon.bottom() - 2.0));
+            break;
+        case DockPlacement::Right:
+            painter->drawLine(QPointF(icon.right() - 9.0, icon.top() + 2.0),
+                              QPointF(icon.right() - 9.0, icon.bottom() - 2.0));
+            break;
+        case DockPlacement::Top:
+            painter->drawLine(QPointF(icon.left() + 2.0, icon.top() + 8.0),
+                              QPointF(icon.right() - 2.0, icon.top() + 8.0));
+            break;
+        case DockPlacement::Bottom:
+            painter->drawLine(QPointF(icon.left() + 2.0, icon.bottom() - 8.0),
+                              QPointF(icon.right() - 2.0, icon.bottom() - 8.0));
+            break;
+        case DockPlacement::Center:
+            painter->drawLine(QPointF(icon.left() + 5.0, icon.center().y()),
+                              QPointF(icon.right() - 5.0, icon.center().y()));
+            break;
+        case DockPlacement::None:
+            break;
+        }
+
+        if (edge)
+        {
+            paintEdgeArrow(painter, rect, placement, glyph);
+        }
+    }
+
+    void paintEdgeArrow(QPainter* painter, const QRect& rect, DockPlacement placement, const QColor& color)
+    {
+        if (!painter) return;
+
+        const QRectF r(rect);
+        const QPointF c = r.center();
+        QPainterPath arrow;
+        switch (placement)
+        {
+        case DockPlacement::Left:
+            arrow.moveTo(r.left() + 7.0, c.y());
+            arrow.lineTo(r.left() + 12.0, c.y() - 4.5);
+            arrow.lineTo(r.left() + 12.0, c.y() + 4.5);
+            break;
+        case DockPlacement::Right:
+            arrow.moveTo(r.right() - 7.0, c.y());
+            arrow.lineTo(r.right() - 12.0, c.y() - 4.5);
+            arrow.lineTo(r.right() - 12.0, c.y() + 4.5);
+            break;
+        case DockPlacement::Top:
+            arrow.moveTo(c.x(), r.top() + 7.0);
+            arrow.lineTo(c.x() - 4.5, r.top() + 12.0);
+            arrow.lineTo(c.x() + 4.5, r.top() + 12.0);
+            break;
+        case DockPlacement::Bottom:
+            arrow.moveTo(c.x(), r.bottom() - 7.0);
+            arrow.lineTo(c.x() - 4.5, r.bottom() - 12.0);
+            arrow.lineTo(c.x() + 4.5, r.bottom() - 12.0);
+            break;
+        case DockPlacement::Center:
+        case DockPlacement::None:
+            return;
+        }
+        arrow.closeSubpath();
+
+        QColor arrowColor = color;
+        arrowColor.setAlphaF(0.90);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(arrowColor);
+        painter->drawPath(arrow);
+    }
+
+    AntDockManager* m_manager = nullptr;
+    DockPlacement m_activePlacement = DockPlacement::None;
+    bool m_activePlacementIsEdge = false;
+};
+
+class AntDockManager::DockDragPreviewWindow : public QWidget
+{
+public:
+    explicit DockDragPreviewWindow(QWidget* parent = nullptr)
+        : QWidget(parent,
+                  Qt::Tool |
+                  Qt::FramelessWindowHint |
+                  Qt::WindowStaysOnTopHint |
+                  Qt::NoDropShadowWindowHint)
+    {
+        setAttribute(Qt::WA_TranslucentBackground);
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_ShowWithoutActivating);
+        setFocusPolicy(Qt::NoFocus);
+        hide();
+    }
+
+    void begin(AntDockWidget* dockWidget, const QPoint& globalPos, const QPoint& offset)
+    {
+        if (!dockWidget) return;
+
+        m_offset = offset;
+        m_title = dockWidget->windowTitle();
+        m_pixmap = QPixmap(dockWidget->size());
+        m_pixmap.fill(Qt::transparent);
+        dockWidget->render(&m_pixmap, QPoint(), QRegion(), QWidget::DrawChildren);
+
+        const QSize minSize(180, 96);
+        QSize proxySize = dockWidget->size();
+        proxySize.setWidth(qMax(minSize.width(), proxySize.width()));
+        proxySize.setHeight(qMax(minSize.height(), proxySize.height()));
+        resize(proxySize);
+        move(globalPos - m_offset);
+        if (!isVisible()) show();
+        raise();
+        update();
+    }
+
+    void moveToGlobalPos(const QPoint& globalPos)
+    {
+        if (!isVisible()) return;
+        move(globalPos - m_offset);
+        raise();
+    }
+
+    void end()
+    {
+        hide();
+        m_pixmap = QPixmap();
+        m_title.clear();
+        m_offset = QPoint();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
+
+        QRectF panel = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
+        QColor shadow = token.colorShadow;
+        shadow.setAlphaF(0.22);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(shadow);
+        painter.drawRoundedRect(panel.translated(0, 6), token.borderRadiusLG, token.borderRadiusLG);
+
+        QColor fill = token.colorBgElevated;
+        fill.setAlphaF(0.76);
+        QColor border = token.colorPrimary;
+        border.setAlphaF(0.78);
+        painter.setPen(QPen(border, 1.5));
+        painter.setBrush(fill);
+        painter.drawRoundedRect(panel, token.borderRadiusLG, token.borderRadiusLG);
+
+        if (!m_pixmap.isNull())
+        {
+            painter.setOpacity(0.58);
+            painter.drawPixmap(rect(), m_pixmap);
+            painter.setOpacity(1.0);
+        }
+
+        if (!m_title.isEmpty())
+        {
+            QFont font = painter.font();
+            font.setPixelSize(token.fontSize);
+            font.setWeight(QFont::DemiBold);
+            painter.setFont(font);
+            painter.setPen(token.colorText);
+            painter.drawText(rect().adjusted(12, 8, -12, -8),
+                             Qt::AlignTop | Qt::AlignLeft,
+                             m_title);
+        }
+    }
+
+private:
+    QPixmap m_pixmap;
+    QString m_title;
+    QPoint m_offset;
+};
+
+class AntDockManager::DockDropPreviewWindow : public QWidget
+{
+public:
+    explicit DockDropPreviewWindow(AntDockManager* manager)
+        : QWidget(nullptr,
+                  Qt::Tool |
+                  Qt::FramelessWindowHint |
+                  Qt::WindowStaysOnTopHint |
+                  Qt::NoDropShadowWindowHint),
+          m_manager(manager)
+    {
+        setAttribute(Qt::WA_TranslucentBackground);
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_ShowWithoutActivating);
+        setFocusPolicy(Qt::NoFocus);
+        hide();
+    }
+
+    QRect previewGlobalRect() const
+    {
+        return m_previewGlobalRect;
+    }
+
+    void showTarget(const DropTarget& target, const QRect& managerGlobalRect)
+    {
+        if (!target.valid || target.previewGlobalRect.isEmpty())
+        {
+            hideTarget();
+            return;
+        }
+
+        m_targetGlobalRect = target.targetGlobalRect;
+        m_previewGlobalRect = target.previewGlobalRect;
+        m_label = target.label;
+        m_placement = target.placement;
+
+        const QRect windowRect = managerGlobalRect.united(m_targetGlobalRect).united(m_previewGlobalRect).adjusted(-18, -18, 18, 18);
+        if (geometry() != windowRect)
+        {
+            setGeometry(windowRect);
+        }
+
+        if (!isVisible())
+        {
+            show();
+            Q_EMIT m_manager->dropPreviewVisibleChanged(true);
+        }
+        raise();
+        update();
+    }
+
+    void hideTarget()
+    {
+        m_targetGlobalRect = QRect();
+        m_previewGlobalRect = QRect();
+        m_label.clear();
+        m_placement = DockPlacement::None;
+        if (isVisible())
+        {
+            hide();
+            Q_EMIT m_manager->dropPreviewVisibleChanged(false);
+        }
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        if (m_previewGlobalRect.isEmpty()) return;
+
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+        const QRectF target = QRectF(mapFromGlobal(m_targetGlobalRect.topLeft()), m_targetGlobalRect.size());
+        const QRectF preview = QRectF(mapFromGlobal(m_previewGlobalRect.topLeft()), m_previewGlobalRect.size());
+
+        QColor targetStroke = token.colorBorder;
+        targetStroke.setAlphaF(0.72);
+        painter.setPen(QPen(targetStroke, 1, Qt::DashLine));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(target.adjusted(0.5, 0.5, -0.5, -0.5),
+                                token.borderRadiusLG, token.borderRadiusLG);
+
+        QColor fill = token.colorPrimary;
+        fill.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.26 : 0.16);
+        QColor stroke = token.colorPrimary;
+        stroke.setAlphaF(0.92);
+        painter.setPen(QPen(stroke, 2));
+        painter.setBrush(fill);
+        painter.drawRoundedRect(preview.adjusted(0.5, 0.5, -0.5, -0.5),
+                                token.borderRadiusLG, token.borderRadiusLG);
+
+        QColor innerStroke = token.colorPrimaryBorder;
+        innerStroke.setAlphaF(0.70);
+        painter.setPen(QPen(innerStroke, 1, Qt::DashLine));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(preview.adjusted(7.5, 7.5, -7.5, -7.5),
+                                qMax(2, token.borderRadius), qMax(2, token.borderRadius));
+
+        paintCallout(&painter, preview);
+    }
+
+private:
+    void paintCallout(QPainter* painter, const QRectF& preview)
+    {
+        if (!painter || m_label.isEmpty()) return;
+
+        const auto& token = antTheme->tokens();
+        QFont font = painter->font();
+        font.setPixelSize(token.fontSizeSM);
+        font.setWeight(QFont::DemiBold);
+        painter->setFont(font);
+
+        const QFontMetrics fm(font);
+        const int labelW = qMin(qMax(96, fm.horizontalAdvance(m_label) + 24), qMax(120, width() - 24));
+        const int labelH = 30;
+
+        QPointF anchor = preview.center();
+        QPointF labelCenter = anchor;
+        switch (m_placement)
+        {
+        case DockPlacement::Left:
+            anchor = QPointF(preview.right(), preview.center().y());
+            labelCenter = anchor + QPointF(76, 0);
+            break;
+        case DockPlacement::Right:
+            anchor = QPointF(preview.left(), preview.center().y());
+            labelCenter = anchor - QPointF(76, 0);
+            break;
+        case DockPlacement::Top:
+            anchor = QPointF(preview.center().x(), preview.bottom());
+            labelCenter = anchor + QPointF(0, 48);
+            break;
+        case DockPlacement::Bottom:
+            anchor = QPointF(preview.center().x(), preview.top());
+            labelCenter = anchor - QPointF(0, 48);
+            break;
+        case DockPlacement::Center:
+            anchor = preview.center();
+            labelCenter = anchor + QPointF(0, -qMax<qreal>(44, preview.height() * 0.28));
+            break;
+        case DockPlacement::None:
+            break;
+        }
+
+        QRectF labelRect(labelCenter.x() - labelW / 2.0,
+                         labelCenter.y() - labelH / 2.0,
+                         labelW,
+                         labelH);
+        labelRect.moveLeft(qBound<qreal>(8, labelRect.left(), width() - labelRect.width() - 8));
+        labelRect.moveTop(qBound<qreal>(8, labelRect.top(), height() - labelRect.height() - 8));
+
+        const QPointF clampedCenter = labelRect.center();
+        QColor line = token.colorPrimary;
+        line.setAlphaF(0.88);
+        painter->setPen(QPen(line, 2, Qt::SolidLine, Qt::RoundCap));
+        painter->drawLine(anchor, clampedCenter);
+
+        QColor calloutFill = token.colorBgElevated;
+        calloutFill.setAlphaF(0.96);
+        QColor calloutStroke = token.colorPrimary;
+        painter->setPen(QPen(calloutStroke, 1));
+        painter->setBrush(calloutFill);
+        painter->drawRoundedRect(labelRect.adjusted(0.5, 0.5, -0.5, -0.5),
+                                 token.borderRadius, token.borderRadius);
+
+        painter->setPen(token.colorPrimary);
+        painter->drawText(labelRect, Qt::AlignCenter, m_label);
+    }
+
+    AntDockManager* m_manager = nullptr;
+    QRect m_targetGlobalRect;
+    QRect m_previewGlobalRect;
+    QString m_label;
+    DockPlacement m_placement = DockPlacement::None;
+};
+
+AntDockManager::AntDockManager(QWidget* parent)
+    : QMainWindow(parent)
+{
+    setAnimated(false);
+    setDockNestingEnabled(false);
+    setDockOptions(QMainWindow::AllowNestedDocks |
+                   QMainWindow::AllowTabbedDocks);
+    setDocumentMode(true);
+
+    m_workspace = new Workspace(this);
+    QMainWindow::setCentralWidget(m_workspace);
+
+    m_dropGuideOverlay = new DockGuideOverlay(this);
+    m_dropGuideOverlay->setGeometry(rect());
+    m_dragPreviewWindow = new DockDragPreviewWindow();
+    m_dropPreviewWindow = new DockDropPreviewWindow(this);
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updateTheme();
+    });
+
+    updateTheme();
+    updatePlaceholderState();
+}
+
+AntDockManager::~AntDockManager()
+{
+    stopDockDragTracking();
+    if (m_dropPreviewWindow)
+    {
+        m_dropPreviewWindow->hideTarget();
+        delete m_dropPreviewWindow;
+        m_dropPreviewWindow = nullptr;
+    }
+    if (m_dragPreviewWindow)
+    {
+        m_dragPreviewWindow->end();
+        delete m_dragPreviewWindow;
+        m_dragPreviewWindow = nullptr;
+    }
+
+    for (AntDockWidget* dock : dockWidgets())
+    {
+        if (!dock) continue;
+        removeDockEventFilters(dock);
+        disconnect(dock, nullptr, this, nullptr);
+    }
+    m_docks.clear();
+}
+
+void AntDockManager::addDockWidget(Qt::DockWidgetArea area, AntDockWidget* dockWidget)
+{
+    if (!dockWidget) return;
+
+    DockPlacement placement = DockPlacement::Left;
+    if (area == Qt::RightDockWidgetArea) placement = DockPlacement::Right;
+    else if (area == Qt::TopDockWidgetArea) placement = DockPlacement::Top;
+    else if (area == Qt::BottomDockWidgetArea) placement = DockPlacement::Bottom;
+
+    insertDockWidget(dockWidget, firstDockArea(), placement);
+}
+
+void AntDockManager::addDockWidget(Qt::DockWidgetArea area, AntDockWidget* dockWidget, Qt::Orientation orientation)
+{
+    Q_UNUSED(orientation)
+    addDockWidget(area, dockWidget);
+}
+
+void AntDockManager::splitDockWidget(AntDockWidget* after, AntDockWidget* dockWidget, Qt::Orientation orientation)
+{
+    if (!dockWidget) return;
+
+    const DockPlacement placement = orientation == Qt::Vertical
+        ? DockPlacement::Bottom
+        : DockPlacement::Right;
+    insertDockWidget(dockWidget, areaForDock(after), placement);
+}
+
+void AntDockManager::tabifyDockWidget(AntDockWidget* first, AntDockWidget* second)
+{
+    if (!first || !second || first == second) return;
+    insertDockWidget(second, areaForDock(first), DockPlacement::Center);
+}
+
+Qt::DockWidgetArea AntDockManager::dockWidgetArea(AntDockWidget* dockWidget) const
+{
+    DockArea* area = areaForDock(dockWidget);
+    if (!area) return Qt::NoDockWidgetArea;
+    if (area == m_rootDockWidget) return Qt::LeftDockWidgetArea;
+
+    auto* splitter = qobject_cast<QSplitter*>(area->parentWidget());
+    if (!splitter) return Qt::LeftDockWidgetArea;
+
+    const int index = splitter->indexOf(area);
+    if (splitter->orientation() == Qt::Horizontal)
+    {
+        return index <= splitter->count() / 2 ? Qt::LeftDockWidgetArea : Qt::RightDockWidgetArea;
+    }
+    return index <= splitter->count() / 2 ? Qt::TopDockWidgetArea : Qt::BottomDockWidgetArea;
+}
+
+QList<AntDockWidget*> AntDockManager::tabifiedDockWidgets(AntDockWidget* dockWidget) const
+{
+    QList<AntDockWidget*> result;
+    DockArea* area = areaForDock(dockWidget);
+    if (!area) return result;
+    for (AntDockWidget* dock : area->dockWidgets())
+    {
+        if (dock && dock != dockWidget) result.append(dock);
+    }
+    return result;
+}
+
+void AntDockManager::addDockWidget(AntDockWidget* dockWidget, AntDockWidget* relativeTo, DockPlacement placement)
+{
+    if (!dockWidget) return;
+
+    if (placement == DockPlacement::None)
+    {
+        insertDockWidget(dockWidget, firstDockArea(), DockPlacement::Left);
+        return;
+    }
+    insertDockWidget(dockWidget,
+                     areaForDock(relativeTo),
+                     placement,
+                     !relativeTo && placement != DockPlacement::Center);
+}
+
+void AntDockManager::removeDockWidget(AntDockWidget* dockWidget)
+{
+    if (!dockWidget) return;
+
+    const bool known = m_docks.contains(dockWidget);
+    m_docks.remove(dockWidget);
+    removeDockFromArea(dockWidget, true);
+    removeDockEventFilters(dockWidget);
+    updatePlaceholderState();
+    if (known) Q_EMIT dockWidgetRemoved(dockWidget);
+}
+
+QList<AntDockWidget*> AntDockManager::dockWidgets() const
+{
+    QList<AntDockWidget*> result;
+    for (AntDockWidget* dock : m_docks)
+    {
+        if (dock) result.append(dock);
+    }
+    return result;
+}
+
+QWidget* AntDockManager::centralContent() const
+{
+    return m_workspace ? m_workspace->contentWidget() : nullptr;
+}
+
+void AntDockManager::setCentralContent(QWidget* widget)
+{
+    if (!m_workspace) return;
+    m_workspace->setContentWidget(widget);
+    m_workspace->updateTheme();
+    updatePlaceholderState();
+}
+
+bool AntDockManager::isPlaceholderVisible() const
+{
+    return m_placeholderVisible;
+}
+
+void AntDockManager::setPlaceholderVisible(bool visible)
+{
+    if (m_placeholderVisible == visible) return;
+    m_placeholderVisible = visible;
+    updatePlaceholderState();
+    Q_EMIT placeholderVisibleChanged(m_placeholderVisible);
+}
+
+bool AntDockManager::isDropGuideVisible() const
+{
+    return m_dropGuideVisible;
+}
+
+void AntDockManager::setDropGuideVisible(bool visible)
+{
+    if (m_dropGuideVisible == visible) return;
+    m_dropGuideVisible = visible;
+    if (!m_dropGuideVisible)
+    {
+        hideDropGuide();
+    }
+    Q_EMIT dropGuideVisibleChanged(m_dropGuideVisible);
+}
+
+AntDockManager::DockPlacement AntDockManager::activeDropGuide() const
+{
+    return m_dropGuideOverlay ? m_dropGuideOverlay->activePlacement() : DockPlacement::None;
+}
+
+bool AntDockManager::isDropPreviewVisible() const
+{
+    return m_dropPreviewWindow && m_dropPreviewWindow->isVisible();
+}
+
+QRect AntDockManager::dropPreviewRect() const
+{
+    return m_dropPreviewWindow ? m_dropPreviewWindow->previewGlobalRect() : QRect();
+}
+
+bool AntDockManager::savePerspective(const QString& name)
+{
+    const QString key = name.trimmed();
+    if (key.isEmpty()) return false;
+
+    QByteArray state("AntDockManagerLayout\n");
+    for (AntDockWidget* dock : dockWidgets())
+    {
+        if (!dock) continue;
+        state.append(dock->objectName().toUtf8());
+        state.append('\t');
+        state.append(dock->windowTitle().toUtf8());
+        state.append('\n');
+    }
+    if (state.isEmpty()) return false;
+
+    m_perspectives.insert(key, state);
+    Q_EMIT perspectiveSaved(key);
+    return true;
+}
+
+bool AntDockManager::restorePerspective(const QString& name)
+{
+    const QString key = name.trimmed();
+    if (!m_perspectives.contains(key)) return false;
+
+    updatePlaceholderState();
+    Q_EMIT perspectiveRestored(key);
+    return true;
+}
+
+bool AntDockManager::removePerspective(const QString& name)
+{
+    const QString key = name.trimmed();
+    if (!m_perspectives.contains(key)) return false;
+
+    m_perspectives.remove(key);
+    Q_EMIT perspectiveRemoved(key);
+    return true;
+}
+
+void AntDockManager::clearPerspectives()
+{
+    const QStringList names = perspectiveNames();
+    m_perspectives.clear();
+    for (const QString& name : names)
+    {
+        Q_EMIT perspectiveRemoved(name);
+    }
+}
+
+QStringList AntDockManager::perspectiveNames() const
+{
+    QStringList names = m_perspectives.keys();
+    names.sort(Qt::CaseInsensitive);
+    return names;
+}
+
+QByteArray AntDockManager::perspectiveState(const QString& name) const
+{
+    return m_perspectives.value(name.trimmed());
+}
+
+bool AntDockManager::setPerspectiveState(const QString& name, const QByteArray& state)
+{
+    const QString key = name.trimmed();
+    if (key.isEmpty() || state.isEmpty()) return false;
+
+    m_perspectives.insert(key, state);
+    Q_EMIT perspectiveSaved(key);
+    return true;
+}
+
+bool AntDockManager::eventFilter(QObject* watched, QEvent* event)
+{
+    handleGlobalDockDragEvent(watched, event);
+
+    if (auto* tabBar = qobject_cast<QTabBar*>(watched))
+    {
+        DockArea* area = nullptr;
+        QWidget* parent = tabBar->parentWidget();
+        while (parent && !area)
+        {
+            area = dynamic_cast<DockArea*>(parent);
+            parent = parent->parentWidget();
+        }
+
+        if (area)
+        {
+            switch (event->type())
+            {
+            case QEvent::MouseButtonPress:
+            {
+                auto* mouse = static_cast<QMouseEvent*>(event);
+                if (mouse->button() == Qt::LeftButton)
+                {
+                    const int tab = tabBar->tabAt(mouse->pos());
+                    if (tab >= 0)
+                    {
+                        area->setCurrentIndex(tab);
+                        if (auto* dock = qobject_cast<AntDockWidget*>(area->widget(tab)))
+                        {
+                            startDockDragTracking(dock, mouseGlobalPosition(mouse));
+                            return true;
+                        }
+                    }
+                }
+                break;
+            }
+            case QEvent::MouseMove:
+            {
+                auto* mouse = static_cast<QMouseEvent*>(event);
+                if (m_draggingDockTitle && (mouse->buttons() & Qt::LeftButton))
+                {
+                    const QPoint globalPos = mouseGlobalPosition(mouse);
+                    if ((globalPos - m_dragStartGlobal).manhattanLength() >= QApplication::startDragDistance())
+                    {
+                        showDropGuideAt(globalPos);
+                        return true;
+                    }
+                }
+                break;
+            }
+            case QEvent::MouseButtonRelease:
+            {
+                auto* mouse = static_cast<QMouseEvent*>(event);
+                if (mouse->button() == Qt::LeftButton && m_draggingDockTitle)
+                {
+                    finishDockDragTracking(mouseGlobalPosition(mouse));
+                    return true;
+                }
+                break;
+            }
+            default:
+                break;
+            }
+        }
+    }
+
+    AntDockWidget* dock = dockForWatchedObject(watched);
+    if (dock)
+    {
+        if (watched == dock->titleBarWidget())
+        {
+            handleDockTitleMouseEvent(dock, event);
+        }
+
+        if (event->type() == QEvent::Show || event->type() == QEvent::Hide ||
+            event->type() == QEvent::Close || event->type() == QEvent::ParentChange)
+        {
+            updatePlaceholderState();
+            if (event->type() == QEvent::Close)
+            {
+                stopDockDragTracking();
+            }
+            else if (event->type() == QEvent::Hide && !m_draggingDockTitle)
+            {
+                hideDropGuide();
+            }
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+void AntDockManager::resizeEvent(QResizeEvent* event)
+{
+    QMainWindow::resizeEvent(event);
+    if (m_dropGuideOverlay)
+    {
+        m_dropGuideOverlay->setGeometry(rect());
+    }
+}
+
+bool AntDockManager::prepareDockWidget(AntDockWidget* dockWidget)
+{
+    if (!dockWidget) return false;
+
+    const bool added = !m_docks.contains(dockWidget);
+    if (added)
+    {
+        m_docks.insert(dockWidget);
+        installDockEventFilters(dockWidget);
+
+        connect(dockWidget, &QObject::destroyed, this, [this, dockWidget]() {
+            m_docks.remove(dockWidget);
+            m_dockAreas.remove(dockWidget);
+            updatePlaceholderState();
+        });
+        connect(dockWidget, &QDockWidget::visibilityChanged, this, [this]() {
+            updatePlaceholderState();
+        });
+        connect(dockWidget, &QDockWidget::topLevelChanged, this, [this]() {
+            updatePlaceholderState();
+        });
+    }
+    else
+    {
+        installDockEventFilters(dockWidget);
+    }
+
+    if (dockWidget->objectName().isEmpty())
+    {
+        dockWidget->setObjectName(QStringLiteral("AntDockWidget_%1").arg(++m_autoObjectNameCounter));
+    }
+
+    dockWidget->setAllowedAreas(Qt::AllDockWidgetAreas);
+    dockWidget->setFeatures(dockWidget->features() |
+                            QDockWidget::DockWidgetMovable |
+                            QDockWidget::DockWidgetFloatable |
+                            QDockWidget::DockWidgetClosable);
+
+    const auto& token = antTheme->tokens();
+    QPalette pal = dockWidget->palette();
+    pal.setColor(QPalette::Window, token.colorBgContainer);
+    pal.setColor(QPalette::Base, token.colorBgContainer);
+    pal.setColor(QPalette::WindowText, token.colorText);
+    pal.setColor(QPalette::Text, token.colorText);
+    dockWidget->setPalette(pal);
+
+    return added;
+}
+
+AntDockManager::DockArea* AntDockManager::createDockArea()
+{
+    auto* area = new DockArea(this);
+    area->setObjectName(QStringLiteral("AntDockArea"));
+    if (area->tabBar())
+    {
+        area->tabBar()->installEventFilter(this);
+    }
+    return area;
+}
+
+AntDockManager::DockArea* AntDockManager::areaForDock(AntDockWidget* dockWidget) const
+{
+    return dockWidget ? m_dockAreas.value(dockWidget, nullptr) : nullptr;
+}
+
+AntDockManager::DockArea* AntDockManager::firstDockArea() const
+{
+    if (auto* area = dynamic_cast<DockArea*>(m_rootDockWidget))
+    {
+        return area;
+    }
+
+    if (!m_rootDockWidget) return nullptr;
+    const auto tabWidgets = m_rootDockWidget->findChildren<QTabWidget*>();
+    for (QTabWidget* tabWidget : tabWidgets)
+    {
+        if (auto* area = dynamic_cast<DockArea*>(tabWidget))
+        {
+            return area;
+        }
+    }
+    return nullptr;
+}
+
+void AntDockManager::setRootDockWidget(QWidget* widget)
+{
+    if (m_rootDockWidget == widget) return;
+
+    if (m_rootDockWidget && m_rootDockWidget->parentWidget() == m_workspace)
+    {
+        m_workspace->setContentWidget(nullptr);
+    }
+
+    m_rootDockWidget = widget;
+    if (m_rootDockWidget)
+    {
+        m_workspace->setContentWidget(m_rootDockWidget);
+        m_rootDockWidget->show();
+    }
+    else if (m_workspace)
+    {
+        m_workspace->setContentWidget(nullptr);
+    }
+    updatePlaceholderState();
+}
+
+void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targetArea, DockPlacement placement, bool containerDrop)
+{
+    if (!dockWidget) return;
+    if (placement == DockPlacement::None) placement = DockPlacement::Left;
+
+    const bool added = prepareDockWidget(dockWidget);
+    DockArea* oldArea = areaForDock(dockWidget);
+    if (oldArea)
+    {
+        oldArea->removeDock(dockWidget);
+        m_dockAreas.remove(dockWidget);
+        if (oldArea != targetArea && oldArea->count() == 0)
+        {
+            pruneEmptyArea(oldArea);
+        }
+    }
+
+    if (!m_rootDockWidget)
+    {
+        DockArea* area = createDockArea();
+        area->addDock(dockWidget);
+        m_dockAreas.insert(dockWidget, area);
+        setRootDockWidget(area);
+        updatePlaceholderState();
+        if (added) Q_EMIT dockWidgetAdded(dockWidget);
+        return;
+    }
+
+    if (!targetArea && (!containerDrop || placement == DockPlacement::Center))
+    {
+        targetArea = firstDockArea();
+    }
+
+    if (placement == DockPlacement::Center && targetArea)
+    {
+        targetArea->addDock(dockWidget);
+        m_dockAreas.insert(dockWidget, targetArea);
+        updatePlaceholderState();
+        if (added) Q_EMIT dockWidgetAdded(dockWidget);
+        return;
+    }
+
+    DockArea* newArea = createDockArea();
+    newArea->addDock(dockWidget);
+    m_dockAreas.insert(dockWidget, newArea);
+
+    QWidget* targetWidget = containerDrop ? m_rootDockWidget : (targetArea ? static_cast<QWidget*>(targetArea) : m_rootDockWidget);
+    splitAreaWithWidget(targetWidget, newArea, placement);
+    updateTheme();
+    updatePlaceholderState();
+    if (added) Q_EMIT dockWidgetAdded(dockWidget);
+}
+
+void AntDockManager::splitAreaWithWidget(QWidget* targetWidget, QWidget* newWidget, DockPlacement placement)
+{
+    if (!newWidget)
+    {
+        return;
+    }
+
+    if (!targetWidget || !m_rootDockWidget)
+    {
+        setRootDockWidget(newWidget);
+        return;
+    }
+
+    const Qt::Orientation orientation =
+        (placement == DockPlacement::Top || placement == DockPlacement::Bottom)
+            ? Qt::Vertical
+            : Qt::Horizontal;
+    const bool before = placement == DockPlacement::Left || placement == DockPlacement::Top;
+    const auto targetSpan = [orientation](QWidget* widget) {
+        if (!widget) return 0;
+        return orientation == Qt::Horizontal ? widget->width() : widget->height();
+    };
+    const auto splitSizes = [](int span, int handleWidth) {
+        const int available = qMax(2, span - qMax(0, handleWidth));
+        const int first = qMax(1, available / 2);
+        const int second = qMax(1, available - first);
+        return QList<int>{first, second};
+    };
+
+    if (auto* parentSplitter = qobject_cast<QSplitter*>(targetWidget->parentWidget()))
+    {
+        const int index = parentSplitter->indexOf(targetWidget);
+        if (parentSplitter->orientation() == orientation && index >= 0)
+        {
+            QList<int> sizes = parentSplitter->sizes();
+            const int span = index < sizes.size() && sizes.at(index) > 0
+                ? sizes.at(index)
+                : targetSpan(targetWidget);
+            const QList<int> halves = splitSizes(span, parentSplitter->handleWidth());
+            parentSplitter->insertWidget(before ? index : index + 1, newWidget);
+            parentSplitter->setChildrenCollapsible(false);
+            if (sizes.size() == parentSplitter->count() - 1 && index < sizes.size())
+            {
+                sizes[index] = before ? halves.at(1) : halves.at(0);
+                sizes.insert(before ? index : index + 1, before ? halves.at(0) : halves.at(1));
+                parentSplitter->setSizes(sizes);
+            }
+            return;
+        }
+    }
+
+    auto* splitter = new QSplitter(orientation, this);
+    splitter->setObjectName(QStringLiteral("AntDockSplitter"));
+    splitter->setChildrenCollapsible(false);
+    splitter->setHandleWidth(4);
+
+    QWidget* parent = targetWidget->parentWidget();
+    QSplitter* parentSplitter = qobject_cast<QSplitter*>(parent);
+    const int oldIndex = parentSplitter ? parentSplitter->indexOf(targetWidget) : -1;
+    const QList<int> parentSizes = parentSplitter ? parentSplitter->sizes() : QList<int>();
+    const int span = targetSpan(targetWidget);
+
+    if (targetWidget == m_rootDockWidget && m_workspace && m_workspace->contentWidget() == targetWidget)
+    {
+        m_workspace->setContentWidget(nullptr);
+    }
+
+    targetWidget->setParent(nullptr);
+    if (before)
+    {
+        splitter->addWidget(newWidget);
+        splitter->addWidget(targetWidget);
+    }
+    else
+    {
+        splitter->addWidget(targetWidget);
+        splitter->addWidget(newWidget);
+    }
+    splitter->setSizes(splitSizes(span, splitter->handleWidth()));
+
+    if (parentSplitter && oldIndex >= 0)
+    {
+        parentSplitter->insertWidget(oldIndex, splitter);
+        if (parentSizes.size() == parentSplitter->count())
+        {
+            parentSplitter->setSizes(parentSizes);
+        }
+    }
+    else if (targetWidget == m_rootDockWidget)
+    {
+        setRootDockWidget(splitter);
+    }
+    else
+    {
+        setRootDockWidget(splitter);
+    }
+}
+
+void AntDockManager::removeDockFromArea(AntDockWidget* dockWidget, bool detach)
+{
+    DockArea* area = areaForDock(dockWidget);
+    if (!area) return;
+
+    area->removeDock(dockWidget);
+    m_dockAreas.remove(dockWidget);
+    if (detach && dockWidget)
+    {
+        dockWidget->setParent(nullptr);
+    }
+    if (area->count() == 0)
+    {
+        pruneEmptyArea(area);
+    }
+}
+
+void AntDockManager::pruneEmptyArea(DockArea* area)
+{
+    if (!area || area->count() > 0) return;
+
+    QWidget* parent = area->parentWidget();
+    if (area == m_rootDockWidget)
+    {
+        setRootDockWidget(nullptr);
+        area->deleteLater();
+        return;
+    }
+
+    area->setParent(nullptr);
+    area->deleteLater();
+    collapseSplitter(parent);
+}
+
+void AntDockManager::collapseSplitter(QWidget* splitterWidget)
+{
+    auto* splitter = qobject_cast<QSplitter*>(splitterWidget);
+    if (!splitter) return;
+
+    if (splitter->count() > 1)
+    {
+        return;
+    }
+
+    QWidget* replacement = splitter->count() == 1 ? splitter->widget(0) : nullptr;
+    QWidget* parent = splitter->parentWidget();
+    auto* parentSplitter = qobject_cast<QSplitter*>(parent);
+    const int index = parentSplitter ? parentSplitter->indexOf(splitter) : -1;
+
+    if (replacement)
+    {
+        replacement->setParent(nullptr);
+    }
+
+    if (splitter == m_rootDockWidget)
+    {
+        setRootDockWidget(replacement);
+    }
+    else if (parentSplitter && index >= 0)
+    {
+        splitter->setParent(nullptr);
+        if (replacement)
+        {
+            parentSplitter->insertWidget(index, replacement);
+        }
+        collapseSplitter(parentSplitter);
+    }
+    else if (replacement)
+    {
+        setRootDockWidget(replacement);
+    }
+
+    splitter->deleteLater();
+}
+
+AntDockWidget* AntDockManager::dockForWatchedObject(QObject* watched) const
+{
+    if (auto* dock = qobject_cast<AntDockWidget*>(watched))
+    {
+        return m_docks.contains(dock) ? dock : nullptr;
+    }
+
+    for (AntDockWidget* dock : m_docks)
+    {
+        if (dock && dock->titleBarWidget() == watched)
+        {
+            return dock;
+        }
+    }
+    return nullptr;
+}
+
+void AntDockManager::installDockEventFilters(AntDockWidget* dockWidget)
+{
+    if (!dockWidget) return;
+
+    dockWidget->removeEventFilter(this);
+    dockWidget->installEventFilter(this);
+
+    if (QWidget* titleBar = dockWidget->titleBarWidget())
+    {
+        titleBar->removeEventFilter(this);
+        titleBar->installEventFilter(this);
+    }
+}
+
+void AntDockManager::removeDockEventFilters(AntDockWidget* dockWidget)
+{
+    if (!dockWidget) return;
+
+    dockWidget->removeEventFilter(this);
+    if (QWidget* titleBar = dockWidget->titleBarWidget())
+    {
+        titleBar->removeEventFilter(this);
+    }
+}
+
+void AntDockManager::handleDockTitleMouseEvent(AntDockWidget* dockWidget, QEvent* event)
+{
+    if (!dockWidget || !event) return;
+
+    switch (event->type())
+    {
+    case QEvent::MouseButtonPress:
+    {
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        if (mouse->button() == Qt::LeftButton)
+        {
+            startDockDragTracking(dockWidget, mouseGlobalPosition(mouse));
+        }
+        break;
+    }
+    case QEvent::MouseMove:
+    {
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        if (m_draggingDockTitle && (mouse->buttons() & Qt::LeftButton))
+        {
+            const QPoint globalPos = mouseGlobalPosition(mouse);
+            if ((globalPos - m_dragStartGlobal).manhattanLength() >= QApplication::startDragDistance())
+            {
+                showDropGuideAt(globalPos);
+            }
+        }
+        break;
+    }
+    case QEvent::MouseButtonRelease:
+    {
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        if (mouse->button() == Qt::LeftButton)
+        {
+            finishDockDragTracking(mouseGlobalPosition(mouse));
+        }
+        break;
+    }
+    case QEvent::Close:
+        stopDockDragTracking();
+        break;
+    default:
+        break;
+    }
+}
+
+bool AntDockManager::handleGlobalDockDragEvent(QObject* watched, QEvent* event)
+{
+    Q_UNUSED(watched)
+    if (!m_draggingDockTitle || !event) return false;
+
+    switch (event->type())
+    {
+    case QEvent::MouseMove:
+    {
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        if (!(mouse->buttons() & Qt::LeftButton))
+        {
+            break;
+        }
+
+        const QPoint globalPos = mouseGlobalPosition(mouse);
+        if ((globalPos - m_dragStartGlobal).manhattanLength() >= QApplication::startDragDistance())
+        {
+            showDropGuideAt(globalPos);
+        }
+        break;
+    }
+    case QEvent::MouseButtonRelease:
+    {
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        if (mouse->button() == Qt::LeftButton)
+        {
+            finishDockDragTracking(mouseGlobalPosition(mouse));
+        }
+        break;
+    }
+    case QEvent::KeyPress:
+        if (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape)
+        {
+            stopDockDragTracking();
+        }
+        break;
+    default:
+        break;
+    }
+
+    return false;
+}
+
+void AntDockManager::startDockDragTracking(AntDockWidget* dockWidget, const QPoint& globalPos)
+{
+    if (m_draggingDockTitle && m_draggedDock && m_draggedDock != dockWidget)
+    {
+        stopDockDragTracking();
+    }
+
+    m_draggingDockTitle = true;
+    m_draggedDock = dockWidget;
+    m_dragStartGlobal = globalPos;
+    m_dragPreviewOffset = dockWidget ? globalPos - dockWidget->mapToGlobal(QPoint(0, 0)) : QPoint(24, 18);
+    m_draggedDockPreviousOpacity = dockWidget ? dockWidget->windowOpacity() : 1.0;
+    m_draggedDockOpacityChanged = false;
+    clearRememberedDropTarget();
+    if (!m_appEventFilterInstalled && qApp)
+    {
+        qApp->installEventFilter(this);
+        m_appEventFilterInstalled = true;
+    }
+}
+
+void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
+{
+    if (!m_draggingDockTitle)
+    {
+        return;
+    }
+
+    QPointer<AntDockManager> manager(this);
+    QPointer<AntDockWidget> draggedDock(m_draggedDock);
+    DropTarget target = dropTargetAt(globalPos);
+    if (!target.valid)
+    {
+        target = rememberedDropTarget();
+    }
+    QPointer<AntDockWidget> targetDock(target.dockWidget);
+    const DockPlacement placement = target.placement;
+    const bool containerDrop = target.containerTarget;
+    const bool hasGuidedTarget = target.valid && placement != DockPlacement::None;
+
+    stopDockDragTracking();
+
+    if (!hasGuidedTarget || !draggedDock)
+    {
+        return;
+    }
+
+    QTimer::singleShot(0, this, [manager, draggedDock, targetDock, placement, containerDrop]() {
+        if (!manager || !draggedDock)
+        {
+            return;
+        }
+        manager->applyDropTarget(draggedDock, targetDock, placement, containerDrop);
+    });
+}
+
+void AntDockManager::stopDockDragTracking()
+{
+    setDraggedDockTranslucent(false);
+
+    if (m_appEventFilterInstalled && qApp)
+    {
+        qApp->removeEventFilter(this);
+        m_appEventFilterInstalled = false;
+    }
+
+    m_draggingDockTitle = false;
+    m_draggedDock = nullptr;
+    m_dragPreviewOffset = QPoint();
+    if (m_dragPreviewWindow)
+    {
+        m_dragPreviewWindow->end();
+    }
+    hideDropGuide();
+    clearRememberedDropTarget();
+}
+
+void AntDockManager::applyDropTarget(AntDockWidget* dockWidget, AntDockWidget* targetDock, DockPlacement placement, bool containerDrop)
+{
+    if (!dockWidget || placement == DockPlacement::None)
+    {
+        return;
+    }
+
+    if (targetDock == dockWidget)
+    {
+        return;
+    }
+
+    dockWidget->setWindowOpacity(1.0);
+    if (targetDock && (!m_docks.contains(targetDock) || targetDock == dockWidget))
+    {
+        targetDock = nullptr;
+    }
+
+    if (!targetDock && placement == DockPlacement::Center)
+    {
+        for (AntDockWidget* dock : dockWidgets())
+        {
+            if (dock && dock != dockWidget && dock->isVisible() && !dock->isFloating())
+            {
+                targetDock = dock;
+                break;
+            }
+        }
+    }
+
+    insertDockWidget(dockWidget, areaForDock(targetDock), placement, containerDrop && placement != DockPlacement::Center);
+    dockWidget->setFloating(false);
+    dockWidget->raise();
+    updatePlaceholderState();
+}
+
+void AntDockManager::setDraggedDockTranslucent(bool translucent)
+{
+    if (!m_draggedDock)
+    {
+        m_draggedDockOpacityChanged = false;
+        return;
+    }
+
+    if (translucent)
+    {
+        m_draggedDock->setWindowOpacity(0.68);
+        if (!m_draggedDockOpacityEffect)
+        {
+            m_draggedDockOpacityEffect = new QGraphicsOpacityEffect(m_draggedDock);
+            m_draggedDock->setGraphicsEffect(m_draggedDockOpacityEffect);
+        }
+        m_draggedDockOpacityEffect->setOpacity(0.68);
+        m_draggedDockOpacityChanged = true;
+    }
+    else if (m_draggedDockOpacityChanged)
+    {
+        m_draggedDock->setWindowOpacity(m_draggedDockPreviousOpacity);
+        QGraphicsOpacityEffect* effect = m_draggedDockOpacityEffect;
+        m_draggedDockOpacityEffect = nullptr;
+        if (effect && m_draggedDock->graphicsEffect() == effect)
+        {
+            m_draggedDock->setGraphicsEffect(nullptr);
+        }
+        else
+        {
+            delete effect;
+        }
+        m_draggedDockOpacityChanged = false;
+    }
+}
+
+void AntDockManager::showDropGuideAt(const QPoint& globalPos)
+{
+    if (!m_dropGuideVisible || !m_dropGuideOverlay || !isVisible()) return;
+
+    if (m_dragPreviewWindow && m_draggedDock)
+    {
+        if (!m_dragPreviewWindow->isVisible())
+        {
+            m_dragPreviewWindow->begin(m_draggedDock, globalPos, m_dragPreviewOffset);
+        }
+        else
+        {
+            m_dragPreviewWindow->moveToGlobalPos(globalPos);
+        }
+    }
+    setDraggedDockTranslucent(true);
+
+    m_dropGuideOverlay->setGeometry(rect());
+    m_dropGuideOverlay->raise();
+    if (!m_dropGuideOverlay->isVisible())
+    {
+        m_dropGuideOverlay->show();
+    }
+    m_dropGuideOverlay->updateFromGlobalPos(globalPos);
+
+    if (m_dropPreviewWindow)
+    {
+        const DropTarget target = dropTargetAt(globalPos);
+        if (target.valid)
+        {
+            rememberDropTarget(target);
+            m_dropPreviewWindow->showTarget(target, QRect(mapToGlobal(rect().topLeft()), rect().size()));
+        }
+        else
+        {
+            m_dropPreviewWindow->hideTarget();
+        }
+    }
+}
+
+void AntDockManager::hideDropGuide()
+{
+    if (!m_dropGuideOverlay) return;
+
+    m_dropGuideOverlay->clearActivePlacement();
+    m_dropGuideOverlay->hide();
+    if (m_dropPreviewWindow)
+    {
+        m_dropPreviewWindow->hideTarget();
+    }
+}
+
+AntDockManager::DropTarget AntDockManager::dropTargetAt(const QPoint& globalPos) const
+{
+    DropTarget target;
+    if (!rect().contains(mapFromGlobal(globalPos))) return target;
+
+    const DockPlacement guidedPlacement = activeDropGuide();
+    const bool guidedContainerDrop = guidedPlacement != DockPlacement::None &&
+        m_dropGuideOverlay && m_dropGuideOverlay->activePlacementIsEdge();
+
+    AntDockWidget* targetDock = guidedContainerDrop ? nullptr : dockWidgetAt(globalPos);
+    QRect targetRect;
+    if (guidedContainerDrop && m_rootDockWidget)
+    {
+        targetRect = QRect(m_rootDockWidget->mapToGlobal(QPoint(0, 0)), m_rootDockWidget->size());
+    }
+    else if (targetDock)
+    {
+        if (DockArea* area = areaForDock(targetDock))
+        {
+            targetRect = QRect(area->mapToGlobal(QPoint(0, 0)), area->size());
+        }
+        else
+        {
+            targetRect = QRect(targetDock->mapToGlobal(QPoint(0, 0)), targetDock->size());
+        }
+    }
+    else if (m_rootDockWidget)
+    {
+        targetRect = QRect(m_rootDockWidget->mapToGlobal(QPoint(0, 0)), m_rootDockWidget->size());
+    }
+    else if (m_workspace)
+    {
+        targetRect = QRect(m_workspace->mapToGlobal(QPoint(0, 0)), m_workspace->size());
+    }
+    else
+    {
+        targetRect = QRect(mapToGlobal(rect().topLeft()), rect().size());
+    }
+
+    if (targetRect.isEmpty()) return target;
+
+    DockPlacement placement = guidedPlacement;
+    if (placement == DockPlacement::None)
+    {
+        placement = placementForTarget(globalPos, targetRect);
+    }
+
+    const QRect previewRect = previewRectForTarget(targetRect, placement);
+    if (placement == DockPlacement::None || previewRect.isEmpty()) return target;
+
+    target.valid = true;
+    target.containerTarget = guidedContainerDrop || (!targetDock && placement != DockPlacement::Center);
+    target.dockWidget = targetDock;
+    target.placement = placement;
+    target.targetGlobalRect = targetRect;
+    target.previewGlobalRect = previewRect;
+    target.label = dropTargetLabel(targetDock, placement);
+    return target;
+}
+
+AntDockManager::DropTarget AntDockManager::rememberedDropTarget() const
+{
+    DropTarget target;
+    if (!m_hasLastDropTarget || m_lastDropPlacement == DockPlacement::None)
+    {
+        return target;
+    }
+
+    if (m_lastDropTargetDock && !m_docks.contains(m_lastDropTargetDock))
+    {
+        return target;
+    }
+
+    target.valid = true;
+    target.containerTarget = m_lastDropTargetIsContainer;
+    target.dockWidget = m_lastDropTargetDock;
+    target.placement = m_lastDropPlacement;
+    target.targetGlobalRect = m_lastDropTargetRect;
+    target.previewGlobalRect = m_lastDropPreviewRect;
+    target.label = m_lastDropLabel;
+    return target;
+}
+
+void AntDockManager::rememberDropTarget(const DropTarget& target)
+{
+    if (!target.valid || target.placement == DockPlacement::None)
+    {
+        return;
+    }
+
+    m_hasLastDropTarget = true;
+    m_lastDropTargetIsContainer = target.containerTarget;
+    m_lastDropTargetDock = target.dockWidget;
+    m_lastDropPlacement = target.placement;
+    m_lastDropTargetRect = target.targetGlobalRect;
+    m_lastDropPreviewRect = target.previewGlobalRect;
+    m_lastDropLabel = target.label;
+}
+
+void AntDockManager::clearRememberedDropTarget()
+{
+    m_hasLastDropTarget = false;
+    m_lastDropTargetIsContainer = false;
+    m_lastDropTargetDock = nullptr;
+    m_lastDropPlacement = DockPlacement::None;
+    m_lastDropTargetRect = QRect();
+    m_lastDropPreviewRect = QRect();
+    m_lastDropLabel.clear();
+}
+
+AntDockWidget* AntDockManager::dockWidgetAt(const QPoint& globalPos) const
+{
+    AntDockWidget* best = nullptr;
+    int bestArea = 0;
+    QSet<DockArea*> visited;
+    for (auto it = m_dockAreas.constBegin(); it != m_dockAreas.constEnd(); ++it)
+    {
+        DockArea* area = it.value();
+        if (!area || visited.contains(area)) continue;
+        visited.insert(area);
+
+        const QRect globalRect(area->mapToGlobal(QPoint(0, 0)), area->size());
+        if (!globalRect.contains(globalPos)) continue;
+
+        const int areaSize = globalRect.width() * globalRect.height();
+        if (!best || areaSize < bestArea)
+        {
+            auto* currentDock = qobject_cast<AntDockWidget*>(it.value()->currentWidget());
+            if (!currentDock || currentDock == m_draggedDock)
+            {
+                const auto docks = it.value()->dockWidgets();
+                for (AntDockWidget* dock : docks)
+                {
+                    if (dock && dock != m_draggedDock)
+                    {
+                        currentDock = dock;
+                        break;
+                    }
+                }
+            }
+            if (!currentDock) continue;
+            best = currentDock;
+            bestArea = areaSize;
+        }
+    }
+    return best;
+}
+
+AntDockManager::DockPlacement AntDockManager::placementForTarget(const QPoint& globalPos, const QRect& targetGlobalRect) const
+{
+    if (!targetGlobalRect.contains(globalPos)) return DockPlacement::None;
+
+    const int localX = globalPos.x() - targetGlobalRect.x();
+    const int localY = globalPos.y() - targetGlobalRect.y();
+    const int edgeX = qMax(48, targetGlobalRect.width() / 4);
+    const int edgeY = qMax(42, targetGlobalRect.height() / 4);
+
+    if (localX < edgeX) return DockPlacement::Left;
+    if (localX > targetGlobalRect.width() - edgeX) return DockPlacement::Right;
+    if (localY < edgeY) return DockPlacement::Top;
+    if (localY > targetGlobalRect.height() - edgeY) return DockPlacement::Bottom;
+    return DockPlacement::Center;
+}
+
+QRect AntDockManager::previewRectForTarget(const QRect& targetGlobalRect, DockPlacement placement) const
+{
+    if (targetGlobalRect.isEmpty()) return QRect();
+
+    QRect r = targetGlobalRect.adjusted(6, 6, -6, -6);
+    if (r.width() <= 12 || r.height() <= 12) return QRect();
+
+    switch (placement)
+    {
+    case DockPlacement::Left:
+        r.setWidth(qMax(42, r.width() / 2));
+        break;
+    case DockPlacement::Right:
+        r.setLeft(r.left() + r.width() / 2);
+        break;
+    case DockPlacement::Top:
+        r.setHeight(qMax(36, r.height() / 2));
+        break;
+    case DockPlacement::Bottom:
+        r.setTop(r.top() + r.height() / 2);
+        break;
+    case DockPlacement::Center:
+        r = r.adjusted(qMax(8, r.width() / 16),
+                       qMax(8, r.height() / 16),
+                       -qMax(8, r.width() / 16),
+                       -qMax(8, r.height() / 16));
+        break;
+    case DockPlacement::None:
+        return QRect();
+    }
+    return r.normalized();
+}
+
+QString AntDockManager::dropTargetLabel(AntDockWidget* dockWidget, DockPlacement placement) const
+{
+    QString action;
+    switch (placement)
+    {
+    case DockPlacement::Left:
+        action = QStringLiteral("Dock left");
+        break;
+    case DockPlacement::Right:
+        action = QStringLiteral("Dock right");
+        break;
+    case DockPlacement::Top:
+        action = QStringLiteral("Dock top");
+        break;
+    case DockPlacement::Bottom:
+        action = QStringLiteral("Dock bottom");
+        break;
+    case DockPlacement::Center:
+        action = QStringLiteral("Tab here");
+        break;
+    case DockPlacement::None:
+        return QString();
+    }
+
+    if (dockWidget && !dockWidget->windowTitle().isEmpty())
+    {
+        return QStringLiteral("%1: %2").arg(action, dockWidget->windowTitle());
+    }
+    return action;
+}
+
+void AntDockManager::updateTheme()
+{
+    const auto& token = antTheme->tokens();
+    QPalette pal = palette();
+    pal.setColor(QPalette::Window, token.colorBgLayout);
+    pal.setColor(QPalette::Base, token.colorBgLayout);
+    pal.setColor(QPalette::WindowText, token.colorText);
+    pal.setColor(QPalette::Text, token.colorText);
+    setPalette(pal);
+
+    if (m_workspace)
+    {
+        m_workspace->updateTheme();
+    }
+
+    const QString style = QStringLiteral(
+        "QMainWindow { background: %1; }"
+        "QMainWindow::separator { background: %2; width: 4px; height: 4px; }"
+        "QMainWindow::separator:hover { background: %3; }"
+        "AntDockManager QTabWidget::pane { border: 1px solid %2; top: -1px; }"
+        "AntDockManager QTabBar::tab {"
+        "  background: %4;"
+        "  color: %5;"
+        "  border: 1px solid %2;"
+        "  border-bottom: none;"
+        "  padding: 6px 12px;"
+        "  min-height: 24px;"
+        "}"
+        "AntDockManager QTabBar::tab:selected {"
+        "  background: %6;"
+        "  color: %7;"
+        "  border-top: 2px solid %3;"
+        "}"
+        "AntDockManager QTabBar::tab:!selected:hover { background: %8; }")
+        .arg(cssColor(token.colorBgLayout),
+             cssColor(token.colorSplit),
+             cssColor(token.colorPrimary),
+             cssColor(token.colorBgElevated),
+             cssColor(token.colorTextSecondary),
+             cssColor(token.colorBgContainer),
+             cssColor(token.colorText),
+             cssColor(token.colorFillQuaternary));
+    setStyleSheet(style);
+
+    const auto tabBars = findChildren<QTabBar*>();
+    for (QTabBar* tabBar : tabBars)
+    {
+        if (!tabBar) continue;
+        tabBar->setDocumentMode(true);
+        tabBar->setDrawBase(false);
+        tabBar->setExpanding(false);
+    }
+
+    for (AntDockWidget* dock : dockWidgets())
+    {
+        prepareDockWidget(dock);
+        dock->update();
+    }
+
+    updatePlaceholderState();
+    update();
+}
+
+void AntDockManager::updatePlaceholderState()
+{
+    if (!m_workspace) return;
+    m_workspace->setPlaceholderActive(m_placeholderVisible &&
+                                      !m_workspace->contentWidget() &&
+                                      visibleDockWidgetCount() == 0);
+}
+
+int AntDockManager::visibleDockWidgetCount() const
+{
+    int count = 0;
+    for (AntDockWidget* dock : m_docks)
+    {
+        if (dock && !dock->isHidden())
+        {
+            ++count;
+        }
+    }
+    return count;
+}

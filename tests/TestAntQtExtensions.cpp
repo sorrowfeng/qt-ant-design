@@ -1,13 +1,19 @@
 #include <QPalette>
 #include <QPainter>
+#include <QCoreApplication>
+#include <QGraphicsOpacityEffect>
 #include <QImage>
 #include <QLabel>
 #include <QMargins>
+#include <QMainWindow>
+#include <QMetaType>
+#include <QMouseEvent>
 #include <QPlainTextEdit>
 #include <QComboBox>
 #include <QAction>
 #include <QHideEvent>
 #include <QSignalSpy>
+#include <QTabWidget>
 #include <QHoverEvent>
 #include <QTest>
 #include <QToolButton>
@@ -26,6 +32,7 @@
 #include "widgets/AntToolButton.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntMenuBar.h"
+#include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntWidget.h"
 #include "widgets/AntWindow.h"
@@ -72,6 +79,20 @@ QLabel* ribbonTitleLabelForExtensionTest(AntRibbonGroup* group, const QString& t
         {
             return label;
         }
+    }
+    return nullptr;
+}
+
+QTabWidget* dockAreaForExtensionTest(AntDockWidget* dock)
+{
+    QWidget* parent = dock ? dock->parentWidget() : nullptr;
+    while (parent)
+    {
+        if (auto* tabWidget = qobject_cast<QTabWidget*>(parent))
+        {
+            return tabWidget;
+        }
+        parent = parent->parentWidget();
     }
     return nullptr;
 }
@@ -126,6 +147,7 @@ private slots:
     void toolBar();
     void menuBar();
     void dockWidget();
+    void dockManager();
     void widget();
     void window();
     void windowTitleBarButtonsHandleChildDeliveredClicks();
@@ -697,6 +719,176 @@ void TestAntQtExtensions::dockWidget()
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     QCOMPARE(w2->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
     QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+}
+
+void TestAntQtExtensions::dockManager()
+{
+    qRegisterMetaType<AntDockWidget*>("AntDockWidget*");
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    auto* manager = new AntDockManager;
+    manager->resize(640, 420);
+    QCOMPARE(manager->dockOptions().testFlag(QMainWindow::AllowNestedDocks), true);
+    QCOMPARE(manager->dockOptions().testFlag(QMainWindow::AllowTabbedDocks), true);
+    QCOMPARE(manager->palette().color(QPalette::Window), antTheme->tokens().colorBgLayout);
+    QCOMPARE(manager->isDropGuideVisible(), true);
+    QCOMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::None);
+    QCOMPARE(manager->isDropPreviewVisible(), false);
+    QVERIFY(manager->dropPreviewRect().isEmpty());
+
+    auto* explorer = new AntDockWidget(QStringLiteral("Explorer"));
+    explorer->setWidget(new QWidget);
+    auto* inspector = new AntDockWidget(QStringLiteral("Inspector"));
+    inspector->setWidget(new QWidget);
+    auto* preview = new AntDockWidget(QStringLiteral("Preview"));
+    preview->setWidget(new QWidget);
+
+    QSignalSpy addedSpy(manager, &AntDockManager::dockWidgetAdded);
+    manager->addDockWidget(Qt::LeftDockWidgetArea, explorer);
+    QCOMPARE(addedSpy.count(), 1);
+    QVERIFY(manager->dockWidgets().contains(explorer));
+    QCOMPARE(manager->dockWidgetArea(explorer), Qt::LeftDockWidgetArea);
+    QVERIFY(!explorer->objectName().isEmpty());
+
+    manager->splitDockWidget(explorer, inspector, Qt::Horizontal);
+    QCOMPARE(addedSpy.count(), 2);
+    QVERIFY(manager->dockWidgets().contains(inspector));
+
+    manager->addDockWidget(preview, inspector, AntDockManager::DockPlacement::Center);
+    QCOMPARE(addedSpy.count(), 3);
+    QVERIFY(manager->dockWidgets().contains(preview));
+    QVERIFY(manager->tabifiedDockWidgets(inspector).contains(preview));
+
+    QTabWidget* inspectorArea = dockAreaForExtensionTest(inspector);
+    QVERIFY(inspectorArea != nullptr);
+    auto* properties = new AntDockWidget(QStringLiteral("Properties"));
+    properties->setWidget(new QWidget);
+    manager->addDockWidget(properties, inspector, AntDockManager::DockPlacement::Right);
+    QCOMPARE(addedSpy.count(), 4);
+    QTabWidget* propertiesArea = dockAreaForExtensionTest(properties);
+    QVERIFY(propertiesArea != nullptr);
+    QVERIFY(propertiesArea != inspectorArea);
+
+    QSignalSpy guideVisibleSpy(manager, &AntDockManager::dropGuideVisibleChanged);
+    manager->setDropGuideVisible(false);
+    QCOMPARE(manager->isDropGuideVisible(), false);
+    QCOMPARE(guideVisibleSpy.count(), 1);
+    manager->setDropGuideVisible(true);
+    QCOMPARE(manager->isDropGuideVisible(), true);
+    QCOMPARE(guideVisibleSpy.count(), 2);
+
+    QSignalSpy savedSpy(manager, &AntDockManager::perspectiveSaved);
+    QSignalSpy restoredSpy(manager, &AntDockManager::perspectiveRestored);
+    QSignalSpy removedPerspectiveSpy(manager, &AntDockManager::perspectiveRemoved);
+    QVERIFY(manager->savePerspective(QStringLiteral("default")));
+    QCOMPARE(savedSpy.count(), 1);
+    QVERIFY(manager->perspectiveNames().contains(QStringLiteral("default")));
+    QVERIFY(!manager->perspectiveState(QStringLiteral("default")).isEmpty());
+    QVERIFY(manager->restorePerspective(QStringLiteral("default")));
+    QCOMPARE(restoredSpy.count(), 1);
+    QVERIFY(manager->removePerspective(QStringLiteral("default")));
+    QCOMPARE(removedPerspectiveSpy.count(), 1);
+    QVERIFY(!manager->perspectiveNames().contains(QStringLiteral("default")));
+
+    manager->show();
+    QVERIFY(QTest::qWaitForWindowExposed(manager));
+    const QRect inspectorAreaRect = QRect(inspectorArea->mapToGlobal(QPoint(0, 0)), inspectorArea->size());
+    const QRect propertiesAreaRect = QRect(propertiesArea->mapToGlobal(QPoint(0, 0)), propertiesArea->size());
+    QVERIFY2(propertiesAreaRect.left() >= inspectorAreaRect.center().x(),
+             "DockPlacement::Right must create a real custom layout area to the target's right.");
+    QVERIFY(explorer->titleBarWidget() != nullptr);
+    QVERIFY(properties->titleBarWidget() != nullptr);
+    QSignalSpy previewVisibleSpy(manager, &AntDockManager::dropPreviewVisibleChanged);
+
+    const QPoint rightGuideGlobal = manager->mapToGlobal(QPoint(manager->width() - 33, manager->height() / 2));
+    const QPoint dragStart = explorer->titleBarWidget()->rect().center();
+    const QPoint rightGuideMove = explorer->titleBarWidget()->mapFromGlobal(rightGuideGlobal);
+    QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                           QPointF(dragStart),
+                           QPointF(explorer->titleBarWidget()->mapToGlobal(dragStart)),
+                           Qt::LeftButton,
+                           Qt::LeftButton,
+                           Qt::NoModifier);
+    QCoreApplication::sendEvent(explorer->titleBarWidget(), &pressEvent);
+    QMouseEvent moveEvent(QEvent::MouseMove,
+                          QPointF(rightGuideMove),
+                          QPointF(rightGuideGlobal),
+                          Qt::NoButton,
+                          Qt::LeftButton,
+                          Qt::NoModifier);
+    QCoreApplication::sendEvent(explorer->titleBarWidget(), &moveEvent);
+    QTRY_VERIFY(manager->isDropPreviewVisible());
+    QTRY_COMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::Right);
+    QVERIFY(!manager->dropPreviewRect().isEmpty());
+    const QRect managerGlobalRect = QRect(manager->mapToGlobal(QPoint(0, 0)), manager->size());
+    QVERIFY2(manager->dropPreviewRect().left() >= managerGlobalRect.center().x(),
+             "Right edge guide preview must target the right half of the dock container.");
+    QMouseEvent releaseRightEvent(QEvent::MouseButtonRelease,
+                                  QPointF(rightGuideMove),
+                                  QPointF(rightGuideGlobal),
+                                  Qt::LeftButton,
+                                  Qt::NoButton,
+                                  Qt::NoModifier);
+    QCoreApplication::sendEvent(explorer->titleBarWidget(), &releaseRightEvent);
+    QTRY_VERIFY(!manager->isDropPreviewVisible());
+    QTRY_VERIFY([&]() {
+        QTabWidget* explorerArea = dockAreaForExtensionTest(explorer);
+        if (!explorerArea) return false;
+        const QRect explorerAreaRect = QRect(explorerArea->mapToGlobal(QPoint(0, 0)), explorerArea->size());
+        return explorerAreaRect.left() >= managerGlobalRect.center().x();
+    }());
+
+    const QPoint centerGuideGlobal = manager->mapToGlobal(manager->rect().center());
+    const QPoint propertiesDragStart = properties->titleBarWidget()->rect().center();
+    const QPoint centerGuideMove = properties->titleBarWidget()->mapFromGlobal(centerGuideGlobal);
+    QMouseEvent pressCenterEvent(QEvent::MouseButtonPress,
+                                 QPointF(propertiesDragStart),
+                                 QPointF(properties->titleBarWidget()->mapToGlobal(propertiesDragStart)),
+                                 Qt::LeftButton,
+                                 Qt::LeftButton,
+                                 Qt::NoModifier);
+    QCoreApplication::sendEvent(properties->titleBarWidget(), &pressCenterEvent);
+    QMouseEvent guideMoveEvent(QEvent::MouseMove,
+                               QPointF(centerGuideMove),
+                               QPointF(centerGuideGlobal),
+                               Qt::NoButton,
+                               Qt::LeftButton,
+                               Qt::NoModifier);
+    QCoreApplication::sendEvent(properties->titleBarWidget(), &guideMoveEvent);
+    QTRY_COMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::Center);
+    auto* opacityEffect = qobject_cast<QGraphicsOpacityEffect*>(properties->graphicsEffect());
+    QVERIFY(opacityEffect != nullptr);
+    QVERIFY(qAbs(opacityEffect->opacity() - 0.68) < 0.01);
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                             QPointF(centerGuideMove),
+                             QPointF(centerGuideGlobal),
+                             Qt::LeftButton,
+                             Qt::NoButton,
+                             Qt::NoModifier);
+    QCoreApplication::sendEvent(properties->titleBarWidget(), &releaseEvent);
+    QTRY_VERIFY(!manager->isDropPreviewVisible());
+    QCOMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::None);
+    QTRY_VERIFY(properties->graphicsEffect() == nullptr);
+    QTRY_VERIFY(manager->tabifiedDockWidgets(preview).contains(properties) ||
+                manager->tabifiedDockWidgets(inspector).contains(properties) ||
+                manager->tabifiedDockWidgets(explorer).contains(properties) ||
+                manager->tabifiedDockWidgets(properties).contains(preview) ||
+                manager->tabifiedDockWidgets(properties).contains(inspector) ||
+                manager->tabifiedDockWidgets(properties).contains(explorer));
+    QVERIFY(previewVisibleSpy.count() >= 4);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCOMPARE(manager->palette().color(QPalette::Window), antTheme->tokens().colorBgLayout);
+    QCOMPARE(explorer->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+
+    QSignalSpy removedSpy(manager, &AntDockManager::dockWidgetRemoved);
+    manager->removeDockWidget(preview);
+    QCOMPARE(removedSpy.count(), 1);
+    QVERIFY(!manager->dockWidgets().contains(preview));
+    delete preview;
+    delete manager;
+
     antTheme->setThemeMode(Ant::ThemeMode::Default);
 }
 

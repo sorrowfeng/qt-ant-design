@@ -13,6 +13,7 @@
 #include <QScrollArea>
 #include <QSpinBox>
 #include <QString>
+#include <QStringList>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -21,6 +22,7 @@
 #include "core/AntTypes.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntButton.h"
+#include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
@@ -248,18 +250,68 @@ QWidget* createDockWidgetPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("AntDockWidget"));
         auto* cl = card->bodyLayout();
 
-        auto* infoLabel = makeParagraph(QStringLiteral("Dock widgets can be created from QMainWindow.\nThis page shows the AntDockWidget API."), page);
+        auto* infoLabel = makeParagraph(QStringLiteral("AntDockManager provides a themed docking workspace with a custom splitter/tab dock tree, translucent draggable AntDockWidget panels, and ADS-like drop guide squares."), page);
         cl->addWidget(infoLabel);
 
-        auto* dock = new AntDockWidget(QStringLiteral("My Dock"), page);
-        auto* dockContent = new QWidget();
-        auto* dockLayout = new QVBoxLayout(dockContent);
-        dockLayout->addWidget(makeText(QStringLiteral("Dock content area"), dockContent));
-        dockLayout->addStretch();
-        dock->setWidget(dockContent);
-        dock->setMinimumWidth(200);
+        auto* manager = new AntDockManager(page);
+        manager->setMinimumHeight(360);
 
-        cl->addWidget(dock);
+        auto createDock = [](const QString& title, const QStringList& rows) {
+            auto* dock = new AntDockWidget(title);
+            auto* content = new QWidget();
+            auto* dockLayout = new QVBoxLayout(content);
+            dockLayout->setContentsMargins(12, 12, 12, 12);
+            dockLayout->setSpacing(8);
+            for (const QString& row : rows)
+            {
+                dockLayout->addWidget(makeText(row, content));
+            }
+            dockLayout->addStretch();
+            dock->setWidget(content);
+            return dock;
+        };
+
+        auto* filesDock = createDock(QStringLiteral("Explorer"),
+                                     {QStringLiteral("src/widgets"),
+                                      QStringLiteral("src/styles"),
+                                      QStringLiteral("examples/pages")});
+        auto* inspectorDock = createDock(QStringLiteral("Inspector"),
+                                         {QStringLiteral("Selection: AntDockWidget"),
+                                          QStringLiteral("Placement: Tabbed")});
+        auto* outputDock = createDock(QStringLiteral("Output"),
+                                      {QStringLiteral("Build ready"),
+                                       QStringLiteral("Tests idle")});
+        auto* previewDock = createDock(QStringLiteral("Preview"),
+                                       {QStringLiteral("Dock panels can be split or tabified."),
+                                        QStringLiteral("Drag a title bar to move a panel.")});
+
+        manager->addDockWidget(Qt::LeftDockWidgetArea, filesDock);
+        manager->splitDockWidget(filesDock, inspectorDock, Qt::Horizontal);
+        manager->splitDockWidget(filesDock, outputDock, Qt::Vertical);
+        manager->addDockWidget(previewDock, inspectorDock, AntDockManager::DockPlacement::Center);
+        manager->savePerspective(QStringLiteral("Default"));
+
+        auto* actionRow = new QHBoxLayout();
+        auto* saveLayout = new AntButton(QStringLiteral("Save Layout"));
+        saveLayout->setButtonType(Ant::ButtonType::Default);
+        QObject::connect(saveLayout, &QPushButton::clicked, manager, [manager]() {
+            manager->savePerspective(QStringLiteral("Workspace"));
+        });
+        actionRow->addWidget(saveLayout);
+
+        auto* restoreLayout = new AntButton(QStringLiteral("Restore Layout"));
+        restoreLayout->setButtonType(Ant::ButtonType::Default);
+        QObject::connect(restoreLayout, &QPushButton::clicked, manager, [manager]() {
+            if (!manager->restorePerspective(QStringLiteral("Workspace")))
+            {
+                manager->restorePerspective(QStringLiteral("Default"));
+            }
+        });
+        actionRow->addWidget(restoreLayout);
+        actionRow->addStretch();
+        cl->addLayout(actionRow);
+
+        cl->addWidget(manager);
         layout->addWidget(card);
     }
 
