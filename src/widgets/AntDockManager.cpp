@@ -281,6 +281,11 @@ public:
         return m_activePlacementIsEdge;
     }
 
+    QRect areaGuideRect() const
+    {
+        return m_areaGuideRect;
+    }
+
     void clearActivePlacement()
     {
         if (m_activePlacement == DockPlacement::None && !m_activePlacementIsEdge) return;
@@ -290,11 +295,18 @@ public:
         Q_EMIT m_manager->activeDropGuideChanged(m_activePlacement);
     }
 
-    void updateFromGlobalPos(const QPoint& globalPos)
+    void updateFromGlobalPos(const QPoint& globalPos, const QRect& areaGlobalRect, const QRect& containerGlobalRect)
     {
+        const QRect nextAreaRect = globalRectToLocal(areaGlobalRect);
+        const QRect localContainerRect = globalRectToLocal(containerGlobalRect);
+        const QRect nextContainerRect = localContainerRect.isEmpty() ? rect() : localContainerRect;
+        const bool targetChanged = m_areaGuideRect != nextAreaRect || m_containerGuideRect != nextContainerRect;
+        m_areaGuideRect = nextAreaRect;
+        m_containerGuideRect = nextContainerRect;
+
         const GuideZone next = zoneAt(mapFromGlobal(globalPos));
         const bool placementChanged = m_activePlacement != next.placement;
-        if (!placementChanged && m_activePlacementIsEdge == next.edge) return;
+        if (!placementChanged && m_activePlacementIsEdge == next.edge && !targetChanged) return;
 
         m_activePlacement = next.placement;
         m_activePlacementIsEdge = next.edge;
@@ -354,7 +366,6 @@ private:
     QList<GuideZone> guideRects() const
     {
         QList<GuideZone> zones;
-        const QPoint center = rect().center();
         const int guideSize = 38;
         const int gap = 8;
         const int step = guideSize + gap;
@@ -364,17 +375,37 @@ private:
             return QRect(c.x() - guideSize / 2, c.y() - guideSize / 2, guideSize, guideSize);
         };
 
-        zones.append({DockPlacement::Top, squareAt(center + QPoint(0, -step)), false});
-        zones.append({DockPlacement::Left, squareAt(center + QPoint(-step, 0)), false});
-        zones.append({DockPlacement::Center, squareAt(center), false});
-        zones.append({DockPlacement::Right, squareAt(center + QPoint(step, 0)), false});
-        zones.append({DockPlacement::Bottom, squareAt(center + QPoint(0, step)), false});
+        if (!m_areaGuideRect.isEmpty())
+        {
+            const QPoint areaCenter = m_areaGuideRect.center();
+            zones.append({DockPlacement::Top, squareAt(areaCenter + QPoint(0, -step)), false});
+            zones.append({DockPlacement::Left, squareAt(areaCenter + QPoint(-step, 0)), false});
+            zones.append({DockPlacement::Center, squareAt(areaCenter), false});
+            zones.append({DockPlacement::Right, squareAt(areaCenter + QPoint(step, 0)), false});
+            zones.append({DockPlacement::Bottom, squareAt(areaCenter + QPoint(0, step)), false});
+        }
 
-        zones.append({DockPlacement::Left, squareAt(QPoint(edgeMargin + guideSize / 2, center.y())), true});
-        zones.append({DockPlacement::Right, squareAt(QPoint(width() - edgeMargin - guideSize / 2, center.y())), true});
-        zones.append({DockPlacement::Top, squareAt(QPoint(center.x(), edgeMargin + guideSize / 2)), true});
-        zones.append({DockPlacement::Bottom, squareAt(QPoint(center.x(), height() - edgeMargin - guideSize / 2)), true});
+        const QRect container = m_containerGuideRect.isEmpty() ? rect() : m_containerGuideRect;
+        const QPoint containerCenter = container.center();
+        zones.append({DockPlacement::Left,
+                      squareAt(QPoint(container.left() + edgeMargin + guideSize / 2, containerCenter.y())),
+                      true});
+        zones.append({DockPlacement::Right,
+                      squareAt(QPoint(container.right() - edgeMargin - guideSize / 2, containerCenter.y())),
+                      true});
+        zones.append({DockPlacement::Top,
+                      squareAt(QPoint(containerCenter.x(), container.top() + edgeMargin + guideSize / 2)),
+                      true});
+        zones.append({DockPlacement::Bottom,
+                      squareAt(QPoint(containerCenter.x(), container.bottom() - edgeMargin - guideSize / 2)),
+                      true});
         return zones;
+    }
+
+    QRect globalRectToLocal(const QRect& globalRect) const
+    {
+        if (globalRect.isEmpty()) return QRect();
+        return QRect(mapFromGlobal(globalRect.topLeft()), globalRect.size()).intersected(rect());
     }
 
     GuideZone zoneAt(const QPoint& pos) const
@@ -392,7 +423,7 @@ private:
         if (!painter || zone.rect.isEmpty()) return;
 
         const auto& token = antTheme->tokens();
-        const bool active = zone.placement == m_activePlacement;
+        const bool active = zone.placement == m_activePlacement && zone.edge == m_activePlacementIsEdge;
         const QRectF box = QRectF(zone.rect).adjusted(0.5, 0.5, -0.5, -0.5);
 
         QColor shadow = token.colorShadow;
@@ -538,6 +569,8 @@ private:
     AntDockManager* m_manager = nullptr;
     DockPlacement m_activePlacement = DockPlacement::None;
     bool m_activePlacementIsEdge = false;
+    QRect m_areaGuideRect;
+    QRect m_containerGuideRect;
 };
 
 class AntDockManager::DockDragPreviewWindow : public QWidget
@@ -1855,7 +1888,31 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
     {
         m_dropGuideOverlay->show();
     }
-    m_dropGuideOverlay->updateFromGlobalPos(globalPos);
+
+    QRect areaGuideGlobalRect;
+    if (AntDockWidget* guideDock = dockWidgetAt(globalPos))
+    {
+        if (DockArea* area = areaForDock(guideDock))
+        {
+            areaGuideGlobalRect = QRect(area->mapToGlobal(QPoint(0, 0)), area->size());
+        }
+    }
+
+    QRect containerGuideGlobalRect;
+    if (m_rootDockWidget)
+    {
+        containerGuideGlobalRect = QRect(m_rootDockWidget->mapToGlobal(QPoint(0, 0)), m_rootDockWidget->size());
+    }
+    else if (m_workspace)
+    {
+        containerGuideGlobalRect = QRect(m_workspace->mapToGlobal(QPoint(0, 0)), m_workspace->size());
+        areaGuideGlobalRect = containerGuideGlobalRect;
+    }
+    else
+    {
+        containerGuideGlobalRect = QRect(mapToGlobal(rect().topLeft()), rect().size());
+    }
+    m_dropGuideOverlay->updateFromGlobalPos(globalPos, areaGuideGlobalRect, containerGuideGlobalRect);
 
     if (m_dropPreviewWindow)
     {

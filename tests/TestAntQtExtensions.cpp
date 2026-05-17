@@ -801,9 +801,9 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(properties->titleBarWidget() != nullptr);
     QSignalSpy previewVisibleSpy(manager, &AntDockManager::dropPreviewVisibleChanged);
 
-    const QPoint rightGuideGlobal = manager->mapToGlobal(QPoint(manager->width() - 33, manager->height() / 2));
     const QPoint dragStart = explorer->titleBarWidget()->rect().center();
-    const QPoint rightGuideMove = explorer->titleBarWidget()->mapFromGlobal(rightGuideGlobal);
+    const QPoint propertiesCenterGlobal = propertiesAreaRect.center();
+    const QPoint propertiesCenterMove = explorer->titleBarWidget()->mapFromGlobal(propertiesCenterGlobal);
     QMouseEvent pressEvent(QEvent::MouseButtonPress,
                            QPointF(dragStart),
                            QPointF(explorer->titleBarWidget()->mapToGlobal(dragStart)),
@@ -811,6 +811,20 @@ void TestAntQtExtensions::dockManager()
                            Qt::LeftButton,
                            Qt::NoModifier);
     QCoreApplication::sendEvent(explorer->titleBarWidget(), &pressEvent);
+    QMouseEvent moveToPropertiesEvent(QEvent::MouseMove,
+                                      QPointF(propertiesCenterMove),
+                                      QPointF(propertiesCenterGlobal),
+                                      Qt::NoButton,
+                                      Qt::LeftButton,
+                                      Qt::NoModifier);
+    QCoreApplication::sendEvent(explorer->titleBarWidget(), &moveToPropertiesEvent);
+    QTRY_VERIFY(manager->isDropPreviewVisible());
+    QTRY_COMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::Center);
+    QVERIFY2(propertiesAreaRect.contains(manager->dropPreviewRect().center()),
+             "Dock-area guide must follow the dock area under the cursor instead of staying at the container center.");
+
+    const QPoint rightGuideGlobal = manager->mapToGlobal(QPoint(manager->width() - 33, manager->height() / 2));
+    const QPoint rightGuideMove = explorer->titleBarWidget()->mapFromGlobal(rightGuideGlobal);
     QMouseEvent moveEvent(QEvent::MouseMove,
                           QPointF(rightGuideMove),
                           QPointF(rightGuideGlobal),
@@ -839,7 +853,8 @@ void TestAntQtExtensions::dockManager()
         return explorerAreaRect.left() >= managerGlobalRect.center().x();
     }());
 
-    const QPoint centerGuideGlobal = manager->mapToGlobal(manager->rect().center());
+    const QRect inspectorDropAreaRect = QRect(inspectorArea->mapToGlobal(QPoint(0, 0)), inspectorArea->size());
+    const QPoint centerGuideGlobal = inspectorDropAreaRect.center();
     const QPoint propertiesDragStart = properties->titleBarWidget()->rect().center();
     const QPoint centerGuideMove = properties->titleBarWidget()->mapFromGlobal(centerGuideGlobal);
     QMouseEvent pressCenterEvent(QEvent::MouseButtonPress,
