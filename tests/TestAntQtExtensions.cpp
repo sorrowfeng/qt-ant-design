@@ -1033,13 +1033,17 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(explorer->isFloating());
     QTRY_VERIFY(explorer->titleBarWidget()->isVisible());
     QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), true);
-    QVERIFY(explorer->property("antDockFloatingShadowMargin").toInt() >= 12);
+    QCOMPARE(explorer->property("antDockFloatingShadowMargin").toInt(), 0);
     QVERIFY(explorer->property("antDockFloatingCornerRadius").toInt() >= 8);
     QCOMPARE(explorer->property("antDockFloatingTitleBarHeight").toInt(), 40);
     QCOMPARE(explorer->titleBarWidget()->property("antDockTitleBarHeight").toInt(), 40);
     QCOMPARE(explorer->windowType(), Qt::Window);
     QVERIFY(explorer->windowFlags().testFlag(Qt::FramelessWindowHint));
-    QVERIFY(explorer->testAttribute(Qt::WA_TranslucentBackground));
+    QVERIFY(!explorer->testAttribute(Qt::WA_TranslucentBackground));
+#if defined(Q_OS_WIN)
+    QTRY_VERIFY(explorer->property("antDockNativeWindowFrameEnabled").toBool());
+    QVERIFY(explorer->property("antDockDwmFrameApplyCount").toInt() > 0);
+#endif
     QVERIFY(dockAreaForExtensionTest(explorer) == nullptr);
     const QSize floatingResize = explorer->size().expandedTo(QSize(280, 180));
     explorer->resize(floatingResize);
@@ -1069,7 +1073,11 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(explorer->titleBarWidget()->property("antDockTitleBarHeight").toInt(), 40);
     QCOMPARE(explorer->windowType(), Qt::Window);
     QVERIFY(explorer->windowFlags().testFlag(Qt::FramelessWindowHint));
-    QVERIFY(explorer->testAttribute(Qt::WA_TranslucentBackground));
+    QVERIFY(!explorer->testAttribute(Qt::WA_TranslucentBackground));
+#if defined(Q_OS_WIN)
+    QTRY_VERIFY(explorer->property("antDockNativeWindowFrameEnabled").toBool());
+    QVERIFY(explorer->property("antDockDwmFrameApplyCount").toInt() > 0);
+#endif
 
     dragFloatingDockBack(explorer, inspector);
     QTRY_VERIFY(!explorer->isFloating());

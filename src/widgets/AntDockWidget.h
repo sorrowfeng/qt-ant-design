@@ -6,6 +6,8 @@
 #include <QRect>
 
 class QEvent;
+class QHideEvent;
+class QMoveEvent;
 class QWidget;
 class QPaintEvent;
 class QResizeEvent;
@@ -24,6 +26,8 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+    void moveEvent(QMoveEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void changeEvent(QEvent* event) override;
@@ -38,6 +42,14 @@ private:
     QRect floatingPanelRect() const;
     int floatingShadowMargin() const;
     int floatingCornerRadius() const;
+#if defined(Q_OS_WIN)
+    void applyNativeWindowFrame();
+    void updateLegacySoftwareShadow();
+    void hideLegacySoftwareShadow();
+#endif
 
     bool m_floatingFrameActive = false;
+#if defined(Q_OS_WIN)
+    QWidget* m_legacySoftwareShadow = nullptr;
+#endif
 };
