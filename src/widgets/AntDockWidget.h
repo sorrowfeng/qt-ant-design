@@ -5,6 +5,7 @@
 #include <QDockWidget>
 #include <QRect>
 
+class QEvent;
 class QWidget;
 class QPaintEvent;
 class QResizeEvent;
@@ -25,6 +26,7 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void showEvent(QShowEvent* event) override;
+    void changeEvent(QEvent* event) override;
 #if defined(Q_OS_WIN)
     bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
 #endif
@@ -34,6 +36,8 @@ private:
     void updateTheme();
     void updateFloatingFrame();
     QRect floatingPanelRect() const;
+    int floatingShadowMargin() const;
+    int floatingCornerRadius() const;
 
     bool m_floatingFrameActive = false;
 };
