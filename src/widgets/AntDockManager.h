@@ -146,10 +146,12 @@ private:
     bool m_appEventFilterInstalled = false;
     AntDockWidget* m_draggedDock = nullptr;
     QPoint m_dragStartGlobal;
+    QPoint m_lastDropGuideGlobal;
     QPoint m_dragPreviewOffset;
     qreal m_draggedDockPreviousOpacity = 1.0;
     QGraphicsOpacityEffect* m_draggedDockOpacityEffect = nullptr;
     bool m_draggedDockOpacityChanged = false;
+    bool m_hasLastDropGuideGlobal = false;
     bool m_hasLastDropTarget = false;
     bool m_lastDropTargetIsContainer = false;
     AntDockWidget* m_lastDropTargetDock = nullptr;

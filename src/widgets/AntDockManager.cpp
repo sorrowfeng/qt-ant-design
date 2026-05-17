@@ -572,7 +572,11 @@ public:
         proxySize.setWidth(qMax(minSize.width(), proxySize.width()));
         proxySize.setHeight(qMax(minSize.height(), proxySize.height()));
         resize(proxySize);
-        move(globalPos - m_offset);
+        const QPoint topLeft = globalPos - m_offset;
+        if (pos() != topLeft)
+        {
+            move(topLeft);
+        }
         if (!isVisible()) show();
         raise();
         update();
@@ -581,8 +585,11 @@ public:
     void moveToGlobalPos(const QPoint& globalPos)
     {
         if (!isVisible()) return;
-        move(globalPos - m_offset);
-        raise();
+        const QPoint topLeft = globalPos - m_offset;
+        if (pos() != topLeft)
+        {
+            move(topLeft);
+        }
     }
 
     void end()
@@ -686,9 +693,9 @@ public:
         if (!isVisible())
         {
             show();
+            raise();
             Q_EMIT m_manager->dropPreviewVisibleChanged(true);
         }
-        raise();
         update();
     }
 
@@ -1671,6 +1678,8 @@ void AntDockManager::startDockDragTracking(AntDockWidget* dockWidget, const QPoi
     m_draggingDockTitle = true;
     m_draggedDock = dockWidget;
     m_dragStartGlobal = globalPos;
+    m_lastDropGuideGlobal = QPoint();
+    m_hasLastDropGuideGlobal = false;
     m_dragPreviewOffset = dockWidget ? globalPos - dockWidget->mapToGlobal(QPoint(0, 0)) : QPoint(24, 18);
     m_draggedDockPreviousOpacity = dockWidget ? dockWidget->windowOpacity() : 1.0;
     m_draggedDockOpacityChanged = false;
@@ -1729,6 +1738,8 @@ void AntDockManager::stopDockDragTracking()
 
     m_draggingDockTitle = false;
     m_draggedDock = nullptr;
+    m_lastDropGuideGlobal = QPoint();
+    m_hasLastDropGuideGlobal = false;
     m_dragPreviewOffset = QPoint();
     if (m_dragPreviewWindow)
     {
@@ -1784,6 +1795,11 @@ void AntDockManager::setDraggedDockTranslucent(bool translucent)
 
     if (translucent)
     {
+        if (m_draggedDockOpacityChanged)
+        {
+            return;
+        }
+
         m_draggedDock->setWindowOpacity(0.68);
         if (!m_draggedDockOpacityEffect)
         {
@@ -1813,6 +1829,12 @@ void AntDockManager::setDraggedDockTranslucent(bool translucent)
 void AntDockManager::showDropGuideAt(const QPoint& globalPos)
 {
     if (!m_dropGuideVisible || !m_dropGuideOverlay || !isVisible()) return;
+    if (m_hasLastDropGuideGlobal && m_lastDropGuideGlobal == globalPos)
+    {
+        return;
+    }
+    m_lastDropGuideGlobal = globalPos;
+    m_hasLastDropGuideGlobal = true;
 
     if (m_dragPreviewWindow && m_draggedDock)
     {
