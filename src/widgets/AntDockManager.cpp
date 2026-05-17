@@ -1053,9 +1053,10 @@ void AntDockManager::setDropGuideEnabled(bool enabled)
 {
     if (m_dropGuideVisible == enabled) return;
     m_dropGuideVisible = enabled;
-    if (!m_dropGuideVisible)
+    if (!m_dropGuideVisible && m_dropGuideOverlay)
     {
-        hideDropGuide();
+        m_dropGuideOverlay->clearActivePlacement();
+        m_dropGuideOverlay->hide();
     }
     Q_EMIT dropGuideEnabledChanged(m_dropGuideVisible);
     Q_EMIT dropGuideVisibleChanged(m_dropGuideVisible);
@@ -1744,14 +1745,10 @@ void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
 
     QPointer<AntDockManager> manager(this);
     QPointer<AntDockWidget> draggedDock(m_draggedDock);
-    DropTarget target;
-    if (m_dropGuideVisible)
+    DropTarget target = dropTargetAt(globalPos);
+    if (!target.valid)
     {
-        target = dropTargetAt(globalPos);
-        if (!target.valid)
-        {
-            target = rememberedDropTarget();
-        }
+        target = rememberedDropTarget();
     }
     QPointer<AntDockWidget> targetDock(target.dockWidget);
     const DockPlacement placement = target.placement;
@@ -1897,19 +1894,6 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
     }
     setDraggedDockTranslucent(true);
 
-    if (!m_dropGuideVisible)
-    {
-        hideDropGuide();
-        return;
-    }
-
-    m_dropGuideOverlay->setGeometry(rect());
-    m_dropGuideOverlay->raise();
-    if (!m_dropGuideOverlay->isVisible())
-    {
-        m_dropGuideOverlay->show();
-    }
-
     QRect areaGuideGlobalRect;
     if (AntDockWidget* guideDock = dockWidgetAt(globalPos))
     {
@@ -1933,7 +1917,22 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
     {
         containerGuideGlobalRect = QRect(mapToGlobal(rect().topLeft()), rect().size());
     }
-    m_dropGuideOverlay->updateFromGlobalPos(globalPos, areaGuideGlobalRect, containerGuideGlobalRect);
+
+    if (m_dropGuideVisible)
+    {
+        m_dropGuideOverlay->setGeometry(rect());
+        m_dropGuideOverlay->raise();
+        if (!m_dropGuideOverlay->isVisible())
+        {
+            m_dropGuideOverlay->show();
+        }
+        m_dropGuideOverlay->updateFromGlobalPos(globalPos, areaGuideGlobalRect, containerGuideGlobalRect);
+    }
+    else
+    {
+        m_dropGuideOverlay->clearActivePlacement();
+        m_dropGuideOverlay->hide();
+    }
 
     if (m_dropPreviewWindow)
     {
