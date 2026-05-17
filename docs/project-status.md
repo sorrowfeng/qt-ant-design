@@ -22,7 +22,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 
 ## Recent Completed Work
 
-- Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, named perspectives, translucent drag windows, toggleable ADS-like center/edge drop guide squares, deterministic guided drop placement, and a floating drop preview window that marks the target layout region while dragging.
+- Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, named perspectives, threshold-activated translucent drag previews, toggleable ADS-like center/edge drop guide squares, deterministic guided drop placement, manager-owned floating dock windows using the AntWindow-style Windows native frame/DWM rounded-corner/shadow path, double-click maximize/restore, and drag-back-to-layout support.
 - Added a pure-control Showcase page matching the Ant Design homepage showcase without the website shell, theme sidebar, or decorative background.
 - Reworked `AntColorPicker` from a modal editor to an AntD-like click-open popup panel.
 - Added a non-maximized `AntWindow` outline so frameless windows remain distinguishable on similarly colored desktop backgrounds.
@@ -94,6 +94,17 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Refreshed and corrected the README dark thumbnails for `AntCalendar`, `AntAnchor`, `AntSplitter`, `AntLayout`, and `AntScrollBar`; `AntCalendar` now themes its internal `QTableView` viewport, `AntLayoutFooter` uses `colorBgLayout`, and the Anchor/Splitter/ScrollBar demo surfaces no longer keep hard-coded light fills in dark mode.
 - Replaced the shared `image-basic` demo asset and refreshed the affected README component thumbnails for `AntAvatar` and `AntImage` in both light and dark modes.
 - Updated `AntQRCode`'s default value, example, and README light/dark thumbnails so the default QR code scans to the repository URL: `https://github.com/sorrowfeng/qt-ant-design`; the QRCode example now also exposes an editable `AntInput` and primary Regenerate button that call `AntQRCode::setValue()` to rebuild the embedded byte-mode + Reed-Solomon QR matrix.
+
+Latest targeted DockWidget floating-window validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntQtExtensions qt-ant-design-example
+.\build\tests\Debug\TestAntQtExtensions.exe dockManager -o dockManager.xml,xml
+cmake --build build\readme-dock-capture\out --config Debug
+.\build\readme-dock-capture\out\Debug\readme_dock_capture.exe D:\Project\GitProject\qt-ant-design
+```
+
+Result: the `dockManager` targeted test passed, the example Debug build succeeded, and the README `AntDockWidget` light/dark thumbnails were regenerated at `960x540` on `2026-05-17` with the `Preview` dock shown as a manager-owned floating native window.
 
 Latest targeted `image-basic` asset validation:
 
