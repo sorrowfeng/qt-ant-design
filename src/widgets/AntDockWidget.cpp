@@ -5,6 +5,8 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPalette>
+#include <QResizeEvent>
+#include <QShowEvent>
 
 #include "AntButton.h"
 #include "core/AntTheme.h"
@@ -15,6 +17,9 @@
 
 namespace
 {
+constexpr int kFloatingShadowMargin = 14;
+constexpr int kFloatingCornerRadius = 8;
+constexpr int kFloatingBorderWidth = 1;
 
 class DockTitleBar : public QWidget
 {
@@ -158,6 +163,7 @@ AntDockWidget::AntDockWidget(QWidget* parent, Qt::WindowFlags flags)
     updateTheme();
 
     connect(this, &QDockWidget::topLevelChanged, this, [this](bool) {
+        updateFloatingFrame();
         update();
     });
 
@@ -209,6 +215,110 @@ void AntDockWidget::updateTheme()
     }
 }
 
+void AntDockWidget::updateFloatingFrame()
+{
+    const bool floating = isFloating();
+    setProperty("antDockFloatingFrame", floating);
+    setProperty("antDockFloatingShadowMargin", floating ? kFloatingShadowMargin : 0);
+    setProperty("antDockFloatingCornerRadius", floating ? kFloatingCornerRadius : 0);
+
+    if (floating)
+    {
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAutoFillBackground(false);
+        setContentsMargins(kFloatingShadowMargin,
+                           kFloatingShadowMargin,
+                           kFloatingShadowMargin,
+                           kFloatingShadowMargin);
+
+        const Qt::WindowFlags wantedFlags =
+            (windowFlags() | Qt::Tool | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint) &
+            ~Qt::WindowTitleHint;
+        if (windowFlags() != wantedFlags)
+        {
+            const bool wasVisible = isVisible();
+            const QRect oldGeometry = geometry();
+            setWindowFlags(wantedFlags);
+            setGeometry(oldGeometry);
+            if (wasVisible)
+            {
+                show();
+            }
+        }
+    }
+    else
+    {
+        setAttribute(Qt::WA_TranslucentBackground, false);
+        setAttribute(Qt::WA_NoSystemBackground, false);
+        setContentsMargins(0, 0, 0, 0);
+    }
+
+    if (m_floatingFrameActive != floating)
+    {
+        m_floatingFrameActive = floating;
+        updateGeometry();
+    }
+    update();
+}
+
+QRect AntDockWidget::floatingPanelRect() const
+{
+    return rect().adjusted(kFloatingShadowMargin,
+                           kFloatingShadowMargin,
+                           -kFloatingShadowMargin,
+                           -kFloatingShadowMargin);
+}
+
+void AntDockWidget::paintEvent(QPaintEvent* event)
+{
+    if (!isFloating())
+    {
+        QDockWidget::paintEvent(event);
+        return;
+    }
+
+    Q_UNUSED(event)
+    QPainter painter(this);
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    painter.fillRect(rect(), Qt::transparent);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+    const QRect panel = floatingPanelRect();
+    if (panel.isEmpty())
+    {
+        return;
+    }
+
+    antTheme->drawEffectShadow(&painter, panel, kFloatingShadowMargin, kFloatingCornerRadius, 1.15);
+
+    const auto& token = antTheme->tokens();
+    QColor fill = token.colorBgElevated;
+    QColor border = token.colorBorderSecondary;
+    border.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.54 : 0.72);
+
+    const QRectF panelRect = QRectF(panel).adjusted(0.5, 0.5, -0.5, -0.5);
+    painter.setPen(QPen(border, kFloatingBorderWidth));
+    painter.setBrush(fill);
+    painter.drawRoundedRect(panelRect, kFloatingCornerRadius, kFloatingCornerRadius);
+}
+
+void AntDockWidget::resizeEvent(QResizeEvent* event)
+{
+    QDockWidget::resizeEvent(event);
+    if (isFloating())
+    {
+        update();
+    }
+}
+
+void AntDockWidget::showEvent(QShowEvent* event)
+{
+    updateFloatingFrame();
+    QDockWidget::showEvent(event);
+}
+
 #if defined(Q_OS_WIN)
 bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
 {
@@ -217,7 +327,7 @@ bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qint
     auto* msg = static_cast<MSG*>(message);
     if (msg->message == WM_NCHITTEST && isFloating())
     {
-        const int border = 6;
+        const int border = qMax(8, kFloatingShadowMargin);
         POINT pt = msg->pt;
         ScreenToClient(reinterpret_cast<HWND>(winId()), &pt);
         RECT r;

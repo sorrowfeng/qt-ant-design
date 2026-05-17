@@ -1910,7 +1910,6 @@ void AntDockManager::floatDockWidget(AntDockWidget* dockWidget, const QRect& glo
     setEmbeddedDockTitleBarVisible(dockWidget, true);
     dockWidget->setWindowOpacity(1.0);
     dockWidget->setFloating(true);
-    dockWidget->setParent(nullptr);
     dockWidget->setMinimumSize(QSize(180, 120));
     dockWidget->setGeometry(targetGeometry);
     dockWidget->show();

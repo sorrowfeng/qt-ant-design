@@ -1032,6 +1032,11 @@ void TestAntQtExtensions::dockManager()
     QCoreApplication::sendEvent(floatingSourceTabBar, &floatReleaseEvent);
     QTRY_VERIFY(explorer->isFloating());
     QTRY_VERIFY(explorer->titleBarWidget()->isVisible());
+    QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), true);
+    QVERIFY(explorer->property("antDockFloatingShadowMargin").toInt() >= 12);
+    QVERIFY(explorer->property("antDockFloatingCornerRadius").toInt() >= 8);
+    QVERIFY(explorer->windowFlags().testFlag(Qt::FramelessWindowHint));
+    QVERIFY(explorer->testAttribute(Qt::WA_TranslucentBackground));
     QVERIFY(dockAreaForExtensionTest(explorer) == nullptr);
     const QSize floatingResize = explorer->size().expandedTo(QSize(280, 180));
     explorer->resize(floatingResize);
@@ -1041,6 +1046,7 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(!explorer->isFloating());
     QTRY_VERIFY(dockAreaForExtensionTest(explorer) != nullptr);
     QTRY_VERIFY(!explorer->titleBarWidget()->isVisible());
+    QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), false);
 
     QTabBar* doubleClickTabBar = dockTabBarForExtensionTest(explorer);
     QVERIFY(doubleClickTabBar != nullptr);
@@ -1055,11 +1061,15 @@ void TestAntQtExtensions::dockManager()
     QCoreApplication::sendEvent(doubleClickTabBar, &doubleClickEvent);
     QTRY_VERIFY(explorer->isFloating());
     QTRY_VERIFY(explorer->titleBarWidget()->isVisible());
+    QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), true);
+    QVERIFY(explorer->windowFlags().testFlag(Qt::FramelessWindowHint));
+    QVERIFY(explorer->testAttribute(Qt::WA_TranslucentBackground));
 
     dragFloatingDockBack(explorer, inspector);
     QTRY_VERIFY(!explorer->isFloating());
     QTRY_VERIFY(dockAreaForExtensionTest(explorer) != nullptr);
     QTRY_VERIFY(!explorer->titleBarWidget()->isVisible());
+    QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), false);
 
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     QCOMPARE(manager->palette().color(QPalette::Window), antTheme->tokens().colorBgLayout);
