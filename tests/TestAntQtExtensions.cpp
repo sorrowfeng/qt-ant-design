@@ -1055,6 +1055,54 @@ void TestAntQtExtensions::dockManager()
     explorer->resize(floatingResize);
     QCOMPARE(explorer->size(), floatingResize);
 
+    QWidget* floatingTitleBar = explorer->titleBarWidget();
+    QVERIFY(floatingTitleBar != nullptr);
+    const QPoint floatingTitlePoint = floatingTitleBar->rect().center();
+    const QPoint floatingTitleGlobal = floatingTitleBar->mapToGlobal(floatingTitlePoint);
+    const QRect floatingGeometryBeforeClick = explorer->geometry();
+    QMouseEvent floatingClickPress(QEvent::MouseButtonPress,
+                                   QPointF(floatingTitlePoint),
+                                   QPointF(floatingTitleGlobal),
+                                   Qt::LeftButton,
+                                   Qt::LeftButton,
+                                   Qt::NoModifier);
+    QCoreApplication::sendEvent(floatingTitleBar, &floatingClickPress);
+    QMouseEvent floatingClickRelease(QEvent::MouseButtonRelease,
+                                     QPointF(floatingTitlePoint),
+                                     QPointF(floatingTitleGlobal),
+                                     Qt::LeftButton,
+                                     Qt::NoButton,
+                                     Qt::NoModifier);
+    QCoreApplication::sendEvent(floatingTitleBar, &floatingClickRelease);
+    QTRY_VERIFY(!manager->isDropPreviewVisible());
+    QCOMPARE(manager->property("antDockDragActivated").toBool(), false);
+    QVERIFY(explorer->graphicsEffect() == nullptr);
+    QCOMPARE(explorer->geometry(), floatingGeometryBeforeClick);
+
+    QMouseEvent floatingDoubleClick(QEvent::MouseButtonDblClick,
+                                    QPointF(floatingTitlePoint),
+                                    QPointF(floatingTitleGlobal),
+                                    Qt::LeftButton,
+                                    Qt::LeftButton,
+                                    Qt::NoModifier);
+    QCoreApplication::sendEvent(floatingTitleBar, &floatingDoubleClick);
+    QMouseEvent floatingDoubleRelease(QEvent::MouseButtonRelease,
+                                      QPointF(floatingTitlePoint),
+                                      QPointF(floatingTitleGlobal),
+                                      Qt::LeftButton,
+                                      Qt::NoButton,
+                                      Qt::NoModifier);
+    QCoreApplication::sendEvent(floatingTitleBar, &floatingDoubleRelease);
+    QTRY_VERIFY(!manager->isDropPreviewVisible());
+    QCOMPARE(manager->property("antDockDragActivated").toBool(), false);
+    QVERIFY(explorer->graphicsEffect() == nullptr);
+    QTRY_VERIFY(explorer->isFloating());
+    if (explorer->isMaximized())
+    {
+        explorer->showNormal();
+        QTRY_VERIFY(!explorer->isMaximized());
+    }
+
     dragFloatingDockBack(explorer, inspector);
     QTRY_VERIFY(!explorer->isFloating());
     QTRY_VERIFY(dockAreaForExtensionTest(explorer) != nullptr);

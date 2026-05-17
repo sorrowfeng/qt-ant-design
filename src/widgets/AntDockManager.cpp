@@ -1308,6 +1308,7 @@ bool AntDockManager::eventFilter(QObject* watched, QEvent* event)
                         area->setCurrentIndex(tab);
                         if (auto* dock = qobject_cast<AntDockWidget*>(area->widget(tab)))
                         {
+                            stopDockDragTracking();
                             QRect tabGlobalRect(tabBar->mapToGlobal(tabBar->tabRect(tab).topLeft()),
                                                 tabBar->tabRect(tab).size());
                             QSize floatSize = dock->size().expandedTo(QSize(240, 140));
@@ -1782,6 +1783,15 @@ void AntDockManager::handleDockTitleMouseEvent(AntDockWidget* dockWidget, QEvent
         }
         break;
     }
+    case QEvent::MouseButtonDblClick:
+    {
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        if (mouse->button() == Qt::LeftButton)
+        {
+            stopDockDragTracking();
+        }
+        break;
+    }
     case QEvent::Close:
         stopDockDragTracking();
         break;
@@ -1821,6 +1831,9 @@ bool AntDockManager::handleGlobalDockDragEvent(QObject* watched, QEvent* event)
         }
         break;
     }
+    case QEvent::MouseButtonDblClick:
+        stopDockDragTracking();
+        break;
     case QEvent::KeyPress:
         if (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape)
         {
@@ -1842,6 +1855,8 @@ void AntDockManager::startDockDragTracking(AntDockWidget* dockWidget, const QPoi
     }
 
     m_draggingDockTitle = true;
+    m_dockDragActivated = false;
+    setProperty("antDockDragActivated", false);
     m_draggedDock = dockWidget;
     m_dragStartGlobal = globalPos;
     m_lastDropGuideGlobal = QPoint();
@@ -1861,6 +1876,12 @@ void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
 {
     if (!m_draggingDockTitle)
     {
+        return;
+    }
+
+    if (!m_dockDragActivated)
+    {
+        stopDockDragTracking();
         return;
     }
 
@@ -1917,6 +1938,8 @@ void AntDockManager::stopDockDragTracking()
     }
 
     m_draggingDockTitle = false;
+    m_dockDragActivated = false;
+    setProperty("antDockDragActivated", false);
     m_draggedDock = nullptr;
     m_lastDropGuideGlobal = QPoint();
     m_hasLastDropGuideGlobal = false;
@@ -2072,6 +2095,8 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
     {
         return;
     }
+    m_dockDragActivated = true;
+    setProperty("antDockDragActivated", true);
     m_lastDropGuideGlobal = globalPos;
     m_hasLastDropGuideGlobal = true;
 

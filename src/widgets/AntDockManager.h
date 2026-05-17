@@ -149,6 +149,7 @@ private:
     bool m_placeholderVisible = true;
     bool m_dropGuideVisible = true;
     bool m_draggingDockTitle = false;
+    bool m_dockDragActivated = false;
     bool m_appEventFilterInstalled = false;
     AntDockWidget* m_draggedDock = nullptr;
     QPoint m_dragStartGlobal;
