@@ -374,7 +374,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntToolButton`：QToolButton + QProxyStyle，dropdown 箭头动画
 - `AntMenuBar`：QMenuBar 主题化
 - `AntToolBar`：QToolBar 主题化，浮动阴影
-- `AntDockWidget` / `AntDockManager`：主题化停靠面板，自定义标题栏，使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，支持中心标签页停靠、命名布局快照、拖动窗体半透明、ADS-like 中心/边缘停靠小方格、按引导位置确定落位、拖动浮动预览窗口和 Win32 resize 边缘
+- `AntDockWidget` / `AntDockManager`：主题化停靠面板，自定义标题栏，使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，支持中心标签页停靠、命名布局快照、拖动窗体半透明、可通过 `setDropGuideEnabled()` 开关的 ADS-like 中心/边缘停靠小方格、按引导位置确定落位、拖动浮动预览窗口和 Win32 resize 边缘
 - `AntScrollArea`：QScrollArea + AntScrollBar + QScroller 手势滚动
 - `AntPlainTextEdit`：多行文本编辑器，3 种变体，TextArea 式右下角缩放柄，上下文菜单
 - `AntLog`：5 级别彩色日志输出（Debug/Info/Success/Warning/Error），时间戳

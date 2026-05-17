@@ -374,7 +374,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntToolButton`: QToolButton + QProxyStyle with dropdown arrow animation
 - `AntMenuBar`: themed QMenuBar
 - `AntToolBar`: themed QToolBar with floating shadow
-- `AntDockWidget` / `AntDockManager`: themed dock panels with custom title bars, a custom splitter/tab dock tree, center tab placement, named perspectives, translucent drag window, ADS-like center / edge drop guide squares, deterministic guided drop placement that does not rely on Qt's native dock layout, floating drop preview window, and Win32 resize edges
+- `AntDockWidget` / `AntDockManager`: themed dock panels with custom title bars, a custom splitter/tab dock tree, center tab placement, named perspectives, translucent drag window, toggleable ADS-like center / edge drop guide squares (`setDropGuideEnabled()`), deterministic guided drop placement that does not rely on Qt's native dock layout, floating drop preview window, and Win32 resize edges
 - `AntScrollArea`: QScrollArea + AntScrollBar + QScroller gesture scrolling
 - `AntPlainTextEdit`: multi-line text editor with 3 variants, TextArea-style resize grip, and a context menu
 - `AntLog`: 5-level colored log output (Debug / Info / Success / Warning / Error) with timestamps

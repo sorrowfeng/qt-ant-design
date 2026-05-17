@@ -732,6 +732,7 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(manager->dockOptions().testFlag(QMainWindow::AllowNestedDocks), true);
     QCOMPARE(manager->dockOptions().testFlag(QMainWindow::AllowTabbedDocks), true);
     QCOMPARE(manager->palette().color(QPalette::Window), antTheme->tokens().colorBgLayout);
+    QCOMPARE(manager->isDropGuideEnabled(), true);
     QCOMPARE(manager->isDropGuideVisible(), true);
     QCOMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::None);
     QCOMPARE(manager->isDropPreviewVisible(), false);
@@ -770,12 +771,17 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(propertiesArea != nullptr);
     QVERIFY(propertiesArea != inspectorArea);
 
+    QSignalSpy guideEnabledSpy(manager, &AntDockManager::dropGuideEnabledChanged);
     QSignalSpy guideVisibleSpy(manager, &AntDockManager::dropGuideVisibleChanged);
-    manager->setDropGuideVisible(false);
+    manager->setDropGuideEnabled(false);
+    QCOMPARE(manager->isDropGuideEnabled(), false);
     QCOMPARE(manager->isDropGuideVisible(), false);
+    QCOMPARE(guideEnabledSpy.count(), 1);
     QCOMPARE(guideVisibleSpy.count(), 1);
     manager->setDropGuideVisible(true);
+    QCOMPARE(manager->isDropGuideEnabled(), true);
     QCOMPARE(manager->isDropGuideVisible(), true);
+    QCOMPARE(guideEnabledSpy.count(), 2);
     QCOMPARE(guideVisibleSpy.count(), 2);
 
     QSignalSpy savedSpy(manager, &AntDockManager::perspectiveSaved);
@@ -804,6 +810,38 @@ void TestAntQtExtensions::dockManager()
     const QPoint dragStart = explorer->titleBarWidget()->rect().center();
     const QPoint propertiesCenterGlobal = propertiesAreaRect.center();
     const QPoint propertiesCenterMove = explorer->titleBarWidget()->mapFromGlobal(propertiesCenterGlobal);
+
+    QTabWidget* explorerAreaBeforeDisabledGuideDrag = dockAreaForExtensionTest(explorer);
+    QVERIFY(explorerAreaBeforeDisabledGuideDrag != nullptr);
+    manager->setDropGuideEnabled(false);
+    QMouseEvent disabledPressEvent(QEvent::MouseButtonPress,
+                                   QPointF(dragStart),
+                                   QPointF(explorer->titleBarWidget()->mapToGlobal(dragStart)),
+                                   Qt::LeftButton,
+                                   Qt::LeftButton,
+                                   Qt::NoModifier);
+    QCoreApplication::sendEvent(explorer->titleBarWidget(), &disabledPressEvent);
+    QMouseEvent disabledMoveEvent(QEvent::MouseMove,
+                                  QPointF(propertiesCenterMove),
+                                  QPointF(propertiesCenterGlobal),
+                                  Qt::NoButton,
+                                  Qt::LeftButton,
+                                  Qt::NoModifier);
+    QCoreApplication::sendEvent(explorer->titleBarWidget(), &disabledMoveEvent);
+    QCoreApplication::processEvents();
+    QVERIFY(!manager->isDropPreviewVisible());
+    QCOMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::None);
+    QMouseEvent disabledReleaseEvent(QEvent::MouseButtonRelease,
+                                     QPointF(propertiesCenterMove),
+                                     QPointF(propertiesCenterGlobal),
+                                     Qt::LeftButton,
+                                     Qt::NoButton,
+                                     Qt::NoModifier);
+    QCoreApplication::sendEvent(explorer->titleBarWidget(), &disabledReleaseEvent);
+    QTRY_VERIFY(explorer->graphicsEffect() == nullptr);
+    QCOMPARE(dockAreaForExtensionTest(explorer), explorerAreaBeforeDisabledGuideDrag);
+    manager->setDropGuideEnabled(true);
+
     QMouseEvent pressEvent(QEvent::MouseButtonPress,
                            QPointF(dragStart),
                            QPointF(explorer->titleBarWidget()->mapToGlobal(dragStart)),

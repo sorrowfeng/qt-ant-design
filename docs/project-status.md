@@ -22,7 +22,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 
 ## Recent Completed Work
 
-- Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, named perspectives, translucent drag windows, ADS-like center/edge drop guide squares, deterministic guided drop placement, and a floating drop preview window that marks the target layout region while dragging.
+- Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, named perspectives, translucent drag windows, toggleable ADS-like center/edge drop guide squares, deterministic guided drop placement, and a floating drop preview window that marks the target layout region while dragging.
 - Added a pure-control Showcase page matching the Ant Design homepage showcase without the website shell, theme sidebar, or decorative background.
 - Reworked `AntColorPicker` from a modal editor to an AntD-like click-open popup panel.
 - Added a non-maximized `AntWindow` outline so frameless windows remain distinguishable on similarly colored desktop backgrounds.

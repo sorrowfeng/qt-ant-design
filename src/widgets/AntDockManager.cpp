@@ -1036,17 +1036,28 @@ void AntDockManager::setPlaceholderVisible(bool visible)
 
 bool AntDockManager::isDropGuideVisible() const
 {
+    return isDropGuideEnabled();
+}
+
+bool AntDockManager::isDropGuideEnabled() const
+{
     return m_dropGuideVisible;
 }
 
 void AntDockManager::setDropGuideVisible(bool visible)
 {
-    if (m_dropGuideVisible == visible) return;
-    m_dropGuideVisible = visible;
+    setDropGuideEnabled(visible);
+}
+
+void AntDockManager::setDropGuideEnabled(bool enabled)
+{
+    if (m_dropGuideVisible == enabled) return;
+    m_dropGuideVisible = enabled;
     if (!m_dropGuideVisible)
     {
         hideDropGuide();
     }
+    Q_EMIT dropGuideEnabledChanged(m_dropGuideVisible);
     Q_EMIT dropGuideVisibleChanged(m_dropGuideVisible);
 }
 
@@ -1733,10 +1744,14 @@ void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
 
     QPointer<AntDockManager> manager(this);
     QPointer<AntDockWidget> draggedDock(m_draggedDock);
-    DropTarget target = dropTargetAt(globalPos);
-    if (!target.valid)
+    DropTarget target;
+    if (m_dropGuideVisible)
     {
-        target = rememberedDropTarget();
+        target = dropTargetAt(globalPos);
+        if (!target.valid)
+        {
+            target = rememberedDropTarget();
+        }
     }
     QPointer<AntDockWidget> targetDock(target.dockWidget);
     const DockPlacement placement = target.placement;
@@ -1861,7 +1876,7 @@ void AntDockManager::setDraggedDockTranslucent(bool translucent)
 
 void AntDockManager::showDropGuideAt(const QPoint& globalPos)
 {
-    if (!m_dropGuideVisible || !m_dropGuideOverlay || !isVisible()) return;
+    if (!m_dropGuideOverlay || !isVisible()) return;
     if (m_hasLastDropGuideGlobal && m_lastDropGuideGlobal == globalPos)
     {
         return;
@@ -1881,6 +1896,12 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
         }
     }
     setDraggedDockTranslucent(true);
+
+    if (!m_dropGuideVisible)
+    {
+        hideDropGuide();
+        return;
+    }
 
     m_dropGuideOverlay->setGeometry(rect());
     m_dropGuideOverlay->raise();

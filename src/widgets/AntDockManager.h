@@ -21,6 +21,7 @@ class QT_ANT_DESIGN_EXPORT AntDockManager : public QMainWindow
 {
     Q_OBJECT
     Q_PROPERTY(bool placeholderVisible READ isPlaceholderVisible WRITE setPlaceholderVisible NOTIFY placeholderVisibleChanged)
+    Q_PROPERTY(bool dropGuideEnabled READ isDropGuideEnabled WRITE setDropGuideEnabled NOTIFY dropGuideEnabledChanged)
     Q_PROPERTY(bool dropGuideVisible READ isDropGuideVisible WRITE setDropGuideVisible NOTIFY dropGuideVisibleChanged)
 
 public:
@@ -60,6 +61,8 @@ public:
     bool isPlaceholderVisible() const;
     void setPlaceholderVisible(bool visible);
 
+    bool isDropGuideEnabled() const;
+    void setDropGuideEnabled(bool enabled);
     bool isDropGuideVisible() const;
     void setDropGuideVisible(bool visible);
     DockPlacement activeDropGuide() const;
@@ -78,6 +81,7 @@ Q_SIGNALS:
     void dockWidgetAdded(AntDockWidget* dockWidget);
     void dockWidgetRemoved(AntDockWidget* dockWidget);
     void placeholderVisibleChanged(bool visible);
+    void dropGuideEnabledChanged(bool enabled);
     void dropGuideVisibleChanged(bool visible);
     void dropPreviewVisibleChanged(bool visible);
     void activeDropGuideChanged(AntDockManager::DockPlacement placement);

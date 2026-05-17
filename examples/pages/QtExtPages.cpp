@@ -35,6 +35,7 @@
 #include "widgets/AntScrollBar.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntStatusBar.h"
+#include "widgets/AntSwitch.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntToolButton.h"
 #include "widgets/AntTypography.h"
@@ -250,7 +251,7 @@ QWidget* createDockWidgetPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("AntDockWidget"));
         auto* cl = card->bodyLayout();
 
-        auto* infoLabel = makeParagraph(QStringLiteral("AntDockManager provides a themed docking workspace with a custom splitter/tab dock tree, translucent draggable AntDockWidget panels, and ADS-like drop guide squares."), page);
+        auto* infoLabel = makeParagraph(QStringLiteral("AntDockManager provides a themed docking workspace with a custom splitter/tab dock tree, translucent draggable AntDockWidget panels, and toggleable ADS-like drop guide squares."), page);
         cl->addWidget(infoLabel);
 
         auto* manager = new AntDockManager(page);
@@ -308,6 +309,20 @@ QWidget* createDockWidgetPage(QWidget* /*owner*/)
             }
         });
         actionRow->addWidget(restoreLayout);
+
+        auto* guideToggle = new AntSwitch(page);
+        guideToggle->setChecked(manager->isDropGuideEnabled());
+        guideToggle->setCheckedText(QStringLiteral("Guides"));
+        guideToggle->setUncheckedText(QStringLiteral("Guides"));
+        QObject::connect(guideToggle, &AntSwitch::checkedChanged, manager, &AntDockManager::setDropGuideEnabled);
+        QObject::connect(manager, &AntDockManager::dropGuideEnabledChanged, guideToggle, [guideToggle](bool enabled) {
+            if (guideToggle->isChecked() != enabled)
+            {
+                guideToggle->setChecked(enabled);
+            }
+        });
+        actionRow->addWidget(makeText(QStringLiteral("Drop guides"), page));
+        actionRow->addWidget(guideToggle);
         actionRow->addStretch();
         cl->addLayout(actionRow);
 
