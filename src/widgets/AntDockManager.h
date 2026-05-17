@@ -121,6 +121,8 @@ private:
     void finishDockDragTracking(const QPoint& globalPos);
     void stopDockDragTracking();
     void applyDropTarget(AntDockWidget* dockWidget, AntDockWidget* targetDock, DockPlacement placement, bool containerDrop);
+    void floatDockWidget(AntDockWidget* dockWidget, const QRect& globalGeometry);
+    QRect floatingGeometryForDock(AntDockWidget* dockWidget, const QPoint& globalPos) const;
     void setDraggedDockTranslucent(bool translucent);
     void showDropGuideAt(const QPoint& globalPos);
     void hideDropGuide();

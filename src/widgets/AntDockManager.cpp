@@ -640,6 +640,11 @@ public:
         }
     }
 
+    QRect previewGlobalGeometry() const
+    {
+        return isVisible() ? geometry() : QRect();
+    }
+
     void end()
     {
         hide();
@@ -1215,6 +1220,29 @@ bool AntDockManager::eventFilter(QObject* watched, QEvent* event)
                 }
                 break;
             }
+            case QEvent::MouseButtonDblClick:
+            {
+                auto* mouse = static_cast<QMouseEvent*>(event);
+                if (mouse->button() == Qt::LeftButton)
+                {
+                    const int tab = tabBar->tabAt(mouse->pos());
+                    if (tab >= 0)
+                    {
+                        area->setCurrentIndex(tab);
+                        if (auto* dock = qobject_cast<AntDockWidget*>(area->widget(tab)))
+                        {
+                            QRect tabGlobalRect(tabBar->mapToGlobal(tabBar->tabRect(tab).topLeft()),
+                                                tabBar->tabRect(tab).size());
+                            QSize floatSize = dock->size().expandedTo(QSize(240, 140));
+                            const QPoint topLeft(tabGlobalRect.center().x() - floatSize.width() / 2,
+                                                 tabGlobalRect.center().y() + 6);
+                            floatDockWidget(dock, QRect(topLeft, floatSize));
+                            return true;
+                        }
+                    }
+                }
+                break;
+            }
             case QEvent::MouseButtonRelease:
             {
                 auto* mouse = static_cast<QMouseEvent*>(event);
@@ -1761,7 +1789,8 @@ void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
     QPointer<AntDockManager> manager(this);
     QPointer<AntDockWidget> draggedDock(m_draggedDock);
     DropTarget target = dropTargetAt(globalPos);
-    if (!target.valid)
+    const bool releaseInsideManager = rect().contains(mapFromGlobal(globalPos));
+    if (!target.valid && releaseInsideManager)
     {
         target = rememberedDropTarget();
     }
@@ -1769,11 +1798,24 @@ void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
     const DockPlacement placement = target.placement;
     const bool containerDrop = target.containerTarget;
     const bool hasGuidedTarget = target.valid && placement != DockPlacement::None;
+    const QRect floatGeometry = floatingGeometryForDock(m_draggedDock, globalPos);
 
     stopDockDragTracking();
 
-    if (!hasGuidedTarget || !draggedDock)
+    if (!draggedDock)
     {
+        return;
+    }
+
+    if (!hasGuidedTarget)
+    {
+        QTimer::singleShot(0, this, [manager, draggedDock, floatGeometry]() {
+            if (!manager || !draggedDock)
+            {
+                return;
+            }
+            manager->floatDockWidget(draggedDock, floatGeometry);
+        });
         return;
     }
 
@@ -1845,6 +1887,64 @@ void AntDockManager::applyDropTarget(AntDockWidget* dockWidget, AntDockWidget* t
     updatePlaceholderState();
 }
 
+void AntDockManager::floatDockWidget(AntDockWidget* dockWidget, const QRect& globalGeometry)
+{
+    if (!dockWidget)
+    {
+        return;
+    }
+
+    if (m_draggingDockTitle && m_draggedDock == dockWidget)
+    {
+        stopDockDragTracking();
+    }
+
+    QRect targetGeometry = globalGeometry;
+    if (targetGeometry.isEmpty())
+    {
+        targetGeometry = QRect(dockWidget->mapToGlobal(QPoint(0, 0)),
+                               dockWidget->size().expandedTo(QSize(240, 140)));
+    }
+
+    removeDockFromArea(dockWidget, true);
+    setEmbeddedDockTitleBarVisible(dockWidget, true);
+    dockWidget->setWindowOpacity(1.0);
+    dockWidget->setFloating(true);
+    dockWidget->setParent(nullptr);
+    dockWidget->setMinimumSize(QSize(180, 120));
+    dockWidget->setGeometry(targetGeometry);
+    dockWidget->show();
+    dockWidget->raise();
+    dockWidget->activateWindow();
+    installDockEventFilters(dockWidget);
+    updatePlaceholderState();
+}
+
+QRect AntDockManager::floatingGeometryForDock(AntDockWidget* dockWidget, const QPoint& globalPos) const
+{
+    if (m_dragPreviewWindow)
+    {
+        const QRect previewGeometry = m_dragPreviewWindow->previewGlobalGeometry();
+        if (!previewGeometry.isEmpty())
+        {
+            return previewGeometry;
+        }
+    }
+
+    if (!dockWidget)
+    {
+        return QRect(globalPos - QPoint(120, 28), QSize(240, 140));
+    }
+
+    const QSize size = dockWidget->size().expandedTo(QSize(240, 140));
+    QPoint topLeft = globalPos - m_dragPreviewOffset;
+    if (m_dragPreviewOffset.isNull())
+    {
+        topLeft = globalPos - QPoint(qMin(80, size.width() / 3), 22);
+    }
+    return QRect(topLeft, size);
+}
+
 void AntDockManager::setDraggedDockTranslucent(bool translucent)
 {
     if (!m_draggedDock)
@@ -1896,7 +1996,19 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
     m_lastDropGuideGlobal = globalPos;
     m_hasLastDropGuideGlobal = true;
 
-    if (m_dragPreviewWindow && m_draggedDock)
+    if (m_draggedDock && m_draggedDock->isFloating())
+    {
+        const QPoint topLeft = globalPos - m_dragPreviewOffset;
+        if (m_draggedDock->pos() != topLeft)
+        {
+            m_draggedDock->move(topLeft);
+        }
+        if (m_dragPreviewWindow && m_dragPreviewWindow->isVisible())
+        {
+            m_dragPreviewWindow->end();
+        }
+    }
+    else if (m_dragPreviewWindow && m_draggedDock)
     {
         if (!m_dragPreviewWindow->isVisible())
         {

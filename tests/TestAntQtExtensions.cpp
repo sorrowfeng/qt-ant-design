@@ -971,6 +971,96 @@ void TestAntQtExtensions::dockManager()
                 manager->tabifiedDockWidgets(explorer).contains(inspector));
     manager->setDropGuideEnabled(true);
 
+    auto dragFloatingDockBack = [&](AntDockWidget* dock, AntDockWidget* target) {
+        QWidget* titleBar = dock ? dock->titleBarWidget() : nullptr;
+        QTabWidget* targetArea = dockAreaForExtensionTest(target);
+        QVERIFY(titleBar != nullptr);
+        QVERIFY(targetArea != nullptr);
+        const QRect targetRect(targetArea->mapToGlobal(QPoint(0, 0)), targetArea->size());
+        const QPoint titleStart = titleBar->rect().center();
+        const QPoint targetGlobal = targetRect.center();
+        const QPoint targetLocal = titleBar->mapFromGlobal(targetGlobal);
+        QMouseEvent pressFloatingEvent(QEvent::MouseButtonPress,
+                                       QPointF(titleStart),
+                                       QPointF(titleBar->mapToGlobal(titleStart)),
+                                       Qt::LeftButton,
+                                       Qt::LeftButton,
+                                       Qt::NoModifier);
+        QCoreApplication::sendEvent(titleBar, &pressFloatingEvent);
+        QMouseEvent moveFloatingEvent(QEvent::MouseMove,
+                                      QPointF(targetLocal),
+                                      QPointF(targetGlobal),
+                                      Qt::NoButton,
+                                      Qt::LeftButton,
+                                      Qt::NoModifier);
+        QCoreApplication::sendEvent(titleBar, &moveFloatingEvent);
+        QMouseEvent releaseFloatingEvent(QEvent::MouseButtonRelease,
+                                         QPointF(targetLocal),
+                                         QPointF(targetGlobal),
+                                         Qt::LeftButton,
+                                         Qt::NoButton,
+                                         Qt::NoModifier);
+        QCoreApplication::sendEvent(titleBar, &releaseFloatingEvent);
+    };
+
+    QTabBar* floatingSourceTabBar = dockTabBarForExtensionTest(explorer);
+    QVERIFY(floatingSourceTabBar != nullptr);
+    const QPoint floatDragStart = dockTabCenterForExtensionTest(explorer);
+    QVERIFY(!floatDragStart.isNull());
+    const QPoint outsideManagerGlobal = manager->mapToGlobal(QPoint(-260, -180));
+    const QPoint outsideManagerLocal = floatingSourceTabBar->mapFromGlobal(outsideManagerGlobal);
+    QMouseEvent floatPressEvent(QEvent::MouseButtonPress,
+                                QPointF(floatDragStart),
+                                QPointF(floatingSourceTabBar->mapToGlobal(floatDragStart)),
+                                Qt::LeftButton,
+                                Qt::LeftButton,
+                                Qt::NoModifier);
+    QCoreApplication::sendEvent(floatingSourceTabBar, &floatPressEvent);
+    QMouseEvent floatMoveEvent(QEvent::MouseMove,
+                               QPointF(outsideManagerLocal),
+                               QPointF(outsideManagerGlobal),
+                               Qt::NoButton,
+                               Qt::LeftButton,
+                               Qt::NoModifier);
+    QCoreApplication::sendEvent(floatingSourceTabBar, &floatMoveEvent);
+    QMouseEvent floatReleaseEvent(QEvent::MouseButtonRelease,
+                                  QPointF(outsideManagerLocal),
+                                  QPointF(outsideManagerGlobal),
+                                  Qt::LeftButton,
+                                  Qt::NoButton,
+                                  Qt::NoModifier);
+    QCoreApplication::sendEvent(floatingSourceTabBar, &floatReleaseEvent);
+    QTRY_VERIFY(explorer->isFloating());
+    QTRY_VERIFY(explorer->titleBarWidget()->isVisible());
+    QVERIFY(dockAreaForExtensionTest(explorer) == nullptr);
+    const QSize floatingResize = explorer->size().expandedTo(QSize(280, 180));
+    explorer->resize(floatingResize);
+    QCOMPARE(explorer->size(), floatingResize);
+
+    dragFloatingDockBack(explorer, inspector);
+    QTRY_VERIFY(!explorer->isFloating());
+    QTRY_VERIFY(dockAreaForExtensionTest(explorer) != nullptr);
+    QTRY_VERIFY(!explorer->titleBarWidget()->isVisible());
+
+    QTabBar* doubleClickTabBar = dockTabBarForExtensionTest(explorer);
+    QVERIFY(doubleClickTabBar != nullptr);
+    const QPoint doubleClickPoint = dockTabCenterForExtensionTest(explorer);
+    QVERIFY(!doubleClickPoint.isNull());
+    QMouseEvent doubleClickEvent(QEvent::MouseButtonDblClick,
+                                 QPointF(doubleClickPoint),
+                                 QPointF(doubleClickTabBar->mapToGlobal(doubleClickPoint)),
+                                 Qt::LeftButton,
+                                 Qt::LeftButton,
+                                 Qt::NoModifier);
+    QCoreApplication::sendEvent(doubleClickTabBar, &doubleClickEvent);
+    QTRY_VERIFY(explorer->isFloating());
+    QTRY_VERIFY(explorer->titleBarWidget()->isVisible());
+
+    dragFloatingDockBack(explorer, inspector);
+    QTRY_VERIFY(!explorer->isFloating());
+    QTRY_VERIFY(dockAreaForExtensionTest(explorer) != nullptr);
+    QTRY_VERIFY(!explorer->titleBarWidget()->isVisible());
+
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     QCOMPARE(manager->palette().color(QPalette::Window), antTheme->tokens().colorBgLayout);
     QCOMPARE(explorer->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
