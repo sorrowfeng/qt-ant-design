@@ -3,13 +3,11 @@
 #include <QApplication>
 #include <QAction>
 #include <QContextMenuEvent>
-#include <QDataStream>
 #include <QDockWidget>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QGraphicsOpacityEffect>
 #include <QIcon>
-#include <QIODevice>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMouseEvent>
@@ -30,6 +28,7 @@
 
 #include "AntDockWidget.h"
 #include "core/AntTheme.h"
+#include "../private/AntDockLayoutSerializer.h"
 
 #if defined(Q_OS_WIN)
 #include <windows.h>
@@ -37,33 +36,6 @@
 
 namespace
 {
-constexpr const char* kPerspectiveMagic = "AntDockManagerPerspective";
-constexpr quint16 kPerspectiveVersion = 1;
-
-enum class DockLayoutNodeType : quint8
-{
-    Empty = 0,
-    Area = 1,
-    Splitter = 2,
-};
-
-struct DockLayoutNode
-{
-    DockLayoutNodeType type = DockLayoutNodeType::Empty;
-    Qt::Orientation orientation = Qt::Horizontal;
-    QList<int> sizes;
-    QStringList dockIds;
-    QList<DockLayoutNode> children;
-    int currentIndex = 0;
-};
-
-struct FloatingDockSnapshot
-{
-    QString dockId;
-    QRect geometry;
-    bool visible = true;
-};
-
 QString cssColor(const QColor& color)
 {
     return QStringLiteral("rgba(%1,%2,%3,%4)")
@@ -87,218 +59,6 @@ QPoint mouseGlobalPosition(QMouseEvent* event)
 #else
     return event->globalPos();
 #endif
-}
-
-QString dockPersistentId(AntDockWidget* dockWidget)
-{
-    return dockWidget ? dockWidget->objectName() : QString();
-}
-
-DockLayoutNode captureDockLayoutNode(QWidget* widget)
-{
-    DockLayoutNode node;
-    if (!widget) return node;
-
-    if (auto* splitter = qobject_cast<QSplitter*>(widget))
-    {
-        node.type = DockLayoutNodeType::Splitter;
-        node.orientation = splitter->orientation();
-        node.sizes = splitter->sizes();
-        for (int i = 0; i < splitter->count(); ++i)
-        {
-            DockLayoutNode child = captureDockLayoutNode(splitter->widget(i));
-            if (child.type != DockLayoutNodeType::Empty)
-            {
-                node.children.append(child);
-            }
-        }
-        if (node.children.isEmpty())
-        {
-            node.type = DockLayoutNodeType::Empty;
-            node.sizes.clear();
-        }
-        return node;
-    }
-
-    if (auto* tabs = qobject_cast<QTabWidget*>(widget))
-    {
-        if (tabs->objectName() != QStringLiteral("AntDockArea"))
-        {
-            return node;
-        }
-
-        node.type = DockLayoutNodeType::Area;
-        node.currentIndex = qMax(0, tabs->currentIndex());
-        for (int i = 0; i < tabs->count(); ++i)
-        {
-            if (auto* dock = qobject_cast<AntDockWidget*>(tabs->widget(i)))
-            {
-                const QString id = dockPersistentId(dock);
-                if (!id.isEmpty())
-                {
-                    node.dockIds.append(id);
-                }
-            }
-        }
-        if (node.dockIds.isEmpty())
-        {
-            node.type = DockLayoutNodeType::Empty;
-            node.currentIndex = 0;
-        }
-    }
-
-    return node;
-}
-
-void collectDockIds(const DockLayoutNode& node, QSet<QString>* ids)
-{
-    if (!ids) return;
-
-    for (const QString& id : node.dockIds)
-    {
-        if (!id.isEmpty())
-        {
-            ids->insert(id);
-        }
-    }
-    for (const DockLayoutNode& child : node.children)
-    {
-        collectDockIds(child, ids);
-    }
-}
-
-void writeLayoutNode(QDataStream& stream, const DockLayoutNode& node)
-{
-    stream << static_cast<quint8>(node.type);
-    stream << static_cast<qint32>(node.orientation);
-    stream << static_cast<qint32>(node.currentIndex);
-
-    stream << static_cast<qint32>(node.sizes.size());
-    for (int size : node.sizes)
-    {
-        stream << static_cast<qint32>(size);
-    }
-
-    stream << static_cast<qint32>(node.dockIds.size());
-    for (const QString& id : node.dockIds)
-    {
-        stream << id;
-    }
-
-    stream << static_cast<qint32>(node.children.size());
-    for (const DockLayoutNode& child : node.children)
-    {
-        writeLayoutNode(stream, child);
-    }
-}
-
-bool readLayoutNode(QDataStream& stream, DockLayoutNode* node)
-{
-    if (!node) return false;
-
-    quint8 rawType = 0;
-    qint32 rawOrientation = 0;
-    qint32 rawCurrentIndex = 0;
-    stream >> rawType >> rawOrientation >> rawCurrentIndex;
-    if (stream.status() != QDataStream::Ok) return false;
-
-    if (rawType > static_cast<quint8>(DockLayoutNodeType::Splitter))
-    {
-        return false;
-    }
-    if (rawOrientation != static_cast<qint32>(Qt::Horizontal) &&
-        rawOrientation != static_cast<qint32>(Qt::Vertical))
-    {
-        return false;
-    }
-
-    node->type = static_cast<DockLayoutNodeType>(rawType);
-    node->orientation = static_cast<Qt::Orientation>(rawOrientation);
-    node->currentIndex = qMax<qint32>(0, rawCurrentIndex);
-    node->sizes.clear();
-    node->dockIds.clear();
-    node->children.clear();
-
-    qint32 sizeCount = 0;
-    stream >> sizeCount;
-    if (stream.status() != QDataStream::Ok || sizeCount < 0 || sizeCount > 256) return false;
-    for (qint32 i = 0; i < sizeCount; ++i)
-    {
-        qint32 size = 0;
-        stream >> size;
-        node->sizes.append(qMax<qint32>(0, size));
-    }
-
-    qint32 dockCount = 0;
-    stream >> dockCount;
-    if (stream.status() != QDataStream::Ok || dockCount < 0 || dockCount > 1024) return false;
-    for (qint32 i = 0; i < dockCount; ++i)
-    {
-        QString id;
-        stream >> id;
-        if (!id.isEmpty())
-        {
-            node->dockIds.append(id);
-        }
-    }
-
-    qint32 childCount = 0;
-    stream >> childCount;
-    if (stream.status() != QDataStream::Ok || childCount < 0 || childCount > 256) return false;
-    for (qint32 i = 0; i < childCount; ++i)
-    {
-        DockLayoutNode child;
-        if (!readLayoutNode(stream, &child))
-        {
-            return false;
-        }
-        if (child.type != DockLayoutNodeType::Empty)
-        {
-            node->children.append(child);
-        }
-    }
-
-    if (node->type == DockLayoutNodeType::Area && node->dockIds.isEmpty())
-    {
-        node->type = DockLayoutNodeType::Empty;
-    }
-    if (node->type == DockLayoutNodeType::Splitter && node->children.isEmpty())
-    {
-        node->type = DockLayoutNodeType::Empty;
-    }
-
-    return stream.status() == QDataStream::Ok;
-}
-
-void writeFloatingSnapshots(QDataStream& stream, const QList<FloatingDockSnapshot>& snapshots)
-{
-    stream << static_cast<qint32>(snapshots.size());
-    for (const FloatingDockSnapshot& snapshot : snapshots)
-    {
-        stream << snapshot.dockId << snapshot.geometry << snapshot.visible;
-    }
-}
-
-bool readFloatingSnapshots(QDataStream& stream, QList<FloatingDockSnapshot>* snapshots)
-{
-    if (!snapshots) return false;
-
-    snapshots->clear();
-    qint32 count = 0;
-    stream >> count;
-    if (stream.status() != QDataStream::Ok || count < 0 || count > 1024) return false;
-
-    for (qint32 i = 0; i < count; ++i)
-    {
-        FloatingDockSnapshot snapshot;
-        stream >> snapshot.dockId >> snapshot.geometry >> snapshot.visible;
-        if (stream.status() != QDataStream::Ok) return false;
-        if (!snapshot.dockId.isEmpty())
-        {
-            snapshots->append(snapshot);
-        }
-    }
-    return true;
 }
 
 void setEmbeddedDockTitleBarVisible(AntDockWidget* dockWidget, bool visible)
@@ -385,6 +145,16 @@ void clearFloatingDockOwner(AntDockWidget* dockWidget)
 #endif
 }
 } // namespace
+
+using AntDockInternal::DockLayoutNode;
+using AntDockInternal::DockLayoutNodeType;
+using AntDockInternal::FloatingDockSnapshot;
+using AntDockInternal::captureDockLayoutNode;
+using AntDockInternal::collectDockIds;
+using AntDockInternal::deserializeDockPerspective;
+using AntDockInternal::dockPersistentId;
+using AntDockInternal::isLegacyDockPerspective;
+using AntDockInternal::serializeDockPerspective;
 
 struct AntDockManager::DropTarget
 {
@@ -1582,12 +1352,7 @@ bool AntDockManager::savePerspective(const QString& name)
         }
     }
 
-    QByteArray state;
-    QDataStream stream(&state, QIODevice::WriteOnly);
-    stream.setVersion(QDataStream::Qt_5_0);
-    stream << QString::fromLatin1(kPerspectiveMagic) << kPerspectiveVersion;
-    writeLayoutNode(stream, rootNode);
-    writeFloatingSnapshots(stream, floatingSnapshots);
+    const QByteArray state = serializeDockPerspective(rootNode, floatingSnapshots);
     if (state.isEmpty()) return false;
 
     m_perspectives.insert(key, state);
@@ -1601,29 +1366,16 @@ bool AntDockManager::restorePerspective(const QString& name)
     const QByteArray state = m_perspectives.value(key);
     if (state.isEmpty()) return false;
 
-    if (state.startsWith("AntDockManagerLayout\n"))
+    if (isLegacyDockPerspective(state))
     {
         updatePlaceholderState();
         Q_EMIT perspectiveRestored(key);
         return true;
     }
 
-    QDataStream stream(state);
-    stream.setVersion(QDataStream::Qt_5_0);
-
-    QString magic;
-    quint16 version = 0;
-    stream >> magic >> version;
-    if (stream.status() != QDataStream::Ok ||
-        magic != QString::fromLatin1(kPerspectiveMagic) ||
-        version != kPerspectiveVersion)
-    {
-        return false;
-    }
-
     DockLayoutNode rootNode;
     QList<FloatingDockSnapshot> floatingSnapshots;
-    if (!readLayoutNode(stream, &rootNode) || !readFloatingSnapshots(stream, &floatingSnapshots))
+    if (!deserializeDockPerspective(state, &rootNode, &floatingSnapshots))
     {
         return false;
     }
