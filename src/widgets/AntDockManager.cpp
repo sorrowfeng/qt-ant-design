@@ -44,6 +44,7 @@ constexpr int kDockContextMenuShadowMargin = 24;
 constexpr int kDockContextMenuInnerPadding = 4;
 constexpr int kDockContextMenuMinWidth = 176;
 constexpr int kDockContextMenuMaxWidth = 280;
+constexpr int kDockContextMenuShadowSpread = 18;
 
 QString cssColor(const QColor& color)
 {
@@ -242,11 +243,68 @@ QRect availableScreenGeometryForPopup(const QPoint& globalPos, const QWidget* fa
     return QRect(0, 0, 1280, 720);
 }
 
+void drawDockContextMenuShadow(QPainter* painter, const QRect& panel, int radius)
+{
+    if (!painter || panel.isEmpty())
+    {
+        return;
+    }
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    const auto& token = antTheme->tokens();
+    const QRectF sourceRect(panel.translated(0, 3));
+    const QColor shadowBase = token.colorShadow;
+    const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.18 : 0.14;
+
+    for (int step = kDockContextMenuShadowSpread; step > 0; --step)
+    {
+        const qreal outerDistance = static_cast<qreal>(step);
+        const qreal innerDistance = static_cast<qreal>(step - 1);
+        const qreal proximity = 1.0 - outerDistance / static_cast<qreal>(kDockContextMenuShadowSpread);
+        const qreal eased = proximity * proximity * (3.0 - 2.0 * proximity);
+        const qreal opacity = maxOpacity * eased;
+        if (opacity <= 0.0)
+        {
+            continue;
+        }
+
+        QColor shadow = shadowBase;
+        shadow.setAlphaF(opacity);
+
+        QPainterPath outerPath;
+        const QRectF outerRect = sourceRect.adjusted(-outerDistance,
+                                                     -outerDistance,
+                                                     outerDistance,
+                                                     outerDistance);
+        outerPath.addRoundedRect(outerRect, radius + outerDistance, radius + outerDistance);
+
+        QPainterPath innerPath;
+        if (innerDistance <= 0.0)
+        {
+            innerPath.addRoundedRect(sourceRect, radius, radius);
+        }
+        else
+        {
+            const QRectF innerRect = sourceRect.adjusted(-innerDistance,
+                                                         -innerDistance,
+                                                         innerDistance,
+                                                         innerDistance);
+            innerPath.addRoundedRect(innerRect, radius + innerDistance, radius + innerDistance);
+        }
+
+        painter->fillPath(outerPath.subtracted(innerPath), shadow);
+    }
+
+    painter->restore();
+}
+
 class AntDockContextMenuPopup : public QFrame
 {
 public:
     explicit AntDockContextMenuPopup(QWidget* parent)
-        : QFrame(parent, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+        : QFrame(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
     {
         setObjectName(QStringLiteral("AntDockContextMenuPopup"));
         setAttribute(Qt::WA_TranslucentBackground, true);
@@ -272,6 +330,11 @@ public:
         });
     }
 
+    ~AntDockContextMenuPopup() override
+    {
+        uninstallGlobalEventFilter();
+    }
+
     AntMenu* menu() const { return m_menu; }
 
     void popupAt(const QPoint& globalPos)
@@ -282,11 +345,48 @@ public:
         geometry.moveLeft(qBound(screenRect.left() + 4, geometry.left(), screenRect.right() - geometry.width() - 4));
         geometry.moveTop(qBound(screenRect.top() + 4, geometry.top(), screenRect.bottom() - geometry.height() - 4));
         setGeometry(geometry);
+        installGlobalEventFilter();
         show();
         raise();
     }
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (!isVisible())
+        {
+            return QFrame::eventFilter(watched, event);
+        }
+
+        if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonDblClick)
+        {
+            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            const QPoint globalPos = mouseGlobalPosition(mouseEvent);
+            if (!geometry().contains(globalPos))
+            {
+                close();
+            }
+            return false;
+        }
+
+        if (event->type() == QEvent::KeyPress)
+        {
+            auto* keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_Escape)
+            {
+                close();
+                return true;
+            }
+        }
+
+        if (event->type() == QEvent::WindowDeactivate)
+        {
+            close();
+        }
+
+        return QFrame::eventFilter(watched, event);
+    }
+
     void paintEvent(QPaintEvent* event) override
     {
         Q_UNUSED(event)
@@ -298,7 +398,7 @@ protected:
                                             kDockContextMenuShadowMargin,
                                             -kDockContextMenuShadowMargin,
                                             -kDockContextMenuShadowMargin);
-        antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.72);
+        drawDockContextMenuShadow(&painter, panel, token.borderRadiusLG);
         const QColor border = antTheme->themeMode() == Ant::ThemeMode::Dark
                                   ? translucent(token.colorTextLightSolid, 0.18)
                                   : token.colorBorder;
@@ -311,11 +411,32 @@ protected:
 
     void hideEvent(QHideEvent* event) override
     {
+        uninstallGlobalEventFilter();
         QFrame::hideEvent(event);
         deleteLater();
     }
 
 private:
+    void installGlobalEventFilter()
+    {
+        if (!qApp || m_eventFilterInstalled)
+        {
+            return;
+        }
+        qApp->installEventFilter(this);
+        m_eventFilterInstalled = true;
+    }
+
+    void uninstallGlobalEventFilter()
+    {
+        if (!qApp || !m_eventFilterInstalled)
+        {
+            return;
+        }
+        qApp->removeEventFilter(this);
+        m_eventFilterInstalled = false;
+    }
+
     void syncTheme()
     {
         if (!m_menu)
@@ -362,6 +483,7 @@ private:
     }
 
     AntMenu* m_menu = nullptr;
+    bool m_eventFilterInstalled = false;
 };
 } // namespace
 

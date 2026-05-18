@@ -904,9 +904,18 @@ void TestAntQtExtensions::dockManager()
                                    inspectorTabBar->mapToGlobal(inspectorTabPoint));
     QCoreApplication::sendEvent(inspectorTabBar, &contextEvent);
     QCOMPARE(contextMenuSpy.count(), 1);
-    QWidget* popup = QApplication::activePopupWidget();
+    QWidget* popup = nullptr;
+    for (QWidget* widget : QApplication::topLevelWidgets())
+    {
+        if (widget && widget->objectName() == QStringLiteral("AntDockContextMenuPopup") && widget->isVisible())
+        {
+            popup = widget;
+            break;
+        }
+    }
     QVERIFY(popup != nullptr);
     QCOMPARE(popup->objectName(), QStringLiteral("AntDockContextMenuPopup"));
+    QVERIFY(popup->testAttribute(Qt::WA_TranslucentBackground));
     auto* dockMenu = popup->findChild<AntMenu*>(QStringLiteral("AntDockContextMenu"));
     QVERIFY(dockMenu != nullptr);
     QCOMPARE(dockMenu->menuTheme(),
