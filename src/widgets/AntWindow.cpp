@@ -57,7 +57,7 @@ constexpr int kLegacySoftwareShadowMargin = 14;
 constexpr int kLegacySoftwareShadowInnerClearance = 0;
 
 #if defined(Q_OS_WIN)
-void makeAntWindowShadowClickThrough(QWidget* widget)
+void makeAntWindowNativeInputTransparent(QWidget* widget, const char* propertyName)
 {
     if (!widget)
     {
@@ -86,7 +86,15 @@ void makeAntWindowShadowClickThrough(QWidget* widget)
                            SWP_NOACTIVATE | SWP_FRAMECHANGED);
     }
 
-    widget->setProperty("antWindowLegacySoftwareShadowClickThrough", true);
+    if (propertyName)
+    {
+        widget->setProperty(propertyName, true);
+    }
+}
+
+void makeAntWindowShadowClickThrough(QWidget* widget)
+{
+    makeAntWindowNativeInputTransparent(widget, "antWindowLegacySoftwareShadowClickThrough");
 }
 #endif
 
@@ -279,6 +287,9 @@ public:
         setAttribute(Qt::WA_NoSystemBackground, true);
         setAttribute(Qt::WA_TranslucentBackground, true);
         setFocusPolicy(Qt::NoFocus);
+#if defined(Q_OS_WIN)
+        setProperty("antWindowCornerSmootherClickThrough", false);
+#endif
     }
 
     void setCornerRadius(int radius)
@@ -298,6 +309,29 @@ public:
     }
 
 protected:
+#if defined(Q_OS_WIN)
+    void showEvent(QShowEvent* event) override
+    {
+        QWidget::showEvent(event);
+        makeAntWindowNativeInputTransparent(this, "antWindowCornerSmootherClickThrough");
+    }
+
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    {
+        if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
+        {
+            auto* msg = static_cast<MSG*>(message);
+            if (msg->message == WM_NCHITTEST)
+            {
+                *result = HTTRANSPARENT;
+                setProperty("antWindowCornerSmootherClickThrough", true);
+                return true;
+            }
+        }
+        return QWidget::nativeEvent(eventType, message, result);
+    }
+#endif
+
     void paintEvent(QPaintEvent*) override
     {
         if (m_radius <= 0 || rect().isEmpty())
@@ -2272,6 +2306,9 @@ void AntWindow::updateCornerSmoother()
     {
         m_cornerSmoother->setGeometry(rect());
     }
+#if defined(Q_OS_WIN)
+    makeAntWindowNativeInputTransparent(m_cornerSmoother, "antWindowCornerSmootherClickThrough");
+#endif
     m_cornerSmoother->raise();
 }
 

@@ -8,6 +8,7 @@
 #include <QWidget>
 
 class QPaintEvent;
+class QShowEvent;
 
 // Click-wave overlay: draws an expanding soft glow around a target widget (or
 // a specific rect within it), matching Ant Design's `.wave-motion-appear-active`
@@ -28,6 +29,10 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+#if defined(Q_OS_WIN)
+    void showEvent(QShowEvent* event) override;
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
+#endif
 
 private:
     AntWave(QWidget* target, const QRect& localRect, const QColor& color, int radius, bool quick);

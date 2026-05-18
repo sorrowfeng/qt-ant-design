@@ -98,13 +98,12 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 Latest targeted DockWidget floating-window validation:
 
 ```powershell
-cmake --build build --config Debug --target TestAntQtExtensions qt-ant-design-example
-.\build\tests\Debug\TestAntQtExtensions.exe dockManager -o dockManager.xml,xml
-cmake --build build\readme-dock-capture\out --config Debug
-.\build\readme-dock-capture\out\Debug\readme_dock_capture.exe D:\Project\GitProject\qt-ant-design
+cmake --build build --config Debug --target TestAntQtExtensions
+ctest --test-dir build -C Debug -R "^TestAntQtExtensions$" --output-on-failure
+cmake --build build --config Debug --target qt-ant-design-example
 ```
 
-Result: the `dockManager` targeted test passed, the example Debug build succeeded, and the README `AntDockWidget` light/dark thumbnails were regenerated at `960x540` on `2026-05-17` with the `Preview` dock shown as a manager-owned floating native window.
+Result: the `dockManager` targeted test passed and the example Debug build succeeded on `2026-05-19`; the test now also covers an `AntWindow` hosted DockWidget page where a floating dock is embedded back into the layout and Windows `SendInput` can still toggle the page `AntSwitch` after `WindowFromPoint()` skips the native corner smoother and click-wave overlays.
 
 Latest targeted `image-basic` asset validation:
 

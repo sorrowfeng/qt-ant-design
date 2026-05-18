@@ -3,9 +3,14 @@
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QShowEvent>
 #include <QVariantAnimation>
 
 #include "AntTheme.h"
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 
 namespace
 {
@@ -30,6 +35,45 @@ QColor defaultWaveColor(const QWidget* target)
     }
     return antTheme->tokens().colorPrimary;
 }
+
+#if defined(Q_OS_WIN)
+void makeWaveNativeInputTransparent(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    const WId id = widget->internalWinId();
+    if (!id)
+    {
+        return;
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(id);
+    if (!hwnd)
+    {
+        return;
+    }
+
+    const LONG_PTR currentStyle = ::GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    const LONG_PTR nextStyle = currentStyle | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
+    if (nextStyle != currentStyle)
+    {
+        ::SetWindowLongPtrW(hwnd, GWL_EXSTYLE, nextStyle);
+        ::SetWindowPos(hwnd,
+                       nullptr,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
+                           SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+
+    widget->setProperty("antWaveNativeClickThrough", true);
+}
+#endif
 }
 
 AntWave::AntWave(QWidget* target, const QRect& localRect, const QColor& color, int radius, bool quick)
@@ -45,6 +89,9 @@ AntWave::AntWave(QWidget* target, const QRect& localRect, const QColor& color, i
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_TranslucentBackground);
     setFocusPolicy(Qt::NoFocus);
+#if defined(Q_OS_WIN)
+    setProperty("antWaveNativeClickThrough", false);
+#endif
 
     if (target)
     {
@@ -75,6 +122,9 @@ void AntWave::triggerRect(QWidget* target, const QRect& localRect, const QColor&
     }
     auto* wave = new AntWave(target, localRect, color, radius, quick);
     wave->show();
+#if defined(Q_OS_WIN)
+    makeWaveNativeInputTransparent(wave);
+#endif
 
     auto* anim = new QVariantAnimation(wave);
     anim->setDuration(quick ? kWaveQuickDurationMs : kWaveFadeDurationMs);
@@ -99,6 +149,29 @@ void AntWave::tick(qreal t)
     }
     update();
 }
+
+#if defined(Q_OS_WIN)
+void AntWave::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+    makeWaveNativeInputTransparent(this);
+}
+
+bool AntWave::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
+{
+    if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
+    {
+        auto* msg = static_cast<MSG*>(message);
+        if (msg->message == WM_NCHITTEST)
+        {
+            *result = HTTRANSPARENT;
+            setProperty("antWaveNativeClickThrough", true);
+            return true;
+        }
+    }
+    return QWidget::nativeEvent(eventType, message, result);
+}
+#endif
 
 void AntWave::paintEvent(QPaintEvent*)
 {

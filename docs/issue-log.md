@@ -98,6 +98,13 @@
 - **解决**：嵌回布局时不再调用 `QDockWidget::setFloating(false)`；新增 `prepareDockWidgetForEmbedding()`，在 dock 嵌回布局前释放 Qt mouse grab 和当前进程 Win32 mouse capture、隐藏并递归销毁旧 floating HWND 及其子 native HWND、清理 native owner / 透明输入 flags / window opacity，并通过 `setParent(parent, Qt::Widget)` 强制恢复普通子控件窗口类型。Windows 下额外归一化重新创建后的真实 HWND：强制 `WS_CHILD`，清除 `WS_POPUP`、`WS_EX_TOPMOST`、`WS_EX_TOOLWINDOW`、`WS_EX_TRANSPARENT`、`WS_EX_NOACTIVATE` 等顶层 / 透明输入样式，并显式 `SetParent()` 到嵌入区域的真实 HWND。Dock 页重新加入 `QTabWidget` 时先由 `addTab()` 接管布局，再显示 dock，避免旧浮窗几何短暂作为 native child 暴露。嵌回后再次隐藏 drop guide / drag preview / drop preview，并在 Win32 层强制 `ShowWindow(SW_HIDE)` 收起透明 tool window；Dock / AntWindow 软件阴影窗口也设置为 native click-through 并在隐藏时强制收起，避免透明或阴影 HWND 残留在 example 主窗口上方吃掉鼠标。停靠状态由 `AntDockManager` 自己的 area 映射决定。回归测试覆盖 embedded 后的 Qt window flags、Win32 style、真实 `WindowFromPoint()` 命中、透明输入属性、overlay 隐藏、Qt / Win32 mouse grab 清理和客户区 hit-test；Windows 可用真实输入时，还会用 `SendInput` 拖动浮窗回布局并点击嵌回后的 `AntSwitch`。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`src/widgets/AntDockWidget.cpp`、`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 12. AntDockWidget 嵌回 AntWindow 后页面控件仍可能被覆盖层拦截
+
+- **现象**：`AntDockWidget` 从浮动窗口嵌回 `AntWindow` 宿主页面后，`QApplication::widgetAt()` 能命中 `AntSwitch`，但 Windows 真实输入偶尔命中 `AntWindowCornerSmoother` 或点击 wave 动效层，导致页面控件看起来仍然无响应。
+- **根因**：这些覆盖层只设置了 Qt 层面的 `WA_TransparentForMouseEvents`。当它们因为宿主窗口、动画或测试命中路径拥有 native child HWND 时，`WindowFromPoint()` 仍可能优先返回覆盖层 HWND，真实鼠标消息无法继续落到底层控件。
+- **解决**：把 `AntWindowCornerSmoother` 和通用 `AntWave` 都补齐 Win32 原生命中穿透：设置 `WS_EX_TRANSPARENT` / `WS_EX_NOACTIVATE`，并在 `WM_NCHITTEST` 返回 `HTTRANSPARENT`。`TestAntQtExtensions::dockManager()` 新增 `AntWindow` 宿主场景，覆盖浮动、嵌回、`WindowFromPoint()` 不再命中覆盖层，以及 `SendInput` 再次点击 `AntSwitch` 必须切换。
+- **改动文件**：`src/widgets/AntWindow.cpp`、`src/core/AntWave.h`、`src/core/AntWave.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntDockWidget 浮动窗口在主布局管理器不在前台时无法拖动

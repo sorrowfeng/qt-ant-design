@@ -22,8 +22,10 @@
 #include <QHoverEvent>
 #include <QTest>
 #include <QToolButton>
+#include <QVBoxLayout>
 #include <QWindow>
 #include "core/AntTheme.h"
+#include "core/AntWave.h"
 #include "widgets/AntApp.h"
 #include "widgets/AntConfigProvider.h"
 #include "widgets/AntForm.h"
@@ -1782,6 +1784,81 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(!manager->dockWidgets().contains(preview));
     delete preview;
     delete manager;
+
+#if defined(Q_OS_WIN)
+    if (nativeMouseInputAvailableForExtensionTest())
+    {
+        AntWindow host;
+        host.setGeometry(80, 80, 900, 620);
+        auto* page = new QWidget;
+        auto* pageLayout = new QVBoxLayout(page);
+        pageLayout->setContentsMargins(24, 24, 24, 24);
+        pageLayout->setSpacing(12);
+
+        auto* pageSwitch = new AntSwitch(page);
+        pageSwitch->setObjectName(QStringLiteral("dockAntWindowPageSwitch"));
+        pageSwitch->setFixedSize(92, 28);
+        pageLayout->addWidget(pageSwitch);
+
+        auto* windowManager = new AntDockManager(page);
+        windowManager->setMinimumHeight(360);
+        pageLayout->addWidget(windowManager, 1);
+
+        host.setCentralWidget(page);
+        host.show();
+        page->show();
+        pageSwitch->show();
+        windowManager->show();
+        QVERIFY(QTest::qWaitForWindowExposed(&host));
+        QTRY_VERIFY(page->isVisible());
+        QTRY_VERIFY(pageSwitch->isVisible());
+        QTRY_VERIFY(windowManager->isVisible());
+
+        auto* windowExplorer = new AntDockWidget(QStringLiteral("Explorer"));
+        windowExplorer->setWidget(new QWidget);
+        auto* windowInspector = new AntDockWidget(QStringLiteral("Inspector"));
+        windowInspector->setWidget(new QWidget);
+        windowManager->addDockWidget(Qt::LeftDockWidgetArea, windowExplorer);
+        windowManager->splitDockWidget(windowExplorer, windowInspector, Qt::Horizontal);
+        QTRY_VERIFY(dockAreaForExtensionTest(windowExplorer) != nullptr);
+        QTRY_VERIFY(dockAreaForExtensionTest(windowInspector) != nullptr);
+
+        QSignalSpy switchBeforeSpy(pageSwitch, &AntSwitch::checkedChanged);
+        QVERIFY(nativeMouseClickForExtensionTest(&host, pageSwitch->mapToGlobal(pageSwitch->rect().center())));
+        QTRY_COMPARE(switchBeforeSpy.count(), 1);
+        QVERIFY(pageSwitch->isChecked());
+
+        windowManager->setDockWidgetFloating(
+            windowExplorer,
+            true,
+            QRect(windowManager->mapToGlobal(QPoint(96, 96)), QSize(280, 190)));
+        QTRY_VERIFY(windowExplorer->isFloating());
+
+        dragFloatingDockBack(windowExplorer, windowInspector);
+        QTRY_VERIFY(!windowExplorer->isFloating());
+        QTRY_VERIFY(dockAreaForExtensionTest(windowExplorer) != nullptr);
+
+        QSignalSpy switchAfterSpy(pageSwitch, &AntSwitch::checkedChanged);
+        QVERIFY(bringWidgetToFrontForExtensionTest(&host));
+        {
+            const QPoint switchGlobal = pageSwitch->mapToGlobal(pageSwitch->rect().center());
+            const QPoint switchNative = nativePointForExtensionTest(&host, switchGlobal);
+            POINT nativePoint{switchNative.x(), switchNative.y()};
+            HWND nativeAtPoint = ::WindowFromPoint(nativePoint);
+            QVERIFY(nativeAtPoint != nullptr);
+            QWidget* nativeWidget = QWidget::find(reinterpret_cast<WId>(nativeAtPoint));
+            QVERIFY(!nativeWidget || nativeWidget->objectName() != QStringLiteral("AntWindowCornerSmoother"));
+            QVERIFY(qobject_cast<AntWave*>(nativeWidget) == nullptr);
+            QWidget* smoother = host.findChild<QWidget*>(QStringLiteral("AntWindowCornerSmoother"));
+            QVERIFY(smoother != nullptr);
+            QCOMPARE(smoother->property("antWindowCornerSmootherClickThrough").toBool(), true);
+        }
+        releaseTopMostForExtensionTest(&host);
+        QVERIFY(nativeMouseClickForExtensionTest(&host, pageSwitch->mapToGlobal(pageSwitch->rect().center())));
+        QTRY_COMPARE(switchAfterSpy.count(), 1);
+        QVERIFY(!pageSwitch->isChecked());
+    }
+#endif
 
     antTheme->setThemeMode(Ant::ThemeMode::Default);
 }
