@@ -26,6 +26,7 @@
 
 - 同步日期：`2026-05-17`
 - 状态总览：`docs/project-status.md`
+- AntWindow / AntDockWidget 已解决与待解决问题清单：`docs/antwindow-antdock-issues.md`
 - 已实现公开组件总数：`84`（`src/widgets` 有 `105` 个 `Ant*.h`，包含 `84` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`）
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
 - 子组件/变体完整度：`15 / 15`（100%）
@@ -521,3 +522,10 @@ ctest -C Debug --output-on-failure
 # 运行单个测试（通过 ctest）
 ctest -C Debug -R TestAntButton --output-on-failure
 ```
+
+### 测试范围规则
+
+- **修改控件后只测试该控件对应的测试目标**，不要默认运行 `ctest -C Debug` 全量。例如改动 `AntWindow`/`AntDockManager` 时只跑 `TestAntQtExtensions`；改动 `AntButton` 时只跑 `TestAntButton`。
+- 多控件改动时，只跑与改动控件直接相关的 CTest 目标集合（参考上面的“测试文件结构”查目标归属）。
+- 仅当用户明确要求“跑全量测试”或改动确实涉及全局基础设施（`AntTheme`、`AntStyleBase`、`core/` 公共头文件等）时才执行 `ctest -C Debug --output-on-failure`。
+- 同样适用于 build：优先 `cmake --build build --config Debug --target <对应测试目标>`，避免触发全部 37 个目标的链接。

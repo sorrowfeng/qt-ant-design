@@ -227,6 +227,62 @@ protected:
     qreal m_progress = 0.0;
 };
 
+// In-process child overlay that softens the visible window outline by applying
+// an anti-aliased rounded-shape composition pass over the parent's backing
+// store after every other child has finished painting. Combined with
+// `WA_TranslucentBackground` on the host window, this lets us keep the
+// existing 1-bit `setMask` (required by tests + for clipping unaware child
+// widgets) while presenting smooth corner pixels on Win10 where DWM does not
+// expose a rounded-corner API.
+class AntWindowCornerSmoother : public QWidget
+{
+public:
+    explicit AntWindowCornerSmoother(QWidget* parent)
+        : QWidget(parent)
+    {
+        setObjectName(QStringLiteral("AntWindowCornerSmoother"));
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setFocusPolicy(Qt::NoFocus);
+    }
+
+    void setCornerRadius(int radius)
+    {
+        const int normalized = qMax(0, radius);
+        if (m_radius == normalized)
+        {
+            return;
+        }
+        m_radius = normalized;
+        update();
+    }
+
+    int cornerRadius() const
+    {
+        return m_radius;
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        if (m_radius <= 0 || rect().isEmpty())
+        {
+            return;
+        }
+
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform, true);
+        painter.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(Qt::white);
+        painter.drawRoundedRect(QRectF(rect()), m_radius, m_radius);
+    }
+
+private:
+    int m_radius = 0;
+};
+
 class AntWindowLegacySoftwareShadow : public QWidget
 {
 public:
@@ -634,36 +690,19 @@ void applyLegacyRoundedMask(QWidget* widget, int radius)
         return;
     }
 
+    // AntWindow now relies on WA_TranslucentBackground + alpha-painted corners
+    // (from AntWindowStyle::drawWindow's rounded clip + AntWindowCornerSmoother)
+    // for the rounded outline. Applying setMask on top is redundant AND causes
+    // visible flicker on shrink: the mask update is asynchronous w.r.t. the
+    // WM_SIZE-triggered backing store paint, so the compositor briefly shows
+    // stale pixels along the edge that the new (smaller) mask should have
+    // clipped. Skipping setMask entirely keeps the corner pixels coming from
+    // the alpha-aware backing store, which Qt resizes synchronously with the
+    // paint event.
+    Q_UNUSED(radius)
     widget->setProperty(kLegacyRoundedMaskFrameInsetProperty, kLegacyRoundedMaskFrameInset);
-
-    if (usesNativeCaptionFrameForWidget(widget) || widget->isMaximized() || widget->isFullScreen() || radius <= 0)
-    {
-        widget->setProperty(kLegacyRoundedMaskAppliedProperty, false);
-        widget->clearMask();
-        return;
-    }
-
-    const QRect bounds = widget->rect();
-    if (bounds.isEmpty())
-    {
-        widget->setProperty(kLegacyRoundedMaskAppliedProperty, false);
-        widget->clearMask();
-        return;
-    }
-
-    const QRectF maskRect =
-        QRectF(bounds).adjusted(0.0, 0.0, -kLegacyRoundedMaskFrameInset, -kLegacyRoundedMaskFrameInset);
-    if (maskRect.isEmpty())
-    {
-        widget->setProperty(kLegacyRoundedMaskAppliedProperty, false);
-        widget->clearMask();
-        return;
-    }
-
-    QPainterPath path;
-    path.addRoundedRect(maskRect, radius + kLegacyRoundedMaskFrameInset, radius + kLegacyRoundedMaskFrameInset);
-    widget->setMask(QRegion(path.toFillPolygon().toPolygon()));
-    widget->setProperty(kLegacyRoundedMaskAppliedProperty, true);
+    widget->setProperty(kLegacyRoundedMaskAppliedProperty, false);
+    widget->clearMask();
 }
 #endif
 }
@@ -674,6 +713,11 @@ AntWindow::AntWindow(QWidget* parent)
     qRegisterMetaType<AntWindow::TitleBarButton>("AntWindow::TitleBarButton");
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_StyledBackground, false);
+    // Required so the AA fragments produced by the corner-smoother overlay
+    // survive in the backing store and reach the compositor as smooth corner
+    // alpha. Without this, the 1-bit `setMask` would clip the painted
+    // anti-aliased fragments and the corners would render jagged on Win10.
+    setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     installAntStyle<AntWindowStyle>(this);
@@ -688,6 +732,11 @@ AntWindow::AntWindow(QWidget* parent)
     contentLayout->setContentsMargins(0, TitleBarHeight, 0, 0);
     contentLayout->setSpacing(0);
     QMainWindow::setCentralWidget(m_contentWidget);
+
+    auto* smoother = new AntWindowCornerSmoother(this);
+    smoother->setCornerRadius(m_cornerRadius);
+    smoother->raise();
+    m_cornerSmoother = smoother;
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         syncTheme();
@@ -732,6 +781,11 @@ void AntWindow::setCentralWidget(QWidget* widget)
         m_centralContentWidget = widget;
         layout->addWidget(widget, 1);
     }
+
+    if (m_cornerSmoother)
+    {
+        m_cornerSmoother->raise();
+    }
 }
 
 void AntWindow::setRibbon(AntRibbon* ribbon)
@@ -759,6 +813,10 @@ void AntWindow::setRibbon(AntRibbon* ribbon)
         m_ribbon->setParent(m_contentWidget);
         layout->insertWidget(0, m_ribbon);
         m_ribbon->setVisible(m_ribbonVisible);
+    }
+    if (m_cornerSmoother)
+    {
+        m_cornerSmoother->raise();
     }
     updateGeometry();
     update();
@@ -876,6 +934,7 @@ void AntWindow::setCornerRadius(int radius)
 
     m_cornerRadius = normalizedRadius;
     applyNativeWindowFrame();
+    updateCornerSmoother();
     update();
     Q_EMIT cornerRadiusChanged(m_cornerRadius);
 }
@@ -1057,6 +1116,28 @@ bool AntWindow::event(QEvent* event)
     case QEvent::Leave:
         clearTitleBarHover();
         break;
+    case QEvent::ScreenChangeInternal:
+    case QEvent::DevicePixelRatioChange:
+        // Moving across monitors with different scaling makes the shadow HWND
+        // — which is an independent top-level window — keep its previous DPR
+        // until its own QScreen is updated. Re-parent the shadow to the new
+        // screen and reapply the native frame so the rasterised shadow grid
+        // and the painted shadow geometry stay aligned with the host window.
+        if (QWindow* shadowWindow = m_legacySoftwareShadow ? m_legacySoftwareShadow->windowHandle() : nullptr)
+        {
+            if (QScreen* newScreen = windowHandle() ? windowHandle()->screen() : nullptr)
+            {
+                if (shadowWindow->screen() != newScreen)
+                {
+                    shadowWindow->setScreen(newScreen);
+                }
+            }
+        }
+        applyNativeWindowFrame();
+        updateLegacySoftwareShadow();
+        updateCornerSmoother();
+        update();
+        break;
     default:
         break;
     }
@@ -1187,6 +1268,7 @@ void AntWindow::changeEvent(QEvent* event)
         m_windowMaximized = QMainWindow::isMaximized();
         applyNativeWindowFrame();
         updateLegacySoftwareShadow();
+        updateCornerSmoother();
         update();
     }
     QMainWindow::changeEvent(event);
@@ -1195,6 +1277,10 @@ void AntWindow::changeEvent(QEvent* event)
 void AntWindow::moveEvent(QMoveEvent* event)
 {
     QMainWindow::moveEvent(event);
+    if (m_legacyLiveResize)
+    {
+        return;
+    }
     updateLegacySoftwareShadow();
 }
 
@@ -1208,18 +1294,28 @@ void AntWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
 #ifdef Q_OS_WIN
+    // Always reapply the rounded mask — it controls which pixels of the
+    // backing store the compositor shows, so if we leave it at the previous
+    // (smaller) rect, growing the window during a live drag leaves stale
+    // areas clipped until the user releases. Mask updates are cheap.
     applyLegacyRoundedMask(this, m_cornerRadius);
-    if (isVisible() && !usesNativeCaptionFrameForWidget(this) && !isMaximized() && !isFullScreen())
+    // The expensive parts (DWM frame reapply + queued refresh) cause visible
+    // flicker because they force the compositor to rebuild the non-client
+    // surface. Defer them until the drag finishes (WM_EXITSIZEMOVE handler).
+    if (!m_legacyLiveResize && isVisible() && !usesNativeCaptionFrameForWidget(this) &&
+        !isMaximized() && !isFullScreen())
     {
         const HWND hwnd = reinterpret_cast<HWND>(winId());
         reapplyDwmFrameMargins(this, hwnd, false, "resize");
         queueLegacyDwmFrameRefresh(this, "resize-deferred");
     }
 #endif
-    if (m_legacySoftwareShadow || (windowHandle() && windowHandle()->isExposed()))
+    if (!m_legacyLiveResize &&
+        (m_legacySoftwareShadow || (windowHandle() && windowHandle()->isExposed())))
     {
         updateLegacySoftwareShadow();
     }
+    updateCornerSmoother();
     if (m_themeTransitionOverlay)
     {
         m_themeTransitionOverlay->setGeometry(rect());
@@ -1232,6 +1328,7 @@ void AntWindow::showEvent(QShowEvent* event)
     QMainWindow::showEvent(event);
     m_windowMaximized = QMainWindow::isMaximized();
     applyNativeWindowFrame();
+    updateCornerSmoother();
     QTimer::singleShot(16, this, [this]() {
         updateLegacySoftwareShadow();
     });
@@ -1269,6 +1366,84 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
 
         switch (uMsg)
         {
+        case WM_DPICHANGED:
+        {
+            // Win32 fires WM_DPICHANGED with the new suggested window rect when
+            // the window crosses to a monitor with a different DPI. Defer to Qt
+            // for the main window's own geometry update, then refresh the
+            // shadow HWND (a separate top-level window whose DPR doesn't track
+            // automatically) so the painted shadow lines up at the new scale.
+            QPointer<AntWindow> guard(this);
+            QTimer::singleShot(0, this, [guard]() {
+                if (!guard)
+                {
+                    return;
+                }
+                if (QWindow* shadowWindow = guard->m_legacySoftwareShadow
+                                                ? guard->m_legacySoftwareShadow->windowHandle()
+                                                : nullptr)
+                {
+                    if (QScreen* newScreen = guard->windowHandle() ? guard->windowHandle()->screen() : nullptr)
+                    {
+                        if (shadowWindow->screen() != newScreen)
+                        {
+                            shadowWindow->setScreen(newScreen);
+                        }
+                    }
+                }
+                guard->applyNativeWindowFrame();
+                guard->updateLegacySoftwareShadow();
+                guard->updateCornerSmoother();
+                guard->update();
+            });
+            break;
+        }
+        case WM_ENTERSIZEMOVE:
+        case WM_SIZING:
+            if (!usesNativeCaptionFrameForWidget(this) && !m_legacyLiveResize &&
+                !isMaximized() && !isFullScreen())
+            {
+                m_legacyLiveResize = true;
+                setProperty("antWindowLegacyLiveResize", true);
+                hideLegacySoftwareShadow();
+                // Extend the DWM frame across the whole client area for the
+                // duration of the drag. DWM provides its own backdrop in the
+                // extended region, which masks the single-frame gap where
+                // Qt's backing store has not yet caught up with WM_SIZE — the
+                // root cause of the occasional transparent edge flash on
+                // shrink. The normal {0,0,0,0} margins are restored on
+                // WM_EXITSIZEMOVE via applyNativeWindowFrame().
+                DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
+                if (resolveDwmApis(nullptr, &extendFrame) && extendFrame)
+                {
+                    const DwmMargins fullFrameMargins{-1, -1, -1, -1};
+                    extendFrame(hwnd, &fullFrameMargins);
+                }
+                // Force one repaint with square corners + smoother off before
+                // the first WM_SIZE lands, so the very first resize frame is
+                // already fully opaque to the edges.
+                updateCornerSmoother();
+                update();
+            }
+            break;
+        case WM_EXITSIZEMOVE:
+            if (m_legacyLiveResize)
+            {
+                m_legacyLiveResize = false;
+                setProperty("antWindowLegacyLiveResize", false);
+                QPointer<AntWindow> guard(this);
+                QTimer::singleShot(16, this, [guard]() {
+                    if (!guard)
+                    {
+                        return;
+                    }
+                    guard->applyNativeWindowFrame();
+                    guard->updateLegacySoftwareShadow();
+                    guard->updateCornerSmoother();
+                    guard->update();
+                });
+            }
+            break;
         case WM_NCCALCSIZE:
         {
             *result = 0;
@@ -1749,6 +1924,10 @@ void AntWindow::startThemeModeTransition()
             m_themeTransitionOverlay = nullptr;
         }
         overlay->deleteLater();
+        if (m_cornerSmoother)
+        {
+            m_cornerSmoother->raise();
+        }
     });
 }
 
@@ -1935,6 +2114,22 @@ void AntWindow::updateLegacySoftwareShadow()
         shadow->setCornerRadius(m_cornerRadius);
     }
 
+    // Pin the shadow HWND to the same QScreen as the host window so its
+    // backing-store DPR tracks the host across monitors with different
+    // scaling. Without this the shadow keeps the DPR of whichever screen it
+    // was created on, which makes the rasterised shadow drift away from the
+    // window outline when crossing scale boundaries.
+    if (QWindow* shadowWindow = m_legacySoftwareShadow->windowHandle())
+    {
+        if (QScreen* hostScreen = windowHandle() ? windowHandle()->screen() : nullptr)
+        {
+            if (shadowWindow->screen() != hostScreen)
+            {
+                shadowWindow->setScreen(hostScreen);
+            }
+        }
+    }
+
     const QRect shadowGeometry = geometry().adjusted(-kLegacySoftwareShadowMargin,
                                                      -kLegacySoftwareShadowMargin,
                                                      kLegacySoftwareShadowMargin,
@@ -1974,6 +2169,30 @@ void AntWindow::hideLegacySoftwareShadow()
     {
         m_legacySoftwareShadow->hide();
     }
+}
+
+void AntWindow::updateCornerSmoother()
+{
+    if (!m_cornerSmoother)
+    {
+        return;
+    }
+
+    auto* smoother = static_cast<AntWindowCornerSmoother*>(m_cornerSmoother);
+    // During an interactive drag-resize the rounded clip is also disabled in
+    // AntWindowStyle::drawWindow so the entire client rect stays opaque and
+    // does not flash through to the desktop on grow/shrink. Match that here:
+    // running the alpha-erase smoother on top of the square painted client
+    // would still produce alpha=0 corner pixels and re-introduce the flicker.
+    const bool liveResize = m_legacyLiveResize;
+    const int effectiveRadius =
+        (m_windowMaximized || isFullScreen() || liveResize) ? 0 : m_cornerRadius;
+    smoother->setCornerRadius(effectiveRadius);
+    if (m_cornerSmoother->geometry() != rect())
+    {
+        m_cornerSmoother->setGeometry(rect());
+    }
+    m_cornerSmoother->raise();
 }
 
 void AntWindow::emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible)

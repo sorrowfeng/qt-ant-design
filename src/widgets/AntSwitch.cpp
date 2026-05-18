@@ -165,8 +165,18 @@ void AntSwitch::enterEvent(QEnterEvent* event)
 void AntSwitch::leaveEvent(QEvent* event)
 {
     m_hovered = false;
-    m_pressed = false;
-    animateStretch(0.0);
+    // Do NOT clear m_pressed here: while a mouse press is in flight Qt holds
+    // an implicit grab and the matching release is still routed back to us,
+    // even if the cursor briefly leaves the widget rect or an unrelated
+    // top-level window (e.g. a freshly-floated AntDockWidget) changes the
+    // active window. Clearing m_pressed in leaveEvent caused the release to
+    // be silently discarded — the press animation played but the toggle
+    // never committed. m_pressed is cleared in mouseReleaseEvent which is
+    // guaranteed to be delivered while the implicit grab is active.
+    if (!m_pressed)
+    {
+        animateStretch(0.0);
+    }
     update();
     QWidget::leaveEvent(event);
 }

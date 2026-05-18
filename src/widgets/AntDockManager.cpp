@@ -139,14 +139,22 @@ void setFloatingDockOwner(AntDockWidget* dockWidget, QWidget* ownerWidget)
 {
     if (!dockWidget) return;
 
+    // The Win32 owner of a top-level window must itself be a top-level window —
+    // pointing GWLP_HWNDPARENT at a child HWND (e.g. one freshly minted by
+    // calling winId() on a non-toplevel AntDockManager) breaks the activation
+    // and focus chain for every sibling control in the main window. Always
+    // resolve to the actual top-level widget so the floating dock is owned by
+    // a real top-level HWND.
+    QWidget* ownerTopLevel = ownerWidget ? ownerWidget->window() : nullptr;
+
     QWindow* ownerWindow = nullptr;
-    if (ownerWidget)
+    if (ownerTopLevel)
     {
-        if (!ownerWidget->windowHandle())
+        if (!ownerTopLevel->windowHandle())
         {
-            ownerWidget->winId();
+            ownerTopLevel->winId();
         }
-        ownerWindow = ownerWidget->windowHandle();
+        ownerWindow = ownerTopLevel->windowHandle();
     }
 
     if (!dockWidget->windowHandle() && dockWidget->isWindow())
@@ -162,9 +170,9 @@ void setFloatingDockOwner(AntDockWidget* dockWidget, QWidget* ownerWidget)
 
 #if defined(Q_OS_WIN)
     HWND ownerHwnd = nullptr;
-    if (ownerWidget)
+    if (ownerTopLevel)
     {
-        ownerHwnd = reinterpret_cast<HWND>(ownerWidget->winId());
+        ownerHwnd = reinterpret_cast<HWND>(ownerTopLevel->winId());
     }
 
     HWND dockHwnd = reinterpret_cast<HWND>(dockWidget->winId());
@@ -1903,8 +1911,34 @@ bool AntDockManager::prepareDockWidget(AntDockWidget* dockWidget)
         connect(dockWidget, &QDockWidget::visibilityChanged, this, [this]() {
             updatePlaceholderState();
         });
-        connect(dockWidget, &QDockWidget::topLevelChanged, this, [this]() {
+        connect(dockWidget, &QDockWidget::topLevelChanged, this, [this, dockWidget](bool topLevel) {
             updatePlaceholderState();
+            // When the dock transitions to floating, Qt's setWindowFlags() inside
+            // AntDockWidget::updateFloatingFrame() destroys and recreates the
+            // native HWND, which silently drops any GWLP_HWNDPARENT owner we set
+            // before. Without an owner pointing at a top-level HWND, Win32 treats
+            // the floating dock as an independent top-level window and its
+            // activation chain interferes with sibling controls in the main
+            // window — clicks on AntSwitch / AntSegmented stop registering.
+            // Reapply the owner here, after the HWND has been recreated.
+            if (topLevel)
+            {
+                // Defer to the next event-loop tick so any pending Qt-internal
+                // window handle bookkeeping has settled before we touch
+                // GWLP_HWNDPARENT.
+                QPointer<AntDockManager> manager(this);
+                QPointer<AntDockWidget> guard(dockWidget);
+                QTimer::singleShot(0, this, [manager, guard]() {
+                    if (manager && guard && guard->isFloating())
+                    {
+                        setFloatingDockOwner(guard.data(), manager.data());
+                    }
+                });
+            }
+            else
+            {
+                clearFloatingDockOwner(dockWidget);
+            }
         });
     }
     else

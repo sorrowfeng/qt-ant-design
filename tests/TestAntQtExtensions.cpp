@@ -1905,7 +1905,13 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     QVERIFY(QTest::qWaitForWindowExposed(&window));
 
     QCOMPARE(window.property("antWindowUsesNativeCaptionFrame").toBool(), false);
-    QCOMPARE(window.property("antWindowLegacyRoundedMaskApplied").toBool(), true);
+    // AntWindow no longer uses setMask to clip its rounded corners — it relies
+    // on WA_TranslucentBackground + alpha-painted corners (style rounded clip
+    // path + AntWindowCornerSmoother). The mask was a source of shrink-resize
+    // flicker because its update is asynchronous w.r.t. the WM_SIZE backing
+    // store paint. The legacy-frame-policy property contract still exposes
+    // the historical frame-inset value for diagnostics.
+    QCOMPARE(window.property("antWindowLegacyRoundedMaskApplied").toBool(), false);
     QCOMPARE(window.property("antWindowLegacyRoundedMaskFrameInset").toInt(), 1);
     QCOMPARE(window.property("antWindowDwmFrameMargins").value<QMargins>(), QMargins(0, 0, 0, 0));
     QCOMPARE(window.property("antWindowLegacyClassDropShadowEnabled").toBool(), false);

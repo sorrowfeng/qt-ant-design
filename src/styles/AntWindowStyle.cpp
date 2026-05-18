@@ -122,7 +122,14 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
     const int titleBarH = AntWindow::TitleBarHeight;
     const int w = option->rect.width();
     const bool maximized = window->isMaximized();
-    const int cornerRadius = maximized ? 0 : window->cornerRadius();
+    // During an interactive Win10 drag-resize, the backing store cannot keep
+    // pace with WM_SIZE — newly exposed pixels (on grow) or pixels DWM still
+    // composites (on shrink) read alpha=0 and show through to the desktop,
+    // producing visible flicker. While the drag is active we paint with
+    // square corners so the entire client rect is fully opaque; the rounded
+    // outline is restored on WM_EXITSIZEMOVE.
+    const bool liveResize = window->property("antWindowLegacyLiveResize").toBool();
+    const int cornerRadius = (maximized || liveResize) ? 0 : window->cornerRadius();
     const QRectF windowRect(option->rect);
     QPainterPath windowPath;
     if (cornerRadius > 0)
@@ -280,23 +287,6 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
                      centeredIconRect(btnRect),
                      iconColorFor(AntWindow::TitleBarButton::Close, true),
                      painter);
-    }
-
-    // Draw an inner outline so frameless windows remain visible on light desktop backgrounds.
-    if (!maximized)
-    {
-        painter->setPen(QPen(token.colorBorder, token.lineWidth));
-        painter->setBrush(Qt::NoBrush);
-        const qreal halfLine = token.lineWidth / 2.0;
-        const QRectF outlineRect = QRectF(option->rect).adjusted(halfLine, halfLine, -halfLine, -halfLine);
-        if (cornerRadius > 0)
-        {
-            painter->drawRoundedRect(outlineRect, cornerRadius, cornerRadius);
-        }
-        else
-        {
-            painter->drawRect(outlineRect);
-        }
     }
 
     painter->restore();

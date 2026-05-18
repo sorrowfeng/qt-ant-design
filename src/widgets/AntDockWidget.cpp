@@ -1107,10 +1107,23 @@ void AntDockWidget::paintEvent(QPaintEvent* event)
     QColor border = token.colorBorderSecondary;
     border.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.54 : 0.72);
 
+    const bool liveResize = property(kDockLegacyLiveResizeProperty).toBool();
+    if (liveResize)
+    {
+        // Mid-drag: fill the entire client rect with the panel colour and
+        // skip the 1px border. A pen-stroked border at QRectF(panel).adjusted
+        // (0.5, 0.5, -0.5, -0.5) lags one frame behind WM_SIZE — the old
+        // edge pixels are still in the backing store while the new edge has
+        // already moved inward, producing the flickering edge lines. The
+        // border is restored on WM_EXITSIZEMOVE.
+        painter.fillRect(rect(), fill);
+        return;
+    }
+
     const QRectF panelRect = QRectF(panel).adjusted(0.5, 0.5, -0.5, -0.5);
     painter.setPen(QPen(border, kFloatingBorderWidth));
     painter.setBrush(fill);
-    if (cornerRadius > 0 && !property(kDockLegacyLiveResizeProperty).toBool())
+    if (cornerRadius > 0)
     {
         painter.drawRoundedRect(panelRect, cornerRadius, cornerRadius);
     }
@@ -1147,6 +1160,16 @@ void AntDockWidget::resizeEvent(QResizeEvent* event)
 #if defined(Q_OS_WIN)
         if (m_legacyLiveResize && !supportsNativeCaptionFrame())
         {
+            // Drop the rounded mask entirely while the user is dragging an
+            // edge — keeping a mask in sync with WM_SIZE is the principal
+            // cause of edge-flicker, because SetWindowRgn is asynchronous
+            // w.r.t. the WM_SIZE-triggered backing-store paint. The dock
+            // already paints a square outline during live resize (see
+            // paintEvent + kDockLegacyLiveResizeProperty), so removing the
+            // mask is a no-op visually but keeps the entire client area
+            // continuously opaque.
+            setProperty(kDockLegacyRoundedMaskAppliedProperty, false);
+            clearMask();
             hideLegacySoftwareShadow();
             refreshFloatingDockWindow(this, "legacy-live-resize");
         }
@@ -1228,6 +1251,11 @@ void AntDockWidget::applyNativeWindowFrame()
     applyLegacyClassDropShadow(this, hwnd, useNativeCaption);
     if (m_legacyLiveResize && !useNativeCaption)
     {
+        // Mid-drag: keep the mask cleared so the entire client area stays
+        // opaque and edges do not flash. The rounded outline is restored on
+        // WM_EXITSIZEMOVE via the normal applyNativeWindowFrame path.
+        setProperty(kDockLegacyRoundedMaskAppliedProperty, false);
+        clearMask();
         setProperty(kDockUsesNativeCaptionFrameProperty, useNativeCaption);
         setProperty(kDockLegacyLiveResizeProperty, true);
         return;

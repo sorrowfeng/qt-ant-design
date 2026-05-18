@@ -127,6 +127,7 @@ private:
     void applyNativeWindowFrame();
     void updateLegacySoftwareShadow();
     void hideLegacySoftwareShadow();
+    void updateCornerSmoother();
     void syncTheme();
     void applyContentPalette(QWidget* widget);
 
@@ -151,4 +152,6 @@ private:
     bool m_ribbonVisible = true;
     QWidget* m_themeTransitionOverlay = nullptr;
     QWidget* m_legacySoftwareShadow = nullptr;
+    QWidget* m_cornerSmoother = nullptr;
+    bool m_legacyLiveResize = false;
 };

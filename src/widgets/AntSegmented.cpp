@@ -280,7 +280,13 @@ void AntSegmented::mouseReleaseEvent(QMouseEvent* event)
 void AntSegmented::leaveEvent(QEvent* event)
 {
     m_hoveredIndex = -1;
-    m_pressedIndex = -1;
+    // Do NOT clear m_pressedIndex here: Qt's implicit mouse grab keeps the
+    // matching release routed to us even if the cursor briefly leaves the
+    // widget rect (or an unrelated top-level HWND, e.g. a freshly-floated
+    // AntDockWidget, changes the active window). Clearing m_pressedIndex on
+    // leave caused mouseReleaseEvent to see "no pressed index" and skip the
+    // value commit — the press indicator flashed but the segment never
+    // actually switched. m_pressedIndex is cleared in mouseReleaseEvent.
     update();
     QWidget::leaveEvent(event);
 }
