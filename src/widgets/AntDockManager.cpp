@@ -3046,6 +3046,7 @@ void AntDockManager::floatDockWidget(AntDockWidget* dockWidget, const QRect& glo
     {
         return;
     }
+    const bool added = prepareDockWidget(dockWidget);
     if (!dockWidgetFeatureEnabled(dockWidget, QDockWidget::DockWidgetFloatable))
     {
         return;
@@ -3077,6 +3078,7 @@ void AntDockManager::floatDockWidget(AntDockWidget* dockWidget, const QRect& glo
     dockWidget->activateWindow();
     installDockEventFilters(dockWidget);
     updatePlaceholderState();
+    if (added) Q_EMIT dockWidgetAdded(dockWidget);
     Q_EMIT dockWidgetFloated(dockWidget);
     Q_EMIT dockLayoutChanged();
 }

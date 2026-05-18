@@ -1056,6 +1056,23 @@ void TestAntQtExtensions::dockManager()
     manager->setDockWidgetFloatable(preview, true);
     QCOMPARE(manager->isDockWidgetFloatable(preview), true);
 
+    auto* detachedFloating = new AntDockWidget(QStringLiteral("Detached Floating"));
+    detachedFloating->setWidget(new QWidget);
+    const int addedBeforeDetachedFloat = addedSpy.count();
+    const int floatedBeforeDetachedFloat = floatedSpy.count();
+    manager->setDockWidgetFloating(detachedFloating,
+                                   true,
+                                   QRect(manager->mapToGlobal(QPoint(120, 96)), QSize(260, 180)));
+    QCOMPARE(addedSpy.count(), addedBeforeDetachedFloat + 1);
+    QCOMPARE(floatedSpy.count(), floatedBeforeDetachedFloat + 1);
+    QVERIFY(manager->dockWidgets().contains(detachedFloating));
+    QVERIFY(manager->isDockWidgetFloating(detachedFloating));
+    QVERIFY(manager->floatingDockWidgets().contains(detachedFloating));
+    QTRY_VERIFY(detachedFloating->isVisible());
+    manager->removeDockWidget(detachedFloating);
+    QTRY_VERIFY(!detachedFloating->isVisible());
+    delete detachedFloating;
+
     QVERIFY(manager->isDockWidgetMovable(preview));
     manager->setDockWidgetMovable(preview, false);
     QCOMPARE(manager->isDockWidgetMovable(preview), false);

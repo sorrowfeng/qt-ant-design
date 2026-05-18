@@ -133,6 +133,13 @@
 - **解决**：菜单第一项的禁用条件改为 `!floating && !floatable`：未浮动时继续遵守 floatable feature，已浮动时始终允许 `Dock to workspace`。回归测试覆盖浮动窗口禁用 floatable 后右键菜单仍可显示可用的 `Dock to workspace`。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 17. AntDockManager 直接浮动未添加 Dock 时不会注册到 manager
+
+- **现象**：外部直接调用 `AntDockManager::setDockWidgetFloating(dock, true)`，如果该 dock 还没有通过 `addDockWidget()` 添加过，会显示一个浮动窗口，但 `dockWidgets()` / `floatingDockWidgets()` 不包含它，保存布局、事件过滤、后续移除等管理能力都不完整。
+- **根因**：`setDockWidgetFloating(true)` 直接进入 `floatDockWidget()`，而旧的 `floatDockWidget()` 假设 dock 已经在 `m_docks` 中，只负责从旧 area detach 并显示浮窗，没有调用 `prepareDockWidget()` 注册、安装连接和补齐 object name。
+- **解决**：`floatDockWidget()` 现在先调用 `prepareDockWidget()`，对首次浮动的 dock 完成 manager 注册，并在成功浮动后发出 `dockWidgetAdded`，再发出 `dockWidgetFloated`。回归测试覆盖 detached dock 直接浮动后进入 `dockWidgets()` / `floatingDockWidgets()`，并可通过 `removeDockWidget()` 正常收起。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
