@@ -103,7 +103,7 @@ ctest --test-dir build -C Debug -R "^TestAntQtExtensions$" --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 ```
 
-Result: the `dockManager` targeted test passed and the example Debug build succeeded on `2026-05-19`; the test now also covers an `AntWindow` hosted DockWidget page where a floating dock is embedded back into the layout and Windows `SendInput` can still toggle the page `AntSwitch` after `WindowFromPoint()` skips the native corner smoother and click-wave overlays. The same target now validates that an already-floating dock can still be dragged when its manager surface is hidden, without showing a drop preview or active guide, that programmatic removal of a floating dock hides the orphan window while clearing manager ownership, and that context-menu close actions respect each dock tab's closable feature.
+Result: the `dockManager` targeted test passed and the example Debug build succeeded on `2026-05-19`; the test now also covers an `AntWindow` hosted DockWidget page where a floating dock is embedded back into the layout and Windows `SendInput` can still toggle the page `AntSwitch` after `WindowFromPoint()` skips the native corner smoother and click-wave overlays. The same target now validates that an already-floating dock can still be dragged when its manager surface is hidden, without showing a drop preview or active guide, that programmatic removal of a floating dock hides the orphan window while clearing manager ownership, that context-menu close actions respect each dock tab's closable feature, and that disabling floatable does not block a floating dock from returning to the workspace through its context menu.
 
 Latest targeted `image-basic` asset validation:
 

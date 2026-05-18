@@ -126,6 +126,13 @@
 - **解决**：构建右键菜单时提前筛出 `closableOtherDocks`，`Close other tabs` 只有在存在可关闭的其他 tab 时才启用；执行该动作时也只移除这个列表。回归测试覆盖“其他 tab 不可关闭”和“当前 tab 不可关闭但其他 tab 可关闭”两个方向。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 16. AntDockWidget 禁用 floatable 后浮动窗口无法通过菜单回到布局
+
+- **现象**：`AntDockWidget` 已经处于浮动状态时，如果外部调用 `setDockWidgetFloatable(dock, false)`，右键菜单里的 `Dock to workspace` 也会被禁用，用户无法从菜单把浮动窗口放回布局。
+- **根因**：右键菜单的第一项同时表示 `Float` 和 `Dock to workspace`，旧逻辑无论当前是否已经浮动，都直接用 `!floatable` 决定 disabled。`DockWidgetFloatable` 应该限制“从布局浮出去”，不应该阻止已经浮动的窗口回到布局。
+- **解决**：菜单第一项的禁用条件改为 `!floating && !floatable`：未浮动时继续遵守 floatable feature，已浮动时始终允许 `Dock to workspace`。回归测试覆盖浮动窗口禁用 floatable 后右键菜单仍可显示可用的 `Dock to workspace`。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

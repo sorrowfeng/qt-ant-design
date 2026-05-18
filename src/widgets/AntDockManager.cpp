@@ -3148,7 +3148,7 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
                   floating ? tr("Dock to workspace") : tr("Float"),
                   floating ? Ant::IconType::Home : Ant::IconType::CloudUpload,
                   QString(),
-                  !floatable);
+                  !floating && !floatable);
 
     if (area && area->count() > 1)
     {

@@ -1467,6 +1467,34 @@ void TestAntQtExtensions::dockManager()
     explorer->setGeometry(QRect(manager->mapToGlobal(QPoint(64, 64)), floatingResize));
     QCOMPARE(explorer->size(), floatingResize);
 
+    manager->setDockWidgetFloatable(explorer, false);
+    QWidget* floatingTitleBarForMenu = explorer->titleBarWidget();
+    QVERIFY(floatingTitleBarForMenu != nullptr);
+    const QPoint floatingMenuPoint = floatingTitleBarForMenu->rect().center();
+    QContextMenuEvent floatingContextEvent(
+        QContextMenuEvent::Mouse,
+        floatingMenuPoint,
+        floatingTitleBarForMenu->mapToGlobal(floatingMenuPoint));
+    QCoreApplication::sendEvent(floatingTitleBarForMenu, &floatingContextEvent);
+    QWidget* floatingPopup = nullptr;
+    for (QWidget* widget : QApplication::topLevelWidgets())
+    {
+        if (widget && widget->objectName() == QStringLiteral("AntDockContextMenuPopup") && widget->isVisible())
+        {
+            floatingPopup = widget;
+            break;
+        }
+    }
+    QVERIFY(floatingPopup != nullptr);
+    auto* floatingDockMenu = floatingPopup->findChild<AntMenu*>(QStringLiteral("AntDockContextMenu"));
+    QVERIFY(floatingDockMenu != nullptr);
+    const AntMenuItem floatingAction = menuItemByKey(floatingDockMenu, QStringLiteral("float"));
+    QCOMPARE(floatingAction.label, QStringLiteral("Dock to workspace"));
+    QCOMPARE(floatingAction.disabled, false);
+    floatingPopup->close();
+    QCoreApplication::processEvents();
+    manager->setDockWidgetFloatable(explorer, true);
+
     auto* floatingClickSwitch = new AntSwitch(manager);
     floatingClickSwitch->setObjectName(QStringLiteral("dockFloatingClickSwitch"));
     floatingClickSwitch->setGeometry(16, 16, 92, 28);
