@@ -1418,8 +1418,10 @@ void TestAntQtExtensions::dockManager()
                                          Qt::LeftButton,
                                          Qt::NoModifier);
     QCoreApplication::sendEvent(movableCancelTabBar, &directFeatureCancelPress);
+    const int directSetFeaturesSignalCount = featureSpy.count();
     preview->setFeatures(preview->features() & ~QDockWidget::DockWidgetMovable);
     QCOMPARE(manager->isDockWidgetMovable(preview), false);
+    QCOMPARE(featureSpy.count(), directSetFeaturesSignalCount + 1);
     QMouseEvent directFeatureCanceledMove(QEvent::MouseMove,
                                           QPointF(movableCancelTabBar->mapFromGlobal(canceledMoveGlobal)),
                                           QPointF(canceledMoveGlobal),
@@ -1439,6 +1441,7 @@ void TestAntQtExtensions::dockManager()
     QCoreApplication::sendEvent(movableCancelTabBar, &directFeatureCancelRelease);
     preview->setFeatures(preview->features() | QDockWidget::DockWidgetMovable);
     QCOMPARE(manager->isDockWidgetMovable(preview), true);
+    QCOMPARE(featureSpy.count(), directSetFeaturesSignalCount + 2);
 
     const QPoint previewTabPoint = dockTabCenterForExtensionTest(preview);
     QVERIFY(!previewTabPoint.isNull());

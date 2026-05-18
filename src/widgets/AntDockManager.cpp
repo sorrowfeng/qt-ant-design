@@ -2416,6 +2416,7 @@ bool AntDockManager::prepareDockWidget(AntDockWidget* dockWidget)
                 &QDockWidget::featuresChanged,
                 this,
                 [this, dockWidget](QDockWidget::DockWidgetFeatures features) {
+            Q_EMIT dockWidgetFeatureChanged(dockWidget);
             if (m_draggedDock == dockWidget && !features.testFlag(QDockWidget::DockWidgetMovable))
             {
                 stopDockDragTracking();
@@ -3137,11 +3138,6 @@ void AntDockManager::setDockWidgetFeatureEnabled(AntDockWidget* dockWidget,
     const bool wasEnabled = features.testFlag(feature);
     if (wasEnabled == enabled) return;
 
-    if (feature == QDockWidget::DockWidgetMovable && !enabled && m_draggedDock == dockWidget)
-    {
-        stopDockDragTracking();
-    }
-
     if (enabled)
     {
         features |= feature;
@@ -3151,7 +3147,6 @@ void AntDockManager::setDockWidgetFeatureEnabled(AntDockWidget* dockWidget,
         features &= ~feature;
     }
     dockWidget->setFeatures(features);
-    Q_EMIT dockWidgetFeatureChanged(dockWidget);
 }
 
 void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint& globalPos)

@@ -203,6 +203,13 @@
 - **解决**：`prepareDockWidget()` 现在连接 `featuresChanged`，当当前拖动 Dock 的 `DockWidgetMovable` 被外部直接关闭时，同样调用 `stopDockDragTracking()` 清理预览和引导状态。回归测试覆盖 manager API 和直接 `setFeatures()` 两条路径。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 27. 外部直接 setFeatures 不触发 manager feature 变更信号
+
+- **现象**：受管 Dock 被外部直接调用 `dock->setFeatures()` 修改 feature 后，`AntDockManager::dockWidgetFeatureChanged` 不会发出，外部监听 manager 信号时感知不到状态变化。
+- **根因**：manager 只在 `setDockWidgetFeatureEnabled()` 中手动发信号，未把受管 Dock 自身的 `featuresChanged` 作为统一变更入口转发。
+- **解决**：`prepareDockWidget()` 监听 `featuresChanged` 后统一发出 `dockWidgetFeatureChanged`，`setDockWidgetFeatureEnabled()` 只负责更新 features，避免 manager API 路径重复发信号；回归测试覆盖直接 `setFeatures()` 清除/恢复 movable 的信号计数。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
