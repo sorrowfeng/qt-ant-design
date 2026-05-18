@@ -986,6 +986,28 @@ void AntDockWidget::setWidget(QWidget* widget)
     updateTheme();
 }
 
+#if defined(Q_OS_WIN)
+void AntDockWidget::resetNativeFloatingWindowForEmbedding()
+{
+    if (const WId dockId = internalWinId())
+    {
+        HWND dockHwnd = reinterpret_cast<HWND>(dockId);
+        ::ShowWindow(dockHwnd, SW_HIDE);
+        ::SetWindowPos(dockHwnd,
+                       nullptr,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                           SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
+    }
+    hideLegacySoftwareShadow();
+    destroy(true, false);
+    setProperty("antDockNativeFloatingHwndDestroyed", true);
+}
+#endif
+
 void AntDockWidget::updateTheme()
 {
     const auto& token = antTheme->tokens();

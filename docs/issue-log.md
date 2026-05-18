@@ -89,13 +89,13 @@
 - **现象**：在 `AntDockWidget` 上右键弹出的上下文菜单使用 Qt 原生 `QMenu` 外观，未与 Ant Design 设计系统对齐（缺少主题色、圆角、阴影、字号、间距、暗色模式 token）。
 - **根因**：`AntDockManager::showDockContextMenu()` 直接创建 `QMenu` 并添加 `QAction`，该路径不经过项目内 `AntMenu` 的主题、绘制和菜单项状态逻辑。
 - **解决**：新增 manager-owned `AntDockContextMenuPopup` 轻量弹层，内部承载 `AntMenu`；右键命令改为 `AntMenuItem` key 分发，保留浮动、tab 移动、拆分、关闭等原有行为，同时复用 `AntMenu` 的紧凑布局、亮/暗主题、disabled / danger 状态。弹层使用无装饰、无原生窗口阴影的 tool 型窗口，并用贴合面板外沿的单层柔和羽化阴影绘制，避免原生阴影和手绘阴影叠加成多重层次。
-- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`src/widgets/AntDockWidget.cpp`、`src/widgets/AntDockWidget.h`、`tests/TestAntQtExtensions.cpp`
 
 ### 11. AntDockWidget 在 Win11 上浮动后嵌回布局导致客户区点击失效
 
 - **现象**：`AntDockWidget` 先浮动，再拖回主布局后，主窗口除标题栏外的客户区控件无法响应点击。
-- **根因**：自研停靠树把浮动 dock 放回 `QTabWidget` 后仍调用 `QDockWidget::setFloating(false)`，这会重新进入 Qt 原生 dock 的内部状态机。Win11 / DWM 路径下该调用有概率创建或残留覆盖客户区的内部顶层窗口，导致鼠标事件被旧窗口吃掉。
-- **解决**：嵌回布局时不再调用 `QDockWidget::setFloating(false)`；新增 `prepareDockWidgetForEmbedding()`，在 dock 嵌回布局前释放 mouse grab、隐藏旧 top-level、清理 native owner / 透明输入 flags / window opacity，并通过 `setParent(parent, Qt::Widget)` 强制恢复普通子控件窗口类型。停靠状态由 `AntDockManager` 自己的 area 映射决定，回归测试覆盖 embedded 后的 window flags、透明输入属性、overlay 隐藏、mouse grab 清理和客户区 hit-test。
+- **根因**：自研停靠树把浮动 dock 放回 `QTabWidget` 后仍调用 `QDockWidget::setFloating(false)`，这会重新进入 Qt 原生 dock 的内部状态机。真实拖动场景下 Win32 还可能把 mouse capture 留在浮动 dock 的旧 HWND 上，Qt 的 `QWidget::mouseGrabber()` 看不到这个 native capture，后续客户区鼠标消息会继续被旧窗口接走。
+- **解决**：嵌回布局时不再调用 `QDockWidget::setFloating(false)`；新增 `prepareDockWidgetForEmbedding()`，在 dock 嵌回布局前释放 Qt mouse grab 和 Win32 mouse capture、隐藏并销毁旧 floating HWND、清理 native owner / 透明输入 flags / window opacity，并通过 `setParent(parent, Qt::Widget)` 强制恢复普通子控件窗口类型。Windows 下额外归一化重新创建后的真实 HWND：强制 `WS_CHILD`，清除 `WS_POPUP`、`WS_EX_TOPMOST`、`WS_EX_TOOLWINDOW`、`WS_EX_TRANSPARENT`、`WS_EX_NOACTIVATE` 等顶层 / 透明输入样式。停靠状态由 `AntDockManager` 自己的 area 映射决定，回归测试覆盖 embedded 后的 Qt window flags、Win32 style、真实 `WindowFromPoint()` 命中、透明输入属性、overlay 隐藏、Qt / Win32 mouse grab 清理和客户区 hit-test。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
 ## 未解决

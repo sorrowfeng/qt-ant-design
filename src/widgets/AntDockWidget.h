@@ -23,6 +23,9 @@ public:
                            Qt::WindowFlags flags = Qt::WindowFlags());
 
     void setWidget(QWidget* widget);
+#if defined(Q_OS_WIN)
+    void resetNativeFloatingWindowForEmbedding();
+#endif
 
 protected:
     void paintEvent(QPaintEvent* event) override;

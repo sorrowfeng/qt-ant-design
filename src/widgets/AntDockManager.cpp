@@ -223,6 +223,86 @@ void clearFloatingDockOwner(AntDockWidget* dockWidget)
 #endif
 }
 
+#if defined(Q_OS_WIN)
+void releaseNativeMouseCaptureForDock(AntDockWidget* dockWidget)
+{
+    HWND capturedHwnd = ::GetCapture();
+    if (!capturedHwnd)
+    {
+        if (dockWidget)
+        {
+            dockWidget->setProperty("antDockNativeMouseCaptureCleared", true);
+        }
+        return;
+    }
+
+    HWND dockHwnd = nullptr;
+    if (dockWidget && dockWidget->internalWinId())
+    {
+        dockHwnd = reinterpret_cast<HWND>(dockWidget->internalWinId());
+    }
+
+    const bool captureBelongsToDock =
+        dockHwnd && (capturedHwnd == dockHwnd || ::IsChild(dockHwnd, capturedHwnd));
+
+    if (captureBelongsToDock)
+    {
+        ::ReleaseCapture();
+    }
+
+    if (dockWidget)
+    {
+        const HWND afterRelease = ::GetCapture();
+        const bool stillCapturedByDock =
+            dockHwnd && afterRelease && (afterRelease == dockHwnd || ::IsChild(dockHwnd, afterRelease));
+        dockWidget->setProperty("antDockNativeMouseCaptureCleared", !stillCapturedByDock);
+        dockWidget->setProperty("antDockNativeMouseCaptureWasDock", captureBelongsToDock);
+    }
+}
+
+void normalizeEmbeddedDockNativeWindow(AntDockWidget* dockWidget, QWidget* parentWidget)
+{
+    if (!dockWidget || !parentWidget)
+    {
+        return;
+    }
+
+    HWND dockHwnd = nullptr;
+    if (dockWidget->internalWinId())
+    {
+        dockHwnd = reinterpret_cast<HWND>(dockWidget->internalWinId());
+    }
+    if (!dockHwnd)
+    {
+        dockWidget->setProperty("antDockNativeEmbeddedChildFrame", true);
+        return;
+    }
+
+    LONG_PTR style = ::GetWindowLongPtrW(dockHwnd, GWL_STYLE);
+    style |= WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+    style &= ~(WS_POPUP | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+    ::SetWindowLongPtrW(dockHwnd, GWL_STYLE, style);
+
+    LONG_PTR exStyle = ::GetWindowLongPtrW(dockHwnd, GWL_EXSTYLE);
+    exStyle &= ~(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_APPWINDOW |
+                 WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE);
+    ::SetWindowLongPtrW(dockHwnd, GWL_EXSTYLE, exStyle);
+    ::EnableWindow(dockHwnd, TRUE);
+    ::SetWindowPos(dockHwnd,
+                   nullptr,
+                   0,
+                   0,
+                   0,
+                   0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
+                       SWP_NOACTIVATE | SWP_FRAMECHANGED);
+
+    dockWidget->setProperty("antDockNativeEmbeddedChildFrame", true);
+    dockWidget->setProperty("antDockNativeEmbeddedStyle", static_cast<qulonglong>(style));
+    dockWidget->setProperty("antDockNativeEmbeddedExStyle", static_cast<qulonglong>(exStyle));
+}
+#endif
+
 void prepareDockWidgetForEmbedding(AntDockWidget* dockWidget, QWidget* parentWidget)
 {
     if (!dockWidget || !parentWidget)
@@ -238,6 +318,10 @@ void prepareDockWidgetForEmbedding(AntDockWidget* dockWidget, QWidget* parentWid
         }
     }
     dockWidget->releaseMouse();
+
+#if defined(Q_OS_WIN)
+    releaseNativeMouseCaptureForDock(dockWidget);
+#endif
 
     const bool wasTopLevel = dockWidget->isWindow() || dockWidget->isFloating() ||
                              dockWidget->property("antDockFloatingOwnedByManager").toBool();
@@ -257,10 +341,7 @@ void prepareDockWidgetForEmbedding(AntDockWidget* dockWidget, QWidget* parentWid
 #if defined(Q_OS_WIN)
     if (wasTopLevel)
     {
-        if (const WId dockId = dockWidget->internalWinId())
-        {
-            ::ShowWindow(reinterpret_cast<HWND>(dockId), SW_HIDE);
-        }
+        dockWidget->resetNativeFloatingWindowForEmbedding();
     }
 #endif
 
@@ -270,6 +351,9 @@ void prepareDockWidgetForEmbedding(AntDockWidget* dockWidget, QWidget* parentWid
     // remain above the main window's client area and eat mouse input.
     dockWidget->setParent(parentWidget, Qt::Widget);
     dockWidget->clearMask();
+#if defined(Q_OS_WIN)
+    normalizeEmbeddedDockNativeWindow(dockWidget, parentWidget);
+#endif
 }
 
 QRect availableScreenGeometryForPopup(const QPoint& globalPos, const QWidget* fallback)

@@ -1280,6 +1280,24 @@ void TestAntQtExtensions::dockManager()
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     QVERIFY(!explorer->windowFlags().testFlag(Qt::WindowTransparentForInput));
 #endif
+#if defined(Q_OS_WIN)
+    QCOMPARE(explorer->property("antDockNativeMouseCaptureCleared").toBool(), true);
+    QCOMPARE(explorer->property("antDockNativeFloatingHwndDestroyed").toBool(), true);
+    QCOMPARE(explorer->property("antDockNativeEmbeddedChildFrame").toBool(), true);
+    if (const WId explorerId = explorer->internalWinId())
+    {
+        HWND capturedHwnd = ::GetCapture();
+        HWND explorerHwnd = reinterpret_cast<HWND>(explorerId);
+        QVERIFY(!capturedHwnd || (capturedHwnd != explorerHwnd && !::IsChild(explorerHwnd, capturedHwnd)));
+        const LONG_PTR nativeStyle = ::GetWindowLongPtrW(explorerHwnd, GWL_STYLE);
+        const LONG_PTR nativeExStyle = ::GetWindowLongPtrW(explorerHwnd, GWL_EXSTYLE);
+        QVERIFY((nativeStyle & WS_CHILD) != 0);
+        QVERIFY((nativeStyle & WS_POPUP) == 0);
+        QVERIFY((nativeExStyle & WS_EX_TOPMOST) == 0);
+        QVERIFY((nativeExStyle & WS_EX_TRANSPARENT) == 0);
+        QVERIFY((nativeExStyle & WS_EX_NOACTIVATE) == 0);
+    }
+#endif
     QVERIFY(dockedSpy.count() >= 1);
     manager->setDockWidgetFloating(explorer, true, savedFloatingGeometry);
     QTRY_VERIFY(manager->isDockWidgetFloating(explorer));
@@ -1367,6 +1385,24 @@ void TestAntQtExtensions::dockManager()
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     QVERIFY(!explorer->windowFlags().testFlag(Qt::WindowTransparentForInput));
 #endif
+#if defined(Q_OS_WIN)
+    QCOMPARE(explorer->property("antDockNativeMouseCaptureCleared").toBool(), true);
+    QCOMPARE(explorer->property("antDockNativeFloatingHwndDestroyed").toBool(), true);
+    QCOMPARE(explorer->property("antDockNativeEmbeddedChildFrame").toBool(), true);
+    if (const WId explorerId = explorer->internalWinId())
+    {
+        HWND capturedHwnd = ::GetCapture();
+        HWND explorerHwnd = reinterpret_cast<HWND>(explorerId);
+        QVERIFY(!capturedHwnd || (capturedHwnd != explorerHwnd && !::IsChild(explorerHwnd, capturedHwnd)));
+        const LONG_PTR nativeStyle = ::GetWindowLongPtrW(explorerHwnd, GWL_STYLE);
+        const LONG_PTR nativeExStyle = ::GetWindowLongPtrW(explorerHwnd, GWL_EXSTYLE);
+        QVERIFY((nativeStyle & WS_CHILD) != 0);
+        QVERIFY((nativeStyle & WS_POPUP) == 0);
+        QVERIFY((nativeExStyle & WS_EX_TOPMOST) == 0);
+        QVERIFY((nativeExStyle & WS_EX_TRANSPARENT) == 0);
+        QVERIFY((nativeExStyle & WS_EX_NOACTIVATE) == 0);
+    }
+#endif
 
     auto* embeddedClickSwitch = new AntSwitch(manager);
     embeddedClickSwitch->setObjectName(QStringLiteral("dockEmbeddedClickSwitch"));
@@ -1376,6 +1412,43 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(embeddedClickSwitch->isVisible());
     QWidget* embeddedHitWidget = QApplication::widgetAt(embeddedClickSwitch->mapToGlobal(embeddedClickSwitch->rect().center()));
     QVERIFY(embeddedHitWidget == embeddedClickSwitch || embeddedClickSwitch->isAncestorOf(embeddedHitWidget));
+#if defined(Q_OS_WIN)
+    {
+        HWND managerRootHwnd = ::GetAncestor(reinterpret_cast<HWND>(manager->window()->winId()), GA_ROOT);
+        ::SetWindowPos(managerRootHwnd,
+                       HWND_TOPMOST,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        ::SetWindowPos(managerRootHwnd,
+                       HWND_NOTOPMOST,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        QTest::qWait(20);
+        const QPoint embeddedSwitchGlobal = embeddedClickSwitch->mapToGlobal(embeddedClickSwitch->rect().center());
+        POINT nativePoint{embeddedSwitchGlobal.x(), embeddedSwitchGlobal.y()};
+        HWND nativeAtPoint = ::WindowFromPoint(nativePoint);
+        QVERIFY(nativeAtPoint != nullptr);
+        HWND pointRootHwnd = ::GetAncestor(nativeAtPoint, GA_ROOT);
+        DWORD pointProcessId = 0;
+        ::GetWindowThreadProcessId(pointRootHwnd, &pointProcessId);
+        if (pointProcessId == ::GetCurrentProcessId())
+        {
+            QCOMPARE(pointRootHwnd, managerRootHwnd);
+            if (const WId explorerId = explorer->internalWinId())
+            {
+                HWND explorerHwnd = reinterpret_cast<HWND>(explorerId);
+                QVERIFY(nativeAtPoint != explorerHwnd);
+                QVERIFY(!::IsChild(explorerHwnd, nativeAtPoint));
+            }
+        }
+    }
+#endif
     QSignalSpy embeddedClickSwitchSpy(embeddedClickSwitch, &AntSwitch::checkedChanged);
     QTest::mousePress(embeddedClickSwitch,
                       Qt::LeftButton,
