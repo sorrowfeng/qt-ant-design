@@ -154,6 +154,13 @@
 - **解决**：`AntDockManager` 现在在 Close 事件中统一处理受管 Dock：closable 关闭时移除并隐藏，非 closable 关闭时忽略事件。回归测试覆盖非 closable 浮动窗口 close 被拦截，以及 closable 浮动窗口 close 后从 manager 和 floating 列表中移除。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 20. Manager 析构后浮动 Dock 可能残留为孤立窗口
+
+- **现象**：`AntDockManager` 销毁时，如果还有由它管理的浮动 `AntDockWidget`，该 Dock 已经是独立顶层窗口，可能在 manager 销毁后仍然可见并保留旧 owner 状态。
+- **根因**：析构函数只移除事件过滤器和信号连接，没有像显式 `removeDockWidget()` 一样收敛浮动窗口的可见性、透明度和 owner 属性。
+- **解决**：析构时识别受管浮动 Dock，先清理 floating owner、恢复 `windowOpacity(1.0)` 并隐藏窗口，再移除事件过滤器和连接。回归测试覆盖删除 manager 后浮动 Dock 被隐藏且 owner 属性清空。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

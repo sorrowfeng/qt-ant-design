@@ -1134,6 +1134,33 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(!directCloseFloating->isVisible());
     delete directCloseFloating;
 
+    {
+        auto* cleanupManager = new AntDockManager;
+        cleanupManager->setGeometry(80, 80, 420, 280);
+        cleanupManager->show();
+        QVERIFY(QTest::qWaitForWindowExposed(cleanupManager));
+
+        auto* cleanupFloating = new AntDockWidget(QStringLiteral("Cleanup Floating"));
+        cleanupFloating->setWidget(new QWidget);
+        cleanupManager->setDockWidgetFloating(
+            cleanupFloating,
+            true,
+            QRect(cleanupManager->mapToGlobal(QPoint(96, 72)), QSize(240, 160)));
+        QVERIFY(cleanupManager->dockWidgets().contains(cleanupFloating));
+        QVERIFY(cleanupManager->floatingDockWidgets().contains(cleanupFloating));
+        QTRY_VERIFY(cleanupFloating->isVisible());
+        QCOMPARE(cleanupFloating->property("antDockFloatingOwnedByManager").toBool(), true);
+
+        delete cleanupManager;
+        QCoreApplication::processEvents();
+        QVERIFY(!cleanupFloating->isVisible());
+        QCOMPARE(cleanupFloating->property("antDockFloatingOwnedByManager").toBool(), false);
+#if defined(Q_OS_WIN)
+        QCOMPARE(cleanupFloating->property("antDockFloatingNativeOwnedByManager").toBool(), false);
+#endif
+        delete cleanupFloating;
+    }
+
     QVERIFY(manager->isDockWidgetMovable(preview));
     manager->setDockWidgetMovable(preview, false);
     QCOMPARE(manager->isDockWidgetMovable(preview), false);

@@ -1619,6 +1619,15 @@ AntDockManager::~AntDockManager()
     for (AntDockWidget* dock : dockWidgets())
     {
         if (!dock) continue;
+        const bool managedFloating = dock->isFloating() ||
+                                     dock->property("antDockFloatingOwnedByManager").toBool() ||
+                                     (!areaForDock(dock) && dock->isVisible());
+        if (managedFloating)
+        {
+            clearFloatingDockOwner(dock);
+            dock->setWindowOpacity(1.0);
+            dock->hide();
+        }
         removeDockEventFilters(dock);
         disconnect(dock, nullptr, this, nullptr);
     }
