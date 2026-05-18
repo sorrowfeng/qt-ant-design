@@ -44,7 +44,7 @@ constexpr int kDockContextMenuShadowMargin = 24;
 constexpr int kDockContextMenuInnerPadding = 4;
 constexpr int kDockContextMenuMinWidth = 176;
 constexpr int kDockContextMenuMaxWidth = 280;
-constexpr int kDockContextMenuShadowSpread = 18;
+constexpr int kDockContextMenuShadowSpread = 14;
 
 QString cssColor(const QColor& color)
 {
@@ -254,9 +254,9 @@ void drawDockContextMenuShadow(QPainter* painter, const QRect& panel, int radius
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     const auto& token = antTheme->tokens();
-    const QRectF sourceRect(panel.translated(0, 3));
+    const QRectF sourceRect(panel);
     const QColor shadowBase = token.colorShadow;
-    const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.18 : 0.14;
+    const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.14 : 0.10;
 
     for (int step = kDockContextMenuShadowSpread; step > 0; --step)
     {
@@ -304,11 +304,13 @@ class AntDockContextMenuPopup : public QFrame
 {
 public:
     explicit AntDockContextMenuPopup(QWidget* parent)
-        : QFrame(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+        : QFrame(parent, Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
     {
         setObjectName(QStringLiteral("AntDockContextMenuPopup"));
         setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
         setAttribute(Qt::WA_ShowWithoutActivating, true);
+        setAutoFillBackground(false);
         setMouseTracking(true);
 
         auto* layout = new QVBoxLayout(this);
