@@ -189,6 +189,13 @@
 - **解决**：非浮动标题栏双击现在先检查 `DockWidgetFloatable`，禁用时保持嵌入；回归测试覆盖禁用/启用 floatable 后标题栏双击的不同结果。
 - **改动文件**：`src/widgets/AntDockWidget.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 25. 拖动中关闭 movable 后仍继续显示落位预览
+
+- **现象**：Dock tab / 标题栏拖动已经开始后，如果外部调用 `setDockWidgetMovable(dock, false)`，当前拖动状态仍会继续响应后续鼠标移动，可能继续显示 drop preview / guide。
+- **根因**：`setDockWidgetFeatureEnabled()` 只更新 `QDockWidget::features()`，没有在动态关闭 `DockWidgetMovable` 时收敛已有的 `m_draggingDockTitle` / `m_draggedDock` 状态。
+- **解决**：关闭当前拖动 Dock 的 `DockWidgetMovable` 时立即调用 `stopDockDragTracking()`，同步清理 drag preview、drop guide、记忆 drop target 和全局事件过滤器；回归测试覆盖拖动开始后关闭 movable，后续移动不会激活 drop preview。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

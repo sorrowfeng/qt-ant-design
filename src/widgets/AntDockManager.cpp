@@ -3128,6 +3128,11 @@ void AntDockManager::setDockWidgetFeatureEnabled(AntDockWidget* dockWidget,
     const bool wasEnabled = features.testFlag(feature);
     if (wasEnabled == enabled) return;
 
+    if (feature == QDockWidget::DockWidgetMovable && !enabled && m_draggedDock == dockWidget)
+    {
+        stopDockDragTracking();
+    }
+
     if (enabled)
     {
         features |= feature;

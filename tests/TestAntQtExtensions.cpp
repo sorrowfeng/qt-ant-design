@@ -1376,6 +1376,41 @@ void TestAntQtExtensions::dockManager()
     QCoreApplication::processEvents();
     manager->setDockWidgetClosable(inspector, true);
 
+    QTabBar* movableCancelTabBar = dockTabBarForExtensionTest(preview);
+    QVERIFY(movableCancelTabBar != nullptr);
+    const QPoint movableCancelStart = dockTabCenterForExtensionTest(preview);
+    QVERIFY(!movableCancelStart.isNull());
+    const QPoint movableCancelGlobal = movableCancelTabBar->mapToGlobal(movableCancelStart);
+    QMouseEvent movableCancelPress(QEvent::MouseButtonPress,
+                                   QPointF(movableCancelStart),
+                                   QPointF(movableCancelGlobal),
+                                   Qt::LeftButton,
+                                   Qt::LeftButton,
+                                   Qt::NoModifier);
+    QCoreApplication::sendEvent(movableCancelTabBar, &movableCancelPress);
+    manager->setDockWidgetMovable(preview, false);
+    QCOMPARE(manager->isDockWidgetMovable(preview), false);
+    const QPoint canceledMoveGlobal = propertiesAreaRect.center();
+    QMouseEvent canceledMove(QEvent::MouseMove,
+                             QPointF(movableCancelTabBar->mapFromGlobal(canceledMoveGlobal)),
+                             QPointF(canceledMoveGlobal),
+                             Qt::NoButton,
+                             Qt::LeftButton,
+                             Qt::NoModifier);
+    QCoreApplication::sendEvent(movableCancelTabBar, &canceledMove);
+    QCOMPARE(manager->property("antDockDragActivated").toBool(), false);
+    QVERIFY(!manager->isDropPreviewVisible());
+    QCOMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::None);
+    QMouseEvent movableCancelRelease(QEvent::MouseButtonRelease,
+                                     QPointF(movableCancelStart),
+                                     QPointF(movableCancelGlobal),
+                                     Qt::LeftButton,
+                                     Qt::NoButton,
+                                     Qt::NoModifier);
+    QCoreApplication::sendEvent(movableCancelTabBar, &movableCancelRelease);
+    manager->setDockWidgetMovable(preview, true);
+    QCOMPARE(manager->isDockWidgetMovable(preview), true);
+
     const QPoint previewTabPoint = dockTabCenterForExtensionTest(preview);
     QVERIFY(!previewTabPoint.isNull());
     const QPoint previewTabGlobal = inspectorTabBar->mapToGlobal(previewTabPoint);
