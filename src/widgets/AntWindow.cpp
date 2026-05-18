@@ -56,6 +56,40 @@ constexpr auto kLegacySoftwareShadowObjectName = "AntWindowLegacySoftwareShadow"
 constexpr int kLegacySoftwareShadowMargin = 14;
 constexpr int kLegacySoftwareShadowInnerClearance = 0;
 
+#if defined(Q_OS_WIN)
+void makeAntWindowShadowClickThrough(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (!hwnd)
+    {
+        return;
+    }
+
+    const LONG_PTR currentStyle = ::GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    const LONG_PTR clickThroughStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
+    const LONG_PTR nextStyle = currentStyle | clickThroughStyle;
+    if (nextStyle != currentStyle)
+    {
+        ::SetWindowLongPtrW(hwnd, GWL_EXSTYLE, nextStyle);
+        ::SetWindowPos(hwnd,
+                       nullptr,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
+                           SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+
+    widget->setProperty("antWindowLegacySoftwareShadowClickThrough", true);
+}
+#endif
+
 class AntWindowThemeTransitionOverlay : public QWidget
 {
 public:
@@ -294,9 +328,15 @@ public:
         setAttribute(Qt::WA_NoSystemBackground, true);
         setAttribute(Qt::WA_TransparentForMouseEvents, true);
         setAttribute(Qt::WA_ShowWithoutActivating, true);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        setWindowFlag(Qt::WindowTransparentForInput, true);
+#endif
         setFocusPolicy(Qt::NoFocus);
         setProperty("shadowMargin", kLegacySoftwareShadowMargin);
         setProperty("shadowInnerClearance", kLegacySoftwareShadowInnerClearance);
+#if defined(Q_OS_WIN)
+        setProperty("antWindowLegacySoftwareShadowClickThrough", false);
+#endif
     }
 
     void setCornerRadius(int radius)
@@ -306,6 +346,29 @@ public:
     }
 
 protected:
+#if defined(Q_OS_WIN)
+    void showEvent(QShowEvent* event) override
+    {
+        QWidget::showEvent(event);
+        makeAntWindowShadowClickThrough(this);
+    }
+
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    {
+        if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
+        {
+            auto* msg = static_cast<MSG*>(message);
+            if (msg->message == WM_NCHITTEST)
+            {
+                *result = HTTRANSPARENT;
+                setProperty("antWindowLegacySoftwareShadowClickThrough", true);
+                return true;
+            }
+        }
+        return QWidget::nativeEvent(eventType, message, result);
+    }
+#endif
+
     void paintEvent(QPaintEvent*) override
     {
         QPainter painter(this);
@@ -2145,6 +2208,7 @@ void AntWindow::updateLegacySoftwareShadow()
     const HWND shadowHwnd = reinterpret_cast<HWND>(m_legacySoftwareShadow->winId());
     if (shadowHwnd && hwnd)
     {
+        makeAntWindowShadowClickThrough(m_legacySoftwareShadow);
         ::SetWindowPos(shadowHwnd,
                        hwnd,
                        shadowGeometry.x(),
@@ -2167,6 +2231,22 @@ void AntWindow::hideLegacySoftwareShadow()
     setProperty("antWindowLegacySoftwareShadowEnabled", false);
     if (m_legacySoftwareShadow)
     {
+#ifdef Q_OS_WIN
+        if (const WId shadowId = m_legacySoftwareShadow->internalWinId())
+        {
+            HWND shadowHwnd = reinterpret_cast<HWND>(shadowId);
+            makeAntWindowShadowClickThrough(m_legacySoftwareShadow);
+            ::ShowWindow(shadowHwnd, SW_HIDE);
+            ::SetWindowPos(shadowHwnd,
+                           nullptr,
+                           0,
+                           0,
+                           0,
+                           0,
+                           SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                               SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
+        }
+#endif
         m_legacySoftwareShadow->hide();
     }
 }

@@ -2347,6 +2347,11 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     auto* shadowWidget = window.findChild<QWidget*>(QStringLiteral("AntWindowLegacySoftwareShadow"));
     QVERIFY(shadowWidget);
     QTRY_VERIFY(shadowWidget->isVisible());
+    QVERIFY(shadowWidget->testAttribute(Qt::WA_TransparentForMouseEvents));
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    QVERIFY(shadowWidget->windowFlags().testFlag(Qt::WindowTransparentForInput));
+#endif
+    QTRY_COMPARE(shadowWidget->property("antWindowLegacySoftwareShadowClickThrough").toBool(), true);
 
     auto maxAlphaIn = [](const QImage& image, const QRect& sampleRect) {
         int maxAlpha = 0;

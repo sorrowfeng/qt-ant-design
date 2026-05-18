@@ -141,6 +141,12 @@ void forceHideNativeToolWindow(QWidget* widget)
     if (const WId id = widget->internalWinId())
     {
         HWND hwnd = reinterpret_cast<HWND>(id);
+        const LONG_PTR currentStyle = ::GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+        const LONG_PTR transparentStyle = currentStyle | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
+        if (transparentStyle != currentStyle)
+        {
+            ::SetWindowLongPtrW(hwnd, GWL_EXSTYLE, transparentStyle);
+        }
         ::ShowWindow(hwnd, SW_HIDE);
         ::SetWindowPos(hwnd,
                        nullptr,
@@ -299,6 +305,13 @@ void normalizeEmbeddedDockNativeWindow(AntDockWidget* dockWidget, QWidget* paren
     {
         dockWidget->setProperty("antDockNativeEmbeddedChildFrame", true);
         return;
+    }
+
+    HWND parentHwnd = reinterpret_cast<HWND>(parentWidget->winId());
+    if (parentHwnd)
+    {
+        ::SetParent(dockHwnd, parentHwnd);
+        dockWidget->setProperty("antDockNativeEmbeddedParentApplied", true);
     }
 
     LONG_PTR style = ::GetWindowLongPtrW(dockHwnd, GWL_STYLE);

@@ -1389,6 +1389,22 @@ void AntDockWidget::hideLegacySoftwareShadow()
     setProperty(kDockLegacyShadowEnabledProperty, false);
     if (m_legacySoftwareShadow)
     {
+#if defined(Q_OS_WIN)
+        if (const WId shadowId = m_legacySoftwareShadow->internalWinId())
+        {
+            HWND shadowHwnd = reinterpret_cast<HWND>(shadowId);
+            makeWindowClickThrough(m_legacySoftwareShadow);
+            ::ShowWindow(shadowHwnd, SW_HIDE);
+            ::SetWindowPos(shadowHwnd,
+                           nullptr,
+                           0,
+                           0,
+                           0,
+                           0,
+                           SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                               SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
+        }
+#endif
         m_legacySoftwareShadow->hide();
     }
 }
