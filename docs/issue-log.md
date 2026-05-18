@@ -182,6 +182,13 @@
 - **解决**：标题栏 close 按钮现在跟随 `DockWidgetClosable` 隐藏/显示，并监听 `featuresChanged` 动态刷新；回归测试覆盖浮动 Dock 的 close 按钮在 manager API 切换 closable 时即时同步。
 - **改动文件**：`src/widgets/AntDockWidget.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 24. 标题栏双击浮动绕过 DockWidgetFloatable
+
+- **现象**：`AntDockWidget` 作为普通 `QDockWidget` 使用时，即使关闭 `DockWidgetFloatable`，双击自绘标题栏仍可能直接调用 `setFloating(true)`。
+- **根因**：标题栏双击处理只区分当前是否浮动，没有在非浮动分支检查 `DockWidgetFloatable` feature。
+- **解决**：非浮动标题栏双击现在先检查 `DockWidgetFloatable`，禁用时保持嵌入；回归测试覆盖禁用/启用 floatable 后标题栏双击的不同结果。
+- **改动文件**：`src/widgets/AntDockWidget.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

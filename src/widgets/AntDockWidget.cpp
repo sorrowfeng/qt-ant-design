@@ -903,7 +903,10 @@ protected:
             }
             else
             {
-                m_dock->setFloating(true);
+                if (m_dock->features().testFlag(QDockWidget::DockWidgetFloatable))
+                {
+                    m_dock->setFloating(true);
+                }
             }
             event->accept();
             return;

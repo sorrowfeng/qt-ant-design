@@ -982,6 +982,40 @@ void TestAntQtExtensions::dockWidget()
     QCOMPARE(w2->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
     QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    QMainWindow host;
+    host.resize(360, 260);
+    auto* lockedFloat = new AntDockWidget(QStringLiteral("Locked Float"));
+    lockedFloat->setWidget(new QWidget);
+    lockedFloat->setFeatures(lockedFloat->features() & ~QDockWidget::DockWidgetFloatable);
+    host.addDockWidget(Qt::LeftDockWidgetArea, lockedFloat);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+    QVERIFY(!lockedFloat->isFloating());
+    QWidget* titleBar = lockedFloat->titleBarWidget();
+    QVERIFY(titleBar != nullptr);
+    QTRY_VERIFY(titleBar->isVisible());
+    const QPoint titlePoint = titleBar->rect().center();
+    QMouseEvent blockedDoubleClick(QEvent::MouseButtonDblClick,
+                                   QPointF(titlePoint),
+                                   QPointF(titleBar->mapToGlobal(titlePoint)),
+                                   Qt::LeftButton,
+                                   Qt::LeftButton,
+                                   Qt::NoModifier);
+    QCoreApplication::sendEvent(titleBar, &blockedDoubleClick);
+    QCoreApplication::processEvents();
+    QVERIFY(!lockedFloat->isFloating());
+
+    lockedFloat->setFeatures(lockedFloat->features() | QDockWidget::DockWidgetFloatable);
+    QMouseEvent allowedDoubleClick(QEvent::MouseButtonDblClick,
+                                   QPointF(titlePoint),
+                                   QPointF(titleBar->mapToGlobal(titlePoint)),
+                                   Qt::LeftButton,
+                                   Qt::LeftButton,
+                                   Qt::NoModifier);
+    QCoreApplication::sendEvent(titleBar, &allowedDoubleClick);
+    QTRY_VERIFY(lockedFloat->isFloating());
+    lockedFloat->hide();
 }
 
 void TestAntQtExtensions::dockManager()
