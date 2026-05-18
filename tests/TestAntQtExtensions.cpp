@@ -1199,6 +1199,26 @@ void TestAntQtExtensions::dockManager()
         QTRY_VERIFY((shadow = explorer->findChild<QWidget*>(QStringLiteral("AntDockLegacySoftwareShadow"))) != nullptr);
         QVERIFY(shadow->testAttribute(Qt::WA_TransparentForMouseEvents));
         QTRY_COMPARE(shadow->property("antDockLegacySoftwareShadowClickThrough").toBool(), true);
+        QTRY_COMPARE(shadow->property("antDockLegacySoftwareShadowRingRegion").toBool(), true);
+    }
+    if (!explorer->property("antDockUsesNativeCaptionFrame").toBool())
+    {
+        const HWND explorerHwnd = reinterpret_cast<HWND>(explorer->winId());
+        ::SendMessageW(explorerHwnd, WM_ENTERSIZEMOVE, 0, 0);
+        QTRY_COMPARE(explorer->property("antDockLegacyLiveResize").toBool(), true);
+        QCOMPARE(explorer->property("antDockLegacySoftwareShadowEnabled").toBool(), false);
+        ::SendMessageW(explorerHwnd, WM_EXITSIZEMOVE, 0, 0);
+        QTRY_COMPARE(explorer->property("antDockLegacyLiveResize").toBool(), false);
+
+        MSG outsideHitTestMessage{};
+        outsideHitTestMessage.hwnd = explorerHwnd;
+        outsideHitTestMessage.message = WM_NCHITTEST;
+        const QPoint outsideFrameGlobal = explorer->mapToGlobal(QPoint(-4, explorer->height() / 2));
+        outsideHitTestMessage.lParam = MAKELPARAM(outsideFrameGlobal.x(), outsideFrameGlobal.y());
+        const qintptr outsideHitTestResult =
+            ::SendMessageW(explorerHwnd, outsideHitTestMessage.message, 0, outsideHitTestMessage.lParam);
+        QCOMPARE(outsideHitTestResult, static_cast<qintptr>(HTTRANSPARENT));
+        QCOMPARE(explorer->property("antDockLegacyOutsideClientHitTestTransparent").toBool(), true);
     }
 #endif
     QVERIFY(manager->savePerspective(QStringLiteral("floating")));

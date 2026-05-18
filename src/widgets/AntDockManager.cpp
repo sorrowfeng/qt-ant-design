@@ -785,6 +785,9 @@ public:
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_TransparentForMouseEvents);
         setAttribute(Qt::WA_ShowWithoutActivating);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        setWindowFlag(Qt::WindowTransparentForInput, true);
+#endif
         setFocusPolicy(Qt::NoFocus);
 #if defined(Q_OS_WIN)
         setProperty(kTransparentToolWindowClickThroughProperty, false);
@@ -923,6 +926,9 @@ public:
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_TransparentForMouseEvents);
         setAttribute(Qt::WA_ShowWithoutActivating);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        setWindowFlag(Qt::WindowTransparentForInput, true);
+#endif
         setFocusPolicy(Qt::NoFocus);
 #if defined(Q_OS_WIN)
         setProperty(kTransparentToolWindowClickThroughProperty, false);

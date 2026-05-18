@@ -51,5 +51,6 @@ private:
     bool m_floatingFrameActive = false;
 #if defined(Q_OS_WIN)
     QWidget* m_legacySoftwareShadow = nullptr;
+    bool m_legacyLiveResize = false;
 #endif
 };

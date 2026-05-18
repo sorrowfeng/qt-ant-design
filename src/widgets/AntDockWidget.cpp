@@ -33,6 +33,7 @@ constexpr int kFloatingBorderWidth = 1;
 constexpr int kFloatingTitleBarHeight = 40;
 constexpr int kEmbeddedTitleBarHeight = 32;
 constexpr int kFloatingTitleButtonWidth = 46;
+constexpr auto kDockLegacyLiveResizeProperty = "antDockLegacyLiveResize";
 
 #if defined(Q_OS_WIN)
 constexpr int kNativeFrameShadowMargin = 14;
@@ -46,6 +47,7 @@ constexpr auto kDockLegacyRoundedMaskAppliedProperty = "antDockLegacyRoundedMask
 constexpr auto kDockLegacyShadowEnabledProperty = "antDockLegacySoftwareShadowEnabled";
 constexpr auto kDockLegacyShadowClickThroughProperty = "antDockLegacySoftwareShadowClickThrough";
 constexpr auto kDockLegacyShadowObjectName = "AntDockLegacySoftwareShadow";
+constexpr auto kDockLegacyShadowRingRegionProperty = "antDockLegacySoftwareShadowRingRegion";
 constexpr auto kDockDwmFrameRefreshQueuedProperty = "antDockDwmFrameRefreshQueued";
 #endif
 
@@ -122,6 +124,65 @@ void makeWindowClickThrough(QWidget* widget)
     widget->setProperty(kDockLegacyShadowClickThroughProperty, true);
 }
 
+void applyShadowWindowRingRegion(QWidget* widget, int margin, int cornerRadius)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (!hwnd)
+    {
+        return;
+    }
+
+    RECT nativeRect{};
+    if (!::GetWindowRect(hwnd, &nativeRect))
+    {
+        return;
+    }
+
+    const int nativeWidth = qMax(0L, nativeRect.right - nativeRect.left);
+    const int nativeHeight = qMax(0L, nativeRect.bottom - nativeRect.top);
+    if (nativeWidth <= 0 || nativeHeight <= 0)
+    {
+        return;
+    }
+
+    const qreal xScale = widget->width() > 0 ? static_cast<qreal>(nativeWidth) / widget->width() : 1.0;
+    const qreal yScale = widget->height() > 0 ? static_cast<qreal>(nativeHeight) / widget->height() : 1.0;
+    const int nativeMarginX = qBound(1, qRound(margin * xScale), nativeWidth / 2);
+    const int nativeMarginY = qBound(1, qRound(margin * yScale), nativeHeight / 2);
+    const int nativeRadiusX = qMax(0, qRound(cornerRadius * 2.0 * xScale));
+    const int nativeRadiusY = qMax(0, qRound(cornerRadius * 2.0 * yScale));
+
+    HRGN outerRegion = ::CreateRectRgn(0, 0, nativeWidth, nativeHeight);
+    HRGN innerRegion = ::CreateRoundRectRgn(nativeMarginX,
+                                            nativeMarginY,
+                                            qMax(nativeMarginX + 1, nativeWidth - nativeMarginX + 1),
+                                            qMax(nativeMarginY + 1, nativeHeight - nativeMarginY + 1),
+                                            nativeRadiusX,
+                                            nativeRadiusY);
+    if (!outerRegion || !innerRegion)
+    {
+        if (outerRegion) ::DeleteObject(outerRegion);
+        if (innerRegion) ::DeleteObject(innerRegion);
+        return;
+    }
+
+    ::CombineRgn(outerRegion, outerRegion, innerRegion, RGN_DIFF);
+    ::DeleteObject(innerRegion);
+    if (::SetWindowRgn(hwnd, outerRegion, TRUE) == 0)
+    {
+        ::DeleteObject(outerRegion);
+        widget->setProperty(kDockLegacyShadowRingRegionProperty, false);
+        return;
+    }
+
+    widget->setProperty(kDockLegacyShadowRingRegionProperty, true);
+}
+
 class AntDockLegacySoftwareShadow : public QWidget
 {
 public:
@@ -133,9 +194,13 @@ public:
         setAttribute(Qt::WA_NoSystemBackground, true);
         setAttribute(Qt::WA_TransparentForMouseEvents, true);
         setAttribute(Qt::WA_ShowWithoutActivating, true);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        setWindowFlag(Qt::WindowTransparentForInput, true);
+#endif
         setFocusPolicy(Qt::NoFocus);
         setProperty("shadowMargin", kNativeFrameShadowMargin);
         setProperty(kDockLegacyShadowClickThroughProperty, false);
+        setProperty(kDockLegacyShadowRingRegionProperty, false);
     }
 
     void setCornerRadius(int radius)
@@ -774,7 +839,8 @@ protected:
         const bool maximized = m_dock->isMaximized();
         const QColor bg = floating ? token.colorBgElevated : token.colorBgContainer;
 
-        if (floating && !maximized)
+        const bool legacyLiveResize = m_dock->property(kDockLegacyLiveResizeProperty).toBool();
+        if (floating && !maximized && !legacyLiveResize)
         {
             QPainterPath titlePath;
             titlePath.addRoundedRect(QRectF(rect()), kFloatingCornerRadius, kFloatingCornerRadius);
@@ -889,6 +955,7 @@ void AntDockWidget::updateFloatingFrame()
     {
         setAttribute(Qt::WA_TranslucentBackground, false);
         setAttribute(Qt::WA_NoSystemBackground, false);
+        setAttribute(Qt::WA_OpaquePaintEvent, true);
         setAutoFillBackground(false);
         setContentsMargins(0, 0, 0, 0);
 
@@ -913,8 +980,11 @@ void AntDockWidget::updateFloatingFrame()
     {
         setAttribute(Qt::WA_TranslucentBackground, false);
         setAttribute(Qt::WA_NoSystemBackground, false);
+        setAttribute(Qt::WA_OpaquePaintEvent, false);
         setContentsMargins(0, 0, 0, 0);
+        setProperty(kDockLegacyLiveResizeProperty, false);
 #if defined(Q_OS_WIN)
+        m_legacyLiveResize = false;
         hideLegacySoftwareShadow();
         setProperty(kDockNativeFrameEnabledProperty, false);
         setProperty(kDockUsesNativeCaptionFrameProperty, false);
@@ -974,7 +1044,7 @@ void AntDockWidget::paintEvent(QPaintEvent* event)
     const QRectF panelRect = QRectF(panel).adjusted(0.5, 0.5, -0.5, -0.5);
     painter.setPen(QPen(border, kFloatingBorderWidth));
     painter.setBrush(fill);
-    if (cornerRadius > 0)
+    if (cornerRadius > 0 && !property(kDockLegacyLiveResizeProperty).toBool())
     {
         painter.drawRoundedRect(panelRect, cornerRadius, cornerRadius);
     }
@@ -988,7 +1058,7 @@ void AntDockWidget::moveEvent(QMoveEvent* event)
 {
     QDockWidget::moveEvent(event);
 #if defined(Q_OS_WIN)
-    if (isFloating())
+    if (isFloating() && !m_legacyLiveResize)
     {
         updateLegacySoftwareShadow();
     }
@@ -1009,8 +1079,15 @@ void AntDockWidget::resizeEvent(QResizeEvent* event)
     if (isFloating())
     {
 #if defined(Q_OS_WIN)
-        applyNativeWindowFrame();
-        updateLegacySoftwareShadow();
+        if (m_legacyLiveResize && !supportsNativeCaptionFrame())
+        {
+            hideLegacySoftwareShadow();
+        }
+        else
+        {
+            applyNativeWindowFrame();
+            updateLegacySoftwareShadow();
+        }
 #endif
         update();
     }
@@ -1024,10 +1101,11 @@ void AntDockWidget::showEvent(QShowEvent* event)
     if (isFloating())
     {
         applyNativeWindowFrame();
-        QTimer::singleShot(16, this, [this]() {
-            if (isFloating())
+        QPointer<AntDockWidget> guard(this);
+        QTimer::singleShot(16, this, [guard]() {
+            if (guard && guard->isFloating() && !guard->property(kDockLegacyLiveResizeProperty).toBool())
             {
-                updateLegacySoftwareShadow();
+                guard->updateLegacySoftwareShadow();
             }
         });
     }
@@ -1041,8 +1119,11 @@ void AntDockWidget::changeEvent(QEvent* event)
     {
         updateFloatingFrame();
 #if defined(Q_OS_WIN)
-        applyNativeWindowFrame();
-        updateLegacySoftwareShadow();
+        if (!m_legacyLiveResize)
+        {
+            applyNativeWindowFrame();
+            updateLegacySoftwareShadow();
+        }
 #endif
         if (QWidget* bar = titleBarWidget())
         {
@@ -1068,6 +1149,12 @@ void AntDockWidget::applyNativeWindowFrame()
     const bool useNativeCaption = supportsNativeCaptionFrame();
     ensureNativeWindowStyle(hwnd, useNativeCaption);
     applyLegacyClassDropShadow(this, hwnd, useNativeCaption);
+    if (m_legacyLiveResize && !useNativeCaption)
+    {
+        setProperty(kDockUsesNativeCaptionFrameProperty, useNativeCaption);
+        setProperty(kDockLegacyLiveResizeProperty, true);
+        return;
+    }
     applyLegacyRoundedMask(this, floatingCornerRadius(), useNativeCaption);
     setProperty(kDockNativeFrameEnabledProperty, true);
     setProperty(kDockUsesNativeCaptionFrameProperty, useNativeCaption);
@@ -1117,12 +1204,14 @@ void AntDockWidget::updateLegacySoftwareShadow()
     const bool enabled = isFloating()
         && isVisible()
         && windowHandle()
+        && !m_legacyLiveResize
         && !useNativeCaption
         && !isMaximized()
         && !isFullScreen()
         && !isMinimized();
 
     setProperty(kDockLegacyShadowEnabledProperty, enabled);
+    setProperty(kDockLegacyLiveResizeProperty, m_legacyLiveResize);
     if (!enabled)
     {
         hideLegacySoftwareShadow();
@@ -1157,6 +1246,7 @@ void AntDockWidget::updateLegacySoftwareShadow()
     if (shadowHwnd && hwnd)
     {
         makeWindowClickThrough(m_legacySoftwareShadow);
+        applyShadowWindowRingRegion(m_legacySoftwareShadow, kNativeFrameShadowMargin, floatingCornerRadius());
         ::SetWindowPos(shadowHwnd,
                        hwnd,
                        shadowGeometry.x(),
@@ -1189,6 +1279,44 @@ bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qint
 
     switch (uMsg)
     {
+    case WM_ENTERSIZEMOVE:
+        if (!supportsNativeCaptionFrame())
+        {
+            m_legacyLiveResize = true;
+            setProperty(kDockLegacyLiveResizeProperty, true);
+            hideLegacySoftwareShadow();
+            update();
+        }
+        break;
+    case WM_SIZING:
+        if (!supportsNativeCaptionFrame() && !m_legacyLiveResize)
+        {
+            m_legacyLiveResize = true;
+            setProperty(kDockLegacyLiveResizeProperty, true);
+            hideLegacySoftwareShadow();
+            update();
+        }
+        break;
+    case WM_EXITSIZEMOVE:
+        if (m_legacyLiveResize)
+        {
+            m_legacyLiveResize = false;
+            setProperty(kDockLegacyLiveResizeProperty, false);
+            QPointer<AntDockWidget> guard(this);
+            QTimer::singleShot(16, this, [guard]() {
+                if (!guard || !guard->isFloating())
+                {
+                    return;
+                }
+                guard->applyNativeWindowFrame();
+                guard->updateLegacySoftwareShadow();
+                guard->update();
+            });
+        }
+        break;
+    case WM_ERASEBKGND:
+        *result = 1;
+        return true;
     case WM_NCCALCSIZE:
         *result = 0;
         return true;
@@ -1197,6 +1325,14 @@ bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qint
         const QPoint widgetPos = nativeMessageLocalPoint(hwnd, msg->lParam, devicePixelRatioF());
         const int clientWidth = width();
         const int clientHeight = height();
+        if (!supportsNativeCaptionFrame() &&
+            (widgetPos.x() < 0 || widgetPos.y() < 0 || widgetPos.x() >= clientWidth || widgetPos.y() >= clientHeight))
+        {
+            *result = HTTRANSPARENT;
+            setProperty("antDockLegacyOutsideClientHitTestTransparent", true);
+            return true;
+        }
+
         const bool canResize = !isMaximized() && !isFullScreen() && clientWidth > 0 && clientHeight > 0;
         if (canResize)
         {
