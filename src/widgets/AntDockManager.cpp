@@ -1,6 +1,7 @@
 #include "AntDockManager.h"
 
 #include <QApplication>
+#include <QCloseEvent>
 #include <QContextMenuEvent>
 #include <QDockWidget>
 #include <QEvent>
@@ -2324,20 +2325,39 @@ bool AntDockManager::eventFilter(QObject* watched, QEvent* event)
     AntDockWidget* dock = dockForWatchedObject(watched);
     if (dock)
     {
+        if (event->type() == QEvent::Close)
+        {
+            stopDockDragTracking();
+            updatePlaceholderState();
+
+            if (m_docks.contains(dock))
+            {
+                if (!dockWidgetFeatureEnabled(dock, QDockWidget::DockWidgetClosable))
+                {
+                    static_cast<QCloseEvent*>(event)->ignore();
+                    return true;
+                }
+
+                QPointer<AntDockWidget> guard(dock);
+                removeDockWidget(dock);
+                if (guard)
+                {
+                    guard->hide();
+                }
+                return true;
+            }
+        }
+
         if (watched == dock->titleBarWidget())
         {
             handleDockTitleMouseEvent(dock, event);
         }
 
         if (event->type() == QEvent::Show || event->type() == QEvent::Hide ||
-            event->type() == QEvent::Close || event->type() == QEvent::ParentChange)
+            event->type() == QEvent::ParentChange)
         {
             updatePlaceholderState();
-            if (event->type() == QEvent::Close)
-            {
-                stopDockDragTracking();
-            }
-            else if (event->type() == QEvent::Hide && !m_draggingDockTitle)
+            if (event->type() == QEvent::Hide && !m_draggingDockTitle)
             {
                 hideDropGuide();
             }

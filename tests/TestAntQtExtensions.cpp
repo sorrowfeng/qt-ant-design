@@ -1099,6 +1099,41 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(!detachedFloating->isVisible());
     delete detachedFloating;
 
+    auto* lockedCloseFloating = new AntDockWidget(QStringLiteral("Locked Close Floating"));
+    lockedCloseFloating->setWidget(new QWidget);
+    lockedCloseFloating->setFeatures(lockedCloseFloating->features() & ~QDockWidget::DockWidgetClosable);
+    manager->setDockWidgetFloating(lockedCloseFloating,
+                                   true,
+                                   QRect(manager->mapToGlobal(QPoint(132, 108)), QSize(260, 180)));
+    QVERIFY(manager->dockWidgets().contains(lockedCloseFloating));
+    QVERIFY(manager->isDockWidgetFloating(lockedCloseFloating));
+    QTRY_VERIFY(lockedCloseFloating->isVisible());
+    lockedCloseFloating->close();
+    QCoreApplication::processEvents();
+    QVERIFY(manager->dockWidgets().contains(lockedCloseFloating));
+    QVERIFY(manager->floatingDockWidgets().contains(lockedCloseFloating));
+    QVERIFY(lockedCloseFloating->isVisible());
+    manager->removeDockWidget(lockedCloseFloating);
+    QTRY_VERIFY(!lockedCloseFloating->isVisible());
+    delete lockedCloseFloating;
+
+    auto* directCloseFloating = new AntDockWidget(QStringLiteral("Direct Close Floating"));
+    directCloseFloating->setWidget(new QWidget);
+    QSignalSpy directCloseRemovedSpy(manager, &AntDockManager::dockWidgetRemoved);
+    manager->setDockWidgetFloating(directCloseFloating,
+                                   true,
+                                   QRect(manager->mapToGlobal(QPoint(144, 120)), QSize(260, 180)));
+    QVERIFY(manager->dockWidgets().contains(directCloseFloating));
+    QVERIFY(manager->floatingDockWidgets().contains(directCloseFloating));
+    QTRY_VERIFY(directCloseFloating->isVisible());
+    directCloseFloating->close();
+    QCoreApplication::processEvents();
+    QCOMPARE(directCloseRemovedSpy.count(), 1);
+    QVERIFY(!manager->dockWidgets().contains(directCloseFloating));
+    QVERIFY(!manager->floatingDockWidgets().contains(directCloseFloating));
+    QVERIFY(!directCloseFloating->isVisible());
+    delete directCloseFloating;
+
     QVERIFY(manager->isDockWidgetMovable(preview));
     manager->setDockWidgetMovable(preview, false);
     QCOMPARE(manager->isDockWidgetMovable(preview), false);

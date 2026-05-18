@@ -147,6 +147,13 @@
 - **解决**：首次接管 dock 时不再覆盖调用方已设置的 features；`floatDockWidget()` 先检查 `DockWidgetFloatable`，通过后才注册到 manager。回归测试覆盖预配置不可浮动/不可移动的 dock 加入后保持原 feature，以及未注册且不可浮动的 dock 调用浮动 API 不会注册或显示。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 19. 浮动 Dock 直接 close 后仍残留在 manager 状态中
+
+- **现象**：浮动 `AntDockWidget` 通过窗口关闭按钮或外部 `close()` 关闭后，窗口虽然隐藏，但仍保留在 `dockWidgets()` / `floatingDockWidgets()` 和布局快照状态中；关闭被禁用的 Dock 也可能被程序化 close 隐藏。
+- **根因**：manager 的事件过滤器收到 `QEvent::Close` 时只停止拖动，没有走统一的 `removeDockWidget()` 清理路径，也没有按 `DockWidgetClosable` feature 拦截关闭。
+- **解决**：`AntDockManager` 现在在 Close 事件中统一处理受管 Dock：closable 关闭时移除并隐藏，非 closable 关闭时忽略事件。回归测试覆盖非 closable 浮动窗口 close 被拦截，以及 closable 浮动窗口 close 后从 manager 和 floating 列表中移除。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
