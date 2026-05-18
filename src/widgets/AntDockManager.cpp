@@ -2412,6 +2412,15 @@ bool AntDockManager::prepareDockWidget(AntDockWidget* dockWidget)
         connect(dockWidget, &QDockWidget::visibilityChanged, this, [this]() {
             updatePlaceholderState();
         });
+        connect(dockWidget,
+                &QDockWidget::featuresChanged,
+                this,
+                [this, dockWidget](QDockWidget::DockWidgetFeatures features) {
+            if (m_draggedDock == dockWidget && !features.testFlag(QDockWidget::DockWidgetMovable))
+            {
+                stopDockDragTracking();
+            }
+        });
         connect(dockWidget, &QDockWidget::topLevelChanged, this, [this, dockWidget](bool topLevel) {
             updatePlaceholderState();
             // When the dock transitions to floating, Qt's setWindowFlags() inside

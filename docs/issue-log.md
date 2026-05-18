@@ -196,6 +196,13 @@
 - **解决**：关闭当前拖动 Dock 的 `DockWidgetMovable` 时立即调用 `stopDockDragTracking()`，同步清理 drag preview、drop guide、记忆 drop target 和全局事件过滤器；回归测试覆盖拖动开始后关闭 movable，后续移动不会激活 drop preview。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 26. 外部直接 setFeatures 关闭 movable 不会取消当前拖动
+
+- **现象**：如果拖动已经开始，调用方绕过 manager API，直接用 `dock->setFeatures()` 清除 `DockWidgetMovable`，当前拖动仍可能继续响应后续鼠标移动。
+- **根因**：manager 只在 `setDockWidgetFeatureEnabled()` 中处理拖动取消，没有监听受管 Dock 的 `featuresChanged`。
+- **解决**：`prepareDockWidget()` 现在连接 `featuresChanged`，当当前拖动 Dock 的 `DockWidgetMovable` 被外部直接关闭时，同样调用 `stopDockDragTracking()` 清理预览和引导状态。回归测试覆盖 manager API 和直接 `setFeatures()` 两条路径。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
