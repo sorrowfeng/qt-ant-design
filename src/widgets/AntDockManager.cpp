@@ -236,16 +236,11 @@ void releaseNativeMouseCaptureForDock(AntDockWidget* dockWidget)
         return;
     }
 
-    HWND dockHwnd = nullptr;
-    if (dockWidget && dockWidget->internalWinId())
-    {
-        dockHwnd = reinterpret_cast<HWND>(dockWidget->internalWinId());
-    }
+    DWORD captureProcessId = 0;
+    ::GetWindowThreadProcessId(capturedHwnd, &captureProcessId);
+    const bool captureBelongsToThisProcess = captureProcessId == ::GetCurrentProcessId();
 
-    const bool captureBelongsToDock =
-        dockHwnd && (capturedHwnd == dockHwnd || ::IsChild(dockHwnd, capturedHwnd));
-
-    if (captureBelongsToDock)
+    if (captureBelongsToThisProcess)
     {
         ::ReleaseCapture();
     }
@@ -253,10 +248,14 @@ void releaseNativeMouseCaptureForDock(AntDockWidget* dockWidget)
     if (dockWidget)
     {
         const HWND afterRelease = ::GetCapture();
-        const bool stillCapturedByDock =
-            dockHwnd && afterRelease && (afterRelease == dockHwnd || ::IsChild(dockHwnd, afterRelease));
-        dockWidget->setProperty("antDockNativeMouseCaptureCleared", !stillCapturedByDock);
-        dockWidget->setProperty("antDockNativeMouseCaptureWasDock", captureBelongsToDock);
+        DWORD afterProcessId = 0;
+        if (afterRelease)
+        {
+            ::GetWindowThreadProcessId(afterRelease, &afterProcessId);
+        }
+        dockWidget->setProperty("antDockNativeMouseCaptureCleared",
+                                !afterRelease || afterProcessId != ::GetCurrentProcessId());
+        dockWidget->setProperty("antDockNativeMouseCaptureWasDock", captureBelongsToThisProcess);
     }
 }
 
@@ -2972,6 +2971,12 @@ void AntDockManager::applyDropTarget(AntDockWidget* dockWidget, AntDockWidget* t
     }
 
     insertDockWidget(dockWidget, areaForDock(targetDock), placement, containerDrop && placement != DockPlacement::Center);
+    hideDropGuide();
+    if (m_dragPreviewWindow)
+    {
+        m_dragPreviewWindow->end();
+    }
+    setDraggedDockTranslucent(false);
     dockWidget->raise();
     updatePlaceholderState();
 }
