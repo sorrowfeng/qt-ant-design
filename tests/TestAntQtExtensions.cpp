@@ -1845,7 +1845,13 @@ void TestAntQtExtensions::dockManager()
         QVERIFY(!hiddenManager->isDropPreviewVisible());
         QCOMPARE(hiddenManager->activeDropGuide(), AntDockManager::DockPlacement::None);
 
+        QSignalSpy hiddenRemovedSpy(hiddenManager, &AntDockManager::dockWidgetRemoved);
         hiddenManager->removeDockWidget(hiddenExplorer);
+        QCOMPARE(hiddenRemovedSpy.count(), 1);
+        QVERIFY(!hiddenManager->dockWidgets().contains(hiddenExplorer));
+        QVERIFY(!hiddenManager->floatingDockWidgets().contains(hiddenExplorer));
+        QCOMPARE(hiddenExplorer->property("antDockFloatingOwnedByManager").toBool(), false);
+        QTRY_VERIFY(!hiddenExplorer->isVisible());
         hiddenManager->removeDockWidget(hiddenInspector);
         delete hiddenExplorer;
         delete hiddenInspector;

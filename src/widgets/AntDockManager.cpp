@@ -1706,11 +1706,24 @@ void AntDockManager::removeDockWidget(AntDockWidget* dockWidget)
 {
     if (!dockWidget) return;
 
+    if (m_draggedDock == dockWidget)
+    {
+        stopDockDragTracking();
+    }
+
     const bool known = m_docks.contains(dockWidget);
+    const bool wasFloating = dockWidget->isFloating() ||
+                             dockWidget->property("antDockFloatingOwnedByManager").toBool() ||
+                             (!areaForDock(dockWidget) && dockWidget->isVisible());
     m_docks.remove(dockWidget);
     clearFloatingDockOwner(dockWidget);
     removeDockFromArea(dockWidget, true);
     removeDockEventFilters(dockWidget);
+    if (wasFloating)
+    {
+        dockWidget->setWindowOpacity(1.0);
+        dockWidget->hide();
+    }
     updatePlaceholderState();
     if (known) Q_EMIT dockWidgetRemoved(dockWidget);
     if (known) Q_EMIT dockLayoutChanged();

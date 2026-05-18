@@ -112,6 +112,13 @@
 - **解决**：拆分浮动窗口移动和停靠引导显示：只要正在拖动的 dock 已经是浮动窗口，就先按鼠标全局位置更新浮窗位置并保持半透明拖动反馈；只有 manager 停靠面板可见时才继续显示小方格和嵌入预览。对于隐藏状态下的嵌入 dock，不激活预览或浮动逻辑，避免程序化事件误触发。回归测试覆盖 manager 隐藏后浮动 dock 仍能通过标题栏移动，且不会显示 drop preview 或 active guide。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 14. AntDockManager 程序化移除浮动 Dock 后留下孤立浮窗
+
+- **现象**：外部直接调用 `AntDockManager::removeDockWidget()` 移除一个已经浮动的 `AntDockWidget` 时，manager 会移除记录和 owner，但浮动窗口本身仍可能保持可见，形成一个不再受 manager 管理的孤立窗口。
+- **根因**：浮动 dock 不在 `DockArea` 里，`removeDockFromArea()` 对它是 no-op；旧逻辑只清理集合、owner 和 event filter，没有统一停止拖动状态、恢复 opacity 或隐藏浮动窗口。
+- **解决**：`removeDockWidget()` 在目标正处于拖动状态时先停止 tracking；记录移除前的 floating 状态，清理 owner / area / event filter 后，对浮动目标恢复 `windowOpacity(1.0)` 并 `hide()`，让 `AntDockWidget::hideEvent()` 同步收起软件阴影。回归测试覆盖程序化移除浮动 dock 后 manager 列表、floating 列表、owner 属性和窗口可见性都正确收敛。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
