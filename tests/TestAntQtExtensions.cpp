@@ -3,7 +3,9 @@
 #include <QPainter>
 #include <QCoreApplication>
 #include <QContextMenuEvent>
+#include <QEventLoop>
 #include <QGraphicsOpacityEffect>
+#include <QGuiApplication>
 #include <QImage>
 #include <QLabel>
 #include <QMargins>
@@ -157,6 +159,229 @@ bool supportsNativeCaptionSnapLayoutsForTest()
 {
     constexpr int kWindows11Build = 22000;
     return windowsBuildNumberForTest() >= kWindows11Build;
+}
+
+bool nativeMouseInputAvailableForExtensionTest()
+{
+    const QString platform = QGuiApplication::platformName().toLower();
+    return !platform.contains(QStringLiteral("offscreen")) &&
+           !platform.contains(QStringLiteral("minimal"));
+}
+
+HWND rootHwndForExtensionTest(QWidget* widget)
+{
+    if (!widget)
+    {
+        return nullptr;
+    }
+
+    QWidget* root = widget->window();
+    if (!root)
+    {
+        return nullptr;
+    }
+    if (!root->windowHandle())
+    {
+        root->winId();
+    }
+
+    HWND hwnd = reinterpret_cast<HWND>(root->winId());
+    return hwnd ? ::GetAncestor(hwnd, GA_ROOT) : nullptr;
+}
+
+bool bringWidgetToFrontForExtensionTest(QWidget* widget)
+{
+    if (!nativeMouseInputAvailableForExtensionTest())
+    {
+        return false;
+    }
+
+    QWidget* root = widget ? widget->window() : nullptr;
+    HWND hwnd = rootHwndForExtensionTest(widget);
+    if (!root || !hwnd)
+    {
+        return false;
+    }
+
+    if (::IsIconic(hwnd))
+    {
+        ::ShowWindow(hwnd, SW_RESTORE);
+    }
+    else
+    {
+        ::ShowWindow(hwnd, SW_SHOWNORMAL);
+    }
+
+    root->show();
+    root->raise();
+    root->activateWindow();
+    ::SetWindowPos(hwnd,
+                   HWND_TOPMOST,
+                   0,
+                   0,
+                   0,
+                   0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+    const DWORD currentThreadId = ::GetCurrentThreadId();
+    DWORD foregroundThreadId = currentThreadId;
+    if (HWND foreground = ::GetForegroundWindow())
+    {
+        foregroundThreadId = ::GetWindowThreadProcessId(foreground, nullptr);
+    }
+    const BOOL attached = foregroundThreadId != currentThreadId
+        ? ::AttachThreadInput(currentThreadId, foregroundThreadId, TRUE)
+        : FALSE;
+    ::SetForegroundWindow(hwnd);
+    ::SetActiveWindow(hwnd);
+    ::SetFocus(hwnd);
+    if (attached)
+    {
+        ::AttachThreadInput(currentThreadId, foregroundThreadId, FALSE);
+    }
+    QTest::qWait(80);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+    HWND foreground = ::GetForegroundWindow();
+    return ::IsWindowVisible(hwnd) && (!foreground || ::GetAncestor(foreground, GA_ROOT) == hwnd);
+}
+
+void releaseTopMostForExtensionTest(QWidget* widget)
+{
+    if (HWND hwnd = rootHwndForExtensionTest(widget))
+    {
+        ::SetWindowPos(hwnd,
+                       HWND_NOTOPMOST,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+    }
+}
+
+bool sendMouseInputForExtensionTest(DWORD flags)
+{
+    INPUT input{};
+    input.type = INPUT_MOUSE;
+    input.mi.dwFlags = flags;
+    return ::SendInput(1, &input, sizeof(INPUT)) == 1;
+}
+
+QPoint nativePointForExtensionTest(QWidget* referenceWidget, const QPoint& globalPos)
+{
+    QWidget* root = referenceWidget ? referenceWidget->window() : nullptr;
+    if (root)
+    {
+        if (HWND hwnd = rootHwndForExtensionTest(root))
+        {
+            POINT clientOrigin{0, 0};
+            if (::ClientToScreen(hwnd, &clientOrigin))
+            {
+                const QPoint rootGlobal = root->mapToGlobal(QPoint(0, 0));
+                const qreal dpr = qMax<qreal>(1.0, root->devicePixelRatioF());
+                return QPoint(clientOrigin.x + qRound(static_cast<qreal>(globalPos.x() - rootGlobal.x()) * dpr),
+                              clientOrigin.y + qRound(static_cast<qreal>(globalPos.y() - rootGlobal.y()) * dpr));
+            }
+        }
+    }
+
+    if (QScreen* screen = QGuiApplication::screenAt(globalPos))
+    {
+        const qreal dpr = qMax<qreal>(1.0, screen->devicePixelRatio());
+        const QPoint topLeft = screen->geometry().topLeft();
+        return topLeft + QPoint(qRound(static_cast<qreal>(globalPos.x() - topLeft.x()) * dpr),
+                                qRound(static_cast<qreal>(globalPos.y() - topLeft.y()) * dpr));
+    }
+
+    return globalPos;
+}
+
+bool nativeMoveMouseForExtensionTest(QWidget* referenceWidget, const QPoint& globalPos)
+{
+    const QPoint nativePos = nativePointForExtensionTest(referenceWidget, globalPos);
+    const int virtualLeft = ::GetSystemMetrics(SM_XVIRTUALSCREEN);
+    const int virtualTop = ::GetSystemMetrics(SM_YVIRTUALSCREEN);
+    const int virtualWidth = qMax(1, ::GetSystemMetrics(SM_CXVIRTUALSCREEN));
+    const int virtualHeight = qMax(1, ::GetSystemMetrics(SM_CYVIRTUALSCREEN));
+
+    INPUT input{};
+    input.type = INPUT_MOUSE;
+    input.mi.dx = static_cast<LONG>(
+        qRound(static_cast<qreal>(nativePos.x() - virtualLeft) * 65535.0 /
+               static_cast<qreal>(qMax(1, virtualWidth - 1))));
+    input.mi.dy = static_cast<LONG>(
+        qRound(static_cast<qreal>(nativePos.y() - virtualTop) * 65535.0 /
+               static_cast<qreal>(qMax(1, virtualHeight - 1))));
+    input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
+    return ::SendInput(1, &input, sizeof(INPUT)) == 1;
+}
+
+bool nativeMouseClickForExtensionTest(QWidget* focusWidget, const QPoint& globalPos)
+{
+    if (!bringWidgetToFrontForExtensionTest(focusWidget))
+    {
+        return false;
+    }
+
+    if (!nativeMoveMouseForExtensionTest(focusWidget, globalPos))
+    {
+        releaseTopMostForExtensionTest(focusWidget);
+        return false;
+    }
+    QTest::qWait(40);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 40);
+
+    const bool sent = sendMouseInputForExtensionTest(MOUSEEVENTF_LEFTDOWN) &&
+                      sendMouseInputForExtensionTest(MOUSEEVENTF_LEFTUP);
+    QTest::qWait(80);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+    releaseTopMostForExtensionTest(focusWidget);
+    return sent;
+}
+
+bool nativeMouseDragForExtensionTest(QWidget* focusWidget, const QPoint& startGlobal, const QPoint& endGlobal)
+{
+    if (!bringWidgetToFrontForExtensionTest(focusWidget))
+    {
+        return false;
+    }
+
+    if (!nativeMoveMouseForExtensionTest(focusWidget, startGlobal))
+    {
+        releaseTopMostForExtensionTest(focusWidget);
+        return false;
+    }
+    QTest::qWait(60);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
+
+    if (!sendMouseInputForExtensionTest(MOUSEEVENTF_LEFTDOWN))
+    {
+        releaseTopMostForExtensionTest(focusWidget);
+        return false;
+    }
+    QTest::qWait(80);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+
+    constexpr int kSteps = 18;
+    for (int step = 1; step <= kSteps; ++step)
+    {
+        const qreal t = static_cast<qreal>(step) / static_cast<qreal>(kSteps);
+        const QPoint point(qRound(startGlobal.x() + (endGlobal.x() - startGlobal.x()) * t),
+                           qRound(startGlobal.y() + (endGlobal.y() - startGlobal.y()) * t));
+        if (!nativeMoveMouseForExtensionTest(focusWidget, point))
+        {
+            sendMouseInputForExtensionTest(MOUSEEVENTF_LEFTUP);
+            releaseTopMostForExtensionTest(focusWidget);
+            return false;
+        }
+        QTest::qWait(14);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 14);
+    }
+
+    const bool released = sendMouseInputForExtensionTest(MOUSEEVENTF_LEFTUP);
+    QTest::qWait(120);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
+    releaseTopMostForExtensionTest(focusWidget);
+    return released;
 }
 #endif
 } // namespace
@@ -1144,6 +1369,19 @@ void TestAntQtExtensions::dockManager()
         QCoreApplication::sendEvent(titleBar, &releaseFloatingEvent);
     };
 
+#if defined(Q_OS_WIN)
+    auto dragFloatingDockBackWithNativeMouse = [&](AntDockWidget* dock, AntDockWidget* target) {
+        QWidget* titleBar = dock ? dock->titleBarWidget() : nullptr;
+        QTabWidget* targetArea = dockAreaForExtensionTest(target);
+        QVERIFY(titleBar != nullptr);
+        QVERIFY(targetArea != nullptr);
+        const QRect targetRect(targetArea->mapToGlobal(QPoint(0, 0)), targetArea->size());
+        const QPoint startGlobal = titleBar->mapToGlobal(titleBar->rect().center());
+        const QPoint targetGlobal = targetRect.center();
+        QVERIFY(nativeMouseDragForExtensionTest(dock, startGlobal, targetGlobal));
+    };
+#endif
+
     QTabBar* floatingSourceTabBar = dockTabBarForExtensionTest(explorer);
     QVERIFY(floatingSourceTabBar != nullptr);
     const QPoint floatDragStart = dockTabCenterForExtensionTest(explorer);
@@ -1203,6 +1441,24 @@ void TestAntQtExtensions::dockManager()
     floatingClickSwitch->show();
     floatingClickSwitch->raise();
     QSignalSpy floatingClickSwitchSpy(floatingClickSwitch, &AntSwitch::checkedChanged);
+#if defined(Q_OS_WIN)
+    if (nativeMouseInputAvailableForExtensionTest())
+    {
+        const QPoint floatingSwitchGlobal = floatingClickSwitch->mapToGlobal(floatingClickSwitch->rect().center());
+        QVERIFY(nativeMouseClickForExtensionTest(manager, floatingSwitchGlobal));
+    }
+    else
+    {
+        QTest::mousePress(floatingClickSwitch,
+                          Qt::LeftButton,
+                          Qt::NoModifier,
+                          floatingClickSwitch->rect().center());
+        QTest::mouseRelease(floatingClickSwitch,
+                            Qt::LeftButton,
+                            Qt::NoModifier,
+                            floatingClickSwitch->rect().center());
+    }
+#else
     QTest::mousePress(floatingClickSwitch,
                       Qt::LeftButton,
                       Qt::NoModifier,
@@ -1211,7 +1467,8 @@ void TestAntQtExtensions::dockManager()
                         Qt::LeftButton,
                         Qt::NoModifier,
                         floatingClickSwitch->rect().center());
-    QCOMPARE(floatingClickSwitchSpy.count(), 1);
+#endif
+    QTRY_COMPARE(floatingClickSwitchSpy.count(), 1);
     QVERIFY(floatingClickSwitch->isChecked());
 #if defined(Q_OS_WIN)
     if (explorer->property("antDockLegacySoftwareShadowEnabled").toBool())
@@ -1253,7 +1510,18 @@ void TestAntQtExtensions::dockManager()
 #endif
     QVERIFY(manager->savePerspective(QStringLiteral("floating")));
     const QRect savedFloatingGeometry = explorer->geometry();
+#if defined(Q_OS_WIN)
+    if (nativeMouseInputAvailableForExtensionTest())
+    {
+        dragFloatingDockBackWithNativeMouse(explorer, inspector);
+    }
+    else
+    {
+        dragFloatingDockBack(explorer, inspector);
+    }
+#else
     dragFloatingDockBack(explorer, inspector);
+#endif
     QTRY_VERIFY(!explorer->isFloating());
     QVERIFY(manager->restorePerspective(QStringLiteral("floating")));
     QTRY_VERIFY(explorer->isFloating());
@@ -1413,43 +1681,49 @@ void TestAntQtExtensions::dockManager()
     QWidget* embeddedHitWidget = QApplication::widgetAt(embeddedClickSwitch->mapToGlobal(embeddedClickSwitch->rect().center()));
     QVERIFY(embeddedHitWidget == embeddedClickSwitch || embeddedClickSwitch->isAncestorOf(embeddedHitWidget));
 #if defined(Q_OS_WIN)
+    if (nativeMouseInputAvailableForExtensionTest())
     {
-        HWND managerRootHwnd = ::GetAncestor(reinterpret_cast<HWND>(manager->window()->winId()), GA_ROOT);
-        ::SetWindowPos(managerRootHwnd,
-                       HWND_TOPMOST,
-                       0,
-                       0,
-                       0,
-                       0,
-                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
-        ::SetWindowPos(managerRootHwnd,
-                       HWND_NOTOPMOST,
-                       0,
-                       0,
-                       0,
-                       0,
-                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
-        QTest::qWait(20);
+        QVERIFY(bringWidgetToFrontForExtensionTest(manager));
+        HWND managerRootHwnd = rootHwndForExtensionTest(manager);
+        QVERIFY(managerRootHwnd != nullptr);
         const QPoint embeddedSwitchGlobal = embeddedClickSwitch->mapToGlobal(embeddedClickSwitch->rect().center());
-        POINT nativePoint{embeddedSwitchGlobal.x(), embeddedSwitchGlobal.y()};
+        const QPoint embeddedSwitchNative = nativePointForExtensionTest(manager, embeddedSwitchGlobal);
+        POINT nativePoint{embeddedSwitchNative.x(), embeddedSwitchNative.y()};
         HWND nativeAtPoint = ::WindowFromPoint(nativePoint);
         QVERIFY(nativeAtPoint != nullptr);
         HWND pointRootHwnd = ::GetAncestor(nativeAtPoint, GA_ROOT);
         DWORD pointProcessId = 0;
         ::GetWindowThreadProcessId(pointRootHwnd, &pointProcessId);
-        if (pointProcessId == ::GetCurrentProcessId())
+        QCOMPARE(pointProcessId, ::GetCurrentProcessId());
+        QCOMPARE(pointRootHwnd, managerRootHwnd);
+        if (const WId explorerId = explorer->internalWinId())
         {
-            QCOMPARE(pointRootHwnd, managerRootHwnd);
-            if (const WId explorerId = explorer->internalWinId())
-            {
-                HWND explorerHwnd = reinterpret_cast<HWND>(explorerId);
-                QVERIFY(nativeAtPoint != explorerHwnd);
-                QVERIFY(!::IsChild(explorerHwnd, nativeAtPoint));
-            }
+            HWND explorerHwnd = reinterpret_cast<HWND>(explorerId);
+            QVERIFY(nativeAtPoint != explorerHwnd);
+            QVERIFY(!::IsChild(explorerHwnd, nativeAtPoint));
         }
+        releaseTopMostForExtensionTest(manager);
     }
 #endif
     QSignalSpy embeddedClickSwitchSpy(embeddedClickSwitch, &AntSwitch::checkedChanged);
+#if defined(Q_OS_WIN)
+    if (nativeMouseInputAvailableForExtensionTest())
+    {
+        const QPoint embeddedSwitchGlobal = embeddedClickSwitch->mapToGlobal(embeddedClickSwitch->rect().center());
+        QVERIFY(nativeMouseClickForExtensionTest(manager, embeddedSwitchGlobal));
+    }
+    else
+    {
+        QTest::mousePress(embeddedClickSwitch,
+                          Qt::LeftButton,
+                          Qt::NoModifier,
+                          embeddedClickSwitch->rect().center());
+        QTest::mouseRelease(embeddedClickSwitch,
+                            Qt::LeftButton,
+                            Qt::NoModifier,
+                            embeddedClickSwitch->rect().center());
+    }
+#else
     QTest::mousePress(embeddedClickSwitch,
                       Qt::LeftButton,
                       Qt::NoModifier,
@@ -1458,7 +1732,8 @@ void TestAntQtExtensions::dockManager()
                         Qt::LeftButton,
                         Qt::NoModifier,
                         embeddedClickSwitch->rect().center());
-    QCOMPARE(embeddedClickSwitchSpy.count(), 1);
+#endif
+    QTRY_COMPARE(embeddedClickSwitchSpy.count(), 1);
     QVERIFY(embeddedClickSwitch->isChecked());
 
     QTabBar* doubleClickTabBar = dockTabBarForExtensionTest(explorer);

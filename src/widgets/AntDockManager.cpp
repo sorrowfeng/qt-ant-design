@@ -129,6 +129,30 @@ bool handleTransparentToolWindowNativeEvent(QWidget* widget,
     }
     return true;
 }
+
+void forceHideNativeToolWindow(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    widget->hide();
+    if (const WId id = widget->internalWinId())
+    {
+        HWND hwnd = reinterpret_cast<HWND>(id);
+        ::ShowWindow(hwnd, SW_HIDE);
+        ::SetWindowPos(hwnd,
+                       nullptr,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
+                           SWP_NOACTIVATE | SWP_HIDEWINDOW);
+    }
+    widget->setProperty("antDockNativeToolWindowHidden", true);
+}
 #endif
 
 void setEmbeddedDockTitleBarVisible(AntDockWidget* dockWidget, bool visible)
@@ -1253,7 +1277,11 @@ public:
 
     void end()
     {
+#if defined(Q_OS_WIN)
+        forceHideNativeToolWindow(this);
+#else
         hide();
+#endif
         m_pixmap = QPixmap();
         m_title.clear();
         m_offset = QPoint();
@@ -1387,13 +1415,18 @@ public:
 
     void hideTarget()
     {
+        const bool wasVisible = isVisible();
         m_targetGlobalRect = QRect();
         m_previewGlobalRect = QRect();
         m_label.clear();
         m_placement = DockPlacement::None;
-        if (isVisible())
+#if defined(Q_OS_WIN)
+        forceHideNativeToolWindow(this);
+#else
+        hide();
+#endif
+        if (wasVisible)
         {
-            hide();
             Q_EMIT m_manager->dropPreviewVisibleChanged(false);
         }
     }
