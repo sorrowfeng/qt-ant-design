@@ -1,6 +1,6 @@
-# AntWindow / AntDockWidget 问题记录
+# 项目问题记录
 
-跟踪 `AntWindow`、`AntDockWidget` 以及相关交互控件在 Windows 10 上的已解决问题与待解决问题。每条记录给出现象、根因和解决方法，便于后续回归排查时直接定位。
+整个项目的已解决问题与待解决问题清单。每条记录给出现象、根因（已解决）或推测原因（待解决）和解决方法 / 排查方向，便于回归排查时直接定位。新问题按发现时间追加；解决后从「未解决」搬到「已解决」并补完根因和最终方案。
 
 ## 已解决
 
@@ -114,6 +114,15 @@
   1. 在 `WM_NCCREATE` / `showEvent` 就预设 `{-1,-1,-1,-1}`，常态生效，只在显示时通过 paint 路径让背景不透明
   2. 尝试 `WM_WINDOWPOSCHANGING` 拦截，比 `WM_SIZE` 更早，可以在新尺寸到达 DWM 之前先确保 backdrop
   3. 评估完全放弃 `WA_TranslucentBackground`，圆角在 Win10 上接受方角降级（视觉妥协换稳定不闪）
+
+### D. AntDockWidget 右键菜单未适配 AntDesign 风格
+
+- **现象**：在 `AntDockWidget` 上右键弹出的上下文菜单使用 Qt 原生 `QMenu` 外观，未与 Ant Design 设计系统对齐（缺少主题色、圆角、阴影、字号、间距、暗色模式 token）。
+- **潜在排查方向**：
+  1. `AntDockManager::showDockContextMenu()` 当前 `new QMenu(this)`，应改为复用项目内已有的 `AntMenu` 或者给该 `QMenu` 应用 `AntMenuStyle`
+  2. 参考 `src/widgets/AntMenu.h` / `src/styles/AntMenuStyle.cpp`：确认 `AntMenu` 是否支持 `addAction` + `exec()` 这种命令式弹出，或者需要包一层 helper
+  3. 主题切换时菜单的 palette / token 也要同步——确认 `AntTheme::themeChanged` 信号有覆盖
+  4. 视觉对照：`docs/visual-audit.md` 里 Menu 条目可作为参考样式
 
 ## 关联测试
 

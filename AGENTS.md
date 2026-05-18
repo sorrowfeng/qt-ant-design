@@ -26,7 +26,7 @@
 
 - 同步日期：`2026-05-17`
 - 状态总览：`docs/project-status.md`
-- AntWindow / AntDockWidget 已解决与待解决问题清单：`docs/antwindow-antdock-issues.md`
+- 项目问题清单（已解决 + 待解决）：`docs/issue-log.md`
 - 已实现公开组件总数：`84`（`src/widgets` 有 `105` 个 `Ant*.h`，包含 `84` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`）
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
 - 子组件/变体完整度：`15 / 15`（100%）
