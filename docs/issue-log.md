@@ -119,6 +119,13 @@
 - **解决**：`removeDockWidget()` 在目标正处于拖动状态时先停止 tracking；记录移除前的 floating 状态，清理 owner / area / event filter 后，对浮动目标恢复 `windowOpacity(1.0)` 并 `hide()`，让 `AntDockWidget::hideEvent()` 同步收起软件阴影。回归测试覆盖程序化移除浮动 dock 后 manager 列表、floating 列表、owner 属性和窗口可见性都正确收敛。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 15. AntDockWidget 右键菜单 Close other tabs 忽略其他 tab 的 closable 状态
+
+- **现象**：在一个 tab area 里右键 `Close other tabs` 时，菜单项只根据当前 tab 是否 closable 决定启用状态；如果其他 tab 被设为不可关闭，仍可能被批量关闭。反过来，如果当前 tab 不可关闭但其他 tab 可关闭，该菜单项会被错误禁用。
+- **根因**：`showDockContextMenu()` 构建菜单时复用了当前 dock 的 `closable` 布尔值，执行时也遍历全部 other docks，没有逐个检查 `DockWidgetClosable` feature。
+- **解决**：构建右键菜单时提前筛出 `closableOtherDocks`，`Close other tabs` 只有在存在可关闭的其他 tab 时才启用；执行该动作时也只移除这个列表。回归测试覆盖“其他 tab 不可关闭”和“当前 tab 不可关闭但其他 tab 可关闭”两个方向。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

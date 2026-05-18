@@ -1126,20 +1126,36 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(inspectorTabBar != nullptr);
     const QPoint inspectorTabPoint = dockTabCenterForExtensionTest(inspector);
     QVERIFY(!inspectorTabPoint.isNull());
-    QContextMenuEvent contextEvent(QContextMenuEvent::Mouse,
-                                   inspectorTabPoint,
-                                   inspectorTabBar->mapToGlobal(inspectorTabPoint));
-    QCoreApplication::sendEvent(inspectorTabBar, &contextEvent);
-    QCOMPARE(contextMenuSpy.count(), 1);
-    QWidget* popup = nullptr;
-    for (QWidget* widget : QApplication::topLevelWidgets())
-    {
-        if (widget && widget->objectName() == QStringLiteral("AntDockContextMenuPopup") && widget->isVisible())
+    const auto menuItemByKey = [](AntMenu* menu, const QString& key) {
+        for (int i = 0; menu && i < menu->itemCount(); ++i)
         {
-            popup = widget;
-            break;
+            const AntMenuItem item = menu->itemAt(i);
+            if (item.key == key)
+            {
+                return item;
+            }
         }
-    }
+        return AntMenuItem{};
+    };
+    const auto openInspectorMenu = [&]() {
+        QContextMenuEvent contextEvent(QContextMenuEvent::Mouse,
+                                       inspectorTabPoint,
+                                       inspectorTabBar->mapToGlobal(inspectorTabPoint));
+        QCoreApplication::sendEvent(inspectorTabBar, &contextEvent);
+        QWidget* popup = nullptr;
+        for (QWidget* widget : QApplication::topLevelWidgets())
+        {
+            if (widget && widget->objectName() == QStringLiteral("AntDockContextMenuPopup") && widget->isVisible())
+            {
+                popup = widget;
+                break;
+            }
+        }
+        return popup;
+    };
+    manager->setDockWidgetClosable(preview, false);
+    QWidget* popup = openInspectorMenu();
+    QCOMPARE(contextMenuSpy.count(), 1);
     QVERIFY(popup != nullptr);
     QCOMPARE(popup->objectName(), QStringLiteral("AntDockContextMenuPopup"));
     QVERIFY(popup->testAttribute(Qt::WA_TranslucentBackground));
@@ -1153,8 +1169,22 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(dockMenu->itemAt(0).key, QStringLiteral("float"));
     QCOMPARE(dockMenu->itemAt(0).label, QStringLiteral("Float"));
     QCOMPARE(dockMenu->itemAt(0).disabled, false);
+    QCOMPARE(menuItemByKey(dockMenu, QStringLiteral("close-others")).disabled, true);
     popup->close();
     QCoreApplication::processEvents();
+
+    manager->setDockWidgetClosable(preview, true);
+    manager->setDockWidgetClosable(inspector, false);
+    popup = openInspectorMenu();
+    QCOMPARE(contextMenuSpy.count(), 2);
+    QVERIFY(popup != nullptr);
+    dockMenu = popup->findChild<AntMenu*>(QStringLiteral("AntDockContextMenu"));
+    QVERIFY(dockMenu != nullptr);
+    QCOMPARE(menuItemByKey(dockMenu, QStringLiteral("close-others")).disabled, false);
+    QCOMPARE(menuItemByKey(dockMenu, QStringLiteral("close")).disabled, true);
+    popup->close();
+    QCoreApplication::processEvents();
+    manager->setDockWidgetClosable(inspector, true);
 
     const QPoint previewTabPoint = dockTabCenterForExtensionTest(preview);
     QVERIFY(!previewTabPoint.isNull());

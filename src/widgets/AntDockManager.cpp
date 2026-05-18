@@ -3130,6 +3130,19 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
     const bool closable = isDockWidgetClosable(dockWidget);
     DockArea* area = areaForDock(dockWidget);
     const int tabIndex = area ? area->dockIndex(dockWidget) : -1;
+    QList<AntDockWidget*> otherDocks;
+    if (area)
+    {
+        otherDocks = area->dockWidgets();
+    }
+    QList<AntDockWidget*> closableOtherDocks;
+    for (AntDockWidget* other : otherDocks)
+    {
+        if (other && other != dockWidget && isDockWidgetClosable(other))
+        {
+            closableOtherDocks.append(other);
+        }
+    }
 
     menu->addItem(QStringLiteral("float"),
                   floating ? tr("Dock to workspace") : tr("Float"),
@@ -3185,7 +3198,7 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
                       tr("Close other tabs"),
                       Ant::IconType::CloseCircle,
                       QString(),
-                      !closable,
+                      closableOtherDocks.isEmpty(),
                       true);
     }
 
@@ -3197,14 +3210,11 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
                   !closable,
                   true);
 
-    QList<AntDockWidget*> otherDocks;
-    if (area)
-    {
-        otherDocks = area->dockWidgets();
-    }
-
     QPointer<AntDockContextMenuPopup> popupGuard(popup);
-    connect(menu, &AntMenu::itemClicked, popup, [manager, dock, popupGuard, floating, tabIndex, otherDocks](const QString& key) {
+    connect(menu,
+            &AntMenu::itemClicked,
+            popup,
+            [manager, dock, popupGuard, floating, tabIndex, closableOtherDocks](const QString& key) {
         if (popupGuard)
         {
             popupGuard->close();
@@ -3258,7 +3268,7 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
 
         if (key == QStringLiteral("close-others"))
         {
-            for (AntDockWidget* other : otherDocks)
+            for (AntDockWidget* other : closableOtherDocks)
             {
                 if (!other || other == dock)
                 {
