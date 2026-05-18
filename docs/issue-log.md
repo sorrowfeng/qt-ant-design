@@ -161,6 +161,13 @@
 - **解决**：析构时识别受管浮动 Dock，先清理 floating owner、恢复 `windowOpacity(1.0)` 并隐藏窗口，再移除事件过滤器和连接。回归测试覆盖删除 manager 后浮动 Dock 被隐藏且 owner 属性清空。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 21. Dock 移除后复用会叠加旧 manager 连接
+
+- **现象**：同一个 `AntDockWidget` 实例被 `removeDockWidget()` 移除后再添加回来，旧的 dock 到 manager 的 `visibilityChanged` / `topLevelChanged` 连接仍然存在，后续浮动时 owner 设置和 placeholder 刷新会重复触发。
+- **根因**：`removeDockWidget()` 只移除事件过滤器，没有断开 `prepareDockWidget()` 首次接管时建立的 dock→manager 信号连接。
+- **解决**：移除 Dock 时同步断开 dock 指向当前 manager 的连接；新增内部 `antDockFloatingOwnerApplyCount` 计数用于回归验证，确保移除后复用并浮动时 owner 设置次数不会因旧连接叠加而增长。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

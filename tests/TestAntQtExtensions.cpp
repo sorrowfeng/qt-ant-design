@@ -1161,6 +1161,30 @@ void TestAntQtExtensions::dockManager()
         delete cleanupFloating;
     }
 
+    auto* readdedFloating = new AntDockWidget(QStringLiteral("Readded Floating"));
+    readdedFloating->setWidget(new QWidget);
+    manager->addDockWidget(Qt::BottomDockWidgetArea, readdedFloating);
+    QVERIFY(manager->dockWidgets().contains(readdedFloating));
+    manager->removeDockWidget(readdedFloating);
+    QVERIFY(!manager->dockWidgets().contains(readdedFloating));
+    QCoreApplication::processEvents();
+    const int ownerApplyBeforeReadd = readdedFloating->property("antDockFloatingOwnerApplyCount").toInt();
+    manager->setDockWidgetFloating(
+        readdedFloating,
+        true,
+        QRect(manager->mapToGlobal(QPoint(156, 132)), QSize(260, 180)));
+    QVERIFY(manager->dockWidgets().contains(readdedFloating));
+    QVERIFY(manager->floatingDockWidgets().contains(readdedFloating));
+    QTRY_VERIFY(readdedFloating->isVisible());
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+    const int ownerApplyDelta =
+        readdedFloating->property("antDockFloatingOwnerApplyCount").toInt() - ownerApplyBeforeReadd;
+    QVERIFY2(ownerApplyDelta >= 2 && ownerApplyDelta <= 3,
+             qPrintable(QStringLiteral("unexpected owner apply count after re-add: %1").arg(ownerApplyDelta)));
+    manager->removeDockWidget(readdedFloating);
+    QTRY_VERIFY(!readdedFloating->isVisible());
+    delete readdedFloating;
+
     QVERIFY(manager->isDockWidgetMovable(preview));
     manager->setDockWidgetMovable(preview, false);
     QCOMPARE(manager->isDockWidgetMovable(preview), false);

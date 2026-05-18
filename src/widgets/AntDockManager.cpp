@@ -179,6 +179,9 @@ void setFloatingDockOwner(AntDockWidget* dockWidget, QWidget* ownerWidget)
 {
     if (!dockWidget) return;
 
+    dockWidget->setProperty("antDockFloatingOwnerApplyCount",
+                            dockWidget->property("antDockFloatingOwnerApplyCount").toInt() + 1);
+
     // The Win32 owner of a top-level window must itself be a top-level window —
     // pointing GWLP_HWNDPARENT at a child HWND (e.g. one freshly minted by
     // calling winId() on a non-toplevel AntDockManager) breaks the activation
@@ -1729,6 +1732,7 @@ void AntDockManager::removeDockWidget(AntDockWidget* dockWidget)
     clearFloatingDockOwner(dockWidget);
     removeDockFromArea(dockWidget, true);
     removeDockEventFilters(dockWidget);
+    disconnect(dockWidget, nullptr, this, nullptr);
     if (wasFloating)
     {
         dockWidget->setWindowOpacity(1.0);
