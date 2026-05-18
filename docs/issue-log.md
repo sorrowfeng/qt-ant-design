@@ -84,6 +84,13 @@
 - **改动文件**：`src/widgets/AntSwitch.cpp`、`src/widgets/AntSegmented.cpp`
 - **副作用收益**：这个 leave-clears-press 的 bug 不止在 dock 浮出后出现，任何能在 press 和 release 之间触发 leave 的场景（光标 1px 偏离、tooltip 弹出、其他 widget 抢 hover）都会导致点击丢失。这次修复顺手解决了一整类潜在问题。
 
+### 10. AntDockWidget 右键菜单未适配 AntDesign 风格
+
+- **现象**：在 `AntDockWidget` 上右键弹出的上下文菜单使用 Qt 原生 `QMenu` 外观，未与 Ant Design 设计系统对齐（缺少主题色、圆角、阴影、字号、间距、暗色模式 token）。
+- **根因**：`AntDockManager::showDockContextMenu()` 直接创建 `QMenu` 并添加 `QAction`，该路径不经过项目内 `AntMenu` 的主题、绘制和菜单项状态逻辑。
+- **解决**：新增 manager-owned `AntDockContextMenuPopup` 轻量弹层，内部承载 `AntMenu`；右键命令改为 `AntMenuItem` key 分发，保留浮动、tab 移动、拆分、关闭等原有行为，同时复用 `AntMenu` 的紧凑布局、亮/暗主题、disabled / danger 状态、圆角面板和阴影绘制。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntDockWidget 浮动窗口在主布局管理器不在前台时无法拖动
@@ -114,15 +121,6 @@
   1. 在 `WM_NCCREATE` / `showEvent` 就预设 `{-1,-1,-1,-1}`，常态生效，只在显示时通过 paint 路径让背景不透明
   2. 尝试 `WM_WINDOWPOSCHANGING` 拦截，比 `WM_SIZE` 更早，可以在新尺寸到达 DWM 之前先确保 backdrop
   3. 评估完全放弃 `WA_TranslucentBackground`，圆角在 Win10 上接受方角降级（视觉妥协换稳定不闪）
-
-### D. AntDockWidget 右键菜单未适配 AntDesign 风格
-
-- **现象**：在 `AntDockWidget` 上右键弹出的上下文菜单使用 Qt 原生 `QMenu` 外观，未与 Ant Design 设计系统对齐（缺少主题色、圆角、阴影、字号、间距、暗色模式 token）。
-- **潜在排查方向**：
-  1. `AntDockManager::showDockContextMenu()` 当前 `new QMenu(this)`，应改为复用项目内已有的 `AntMenu` 或者给该 `QMenu` 应用 `AntMenuStyle`
-  2. 参考 `src/widgets/AntMenu.h` / `src/styles/AntMenuStyle.cpp`：确认 `AntMenu` 是否支持 `addAction` + `exec()` 这种命令式弹出，或者需要包一层 helper
-  3. 主题切换时菜单的 palette / token 也要同步——确认 `AntTheme::themeChanged` 信号有覆盖
-  4. 视觉对照：`docs/visual-audit.md` 里 Menu 条目可作为参考样式
 
 ## 关联测试
 

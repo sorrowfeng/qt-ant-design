@@ -36,6 +36,7 @@
 #include "widgets/AntSwitch.h"
 #include "widgets/AntToolButton.h"
 #include "widgets/AntToolBar.h"
+#include "widgets/AntMenu.h"
 #include "widgets/AntMenuBar.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
@@ -903,10 +904,21 @@ void TestAntQtExtensions::dockManager()
                                    inspectorTabBar->mapToGlobal(inspectorTabPoint));
     QCoreApplication::sendEvent(inspectorTabBar, &contextEvent);
     QCOMPARE(contextMenuSpy.count(), 1);
-    if (QWidget* popup = QApplication::activePopupWidget())
-    {
-        popup->close();
-    }
+    QWidget* popup = QApplication::activePopupWidget();
+    QVERIFY(popup != nullptr);
+    QCOMPARE(popup->objectName(), QStringLiteral("AntDockContextMenuPopup"));
+    auto* dockMenu = popup->findChild<AntMenu*>(QStringLiteral("AntDockContextMenu"));
+    QVERIFY(dockMenu != nullptr);
+    QCOMPARE(dockMenu->menuTheme(),
+             antTheme->themeMode() == Ant::ThemeMode::Dark ? Ant::MenuTheme::Dark : Ant::MenuTheme::Light);
+    QCOMPARE(dockMenu->isCompact(), true);
+    QCOMPARE(dockMenu->isSelectable(), false);
+    QVERIFY(dockMenu->itemCount() >= 10);
+    QCOMPARE(dockMenu->itemAt(0).key, QStringLiteral("float"));
+    QCOMPARE(dockMenu->itemAt(0).label, QStringLiteral("Float"));
+    QCOMPARE(dockMenu->itemAt(0).disabled, false);
+    popup->close();
+    QCoreApplication::processEvents();
 
     const QPoint previewTabPoint = dockTabCenterForExtensionTest(preview);
     QVERIFY(!previewTabPoint.isNull());

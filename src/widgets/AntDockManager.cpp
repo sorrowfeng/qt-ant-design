@@ -1,15 +1,16 @@
 #include "AntDockManager.h"
 
 #include <QApplication>
-#include <QAction>
 #include <QContextMenuEvent>
 #include <QDockWidget>
 #include <QEvent>
 #include <QFontMetrics>
+#include <QFrame>
 #include <QGraphicsOpacityEffect>
+#include <QGuiApplication>
+#include <QHideEvent>
 #include <QIcon>
 #include <QKeyEvent>
-#include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -17,6 +18,7 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QResizeEvent>
+#include <QScreen>
 #include <QShowEvent>
 #include <QSplitter>
 #include <QTabBar>
@@ -28,6 +30,7 @@
 #include <functional>
 
 #include "AntDockWidget.h"
+#include "AntMenu.h"
 #include "core/AntTheme.h"
 #include "../private/AntDockLayoutSerializer.h"
 
@@ -37,6 +40,11 @@
 
 namespace
 {
+constexpr int kDockContextMenuShadowMargin = 24;
+constexpr int kDockContextMenuInnerPadding = 4;
+constexpr int kDockContextMenuMinWidth = 176;
+constexpr int kDockContextMenuMaxWidth = 280;
+
 QString cssColor(const QColor& color)
 {
     return QStringLiteral("rgba(%1,%2,%3,%4)")
@@ -213,6 +221,148 @@ void clearFloatingDockOwner(AntDockWidget* dockWidget)
     dockWidget->setProperty("antDockFloatingNativeOwnedByManager", false);
 #endif
 }
+
+QRect availableScreenGeometryForPopup(const QPoint& globalPos, const QWidget* fallback)
+{
+    if (QScreen* screen = QGuiApplication::screenAt(globalPos))
+    {
+        return screen->availableGeometry();
+    }
+    if (fallback)
+    {
+        if (QScreen* screen = fallback->screen())
+        {
+            return screen->availableGeometry();
+        }
+    }
+    if (QScreen* screen = QGuiApplication::primaryScreen())
+    {
+        return screen->availableGeometry();
+    }
+    return QRect(0, 0, 1280, 720);
+}
+
+class AntDockContextMenuPopup : public QFrame
+{
+public:
+    explicit AntDockContextMenuPopup(QWidget* parent)
+        : QFrame(parent, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+    {
+        setObjectName(QStringLiteral("AntDockContextMenuPopup"));
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_ShowWithoutActivating, true);
+        setMouseTracking(true);
+
+        auto* layout = new QVBoxLayout(this);
+        const int popupMargin = kDockContextMenuShadowMargin + kDockContextMenuInnerPadding;
+        layout->setContentsMargins(popupMargin, popupMargin, popupMargin, popupMargin);
+        layout->setSpacing(0);
+
+        m_menu = new AntMenu(this);
+        m_menu->setObjectName(QStringLiteral("AntDockContextMenu"));
+        m_menu->setMode(Ant::MenuMode::Vertical);
+        m_menu->setCompact(true);
+        m_menu->setSelectable(false);
+        syncTheme();
+        layout->addWidget(m_menu);
+
+        connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+            syncTheme();
+            update();
+        });
+    }
+
+    AntMenu* menu() const { return m_menu; }
+
+    void popupAt(const QPoint& globalPos)
+    {
+        rebuildGeometry();
+        QRect geometry(globalPos, size());
+        const QRect screenRect = availableScreenGeometryForPopup(globalPos, parentWidget());
+        geometry.moveLeft(qBound(screenRect.left() + 4, geometry.left(), screenRect.right() - geometry.width() - 4));
+        geometry.moveTop(qBound(screenRect.top() + 4, geometry.top(), screenRect.bottom() - geometry.height() - 4));
+        setGeometry(geometry);
+        show();
+        raise();
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event)
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+
+        const QRect panel = rect().adjusted(kDockContextMenuShadowMargin,
+                                            kDockContextMenuShadowMargin,
+                                            -kDockContextMenuShadowMargin,
+                                            -kDockContextMenuShadowMargin);
+        antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.72);
+        const QColor border = antTheme->themeMode() == Ant::ThemeMode::Dark
+                                  ? translucent(token.colorTextLightSolid, 0.18)
+                                  : token.colorBorder;
+        painter.setPen(QPen(border, token.lineWidth));
+        painter.setBrush(token.colorBgElevated);
+        painter.drawRoundedRect(QRectF(panel).adjusted(0.5, 0.5, -0.5, -0.5),
+                                token.borderRadiusLG,
+                                token.borderRadiusLG);
+    }
+
+    void hideEvent(QHideEvent* event) override
+    {
+        QFrame::hideEvent(event);
+        deleteLater();
+    }
+
+private:
+    void syncTheme()
+    {
+        if (!m_menu)
+        {
+            return;
+        }
+        m_menu->setMenuTheme(antTheme->themeMode() == Ant::ThemeMode::Dark
+                                 ? Ant::MenuTheme::Dark
+                                 : Ant::MenuTheme::Light);
+    }
+
+    void rebuildGeometry()
+    {
+        if (!m_menu)
+        {
+            return;
+        }
+
+        const auto& token = antTheme->tokens();
+        QFont textFont = m_menu->font();
+        textFont.setPixelSize(token.fontSize);
+        const QFontMetrics fm(textFont);
+
+        int maxTextWidth = 96;
+        for (int i = 0; i < m_menu->itemCount(); ++i)
+        {
+            const AntMenuItem item = m_menu->itemAt(i);
+            if (item.divider)
+            {
+                continue;
+            }
+            maxTextWidth = qMax(maxTextWidth, fm.horizontalAdvance(item.label));
+        }
+
+        const int menuWidth = qBound(kDockContextMenuMinWidth,
+                                     maxTextWidth + token.paddingLG * 2 + 42,
+                                     kDockContextMenuMaxWidth);
+        m_menu->setFixedWidth(menuWidth);
+        m_menu->adjustSize();
+
+        const int popupMargin = kDockContextMenuShadowMargin + kDockContextMenuInnerPadding;
+        setFixedSize(menuWidth + popupMargin * 2, m_menu->sizeHint().height() + popupMargin * 2);
+        update();
+    }
+
+    AntMenu* m_menu = nullptr;
+};
 } // namespace
 
 using AntDockInternal::DockLayoutNode;
@@ -2650,8 +2800,13 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
 
     Q_EMIT dockWidgetContextMenuRequested(dockWidget, globalPos);
 
-    auto* menu = new QMenu(this);
-    connect(menu, &QMenu::aboutToHide, menu, &QObject::deleteLater);
+    auto* popup = new AntDockContextMenuPopup(this);
+    AntMenu* menu = popup->menu();
+    if (!menu)
+    {
+        popup->deleteLater();
+        return;
+    }
 
     QPointer<AntDockManager> manager(this);
     QPointer<AntDockWidget> dock(dockWidget);
@@ -2662,70 +2817,153 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
     DockArea* area = areaForDock(dockWidget);
     const int tabIndex = area ? area->dockIndex(dockWidget) : -1;
 
-    QAction* floatAction = menu->addAction(floating ? tr("Dock to workspace") : tr("Float"));
-    floatAction->setEnabled(floatable);
-    connect(floatAction, &QAction::triggered, menu, [manager, dock, floating]() {
-        if (!manager || !dock) return;
-        manager->setDockWidgetFloating(dock, !floating);
-    });
+    menu->addItem(QStringLiteral("float"),
+                  floating ? tr("Dock to workspace") : tr("Float"),
+                  floating ? Ant::IconType::Home : Ant::IconType::CloudUpload,
+                  QString(),
+                  !floatable);
 
     if (area && area->count() > 1)
     {
-        menu->addSeparator();
+        menu->addDivider();
 
-        QAction* moveLeftAction = menu->addAction(tr("Move tab left"));
-        moveLeftAction->setEnabled(movable && tabIndex > 0);
-        connect(moveLeftAction, &QAction::triggered, menu, [manager, dock, tabIndex]() {
-            if (!manager || !dock) return;
-            manager->moveDockWidgetTab(dock, tabIndex - 1);
-        });
+        menu->addItem(QStringLiteral("move-left"),
+                      tr("Move tab left"),
+                      Ant::IconType::Left,
+                      QString(),
+                      !(movable && tabIndex > 0));
 
-        QAction* moveRightAction = menu->addAction(tr("Move tab right"));
-        moveRightAction->setEnabled(movable && area && tabIndex >= 0 && tabIndex < area->count() - 1);
-        connect(moveRightAction, &QAction::triggered, menu, [manager, dock, tabIndex]() {
-            if (!manager || !dock) return;
-            manager->moveDockWidgetTab(dock, tabIndex + 1);
-        });
+        menu->addItem(QStringLiteral("move-right"),
+                      tr("Move tab right"),
+                      Ant::IconType::Right,
+                      QString(),
+                      !(movable && tabIndex >= 0 && tabIndex < area->count() - 1));
 
-        menu->addSeparator();
+        menu->addDivider();
         const auto addSplitAction = [&](const QString& text, DockPlacement placement) {
-            QAction* action = menu->addAction(text);
-            action->setEnabled(movable);
-            connect(action, &QAction::triggered, menu, [manager, dock, placement]() {
-                if (!manager || !dock) return;
-                manager->addDockWidget(dock, dock, placement);
-            });
+            QString key;
+            switch (placement)
+            {
+            case DockPlacement::Left:
+                key = QStringLiteral("split-left");
+                break;
+            case DockPlacement::Right:
+                key = QStringLiteral("split-right");
+                break;
+            case DockPlacement::Top:
+                key = QStringLiteral("split-top");
+                break;
+            case DockPlacement::Bottom:
+                key = QStringLiteral("split-bottom");
+                break;
+            default:
+                return;
+            }
+            menu->addItem(key, text, Ant::IconType::None, QString(), !movable);
         };
         addSplitAction(tr("Split left"), DockPlacement::Left);
         addSplitAction(tr("Split right"), DockPlacement::Right);
         addSplitAction(tr("Split top"), DockPlacement::Top);
         addSplitAction(tr("Split bottom"), DockPlacement::Bottom);
 
-        menu->addSeparator();
-        QAction* closeOthersAction = menu->addAction(tr("Close other tabs"));
-        closeOthersAction->setEnabled(closable);
-        QList<AntDockWidget*> otherDocks = area->dockWidgets();
-        connect(closeOthersAction, &QAction::triggered, menu, [manager, dock, otherDocks]() {
-            if (!manager || !dock) return;
+        menu->addDivider();
+        menu->addItem(QStringLiteral("close-others"),
+                      tr("Close other tabs"),
+                      Ant::IconType::CloseCircle,
+                      QString(),
+                      !closable,
+                      true);
+    }
+
+    menu->addDivider();
+    menu->addItem(QStringLiteral("close"),
+                  tr("Close"),
+                  Ant::IconType::Close,
+                  QString(),
+                  !closable,
+                  true);
+
+    QList<AntDockWidget*> otherDocks;
+    if (area)
+    {
+        otherDocks = area->dockWidgets();
+    }
+
+    QPointer<AntDockContextMenuPopup> popupGuard(popup);
+    connect(menu, &AntMenu::itemClicked, popup, [manager, dock, popupGuard, floating, tabIndex, otherDocks](const QString& key) {
+        if (popupGuard)
+        {
+            popupGuard->close();
+        }
+        if (!manager || !dock)
+        {
+            return;
+        }
+
+        if (key == QStringLiteral("float"))
+        {
+            manager->setDockWidgetFloating(dock, !floating);
+            return;
+        }
+        if (key == QStringLiteral("move-left"))
+        {
+            manager->moveDockWidgetTab(dock, tabIndex - 1);
+            return;
+        }
+        if (key == QStringLiteral("move-right"))
+        {
+            manager->moveDockWidgetTab(dock, tabIndex + 1);
+            return;
+        }
+
+        const auto splitPlacement = [](const QString& actionKey) {
+            if (actionKey == QStringLiteral("split-left"))
+            {
+                return DockPlacement::Left;
+            }
+            if (actionKey == QStringLiteral("split-right"))
+            {
+                return DockPlacement::Right;
+            }
+            if (actionKey == QStringLiteral("split-top"))
+            {
+                return DockPlacement::Top;
+            }
+            if (actionKey == QStringLiteral("split-bottom"))
+            {
+                return DockPlacement::Bottom;
+            }
+            return DockPlacement::None;
+        };
+        const DockPlacement placement = splitPlacement(key);
+        if (placement != DockPlacement::None)
+        {
+            manager->addDockWidget(dock, dock, placement);
+            return;
+        }
+
+        if (key == QStringLiteral("close-others"))
+        {
             for (AntDockWidget* other : otherDocks)
             {
-                if (!other || other == dock) continue;
+                if (!other || other == dock)
+                {
+                    continue;
+                }
                 manager->removeDockWidget(other);
                 other->hide();
             }
-        });
-    }
+            return;
+        }
 
-    menu->addSeparator();
-    QAction* closeAction = menu->addAction(tr("Close"));
-    closeAction->setEnabled(closable);
-    connect(closeAction, &QAction::triggered, menu, [manager, dock]() {
-        if (!manager || !dock) return;
-        manager->removeDockWidget(dock);
-        dock->hide();
+        if (key == QStringLiteral("close"))
+        {
+            manager->removeDockWidget(dock);
+            dock->hide();
+        }
     });
 
-    menu->popup(globalPos);
+    popup->popupAt(globalPos);
 }
 
 QRect AntDockManager::floatingGeometryForDock(AntDockWidget* dockWidget, const QPoint& globalPos) const
