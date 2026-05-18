@@ -1785,6 +1785,73 @@ void TestAntQtExtensions::dockManager()
     delete preview;
     delete manager;
 
+    {
+        auto* hiddenManager = new AntDockManager;
+        hiddenManager->setGeometry(60, 60, 520, 360);
+        hiddenManager->show();
+        QVERIFY(QTest::qWaitForWindowExposed(hiddenManager));
+
+        auto* hiddenExplorer = new AntDockWidget(QStringLiteral("Hidden Explorer"));
+        hiddenExplorer->setWidget(new QWidget);
+        auto* hiddenInspector = new AntDockWidget(QStringLiteral("Hidden Inspector"));
+        hiddenInspector->setWidget(new QWidget);
+        hiddenManager->addDockWidget(Qt::LeftDockWidgetArea, hiddenExplorer);
+        hiddenManager->splitDockWidget(hiddenExplorer, hiddenInspector, Qt::Horizontal);
+        hiddenManager->setDockWidgetFloating(
+            hiddenExplorer,
+            true,
+            QRect(hiddenManager->mapToGlobal(QPoint(96, 96)), QSize(260, 180)));
+        QTRY_VERIFY(hiddenExplorer->isFloating());
+        QTRY_VERIFY(hiddenExplorer->titleBarWidget()->isVisible());
+
+        const QPoint floatingPosBeforeHiddenDrag = hiddenExplorer->pos();
+        hiddenManager->hide();
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+        hiddenExplorer->show();
+        hiddenExplorer->raise();
+        QTRY_VERIFY(hiddenExplorer->isVisible());
+
+        QWidget* hiddenTitleBar = hiddenExplorer->titleBarWidget();
+        QVERIFY(hiddenTitleBar != nullptr);
+        const QPoint pressLocal = hiddenTitleBar->rect().center();
+        const QPoint pressGlobal = hiddenTitleBar->mapToGlobal(pressLocal);
+        const QPoint releaseGlobal = pressGlobal + QPoint(96, 52);
+        const QPoint releaseLocal = hiddenTitleBar->mapFromGlobal(releaseGlobal);
+        QMouseEvent hiddenPress(QEvent::MouseButtonPress,
+                                QPointF(pressLocal),
+                                QPointF(pressGlobal),
+                                Qt::LeftButton,
+                                Qt::LeftButton,
+                                Qt::NoModifier);
+        QCoreApplication::sendEvent(hiddenTitleBar, &hiddenPress);
+        QMouseEvent hiddenMove(QEvent::MouseMove,
+                               QPointF(releaseLocal),
+                               QPointF(releaseGlobal),
+                               Qt::NoButton,
+                               Qt::LeftButton,
+                               Qt::NoModifier);
+        QCoreApplication::sendEvent(hiddenTitleBar, &hiddenMove);
+        QMouseEvent hiddenRelease(QEvent::MouseButtonRelease,
+                                  QPointF(releaseLocal),
+                                  QPointF(releaseGlobal),
+                                  Qt::LeftButton,
+                                  Qt::NoButton,
+                                  Qt::NoModifier);
+        QCoreApplication::sendEvent(hiddenTitleBar, &hiddenRelease);
+
+        const QPoint expectedFloatingPos = floatingPosBeforeHiddenDrag + (releaseGlobal - pressGlobal);
+        QTRY_VERIFY((hiddenExplorer->pos() - expectedFloatingPos).manhattanLength() <= 4);
+        QCOMPARE(hiddenManager->property("antDockDragActivated").toBool(), false);
+        QVERIFY(!hiddenManager->isDropPreviewVisible());
+        QCOMPARE(hiddenManager->activeDropGuide(), AntDockManager::DockPlacement::None);
+
+        hiddenManager->removeDockWidget(hiddenExplorer);
+        hiddenManager->removeDockWidget(hiddenInspector);
+        delete hiddenExplorer;
+        delete hiddenInspector;
+        delete hiddenManager;
+    }
+
 #if defined(Q_OS_WIN)
     if (nativeMouseInputAvailableForExtensionTest())
     {

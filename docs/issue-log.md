@@ -105,18 +105,16 @@
 - **解决**：把 `AntWindowCornerSmoother` 和通用 `AntWave` 都补齐 Win32 原生命中穿透：设置 `WS_EX_TRANSPARENT` / `WS_EX_NOACTIVATE`，并在 `WM_NCHITTEST` 返回 `HTTRANSPARENT`。`TestAntQtExtensions::dockManager()` 新增 `AntWindow` 宿主场景，覆盖浮动、嵌回、`WindowFromPoint()` 不再命中覆盖层，以及 `SendInput` 再次点击 `AntSwitch` 必须切换。
 - **改动文件**：`src/widgets/AntWindow.cpp`、`src/core/AntWave.h`、`src/core/AntWave.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 13. AntDockWidget 浮动窗口在主布局管理器不可见时无法拖动
+
+- **现象**：`AntDockWidget` 已经浮动后，如果 `AntDockManager` 所在的主布局管理器被隐藏、最小化或进入不可见链路，拖动浮动窗口标题栏不会移动窗口。
+- **根因**：浮动 dock 的标题栏拖动复用 `showDropGuideAt()`；该函数开头用 manager 可见性作为总开关。manager 不可见时会直接返回，导致已经浮动的 dock 连自身 `move()` 都不会执行，后续 release 也只是停止 tracking。
+- **解决**：拆分浮动窗口移动和停靠引导显示：只要正在拖动的 dock 已经是浮动窗口，就先按鼠标全局位置更新浮窗位置并保持半透明拖动反馈；只有 manager 停靠面板可见时才继续显示小方格和嵌入预览。对于隐藏状态下的嵌入 dock，不激活预览或浮动逻辑，避免程序化事件误触发。回归测试覆盖 manager 隐藏后浮动 dock 仍能通过标题栏移动，且不会显示 drop preview 或 active guide。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
-### A. AntDockWidget 浮动窗口在主布局管理器不在前台时无法拖动
-
-- **现象**：当 `AntDockManager` 所在的主布局管理器不在前台显示（被其他窗口遮挡或最小化）时，浮动出来的 `AntDockWidget` 无法被拖动。
-- **目前怀疑**：浮动 dock 的拖拽是 manager 的 `eventFilter` + 应用级 event filter 共同实现的——manager 不可见时它对应的事件可能被 Qt 优化掉、或者 owner HWND 失活导致拖动消息被 Win32 路由到别处。
-- **潜在排查方向**：
-  1. 在 `installDockEventFilters` / `handleDockTitleMouseEvent` 加日志，确认 manager 不可见时这些路径是否仍然走到
-  2. 检查 `m_appEventFilterInstalled` 路径是否依赖 manager 自己 visible
-  3. 浮动 dock 在 manager 不可见时是否需要切换为 self-owned 顶层窗口（牺牲 owner 关系换可拖动）
-
-### B. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
+### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
 
 - **现象**：把 AntWindow 拖到其他屏幕时，阴影位置/尺寸的更新和窗口轮廓对不齐——阴影应该实时跟着主窗口画，而不是在跨屏后才补正。
 - **与已解决问题 #5 的区别**：#5 只处理了 `WM_DPICHANGED` / `ScreenChangeInternal` 这类**离散事件**，阴影 HWND 在 DPI 切换的那一帧才同步。但 AntWindow `moveEvent` 在 live-drag 期间也被抑制（`if (m_legacyLiveResize) return`），所以拖拽中的连续 move 事件阴影完全不跟随。
@@ -125,7 +123,7 @@
   2. 或者让 `moveEvent` 始终更新阴影 HWND 位置，只在 resize 时跳过（拖动主要是 reposition，阴影 `SetWindowPos` 在同 DPI 内是便宜的）
   3. 检查 `WM_DPICHANGED` 的处理是否在跨屏首帧就跟上了阴影 HWND 的 `setScreen()`
 
-### C. AntWindow 缩小尺寸时偶尔仍有闪动
+### B. AntWindow 缩小尺寸时偶尔仍有闪动
 
 - **现象**：已解决问题 #7 引入的 DWM `{-1,-1,-1,-1}` 兜底后大幅改善，但缩小时偶尔（约几帧出现一次）还能看到极短的闪动。
 - **推测原因**：

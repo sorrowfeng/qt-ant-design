@@ -3341,7 +3341,29 @@ void AntDockManager::setDraggedDockTranslucent(bool translucent)
 
 void AntDockManager::showDropGuideAt(const QPoint& globalPos)
 {
-    if (!m_dropGuideOverlay || !isVisible()) return;
+    const bool draggingFloatingDock = m_draggedDock && m_draggedDock->isFloating();
+    const bool dockingSurfaceVisible = m_dropGuideOverlay &&
+        isVisible() &&
+        (!window() || !window()->isMinimized());
+
+    if (!dockingSurfaceVisible && !draggingFloatingDock)
+    {
+        if (m_dropGuideOverlay)
+        {
+            m_dropGuideOverlay->clearActivePlacement();
+            m_dropGuideOverlay->hide();
+        }
+        if (m_dropPreviewWindow)
+        {
+            m_dropPreviewWindow->hideTarget();
+        }
+        if (m_dragPreviewWindow)
+        {
+            m_dragPreviewWindow->end();
+        }
+        return;
+    }
+
     if (m_hasLastDropGuideGlobal && m_lastDropGuideGlobal == globalPos)
     {
         return;
@@ -3375,6 +3397,20 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
         }
     }
     setDraggedDockTranslucent(true);
+
+    if (!dockingSurfaceVisible)
+    {
+        if (m_dropGuideOverlay)
+        {
+            m_dropGuideOverlay->clearActivePlacement();
+            m_dropGuideOverlay->hide();
+        }
+        if (m_dropPreviewWindow)
+        {
+            m_dropPreviewWindow->hideTarget();
+        }
+        return;
+    }
 
     QRect areaGuideGlobalRect;
     if (AntDockWidget* guideDock = dockWidgetAt(globalPos))
