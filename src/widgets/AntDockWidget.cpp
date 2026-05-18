@@ -1003,7 +1003,10 @@ void AntDockWidget::resetNativeFloatingWindowForEmbedding()
                            SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
     }
     hideLegacySoftwareShadow();
-    destroy(true, false);
+    // Destroy child native handles as well. A floating dock may contain child
+    // HWNDs created while it was top-level; keeping them alive across reparent
+    // can leave stale native children above the embedded layout.
+    destroy(true, true);
     setProperty("antDockNativeFloatingHwndDestroyed", true);
 }
 #endif

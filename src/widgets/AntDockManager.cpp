@@ -855,9 +855,9 @@ public:
 
         prepareDockWidgetForEmbedding(dockWidget, this);
         setEmbeddedDockTitleBarVisible(dockWidget, false);
-        dockWidget->setVisible(true);
         const int index = addTab(dockWidget, dockWidget->windowIcon(), dockWidget->windowTitle());
         setCurrentIndex(index);
+        dockWidget->setVisible(true);
         connect(dockWidget, &QDockWidget::windowTitleChanged, this, [this, dockWidget](const QString& title) {
             const int tab = indexOf(dockWidget);
             if (tab >= 0) setTabText(tab, title);
