@@ -44,6 +44,8 @@ constexpr auto kDockDwmFrameApplyCountProperty = "antDockDwmFrameApplyCount";
 constexpr auto kDockDwmFrameLastReasonProperty = "antDockDwmFrameLastReason";
 constexpr auto kDockLegacyRoundedMaskAppliedProperty = "antDockLegacyRoundedMaskApplied";
 constexpr auto kDockLegacyShadowEnabledProperty = "antDockLegacySoftwareShadowEnabled";
+constexpr auto kDockLegacyShadowClickThroughProperty = "antDockLegacySoftwareShadowClickThrough";
+constexpr auto kDockLegacyShadowObjectName = "AntDockLegacySoftwareShadow";
 constexpr auto kDockDwmFrameRefreshQueuedProperty = "antDockDwmFrameRefreshQueued";
 #endif
 
@@ -88,18 +90,52 @@ bool drawAntdIcon(const QString& iconName, const QRectF& iconRect, const QColor&
 }
 
 #if defined(Q_OS_WIN)
+void makeWindowClickThrough(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (!hwnd)
+    {
+        return;
+    }
+
+    const LONG_PTR currentStyle = ::GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    const LONG_PTR clickThroughStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
+    const LONG_PTR nextStyle = currentStyle | clickThroughStyle;
+    if (nextStyle != currentStyle)
+    {
+        ::SetWindowLongPtrW(hwnd, GWL_EXSTYLE, nextStyle);
+        ::SetWindowPos(hwnd,
+                       nullptr,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE |
+                           SWP_FRAMECHANGED);
+    }
+
+    widget->setProperty(kDockLegacyShadowClickThroughProperty, true);
+}
+
 class AntDockLegacySoftwareShadow : public QWidget
 {
 public:
     explicit AntDockLegacySoftwareShadow(QWidget* owner)
         : QWidget(owner, Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint | Qt::WindowDoesNotAcceptFocus)
     {
+        setObjectName(QString::fromLatin1(kDockLegacyShadowObjectName));
         setAttribute(Qt::WA_TranslucentBackground, true);
         setAttribute(Qt::WA_NoSystemBackground, true);
         setAttribute(Qt::WA_TransparentForMouseEvents, true);
         setAttribute(Qt::WA_ShowWithoutActivating, true);
         setFocusPolicy(Qt::NoFocus);
         setProperty("shadowMargin", kNativeFrameShadowMargin);
+        setProperty(kDockLegacyShadowClickThroughProperty, false);
     }
 
     void setCornerRadius(int radius)
@@ -109,6 +145,27 @@ public:
     }
 
 protected:
+    void showEvent(QShowEvent* event) override
+    {
+        QWidget::showEvent(event);
+        makeWindowClickThrough(this);
+    }
+
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    {
+        if (eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG")
+        {
+            auto* msg = static_cast<MSG*>(message);
+            if (msg && msg->message == WM_NCHITTEST)
+            {
+                *result = HTTRANSPARENT;
+                setProperty(kDockLegacyShadowClickThroughProperty, true);
+                return true;
+            }
+        }
+        return QWidget::nativeEvent(eventType, message, result);
+    }
+
     void paintEvent(QPaintEvent*) override
     {
         QPainter painter(this);
@@ -1099,6 +1156,7 @@ void AntDockWidget::updateLegacySoftwareShadow()
     const HWND shadowHwnd = reinterpret_cast<HWND>(m_legacySoftwareShadow->winId());
     if (shadowHwnd && hwnd)
     {
+        makeWindowClickThrough(m_legacySoftwareShadow);
         ::SetWindowPos(shadowHwnd,
                        hwnd,
                        shadowGeometry.x(),

@@ -17,6 +17,7 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QResizeEvent>
+#include <QShowEvent>
 #include <QSplitter>
 #include <QTabBar>
 #include <QTabWidget>
@@ -60,6 +61,66 @@ QPoint mouseGlobalPosition(QMouseEvent* event)
     return event->globalPos();
 #endif
 }
+
+#if defined(Q_OS_WIN)
+constexpr auto kTransparentToolWindowClickThroughProperty = "antDockTransparentToolWindowClickThrough";
+
+void makeTransparentToolWindowClickThrough(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (!hwnd)
+    {
+        return;
+    }
+
+    const LONG_PTR currentStyle = ::GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    const LONG_PTR clickThroughStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
+    const LONG_PTR nextStyle = currentStyle | clickThroughStyle;
+    if (nextStyle != currentStyle)
+    {
+        ::SetWindowLongPtrW(hwnd, GWL_EXSTYLE, nextStyle);
+        ::SetWindowPos(hwnd,
+                       nullptr,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE |
+                           SWP_FRAMECHANGED);
+    }
+
+    widget->setProperty(kTransparentToolWindowClickThroughProperty, true);
+}
+
+bool handleTransparentToolWindowNativeEvent(QWidget* widget,
+                                            const QByteArray& eventType,
+                                            void* message,
+                                            qintptr* result)
+{
+    if (eventType != "windows_generic_MSG" && eventType != "windows_dispatcher_MSG")
+    {
+        return false;
+    }
+
+    auto* msg = static_cast<MSG*>(message);
+    if (!msg || msg->message != WM_NCHITTEST)
+    {
+        return false;
+    }
+
+    *result = HTTRANSPARENT;
+    if (widget)
+    {
+        widget->setProperty(kTransparentToolWindowClickThroughProperty, true);
+    }
+    return true;
+}
+#endif
 
 void setEmbeddedDockTitleBarVisible(AntDockWidget* dockWidget, bool visible)
 {
@@ -720,10 +781,14 @@ public:
                   Qt::WindowStaysOnTopHint |
                   Qt::NoDropShadowWindowHint)
     {
+        setObjectName(QStringLiteral("AntDockDragPreviewWindow"));
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_TransparentForMouseEvents);
         setAttribute(Qt::WA_ShowWithoutActivating);
         setFocusPolicy(Qt::NoFocus);
+#if defined(Q_OS_WIN)
+        setProperty(kTransparentToolWindowClickThroughProperty, false);
+#endif
         hide();
     }
 
@@ -748,6 +813,9 @@ public:
             move(topLeft);
         }
         if (!isVisible()) show();
+#if defined(Q_OS_WIN)
+        makeTransparentToolWindowClickThrough(this);
+#endif
         raise();
         update();
     }
@@ -776,6 +844,23 @@ public:
     }
 
 protected:
+#if defined(Q_OS_WIN)
+    void showEvent(QShowEvent* event) override
+    {
+        QWidget::showEvent(event);
+        makeTransparentToolWindowClickThrough(this);
+    }
+
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    {
+        if (handleTransparentToolWindowNativeEvent(this, eventType, message, result))
+        {
+            return true;
+        }
+        return QWidget::nativeEvent(eventType, message, result);
+    }
+#endif
+
     void paintEvent(QPaintEvent*) override
     {
         const auto& token = antTheme->tokens();
@@ -834,10 +919,14 @@ public:
                   Qt::NoDropShadowWindowHint),
           m_manager(manager)
     {
+        setObjectName(QStringLiteral("AntDockDropPreviewWindow"));
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_TransparentForMouseEvents);
         setAttribute(Qt::WA_ShowWithoutActivating);
         setFocusPolicy(Qt::NoFocus);
+#if defined(Q_OS_WIN)
+        setProperty(kTransparentToolWindowClickThroughProperty, false);
+#endif
         hide();
     }
 
@@ -868,6 +957,9 @@ public:
         if (!isVisible())
         {
             show();
+#if defined(Q_OS_WIN)
+            makeTransparentToolWindowClickThrough(this);
+#endif
             raise();
             Q_EMIT m_manager->dropPreviewVisibleChanged(true);
         }
@@ -888,6 +980,23 @@ public:
     }
 
 protected:
+#if defined(Q_OS_WIN)
+    void showEvent(QShowEvent* event) override
+    {
+        QWidget::showEvent(event);
+        makeTransparentToolWindowClickThrough(this);
+    }
+
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    {
+        if (handleTransparentToolWindowNativeEvent(this, eventType, message, result))
+        {
+            return true;
+        }
+        return QWidget::nativeEvent(eventType, message, result);
+    }
+#endif
+
     void paintEvent(QPaintEvent*) override
     {
         if (m_previewGlobalRect.isEmpty()) return;

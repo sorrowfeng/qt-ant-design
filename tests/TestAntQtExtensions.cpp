@@ -1,4 +1,5 @@
 #include <QPalette>
+#include <QApplication>
 #include <QPainter>
 #include <QCoreApplication>
 #include <QContextMenuEvent>
@@ -32,6 +33,7 @@
 #include "widgets/AntSplitter.h"
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntRibbon.h"
+#include "widgets/AntSwitch.h"
 #include "widgets/AntToolButton.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntMenuBar.h"
@@ -71,6 +73,19 @@ QImage renderForExtensionTest(QWidget* widget)
     QPainter painter(&image);
     widget->render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
     return image;
+}
+
+QWidget* topLevelWidgetForExtensionTest(const QString& objectName)
+{
+    const auto widgets = QApplication::topLevelWidgets();
+    for (QWidget* widget : widgets)
+    {
+        if (widget && widget->objectName() == objectName)
+        {
+            return widget;
+        }
+    }
+    return nullptr;
 }
 
 QLabel* ribbonTitleLabelForExtensionTest(AntRibbonGroup* group, const QString& text)
@@ -943,6 +958,16 @@ void TestAntQtExtensions::dockManager()
                                       Qt::NoModifier);
     QCoreApplication::sendEvent(explorerTabBar, &moveToPropertiesEvent);
     QTRY_VERIFY(manager->isDropPreviewVisible());
+#if defined(Q_OS_WIN)
+    QWidget* dragPreviewWindow = nullptr;
+    QWidget* dropPreviewWindow = nullptr;
+    QTRY_VERIFY((dragPreviewWindow = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDragPreviewWindow"))) != nullptr);
+    QTRY_VERIFY((dropPreviewWindow = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDropPreviewWindow"))) != nullptr);
+    QVERIFY(dragPreviewWindow->testAttribute(Qt::WA_TransparentForMouseEvents));
+    QVERIFY(dropPreviewWindow->testAttribute(Qt::WA_TransparentForMouseEvents));
+    QTRY_COMPARE(dragPreviewWindow->property("antDockTransparentToolWindowClickThrough").toBool(), true);
+    QTRY_COMPARE(dropPreviewWindow->property("antDockTransparentToolWindowClickThrough").toBool(), true);
+#endif
     QTRY_COMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::Center);
     QVERIFY2(propertiesAreaRect.contains(manager->dropPreviewRect().center()),
              "Dock-area guide must follow the dock area under the cursor instead of staying at the container center.");
@@ -1150,6 +1175,32 @@ void TestAntQtExtensions::dockManager()
     const QSize floatingResize = explorer->size().expandedTo(QSize(280, 180));
     explorer->setGeometry(QRect(manager->mapToGlobal(QPoint(64, 64)), floatingResize));
     QCOMPARE(explorer->size(), floatingResize);
+
+    auto* floatingClickSwitch = new AntSwitch(manager);
+    floatingClickSwitch->setObjectName(QStringLiteral("dockFloatingClickSwitch"));
+    floatingClickSwitch->setGeometry(16, 16, 92, 28);
+    floatingClickSwitch->show();
+    floatingClickSwitch->raise();
+    QSignalSpy floatingClickSwitchSpy(floatingClickSwitch, &AntSwitch::checkedChanged);
+    QTest::mousePress(floatingClickSwitch,
+                      Qt::LeftButton,
+                      Qt::NoModifier,
+                      floatingClickSwitch->rect().center());
+    QTest::mouseRelease(floatingClickSwitch,
+                        Qt::LeftButton,
+                        Qt::NoModifier,
+                        floatingClickSwitch->rect().center());
+    QCOMPARE(floatingClickSwitchSpy.count(), 1);
+    QVERIFY(floatingClickSwitch->isChecked());
+#if defined(Q_OS_WIN)
+    if (explorer->property("antDockLegacySoftwareShadowEnabled").toBool())
+    {
+        QWidget* shadow = nullptr;
+        QTRY_VERIFY((shadow = explorer->findChild<QWidget*>(QStringLiteral("AntDockLegacySoftwareShadow"))) != nullptr);
+        QVERIFY(shadow->testAttribute(Qt::WA_TransparentForMouseEvents));
+        QTRY_COMPARE(shadow->property("antDockLegacySoftwareShadowClickThrough").toBool(), true);
+    }
+#endif
     QVERIFY(manager->savePerspective(QStringLiteral("floating")));
     const QRect savedFloatingGeometry = explorer->geometry();
     dragFloatingDockBack(explorer, inspector);
