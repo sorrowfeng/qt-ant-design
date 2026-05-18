@@ -183,6 +183,72 @@ void applyShadowWindowRingRegion(QWidget* widget, int margin, int cornerRadius)
     widget->setProperty(kDockLegacyShadowRingRegionProperty, true);
 }
 
+bool fillNativeDockEraseBackground(QWidget* widget, WPARAM paintDevice)
+{
+    if (!widget || !paintDevice)
+    {
+        return false;
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (!hwnd)
+    {
+        return false;
+    }
+
+    RECT clientRect{};
+    if (!::GetClientRect(hwnd, &clientRect))
+    {
+        return false;
+    }
+
+    const auto& token = antTheme->tokens();
+    QColor fill = token.colorBgElevated;
+    HBRUSH brush = ::CreateSolidBrush(RGB(fill.red(), fill.green(), fill.blue()));
+    if (!brush)
+    {
+        return false;
+    }
+
+    ::FillRect(reinterpret_cast<HDC>(paintDevice), &clientRect, brush);
+    ::DeleteObject(brush);
+    widget->setProperty("antDockNativeEraseBackgroundFilled", true);
+    return true;
+}
+
+void refreshFloatingDockWindow(AntDockWidget* dockWidget, const char* reason)
+{
+    if (!dockWidget)
+    {
+        return;
+    }
+
+    dockWidget->setProperty("antDockFloatingRefreshReason", QString::fromLatin1(reason ? reason : ""));
+    dockWidget->setProperty("antDockFloatingRefreshCount",
+                            dockWidget->property("antDockFloatingRefreshCount").toInt() + 1);
+
+    if (QWidget* titleBar = dockWidget->titleBarWidget())
+    {
+        titleBar->updateGeometry();
+        titleBar->update();
+    }
+    if (QWidget* content = dockWidget->widget())
+    {
+        content->updateGeometry();
+        content->update();
+    }
+    dockWidget->updateGeometry();
+    dockWidget->update();
+
+    if (const WId windowId = dockWidget->internalWinId())
+    {
+        ::RedrawWindow(reinterpret_cast<HWND>(windowId),
+                       nullptr,
+                       nullptr,
+                       RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW | RDW_NOERASE);
+    }
+}
+
 class AntDockLegacySoftwareShadow : public QWidget
 {
 public:
@@ -1082,11 +1148,18 @@ void AntDockWidget::resizeEvent(QResizeEvent* event)
         if (m_legacyLiveResize && !supportsNativeCaptionFrame())
         {
             hideLegacySoftwareShadow();
+            refreshFloatingDockWindow(this, "legacy-live-resize");
         }
         else
         {
             applyNativeWindowFrame();
             updateLegacySoftwareShadow();
+            if (!supportsNativeCaptionFrame() &&
+                (event->size().width() > event->oldSize().width() ||
+                 event->size().height() > event->oldSize().height()))
+            {
+                refreshFloatingDockWindow(this, "legacy-resize-grow");
+            }
         }
 #endif
         update();
@@ -1123,6 +1196,10 @@ void AntDockWidget::changeEvent(QEvent* event)
         {
             applyNativeWindowFrame();
             updateLegacySoftwareShadow();
+            if (!supportsNativeCaptionFrame())
+            {
+                refreshFloatingDockWindow(this, isMaximized() ? "legacy-maximized" : "legacy-state");
+            }
         }
 #endif
         if (QWidget* bar = titleBarWidget())
@@ -1310,11 +1387,16 @@ bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qint
                 }
                 guard->applyNativeWindowFrame();
                 guard->updateLegacySoftwareShadow();
+                if (!supportsNativeCaptionFrame())
+                {
+                    refreshFloatingDockWindow(guard.data(), "legacy-live-resize-finished");
+                }
                 guard->update();
             });
         }
         break;
     case WM_ERASEBKGND:
+        fillNativeDockEraseBackground(this, msg->wParam);
         *result = 1;
         return true;
     case WM_NCCALCSIZE:

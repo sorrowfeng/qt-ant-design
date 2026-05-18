@@ -1209,6 +1209,15 @@ void TestAntQtExtensions::dockManager()
         QCOMPARE(explorer->property("antDockLegacySoftwareShadowEnabled").toBool(), false);
         ::SendMessageW(explorerHwnd, WM_EXITSIZEMOVE, 0, 0);
         QTRY_COMPARE(explorer->property("antDockLegacyLiveResize").toBool(), false);
+        QTRY_VERIFY(explorer->property("antDockFloatingRefreshCount").toInt() > 0);
+
+        HDC eraseDc = ::GetDC(explorerHwnd);
+        QVERIFY(eraseDc != nullptr);
+        const LRESULT eraseResult =
+            ::SendMessageW(explorerHwnd, WM_ERASEBKGND, reinterpret_cast<WPARAM>(eraseDc), 0);
+        ::ReleaseDC(explorerHwnd, eraseDc);
+        QCOMPARE(eraseResult, static_cast<LRESULT>(1));
+        QCOMPARE(explorer->property("antDockNativeEraseBackgroundFilled").toBool(), true);
 
         MSG outsideHitTestMessage{};
         outsideHitTestMessage.hwnd = explorerHwnd;
@@ -1245,6 +1254,9 @@ void TestAntQtExtensions::dockManager()
     const QPoint floatingTitlePoint = floatingTitleBar->rect().center();
     const QPoint floatingTitleGlobal = floatingTitleBar->mapToGlobal(floatingTitlePoint);
     const QRect floatingGeometryBeforeClick = explorer->geometry();
+    QWidget* floatingContent = explorer->widget();
+    QVERIFY(floatingContent != nullptr);
+    const QSize floatingContentSizeBeforeMaximize = floatingContent->size();
     QMouseEvent floatingClickPress(QEvent::MouseButtonPress,
                                    QPointF(floatingTitlePoint),
                                    QPointF(floatingTitleGlobal),
@@ -1284,6 +1296,16 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(explorer->isFloating());
     if (explorer->isMaximized())
     {
+        QTRY_VERIFY(floatingContent->width() > floatingContentSizeBeforeMaximize.width() ||
+                    floatingContent->height() > floatingContentSizeBeforeMaximize.height());
+#if defined(Q_OS_WIN)
+        if (!explorer->property("antDockUsesNativeCaptionFrame").toBool())
+        {
+            QCOMPARE(explorer->property("antDockLegacyRoundedMaskApplied").toBool(), false);
+            QTRY_VERIFY(explorer->property("antDockFloatingRefreshCount").toInt() > 0);
+            QVERIFY(explorer->property("antDockFloatingRefreshReason").toString().startsWith(QStringLiteral("legacy-")));
+        }
+#endif
         explorer->showNormal();
         QTRY_VERIFY(!explorer->isMaximized());
     }
