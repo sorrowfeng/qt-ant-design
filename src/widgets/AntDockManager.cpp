@@ -1907,11 +1907,9 @@ bool AntDockManager::restorePerspective(const QString& name)
                 AntDockWidget* dock = docksById.value(id, nullptr);
                 if (!dock || placedDockIds.contains(id)) continue;
 
-                const bool wasManagedFloating = dock->property("antDockFloatingOwnedByManager").toBool();
                 clearFloatingDockOwner(dock);
                 dock->setWindowOpacity(1.0);
                 area->addDock(dock);
-                if (wasManagedFloating) dock->setFloating(false);
                 m_dockAreas.insert(dock, area);
                 placedDockIds.insert(id);
             }
@@ -2354,7 +2352,6 @@ void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targe
 {
     if (!dockWidget) return;
     if (placement == DockPlacement::None) placement = DockPlacement::Left;
-    const bool wasManagedFloating = dockWidget->property("antDockFloatingOwnedByManager").toBool();
     clearFloatingDockOwner(dockWidget);
 
     const bool added = prepareDockWidget(dockWidget);
@@ -2373,7 +2370,6 @@ void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targe
     {
         DockArea* area = createDockArea();
         area->addDock(dockWidget);
-        if (wasManagedFloating) dockWidget->setFloating(false);
         m_dockAreas.insert(dockWidget, area);
         setRootDockWidget(area);
         updatePlaceholderState();
@@ -2391,7 +2387,6 @@ void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targe
     if (placement == DockPlacement::Center && targetArea)
     {
         targetArea->addDock(dockWidget);
-        if (wasManagedFloating) dockWidget->setFloating(false);
         m_dockAreas.insert(dockWidget, targetArea);
         updatePlaceholderState();
         if (added) Q_EMIT dockWidgetAdded(dockWidget);
@@ -2402,7 +2397,6 @@ void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targe
 
     DockArea* newArea = createDockArea();
     newArea->addDock(dockWidget);
-    if (wasManagedFloating) dockWidget->setFloating(false);
     m_dockAreas.insert(dockWidget, newArea);
 
     QWidget* targetWidget = containerDrop ? m_rootDockWidget : (targetArea ? static_cast<QWidget*>(targetArea) : m_rootDockWidget);

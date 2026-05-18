@@ -1265,6 +1265,15 @@ void TestAntQtExtensions::dockManager()
     manager->setDockWidgetFloating(explorer, false);
     QTRY_VERIFY(!manager->isDockWidgetFloating(explorer));
     QVERIFY(dockAreaForExtensionTest(explorer) != nullptr);
+    QCOMPARE(QWidget::mouseGrabber(), nullptr);
+    if (QWidget* dragOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDragPreviewWindow")))
+    {
+        QVERIFY(!dragOverlay->isVisible());
+    }
+    if (QWidget* dropOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDropPreviewWindow")))
+    {
+        QVERIFY(!dropOverlay->isVisible());
+    }
     QVERIFY(!explorer->isWindow());
     QVERIFY(!explorer->windowFlags().testFlag(Qt::Window));
     QVERIFY(!explorer->testAttribute(Qt::WA_TransparentForMouseEvents));
@@ -1340,6 +1349,15 @@ void TestAntQtExtensions::dockManager()
     dragFloatingDockBack(explorer, inspector);
     QTRY_VERIFY(!explorer->isFloating());
     QTRY_VERIFY(dockAreaForExtensionTest(explorer) != nullptr);
+    QCOMPARE(QWidget::mouseGrabber(), nullptr);
+    if (QWidget* dragOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDragPreviewWindow")))
+    {
+        QVERIFY(!dragOverlay->isVisible());
+    }
+    if (QWidget* dropOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDropPreviewWindow")))
+    {
+        QVERIFY(!dropOverlay->isVisible());
+    }
     QTRY_VERIFY(!explorer->titleBarWidget()->isVisible());
     QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), false);
     QCOMPARE(explorer->property("antDockFloatingOwnedByManager").toBool(), false);
