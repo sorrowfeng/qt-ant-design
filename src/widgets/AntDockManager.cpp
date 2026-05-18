@@ -223,6 +223,55 @@ void clearFloatingDockOwner(AntDockWidget* dockWidget)
 #endif
 }
 
+void prepareDockWidgetForEmbedding(AntDockWidget* dockWidget, QWidget* parentWidget)
+{
+    if (!dockWidget || !parentWidget)
+    {
+        return;
+    }
+
+    if (QWidget* grabber = QWidget::mouseGrabber())
+    {
+        if (grabber == dockWidget || dockWidget->isAncestorOf(grabber))
+        {
+            grabber->releaseMouse();
+        }
+    }
+    dockWidget->releaseMouse();
+
+    const bool wasTopLevel = dockWidget->isWindow() || dockWidget->isFloating() ||
+                             dockWidget->property("antDockFloatingOwnedByManager").toBool();
+    if (wasTopLevel)
+    {
+        dockWidget->hide();
+    }
+
+    clearFloatingDockOwner(dockWidget);
+    dockWidget->setWindowOpacity(1.0);
+    dockWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    dockWidget->setWindowFlag(Qt::WindowTransparentForInput, false);
+#endif
+    dockWidget->setProperty("antDockEmbeddedByManager", true);
+
+#if defined(Q_OS_WIN)
+    if (wasTopLevel)
+    {
+        if (const WId dockId = dockWidget->internalWinId())
+        {
+            ::ShowWindow(reinterpret_cast<HWND>(dockId), SW_HIDE);
+        }
+    }
+#endif
+
+    // A floating AntDockWidget has been promoted to a native top-level HWND.
+    // When it is placed back into the custom tab/splitter tree, force the Qt
+    // window type back to a plain child widget so the old native window cannot
+    // remain above the main window's client area and eat mouse input.
+    dockWidget->setParent(parentWidget, Qt::Widget);
+    dockWidget->clearMask();
+}
+
 QRect availableScreenGeometryForPopup(const QPoint& globalPos, const QWidget* fallback)
 {
     if (QScreen* screen = QGuiApplication::screenAt(globalPos))
@@ -684,8 +733,7 @@ public:
             return;
         }
 
-        dockWidget->setParent(this);
-        dockWidget->setProperty("antDockEmbeddedByManager", true);
+        prepareDockWidgetForEmbedding(dockWidget, this);
         setEmbeddedDockTitleBarVisible(dockWidget, false);
         dockWidget->setVisible(true);
         const int index = addTab(dockWidget, dockWidget->windowIcon(), dockWidget->windowTitle());

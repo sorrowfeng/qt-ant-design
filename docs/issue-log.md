@@ -91,6 +91,13 @@
 - **解决**：新增 manager-owned `AntDockContextMenuPopup` 轻量弹层，内部承载 `AntMenu`；右键命令改为 `AntMenuItem` key 分发，保留浮动、tab 移动、拆分、关闭等原有行为，同时复用 `AntMenu` 的紧凑布局、亮/暗主题、disabled / danger 状态。弹层使用无装饰、无原生窗口阴影的 tool 型窗口，并用贴合面板外沿的单层柔和羽化阴影绘制，避免原生阴影和手绘阴影叠加成多重层次。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 11. AntDockWidget 在 Win11 上浮动后嵌回布局导致客户区点击失效
+
+- **现象**：`AntDockWidget` 先浮动，再拖回主布局后，主窗口除标题栏外的客户区控件无法响应点击。
+- **根因**：自研停靠树把浮动 dock 放回 `QTabWidget` 时只调用了 `setParent(this)`，没有显式把之前的 floating top-level window type 还原成普通 `Qt::Widget`。Win11 / DWM 路径下旧 top-level HWND 有概率继续覆盖主窗口客户区，导致鼠标事件被旧窗口吃掉。
+- **解决**：新增 `prepareDockWidgetForEmbedding()`，在 dock 嵌回布局前释放 mouse grab、隐藏旧 top-level、清理 native owner / 透明输入 flags / window opacity，并通过 `setParent(parent, Qt::Widget)` 强制恢复普通子控件窗口类型；回归测试增加 embedded 后的 window flags、透明输入属性和客户区 hit-test 验证。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntDockWidget 浮动窗口在主布局管理器不在前台时无法拖动

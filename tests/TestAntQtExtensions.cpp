@@ -1265,6 +1265,12 @@ void TestAntQtExtensions::dockManager()
     manager->setDockWidgetFloating(explorer, false);
     QTRY_VERIFY(!manager->isDockWidgetFloating(explorer));
     QVERIFY(dockAreaForExtensionTest(explorer) != nullptr);
+    QVERIFY(!explorer->isWindow());
+    QVERIFY(!explorer->windowFlags().testFlag(Qt::Window));
+    QVERIFY(!explorer->testAttribute(Qt::WA_TransparentForMouseEvents));
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    QVERIFY(!explorer->windowFlags().testFlag(Qt::WindowTransparentForInput));
+#endif
     QVERIFY(dockedSpy.count() >= 1);
     manager->setDockWidgetFloating(explorer, true, savedFloatingGeometry);
     QTRY_VERIFY(manager->isDockWidgetFloating(explorer));
@@ -1337,6 +1343,32 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(!explorer->titleBarWidget()->isVisible());
     QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), false);
     QCOMPARE(explorer->property("antDockFloatingOwnedByManager").toBool(), false);
+    QVERIFY(!explorer->isWindow());
+    QVERIFY(!explorer->windowFlags().testFlag(Qt::Window));
+    QVERIFY(!explorer->testAttribute(Qt::WA_TransparentForMouseEvents));
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    QVERIFY(!explorer->windowFlags().testFlag(Qt::WindowTransparentForInput));
+#endif
+
+    auto* embeddedClickSwitch = new AntSwitch(manager);
+    embeddedClickSwitch->setObjectName(QStringLiteral("dockEmbeddedClickSwitch"));
+    embeddedClickSwitch->setGeometry(124, 16, 92, 28);
+    embeddedClickSwitch->show();
+    embeddedClickSwitch->raise();
+    QTRY_VERIFY(embeddedClickSwitch->isVisible());
+    QWidget* embeddedHitWidget = QApplication::widgetAt(embeddedClickSwitch->mapToGlobal(embeddedClickSwitch->rect().center()));
+    QVERIFY(embeddedHitWidget == embeddedClickSwitch || embeddedClickSwitch->isAncestorOf(embeddedHitWidget));
+    QSignalSpy embeddedClickSwitchSpy(embeddedClickSwitch, &AntSwitch::checkedChanged);
+    QTest::mousePress(embeddedClickSwitch,
+                      Qt::LeftButton,
+                      Qt::NoModifier,
+                      embeddedClickSwitch->rect().center());
+    QTest::mouseRelease(embeddedClickSwitch,
+                        Qt::LeftButton,
+                        Qt::NoModifier,
+                        embeddedClickSwitch->rect().center());
+    QCOMPARE(embeddedClickSwitchSpy.count(), 1);
+    QVERIFY(embeddedClickSwitch->isChecked());
 
     QTabBar* doubleClickTabBar = dockTabBarForExtensionTest(explorer);
     QVERIFY(doubleClickTabBar != nullptr);
