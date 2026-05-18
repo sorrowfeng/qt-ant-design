@@ -2413,15 +2413,6 @@ bool AntDockManager::prepareDockWidget(AntDockWidget* dockWidget)
         dockWidget->setObjectName(QStringLiteral("AntDockWidget_%1").arg(++m_autoObjectNameCounter));
     }
 
-    dockWidget->setAllowedAreas(Qt::AllDockWidgetAreas);
-    if (added)
-    {
-        dockWidget->setFeatures(dockWidget->features() |
-                                QDockWidget::DockWidgetMovable |
-                                QDockWidget::DockWidgetFloatable |
-                                QDockWidget::DockWidgetClosable);
-    }
-
     const auto& token = antTheme->tokens();
     QPalette pal = dockWidget->palette();
     pal.setColor(QPalette::Window, token.colorBgContainer);
@@ -3046,11 +3037,11 @@ void AntDockManager::floatDockWidget(AntDockWidget* dockWidget, const QRect& glo
     {
         return;
     }
-    const bool added = prepareDockWidget(dockWidget);
     if (!dockWidgetFeatureEnabled(dockWidget, QDockWidget::DockWidgetFloatable))
     {
         return;
     }
+    const bool added = prepareDockWidget(dockWidget);
 
     if (m_draggingDockTitle && m_draggedDock == dockWidget)
     {

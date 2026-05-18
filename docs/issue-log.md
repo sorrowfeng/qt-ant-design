@@ -140,6 +140,13 @@
 - **解决**：`floatDockWidget()` 现在先调用 `prepareDockWidget()`，对首次浮动的 dock 完成 manager 注册，并在成功浮动后发出 `dockWidgetAdded`，再发出 `dockWidgetFloated`。回归测试覆盖 detached dock 直接浮动后进入 `dockWidgets()` / `floatingDockWidgets()`，并可通过 `removeDockWidget()` 正常收起。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 18. AntDockManager 首次接管 Dock 时覆盖预配置 features
+
+- **现象**：调用方在 `addDockWidget()` 或首次 `setDockWidgetFloating()` 之前预先关闭 `DockWidgetFloatable` / `DockWidgetMovable` / `DockWidgetClosable`，manager 首次接管时仍会把这些 feature 全部重新打开；对未注册且不可浮动的 dock 调用浮动 API 时，还会出现半注册状态。
+- **根因**：`prepareDockWidget()` 在 `added` 分支里无条件 OR 三个默认 features；上一轮把首次浮动注册放进 `floatDockWidget()` 后，注册发生在 floatable 检查之前，导致不可浮动的 detached dock 也可能进入 manager 集合。
+- **解决**：首次接管 dock 时不再覆盖调用方已设置的 features；`floatDockWidget()` 先检查 `DockWidgetFloatable`，通过后才注册到 manager。回归测试覆盖预配置不可浮动/不可移动的 dock 加入后保持原 feature，以及未注册且不可浮动的 dock 调用浮动 API 不会注册或显示。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

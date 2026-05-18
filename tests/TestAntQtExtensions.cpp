@@ -1056,6 +1056,32 @@ void TestAntQtExtensions::dockManager()
     manager->setDockWidgetFloatable(preview, true);
     QCOMPARE(manager->isDockWidgetFloatable(preview), true);
 
+    auto* preconfiguredDock = new AntDockWidget(QStringLiteral("Preconfigured"));
+    preconfiguredDock->setWidget(new QWidget);
+    preconfiguredDock->setFeatures(QDockWidget::DockWidgetClosable);
+    manager->addDockWidget(Qt::BottomDockWidgetArea, preconfiguredDock);
+    QCOMPARE(manager->isDockWidgetClosable(preconfiguredDock), true);
+    QCOMPARE(manager->isDockWidgetFloatable(preconfiguredDock), false);
+    QCOMPARE(manager->isDockWidgetMovable(preconfiguredDock), false);
+    manager->setDockWidgetFloating(preconfiguredDock, true);
+    QVERIFY(!manager->isDockWidgetFloating(preconfiguredDock));
+    manager->removeDockWidget(preconfiguredDock);
+    delete preconfiguredDock;
+
+    auto* detachedLockedFloating = new AntDockWidget(QStringLiteral("Detached Locked Floating"));
+    detachedLockedFloating->setWidget(new QWidget);
+    detachedLockedFloating->setFeatures(detachedLockedFloating->features() & ~QDockWidget::DockWidgetFloatable);
+    const int addedBeforeLockedDetachedFloat = addedSpy.count();
+    const int floatedBeforeLockedDetachedFloat = floatedSpy.count();
+    manager->setDockWidgetFloating(detachedLockedFloating,
+                                   true,
+                                   QRect(manager->mapToGlobal(QPoint(96, 72)), QSize(240, 160)));
+    QCOMPARE(addedSpy.count(), addedBeforeLockedDetachedFloat);
+    QCOMPARE(floatedSpy.count(), floatedBeforeLockedDetachedFloat);
+    QVERIFY(!manager->dockWidgets().contains(detachedLockedFloating));
+    QVERIFY(!detachedLockedFloating->isVisible());
+    delete detachedLockedFloating;
+
     auto* detachedFloating = new AntDockWidget(QStringLiteral("Detached Floating"));
     detachedFloating->setWidget(new QWidget);
     const int addedBeforeDetachedFloat = addedSpy.count();
