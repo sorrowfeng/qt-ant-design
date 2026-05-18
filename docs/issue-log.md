@@ -168,6 +168,13 @@
 - **解决**：移除 Dock 时同步断开 dock 指向当前 manager 的连接；新增内部 `antDockFloatingOwnerApplyCount` 计数用于回归验证，确保移除后复用并浮动时 owner 设置次数不会因旧连接叠加而增长。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 22. DockArea 移除 Dock 后复用会叠加 tab 同步连接
+
+- **现象**：Dock 被从某个 tab area 移除后，如果同一个实例再添加回该 area，标题或图标变化会触发多条旧的 tab 文本/图标同步连接。
+- **根因**：`DockArea::addDock()` 为每个 Dock 建立 `windowTitleChanged` / `windowIconChanged` 到当前 area 的连接，但 `DockArea::removeDock()` 只移除 tab，没有断开 dock 到该 area 的连接。
+- **解决**：`DockArea::removeDock()` 现在同步断开 dock 指向该 area 的连接；新增内部 `antDockAreaTitleSyncCount` 回归计数，验证移除后复用同一 Dock 时标题同步只触发一次。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

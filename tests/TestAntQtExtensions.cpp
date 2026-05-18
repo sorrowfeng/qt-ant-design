@@ -1185,6 +1185,25 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(!readdedFloating->isVisible());
     delete readdedFloating;
 
+    auto* areaConnectionDock = new AntDockWidget(QStringLiteral("Area Connection"));
+    areaConnectionDock->setWidget(new QWidget);
+    manager->addDockWidget(areaConnectionDock, inspector, AntDockManager::DockPlacement::Center);
+    QTabWidget* areaConnectionTabArea = dockAreaForExtensionTest(areaConnectionDock);
+    QVERIFY(areaConnectionTabArea != nullptr);
+    manager->removeDockWidget(areaConnectionDock);
+    QVERIFY(!manager->dockWidgets().contains(areaConnectionDock));
+    manager->addDockWidget(areaConnectionDock, inspector, AntDockManager::DockPlacement::Center);
+    QCOMPARE(dockAreaForExtensionTest(areaConnectionDock), areaConnectionTabArea);
+    const int titleSyncBeforeReaddTitleChange =
+        areaConnectionDock->property("antDockAreaTitleSyncCount").toInt();
+    areaConnectionDock->setWindowTitle(QStringLiteral("Area Connection Updated"));
+    QCoreApplication::processEvents();
+    QCOMPARE(areaConnectionDock->property("antDockAreaTitleSyncCount").toInt() -
+                 titleSyncBeforeReaddTitleChange,
+             1);
+    manager->removeDockWidget(areaConnectionDock);
+    delete areaConnectionDock;
+
     QVERIFY(manager->isDockWidgetMovable(preview));
     manager->setDockWidgetMovable(preview, false);
     QCOMPARE(manager->isDockWidgetMovable(preview), false);

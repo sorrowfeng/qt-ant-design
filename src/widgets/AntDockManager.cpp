@@ -864,7 +864,12 @@ public:
         dockWidget->setVisible(true);
         connect(dockWidget, &QDockWidget::windowTitleChanged, this, [this, dockWidget](const QString& title) {
             const int tab = indexOf(dockWidget);
-            if (tab >= 0) setTabText(tab, title);
+            if (tab >= 0)
+            {
+                dockWidget->setProperty("antDockAreaTitleSyncCount",
+                                        dockWidget->property("antDockAreaTitleSyncCount").toInt() + 1);
+                setTabText(tab, title);
+            }
         });
         connect(dockWidget, &QDockWidget::windowIconChanged, this, [this, dockWidget](const QIcon& icon) {
             const int tab = indexOf(dockWidget);
@@ -877,6 +882,7 @@ public:
         const int index = indexOf(dockWidget);
         if (index < 0) return;
         removeTab(index);
+        disconnect(dockWidget, nullptr, this, nullptr);
         dockWidget->setProperty("antDockEmbeddedByManager", false);
         setEmbeddedDockTitleBarVisible(dockWidget, true);
         dockWidget->setParent(nullptr);
