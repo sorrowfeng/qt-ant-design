@@ -175,6 +175,13 @@
 - **解决**：`DockArea::removeDock()` 现在同步断开 dock 指向该 area 的连接；新增内部 `antDockAreaTitleSyncCount` 回归计数，验证移除后复用同一 Dock 时标题同步只触发一次。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 23. 非 closable 浮动 Dock 标题栏仍显示关闭按钮
+
+- **现象**：关闭 `DockWidgetClosable` 后，浮动窗口标题栏仍显示关闭按钮，点击后没有效果，容易被误认为窗口无响应。
+- **根因**：自绘标题栏只在按钮触发时检查 closable feature，没有把按钮可见性和 `featuresChanged` 同步到标题栏 chrome。
+- **解决**：标题栏 close 按钮现在跟随 `DockWidgetClosable` 隐藏/显示，并监听 `featuresChanged` 动态刷新；回归测试覆盖浮动 Dock 的 close 按钮在 manager API 切换 closable 时即时同步。
+- **改动文件**：`src/widgets/AntDockWidget.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

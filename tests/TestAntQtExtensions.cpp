@@ -1108,6 +1108,14 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(manager->dockWidgets().contains(lockedCloseFloating));
     QVERIFY(manager->isDockWidgetFloating(lockedCloseFloating));
     QTRY_VERIFY(lockedCloseFloating->isVisible());
+    QWidget* lockedCloseButton =
+        lockedCloseFloating->titleBarWidget()->findChild<QWidget*>(QStringLiteral("AntDockTitleCloseButton"));
+    QVERIFY(lockedCloseButton != nullptr);
+    QVERIFY(!lockedCloseButton->isVisible());
+    manager->setDockWidgetClosable(lockedCloseFloating, true);
+    QTRY_VERIFY(lockedCloseButton->isVisible());
+    manager->setDockWidgetClosable(lockedCloseFloating, false);
+    QTRY_VERIFY(!lockedCloseButton->isVisible());
     lockedCloseFloating->close();
     QCoreApplication::processEvents();
     QVERIFY(manager->dockWidgets().contains(lockedCloseFloating));
@@ -1210,7 +1218,7 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(!manager->moveDockWidgetTab(preview, 0));
     manager->setDockWidgetMovable(preview, true);
     QCOMPARE(manager->isDockWidgetMovable(preview), true);
-    QCOMPARE(featureSpy.count(), 6);
+    QCOMPARE(featureSpy.count(), 8);
 
     QVERIFY(manager->moveDockWidgetTab(preview, 0));
     QCOMPARE(manager->dockWidgetTabIndex(preview), 0);

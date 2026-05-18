@@ -635,6 +635,18 @@ public:
     DockTitleButton(Role role, AntDockWidget* dock, QWidget* parent = nullptr)
         : QWidget(parent), m_role(role), m_dock(dock)
     {
+        switch (m_role)
+        {
+        case Role::Minimize:
+            setObjectName(QStringLiteral("AntDockTitleMinimizeButton"));
+            break;
+        case Role::Maximize:
+            setObjectName(QStringLiteral("AntDockTitleMaximizeButton"));
+            break;
+        case Role::Close:
+            setObjectName(QStringLiteral("AntDockTitleCloseButton"));
+            break;
+        }
         setFixedSize(kFloatingTitleButtonWidth, kFloatingTitleBarHeight);
         setCursor(Qt::ArrowCursor);
         setAttribute(Qt::WA_Hover, true);
@@ -827,8 +839,11 @@ public:
     void updateChrome()
     {
         const bool floating = m_dock->isFloating();
+        const bool closable = m_dock->features().testFlag(QDockWidget::DockWidgetClosable);
         m_minimizeButton->setVisible(floating);
         m_maximizeButton->setVisible(floating);
+        m_closeButton->setVisible(closable);
+        m_closeButton->setEnabled(closable);
         m_closeButton->setFixedSize(floating ? QSize(kFloatingTitleButtonWidth, kFloatingTitleBarHeight)
                                              : QSize(26, kEmbeddedTitleBarHeight));
         setProperty("antDockTitleBarHeight", floating ? kFloatingTitleBarHeight : kEmbeddedTitleBarHeight);
@@ -978,6 +993,9 @@ void AntDockWidget::setupTitleBar()
     connect(this, &QDockWidget::windowTitleChanged, bar, &DockTitleBar::updateFromDock);
     connect(this, &QDockWidget::windowIconChanged, bar, [bar](const QIcon&) { bar->updateFromDock(); });
     connect(this, &QDockWidget::topLevelChanged, bar, [bar](bool) { bar->updateChrome(); });
+    connect(this, &QDockWidget::featuresChanged, bar, [bar](QDockWidget::DockWidgetFeatures) {
+        bar->updateChrome();
+    });
 }
 
 void AntDockWidget::setWidget(QWidget* widget)
@@ -1088,6 +1106,10 @@ void AntDockWidget::updateFloatingFrame()
     {
         m_floatingFrameActive = floating;
         updateGeometry();
+    }
+    if (auto* bar = dynamic_cast<DockTitleBar*>(titleBarWidget()))
+    {
+        bar->updateChrome();
     }
     update();
 }
