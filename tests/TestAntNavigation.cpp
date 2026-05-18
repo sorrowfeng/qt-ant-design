@@ -237,6 +237,19 @@ void TestAntNavigation::propertiesAndSignals()
     tabs->setActiveKey("tab2");
     QCOMPARE(tabs->activeKey(), "tab2");
     QCOMPARE(activeSpy.count(), 1);
+    QSignalSpy tabCurrentSpy(tabs, &AntTabs::currentChanged);
+    tabs->setTabEnabled("tab2", false);
+    QCOMPARE(tabs->activeKey(), "tab1");
+    QCOMPARE(activeSpy.count(), 2);
+    QCOMPARE(tabCurrentSpy.count(), 1);
+    QCOMPARE(tabCurrentSpy.takeFirst().at(0).toInt(), 0);
+    tabs->setActiveKey("tab2");
+    QCOMPARE(tabs->activeKey(), "tab1");
+    QCOMPARE(activeSpy.count(), 2);
+    tabs->setTabEnabled("tab2", true);
+    tabs->setActiveKey("tab2");
+    QCOMPARE(tabs->activeKey(), "tab2");
+    QCOMPARE(activeSpy.count(), 3);
 
     auto* lineTabs = new AntTabs;
     lineTabs->resize(320, 120);
@@ -248,6 +261,10 @@ void TestAntNavigation::propertiesAndSignals()
     lineTabs->setActiveKey("two");
     QVERIFY(lineTabs->indicatorRect().left() > firstIndicator.left());
     QCOMPARE(lineTabs->indicatorRect().height(), 2.0);
+    lineTabs->setActiveKey("one");
+    QCOMPARE(lineTabs->activeKey(), "one");
+    lineTabs->setTabEnabled("one", false);
+    QCOMPARE(lineTabs->activeKey(), "two");
 
     tabs->removeTab("tab1");
     tabs->clearTabs();

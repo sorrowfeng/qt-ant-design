@@ -346,11 +346,27 @@ void AntTabs::setTabText(const QString& key, const QString& label)
 void AntTabs::setTabEnabled(const QString& key, bool enabled)
 {
     const int index = indexOfKey(key);
-    if (index < 0)
+    if (index < 0 || m_tabs.at(index).disabled == !enabled)
     {
         return;
     }
+
+    const bool wasActive = m_activeKey == key;
     m_tabs[index].disabled = !enabled;
+
+    if (!enabled && wasActive)
+    {
+        const int fallback = fallbackEnabledIndex(index);
+        if (fallback >= 0)
+        {
+            setActiveIndex(fallback);
+        }
+    }
+    else if (enabled && m_activeKey.isEmpty())
+    {
+        setActiveIndex(index);
+    }
+
     syncIndicatorRect();
     update();
 }
@@ -517,6 +533,34 @@ int AntTabs::indexOfKey(const QString& key) const
 int AntTabs::activeIndex() const
 {
     return indexOfKey(m_activeKey);
+}
+
+int AntTabs::fallbackEnabledIndex(int fromIndex) const
+{
+    const int tabCount = static_cast<int>(m_tabs.size());
+    if (tabCount <= 0)
+    {
+        return -1;
+    }
+
+    const int start = qBound(0, fromIndex, tabCount - 1);
+    for (int i = start - 1; i >= 0; --i)
+    {
+        if (!m_tabs.at(i).disabled)
+        {
+            return i;
+        }
+    }
+
+    for (int i = start + 1; i < tabCount; ++i)
+    {
+        if (!m_tabs.at(i).disabled)
+        {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 QRect AntTabs::tabBarRect() const

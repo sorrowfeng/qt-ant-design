@@ -110,6 +110,7 @@ protected:
 private:
     int indexOfKey(const QString& key) const;
     int activeIndex() const;
+    int fallbackEnabledIndex(int fromIndex) const;
     QRect tabBarRect() const;
     QRect pageRect() const;
     QVector<QRect> tabRects() const;
