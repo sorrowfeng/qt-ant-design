@@ -80,6 +80,36 @@ QImage renderForExtensionTest(QWidget* widget)
     return image;
 }
 
+int primaryLikePixelCountForExtensionTest(const QImage& image, QRect sampleRect)
+{
+    if (image.isNull()) return 0;
+
+    sampleRect = sampleRect.intersected(image.rect());
+    int count = 0;
+    for (int y = sampleRect.top(); y <= sampleRect.bottom(); ++y)
+    {
+        for (int x = sampleRect.left(); x <= sampleRect.right(); ++x)
+        {
+            const QColor color = image.pixelColor(x, y);
+            const bool primaryStroke =
+                color.blue() >= 145 &&
+                color.blue() > color.red() + 24 &&
+                color.blue() > color.green() + 5;
+            const bool primarySoftFill =
+                color.blue() >= 230 &&
+                color.green() >= 210 &&
+                color.red() >= 180 &&
+                color.blue() > color.red() + 8 &&
+                color.blue() >= color.green();
+            if (color.alpha() >= 60 && (primaryStroke || primarySoftFill))
+            {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
 QWidget* topLevelWidgetForExtensionTest(const QString& objectName)
 {
     const auto widgets = QApplication::topLevelWidgets();
@@ -384,6 +414,20 @@ bool nativeMouseDragForExtensionTest(QWidget* focusWidget, const QPoint& startGl
     QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
     releaseTopMostForExtensionTest(focusWidget);
     return released;
+}
+
+bool nativeWindowPrecedesInZOrderForExtensionTest(HWND first, HWND second)
+{
+    if (!first || !second) return false;
+
+    first = ::GetAncestor(first, GA_ROOT);
+    second = ::GetAncestor(second, GA_ROOT);
+    for (HWND hwnd = ::GetTopWindow(nullptr); hwnd; hwnd = ::GetWindow(hwnd, GW_HWNDNEXT))
+    {
+        if (hwnd == first) return true;
+        if (hwnd == second) return false;
+    }
+    return false;
 }
 #endif
 } // namespace
@@ -1493,9 +1537,9 @@ void TestAntQtExtensions::dockManager()
                                       Qt::NoModifier);
     QCoreApplication::sendEvent(explorerTabBar, &moveToPropertiesEvent);
     QTRY_VERIFY(manager->isDropPreviewVisible());
-#if defined(Q_OS_WIN)
     QWidget* dragPreviewWindow = nullptr;
     QWidget* dropPreviewWindow = nullptr;
+#if defined(Q_OS_WIN)
     QTRY_VERIFY((dragPreviewWindow = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDragPreviewWindow"))) != nullptr);
     QTRY_VERIFY((dropPreviewWindow = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDropPreviewWindow"))) != nullptr);
     QVERIFY(dragPreviewWindow->testAttribute(Qt::WA_TransparentForMouseEvents));
@@ -1504,6 +1548,52 @@ void TestAntQtExtensions::dockManager()
     QTRY_COMPARE(dropPreviewWindow->property("antDockTransparentToolWindowClickThrough").toBool(), true);
 #endif
     QTRY_COMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::Center);
+    const QRect managerGlobalRect = QRect(manager->mapToGlobal(QPoint(0, 0)), manager->size());
+    QWidget* guideOverlay = manager->findChild<QWidget*>(QStringLiteral("AntDockGuideOverlay"));
+    QVERIFY(guideOverlay != nullptr);
+    QTRY_VERIFY(guideOverlay->isVisible());
+    QVERIFY(guideOverlay->isWindow());
+    QVERIFY(guideOverlay->testAttribute(Qt::WA_TransparentForMouseEvents));
+    QVERIFY(guideOverlay->windowFlags().testFlag(Qt::WindowStaysOnTopHint));
+    QCOMPARE(guideOverlay->geometry(), managerGlobalRect);
+#if defined(Q_OS_WIN)
+    QTRY_COMPARE(guideOverlay->property("antDockTransparentToolWindowClickThrough").toBool(), true);
+    const HWND guideHwnd = reinterpret_cast<HWND>(guideOverlay->winId());
+    const HWND dropPreviewHwnd = dropPreviewWindow ? reinterpret_cast<HWND>(dropPreviewWindow->winId()) : nullptr;
+    QVERIFY(guideHwnd != nullptr);
+    QVERIFY(dropPreviewHwnd != nullptr);
+    const LONG_PTR guideExStyle = ::GetWindowLongPtrW(guideHwnd, GWL_EXSTYLE);
+    QVERIFY((guideExStyle & WS_EX_TOPMOST) != 0);
+    QVERIFY((guideExStyle & WS_EX_TRANSPARENT) != 0);
+    QVERIFY2(nativeWindowPrecedesInZOrderForExtensionTest(guideHwnd, dropPreviewHwnd),
+             "Drop guide overlay HWND must stay above the drop preview HWND in the native Z-order.");
+#endif
+    const QPoint guideLocalCenter = guideOverlay->mapFromGlobal(propertiesCenterGlobal);
+    const QImage guideOverlayImage =
+        guideOverlay->grab().toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    const qreal guideScaleX = guideOverlay->width() > 0
+        ? static_cast<qreal>(guideOverlayImage.width()) / static_cast<qreal>(guideOverlay->width())
+        : 1.0;
+    const qreal guideScaleY = guideOverlay->height() > 0
+        ? static_cast<qreal>(guideOverlayImage.height()) / static_cast<qreal>(guideOverlay->height())
+        : 1.0;
+    const QRect guideSampleRect(qRound((guideLocalCenter.x() - 30) * guideScaleX),
+                                qRound((guideLocalCenter.y() - 30) * guideScaleY),
+                                qRound(60 * guideScaleX),
+                                qRound(60 * guideScaleY));
+    const int guidePrimaryPixels = primaryLikePixelCountForExtensionTest(guideOverlayImage, guideSampleRect);
+    const QByteArray guidePaintMessage =
+        QStringLiteral("Drop guide overlay must visibly paint the active center guide square; counted %1 primary pixels in (%2,%3 %4x%5) within image %6x%7.")
+            .arg(guidePrimaryPixels)
+            .arg(guideSampleRect.x())
+            .arg(guideSampleRect.y())
+            .arg(guideSampleRect.width())
+            .arg(guideSampleRect.height())
+            .arg(guideOverlayImage.width())
+            .arg(guideOverlayImage.height())
+            .toLocal8Bit();
+    QVERIFY2(guidePrimaryPixels > 24,
+             guidePaintMessage.constData());
     QVERIFY2(propertiesAreaRect.contains(manager->dropPreviewRect().center()),
              "Dock-area guide must follow the dock area under the cursor instead of staying at the container center.");
 
@@ -1519,7 +1609,6 @@ void TestAntQtExtensions::dockManager()
     QTRY_VERIFY(manager->isDropPreviewVisible());
     QTRY_COMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::Right);
     QVERIFY(!manager->dropPreviewRect().isEmpty());
-    const QRect managerGlobalRect = QRect(manager->mapToGlobal(QPoint(0, 0)), manager->size());
     QVERIFY2(manager->dropPreviewRect().left() >= managerGlobalRect.center().x(),
              "Right edge guide preview must target the right half of the dock container.");
     QMouseEvent releaseRightEvent(QEvent::MouseButtonRelease,

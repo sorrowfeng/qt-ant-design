@@ -217,6 +217,13 @@
 - **解决**：resize hit-test 扩展到窗口外侧的系统边框范围，同时继续覆盖内部边缘；回归测试补齐外侧四边和四角的命中结果。
 - **改动文件**：`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 29. DockWidget 拖动时 drop guides 不显示
+
+- **现象**：拖动 DockWidget 时布局预览还能出现，但中心/边缘的小方格引导层不可见。
+- **根因**：drop preview 是独立透明工具窗，层级高于 manager 内部 child overlay；在部分 Windows 组合路径下，child guide overlay 会被预览工具窗盖住或变得不可见。
+- **解决**：drop guide overlay 改为独立透明 top-level 工具窗，并在每次更新 drop preview 后重新 `raise()`，确保小方格在预览层之上；回归测试直接验证 overlay 可见、置顶、原生命中穿透，并通过渲染像素确认 active guide square 被实际绘制。
+- **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

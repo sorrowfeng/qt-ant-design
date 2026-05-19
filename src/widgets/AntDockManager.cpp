@@ -107,6 +107,31 @@ void makeTransparentToolWindowClickThrough(QWidget* widget)
     widget->setProperty(kTransparentToolWindowClickThroughProperty, true);
 }
 
+void raiseTransparentToolWindow(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    widget->raise();
+
+    const HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (!hwnd)
+    {
+        return;
+    }
+
+    makeTransparentToolWindowClickThrough(widget);
+    ::SetWindowPos(hwnd,
+                   HWND_TOPMOST,
+                   0,
+                   0,
+                   0,
+                   0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
+}
+
 bool handleTransparentToolWindowNativeEvent(QWidget* widget,
                                             const QByteArray& eventType,
                                             void* message,
@@ -921,11 +946,22 @@ private:
 
 public:
     explicit DockGuideOverlay(AntDockManager* manager)
-        : QWidget(manager), m_manager(manager)
+        : QWidget(manager,
+                  Qt::Tool |
+                  Qt::FramelessWindowHint |
+                  Qt::WindowStaysOnTopHint |
+                  Qt::NoDropShadowWindowHint),
+          m_manager(manager)
     {
+        setObjectName(QStringLiteral("AntDockGuideOverlay"));
+        setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_ShowWithoutActivating);
         setAttribute(Qt::WA_NoSystemBackground);
         setAutoFillBackground(false);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        setWindowFlag(Qt::WindowTransparentForInput, true);
+#endif
         hide();
     }
 
@@ -976,6 +1012,23 @@ public:
     }
 
 protected:
+#if defined(Q_OS_WIN)
+    void showEvent(QShowEvent* event) override
+    {
+        QWidget::showEvent(event);
+        makeTransparentToolWindowClickThrough(this);
+    }
+
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    {
+        if (handleTransparentToolWindowNativeEvent(this, eventType, message, result))
+        {
+            return true;
+        }
+        return QWidget::nativeEvent(eventType, message, result);
+    }
+#endif
+
     void paintEvent(QPaintEvent*) override
     {
         const auto& token = antTheme->tokens();
@@ -1597,7 +1650,6 @@ AntDockManager::AntDockManager(QWidget* parent)
     QMainWindow::setCentralWidget(m_workspace);
 
     m_dropGuideOverlay = new DockGuideOverlay(this);
-    m_dropGuideOverlay->setGeometry(rect());
     m_dragPreviewWindow = new DockDragPreviewWindow();
     m_dropPreviewWindow = new DockDropPreviewWindow(this);
 
@@ -2390,7 +2442,7 @@ void AntDockManager::resizeEvent(QResizeEvent* event)
     QMainWindow::resizeEvent(event);
     if (m_dropGuideOverlay)
     {
-        m_dropGuideOverlay->setGeometry(rect());
+        m_dropGuideOverlay->setGeometry(QRect(mapToGlobal(QPoint(0, 0)), size()));
     }
 }
 
@@ -3500,14 +3552,19 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
         containerGuideGlobalRect = QRect(mapToGlobal(rect().topLeft()), rect().size());
     }
 
+    const QRect managerGlobalRect(mapToGlobal(QPoint(0, 0)), size());
     if (m_dropGuideVisible)
     {
-        m_dropGuideOverlay->setGeometry(rect());
-        m_dropGuideOverlay->raise();
+        m_dropGuideOverlay->setGeometry(managerGlobalRect);
         if (!m_dropGuideOverlay->isVisible())
         {
             m_dropGuideOverlay->show();
         }
+#if defined(Q_OS_WIN)
+        raiseTransparentToolWindow(m_dropGuideOverlay);
+#else
+        m_dropGuideOverlay->raise();
+#endif
         m_dropGuideOverlay->updateFromGlobalPos(globalPos, areaGuideGlobalRect, containerGuideGlobalRect);
     }
     else
@@ -3522,7 +3579,16 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
         if (target.valid)
         {
             rememberDropTarget(target);
-            m_dropPreviewWindow->showTarget(target, QRect(mapToGlobal(rect().topLeft()), rect().size()));
+            m_dropPreviewWindow->showTarget(target, managerGlobalRect);
+            if (m_dropGuideVisible && m_dropGuideOverlay && m_dropGuideOverlay->isVisible())
+            {
+#if defined(Q_OS_WIN)
+                raiseTransparentToolWindow(m_dropGuideOverlay);
+#else
+                m_dropGuideOverlay->raise();
+#endif
+                m_dropGuideOverlay->update();
+            }
         }
         else
         {
