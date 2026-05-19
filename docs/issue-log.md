@@ -210,6 +210,13 @@
 - **解决**：`prepareDockWidget()` 监听 `featuresChanged` 后统一发出 `dockWidgetFeatureChanged`，`setDockWidgetFeatureEnabled()` 只负责更新 features，避免 manager API 路径重复发信号；回归测试覆盖直接 `setFeatures()` 清除/恢复 movable 的信号计数。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 28. AntWindow 外侧边缘无法触发缩放
+
+- **现象**：AntWindow 显示为无边框窗口后，从窗口外侧贴近边缘拖动时没有进入系统缩放，表现为窗口无法调整大小。
+- **根因**：`WM_NCHITTEST` 的 resize 判断只接受客户区内部坐标，Windows 在系统 resize frame 上发来的坐标可能落在 `-border` 到 `0` 或 `width/height` 外侧，旧逻辑会把这些位置返回为 `HTCLIENT`。
+- **解决**：resize hit-test 扩展到窗口外侧的系统边框范围，同时继续覆盖内部边缘；回归测试补齐外侧四边和四角的命中结果。
+- **改动文件**：`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

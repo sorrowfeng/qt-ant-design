@@ -2689,6 +2689,13 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
         }
         return result;
     };
+    auto systemHitTest = [&](const QPoint& localPos) -> qintptr {
+        const QPoint globalPos = nativeGlobalPoint(localPos);
+        return ::SendMessageW(hwnd,
+                              WM_NCHITTEST,
+                              0,
+                              MAKELPARAM(globalPos.x(), globalPos.y()));
+    };
 
     QCOMPARE(hitTest(QPoint(2, 2)), static_cast<qintptr>(HTTOPLEFT));
     QCOMPARE(hitTest(QPoint(window.width() - 3, 2)), static_cast<qintptr>(HTTOPRIGHT));
@@ -2698,6 +2705,19 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     QCOMPARE(hitTest(QPoint(window.width() - 3, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTRIGHT));
     QCOMPARE(hitTest(QPoint(80, 2)), static_cast<qintptr>(HTTOP));
     QCOMPARE(hitTest(QPoint(80, window.height() - 3)), static_cast<qintptr>(HTBOTTOM));
+    QCOMPARE(hitTest(QPoint(-2, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() + 2, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTRIGHT));
+    QCOMPARE(hitTest(QPoint(80, -2)), static_cast<qintptr>(HTTOP));
+    QCOMPARE(hitTest(QPoint(80, window.height() + 2)), static_cast<qintptr>(HTBOTTOM));
+    QCOMPARE(hitTest(QPoint(-2, -2)), static_cast<qintptr>(HTTOPLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() + 2, -2)), static_cast<qintptr>(HTTOPRIGHT));
+    QCOMPARE(hitTest(QPoint(-2, window.height() + 2)), static_cast<qintptr>(HTBOTTOMLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() + 2, window.height() + 2)), static_cast<qintptr>(HTBOTTOMRIGHT));
+    QCOMPARE(systemHitTest(QPoint(-2, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTLEFT));
+    QCOMPARE(systemHitTest(QPoint(window.width() + 2, AntWindow::TitleBarHeight + 30)),
+             static_cast<qintptr>(HTRIGHT));
+    QCOMPARE(systemHitTest(QPoint(80, -2)), static_cast<qintptr>(HTTOP));
+    QCOMPARE(systemHitTest(QPoint(80, window.height() + 2)), static_cast<qintptr>(HTBOTTOM));
     QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<qintptr>(HTCAPTION));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Pin).center()), static_cast<qintptr>(HTCLIENT));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center()), static_cast<qintptr>(HTCLIENT));

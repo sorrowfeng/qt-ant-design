@@ -1560,10 +1560,20 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
                     qMax(8, qRound(static_cast<qreal>(resizeBorderMetric(hwnd, SM_CXSIZEFRAME, SM_CXPADDEDBORDER)) / dpr));
                 const int borderHeight =
                     qMax(8, qRound(static_cast<qreal>(resizeBorderMetric(hwnd, SM_CYSIZEFRAME, SM_CXPADDEDBORDER)) / dpr));
-                const bool left = widgetPos.x() >= 0 && widgetPos.x() < borderWidth;
-                const bool right = widgetPos.x() < clientWidth && widgetPos.x() >= clientWidth - borderWidth;
-                const bool top = widgetPos.y() >= 0 && widgetPos.y() < borderHeight;
-                const bool bottom = widgetPos.y() < clientHeight && widgetPos.y() >= clientHeight - borderHeight;
+                const bool inHorizontalResizeBand =
+                    widgetPos.x() >= -borderWidth && widgetPos.x() < clientWidth + borderWidth;
+                const bool inVerticalResizeBand =
+                    widgetPos.y() >= -borderHeight && widgetPos.y() < clientHeight + borderHeight;
+                const bool left = inVerticalResizeBand &&
+                                  widgetPos.x() >= -borderWidth && widgetPos.x() < borderWidth;
+                const bool right = inVerticalResizeBand &&
+                                   widgetPos.x() < clientWidth + borderWidth &&
+                                   widgetPos.x() >= clientWidth - borderWidth;
+                const bool top = inHorizontalResizeBand &&
+                                 widgetPos.y() >= -borderHeight && widgetPos.y() < borderHeight;
+                const bool bottom = inHorizontalResizeBand &&
+                                    widgetPos.y() < clientHeight + borderHeight &&
+                                    widgetPos.y() >= clientHeight - borderHeight;
 
                 if (left && top)
                 {
