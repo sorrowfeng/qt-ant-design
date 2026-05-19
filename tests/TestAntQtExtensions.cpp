@@ -84,6 +84,24 @@ QImage renderForExtensionTest(QWidget* widget)
     return image;
 }
 
+int countNearColorForExtensionTest(const QImage& image, const QColor& expected, int tolerance = 18)
+{
+    if (image.isNull()) return 0;
+
+    int count = 0;
+    for (int y = 0; y < image.height(); ++y)
+    {
+        for (int x = 0; x < image.width(); ++x)
+        {
+            if (colorNearForExtensionTest(image.pixelColor(x, y), expected, tolerance))
+            {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
 class PaintProbeWidget : public QWidget
 {
 public:
@@ -2291,8 +2309,38 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(explorer->property("antDockFloatingOwnedByManager").toBool(), false);
 
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
-    QCOMPARE(manager->palette().color(QPalette::Window), antTheme->tokens().colorBgLayout);
-    QCOMPARE(explorer->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+    const auto& darkToken = antTheme->tokens();
+    QCOMPARE(manager->palette().color(QPalette::Window), darkToken.colorBgLayout);
+    QCOMPARE(explorer->palette().color(QPalette::Window), darkToken.colorBgContainer);
+    QCOMPARE(explorer->widget()->palette().color(QPalette::Window), darkToken.colorBgContainer);
+    QCOMPARE(explorer->widget()->autoFillBackground(), true);
+    if (QTabWidget* explorerArea = dockAreaForExtensionTest(explorer))
+    {
+        QCOMPARE(explorerArea->palette().color(QPalette::Window), darkToken.colorBgContainer);
+        QCOMPARE(explorerArea->property("antDockAreaDarkSurfaceApplied").toBool(), true);
+        if (QTabBar* tabBar = explorerArea->tabBar())
+        {
+            QCOMPARE(tabBar->palette().color(QPalette::Button), darkToken.colorBgElevated);
+            QVERIFY(!tabBar->styleSheet().contains(QStringLiteral("#ffffff")));
+        }
+    }
+    const QImage darkDockImage = renderForExtensionTest(manager);
+    const QImage darkDockBodyImage = darkDockImage.copy(QRect(0,
+                                                              qMin(72, darkDockImage.height()),
+                                                              darkDockImage.width(),
+                                                              qMax(0, darkDockImage.height() - 72)));
+    const int darkContainerPixels = countNearColorForExtensionTest(darkDockImage, darkToken.colorBgContainer, 18);
+    const int darkElevatedPixels = countNearColorForExtensionTest(darkDockImage, darkToken.colorBgElevated, 18);
+    const int staleLightPixels = countNearColorForExtensionTest(darkDockBodyImage, QColor(QStringLiteral("#f5f5f5")), 8);
+    QVERIFY2(darkContainerPixels > 12000,
+             qPrintable(QStringLiteral("Dark DockWidget should render a visible container pane surface, counted %1 pixels.")
+                            .arg(darkContainerPixels)));
+    QVERIFY2(darkElevatedPixels > 1200,
+             qPrintable(QStringLiteral("Dark DockWidget should render elevated inactive tab surfaces, counted %1 pixels.")
+                            .arg(darkElevatedPixels)));
+    QVERIFY2(staleLightPixels < 800,
+             qPrintable(QStringLiteral("Dark DockWidget should not keep stale light layout background pixels, counted %1 pixels.")
+                            .arg(staleLightPixels)));
 
     QSignalSpy removedSpy(manager, &AntDockManager::dockWidgetRemoved);
     manager->removeDockWidget(preview);

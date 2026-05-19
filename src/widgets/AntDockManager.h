@@ -15,6 +15,7 @@
 class AntDockWidget;
 class QEvent;
 class QGraphicsOpacityEffect;
+class QPaintEvent;
 class QResizeEvent;
 class QWidget;
 
@@ -112,6 +113,7 @@ Q_SIGNALS:
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
+    void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
 private:

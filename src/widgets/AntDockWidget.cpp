@@ -1038,8 +1038,12 @@ void AntDockWidget::updateTheme()
     QPalette pal = palette();
     pal.setColor(QPalette::Window, token.colorBgContainer);
     pal.setColor(QPalette::Base, token.colorBgContainer);
+    pal.setColor(QPalette::AlternateBase, token.colorFillQuaternary);
+    pal.setColor(QPalette::Button, token.colorBgContainer);
     pal.setColor(QPalette::WindowText, token.colorText);
     pal.setColor(QPalette::Text, token.colorText);
+    pal.setColor(QPalette::ButtonText, token.colorText);
+    pal.setColor(QPalette::PlaceholderText, token.colorTextTertiary);
     setPalette(pal);
 
     if (QWidget* content = widget())
@@ -1047,10 +1051,16 @@ void AntDockWidget::updateTheme()
         QPalette contentPalette = content->palette();
         contentPalette.setColor(QPalette::Window, token.colorBgContainer);
         contentPalette.setColor(QPalette::Base, token.colorBgContainer);
+        contentPalette.setColor(QPalette::AlternateBase, token.colorFillQuaternary);
+        contentPalette.setColor(QPalette::Button, token.colorBgContainer);
         contentPalette.setColor(QPalette::WindowText, token.colorText);
         contentPalette.setColor(QPalette::Text, token.colorText);
+        contentPalette.setColor(QPalette::ButtonText, token.colorText);
+        contentPalette.setColor(QPalette::PlaceholderText, token.colorTextTertiary);
         content->setPalette(contentPalette);
+        content->setAutoFillBackground(true);
     }
+    setProperty("antDockDarkSurfaceApplied", antTheme->themeMode() == Ant::ThemeMode::Dark);
 }
 
 void AntDockWidget::updateFloatingFrame()
@@ -1137,6 +1147,13 @@ void AntDockWidget::paintEvent(QPaintEvent* event)
 {
     if (!isFloating())
     {
+        if (property("antDockEmbeddedByManager").toBool())
+        {
+            Q_UNUSED(event)
+            QPainter painter(this);
+            painter.fillRect(rect(), antTheme->tokens().colorBgContainer);
+            return;
+        }
         QDockWidget::paintEvent(event);
         return;
     }
@@ -1153,9 +1170,10 @@ void AntDockWidget::paintEvent(QPaintEvent* event)
 
     const int cornerRadius = floatingCornerRadius();
     const auto& token = antTheme->tokens();
+    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
     QColor fill = token.colorBgElevated;
-    QColor border = token.colorBorderSecondary;
-    border.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.54 : 0.72);
+    QColor border = dark ? token.colorBorder : token.colorBorderSecondary;
+    border.setAlphaF(dark ? 0.82 : 0.72);
 
     const bool liveResize = property(kDockLegacyLiveResizeProperty).toBool();
     if (liveResize)

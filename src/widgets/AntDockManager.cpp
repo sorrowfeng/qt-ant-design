@@ -15,6 +15,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPaintEvent>
 #include <QPainterPath>
 #include <QPalette>
 #include <QPixmap>
@@ -806,6 +807,7 @@ public:
     explicit DockArea(AntDockManager* manager)
         : QTabWidget(manager), m_manager(manager)
     {
+        setAutoFillBackground(true);
         setDocumentMode(true);
         setMovable(false);
         setTabsClosable(false);
@@ -817,6 +819,26 @@ public:
             tabBar()->setDrawBase(false);
             tabBar()->setExpanding(false);
         }
+    }
+
+    void updateTheme()
+    {
+        const auto& token = antTheme->tokens();
+        QPalette pal = palette();
+        pal.setColor(QPalette::Window, token.colorBgContainer);
+        pal.setColor(QPalette::Base, token.colorBgContainer);
+        pal.setColor(QPalette::AlternateBase, token.colorFillQuaternary);
+        pal.setColor(QPalette::Button, token.colorBgElevated);
+        pal.setColor(QPalette::WindowText, token.colorText);
+        pal.setColor(QPalette::Text, token.colorText);
+        pal.setColor(QPalette::ButtonText, token.colorText);
+        setPalette(pal);
+        if (tabBar())
+        {
+            tabBar()->setPalette(pal);
+        }
+        setProperty("antDockAreaDarkSurfaceApplied", antTheme->themeMode() == Ant::ThemeMode::Dark);
+        update();
     }
 
     bool containsDock(AntDockWidget* dockWidget) const
@@ -925,9 +947,14 @@ protected:
     void paintEvent(QPaintEvent* event) override
     {
         QTabWidget::paintEvent(event);
+        const auto& token = antTheme->tokens();
+        QPainter edgePainter(this);
+        edgePainter.setRenderHint(QPainter::Antialiasing, false);
+        edgePainter.setPen(QPen(token.colorBorderSecondary, 1));
+        edgePainter.setBrush(Qt::NoBrush);
+        edgePainter.drawRect(rect().adjusted(0, 0, -1, -1));
         if (count() > 0) return;
 
-        const auto& token = antTheme->tokens();
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
         QColor border = token.colorBorderSecondary;
@@ -1672,6 +1699,8 @@ private:
 AntDockManager::AntDockManager(QWidget* parent)
     : QMainWindow(parent)
 {
+    setAutoFillBackground(true);
+    setAttribute(Qt::WA_StyledBackground, true);
     setAnimated(false);
     setDockNestingEnabled(false);
     setDockOptions(QMainWindow::AllowNestedDocks |
@@ -2549,6 +2578,20 @@ void AntDockManager::resizeEvent(QResizeEvent* event)
     }
 }
 
+void AntDockManager::paintEvent(QPaintEvent* event)
+{
+    const QColor bg = antTheme->tokens().colorBgLayout;
+    QPainter painter(this);
+    painter.fillRect(event ? event->rect() : rect(), bg);
+    painter.end();
+    QMainWindow::paintEvent(event);
+    QPainter edgePainter(this);
+    edgePainter.fillRect(QRect(0, 0, width(), 1), bg);
+    edgePainter.fillRect(QRect(0, qMax(0, height() - 1), width(), 1), bg);
+    edgePainter.fillRect(QRect(0, 0, 1, height()), bg);
+    edgePainter.fillRect(QRect(qMax(0, width() - 1), 0, 1, height()), bg);
+}
+
 bool AntDockManager::prepareDockWidget(AntDockWidget* dockWidget)
 {
     if (!dockWidget) return false;
@@ -2632,6 +2675,7 @@ AntDockManager::DockArea* AntDockManager::createDockArea()
 {
     auto* area = new DockArea(this);
     area->setObjectName(QStringLiteral("AntDockArea"));
+    area->updateTheme();
     if (area->tabBar())
     {
         area->tabBar()->installEventFilter(this);
@@ -3984,11 +4028,15 @@ QString AntDockManager::dropTargetLabel(AntDockWidget* dockWidget, DockPlacement
 void AntDockManager::updateTheme()
 {
     const auto& token = antTheme->tokens();
+    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
     QPalette pal = palette();
     pal.setColor(QPalette::Window, token.colorBgLayout);
     pal.setColor(QPalette::Base, token.colorBgLayout);
+    pal.setColor(QPalette::AlternateBase, token.colorFillQuaternary);
+    pal.setColor(QPalette::Button, token.colorBgElevated);
     pal.setColor(QPalette::WindowText, token.colorText);
     pal.setColor(QPalette::Text, token.colorText);
+    pal.setColor(QPalette::ButtonText, token.colorText);
     setPalette(pal);
 
     if (m_workspace)
@@ -4000,29 +4048,54 @@ void AntDockManager::updateTheme()
         "QMainWindow { background: %1; }"
         "QMainWindow::separator { background: %2; width: 4px; height: 4px; }"
         "QMainWindow::separator:hover { background: %3; }"
-        "AntDockManager QTabWidget::pane { border: 1px solid %2; top: -1px; }"
+        "AntDockManager QSplitter::handle { background: %1; }"
+        "AntDockManager QSplitter::handle:hover { background: %8; }"
+        "AntDockManager QTabWidget { background: %1; }"
+        "AntDockManager QTabWidget::pane {"
+        "  background: %6;"
+        "  border: 1px solid %2;"
+        "  top: -1px;"
+        "}"
+        "AntDockManager QTabBar { background: %1; }"
         "AntDockManager QTabBar::tab {"
         "  background: %4;"
         "  color: %5;"
         "  border: 1px solid %2;"
         "  border-bottom: none;"
-        "  padding: 6px 12px;"
+        "  border-top-left-radius: 6px;"
+        "  border-top-right-radius: 6px;"
+        "  margin-right: 2px;"
+        "  padding: 6px 14px;"
         "  min-height: 24px;"
         "}"
+        "AntDockManager QTabBar::tab:first { margin-left: 0px; }"
         "AntDockManager QTabBar::tab:selected {"
         "  background: %6;"
         "  color: %7;"
+        "  border-color: %2;"
         "  border-top: 2px solid %3;"
+        "  border-bottom: 1px solid %6;"
         "}"
-        "AntDockManager QTabBar::tab:!selected:hover { background: %8; }")
+        "AntDockManager QTabBar::tab:!selected:hover {"
+        "  background: %8;"
+        "  color: %7;"
+        "}"
+        "AntDockManager QTabBar QToolButton {"
+        "  background: %4;"
+        "  color: %7;"
+        "  border: 1px solid %2;"
+        "  border-radius: 4px;"
+        "  margin: 2px;"
+        "}"
+        "AntDockManager QTabBar QToolButton:hover { background: %8; }")
         .arg(cssColor(token.colorBgLayout),
-             cssColor(token.colorSplit),
+             cssColor(dark ? token.colorBorderSecondary : token.colorSplit),
              cssColor(token.colorPrimary),
-             cssColor(token.colorBgElevated),
+             cssColor(dark ? token.colorBgElevated : token.colorBgContainer),
              cssColor(token.colorTextSecondary),
              cssColor(token.colorBgContainer),
              cssColor(token.colorText),
-             cssColor(token.colorFillQuaternary));
+             cssColor(dark ? token.colorFillTertiary : token.colorFillQuaternary));
     if (m_appliedDockStyleSheet != style)
     {
         setStyleSheet(style);
@@ -4037,6 +4110,14 @@ void AntDockManager::updateTheme()
         tabBar->setDocumentMode(true);
         tabBar->setDrawBase(false);
         tabBar->setExpanding(false);
+    }
+    const auto tabWidgets = findChildren<QTabWidget*>();
+    for (QTabWidget* tabWidget : tabWidgets)
+    {
+        if (auto* area = dynamic_cast<DockArea*>(tabWidget))
+        {
+            area->updateTheme();
+        }
     }
 
     for (AntDockWidget* dock : dockWidgets())

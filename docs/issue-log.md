@@ -276,6 +276,13 @@
 - **解决**：`normalizeEmbeddedDockNativeWindow()` 改为纯 backing-store 收敛路径：回嵌 dock 设置回普通 Qt child widget，不再调用 `parentWidget->winId()`，也不再保留或重设 embedded child HWND；如果仍发现残留 native handle，会隐藏并销毁。drop guide 和 drop preview 改成 `AntDockManager` 内部普通 child overlay，只通过 `raise()` 保持层级，不再创建 Win10 透明 top-level HWND；拖动结束时临时透明窗口也会隐藏并销毁 native handle。回归测试强制 AntWindow legacy frame policy，验证回嵌后的 dock、guide 和 preview 都没有残留 native handle，并在同一窗口内用可绘制探针控件触发 `update()`，从窗口截图采样确认新颜色已经真实刷新。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 37. AntDockWidget 暗色模式层级和背景异常
+
+- **现象**：暗色模式下 `AntDockWidget` 页面容易出现浅色条带、边缘浅线和 tab/pane 层级不清晰，内容区域也可能露出系统浅色背景。
+- **根因**：嵌入态 dock 仍调用 `QDockWidget::paintEvent()`，Qt 原生 dock frame 会在隐藏标题栏后继续绘制一段系统浅色标题/框架区域；`DockArea` 只依赖全局样式表，缺少自己的暗色 palette 和边缘补绘；普通 QWidget dock 内容没有强制使用 token 背景填充。
+- **解决**：`AntDockWidget` 在 manager 嵌入态改为自绘 token 容器背景，不再走原生 dock paint；dock 内容 QWidget 同步 `Window/Base/Button/Text/Placeholder` palette 并启用 `autoFillBackground`。`AntDockManager::DockArea` 增加暗色 palette、外框补绘、tab/pane/splitter token 化样式和 manager 自身背景填充，selected tab 与 pane 连成一体，inactive tab 使用 elevated/fill 层级。回归测试切换 dark 后检查 dock/content/area palette，并渲染 manager 截图确认 container/elevated 暗色 surface 可见且主体区域没有 stale light layout pixels。
+- **改动文件**：`src/widgets/AntDockManager.h`、`src/widgets/AntDockManager.cpp`、`src/widgets/AntDockWidget.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
