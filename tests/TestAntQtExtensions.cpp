@@ -1186,6 +1186,9 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(manager->dropPreviewRect().isEmpty());
 
     auto* explorer = new AntDockWidget(QStringLiteral("Explorer"));
+#if defined(Q_OS_WIN)
+    explorer->setProperty("antDockForceLegacyFramePolicy", true);
+#endif
     explorer->setWidget(new QWidget);
     auto* inspector = new AntDockWidget(QStringLiteral("Inspector"));
     inspector->setWidget(new QWidget);
@@ -1926,6 +1929,7 @@ void TestAntQtExtensions::dockManager()
 #if defined(Q_OS_WIN)
     QTRY_VERIFY(explorer->property("antDockNativeWindowFrameEnabled").toBool());
     QVERIFY(explorer->property("antDockDwmFrameApplyCount").toInt() > 0);
+    QCOMPARE(explorer->property("antDockUsesNativeCaptionFrame").toBool(), false);
     QCOMPARE(explorer->property("antDockFloatingNativeOwnedByManager").toBool(), true);
 #endif
     QVERIFY(dockAreaForExtensionTest(explorer) == nullptr);
@@ -2006,6 +2010,35 @@ void TestAntQtExtensions::dockManager()
         QVERIFY(shadow->testAttribute(Qt::WA_TransparentForMouseEvents));
         QTRY_COMPARE(shadow->property("antDockLegacySoftwareShadowClickThrough").toBool(), true);
         QTRY_COMPARE(shadow->property("antDockLegacySoftwareShadowRingRegion").toBool(), true);
+        const int dockShadowMargin = shadow->property("shadowMargin").toInt();
+        const QMargins dockShadowMargins(dockShadowMargin,
+                                         dockShadowMargin,
+                                         dockShadowMargin,
+                                         dockShadowMargin);
+        const QRect expectedDockShadowGeometry = explorer->geometry().adjusted(-dockShadowMargin,
+                                                                               -dockShadowMargin,
+                                                                               dockShadowMargin,
+                                                                               dockShadowMargin);
+        QTRY_COMPARE(explorer->property("antDockLegacySoftwareShadowGeometry").toRect(),
+                     expectedDockShadowGeometry);
+        QCOMPARE(explorer->property("antDockLegacySoftwareShadowGeometryMode").toString(),
+                 QStringLiteral("qt-logical"));
+        QCOMPARE(shadow->property("antDockLegacySoftwareShadowGeometryMode").toString(),
+                 QStringLiteral("qt-logical"));
+        QCOMPARE(shadow->property("antDockLegacySoftwareShadowGeometry").toRect().marginsRemoved(dockShadowMargins),
+                 explorer->geometry());
+        QTRY_COMPARE(shadow->geometry(), expectedDockShadowGeometry);
+        QVERIFY(shadow->property("antDockLegacySoftwareShadowDevicePixelRatio").toReal() >= 1.0);
+
+        const HWND shadowHwnd = reinterpret_cast<HWND>(shadow->winId());
+        QVERIFY(shadowHwnd != nullptr);
+        RECT nativeShadowRect{};
+        QVERIFY(::GetWindowRect(shadowHwnd, &nativeShadowRect));
+        const qreal shadowDpr = qMax<qreal>(1.0, shadow->devicePixelRatioF());
+        const int nativeShadowWidth = nativeShadowRect.right - nativeShadowRect.left;
+        const int nativeShadowHeight = nativeShadowRect.bottom - nativeShadowRect.top;
+        QVERIFY(qAbs(nativeShadowWidth - qRound(expectedDockShadowGeometry.width() * shadowDpr)) <= 2);
+        QVERIFY(qAbs(nativeShadowHeight - qRound(expectedDockShadowGeometry.height() * shadowDpr)) <= 2);
     }
     if (!explorer->property("antDockUsesNativeCaptionFrame").toBool())
     {

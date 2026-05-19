@@ -294,6 +294,17 @@
   4. 增加 `antWindowLegacySoftwareShadowGeometryMode` / DPR 诊断属性和回归测试，验证 Qt 逻辑几何、native HWND 物理尺寸和 live-move 跟随行为
 - **改动文件**：`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 39. AntDockWidget 浮动窗口在 Win10 缩放比例下软件阴影异常
+
+- **现象**：`AntDockWidget` 浮动为独立窗口后，在 Windows 10 legacy frame 路径和 125% / 150% 等系统缩放下，软件阴影可能与浮窗轮廓错位或尺寸不一致。
+- **根因**：`AntDockWidget::updateLegacySoftwareShadow()` 与旧的 `AntWindow` 路径一样，先用 Qt `setGeometry()` 设置阴影窗口，再把同一个逻辑像素 `QRect` 传给 Win32 `SetWindowPos()`。`SetWindowPos()` 在 per-monitor DPI aware 进程中按物理像素解释坐标和尺寸，导致阴影 HWND 在非 100% 缩放时被错误定位 / 缩放。浮窗阴影还有一个 native ring region，虽然它已经基于 `GetWindowRect()` 反推 DPR，但后续错误的 `SetWindowPos()` 会让 region 和最终窗口尺寸再次不一致。
+- **解决**：
+  1. 浮窗阴影的 move/size 只通过 Qt `setGeometry()` 完成，由 Qt 按当前屏幕 DPR 转换 native 几何
+  2. `SetWindowPos()` 只带 `SWP_NOMOVE | SWP_NOSIZE`，仅维护阴影位于浮窗 owner 后方的 z-order / show 状态
+  3. 在 `ScreenChangeInternal` / `DevicePixelRatioChange` / `WM_DPICHANGED` 时同步阴影 `QWindow::screen()`，再刷新 native frame 和阴影几何
+  4. 增加 `antDockForceLegacyFramePolicy` 内部诊断属性，让当前系统也能强制覆盖 Win10 legacy shadow 路径；回归测试验证 Qt 逻辑几何、native HWND 物理尺寸和 ring region 状态
+- **改动文件**：`src/widgets/AntDockWidget.h`、`src/widgets/AntDockWidget.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 缩小尺寸时偶尔仍有闪动

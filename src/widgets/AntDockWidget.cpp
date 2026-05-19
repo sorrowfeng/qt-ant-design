@@ -14,6 +14,7 @@
 #include <QPointer>
 #include <QRegion>
 #include <QResizeEvent>
+#include <QScreen>
 #include <QShowEvent>
 #include <QSvgRenderer>
 #include <QTimer>
@@ -48,7 +49,11 @@ constexpr auto kDockLegacyShadowEnabledProperty = "antDockLegacySoftwareShadowEn
 constexpr auto kDockLegacyShadowClickThroughProperty = "antDockLegacySoftwareShadowClickThrough";
 constexpr auto kDockLegacyShadowObjectName = "AntDockLegacySoftwareShadow";
 constexpr auto kDockLegacyShadowRingRegionProperty = "antDockLegacySoftwareShadowRingRegion";
+constexpr auto kDockLegacyShadowGeometryProperty = "antDockLegacySoftwareShadowGeometry";
+constexpr auto kDockLegacyShadowGeometryModeProperty = "antDockLegacySoftwareShadowGeometryMode";
+constexpr auto kDockLegacyShadowDprProperty = "antDockLegacySoftwareShadowDevicePixelRatio";
 constexpr auto kDockDwmFrameRefreshQueuedProperty = "antDockDwmFrameRefreshQueued";
+constexpr auto kDockForceLegacyFramePolicyProperty = "antDockForceLegacyFramePolicy";
 #endif
 
 QRectF centeredIconRect(const QRect& buttonRect, qreal iconSize = 14.0)
@@ -429,10 +434,11 @@ int windowsBuildNumber()
     return buildNumber;
 }
 
-bool supportsNativeCaptionFrame()
+bool supportsNativeCaptionFrame(const QWidget* widget = nullptr)
 {
     constexpr int kWindows11Build = 22000;
-    return windowsBuildNumber() >= kWindows11Build;
+    const bool forceLegacyFrame = widget && widget->property(kDockForceLegacyFramePolicyProperty).toBool();
+    return windowsBuildNumber() >= kWindows11Build && !forceLegacyFrame;
 }
 
 DwmMargins shadowPreservingDwmMargins(bool useNativeCaption)
@@ -1143,6 +1149,30 @@ int AntDockWidget::floatingCornerRadius() const
     return isMaximized() ? 0 : kFloatingCornerRadius;
 }
 
+bool AntDockWidget::event(QEvent* event)
+{
+#if defined(Q_OS_WIN)
+    if (isFloating() &&
+        (event->type() == QEvent::ScreenChangeInternal || event->type() == QEvent::DevicePixelRatioChange))
+    {
+        if (QWindow* shadowWindow = m_legacySoftwareShadow ? m_legacySoftwareShadow->windowHandle() : nullptr)
+        {
+            if (QScreen* hostScreen = windowHandle() ? windowHandle()->screen() : nullptr)
+            {
+                if (shadowWindow->screen() != hostScreen)
+                {
+                    shadowWindow->setScreen(hostScreen);
+                }
+            }
+        }
+        applyNativeWindowFrame();
+        updateLegacySoftwareShadow();
+        update();
+    }
+#endif
+    return QDockWidget::event(event);
+}
+
 void AntDockWidget::paintEvent(QPaintEvent* event)
 {
     if (!isFloating())
@@ -1226,7 +1256,7 @@ void AntDockWidget::resizeEvent(QResizeEvent* event)
     if (isFloating())
     {
 #if defined(Q_OS_WIN)
-        if (m_legacyLiveResize && !supportsNativeCaptionFrame())
+        if (m_legacyLiveResize && !supportsNativeCaptionFrame(this))
         {
             // Drop the rounded mask entirely while the user is dragging an
             // edge — keeping a mask in sync with WM_SIZE is the principal
@@ -1245,7 +1275,7 @@ void AntDockWidget::resizeEvent(QResizeEvent* event)
         {
             applyNativeWindowFrame();
             updateLegacySoftwareShadow();
-            if (!supportsNativeCaptionFrame() &&
+            if (!supportsNativeCaptionFrame(this) &&
                 (event->size().width() > event->oldSize().width() ||
                  event->size().height() > event->oldSize().height()))
             {
@@ -1287,7 +1317,7 @@ void AntDockWidget::changeEvent(QEvent* event)
         {
             applyNativeWindowFrame();
             updateLegacySoftwareShadow();
-            if (!supportsNativeCaptionFrame())
+            if (!supportsNativeCaptionFrame(this))
             {
                 refreshFloatingDockWindow(this, isMaximized() ? "legacy-maximized" : "legacy-state");
             }
@@ -1314,7 +1344,7 @@ void AntDockWidget::applyNativeWindowFrame()
         return;
     }
 
-    const bool useNativeCaption = supportsNativeCaptionFrame();
+    const bool useNativeCaption = supportsNativeCaptionFrame(this);
     ensureNativeWindowStyle(hwnd, useNativeCaption);
     applyLegacyClassDropShadow(this, hwnd, useNativeCaption);
     if (m_legacyLiveResize && !useNativeCaption)
@@ -1404,15 +1434,31 @@ void AntDockWidget::updateLegacySoftwareShadow()
         shadow->setCornerRadius(floatingCornerRadius());
     }
 
+    if (QWindow* shadowWindow = m_legacySoftwareShadow->windowHandle())
+    {
+        if (QScreen* hostScreen = windowHandle() ? windowHandle()->screen() : nullptr)
+        {
+            if (shadowWindow->screen() != hostScreen)
+            {
+                shadowWindow->setScreen(hostScreen);
+            }
+        }
+    }
+
     const QRect shadowGeometry = geometry().adjusted(-kNativeFrameShadowMargin,
                                                      -kNativeFrameShadowMargin,
                                                      kNativeFrameShadowMargin,
                                                      kNativeFrameShadowMargin);
     m_legacySoftwareShadow->setGeometry(shadowGeometry);
+    setProperty(kDockLegacyShadowGeometryProperty, shadowGeometry);
+    setProperty(kDockLegacyShadowGeometryModeProperty, QStringLiteral("qt-logical"));
+    m_legacySoftwareShadow->setProperty(kDockLegacyShadowGeometryProperty, shadowGeometry);
+    m_legacySoftwareShadow->setProperty(kDockLegacyShadowGeometryModeProperty, QStringLiteral("qt-logical"));
     if (!m_legacySoftwareShadow->isVisible())
     {
         m_legacySoftwareShadow->show();
     }
+    m_legacySoftwareShadow->setProperty(kDockLegacyShadowDprProperty, m_legacySoftwareShadow->devicePixelRatioF());
 
     const HWND hwnd = reinterpret_cast<HWND>(winId());
     const HWND shadowHwnd = reinterpret_cast<HWND>(m_legacySoftwareShadow->winId());
@@ -1420,13 +1466,17 @@ void AntDockWidget::updateLegacySoftwareShadow()
     {
         makeWindowClickThrough(m_legacySoftwareShadow);
         applyShadowWindowRingRegion(m_legacySoftwareShadow, kNativeFrameShadowMargin, floatingCornerRadius());
+        // shadowGeometry is a Qt logical-pixel QRect. SetWindowPos() uses
+        // native physical pixels in a per-monitor-DPI process, so Qt owns the
+        // move/size conversion above; the native call only keeps z-order and
+        // visibility in sync with the floating dock owner.
         ::SetWindowPos(shadowHwnd,
                        hwnd,
-                       shadowGeometry.x(),
-                       shadowGeometry.y(),
-                       shadowGeometry.width(),
-                       shadowGeometry.height(),
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
     }
 }
 
@@ -1468,8 +1518,34 @@ bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qint
 
     switch (uMsg)
     {
+    case WM_DPICHANGED:
+    {
+        QPointer<AntDockWidget> guard(this);
+        QTimer::singleShot(0, this, [guard]() {
+            if (!guard || !guard->isFloating())
+            {
+                return;
+            }
+            if (QWindow* shadowWindow = guard->m_legacySoftwareShadow
+                                            ? guard->m_legacySoftwareShadow->windowHandle()
+                                            : nullptr)
+            {
+                if (QScreen* hostScreen = guard->windowHandle() ? guard->windowHandle()->screen() : nullptr)
+                {
+                    if (shadowWindow->screen() != hostScreen)
+                    {
+                        shadowWindow->setScreen(hostScreen);
+                    }
+                }
+            }
+            guard->applyNativeWindowFrame();
+            guard->updateLegacySoftwareShadow();
+            guard->update();
+        });
+        break;
+    }
     case WM_ENTERSIZEMOVE:
-        if (!supportsNativeCaptionFrame())
+        if (!supportsNativeCaptionFrame(this))
         {
             m_legacyLiveResize = true;
             setProperty(kDockLegacyLiveResizeProperty, true);
@@ -1478,7 +1554,7 @@ bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qint
         }
         break;
     case WM_SIZING:
-        if (!supportsNativeCaptionFrame() && !m_legacyLiveResize)
+        if (!supportsNativeCaptionFrame(this) && !m_legacyLiveResize)
         {
             m_legacyLiveResize = true;
             setProperty(kDockLegacyLiveResizeProperty, true);
@@ -1499,7 +1575,7 @@ bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qint
                 }
                 guard->applyNativeWindowFrame();
                 guard->updateLegacySoftwareShadow();
-                if (!supportsNativeCaptionFrame())
+                if (!supportsNativeCaptionFrame(guard.data()))
                 {
                     refreshFloatingDockWindow(guard.data(), "legacy-live-resize-finished");
                 }
@@ -1519,7 +1595,7 @@ bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qint
         const QPoint widgetPos = nativeMessageLocalPoint(hwnd, msg->lParam, devicePixelRatioF());
         const int clientWidth = width();
         const int clientHeight = height();
-        if (!supportsNativeCaptionFrame() &&
+        if (!supportsNativeCaptionFrame(this) &&
             (widgetPos.x() < 0 || widgetPos.y() < 0 || widgetPos.x() >= clientWidth || widgetPos.y() >= clientHeight))
         {
             *result = HTTRANSPARENT;

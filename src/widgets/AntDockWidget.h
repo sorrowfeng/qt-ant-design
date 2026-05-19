@@ -28,6 +28,7 @@ public:
 #endif
 
 protected:
+    bool event(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void moveEvent(QMoveEvent* event) override;
     void hideEvent(QHideEvent* event) override;
