@@ -245,6 +245,16 @@
 - **解决**：`AntWindow` 在 Windows 下安装 `QAbstractNativeEventFilter`，当任意属于当前窗口的后代 HWND 在标题栏或 resize band 收到 `WM_NCHITTEST` 时统一返回 `HTTRANSPARENT`，让命中继续回到顶层 `AntWindow` 的系统 resize/caption 路径。回归测试在 DockWidget float 后拖回布局，再通过 worker 线程真实 `SendInput` 分别拖右边、左边和底边，验证尺寸实际增长并覆盖子 HWND 命中转发计数。
 - **改动文件**：`src/widgets/AntWindow.h`、`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 33. DockWidget 切换到新布局响应偏慢
+
+- **现象**：DockWidget 拖拽落位或恢复已保存布局时，新布局出现不够跟手，视觉上像是旧布局与新布局之间慢了一拍。
+- **根因**：
+  1. 拖拽落位为了避开 mouse release 事件分发中的树重排风险，使用 queued meta-call 应用新布局；但旧逻辑先隐藏 drop preview，再等 queued call 才重建布局，中间会露出一帧旧布局空档。
+  2. `restorePerspective()` 会先从旧 `DockArea` 移除全部 dock，并把 dock `setParent(nullptr)`。即使 dock 在新 perspective 中仍然是嵌入状态，也会短暂变成 top-level，Windows 下随后进入 `resetNativeFloatingWindowForEmbedding()` / `destroy(true, true)` / native style 归一化路径，造成不必要的 HWND 销毁重建。
+  3. restore 末尾无条件 `setStyleSheet()`，每次恢复布局都会让 Qt stylesheet 重新解析并 repolish 整个 DockManager 子树。
+- **解决**：有引导目标的拖拽落位会保留 drop preview 直到 queued 布局切换真正应用，避免空白间隙；`restorePerspective()` 进入批量恢复模式，临时关闭 manager/workspace/dock 更新、延后 placeholder 刷新，并把仍会嵌入的 dock 暂挂到 manager child 上，不再临时顶层化；恢复 area 时批量添加 tab，仅最后设置当前 tab；`updateTheme()` 只有样式内容变化时才重新 `setStyleSheet()`。回归测试覆盖 restore 期间保留嵌入 dock、area 重建计数、stylesheet 不重复应用，以及 queued 布局切换前 drop preview 仍保持可见。
+- **改动文件**：`src/widgets/AntDockManager.h`、`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

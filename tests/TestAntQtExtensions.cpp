@@ -1397,8 +1397,13 @@ void TestAntQtExtensions::dockManager()
     manager->addDockWidget(properties, inspector, AntDockManager::DockPlacement::Center);
     QTRY_VERIFY(manager->tabifiedDockWidgets(inspector).contains(properties));
     QTRY_VERIFY(dockAreaForExtensionTest(properties) == dockAreaForExtensionTest(inspector));
+    const int styleApplyCountBeforeRestore = manager->property("antDockStyleSheetApplyCount").toInt();
     QVERIFY(manager->restorePerspective(QStringLiteral("default")));
     QCOMPARE(restoredSpy.count(), 1);
+    QVERIFY(manager->property("antDockLastRestoreElapsedMs").isValid());
+    QVERIFY(manager->property("antDockLastRestoreKeptEmbeddedDocks").toInt() >= 3);
+    QVERIFY(manager->property("antDockLastRestoreAreaCount").toInt() >= 2);
+    QCOMPARE(manager->property("antDockStyleSheetApplyCount").toInt(), styleApplyCountBeforeRestore);
     inspectorArea = dockAreaForExtensionTest(inspector);
     propertiesArea = dockAreaForExtensionTest(properties);
     QVERIFY(inspectorArea != nullptr);
@@ -1687,6 +1692,8 @@ void TestAntQtExtensions::dockManager()
                                   Qt::NoButton,
                                   Qt::NoModifier);
     QCoreApplication::sendEvent(explorerTabBar, &releaseRightEvent);
+    QVERIFY2(manager->isDropPreviewVisible(),
+             "The drop preview should stay visible until the queued layout switch is applied, avoiding a blank one-frame gap.");
     QCoreApplication::sendPostedEvents(manager, QEvent::MetaCall);
     QVERIFY2(layoutSpy.count() > layoutCountBeforeRightDrop,
              "Guided dock drops should update through a queued meta-call without waiting for a timer tick.");
@@ -1731,6 +1738,8 @@ void TestAntQtExtensions::dockManager()
                              Qt::NoButton,
                              Qt::NoModifier);
     QCoreApplication::sendEvent(propertiesTabBar, &releaseEvent);
+    QVERIFY2(manager->isDropPreviewVisible(),
+             "The drop preview should stay visible until the queued tab layout switch is applied, avoiding a blank one-frame gap.");
     QCoreApplication::sendPostedEvents(manager, QEvent::MetaCall);
     QVERIFY2(layoutSpy.count() > layoutCountBeforeCenterDrop,
              "Center dock drops should update through a queued meta-call without waiting for a timer tick.");

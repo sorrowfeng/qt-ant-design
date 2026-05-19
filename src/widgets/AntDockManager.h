@@ -140,7 +140,7 @@ private:
     bool handleGlobalDockDragEvent(QObject* watched, QEvent* event);
     void startDockDragTracking(AntDockWidget* dockWidget, const QPoint& globalPos);
     void finishDockDragTracking(const QPoint& globalPos);
-    void stopDockDragTracking();
+    void stopDockDragTracking(bool keepDropPreview = false);
     void applyDropTarget(AntDockWidget* dockWidget, AntDockWidget* targetDock, DockPlacement placement, bool containerDrop);
     void floatDockWidget(AntDockWidget* dockWidget, const QRect& globalGeometry);
     bool dockWidgetFeatureEnabled(AntDockWidget* dockWidget, QDockWidget::DockWidgetFeature feature) const;
@@ -149,7 +149,7 @@ private:
     QRect floatingGeometryForDock(AntDockWidget* dockWidget, const QPoint& globalPos) const;
     void setDraggedDockTranslucent(bool translucent);
     void showDropGuideAt(const QPoint& globalPos);
-    void hideDropGuide();
+    void hideDropGuide(bool keepDropPreview = false);
     DropTarget dropTargetAt(const QPoint& globalPos) const;
     DropTarget rememberedDropTarget() const;
     void rememberDropTarget(const DropTarget& target);
@@ -172,6 +172,7 @@ private:
     QHash<QString, QByteArray> m_perspectives;
     bool m_placeholderVisible = true;
     bool m_dropGuideVisible = true;
+    bool m_restoringPerspective = false;
     bool m_draggingDockTitle = false;
     bool m_dockDragActivated = false;
     bool m_appEventFilterInstalled = false;
@@ -192,5 +193,6 @@ private:
     QRect m_lastDropTargetRect;
     QRect m_lastDropPreviewRect;
     QString m_lastDropLabel;
+    QString m_appliedDockStyleSheet;
     int m_autoObjectNameCounter = 0;
 };
