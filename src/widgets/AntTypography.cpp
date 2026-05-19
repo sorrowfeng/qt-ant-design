@@ -351,9 +351,27 @@ QSize AntTypography::sizeHint() const
 
 QSize AntTypography::minimumSizeHint() const
 {
+    const auto& token = antTheme->tokens();
     QFont f = createFont();
     QFontMetrics fm(f);
-    return QSize(40, fm.height() + 4);
+    const int copyBtnWidth = m_copyable ? token.fontSize + token.paddingXXS * 2 : 0;
+
+    if (m_code)
+    {
+        const int codePadX = qMax(1, qRound(f.pixelSize() * 0.4));
+        const int codePadTop = qMax(1, qRound(f.pixelSize() * 0.2));
+        const int codePadBottom = qMax(1, qRound(f.pixelSize() * 0.1));
+        return QSize(fm.horizontalAdvance(m_text) + codePadX * 2 + copyBtnWidth + token.lineWidth * 2,
+                     fm.height() + codePadTop + codePadBottom + token.lineWidth * 2);
+    }
+
+    if (m_paragraph || m_ellipsis)
+    {
+        const int paragraphMinWidth = m_ellipsis ? 40 : qMin(measuredSize(400).width(), 120);
+        return QSize(qMax(paragraphMinWidth, copyBtnWidth), fm.height() + token.paddingXS);
+    }
+
+    return QSize(fm.horizontalAdvance(m_text) + copyBtnWidth, qMax(24, fm.height() + 4));
 }
 
 bool AntTypography::hasHeightForWidth() const
@@ -404,7 +422,7 @@ QSize AntTypography::measuredSize(int width) const
 
 void AntTypography::updateSizePolicy()
 {
-    QSizePolicy policy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    QSizePolicy policy = sizePolicy();
     policy.setHeightForWidth(m_paragraph || m_ellipsis);
     setSizePolicy(policy);
 }

@@ -50,7 +50,9 @@ private slots:
     void pixelSizeShortcut();
     void enabledStateSync();
     void verticalAlignmentRendering();
+    void singleLineMinimumWidthKeepsTextVisible();
     void wordWrapAdaptsToLayoutWidth();
+    void sizePolicyCanBeCustomized();
     void copyInteractionState();
 };
 
@@ -228,6 +230,33 @@ void TestAntTypography::verticalAlignmentRendering()
     QVERIFY(bottomInk.center().y() > bottom.height() * 2 / 3);
 }
 
+void TestAntTypography::singleLineMinimumWidthKeepsTextVisible()
+{
+    QWidget host;
+    auto* layout = new QHBoxLayout(&host);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    auto* text = new AntTypography(QStringLiteral("A status label that should stay readable"), &host);
+    auto* filler = new QWidget(&host);
+    filler->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    layout->addWidget(text);
+    layout->addWidget(filler);
+
+    const int textMinimumWidth = text->minimumSizeHint().width();
+    QVERIFY(textMinimumWidth >= text->sizeHint().width());
+
+    host.resize(textMinimumWidth + 80, text->sizeHint().height() + 8);
+    host.show();
+    QCoreApplication::processEvents();
+
+    QVERIFY(text->width() >= textMinimumWidth);
+
+    const int shortMinimumWidth = AntTypography(QStringLiteral("Short")).minimumSizeHint().width();
+    text->setText(QStringLiteral("A much longer status label that asks the layout for more room"));
+    QVERIFY(text->minimumSizeHint().width() > shortMinimumWidth);
+}
+
 void TestAntTypography::wordWrapAdaptsToLayoutWidth()
 {
     QWidget host;
@@ -248,9 +277,22 @@ void TestAntTypography::wordWrapAdaptsToLayoutWidth()
     QLabel nativeWrappedLabel;
     nativeWrappedLabel.setWordWrap(true);
     QCOMPARE(text->sizePolicy().horizontalPolicy(), nativeWrappedLabel.sizePolicy().horizontalPolicy());
+    QVERIFY(text->minimumSizeHint().width() < text->sizeHint().width());
     QCOMPARE(text->width(), host.width());
     QVERIFY(text->heightForWidth(120) > text->heightForWidth(260));
     QVERIFY(text->height() >= text->heightForWidth(text->width()));
+}
+
+void TestAntTypography::sizePolicyCanBeCustomized()
+{
+    AntTypography label(QStringLiteral("Custom policy"));
+    label.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    label.setWordWrap(true);
+
+    QCOMPARE(label.sizePolicy().horizontalPolicy(), QSizePolicy::Expanding);
+    QCOMPARE(label.sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
+    QVERIFY(label.sizePolicy().hasHeightForWidth());
+    QVERIFY(label.hasHeightForWidth());
 }
 
 void TestAntTypography::copyInteractionState()
