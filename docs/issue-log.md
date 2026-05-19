@@ -350,21 +350,16 @@
   - example 真机验证(用户回报):卡顿、黑屏、灰边、focus 框、圆角卡死全部消失。视觉代价:Win10 主窗口圆角降级为方角(阴影保留)
 - **改动文件**:`src/widgets/AntWindow.h`、`src/widgets/AntWindow.cpp`、`src/styles/AntWindowStyle.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 42. AntWindow 缩小尺寸时偶发闪动
+
+- **现象**:已解决问题 #7 引入的 DWM `{-1,-1,-1,-1}` 兜底后已大幅改善,但缩小时偶尔(约几帧出现一次)仍能看到极短闪动。
+- **根因**:Win10 上 `WA_TranslucentBackground=true` + `DwmExtendFrameIntoClientArea({-1,-1,-1,-1})` "全玻璃扩展"在 DWM backdrop 接管和 Qt backing store flush 之间存在帧级竞争,会导致缩小时新尺寸边缘 1-2 帧透明闪烁。
+- **解决**:本症状原本是"未解决",在 #41 把 Win10 切到 opaque 路径(无 `WA_TranslucentBackground`、无 DWM glass 扩展)后已被一并消除;Win11 caption 路径下用户在真机验证未复现,可视为已解决。
+- **改动文件**:已包含在 #41 的改动里(`src/widgets/AntWindow.h`、`src/widgets/AntWindow.cpp`、`src/styles/AntWindowStyle.cpp`)。
+
 ## 未解决
 
-### A. AntWindow 缩小尺寸时偶尔仍有闪动
-
-- **现象**:已解决问题 #7 引入的 DWM `{-1,-1,-1,-1}` 兜底后大幅改善,但缩小时偶尔(约几帧出现一次)还能看到极短的闪动。
-- **适用范围**:仅 Win11 caption 路径(`m_useTranslucentBackground=true`)。Win10 opaque 路径在 #41 之后完全跳过 `WA_TranslucentBackground` + DWM glass 组合,不会出现该症状。
-- **推测原因**:
-  1. `DwmExtendFrameIntoClientArea` 设置生效本身也需要一帧——进入边缘缩放到第一个 `WM_SIZE` 之间的窗口可能 DWM backdrop 还没接管
-  2. Qt 在 `WA_TranslucentBackground=true` 下的 backing store flush 时机和 DWM 合成时钟之间仍有概率性错位
-- **潜在排查方向**:
-  1. 在 `WM_NCCREATE` / `showEvent` 就预设 `{-1,-1,-1,-1}`,常态生效,只在显示时通过 paint 路径让背景不透明
-  2. 尝试 `WM_WINDOWPOSCHANGING` 拦截,比 `WM_SIZE` 更早,可以在新尺寸到达 DWM 之前先确保 backdrop
-  3. 评估 Win11 路径也降级为 opaque + 方角(视觉妥协换稳定不闪),与 Win10 路径统一
-
-### B. AntWindow 主题切换速度变慢
+### A. AntWindow 主题切换速度变慢
 
 - **现象**:点击标题栏的 Light/Dark 切换按钮,从主题真正变化到 overlay 揭示动画结束,整体耗时变长,过渡不像之前那么干脆。
 - **适用范围**:Win10 / Win11 似乎都能感觉到,Win10 opaque 路径上(#41 修复后)更明显。
@@ -378,7 +373,7 @@
   3. 检查最近改动是否给 `themeChanged` 槽加了新的重活(palette 递归、子 style 再创建等)
   4. 评估在主题切换期间临时禁用 `AntCard` / `AntList` 等组件的 hover 动画,避免和 overlay 动画抢调度
 
-### C. AntColorPicker 弹窗下方多重边缘 + 拖动选色卡顿
+### B. AntColorPicker 弹窗下方多重边缘 + 拖动选色卡顿
 
 - **现象**:点击 `AntColorPicker` 触发器弹出颜色面板时:
   1. 弹窗的下边缘(可能也包括左右下角)出现明显的多层 / 重影边框,看起来像是阴影裁切边界 + 面板边框 + 系统边框叠加
