@@ -262,6 +262,13 @@
 - **解决**：新增 `isDockingSurfaceAvailable()`，统一检查 manager、top-level window 和 workspace 是否实际可见且未最小化；`dropTargetAt()`、remembered target 和 release fallback 在 surface 不可用时都返回无效，隐藏 surface 下只允许浮动窗口继续移动，不允许 dock 回布局。回归测试覆盖隐藏 manager 后拖动浮窗：不会发出 docked 信号，不会有 queued 回嵌，浮窗仍保持 floating。
 - **改动文件**：`src/widgets/AntDockManager.h`、`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 35. Win10 示例窗口内控件不自动刷新绘制
+
+- **现象**：Windows 10 legacy frame 路径下，示例主窗口中的控件状态变化后不会稳定自动刷新，表现为任意控件 hover/click/update 都像被整窗卡住，需要其他窗口事件后才看到新绘制。
+- **根因**：`AntWindowCornerSmoother` 是覆盖整窗的 child overlay，用于在 Win10 无 DWM 圆角时做 alpha 圆角柔化；但 `updateCornerSmoother()` 为了设置 Win32 click-through 调用了 `winId()`，把这个整窗 overlay 强制提升成 native child HWND。Win10 对透明 native child 的合成与 Qt backing-store 子控件刷新不同步，导致下面的控件 repaint 不能稳定呈现。
+- **解决**：`AntWindowCornerSmoother` 保持非 native child，不再主动创建整窗 HWND；只有外部已经创建了 native handle 时才设置 Win32 透明扩展样式。无 native handle 时仅通过 Qt `WA_TransparentForMouseEvents` 保持输入穿透。回归测试强制 Win10 legacy frame policy，验证 smoother 没有 native HWND，并验证中心子控件 `update()` 后窗口截图能看到新绘制像素。
+- **改动文件**：`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

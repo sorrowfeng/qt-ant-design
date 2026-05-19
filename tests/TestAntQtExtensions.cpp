@@ -84,6 +84,39 @@ QImage renderForExtensionTest(QWidget* widget)
     return image;
 }
 
+class PaintProbeWidget : public QWidget
+{
+public:
+    explicit PaintProbeWidget(QWidget* parent = nullptr)
+        : QWidget(parent)
+    {
+        setMinimumSize(160, 120);
+    }
+
+    int paintCount() const
+    {
+        return m_paintCount;
+    }
+
+    void setFillColor(const QColor& color)
+    {
+        m_fillColor = color;
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        ++m_paintCount;
+        QPainter painter(this);
+        painter.fillRect(rect(), m_fillColor);
+    }
+
+private:
+    QColor m_fillColor = QColor(32, 112, 240);
+    int m_paintCount = 0;
+};
+
 int primaryLikePixelCountForExtensionTest(const QImage& image, QRect sampleRect)
 {
     if (image.isNull()) return 0;
@@ -3118,10 +3151,36 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     AntWindow window;
     window.setProperty("antWindowForceLegacyFramePolicy", true);
     window.resize(640, 420);
+    auto* probe = new PaintProbeWidget;
+    window.setCentralWidget(probe);
     window.show();
     QVERIFY(QTest::qWaitForWindowExposed(&window));
 
     QCOMPARE(window.property("antWindowUsesNativeCaptionFrame").toBool(), false);
+    QWidget* smoother = window.findChild<QWidget*>(QStringLiteral("AntWindowCornerSmoother"));
+    QVERIFY(smoother != nullptr);
+    QTRY_COMPARE(smoother->property("antWindowCornerSmootherClickThrough").toBool(), true);
+    QCOMPARE(smoother->property("antWindowCornerSmootherNativeHwnd").toBool(), false);
+    QVERIFY2(!smoother->internalWinId(),
+             "Win10 corner smoother must stay as a non-native child; a full-window native child overlay can freeze child repaint composition.");
+    QTRY_VERIFY(probe->paintCount() > 0);
+    const int paintCountBeforeProbeUpdate = probe->paintCount();
+    const QColor probeColor(220, 40, 72);
+    probe->setFillColor(probeColor);
+    QTRY_VERIFY2(probe->paintCount() > paintCountBeforeProbeUpdate,
+                 "Child widgets inside the Win10 AntWindow path must repaint after update().");
+    const QPixmap grabbedWindow = window.grab();
+    const QImage grabbedImage = grabbedWindow.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    const qreal grabDpr = qMax<qreal>(1.0, grabbedWindow.devicePixelRatio());
+    const QPoint sampleInWindow = probe->mapTo(&window, probe->rect().center());
+    const QPoint sampleInImage(qRound(sampleInWindow.x() * grabDpr),
+                               qRound(sampleInWindow.y() * grabDpr));
+    QVERIFY(grabbedImage.rect().contains(sampleInImage));
+    const QColor sampledProbeColor = grabbedImage.pixelColor(sampleInImage);
+    QVERIFY2(colorNearForExtensionTest(sampledProbeColor, probeColor, 24),
+             qPrintable(QStringLiteral("Win10 legacy AntWindow should show child repaint pixels, expected %1 got %2")
+                            .arg(colorStringForExtensionTest(probeColor),
+                                 colorStringForExtensionTest(sampledProbeColor))));
     // AntWindow no longer uses setMask to clip its rounded corners — it relies
     // on WA_TranslucentBackground + alpha-painted corners (style rounded clip
     // path + AntWindowCornerSmoother). The mask was a source of shrink-resize

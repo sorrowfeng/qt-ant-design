@@ -57,17 +57,25 @@ constexpr int kLegacySoftwareShadowMargin = 14;
 constexpr int kLegacySoftwareShadowInnerClearance = 0;
 
 #if defined(Q_OS_WIN)
-void makeAntWindowNativeInputTransparent(QWidget* widget, const char* propertyName)
+bool makeAntWindowNativeInputTransparent(QWidget* widget,
+                                         const char* propertyName,
+                                         bool forceNativeHandle = true,
+                                         bool transparentWhenNoNativeHandle = false)
 {
     if (!widget)
     {
-        return;
+        return false;
     }
 
-    const HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    const WId nativeId = forceNativeHandle ? widget->winId() : widget->internalWinId();
+    const HWND hwnd = reinterpret_cast<HWND>(nativeId);
     if (!hwnd)
     {
-        return;
+        if (propertyName)
+        {
+            widget->setProperty(propertyName, transparentWhenNoNativeHandle);
+        }
+        return false;
     }
 
     const LONG_PTR currentStyle = ::GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
@@ -90,6 +98,7 @@ void makeAntWindowNativeInputTransparent(QWidget* widget, const char* propertyNa
     {
         widget->setProperty(propertyName, true);
     }
+    return true;
 }
 
 void makeAntWindowShadowClickThrough(QWidget* widget)
@@ -289,6 +298,7 @@ public:
         setFocusPolicy(Qt::NoFocus);
 #if defined(Q_OS_WIN)
         setProperty("antWindowCornerSmootherClickThrough", false);
+        setProperty("antWindowCornerSmootherNativeHwnd", false);
 #endif
     }
 
@@ -313,7 +323,12 @@ protected:
     void showEvent(QShowEvent* event) override
     {
         QWidget::showEvent(event);
-        makeAntWindowNativeInputTransparent(this, "antWindowCornerSmootherClickThrough");
+        const bool hasNativeHwnd =
+            makeAntWindowNativeInputTransparent(this,
+                                                "antWindowCornerSmootherClickThrough",
+                                                false,
+                                                true);
+        setProperty("antWindowCornerSmootherNativeHwnd", hasNativeHwnd);
     }
 
     bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
@@ -2492,7 +2507,12 @@ void AntWindow::updateCornerSmoother()
         m_cornerSmoother->setGeometry(rect());
     }
 #if defined(Q_OS_WIN)
-    makeAntWindowNativeInputTransparent(m_cornerSmoother, "antWindowCornerSmootherClickThrough");
+    const bool hasNativeHwnd =
+        makeAntWindowNativeInputTransparent(m_cornerSmoother,
+                                            "antWindowCornerSmootherClickThrough",
+                                            false,
+                                            true);
+    m_cornerSmoother->setProperty("antWindowCornerSmootherNativeHwnd", hasNativeHwnd);
 #endif
     m_cornerSmoother->raise();
 }
