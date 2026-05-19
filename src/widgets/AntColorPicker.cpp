@@ -12,6 +12,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPaintEvent>
 #include <QPixmap>
 #include <QRegularExpressionValidator>
 #include <QScreen>
@@ -79,8 +80,11 @@ public:
         setProperty("antColorPickerOpaqueFieldPaint", true);
         setProperty("antColorPickerUsesCachedFieldBackground", true);
         setProperty("antColorPickerUsesCursorOverlay", true);
+        setProperty("antColorPickerCursorMovesWithoutFieldUpdate", true);
+        setProperty("antColorPickerFieldPaintCount", 0);
         m_cursor = new HueSatCursor(this);
         updateCursorGeometry();
+        m_cursor->raise();
     }
 
     void setHsv(int h, int s, int v)
@@ -97,10 +101,8 @@ public:
         }
         if (m_point != next)
         {
-            const QRect dirty = indicatorRect(m_point).united(indicatorRect(next));
             m_point = next;
             updateCursorGeometry();
-            update(dirty);
         }
         else if (hueChanged)
         {
@@ -130,11 +132,18 @@ public:
 std::function<void()> onChanged;
 
 protected:
-    void paintEvent(QPaintEvent*) override
+    void paintEvent(QPaintEvent* event) override
     {
+        setProperty("antColorPickerFieldPaintCount",
+                    property("antColorPickerFieldPaintCount").toInt() + 1);
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
-        p.drawPixmap(0, 0, backgroundPixmap());
+        const QPixmap background = backgroundPixmap();
+        const QRegion region = event ? event->region() : QRegion(rect());
+        for (const QRect& dirtyRect : region)
+        {
+            p.drawPixmap(dirtyRect, background, dirtyRect);
+        }
     }
 
     void mousePressEvent(QMouseEvent* e) override
@@ -157,16 +166,9 @@ private:
         {
             return;
         }
-        const QRect dirty = indicatorRect(m_point).united(indicatorRect(next));
         m_point = next;
         updateCursorGeometry();
-        update(dirty);
         if (onChanged) onChanged();
-    }
-
-    QRect indicatorRect(const QPoint& point) const
-    {
-        return QRect(point - QPoint(11, 11), QSize(22, 22)).adjusted(-2, -2, 2, 2).intersected(rect());
     }
 
     void invalidateBackgroundCache()
@@ -181,15 +183,12 @@ private:
             return;
         }
 
-        const QRect next(QPoint(m_point.x() - m_cursor->width() / 2,
-                                m_point.y() - m_cursor->height() / 2),
-                         m_cursor->size());
-        if (m_cursor->geometry() != next)
+        const QPoint nextTopLeft(m_point.x() - m_cursor->width() / 2,
+                                 m_point.y() - m_cursor->height() / 2);
+        if (m_cursor->pos() != nextTopLeft)
         {
-            m_cursor->setGeometry(next);
+            m_cursor->move(nextTopLeft);
         }
-        m_cursor->raise();
-        m_cursor->update();
     }
 
     QPixmap backgroundPixmap()
