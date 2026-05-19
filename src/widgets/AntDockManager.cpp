@@ -3129,6 +3129,8 @@ void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
     const DockPlacement placement = target.placement;
     const bool containerDrop = target.containerTarget;
     const bool hasGuidedTarget = target.valid && placement != DockPlacement::None;
+    const bool draggedStartedEmbedded =
+        m_draggedDock && !m_draggedDock->isFloating() && areaForDock(m_draggedDock);
     const QRect floatGeometry = floatingGeometryForDock(m_draggedDock, globalPos);
 
     stopDockDragTracking(hasGuidedTarget);
@@ -3157,12 +3159,27 @@ void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
         return;
     }
 
+    setProperty("antDockLastGuidedDropSynchronous", false);
+    setProperty("antDockLastGuidedDropElapsedMs", 0);
+    if (draggedStartedEmbedded)
+    {
+        QElapsedTimer dropTimer;
+        dropTimer.start();
+        applyDropTarget(draggedDock, targetDock, placement, containerDrop);
+        setProperty("antDockLastGuidedDropSynchronous", true);
+        setProperty("antDockLastGuidedDropElapsedMs", static_cast<int>(dropTimer.elapsed()));
+        return;
+    }
+
     QMetaObject::invokeMethod(this, [manager, draggedDock, targetDock, placement, containerDrop]() {
         if (!manager || !draggedDock)
         {
             return;
         }
+        QElapsedTimer dropTimer;
+        dropTimer.start();
         manager->applyDropTarget(draggedDock, targetDock, placement, containerDrop);
+        manager->setProperty("antDockLastGuidedDropElapsedMs", static_cast<int>(dropTimer.elapsed()));
     }, Qt::QueuedConnection);
 }
 

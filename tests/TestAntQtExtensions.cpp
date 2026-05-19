@@ -1692,11 +1692,14 @@ void TestAntQtExtensions::dockManager()
                                   Qt::NoButton,
                                   Qt::NoModifier);
     QCoreApplication::sendEvent(explorerTabBar, &releaseRightEvent);
-    QVERIFY2(manager->isDropPreviewVisible(),
-             "The drop preview should stay visible until the queued layout switch is applied, avoiding a blank one-frame gap.");
-    QCoreApplication::sendPostedEvents(manager, QEvent::MetaCall);
     QVERIFY2(layoutSpy.count() > layoutCountBeforeRightDrop,
-             "Guided dock drops should update through a queued meta-call without waiting for a timer tick.");
+             "Embedded guided dock drops should apply the new layout before the release event returns.");
+    QCOMPARE(manager->property("antDockLastGuidedDropSynchronous").toBool(), true);
+    QVERIFY(manager->property("antDockLastGuidedDropElapsedMs").isValid());
+    QVERIFY(!manager->isDropPreviewVisible());
+    const int layoutCountAfterRightDrop = layoutSpy.count();
+    QCoreApplication::sendPostedEvents(manager, QEvent::MetaCall);
+    QCOMPARE(layoutSpy.count(), layoutCountAfterRightDrop);
     QVERIFY(!manager->isDropPreviewVisible());
     QVERIFY([&]() {
         QTabWidget* explorerArea = dockAreaForExtensionTest(explorer);
@@ -1738,11 +1741,14 @@ void TestAntQtExtensions::dockManager()
                              Qt::NoButton,
                              Qt::NoModifier);
     QCoreApplication::sendEvent(propertiesTabBar, &releaseEvent);
-    QVERIFY2(manager->isDropPreviewVisible(),
-             "The drop preview should stay visible until the queued tab layout switch is applied, avoiding a blank one-frame gap.");
-    QCoreApplication::sendPostedEvents(manager, QEvent::MetaCall);
     QVERIFY2(layoutSpy.count() > layoutCountBeforeCenterDrop,
-             "Center dock drops should update through a queued meta-call without waiting for a timer tick.");
+             "Embedded center dock drops should apply the tab layout before the release event returns.");
+    QCOMPARE(manager->property("antDockLastGuidedDropSynchronous").toBool(), true);
+    QVERIFY(manager->property("antDockLastGuidedDropElapsedMs").isValid());
+    QVERIFY(!manager->isDropPreviewVisible());
+    const int layoutCountAfterCenterDrop = layoutSpy.count();
+    QCoreApplication::sendPostedEvents(manager, QEvent::MetaCall);
+    QCOMPARE(layoutSpy.count(), layoutCountAfterCenterDrop);
     QVERIFY(!manager->isDropPreviewVisible());
     QCOMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::None);
     QVERIFY(properties->graphicsEffect() == nullptr);
