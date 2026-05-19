@@ -24,7 +24,7 @@
 
 namespace
 {
-constexpr int kColorPickerPopupShadowMargin = 40;
+constexpr int kColorPickerPopupShadowMargin = 28;
 constexpr int kColorPickerPopupPanelPadding = 12;
 constexpr int kColorPickerPopupContentWidth = 234;
 constexpr int kColorPickerPopupContentHeight = 248;
@@ -436,6 +436,7 @@ public:
         setWindowFlag(Qt::NoDropShadowWindowHint, true);
         setFocusPolicy(Qt::StrongFocus);
         setProperty("antColorPickerPopupNoNativeShadow", true);
+        setProperty("antColorPickerPopupShadowMargin", kColorPickerPopupShadowMargin);
         setProperty("antColorPickerPopupShadowWidth", kColorPickerPopupShadowWidth);
         setProperty("antColorPickerPopupShadowStrength", kColorPickerPopupShadowStrength);
         setupUi();

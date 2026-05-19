@@ -115,6 +115,8 @@ Result: `TestAntQtExtensions` passed on `2026-05-20`. The test now verifies that
 
 Follow-up: the theme transition path now activates the visible window layout tree before capturing the new themed frame, preventing Showcase wrapped text from being painted with new font metrics inside stale geometry. The targeted `windowThemeButtonShowsTransitionOverlay` subtest checks that a theme-dependent `sizeHint()` change is applied immediately when the theme button click returns.
 
+Follow-up: `AntColorPicker` popup shadow margin is now tightened to 28px for the 12px software shadow, removing the remaining bottom transparent top-level edge while preserving the soft shadow fade. The targeted `colorPicker` subtest checks the margin, native-shadow flags, bottom alpha fade, and cached hue/saturation drag path.
+
 Latest targeted Win10 dock re-embed repaint cadence validation:
 
 ```powershell

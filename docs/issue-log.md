@@ -397,6 +397,14 @@
 - **验证**:`TestAntQtExtensions::windowThemeButtonShowsTransitionOverlay` 新增一个随主题切换改变 `sizeHint()` 的控件,断言点击主题按钮返回时布局高度已从 32 立即更新到 96;同时保留 transition overlay 的 render 捕获和模式断言。
 - **改动文件**:`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 46. AntColorPicker 弹窗下方残留透明边缘
+
+- **现象**:#44 后下方多重阴影明显改善,但弹窗底部仍能看到一点多余透明边缘。
+- **根因**:`ColorPickerPopup` 仍按旧阴影方案保留 40px 外部透明窗口边距,而当前软件阴影宽度已缩到 12px。底部剩余的完全透明 top-level 区域在 Windows 合成下会被感知成一条额外边缘。
+- **解决**:将 `kColorPickerPopupShadowMargin` 从 40 收紧到 28,仍覆盖 12px 软阴影的最大扩散范围,但移除底部多余透明窗口区域;新增 `antColorPickerPopupShadowMargin` 诊断属性,测试按实际 margin 取样并限制 margin 不超过 shadowWidth 的 3 倍。
+- **验证**:`TestAntQtExtensions::colorPicker` 通过,继续验证 popup 无原生阴影、底部 alpha 衰减、最外侧边缘透明以及 HS field 拖动缓存。
+- **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 当前暂无记录。

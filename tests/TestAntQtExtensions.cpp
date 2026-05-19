@@ -3735,8 +3735,12 @@ void TestAntQtExtensions::colorPicker()
     QVERIFY(popup->testAttribute(Qt::WA_NoSystemBackground));
     QVERIFY(popup->windowFlags().testFlag(Qt::NoDropShadowWindowHint));
     QCOMPARE(popup->property("antColorPickerPopupNoNativeShadow").toBool(), true);
+    QCOMPARE(popup->property("antColorPickerPopupShadowMargin").toInt(), 28);
     QCOMPARE(popup->property("antColorPickerPopupShadowWidth").toInt(), 12);
     QVERIFY(popup->property("antColorPickerPopupShadowStrength").toReal() <= 0.30);
+    const int popupShadowMargin = popup->property("antColorPickerPopupShadowMargin").toInt();
+    const int popupShadowWidth = popup->property("antColorPickerPopupShadowWidth").toInt();
+    QVERIFY(popupShadowMargin <= popupShadowWidth * 3);
 
     QImage popupImage(popup->size(), QImage::Format_ARGB32_Premultiplied);
     popupImage.fill(Qt::transparent);
@@ -3757,7 +3761,7 @@ void TestAntQtExtensions::colorPicker()
         return maxAlpha;
     };
     QVERIFY(maxAlphaIn(popupImage, QRect(0, popupImage.height() - 2, popupImage.width(), 2)) <= 1);
-    const QRect panelRect = popup->rect().adjusted(40, 40, -40, -40);
+    const QRect panelRect = popup->rect().adjusted(popupShadowMargin, popupShadowMargin, -popupShadowMargin, -popupShadowMargin);
     const int nearBottomAlpha = maxAlphaIn(popupImage, QRect(panelRect.left() + 16, panelRect.bottom() + 2, panelRect.width() - 32, 2));
     const int midBottomAlpha = maxAlphaIn(popupImage, QRect(panelRect.left() + 16, panelRect.bottom() + 12, panelRect.width() - 32, 2));
     const int farBottomAlpha = maxAlphaIn(popupImage, QRect(panelRect.left() + 16, panelRect.bottom() + 26, panelRect.width() - 32, 2));
