@@ -431,6 +431,14 @@
 - **验证**:`TestAntQtExtensions::colorPicker` 验证 HS field 的 opaque/static paint 属性,并在 Windows 下验证 `antColorPickerNativeDragSurface=true` 与 `WA_NativeWindow` 生效。
 - **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 50. AntColorPicker native drag surface 导致圆点不动
+
+- **现象**:#49 把 HS field 改为 native 子窗口后,拖动刷新略快,但取色小圆点在 example 中不再跟随鼠标移动。
+- **根因**:透明 popup 内嵌 native 子窗口会绕开 Qt 普通 QWidget 合成路径,在实际窗口中容易出现 native child 与透明 top-level backing store 的同步/裁剪问题。该方案虽然减少了顶层透明合成压力,但破坏了圆点的可见更新。
+- **解决**:撤掉 `WA_NativeWindow` 方案,改为普通 QWidget + 独立 `AntColorPickerHueSatCursor` overlay 子控件。HS field 只绘制并缓存不透明背景;拖动时同步移动 22x22 cursor overlay,只让旧/新小区域刷新,不再重画整块色域。鼠标按下时停止 popup 进入动画,避免刚打开就拖动时动画与取色拖动抢刷新。
+- **验证**:新增 `TestAntQtExtensions::colorPickerDragSmoothness` 专项测试,连续发送 240 次拖动事件,逐次断言 cursor position 同步到鼠标点,Debug 下事件分发低于 160ms,背景缓存不重建,并验证外部刷新仍只合并为一次 live refresh。
+- **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 当前暂无记录。

@@ -632,6 +632,7 @@ private slots:
     void windowLegacyFramePolicyRestoresShadowAfterResize();
     void windowMaximizedNcCalcKeepsFullWorkArea();
     void colorPicker();
+    void colorPickerDragSmoothness();
 };
 
 void TestAntQtExtensions::app()
@@ -3777,12 +3778,12 @@ void TestAntQtExtensions::colorPicker()
     QVERIFY(hueSatField->testAttribute(Qt::WA_OpaquePaintEvent));
     QVERIFY(hueSatField->testAttribute(Qt::WA_NoSystemBackground));
     QVERIFY(hueSatField->testAttribute(Qt::WA_StaticContents));
-#ifdef Q_OS_WIN
-    QCOMPARE(hueSatField->property("antColorPickerNativeDragSurface").toBool(), true);
-    QVERIFY(hueSatField->testAttribute(Qt::WA_NativeWindow));
-#else
     QCOMPARE(hueSatField->property("antColorPickerNativeDragSurface").toBool(), false);
-#endif
+    QVERIFY(!hueSatField->testAttribute(Qt::WA_NativeWindow));
+    QCOMPARE(hueSatField->property("antColorPickerUsesCursorOverlay").toBool(), true);
+    auto* hueSatCursor = popup->findChild<QWidget*>(QStringLiteral("AntColorPickerHueSatCursor"));
+    QVERIFY(hueSatCursor != nullptr);
+    QVERIFY(hueSatCursor->testAttribute(Qt::WA_TransparentForMouseEvents));
     QCOMPARE(hueSatField->property("antColorPickerUsesCachedFieldBackground").toBool(), true);
     QImage fieldImage(hueSatField->size(), QImage::Format_ARGB32_Premultiplied);
     fieldImage.fill(Qt::transparent);
@@ -3815,6 +3816,7 @@ void TestAntQtExtensions::colorPicker()
     QCOMPARE(popup->property("antColorPickerLiveRefreshCount").toInt(), refreshCountBeforeDrag + 1);
     QCOMPARE(selectedSpy.count(), 1);
     QCOMPARE(colorSpy.count(), 2);
+    QCOMPARE(hueSatCursor->geometry(), QRect(QPoint(107, 58), hueSatCursor->size()));
     fieldImage.fill(Qt::transparent);
     {
         QPainter painter(&fieldImage);
@@ -3827,6 +3829,71 @@ void TestAntQtExtensions::colorPicker()
 
     auto* w2 = new AntColorPicker(Qt::blue);
     QCOMPARE(w2->currentColor(), QColor(Qt::blue));
+}
+
+void TestAntQtExtensions::colorPickerDragSmoothness()
+{
+    auto* w = new AntColorPicker;
+    QSignalSpy colorSpy(w, &AntColorPicker::currentColorChanged);
+    QSignalSpy selectedSpy(w, &AntColorPicker::colorSelected);
+    w->setOpen(true);
+
+    auto* popup = w->findChild<QFrame*>(QStringLiteral("AntColorPickerPopup"));
+    QVERIFY(popup != nullptr);
+    QTRY_VERIFY(popup->isVisible());
+    auto* hueSatField = popup->findChild<QWidget*>(QStringLiteral("AntColorPickerHueSatField"));
+    QVERIFY(hueSatField != nullptr);
+    auto* hueSatCursor = popup->findChild<QWidget*>(QStringLiteral("AntColorPickerHueSatCursor"));
+    QVERIFY(hueSatCursor != nullptr);
+
+    QImage warmup(hueSatField->size(), QImage::Format_ARGB32_Premultiplied);
+    warmup.fill(Qt::transparent);
+    {
+        QPainter painter(&warmup);
+        hueSatField->render(&painter);
+    }
+    const int cacheBuildCount = hueSatField->property("antColorPickerFieldBackgroundCacheBuilds").toInt();
+    const int refreshCountBeforeDrag = popup->property("antColorPickerLiveRefreshCount").toInt();
+
+    QMouseEvent fieldPress(QEvent::MouseButtonPress,
+                           QPointF(6, 6),
+                           Qt::LeftButton,
+                           Qt::LeftButton,
+                           Qt::NoModifier);
+    QCoreApplication::sendEvent(hueSatField, &fieldPress);
+
+    constexpr int moveCount = 240;
+    QPoint finalPoint;
+    QElapsedTimer timer;
+    timer.start();
+    for (int i = 0; i < moveCount; ++i)
+    {
+        finalPoint = QPoint(2 + (i * 7) % (hueSatField->width() - 4),
+                            2 + (i * 5) % (hueSatField->height() - 4));
+        QMouseEvent fieldMove(QEvent::MouseMove,
+                              QPointF(finalPoint),
+                              Qt::NoButton,
+                              Qt::LeftButton,
+                              Qt::NoModifier);
+        QCoreApplication::sendEvent(hueSatField, &fieldMove);
+        QCOMPARE(hueSatCursor->geometry().topLeft(), finalPoint - QPoint(hueSatCursor->width() / 2,
+                                                                         hueSatCursor->height() / 2));
+    }
+    const qint64 elapsedMs = timer.elapsed();
+    QVERIFY2(elapsedMs < 160,
+             qPrintable(QStringLiteral("ColorPicker drag dispatch should stay below 160ms for %1 moves, actual %2ms")
+                        .arg(moveCount)
+                        .arg(elapsedMs)));
+
+    QTRY_COMPARE(popup->property("antColorPickerLiveRefreshPending").toBool(), false);
+    QCOMPARE(popup->property("antColorPickerLiveRefreshCount").toInt(), refreshCountBeforeDrag + 1);
+    QCOMPARE(colorSpy.count(), 1);
+    QCOMPARE(selectedSpy.count(), 1);
+    QCOMPARE(hueSatField->property("antColorPickerFieldBackgroundCacheBuilds").toInt(), cacheBuildCount);
+    QCOMPARE(hueSatCursor->geometry().topLeft(), finalPoint - QPoint(hueSatCursor->width() / 2,
+                                                                     hueSatCursor->height() / 2));
+
+    w->setOpen(false);
 }
 
 QTEST_MAIN(TestAntQtExtensions)

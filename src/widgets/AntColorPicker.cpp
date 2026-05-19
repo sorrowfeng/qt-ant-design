@@ -36,6 +36,33 @@ constexpr qreal kColorPickerPopupShadowStrength = 0.30;
 
 // ---- HueSatField ----
 
+class HueSatCursor : public QWidget
+{
+public:
+    explicit HueSatCursor(QWidget* parent = nullptr)
+        : QWidget(parent)
+    {
+        setObjectName(QStringLiteral("AntColorPickerHueSatCursor"));
+        setFixedSize(22, 22);
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAutoFillBackground(false);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+        const QPointF center(width() / 2.0, height() / 2.0);
+        p.setPen(QPen(Qt::white, 2));
+        p.setBrush(Qt::NoBrush);
+        p.drawEllipse(center, 8, 8);
+        p.setPen(QPen(QColor(0, 0, 0, 70), 1));
+        p.drawEllipse(center, 9, 9);
+    }
+};
+
 class HueSatField : public QWidget
 {
 public:
@@ -47,16 +74,13 @@ public:
         setAttribute(Qt::WA_OpaquePaintEvent, true);
         setAttribute(Qt::WA_NoSystemBackground, true);
         setAttribute(Qt::WA_StaticContents, true);
-#ifdef Q_OS_WIN
-        setAttribute(Qt::WA_DontCreateNativeAncestors, true);
-        setAttribute(Qt::WA_NativeWindow, true);
-        setProperty("antColorPickerNativeDragSurface", true);
-#else
         setProperty("antColorPickerNativeDragSurface", false);
-#endif
         setAutoFillBackground(false);
         setProperty("antColorPickerOpaqueFieldPaint", true);
         setProperty("antColorPickerUsesCachedFieldBackground", true);
+        setProperty("antColorPickerUsesCursorOverlay", true);
+        m_cursor = new HueSatCursor(this);
+        updateCursorGeometry();
     }
 
     void setHsv(int h, int s, int v)
@@ -75,6 +99,7 @@ public:
         {
             const QRect dirty = indicatorRect(m_point).united(indicatorRect(next));
             m_point = next;
+            updateCursorGeometry();
             update(dirty);
         }
         else if (hueChanged)
@@ -110,15 +135,13 @@ protected:
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
         p.drawPixmap(0, 0, backgroundPixmap());
-
-        p.setPen(QPen(Qt::white, 2));
-        p.setBrush(Qt::NoBrush);
-        p.drawEllipse(QPointF(m_point), 8, 8);
-        p.setPen(QPen(QColor(0, 0, 0, 70), 1));
-        p.drawEllipse(QPointF(m_point), 9, 9);
     }
 
-    void mousePressEvent(QMouseEvent* e) override { updatePoint(e->pos()); }
+    void mousePressEvent(QMouseEvent* e) override
+    {
+        AntPopupMotion::stop(window());
+        updatePoint(e->pos());
+    }
     void mouseMoveEvent(QMouseEvent* e) override
     {
         if (e->buttons() & Qt::LeftButton) updatePoint(e->pos());
@@ -136,6 +159,7 @@ private:
         }
         const QRect dirty = indicatorRect(m_point).united(indicatorRect(next));
         m_point = next;
+        updateCursorGeometry();
         update(dirty);
         if (onChanged) onChanged();
     }
@@ -148,6 +172,24 @@ private:
     void invalidateBackgroundCache()
     {
         m_background = QPixmap();
+    }
+
+    void updateCursorGeometry()
+    {
+        if (!m_cursor)
+        {
+            return;
+        }
+
+        const QRect next(QPoint(m_point.x() - m_cursor->width() / 2,
+                                m_point.y() - m_cursor->height() / 2),
+                         m_cursor->size());
+        if (m_cursor->geometry() != next)
+        {
+            m_cursor->setGeometry(next);
+        }
+        m_cursor->raise();
+        m_cursor->update();
     }
 
     QPixmap backgroundPixmap()
@@ -199,6 +241,7 @@ private:
     int m_backgroundHue = -1;
     Ant::ThemeMode m_backgroundThemeMode = Ant::ThemeMode::Default;
     QPixmap m_background;
+    HueSatCursor* m_cursor = nullptr;
 };
 
 // ---- HueSlider ----
