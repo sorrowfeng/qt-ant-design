@@ -214,7 +214,7 @@ ctest --test-dir build -C Debug -R "TestAntQtExtensions$" --output-on-failure
 .\build\examples\Debug\qt-ant-design-example.exe --smoke-exit-ms 800
 ```
 
-Result: `1 / 1` targeted test passed and the example Debug build succeeded on `2026-05-19`, including the Windows 10 no-caption software shadow host, 14px lightweight Win11-like shadow margin, zero inner clear band, capped corner alpha, four-sided shadow pixel coverage, resize-following shadow geometry, maximized `WM_NCCALCSIZE`, visible topmost toggles without hide/show recreation, inner/outer `WM_NCHITTEST` resize bands for all four edges and corners, child-HWND hit-test forwarding from the content widget, and a worker-thread `SendInput` drag that verifies the real right edge grows the window width.
+Result: `1 / 1` targeted test passed and the example Debug build succeeded on `2026-05-19`, including the Windows 10 no-caption software shadow host, 14px lightweight Win11-like shadow margin, zero inner clear band, capped corner alpha, four-sided shadow pixel coverage, resize-following shadow geometry, maximized `WM_NCCALCSIZE`, visible topmost toggles without hide/show recreation, inner/outer `WM_NCHITTEST` resize bands for all four edges and corners, child-HWND hit-test forwarding from the content widget and any descendant native HWND, a worker-thread `SendInput` drag that verifies the real right edge grows the window width, and an AntWindow-hosted DockWidget float/re-embed scenario that verifies right, left, and bottom edge drags still resize the host.
 
 Latest targeted AntList / AntTable / AntTypography API validation:
 

@@ -887,6 +887,11 @@ protected:
             auto* msg = static_cast<MSG*>(message);
             if (msg->message == WM_NCHITTEST && shouldForwardChildHitTestToAntWindow(m_owner, msg->lParam))
             {
+                if (m_owner)
+                {
+                    m_owner->setProperty("antWindowChildHitTestForwarded",
+                                         m_owner->property("antWindowChildHitTestForwarded").toInt() + 1);
+                }
                 *result = HTTRANSPARENT;
                 return true;
             }
@@ -930,6 +935,13 @@ AntWindow::AntWindow(QWidget* parent)
     contentLayout->setSpacing(0);
     QMainWindow::setCentralWidget(m_contentWidget);
 
+#ifdef Q_OS_WIN
+    if (QCoreApplication* app = QCoreApplication::instance())
+    {
+        app->installNativeEventFilter(this);
+    }
+#endif
+
     auto* smoother = new AntWindowCornerSmoother(this);
     smoother->setCornerRadius(m_cornerRadius);
     smoother->raise();
@@ -939,6 +951,16 @@ AntWindow::AntWindow(QWidget* parent)
         syncTheme();
         update();
     });
+}
+
+AntWindow::~AntWindow()
+{
+#ifdef Q_OS_WIN
+    if (QCoreApplication* app = QCoreApplication::instance())
+    {
+        app->removeNativeEventFilter(this);
+    }
+#endif
 }
 
 void AntWindow::setWindowTitle(const QString& title)
@@ -1860,6 +1882,53 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
 #endif
 
     return QMainWindow::nativeEvent(eventType, message, result);
+}
+
+bool AntWindow::nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result)
+{
+#ifdef Q_OS_WIN
+    if ((eventType != "windows_generic_MSG" && eventType != "windows_dispatcher_MSG") || !message)
+    {
+        return false;
+    }
+
+    auto* msg = static_cast<MSG*>(message);
+    if (msg->message != WM_NCHITTEST)
+    {
+        return false;
+    }
+
+    if (!windowHandle())
+    {
+        return false;
+    }
+
+    const HWND ownerHwnd = reinterpret_cast<HWND>(winId());
+    const HWND messageHwnd = msg->hwnd;
+    if (!ownerHwnd || !messageHwnd || messageHwnd == ownerHwnd)
+    {
+        return false;
+    }
+
+    if (::GetAncestor(messageHwnd, GA_ROOT) != ownerHwnd && !::IsChild(ownerHwnd, messageHwnd))
+    {
+        return false;
+    }
+
+    if (!shouldForwardChildHitTestToAntWindow(this, msg->lParam))
+    {
+        return false;
+    }
+
+    *result = HTTRANSPARENT;
+    setProperty("antWindowChildHitTestForwarded", property("antWindowChildHitTestForwarded").toInt() + 1);
+    return true;
+#else
+    Q_UNUSED(eventType)
+    Q_UNUSED(message)
+    Q_UNUSED(result)
+    return false;
+#endif
 }
 
 bool AntWindow::isTitleBarArea(const QPoint& pos) const

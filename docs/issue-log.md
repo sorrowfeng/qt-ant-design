@@ -238,6 +238,13 @@
 - **解决**：Windows 下 content widget 改为私有 `AntWindowContentWidget`，在标题栏和 resize 边缘的 `WM_NCHITTEST` 返回 `HTTRANSPARENT`，让命中继续传给顶层 AntWindow；顶层窗口对 resize / caption 的 `WM_NCLBUTTONDOWN` 显式交给 `DefWindowProcW`。回归测试新增 worker 线程真实 `SendInput` 拖右边缘，验证窗口宽度实际增长。
 - **改动文件**：`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 32. DockWidget 回嵌后 AntWindow 左右/底边无法缩放
+
+- **现象**：`AntDockWidget` 从浮动窗口拖回 `AntWindow` 宿主布局后，顶边仍可缩放，但左边、右边和底边拖拽不再触发窗口 resize。
+- **根因**：回嵌后的 Dock 页面里存在更深层的 native child HWND，真实鼠标命中可能落在这些子窗口上，而不是只落在 `AntWindowContentWidget` 上。旧修复只让 content widget 在 resize band 返回 `HTTRANSPARENT`，没有覆盖任意后代 HWND，所以顶层 `AntWindow` 仍可能收不到左右/底边的 `WM_NCHITTEST`。
+- **解决**：`AntWindow` 在 Windows 下安装 `QAbstractNativeEventFilter`，当任意属于当前窗口的后代 HWND 在标题栏或 resize band 收到 `WM_NCHITTEST` 时统一返回 `HTTRANSPARENT`，让命中继续回到顶层 `AntWindow` 的系统 resize/caption 路径。回归测试在 DockWidget float 后拖回布局，再通过 worker 线程真实 `SendInput` 分别拖右边、左边和底边，验证尺寸实际增长并覆盖子 HWND 命中转发计数。
+- **改动文件**：`src/widgets/AntWindow.h`、`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

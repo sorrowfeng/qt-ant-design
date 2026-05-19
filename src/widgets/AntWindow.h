@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QAbstractNativeEventFilter>
 #include <QMainWindow>
 
 #include "core/AntTypes.h"
@@ -16,7 +17,7 @@ class QShowEvent;
 class QWidget;
 class AntRibbon;
 
-class QT_ANT_DESIGN_EXPORT AntWindow : public QMainWindow
+class QT_ANT_DESIGN_EXPORT AntWindow : public QMainWindow, public QAbstractNativeEventFilter
 {
     Q_OBJECT
     Q_PROPERTY(QString windowTitle READ windowTitle WRITE setWindowTitle NOTIFY windowTitleChanged)
@@ -41,7 +42,7 @@ public:
     Q_ENUM(TitleBarButton)
 
     explicit AntWindow(QWidget* parent = nullptr);
-    ~AntWindow() override = default;
+    ~AntWindow() override;
 
     void setWindowTitle(const QString& title);
     void setCentralWidget(QWidget* widget);
@@ -107,6 +108,7 @@ protected:
     void showEvent(QShowEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
+    bool nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result) override;
 
 private:
     bool isTitleBarArea(const QPoint& pos) const;

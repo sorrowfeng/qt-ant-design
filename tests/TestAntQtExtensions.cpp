@@ -2410,6 +2410,62 @@ void TestAntQtExtensions::dockManager()
         QVERIFY(nativeMouseClickForExtensionTest(&host, pageSwitch->mapToGlobal(pageSwitch->rect().center())));
         QTRY_COMPARE(switchAfterSpy.count(), 1);
         QVERIFY(!pageSwitch->isChecked());
+
+        auto verifyHostResizeAfterDockEmbed = [&](const QPoint& startLocal,
+                                                  const QPoint& delta,
+                                                  const char* edgeName) {
+            host.setGeometry(80, 80, 900, 620);
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+            QVERIFY(bringWidgetToFrontForExtensionTest(&host));
+
+            const QRect before = host.geometry();
+            const QPoint startGlobal = host.mapToGlobal(startLocal);
+            const QPoint nativeStart = nativePointForExtensionTest(&host, startGlobal);
+            POINT nativePoint{nativeStart.x(), nativeStart.y()};
+            HWND nativeAtPoint = ::WindowFromPoint(nativePoint);
+            QVERIFY2(nativeAtPoint != nullptr,
+                     qPrintable(QStringLiteral("WindowFromPoint should find a window at the AntWindow %1 resize edge after a dock is re-embedded.")
+                                    .arg(QString::fromLatin1(edgeName))));
+            QVERIFY2(::GetAncestor(nativeAtPoint, GA_ROOT) == reinterpret_cast<HWND>(host.winId()),
+                     qPrintable(QStringLiteral("The AntWindow %1 resize edge should still belong to the host root after a dock is re-embedded.")
+                                    .arg(QString::fromLatin1(edgeName))));
+
+            const int forwardedBefore = host.property("antWindowChildHitTestForwarded").toInt();
+            releaseTopMostForExtensionTest(&host);
+            QVERIFY2(nativeMouseDragFromWorkerForExtensionTest(&host, startGlobal, startGlobal + delta),
+                     qPrintable(QStringLiteral("Native mouse drag should complete on the AntWindow %1 resize edge after a dock is re-embedded.")
+                                    .arg(QString::fromLatin1(edgeName))));
+            QTRY_VERIFY2(host.property("antWindowChildHitTestForwarded").toInt() > forwardedBefore,
+                         qPrintable(QStringLiteral("The AntWindow %1 resize edge should forward child-HWND hit tests after a dock is re-embedded.")
+                                        .arg(QString::fromLatin1(edgeName))));
+
+            if (delta.x() != 0)
+            {
+                QVERIFY2(host.width() > before.width() + 40,
+                         qPrintable(QStringLiteral("Dragging the AntWindow %1 resize edge should grow width after a dock is re-embedded, before=%2 after=%3.")
+                                        .arg(QString::fromLatin1(edgeName))
+                                        .arg(before.width())
+                                        .arg(host.width())));
+            }
+            if (delta.y() != 0)
+            {
+                QVERIFY2(host.height() > before.height() + 40,
+                         qPrintable(QStringLiteral("Dragging the AntWindow %1 resize edge should grow height after a dock is re-embedded, before=%2 after=%3.")
+                                        .arg(QString::fromLatin1(edgeName))
+                                        .arg(before.height())
+                                        .arg(host.height())));
+            }
+        };
+
+        verifyHostResizeAfterDockEmbed(QPoint(host.width() - 2, AntWindow::TitleBarHeight + 140),
+                                       QPoint(96, 0),
+                                       "right");
+        verifyHostResizeAfterDockEmbed(QPoint(2, AntWindow::TitleBarHeight + 140),
+                                       QPoint(-96, 0),
+                                       "left");
+        verifyHostResizeAfterDockEmbed(QPoint(host.width() / 2, host.height() - 2),
+                                       QPoint(0, 96),
+                                       "bottom");
     }
 #endif
 
