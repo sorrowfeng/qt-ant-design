@@ -423,6 +423,14 @@
 - **验证**:`TestAntQtExtensions::colorPicker` 验证 HS field 走 opaque paint、最外角像素 alpha 为 255、背景缓存不随连续拖动重建,并继续验证 live refresh 合帧行为。
 - **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 49. AntColorPicker 透明 popup 内拖动仍有轻微顿感
+
+- **现象**:#48 将 HS field 改为不透明绘制后,example 中拖动仍能感觉到轻微卡顿。
+- **根因**:即使 HS field 本身 opaque,它仍是 `WA_TranslucentBackground` 顶层 popup 的普通子控件。Windows 下透明顶层窗口通常走 layered backing store,普通子控件 repaint 仍可能触发顶层 layered surface 的区域上传,拖动时就会残留合成成本。
+- **解决**:在 Windows 上把 HS field 标记为独立 native 子窗口(`WA_DontCreateNativeAncestors` + `WA_NativeWindow`),并保留 `WA_OpaquePaintEvent` / `WA_NoSystemBackground` / `WA_StaticContents`。这样最高频的拖动 repaint 落在一个不透明 native drag surface 上,避免通过透明 popup 的整块 backing store 合成路径。
+- **验证**:`TestAntQtExtensions::colorPicker` 验证 HS field 的 opaque/static paint 属性,并在 Windows 下验证 `antColorPickerNativeDragSurface=true` 与 `WA_NativeWindow` 生效。
+- **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 当前暂无记录。

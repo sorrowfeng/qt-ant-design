@@ -3776,6 +3776,13 @@ void TestAntQtExtensions::colorPicker()
     QCOMPARE(hueSatField->property("antColorPickerOpaqueFieldPaint").toBool(), true);
     QVERIFY(hueSatField->testAttribute(Qt::WA_OpaquePaintEvent));
     QVERIFY(hueSatField->testAttribute(Qt::WA_NoSystemBackground));
+    QVERIFY(hueSatField->testAttribute(Qt::WA_StaticContents));
+#ifdef Q_OS_WIN
+    QCOMPARE(hueSatField->property("antColorPickerNativeDragSurface").toBool(), true);
+    QVERIFY(hueSatField->testAttribute(Qt::WA_NativeWindow));
+#else
+    QCOMPARE(hueSatField->property("antColorPickerNativeDragSurface").toBool(), false);
+#endif
     QCOMPARE(hueSatField->property("antColorPickerUsesCachedFieldBackground").toBool(), true);
     QImage fieldImage(hueSatField->size(), QImage::Format_ARGB32_Premultiplied);
     fieldImage.fill(Qt::transparent);

@@ -46,6 +46,14 @@ public:
         setMouseTracking(true);
         setAttribute(Qt::WA_OpaquePaintEvent, true);
         setAttribute(Qt::WA_NoSystemBackground, true);
+        setAttribute(Qt::WA_StaticContents, true);
+#ifdef Q_OS_WIN
+        setAttribute(Qt::WA_DontCreateNativeAncestors, true);
+        setAttribute(Qt::WA_NativeWindow, true);
+        setProperty("antColorPickerNativeDragSurface", true);
+#else
+        setProperty("antColorPickerNativeDragSurface", false);
+#endif
         setAutoFillBackground(false);
         setProperty("antColorPickerOpaqueFieldPaint", true);
         setProperty("antColorPickerUsesCachedFieldBackground", true);

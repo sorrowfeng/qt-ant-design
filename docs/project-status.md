@@ -121,6 +121,8 @@ Follow-up: `AntColorPicker` drag refresh now coalesces HEX / alpha slider / prev
 
 Follow-up: the hot HS drag field now declares opaque/no-system-background painting and fills its cached pixmap with the popup elevated surface before drawing the color field. This keeps cursor repaint on a small opaque backing-store region instead of forcing transparent popup background recomposition; the targeted `colorPicker` subtest verifies the opaque paint attributes and fully opaque corner pixel.
 
+Follow-up: on Windows the HS drag field is now an isolated native child surface (`WA_NativeWindow` with no native ancestors) while remaining opaque/static. This keeps the high-frequency drag repaint out of the transparent popup layered-window upload path; the targeted `colorPicker` subtest verifies the native drag surface flag.
+
 Latest targeted Win10 dock re-embed repaint cadence validation:
 
 ```powershell
