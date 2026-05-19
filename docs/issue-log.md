@@ -318,6 +318,17 @@
   2. 尝试 `WM_WINDOWPOSCHANGING` 拦截，比 `WM_SIZE` 更早，可以在新尺寸到达 DWM 之前先确保 backdrop
   3. 评估完全放弃 `WA_TranslucentBackground`，圆角在 Win10 上接受方角降级（视觉妥协换稳定不闪）
 
+### B. Win10 DockWidget 浮窗回嵌后动画/渲染更新仍会卡顿
+
+- **现象**：Windows 10 下，把 `AntDockWidget` 从布局拖成 float 浮动窗口，再重新嵌入 Dock 布局后，示例窗口内控件的动画、hover、点击状态和自动 repaint / update 仍可能出现明显卡顿或延迟刷新。
+- **与已解决问题 #36 的区别**：#36 已处理“回嵌后主窗口动画刷新停止”的一轮确定性问题，包括 embedded dock/native child HWND 收敛、drop guide / preview 非 top-level 化和回嵌后截图采样验证。但当前 Win10 真机仍存在残留卡顿，表现不是完全冻结，而是动画/渲染更新节奏不稳定。
+- **当前状态**：待在 Windows 10 真机环境继续复现和修复。
+- **潜在排查方向**：
+  1. 回嵌后再次枚举 `AntWindow` / `AntDockWidget` / DockArea / guide / preview / software shadow 相关 native HWND，确认没有隐藏或透明 layered/tool/native child 残留在主窗口客户区上方
+  2. 对比回嵌前后 `QWidget::internalWinId()`、`WindowFromPoint()`、Win32 owner / transientParent、`WS_EX_LAYERED` / `WS_EX_TRANSPARENT` / `WS_EX_NOACTIVATE` 等 native 栈状态
+  3. 检查回嵌流程中是否仍有 `winId()` 调用把普通 child widget 强制提升成 native child，尤其是阴影、wave、corner smoother、dock title/content 及测试辅助 overlay
+  4. 在 Win10 真机上给控件动画定时器和 `QEvent::UpdateRequest` / `QEvent::Paint` 加临时计数，区分是 Qt paint 没投递、已投递但 backing store 没合成，还是被透明 HWND 覆盖导致视觉上没刷新
+
 ## 关联测试
 
 - `tests/TestAntQtExtensions.cpp`：覆盖 AntWindow / AntDockWidget 大部分行为
