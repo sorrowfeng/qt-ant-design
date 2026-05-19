@@ -231,6 +231,13 @@
 - **解决**：有明确落位的 drop 现在改用 queued meta-call，避免 timer tick 带来的慢一拍，同时避开在鼠标事件分发中直接销毁 / 重排 tab area 的生命周期风险；`insertDockWidget()` 插入 dock 后立即激活 workspace layout 并触发重绘。回归测试覆盖右侧容器落位和中心 tab 落位通过 `QEvent::MetaCall` 即可完成 dock tree 更新，不再依赖 timer 轮询。
 - **改动文件**：`src/widgets/AntDockManager.h`、`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 31. AntWindow 真实拖拽边缘仍无法缩放
+
+- **现象**：`WM_NCHITTEST` 单元路径能返回 `HTRIGHT` / `HTBOTTOM` 等 resize hit-test，但实际用鼠标拖 AntWindow 边缘时窗口尺寸不变。
+- **根因**：`AntWindow` 的内部 content widget 拥有子 HWND 并覆盖到窗口边缘，真实鼠标命中落在子 HWND 上，顶层 `AntWindow::nativeEvent()` 收不到 `WM_NCHITTEST` / `WM_NCLBUTTONDOWN`，因此系统 resize loop 没有启动。
+- **解决**：Windows 下 content widget 改为私有 `AntWindowContentWidget`，在标题栏和 resize 边缘的 `WM_NCHITTEST` 返回 `HTTRANSPARENT`，让命中继续传给顶层 AntWindow；顶层窗口对 resize / caption 的 `WM_NCLBUTTONDOWN` 显式交给 `DefWindowProcW`。回归测试新增 worker 线程真实 `SendInput` 拖右边缘，验证窗口宽度实际增长。
+- **改动文件**：`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

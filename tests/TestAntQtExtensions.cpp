@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QCoreApplication>
 #include <QContextMenuEvent>
+#include <QElapsedTimer>
 #include <QEventLoop>
 #include <QGraphicsOpacityEffect>
 #include <QGuiApplication>
@@ -24,6 +25,9 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QWindow>
+
+#include <atomic>
+#include <thread>
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
 #include "widgets/AntApp.h"
@@ -347,6 +351,25 @@ bool nativeMoveMouseForExtensionTest(QWidget* referenceWidget, const QPoint& glo
     return ::SendInput(1, &input, sizeof(INPUT)) == 1;
 }
 
+bool nativeMoveMouseToNativePointForExtensionTest(const QPoint& nativePos)
+{
+    const int virtualLeft = ::GetSystemMetrics(SM_XVIRTUALSCREEN);
+    const int virtualTop = ::GetSystemMetrics(SM_YVIRTUALSCREEN);
+    const int virtualWidth = qMax(1, ::GetSystemMetrics(SM_CXVIRTUALSCREEN));
+    const int virtualHeight = qMax(1, ::GetSystemMetrics(SM_CYVIRTUALSCREEN));
+
+    INPUT input{};
+    input.type = INPUT_MOUSE;
+    input.mi.dx = static_cast<LONG>(
+        qRound(static_cast<qreal>(nativePos.x() - virtualLeft) * 65535.0 /
+               static_cast<qreal>(qMax(1, virtualWidth - 1))));
+    input.mi.dy = static_cast<LONG>(
+        qRound(static_cast<qreal>(nativePos.y() - virtualTop) * 65535.0 /
+               static_cast<qreal>(qMax(1, virtualHeight - 1))));
+    input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
+    return ::SendInput(1, &input, sizeof(INPUT)) == 1;
+}
+
 bool nativeMouseClickForExtensionTest(QWidget* focusWidget, const QPoint& globalPos)
 {
     if (!bringWidgetToFrontForExtensionTest(focusWidget))
@@ -414,6 +437,51 @@ bool nativeMouseDragForExtensionTest(QWidget* focusWidget, const QPoint& startGl
     QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
     releaseTopMostForExtensionTest(focusWidget);
     return released;
+}
+
+bool nativeMouseDragFromWorkerForExtensionTest(QWidget* focusWidget, const QPoint& startGlobal, const QPoint& endGlobal)
+{
+    if (!bringWidgetToFrontForExtensionTest(focusWidget))
+    {
+        return false;
+    }
+
+    const QPoint nativeStart = nativePointForExtensionTest(focusWidget, startGlobal);
+    const QPoint nativeEnd = nativePointForExtensionTest(focusWidget, endGlobal);
+    std::atomic_bool done{false};
+    std::atomic_bool ok{true};
+    std::thread worker([nativeStart, nativeEnd, &done, &ok]() {
+        ok = nativeMoveMouseToNativePointForExtensionTest(nativeStart);
+        ::Sleep(70);
+        ok = ok && sendMouseInputForExtensionTest(MOUSEEVENTF_LEFTDOWN);
+        ::Sleep(90);
+        constexpr int kSteps = 18;
+        for (int step = 1; step <= kSteps; ++step)
+        {
+            const qreal t = static_cast<qreal>(step) / static_cast<qreal>(kSteps);
+            const QPoint point(qRound(nativeStart.x() + (nativeEnd.x() - nativeStart.x()) * t),
+                               qRound(nativeStart.y() + (nativeEnd.y() - nativeStart.y()) * t));
+            ok = ok && nativeMoveMouseToNativePointForExtensionTest(point);
+            ::Sleep(16);
+        }
+        ok = ok && sendMouseInputForExtensionTest(MOUSEEVENTF_LEFTUP);
+        ::Sleep(80);
+        done = true;
+    });
+
+    QElapsedTimer timer;
+    timer.start();
+    while (!done && timer.elapsed() < 4000)
+    {
+        QTest::qWait(20);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+    }
+    if (worker.joinable())
+    {
+        worker.join();
+    }
+    releaseTopMostForExtensionTest(focusWidget);
+    return done && ok;
 }
 
 bool nativeWindowPrecedesInZOrderForExtensionTest(HWND first, HWND second)
@@ -2744,6 +2812,30 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     {
     public:
         using AntWindow::nativeEvent;
+
+        bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+        {
+#ifdef Q_OS_WIN
+            if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
+            {
+                auto* msg = static_cast<MSG*>(message);
+                if (msg->message == WM_NCLBUTTONDOWN)
+                {
+                    ++nativeNonClientDownCount;
+                    lastNativeDownHitTest = static_cast<int>(msg->wParam);
+                }
+                else if (msg->message == WM_LBUTTONDOWN)
+                {
+                    ++nativeClientDownCount;
+                }
+            }
+#endif
+            return AntWindow::nativeEvent(eventType, message, result);
+        }
+
+        int nativeNonClientDownCount = 0;
+        int nativeClientDownCount = 0;
+        int lastNativeDownHitTest = 0;
     };
 
     NativeHitTestWindow window;
@@ -2815,6 +2907,50 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
              static_cast<qintptr>(HTRIGHT));
     QCOMPARE(systemHitTest(QPoint(80, -2)), static_cast<qintptr>(HTTOP));
     QCOMPARE(systemHitTest(QPoint(80, window.height() + 2)), static_cast<qintptr>(HTBOTTOM));
+    if (nativeMouseInputAvailableForExtensionTest())
+    {
+        window.showNormal();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        window.setGeometry(120, 120, 640, 420);
+        QCoreApplication::processEvents();
+
+        const int widthBeforeResizeDrag = window.width();
+        const int ncDownBeforeResizeDrag = window.nativeNonClientDownCount;
+        const int clientDownBeforeResizeDrag = window.nativeClientDownCount;
+        const QPoint resizeStart = window.mapToGlobal(QPoint(window.width() - 2, AntWindow::TitleBarHeight + 80));
+        const QPoint resizeEnd = resizeStart + QPoint(96, 0);
+        const QPoint nativeResizeStart = nativePointForExtensionTest(&window, resizeStart);
+        POINT resizeStartPoint{nativeResizeStart.x(), nativeResizeStart.y()};
+        HWND resizeStartHwnd = ::WindowFromPoint(resizeStartPoint);
+        QWidget* resizeStartWidget = resizeStartHwnd ? QWidget::find(reinterpret_cast<WId>(resizeStartHwnd)) : nullptr;
+        QVERIFY2(resizeStartHwnd != nullptr,
+                 "WindowFromPoint should find a native window at the AntWindow resize edge.");
+        QVERIFY2(::GetAncestor(resizeStartHwnd, GA_ROOT) == hwnd,
+                 qPrintable(QStringLiteral("AntWindow resize drag must start over the AntWindow HWND; hit widget=%1 native=0x%2 root=0x%3 expectedRoot=0x%4")
+                                .arg(resizeStartWidget ? resizeStartWidget->objectName() : QStringLiteral("<none>"))
+                                .arg(reinterpret_cast<quintptr>(resizeStartHwnd), 0, 16)
+                                .arg(reinterpret_cast<quintptr>(::GetAncestor(resizeStartHwnd, GA_ROOT)), 0, 16)
+                                .arg(reinterpret_cast<quintptr>(hwnd), 0, 16)));
+        QVERIFY2(resizeStartHwnd == hwnd,
+                 qPrintable(QStringLiteral("Resize edge should resolve to AntWindow's HWND, but hit child widget=%1 native=0x%2 root=0x%3 expected=0x%4")
+                                .arg(resizeStartWidget ? resizeStartWidget->objectName() : QStringLiteral("<none>"))
+                                .arg(reinterpret_cast<quintptr>(resizeStartHwnd), 0, 16)
+                                .arg(reinterpret_cast<quintptr>(::GetAncestor(resizeStartHwnd, GA_ROOT)), 0, 16)
+                                .arg(reinterpret_cast<quintptr>(hwnd), 0, 16)));
+        QVERIFY(nativeMouseDragFromWorkerForExtensionTest(&window, resizeStart, resizeEnd));
+        QVERIFY2(window.nativeNonClientDownCount > ncDownBeforeResizeDrag,
+                 qPrintable(QStringLiteral("Right-edge drag should enter WM_NCLBUTTONDOWN; nc before=%1 after=%2 client before=%3 after=%4 lastHit=%5")
+                                .arg(ncDownBeforeResizeDrag)
+                                .arg(window.nativeNonClientDownCount)
+                                .arg(clientDownBeforeResizeDrag)
+                                .arg(window.nativeClientDownCount)
+                                .arg(window.lastNativeDownHitTest)));
+        QCOMPARE(window.lastNativeDownHitTest, static_cast<int>(HTRIGHT));
+        QVERIFY2(window.width() > widthBeforeResizeDrag + 40,
+                 qPrintable(QStringLiteral("Dragging the native right resize edge should grow AntWindow width, before=%1 after=%2")
+                                .arg(widthBeforeResizeDrag)
+                                .arg(window.width())));
+    }
     QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<qintptr>(HTCAPTION));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Pin).center()), static_cast<qintptr>(HTCLIENT));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center()), static_cast<qintptr>(HTCLIENT));

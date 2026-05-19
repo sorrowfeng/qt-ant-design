@@ -634,6 +634,24 @@ AntWindow::TitleBarButton titleBarButtonForNativeHitTest(WPARAM hitTestCode)
     }
 }
 
+bool isNativeResizeHitTest(WPARAM hitTestCode)
+{
+    switch (hitTestCode)
+    {
+    case HTLEFT:
+    case HTRIGHT:
+    case HTTOP:
+    case HTBOTTOM:
+    case HTTOPLEFT:
+    case HTTOPRIGHT:
+    case HTBOTTOMLEFT:
+    case HTBOTTOMRIGHT:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool resolveDwmApis(DwmSetWindowAttributeFn* setWindowAttribute, DwmExtendFrameIntoClientAreaFn* extendFrame)
 {
     HMODULE dwmapi = ::GetModuleHandleW(L"dwmapi.dll");
@@ -801,6 +819,84 @@ void applyLegacyRoundedMask(QWidget* widget, int radius)
     widget->setProperty(kLegacyRoundedMaskAppliedProperty, false);
     widget->clearMask();
 }
+
+bool shouldForwardChildHitTestToAntWindow(AntWindow* owner, LPARAM messagePos)
+{
+    if (!owner || !owner->windowHandle())
+    {
+        return false;
+    }
+
+    const HWND ownerHwnd = reinterpret_cast<HWND>(owner->winId());
+    if (!ownerHwnd)
+    {
+        return false;
+    }
+
+    const QPoint ownerPos = nativeMessageLocalPoint(ownerHwnd, messagePos, owner->devicePixelRatioF());
+    if (ownerPos.y() >= 0 && ownerPos.y() < AntWindow::TitleBarHeight &&
+        ownerPos.x() >= 0 && ownerPos.x() < owner->width())
+    {
+        return true;
+    }
+
+    const int clientWidth = owner->width();
+    const int clientHeight = owner->height();
+    if (owner->isMaximized() || owner->isFullScreen() || clientWidth <= 0 || clientHeight <= 0)
+    {
+        return false;
+    }
+
+    const qreal dpr = qMax<qreal>(1.0, owner->devicePixelRatioF());
+    const int borderWidth =
+        qMax(8, qRound(static_cast<qreal>(resizeBorderMetric(ownerHwnd, SM_CXSIZEFRAME, SM_CXPADDEDBORDER)) / dpr));
+    const int borderHeight =
+        qMax(8, qRound(static_cast<qreal>(resizeBorderMetric(ownerHwnd, SM_CYSIZEFRAME, SM_CXPADDEDBORDER)) / dpr));
+    const bool inHorizontalResizeBand =
+        ownerPos.x() >= -borderWidth && ownerPos.x() < clientWidth + borderWidth;
+    const bool inVerticalResizeBand =
+        ownerPos.y() >= -borderHeight && ownerPos.y() < clientHeight + borderHeight;
+    const bool left = inVerticalResizeBand &&
+                      ownerPos.x() >= -borderWidth && ownerPos.x() < borderWidth;
+    const bool right = inVerticalResizeBand &&
+                       ownerPos.x() < clientWidth + borderWidth &&
+                       ownerPos.x() >= clientWidth - borderWidth;
+    const bool top = inHorizontalResizeBand &&
+                     ownerPos.y() >= -borderHeight && ownerPos.y() < borderHeight;
+    const bool bottom = inHorizontalResizeBand &&
+                        ownerPos.y() < clientHeight + borderHeight &&
+                        ownerPos.y() >= clientHeight - borderHeight;
+    return left || right || top || bottom;
+}
+
+class AntWindowContentWidget : public QWidget
+{
+public:
+    explicit AntWindowContentWidget(AntWindow* owner)
+        : QWidget(owner)
+        , m_owner(owner)
+    {
+        setObjectName(QStringLiteral("AntWindowContentWidget"));
+    }
+
+protected:
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    {
+        if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
+        {
+            auto* msg = static_cast<MSG*>(message);
+            if (msg->message == WM_NCHITTEST && shouldForwardChildHitTestToAntWindow(m_owner, msg->lParam))
+            {
+                *result = HTTRANSPARENT;
+                return true;
+            }
+        }
+        return QWidget::nativeEvent(eventType, message, result);
+    }
+
+private:
+    AntWindow* m_owner = nullptr;
+};
 #endif
 }
 
@@ -821,7 +917,11 @@ AntWindow::AntWindow(QWidget* parent)
     setMinimumSize(400, 300);
     syncTheme();
 
+#ifdef Q_OS_WIN
+    m_contentWidget = new AntWindowContentWidget(this);
+#else
     m_contentWidget = new QWidget(this);
+#endif
     m_contentWidget->setAttribute(Qt::WA_Hover, true);
     m_contentWidget->setMouseTracking(true);
     m_contentWidget->installEventFilter(this);
@@ -1671,6 +1771,12 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
                 m_pressedButton = button;
                 update(titleBarButtonRect(button));
                 *result = 0;
+                return true;
+            }
+            if (isNativeResizeHitTest(msg->wParam) || msg->wParam == HTCAPTION)
+            {
+                m_pressedButton = TitleBarButton::None;
+                *result = ::DefWindowProcW(hwnd, uMsg, msg->wParam, lParam);
                 return true;
             }
             break;
