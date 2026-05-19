@@ -1611,6 +1611,7 @@ void TestAntQtExtensions::dockManager()
     QVERIFY(!manager->dropPreviewRect().isEmpty());
     QVERIFY2(manager->dropPreviewRect().left() >= managerGlobalRect.center().x(),
              "Right edge guide preview must target the right half of the dock container.");
+    const int layoutCountBeforeRightDrop = layoutSpy.count();
     QMouseEvent releaseRightEvent(QEvent::MouseButtonRelease,
                                   QPointF(rightGuideMove),
                                   QPointF(rightGuideGlobal),
@@ -1618,8 +1619,11 @@ void TestAntQtExtensions::dockManager()
                                   Qt::NoButton,
                                   Qt::NoModifier);
     QCoreApplication::sendEvent(explorerTabBar, &releaseRightEvent);
-    QTRY_VERIFY(!manager->isDropPreviewVisible());
-    QTRY_VERIFY([&]() {
+    QCoreApplication::sendPostedEvents(manager, QEvent::MetaCall);
+    QVERIFY2(layoutSpy.count() > layoutCountBeforeRightDrop,
+             "Guided dock drops should update through a queued meta-call without waiting for a timer tick.");
+    QVERIFY(!manager->isDropPreviewVisible());
+    QVERIFY([&]() {
         QTabWidget* explorerArea = dockAreaForExtensionTest(explorer);
         if (!explorerArea) return false;
         const QRect explorerAreaRect = QRect(explorerArea->mapToGlobal(QPoint(0, 0)), explorerArea->size());
@@ -1651,6 +1655,7 @@ void TestAntQtExtensions::dockManager()
     auto* opacityEffect = qobject_cast<QGraphicsOpacityEffect*>(properties->graphicsEffect());
     QVERIFY(opacityEffect != nullptr);
     QVERIFY(qAbs(opacityEffect->opacity() - 0.68) < 0.01);
+    const int layoutCountBeforeCenterDrop = layoutSpy.count();
     QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
                              QPointF(centerGuideMove),
                              QPointF(centerGuideGlobal),
@@ -1658,15 +1663,18 @@ void TestAntQtExtensions::dockManager()
                              Qt::NoButton,
                              Qt::NoModifier);
     QCoreApplication::sendEvent(propertiesTabBar, &releaseEvent);
-    QTRY_VERIFY(!manager->isDropPreviewVisible());
+    QCoreApplication::sendPostedEvents(manager, QEvent::MetaCall);
+    QVERIFY2(layoutSpy.count() > layoutCountBeforeCenterDrop,
+             "Center dock drops should update through a queued meta-call without waiting for a timer tick.");
+    QVERIFY(!manager->isDropPreviewVisible());
     QCOMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::None);
-    QTRY_VERIFY(properties->graphicsEffect() == nullptr);
-    QTRY_VERIFY(manager->tabifiedDockWidgets(preview).contains(properties) ||
-                manager->tabifiedDockWidgets(inspector).contains(properties) ||
-                manager->tabifiedDockWidgets(explorer).contains(properties) ||
-                manager->tabifiedDockWidgets(properties).contains(preview) ||
-                manager->tabifiedDockWidgets(properties).contains(inspector) ||
-                manager->tabifiedDockWidgets(properties).contains(explorer));
+    QVERIFY(properties->graphicsEffect() == nullptr);
+    QVERIFY(manager->tabifiedDockWidgets(preview).contains(properties) ||
+            manager->tabifiedDockWidgets(inspector).contains(properties) ||
+            manager->tabifiedDockWidgets(explorer).contains(properties) ||
+            manager->tabifiedDockWidgets(properties).contains(preview) ||
+            manager->tabifiedDockWidgets(properties).contains(inspector) ||
+            manager->tabifiedDockWidgets(properties).contains(explorer));
     QVERIFY(previewVisibleSpy.count() >= 4);
 
     QTabWidget* explorerAreaBeforeDisabledGuideDrag = dockAreaForExtensionTest(explorer);

@@ -127,6 +127,7 @@ private:
     DockArea* areaForDock(AntDockWidget* dockWidget) const;
     DockArea* firstDockArea() const;
     void setRootDockWidget(QWidget* widget);
+    void refreshDockLayoutNow();
     void insertDockWidget(AntDockWidget* dockWidget, DockArea* targetArea, DockPlacement placement, bool containerDrop = false);
     void splitAreaWithWidget(QWidget* targetWidget, QWidget* newWidget, DockPlacement placement);
     void removeDockFromArea(AntDockWidget* dockWidget, bool detach);

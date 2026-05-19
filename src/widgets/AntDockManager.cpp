@@ -2582,6 +2582,26 @@ void AntDockManager::setRootDockWidget(QWidget* widget)
     updatePlaceholderState();
 }
 
+void AntDockManager::refreshDockLayoutNow()
+{
+    if (m_workspace && m_workspace->layout())
+    {
+        m_workspace->layout()->activate();
+    }
+    if (m_rootDockWidget)
+    {
+        m_rootDockWidget->updateGeometry();
+        m_rootDockWidget->update();
+    }
+    if (m_workspace)
+    {
+        m_workspace->updateGeometry();
+        m_workspace->update();
+    }
+    updateGeometry();
+    update();
+}
+
 void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targetArea, DockPlacement placement, bool containerDrop)
 {
     if (!dockWidget) return;
@@ -2607,6 +2627,7 @@ void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targe
         m_dockAreas.insert(dockWidget, area);
         setRootDockWidget(area);
         updatePlaceholderState();
+        refreshDockLayoutNow();
         if (added) Q_EMIT dockWidgetAdded(dockWidget);
         Q_EMIT dockWidgetDocked(dockWidget, placement);
         Q_EMIT dockLayoutChanged();
@@ -2623,6 +2644,7 @@ void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targe
         targetArea->addDock(dockWidget);
         m_dockAreas.insert(dockWidget, targetArea);
         updatePlaceholderState();
+        refreshDockLayoutNow();
         if (added) Q_EMIT dockWidgetAdded(dockWidget);
         Q_EMIT dockWidgetDocked(dockWidget, DockPlacement::Center);
         Q_EMIT dockLayoutChanged();
@@ -2637,6 +2659,7 @@ void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targe
     splitAreaWithWidget(targetWidget, newArea, placement);
     updateTheme();
     updatePlaceholderState();
+    refreshDockLayoutNow();
     if (added) Q_EMIT dockWidgetAdded(dockWidget);
     Q_EMIT dockWidgetDocked(dockWidget, placement);
     Q_EMIT dockLayoutChanged();
@@ -3045,23 +3068,23 @@ void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
             return;
         }
 
-        QTimer::singleShot(0, this, [manager, draggedDock, floatGeometry]() {
+        QMetaObject::invokeMethod(this, [manager, draggedDock, floatGeometry]() {
             if (!manager || !draggedDock)
             {
                 return;
             }
             manager->floatDockWidget(draggedDock, floatGeometry);
-        });
+        }, Qt::QueuedConnection);
         return;
     }
 
-    QTimer::singleShot(0, this, [manager, draggedDock, targetDock, placement, containerDrop]() {
+    QMetaObject::invokeMethod(this, [manager, draggedDock, targetDock, placement, containerDrop]() {
         if (!manager || !draggedDock)
         {
             return;
         }
         manager->applyDropTarget(draggedDock, targetDock, placement, containerDrop);
-    });
+    }, Qt::QueuedConnection);
 }
 
 void AntDockManager::stopDockDragTracking()

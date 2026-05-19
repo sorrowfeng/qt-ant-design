@@ -224,6 +224,13 @@
 - **解决**：drop guide overlay 改为独立透明 top-level 工具窗，并在每次更新 drop preview 后重新 `raise()`，确保小方格在预览层之上；回归测试直接验证 overlay 可见、置顶、原生命中穿透，并通过渲染像素确认 active guide square 被实际绘制。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 30. DockWidget 拖动落位后新布局慢一拍刷新
+
+- **现象**：拖动 DockWidget 改变布局时，松开鼠标后预览先消失，新 dock tree 下一轮事件循环才刷新，视觉上有明显滞后。
+- **根因**：`finishDockDragTracking()` 对已命中 drop target 的情况使用 `QTimer::singleShot(0)` 延后调用 `applyDropTarget()`；同时新 root / splitter tree 没有在插入后主动激活布局。
+- **解决**：有明确落位的 drop 现在改用 queued meta-call，避免 timer tick 带来的慢一拍，同时避开在鼠标事件分发中直接销毁 / 重排 tab area 的生命周期风险；`insertDockWidget()` 插入 dock 后立即激活 workspace layout 并触发重绘。回归测试覆盖右侧容器落位和中心 tab 落位通过 `QEvent::MetaCall` 即可完成 dock tree 更新，不再依赖 timer 轮询。
+- **改动文件**：`src/widgets/AntDockManager.h`、`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
