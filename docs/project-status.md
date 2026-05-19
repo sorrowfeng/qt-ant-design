@@ -119,6 +119,8 @@ Follow-up: `AntColorPicker` popup shadow margin is now tightened to 28px for the
 
 Follow-up: `AntColorPicker` drag refresh now coalesces HEX / alpha slider / preview / owner trigger / public signal updates into a 16ms live-refresh timer while keeping the HS cursor repaint immediate. The targeted `colorPicker` subtest verifies repeated drag events reuse the cached field background and collapse into one live refresh.
 
+Follow-up: the hot HS drag field now declares opaque/no-system-background painting and fills its cached pixmap with the popup elevated surface before drawing the color field. This keeps cursor repaint on a small opaque backing-store region instead of forcing transparent popup background recomposition; the targeted `colorPicker` subtest verifies the opaque paint attributes and fully opaque corner pixel.
+
 Latest targeted Win10 dock re-embed repaint cadence validation:
 
 ```powershell

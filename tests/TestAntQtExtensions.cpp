@@ -3773,6 +3773,9 @@ void TestAntQtExtensions::colorPicker()
 
     auto* hueSatField = popup->findChild<QWidget*>(QStringLiteral("AntColorPickerHueSatField"));
     QVERIFY(hueSatField != nullptr);
+    QCOMPARE(hueSatField->property("antColorPickerOpaqueFieldPaint").toBool(), true);
+    QVERIFY(hueSatField->testAttribute(Qt::WA_OpaquePaintEvent));
+    QVERIFY(hueSatField->testAttribute(Qt::WA_NoSystemBackground));
     QCOMPARE(hueSatField->property("antColorPickerUsesCachedFieldBackground").toBool(), true);
     QImage fieldImage(hueSatField->size(), QImage::Format_ARGB32_Premultiplied);
     fieldImage.fill(Qt::transparent);
@@ -3780,6 +3783,7 @@ void TestAntQtExtensions::colorPicker()
         QPainter painter(&fieldImage);
         hueSatField->render(&painter);
     }
+    QCOMPARE(fieldImage.pixelColor(0, 0).alpha(), 255);
     const int cacheBuildCount = hueSatField->property("antColorPickerFieldBackgroundCacheBuilds").toInt();
     QVERIFY(cacheBuildCount > 0);
     QSignalSpy selectedSpy(w, &AntColorPicker::colorSelected);

@@ -415,6 +415,14 @@
 - **验证**:`TestAntQtExtensions::colorPicker` 连续发送多次 HS field 拖动事件,断言背景缓存不重建,并验证多次拖动只合并成一次 live refresh / 一次 `colorSelected` / 一次 `currentColorChanged`。
 - **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 48. AntColorPicker 拖动选色仍卡顿的渲染回归
+
+- **现象**:#47 合并了外部刷新后,拖动选色仍有卡顿;用户反馈上周该路径不卡,说明瓶颈更像近期透明弹层绘制路径带来的渲染回归,不是 HSV 计算或业务信号本身。
+- **根因**:HS 取色区域位于 `WA_TranslucentBackground` 顶层 popup 内,自身没有声明为不透明绘制。拖动时虽然只 `update()` 指示器 dirty rect,Qt 仍可能为了透明子控件向父级追溯背景并参与 layered window 合成,进而把本该很小的 cursor repaint 放大成透明 popup 的背景/阴影合成成本。
+- **解决**:将 `HueSatField` 标记为 `WA_OpaquePaintEvent` + `WA_NoSystemBackground`,缓存背景 pixmap 改为用 `colorBgElevated` 填满整块矩形后再绘制圆角色域。这样 HS field 的每次拖动重绘都是不透明小区域,不再依赖父 popup 背景重建;缓存 key 增加 theme mode,避免主题切换后角落背景颜色陈旧。
+- **验证**:`TestAntQtExtensions::colorPicker` 验证 HS field 走 opaque paint、最外角像素 alpha 为 255、背景缓存不随连续拖动重建,并继续验证 live refresh 合帧行为。
+- **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 当前暂无记录。

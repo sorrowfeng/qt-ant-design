@@ -44,6 +44,10 @@ public:
         setObjectName(QStringLiteral("AntColorPickerHueSatField"));
         setFixedSize(234, 160);
         setMouseTracking(true);
+        setAttribute(Qt::WA_OpaquePaintEvent, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAutoFillBackground(false);
+        setProperty("antColorPickerOpaqueFieldPaint", true);
         setProperty("antColorPickerUsesCachedFieldBackground", true);
     }
 
@@ -146,15 +150,17 @@ private:
         if (!m_background.isNull() &&
             m_background.size() == pixelSize &&
             qFuzzyCompare(m_background.devicePixelRatio(), dpr) &&
-            m_backgroundHue == m_hue)
+            m_backgroundHue == m_hue &&
+            m_backgroundThemeMode == antTheme->themeMode())
         {
             return m_background;
         }
 
         m_background = QPixmap(pixelSize);
         m_background.setDevicePixelRatio(dpr);
-        m_background.fill(Qt::transparent);
+        m_background.fill(antTheme->tokens().colorBgElevated);
         m_backgroundHue = m_hue;
+        m_backgroundThemeMode = antTheme->themeMode();
         setProperty("antColorPickerFieldBackgroundCacheBuilds",
                     property("antColorPickerFieldBackgroundCacheBuilds").toInt() + 1);
 
@@ -183,6 +189,7 @@ private:
     QPoint m_point = QPoint(233, 0);
     int m_hue = 215;
     int m_backgroundHue = -1;
+    Ant::ThemeMode m_backgroundThemeMode = Ant::ThemeMode::Default;
     QPixmap m_background;
 };
 
