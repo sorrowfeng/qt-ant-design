@@ -12,6 +12,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPixmap>
 #include <QRegularExpressionValidator>
 #include <QScreen>
 #include <QSizePolicy>
@@ -27,6 +28,8 @@ constexpr int kColorPickerPopupShadowMargin = 40;
 constexpr int kColorPickerPopupPanelPadding = 12;
 constexpr int kColorPickerPopupContentWidth = 234;
 constexpr int kColorPickerPopupContentHeight = 248;
+constexpr int kColorPickerPopupShadowWidth = 12;
+constexpr qreal kColorPickerPopupShadowStrength = 0.30;
 }
 
 // ---- HueSatField ----
@@ -36,21 +39,34 @@ class HueSatField : public QWidget
 public:
     explicit HueSatField(QWidget* parent = nullptr) : QWidget(parent)
     {
+        setObjectName(QStringLiteral("AntColorPickerHueSatField"));
         setFixedSize(234, 160);
         setMouseTracking(true);
+        setProperty("antColorPickerUsesCachedFieldBackground", true);
     }
 
     void setHsv(int h, int s, int v)
     {
-        m_hue = qBound(0, h < 0 ? 0 : h, 359);
+        const int nextHue = qBound(0, h < 0 ? 0 : h, 359);
+        const bool hueChanged = m_hue != nextHue;
+        m_hue = nextHue;
         const int x = qBound(0, s * width() / 255, width() - 1);
         const int y = qBound(0, height() - 1 - v * height() / 255, height() - 1);
         const QPoint next(x, y);
+        if (hueChanged)
+        {
+            invalidateBackgroundCache();
+        }
         if (m_point != next)
         {
+            const QRect dirty = indicatorRect(m_point).united(indicatorRect(next));
             m_point = next;
+            update(dirty);
         }
-        update();
+        else if (hueChanged)
+        {
+            update();
+        }
     }
 
     void setCurrentHsv(int& h, int& s, int& v)
@@ -62,7 +78,13 @@ public:
 
     void setHue(int hue)
     {
-        m_hue = qBound(0, hue < 0 ? 0 : hue, 359);
+        const int nextHue = qBound(0, hue < 0 ? 0 : hue, 359);
+        if (m_hue == nextHue)
+        {
+            return;
+        }
+        m_hue = nextHue;
+        invalidateBackgroundCache();
         update();
     }
 
@@ -73,23 +95,7 @@ protected:
     {
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
-
-        const QRectF field = rect().adjusted(0.5, 0.5, -0.5, -0.5);
-        p.setPen(Qt::NoPen);
-        p.setBrush(QColor::fromHsv(m_hue, 255, 255));
-        p.drawRoundedRect(field, 3, 3);
-
-        QLinearGradient white(0, 0, width(), 0);
-        white.setColorAt(0, Qt::white);
-        white.setColorAt(1, QColor(255, 255, 255, 0));
-        p.setBrush(white);
-        p.drawRoundedRect(field, 3, 3);
-
-        QLinearGradient black(0, 0, 0, height());
-        black.setColorAt(0, QColor(0, 0, 0, 0));
-        black.setColorAt(1, Qt::black);
-        p.setBrush(black);
-        p.drawRoundedRect(field, 3, 3);
+        p.drawPixmap(0, 0, backgroundPixmap());
 
         p.setPen(QPen(Qt::white, 2));
         p.setBrush(Qt::NoBrush);
@@ -109,13 +115,73 @@ private:
     {
         const int x = qBound(0, pos.x(), width() - 1);
         const int y = qBound(0, pos.y(), height() - 1);
-        m_point = QPoint(x, y);
-        update();
+        const QPoint next(x, y);
+        if (m_point == next)
+        {
+            return;
+        }
+        const QRect dirty = indicatorRect(m_point).united(indicatorRect(next));
+        m_point = next;
+        update(dirty);
         if (onChanged) onChanged();
+    }
+
+    QRect indicatorRect(const QPoint& point) const
+    {
+        return QRect(point - QPoint(11, 11), QSize(22, 22)).adjusted(-2, -2, 2, 2).intersected(rect());
+    }
+
+    void invalidateBackgroundCache()
+    {
+        m_background = QPixmap();
+    }
+
+    QPixmap backgroundPixmap()
+    {
+        const qreal dpr = qMax<qreal>(1.0, devicePixelRatioF());
+        const QSize pixelSize(qMax(1, qRound(width() * dpr)),
+                              qMax(1, qRound(height() * dpr)));
+        if (!m_background.isNull() &&
+            m_background.size() == pixelSize &&
+            qFuzzyCompare(m_background.devicePixelRatio(), dpr) &&
+            m_backgroundHue == m_hue)
+        {
+            return m_background;
+        }
+
+        m_background = QPixmap(pixelSize);
+        m_background.setDevicePixelRatio(dpr);
+        m_background.fill(Qt::transparent);
+        m_backgroundHue = m_hue;
+        setProperty("antColorPickerFieldBackgroundCacheBuilds",
+                    property("antColorPickerFieldBackgroundCacheBuilds").toInt() + 1);
+
+        QPainter p(&m_background);
+        p.setRenderHint(QPainter::Antialiasing);
+        const QRectF field = rect().adjusted(0.5, 0.5, -0.5, -0.5);
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor::fromHsv(m_hue, 255, 255));
+        p.drawRoundedRect(field, 3, 3);
+
+        QLinearGradient white(0, 0, width(), 0);
+        white.setColorAt(0, Qt::white);
+        white.setColorAt(1, QColor(255, 255, 255, 0));
+        p.setBrush(white);
+        p.drawRoundedRect(field, 3, 3);
+
+        QLinearGradient black(0, 0, 0, height());
+        black.setColorAt(0, QColor(0, 0, 0, 0));
+        black.setColorAt(1, Qt::black);
+        p.setBrush(black);
+        p.drawRoundedRect(field, 3, 3);
+
+        return m_background;
     }
 
     QPoint m_point = QPoint(233, 0);
     int m_hue = 215;
+    int m_backgroundHue = -1;
+    QPixmap m_background;
 };
 
 // ---- HueSlider ----
@@ -131,7 +197,12 @@ public:
 
     void setHue(int hue)
     {
-        m_hue = qBound(0, hue < 0 ? 0 : hue, 359);
+        const int nextHue = qBound(0, hue < 0 ? 0 : hue, 359);
+        if (m_hue == nextHue)
+        {
+            return;
+        }
+        m_hue = nextHue;
         update();
     }
 
@@ -197,6 +268,10 @@ public:
 
     void setColor(const QColor& color)
     {
+        if (m_color == color)
+        {
+            return;
+        }
         m_color = color;
         update();
     }
@@ -245,7 +320,15 @@ class ColorPreview : public QWidget
 {
 public:
     explicit ColorPreview(QWidget* parent = nullptr) : QWidget(parent) { setFixedSize(40, 40); }
-    void setColor(const QColor& c) { m_color = c; update(); }
+    void setColor(const QColor& c)
+    {
+        if (m_color == c)
+        {
+            return;
+        }
+        m_color = c;
+        update();
+    }
 
 protected:
     void paintEvent(QPaintEvent*) override
@@ -343,8 +426,18 @@ public:
         : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
           m_owner(owner)
     {
+        setObjectName(QStringLiteral("AntColorPickerPopup"));
+        setFrameShape(QFrame::NoFrame);
+        setLineWidth(0);
+        setMidLineWidth(0);
         setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAutoFillBackground(false);
+        setWindowFlag(Qt::NoDropShadowWindowHint, true);
         setFocusPolicy(Qt::StrongFocus);
+        setProperty("antColorPickerPopupNoNativeShadow", true);
+        setProperty("antColorPickerPopupShadowWidth", kColorPickerPopupShadowWidth);
+        setProperty("antColorPickerPopupShadowStrength", kColorPickerPopupShadowStrength);
         setupUi();
     }
 
@@ -388,7 +481,11 @@ private:
 
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-        antTheme->drawEffectShadow(&painter, panel.toRect(), 16, token.borderRadiusLG, 0.42);
+        antTheme->drawEffectShadow(&painter,
+                                   panel.toRect(),
+                                   kColorPickerPopupShadowWidth,
+                                   token.borderRadiusLG,
+                                   kColorPickerPopupShadowStrength);
 
         QPainterPath arrow;
         arrow.moveTo(arrowCenter.x() - 7.0, arrowCenter.y());
@@ -519,7 +616,11 @@ void ColorPickerPopup::updateSlidersFromColor()
 
 void ColorPickerPopup::updateHexField()
 {
-    m_hexEdit->setText(m_currentColor.name().toUpper());
+    const QString text = m_currentColor.name().toUpper();
+    if (m_hexEdit->text() != text)
+    {
+        m_hexEdit->setText(text);
+    }
 }
 
 void ColorPickerPopup::syncColor()
@@ -598,7 +699,6 @@ void AntColorPicker::setCurrentColor(const QColor& color)
     {
         static_cast<ColorPickerPopup*>(m_popup)->setCurrentColor(m_currentColor);
     }
-    updateGeometry();
     update();
     Q_EMIT currentColorChanged(m_currentColor);
 }

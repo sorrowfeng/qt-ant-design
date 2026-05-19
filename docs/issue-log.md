@@ -357,37 +357,41 @@
 - **解决**:本症状原本是"未解决",在 #41 把 Win10 切到 opaque 路径(无 `WA_TranslucentBackground`、无 DWM glass 扩展)后已被一并消除;Win11 caption 路径下用户在真机验证未复现,可视为已解决。
 - **改动文件**:已包含在 #41 的改动里(`src/widgets/AntWindow.h`、`src/widgets/AntWindow.cpp`、`src/styles/AntWindowStyle.cpp`)。
 
-## 未解决
-
-### A. AntWindow 主题切换速度变慢
+### 43. AntWindow 主题切换速度变慢
 
 - **现象**:点击标题栏的 Light/Dark 切换按钮,从主题真正变化到 overlay 揭示动画结束,整体耗时变长,过渡不像之前那么干脆。
 - **适用范围**:Win10 / Win11 似乎都能感觉到,Win10 opaque 路径上(#41 修复后)更明显。
-- **推测原因**:
-  1. `AntWindowThemeTransitionOverlay` 用 `WA_TranslucentBackground=true` + `CompositionMode_DestinationIn` 风格的 reveal 动画,绘制时要先 capture 旧 frame、再 draw 新 frame——Win10 上没有 backing store alpha 通道时,overlay 仍是 translucent child 而宿主是 opaque,可能让 overlay 和宿主 backing store 走两套不同合成路径
-  2. 主题切换同时触发整个 widget tree 的 `themeChanged` 信号广播,例 84 个公开组件全部 invalidate + repaint。如果某个组件 (`AntCard` / `AntList` / `AntTable`) 在 `themeChanged` 槽里做了重活(palette 全量重设、子 widget 递归 update),会拉长总耗时
-  3. AntWindow 的标题栏 hover / pin / theme 按钮自己也在重画,叠加 overlay 动画的 16 ms precise timer
-- **潜在排查方向**:
-  1. 在 `AntWindowThemeTransitionOverlay::advanceAnimation` / `paintEvent` 里加 `QElapsedTimer` 打点,看每帧实际耗时与动画总时长,先确认是 overlay 自己慢还是底下 widget tree repaint 慢
-  2. 关掉 overlay 看主题切换有多快,如果 overlay 关掉就快,说明 overlay 是瓶颈
-  3. 检查最近改动是否给 `themeChanged` 槽加了新的重活(palette 递归、子 style 再创建等)
-  4. 评估在主题切换期间临时禁用 `AntCard` / `AntList` 等组件的 hover 动画,避免和 overlay 动画抢调度
+- **根因**:
+  1. `startThemeModeTransition()` 为了拿到新旧两帧,在显示旧帧 overlay 后调用两次 `QCoreApplication::processEvents()` 再 `grab()`。这会把主题切换期间整棵 widget tree 的 repaint 全部同步压进点击处理栈里,用户体感就是"点下去之后先卡一下,动画才开始"。
+  2. `AntWindowThemeTransitionOverlay` 的 reveal 羽化每帧用 24 层 `QPainterPath::subtracted()` 环形裁剪绘制新帧,窗口越大每帧路径布尔运算越重。
+  3. Win10 opaque 路径已经不再需要 alpha 圆角揭示,继续使用 translucent reveal overlay 会让 opaque 宿主和 translucent child 走两套合成路径。
+- **解决**:
+  1. 新增同步 `render()` 捕获路径 `captureAntWindowFrame()` 替代 `grab()` + `processEvents()`。主题切换前后都直接 render 当前 widget tree 到带 DPR 的 `QPixmap`,不再通过事件循环强制刷新两次。
+  2. overlay 动画从 320 ms / 8 ms tick 调整为 220 ms / 16 ms tick,减少总时长和每秒绘制次数。
+  3. Win10 opaque 路径改用轻量 crossfade 模式:旧帧铺底,新帧按 progress 淡入,不再做圆形 reveal / feather path 运算。Win11 caption 路径仍保留 circular reveal。
+  4. overlay 增加诊断属性 `transitionCaptureMethod=render`、`transitionUsesEventLoopCapture=false`、`transitionMode`。回归测试验证不再走事件循环捕获,并按 Win10/Win11 路径检查 crossfade / circular-reveal 模式。
+- **改动文件**:`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
 
-### B. AntColorPicker 弹窗下方多重边缘 + 拖动选色卡顿
+### 44. AntColorPicker 弹窗下方多重边缘 + 拖动选色卡顿
 
 - **现象**:点击 `AntColorPicker` 触发器弹出颜色面板时:
   1. 弹窗的下边缘(可能也包括左右下角)出现明显的多层 / 重影边框,看起来像是阴影裁切边界 + 面板边框 + 系统边框叠加
   2. 在 HS 取色区域(色相 / 饱和度大方块)按住鼠标拖动选色时,鼠标位置与采样指示器更新明显跟不上,有可见延迟
 - **适用范围**:Win10 / Win11 都能复现(待用户细分)。
-- **推测原因**:
-  1. **多重边缘**:`AntColorPicker` 弹层是自绘面板,`AntTheme::drawEffectShadow` 在面板外画柔和阴影,弹层 widget 还有自己的 1px 边框。如果弹层有透明留白但又被 Qt::Tool / Qt::Popup 加了系统 drop shadow(`CS_DROPSHADOW`),或者阴影绘制超出 widget 几何被裁切到 widget 边沿,就会出现"阴影边 + 面板边 + 系统边"三层叠
-  2. **拖动卡顿**:HS field 鼠标拖动可能在 `mouseMoveEvent` 里同步重算 HSV 转 RGB / 重画 HS field + Hue / Alpha 滑条 / 预览色块 / RGB-HEX 输入框五块区域,每帧都 invalidate 整个面板而不是 dirty rect,再加上整个弹层透明阴影需要 alpha 合成,Win10 上累积出可见延迟
-- **潜在排查方向**:
-  1. 截屏比对弹窗下边缘,确认到底是几层"边",分别归到 widget border / 软件阴影 / 系统 drop shadow / 阴影裁切
-  2. 检查 `AntColorPicker` 弹层 widget flags(是否 Qt::Popup,是否带 `Qt::NoDropShadowWindowHint`,是否设了 `setAttribute(Qt::WA_TranslucentBackground)` 但又被裁切)
-  3. 给 `mouseMoveEvent` 加节流(throttling)——每 16 ms 至多一次重画,避免每个 WM_MOUSEMOVE 都跑一遍 HSV 计算和整面板 repaint
-  4. 把 HS field / Hue / Alpha / 预览块 拆成独立子 widget,只 `update()` 真正变化的那个,不要整面板 invalidate
-  5. 确认弹层是否走了 `AntStyleBase` 的 `installPaintFilter`,如果是,在 HS field 拖动期间是否会触发不必要的 style polish
+- **根因**:
+  1. 弹层虽然设置了 `Qt::NoDropShadowWindowHint`,但 `QFrame` 默认 frame 状态没有显式清零,同时手绘 shadow 强度偏高,下边缘会把 panel border、手绘阴影层和潜在平台边缘叠在一起。
+  2. HS 取色区域每次拖动都重画整块 234×160 的 hue/saturation/value 渐变,即使 hue 没变也会重新生成三层渐变背景;同时 `setCurrentColor()` 每帧都会 `updateGeometry()`,拖动时额外触发布局请求。
+- **解决**:
+  1. `ColorPickerPopup` 显式 `setFrameShape(QFrame::NoFrame)`、lineWidth/midLineWidth 归零、设置 `WA_NoSystemBackground`、保留 `Qt::NoDropShadowWindowHint`,并暴露 `antColorPickerPopupNoNativeShadow=true` 诊断属性。
+  2. ColorPicker 弹层手绘阴影改为 12px / 0.30 strength,保留柔和 elevation,但降低下边缘多层叠影。
+  3. `HueSatField` 增加按 hue + size + DPR 缓存的背景 pixmap。拖动时只局部刷新旧/新指示器区域,不再每帧重算整块渐变。
+  4. Hue/Alpha/Preview/HEX 更新都增加"值未变化则不 update/setText"保护;`AntColorPicker::setCurrentColor()` 移除拖动期间不必要的 `updateGeometry()`。
+  5. 回归测试验证 popup 无原生阴影/无 QFrame frame、底部透明边缘不被阴影裁切、下方阴影 alpha 逐步衰减,并验证 HS field 连续拖动不会重建背景缓存。
+- **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
+
+## 未解决
+
+当前暂无记录。
 
 ## 关联测试
 

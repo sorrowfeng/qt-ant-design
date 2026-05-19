@@ -102,7 +102,16 @@ cmake --build build --config Debug --target qt-ant-design-example TestAntQtExten
 "build/tests/Debug/TestAntQtExtensions.exe" dockManager windowLegacyFramePolicyRestoresShadowAfterResize windowNativeHitTestSupportsSnapZones windowDwmFrameMarginsPreserveShadow
 ```
 
-Result: on `2026-05-20`, Win10 AntWindow now takes a fully opaque path (no `WA_TranslucentBackground`, no `AntWindowCornerSmoother`, no DWM glass extension during edge resize, no `DWMWA_BORDER_COLOR` gray frame, and `WM_NCACTIVATE` / `WM_NCPAINT` consumed). The window paints square corners with the legacy software shadow drawing a square outline. The Win11 caption path is unchanged. User-reported symptoms cleared on real Win10 hardware: dock float/embed stutter, page-switch stutter, repeated-resize black screen, four-edge gray frame, refocus focus rectangle, and "corners stuck square after an interrupted resize loop". Two new issues recorded as unresolved in `docs/issue-log.md` items B (theme transition speed) and C (AntColorPicker popup multi-edge + drag stutter).
+Result: on `2026-05-20`, Win10 AntWindow now takes a fully opaque path (no `WA_TranslucentBackground`, no `AntWindowCornerSmoother`, no DWM glass extension during edge resize, no `DWMWA_BORDER_COLOR` gray frame, and `WM_NCACTIVATE` / `WM_NCPAINT` consumed). The window paints square corners with the legacy software shadow drawing a square outline. The Win11 caption path is unchanged. User-reported symptoms cleared on real Win10 hardware: dock float/embed stutter, page-switch stutter, repeated-resize black screen, four-edge gray frame, refocus focus rectangle, and "corners stuck square after an interrupted resize loop". Follow-up issues for theme-transition speed and AntColorPicker popup/drag responsiveness are resolved in `docs/issue-log.md` items #43 and #44.
+
+Latest targeted AntWindow transition / AntColorPicker popup validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntQtExtensions
+ctest --test-dir build -C Debug -R "^TestAntQtExtensions$" --output-on-failure
+```
+
+Result: `TestAntQtExtensions` passed on `2026-05-20`. The test now verifies that `AntWindow` theme transition capture uses synchronous `render()` without event-loop capture, uses 220 ms / 16 ms transition timing, switches Win10 opaque-path windows to a light crossfade overlay, and keeps the Win11 caption path on circular reveal. The same target verifies `AntColorPicker` popup windows have no QFrame/native shadow edge, their bottom software shadow fades without a hard stacked line, and the hue/saturation field reuses its cached background while dragging so only the indicator region repaints.
 
 Latest targeted Win10 dock re-embed repaint cadence validation:
 

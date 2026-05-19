@@ -4,7 +4,6 @@
 #include <QCursor>
 #include <QElapsedTimer>
 #include <QEvent>
-#include <QEventLoop>
 #include <QGuiApplication>
 #include <QHideEvent>
 #include <QHoverEvent>
@@ -49,12 +48,31 @@ constexpr AntWindow::TitleBarButton kTitleBarButtonsRightToLeft[] = {
 };
 
 constexpr auto kThemeTransitionOverlayName = "AntWindowThemeTransitionOverlay";
-constexpr int kThemeTransitionFrameIntervalMs = 8;
-constexpr int kThemeTransitionDurationMs = 320;
-constexpr int kThemeTransitionEdgeFeather = 24;
+constexpr int kThemeTransitionFrameIntervalMs = 16;
+constexpr int kThemeTransitionDurationMs = 220;
+constexpr int kThemeTransitionEdgeFeather = 16;
 constexpr auto kLegacySoftwareShadowObjectName = "AntWindowLegacySoftwareShadow";
 constexpr int kLegacySoftwareShadowMargin = 14;
 constexpr int kLegacySoftwareShadowInnerClearance = 0;
+
+QPixmap captureAntWindowFrame(QWidget* widget)
+{
+    if (!widget || widget->width() <= 0 || widget->height() <= 0)
+    {
+        return {};
+    }
+
+    const qreal dpr = qMax<qreal>(1.0, widget->devicePixelRatioF());
+    const QSize imageSize(qMax(1, qRound(widget->width() * dpr)),
+                          qMax(1, qRound(widget->height() * dpr)));
+    QPixmap frame(imageSize);
+    frame.setDevicePixelRatio(dpr);
+    frame.fill(Qt::transparent);
+
+    QPainter painter(&frame);
+    widget->render(&painter, QPoint(), QRegion(), QWidget::DrawWindowBackground | QWidget::DrawChildren);
+    return frame;
+}
 
 #if defined(Q_OS_WIN)
 bool makeAntWindowNativeInputTransparent(QWidget* widget,
@@ -110,15 +128,24 @@ void makeAntWindowShadowClickThrough(QWidget* widget)
 class AntWindowThemeTransitionOverlay : public QWidget
 {
 public:
-    AntWindowThemeTransitionOverlay(QWidget* parent, const QPixmap& oldFrame, const QPoint& origin)
+    enum class Mode
+    {
+        CircularReveal,
+        CrossFade,
+    };
+
+    AntWindowThemeTransitionOverlay(QWidget* parent, const QPixmap& oldFrame, const QPoint& origin, Mode mode)
         : QWidget(parent)
         , m_oldFrame(oldFrame)
         , m_origin(origin)
+        , m_mode(mode)
     {
         setObjectName(QString::fromLatin1(kThemeTransitionOverlayName));
         setAttribute(Qt::WA_TransparentForMouseEvents, true);
         setAttribute(Qt::WA_NoSystemBackground, true);
-        setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_TranslucentBackground, m_mode == Mode::CircularReveal);
+        setAttribute(Qt::WA_OpaquePaintEvent, m_mode == Mode::CrossFade);
+        setAutoFillBackground(false);
         setFocusPolicy(Qt::NoFocus);
         m_timer.setInterval(kThemeTransitionFrameIntervalMs);
         m_timer.setTimerType(Qt::PreciseTimer);
@@ -127,6 +154,10 @@ public:
         setProperty("transitionMotionCurve", QStringLiteral("smootherstep"));
         setProperty("transitionEdgeFeather", kThemeTransitionEdgeFeather);
         setProperty("transitionDrawsCapturedNewFrame", true);
+        setProperty("transitionCaptureMethod", QStringLiteral("render"));
+        setProperty("transitionUsesEventLoopCapture", false);
+        setProperty("transitionMode",
+                    m_mode == Mode::CrossFade ? QStringLiteral("crossfade") : QStringLiteral("circular-reveal"));
         connect(&m_timer, &QTimer::timeout, this, [this]() {
             advanceAnimation();
         });
@@ -205,6 +236,12 @@ protected:
             return;
         }
 
+        if (m_mode == Mode::CrossFade)
+        {
+            drawFrame(&painter, m_newFrame, m_progress);
+            return;
+        }
+
         drawRevealedNewFrame(&painter, radius);
     }
 
@@ -271,6 +308,7 @@ protected:
     QPixmap m_oldFrame;
     QPixmap m_newFrame;
     QPoint m_origin;
+    Mode m_mode = Mode::CircularReveal;
     QTimer m_timer;
     QElapsedTimer m_elapsed;
     std::function<void()> m_finished;
@@ -2303,29 +2341,30 @@ void AntWindow::startThemeModeTransition()
         return;
     }
 
-    const QPixmap oldFrame = grab();
+    const QPixmap oldFrame = captureAntWindowFrame(this);
     if (oldFrame.isNull())
     {
         antTheme->toggleThemeMode();
         return;
     }
 
+    const auto transitionMode = usesLegacyOpaquePath()
+        ? AntWindowThemeTransitionOverlay::Mode::CrossFade
+        : AntWindowThemeTransitionOverlay::Mode::CircularReveal;
     auto* overlay = new AntWindowThemeTransitionOverlay(this,
                                                         oldFrame,
-                                                        titleBarButtonRect(TitleBarButton::Theme).center());
+                                                        titleBarButtonRect(TitleBarButton::Theme).center(),
+                                                        transitionMode);
     m_themeTransitionOverlay = overlay;
     overlay->setGeometry(rect());
     overlay->raise();
     overlay->show();
     overlay->update();
-    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
     antTheme->toggleThemeMode();
-    overlay->raise();
-    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
     overlay->hide();
-    const QPixmap newFrame = grab();
+    const QPixmap newFrame = captureAntWindowFrame(this);
     overlay->setNewFrame(newFrame);
     overlay->show();
     overlay->raise();

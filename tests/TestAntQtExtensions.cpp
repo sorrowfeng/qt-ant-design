@@ -9,6 +9,7 @@
 #include <QGuiApplication>
 #include <QImage>
 #include <QLabel>
+#include <QFrame>
 #include <QMargins>
 #include <QMainWindow>
 #include <QMetaType>
@@ -3078,11 +3079,15 @@ void TestAntQtExtensions::windowThemeButtonShowsTransitionOverlay()
     QVERIFY(overlay->isVisible());
     QVERIFY(overlay->testAttribute(Qt::WA_TransparentForMouseEvents));
     QCOMPARE(overlay->geometry(), window.rect());
-    QCOMPARE(overlay->property("transitionFrameIntervalMs").toInt(), 8);
-    QCOMPARE(overlay->property("transitionDurationMs").toInt(), 320);
+    QCOMPARE(overlay->property("transitionFrameIntervalMs").toInt(), 16);
+    QCOMPARE(overlay->property("transitionDurationMs").toInt(), 220);
     QCOMPARE(overlay->property("transitionMotionCurve").toString(), QStringLiteral("smootherstep"));
-    QCOMPARE(overlay->property("transitionEdgeFeather").toInt(), 24);
+    QCOMPARE(overlay->property("transitionEdgeFeather").toInt(), 16);
     QCOMPARE(overlay->property("transitionDrawsCapturedNewFrame").toBool(), true);
+    QCOMPARE(overlay->property("transitionCaptureMethod").toString(), QStringLiteral("render"));
+    QCOMPARE(overlay->property("transitionUsesEventLoopCapture").toBool(), false);
+    QCOMPARE(overlay->property("transitionMode").toString(),
+             window.usesLegacyOpaquePath() ? QStringLiteral("crossfade") : QStringLiteral("circular-reveal"));
 
     QTRY_VERIFY(window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay")) == nullptr);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
@@ -3682,6 +3687,77 @@ void TestAntQtExtensions::colorPicker()
     w->setOpen(true);
     QCOMPARE(w->isOpen(), true);
     QCOMPARE(openSpy.count(), 1);
+    auto* popup = w->findChild<QFrame*>(QStringLiteral("AntColorPickerPopup"));
+    QVERIFY(popup != nullptr);
+    QTRY_VERIFY(popup->isVisible());
+    QCOMPARE(popup->frameShape(), QFrame::NoFrame);
+    QVERIFY(popup->testAttribute(Qt::WA_TranslucentBackground));
+    QVERIFY(popup->testAttribute(Qt::WA_NoSystemBackground));
+    QVERIFY(popup->windowFlags().testFlag(Qt::NoDropShadowWindowHint));
+    QCOMPARE(popup->property("antColorPickerPopupNoNativeShadow").toBool(), true);
+    QCOMPARE(popup->property("antColorPickerPopupShadowWidth").toInt(), 12);
+    QVERIFY(popup->property("antColorPickerPopupShadowStrength").toReal() <= 0.30);
+
+    QImage popupImage(popup->size(), QImage::Format_ARGB32_Premultiplied);
+    popupImage.fill(Qt::transparent);
+    {
+        QPainter painter(&popupImage);
+        popup->render(&painter);
+    }
+    auto maxAlphaIn = [](const QImage& image, const QRect& sampleRect) {
+        int maxAlpha = 0;
+        const QRect clipped = sampleRect.intersected(image.rect());
+        for (int y = clipped.top(); y <= clipped.bottom(); ++y)
+        {
+            for (int x = clipped.left(); x <= clipped.right(); ++x)
+            {
+                maxAlpha = qMax(maxAlpha, qAlpha(image.pixel(x, y)));
+            }
+        }
+        return maxAlpha;
+    };
+    QVERIFY(maxAlphaIn(popupImage, QRect(0, popupImage.height() - 2, popupImage.width(), 2)) <= 1);
+    const QRect panelRect = popup->rect().adjusted(40, 40, -40, -40);
+    const int nearBottomAlpha = maxAlphaIn(popupImage, QRect(panelRect.left() + 16, panelRect.bottom() + 2, panelRect.width() - 32, 2));
+    const int midBottomAlpha = maxAlphaIn(popupImage, QRect(panelRect.left() + 16, panelRect.bottom() + 12, panelRect.width() - 32, 2));
+    const int farBottomAlpha = maxAlphaIn(popupImage, QRect(panelRect.left() + 16, panelRect.bottom() + 26, panelRect.width() - 32, 2));
+    QVERIFY(nearBottomAlpha >= midBottomAlpha);
+    QVERIFY(midBottomAlpha >= farBottomAlpha);
+    QVERIFY(farBottomAlpha <= 4);
+
+    auto* hueSatField = popup->findChild<QWidget*>(QStringLiteral("AntColorPickerHueSatField"));
+    QVERIFY(hueSatField != nullptr);
+    QCOMPARE(hueSatField->property("antColorPickerUsesCachedFieldBackground").toBool(), true);
+    QImage fieldImage(hueSatField->size(), QImage::Format_ARGB32_Premultiplied);
+    fieldImage.fill(Qt::transparent);
+    {
+        QPainter painter(&fieldImage);
+        hueSatField->render(&painter);
+    }
+    const int cacheBuildCount = hueSatField->property("antColorPickerFieldBackgroundCacheBuilds").toInt();
+    QVERIFY(cacheBuildCount > 0);
+    QMouseEvent fieldPress(QEvent::MouseButtonPress,
+                           QPointF(24, 24),
+                           Qt::LeftButton,
+                           Qt::LeftButton,
+                           Qt::NoModifier);
+    QCoreApplication::sendEvent(hueSatField, &fieldPress);
+    for (int i = 0; i < 12; ++i)
+    {
+        QMouseEvent fieldMove(QEvent::MouseMove,
+                              QPointF(30 + i * 8, 36 + i * 3),
+                              Qt::NoButton,
+                              Qt::LeftButton,
+                              Qt::NoModifier);
+        QCoreApplication::sendEvent(hueSatField, &fieldMove);
+    }
+    QCoreApplication::processEvents();
+    fieldImage.fill(Qt::transparent);
+    {
+        QPainter painter(&fieldImage);
+        hueSatField->render(&painter);
+    }
+    QCOMPARE(hueSatField->property("antColorPickerFieldBackgroundCacheBuilds").toInt(), cacheBuildCount);
     w->setOpen(false);
     QCOMPARE(w->isOpen(), false);
     QCOMPARE(openSpy.count(), 2);
