@@ -439,6 +439,14 @@
 - **验证**:新增 `TestAntQtExtensions::colorPickerDragSmoothness` 专项测试,连续发送 240 次拖动事件,逐次断言 cursor position 同步到鼠标点,Debug 下事件分发低于 80ms,背景缓存不重建,并验证外部刷新仍只合并为一次 live refresh。
 - **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 51. AntColorPicker 拖动后 HS 区域出现白线
+
+- **现象**:#50 使用透明 cursor overlay 后,example 中拖动取色会在 HS 色域内残留白色碎线。
+- **根因**:透明子控件在透明 popup 内高频移动时,旧位置的白色圆点描边会参与父/子 backing store 的局部合成;部分旧 dirty 区域没有被稳定清空,形成白线拖影。
+- **解决**:移除透明 cursor 子控件,改回 HS field 自身绘制圆点,但保留缓存背景和 dirty repaint:每次拖动只刷新旧/新圆点外接矩形的并集,不重绘整块色域,同时继续在鼠标按下时停止 popup 进入动画。
+- **验证**:`TestAntQtExtensions::colorPicker` 与 `colorPickerDragSmoothness` 验证不再创建 cursor overlay、圆点位置仍逐事件同步、240 次拖动 Debug 分发低于 80ms、背景缓存不重建,并在最终渲染中扫描饱和蓝色区域没有额外白色残留像素。
+- **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 当前暂无记录。

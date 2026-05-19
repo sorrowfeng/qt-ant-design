@@ -123,7 +123,7 @@ Follow-up: the hot HS drag field now declares opaque/no-system-background painti
 
 Follow-up: on Windows the HS drag field is now an isolated native child surface (`WA_NativeWindow` with no native ancestors) while remaining opaque/static. This keeps the high-frequency drag repaint out of the transparent popup layered-window upload path; the targeted `colorPicker` subtest verifies the native drag surface flag.
 
-Follow-up correction: the native child drag surface caused the HS cursor to stop visually following the mouse in the real example. The fix now uses a normal QWidget HS field plus a dedicated 22x22 `AntColorPickerHueSatCursor` overlay child; drag updates move only that cursor overlay while the cached HS background stays stable. The new `colorPickerDragSmoothness` subtest sends 240 drag events, verifies cursor position on every event, keeps dispatch below 80ms in Debug, and confirms live refresh is still coalesced.
+Follow-up correction: the native child drag surface caused the HS cursor to stop visually following the mouse in the real example. The first correction used a dedicated cursor overlay, but that could leave white trail fragments inside the transparent popup. The current fix draws the cursor in the HS field itself while keeping cached-background dirty repaint for only the old/new cursor rectangles. The `colorPickerDragSmoothness` subtest sends 240 drag events, verifies cursor position on every event, keeps dispatch below 80ms in Debug, confirms live refresh is still coalesced, and scans the saturated field area for stray white pixels.
 
 Latest targeted Win10 dock re-embed repaint cadence validation:
 

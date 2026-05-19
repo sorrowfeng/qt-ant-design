@@ -37,33 +37,6 @@ constexpr qreal kColorPickerPopupShadowStrength = 0.30;
 
 // ---- HueSatField ----
 
-class HueSatCursor : public QWidget
-{
-public:
-    explicit HueSatCursor(QWidget* parent = nullptr)
-        : QWidget(parent)
-    {
-        setObjectName(QStringLiteral("AntColorPickerHueSatCursor"));
-        setFixedSize(22, 22);
-        setAttribute(Qt::WA_TransparentForMouseEvents, true);
-        setAttribute(Qt::WA_NoSystemBackground, true);
-        setAutoFillBackground(false);
-    }
-
-protected:
-    void paintEvent(QPaintEvent*) override
-    {
-        QPainter p(this);
-        p.setRenderHint(QPainter::Antialiasing);
-        const QPointF center(width() / 2.0, height() / 2.0);
-        p.setPen(QPen(Qt::white, 2));
-        p.setBrush(Qt::NoBrush);
-        p.drawEllipse(center, 8, 8);
-        p.setPen(QPen(QColor(0, 0, 0, 70), 1));
-        p.drawEllipse(center, 9, 9);
-    }
-};
-
 class HueSatField : public QWidget
 {
 public:
@@ -79,12 +52,11 @@ public:
         setAutoFillBackground(false);
         setProperty("antColorPickerOpaqueFieldPaint", true);
         setProperty("antColorPickerUsesCachedFieldBackground", true);
-        setProperty("antColorPickerUsesCursorOverlay", true);
-        setProperty("antColorPickerCursorMovesWithoutFieldUpdate", true);
+        setProperty("antColorPickerUsesCursorOverlay", false);
+        setProperty("antColorPickerDrawsCursorInField", true);
+        setProperty("antColorPickerCursorDirtyRepaint", true);
         setProperty("antColorPickerFieldPaintCount", 0);
-        m_cursor = new HueSatCursor(this);
-        updateCursorGeometry();
-        m_cursor->raise();
+        updateCursorDiagnostics();
     }
 
     void setHsv(int h, int s, int v)
@@ -101,8 +73,17 @@ public:
         }
         if (m_point != next)
         {
+            const QPoint oldPoint = m_point;
             m_point = next;
-            updateCursorGeometry();
+            updateCursorDiagnostics();
+            if (hueChanged)
+            {
+                update();
+            }
+            else
+            {
+                update(cursorDirtyRect(oldPoint).united(cursorDirtyRect(m_point)));
+            }
         }
         else if (hueChanged)
         {
@@ -140,10 +121,9 @@ protected:
         p.setRenderHint(QPainter::Antialiasing);
         const QPixmap background = backgroundPixmap();
         const QRegion region = event ? event->region() : QRegion(rect());
-        for (const QRect& dirtyRect : region)
-        {
-            p.drawPixmap(dirtyRect, background, dirtyRect);
-        }
+        p.setClipRegion(region);
+        p.drawPixmap(0, 0, background);
+        drawCursor(&p);
     }
 
     void mousePressEvent(QMouseEvent* e) override
@@ -166,8 +146,10 @@ private:
         {
             return;
         }
+        const QPoint oldPoint = m_point;
         m_point = next;
-        updateCursorGeometry();
+        updateCursorDiagnostics();
+        update(cursorDirtyRect(oldPoint).united(cursorDirtyRect(m_point)));
         if (onChanged) onChanged();
     }
 
@@ -176,19 +158,29 @@ private:
         m_background = QPixmap();
     }
 
-    void updateCursorGeometry()
+    QRect cursorDirtyRect(const QPoint& point) const
     {
-        if (!m_cursor)
-        {
-            return;
-        }
+        return QRect(point - QPoint(kCursorSize / 2, kCursorSize / 2),
+                     QSize(kCursorSize, kCursorSize))
+            .adjusted(-2, -2, 2, 2)
+            .intersected(rect());
+    }
 
-        const QPoint nextTopLeft(m_point.x() - m_cursor->width() / 2,
-                                 m_point.y() - m_cursor->height() / 2);
-        if (m_cursor->pos() != nextTopLeft)
-        {
-            m_cursor->move(nextTopLeft);
-        }
+    void updateCursorDiagnostics()
+    {
+        setProperty("antColorPickerCursorPoint", m_point);
+        setProperty("antColorPickerCursorRect", cursorDirtyRect(m_point));
+    }
+
+    void drawCursor(QPainter* p)
+    {
+        p->setRenderHint(QPainter::Antialiasing);
+        const QPointF center(m_point);
+        p->setPen(QPen(Qt::white, 2));
+        p->setBrush(Qt::NoBrush);
+        p->drawEllipse(center, 8, 8);
+        p->setPen(QPen(QColor(0, 0, 0, 70), 1));
+        p->drawEllipse(center, 9, 9);
     }
 
     QPixmap backgroundPixmap()
@@ -236,11 +228,11 @@ private:
     }
 
     QPoint m_point = QPoint(233, 0);
+    static constexpr int kCursorSize = 22;
     int m_hue = 215;
     int m_backgroundHue = -1;
     Ant::ThemeMode m_backgroundThemeMode = Ant::ThemeMode::Default;
     QPixmap m_background;
-    HueSatCursor* m_cursor = nullptr;
 };
 
 // ---- HueSlider ----
