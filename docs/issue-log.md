@@ -447,6 +447,14 @@
 - **验证**:`TestAntQtExtensions::colorPicker` 与 `colorPickerDragSmoothness` 验证不再创建 cursor overlay、圆点位置仍逐事件同步、240 次拖动 Debug 分发低于 80ms、背景缓存不重建,并在最终渲染中扫描饱和蓝色区域没有额外白色残留像素。
 - **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 52. AntColorPicker 弹层缺少明显弹出/消失动画
+
+- **现象**:ColorPicker 弹层虽然接入了通用 fade/slide,但位移很小,且原 `Qt::Popup` 自动隐藏路径会让部分关闭场景看起来像瞬间消失。
+- **根因**:`Qt::Popup` 的系统级自动隐藏不一定经过控件自身的 `setOpen(false)` 关闭流程;同时 4px 位移反馈偏弱,用户难以感知弹出/消失动效。
+- **解决**:ColorPicker 弹层改为 tool 顶层窗口,由 `AntColorPicker` 在打开时安装应用级事件过滤器,点击触发器/弹层外部时统一调用 `setOpen(false)`;弹出/消失动画改为按上下方向执行 10px fade/slide,并保留 popup 阴影与拖动性能优化。
+- **验证**:`TestAntQtExtensions::colorPicker` 验证弹层使用手动外部关闭路径、动效开关与距离属性,并在关闭后确认 popup 进入离场动画路径,直到动画结束才隐藏。
+- **改动文件**:`src/widgets/AntColorPicker.h`、`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 当前暂无记录。

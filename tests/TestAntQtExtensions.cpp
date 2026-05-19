@@ -3731,6 +3731,7 @@ void TestAntQtExtensions::colorPicker()
     auto* popup = w->findChild<QFrame*>(QStringLiteral("AntColorPickerPopup"));
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->isVisible());
+    QCOMPARE(popup->windowType(), Qt::Tool);
     QCOMPARE(popup->frameShape(), QFrame::NoFrame);
     QVERIFY(popup->testAttribute(Qt::WA_TranslucentBackground));
     QVERIFY(popup->testAttribute(Qt::WA_NoSystemBackground));
@@ -3739,6 +3740,11 @@ void TestAntQtExtensions::colorPicker()
     QCOMPARE(popup->property("antColorPickerPopupShadowMargin").toInt(), 28);
     QCOMPARE(popup->property("antColorPickerPopupShadowWidth").toInt(), 12);
     QVERIFY(popup->property("antColorPickerPopupShadowStrength").toReal() <= 0.30);
+    QCOMPARE(popup->property("antColorPickerPopupMotionEnabled").toBool(), true);
+    QCOMPARE(popup->property("antColorPickerPopupMotionDistance").toInt(), 10);
+    QCOMPARE(popup->property("antColorPickerPopupUsesManualOutsideClose").toBool(), true);
+    QCOMPARE(popup->property("antColorPickerPopupMotionPlacement").toString(), QStringLiteral("bottom"));
+    QCOMPARE(popup->property("antColorPickerPopupEnterMotionStarted").toBool(), true);
     QCOMPARE(popup->property("antColorPickerCoalescesDragRefresh").toBool(), true);
     QCOMPARE(popup->property("antColorPickerLiveRefreshIntervalMs").toInt(), 16);
     const int popupShadowMargin = popup->property("antColorPickerPopupShadowMargin").toInt();
@@ -3828,6 +3834,10 @@ void TestAntQtExtensions::colorPicker()
     w->setOpen(false);
     QCOMPARE(w->isOpen(), false);
     QCOMPARE(openSpy.count(), 2);
+    QVERIFY(popup->isVisible());
+    QCOMPARE(popup->property("antColorPickerPopupLeaveMotionStarted").toBool(), true);
+    QTRY_VERIFY(!popup->isVisible());
+    QCOMPARE(popup->windowOpacity(), 1.0);
 
     auto* w2 = new AntColorPicker(Qt::blue);
     QCOMPARE(w2->currentColor(), QColor(Qt::blue));

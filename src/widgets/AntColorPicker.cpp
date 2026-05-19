@@ -1,5 +1,6 @@
 #include "AntColorPicker.h"
 
+#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QFrame>
@@ -32,7 +33,18 @@ constexpr int kColorPickerPopupContentWidth = 234;
 constexpr int kColorPickerPopupContentHeight = 248;
 constexpr int kColorPickerPopupShadowWidth = 12;
 constexpr int kColorPickerLiveRefreshIntervalMs = 16;
+constexpr int kColorPickerPopupMotionDistance = 10;
+constexpr int kColorPickerPopupLeaveSettleMs = 180;
 constexpr qreal kColorPickerPopupShadowStrength = 0.30;
+
+QPoint colorPickerGlobalMousePos(const QMouseEvent* event)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    return event->globalPosition().toPoint();
+#else
+    return event->globalPos();
+#endif
+}
 }
 
 // ---- HueSatField ----
@@ -474,7 +486,7 @@ class ColorPickerPopup : public QFrame
 {
 public:
     explicit ColorPickerPopup(AntColorPicker* owner)
-        : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+        : QFrame(owner, Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
           m_owner(owner)
     {
         setObjectName(QStringLiteral("AntColorPickerPopup"));
@@ -490,6 +502,9 @@ public:
         setProperty("antColorPickerPopupShadowMargin", kColorPickerPopupShadowMargin);
         setProperty("antColorPickerPopupShadowWidth", kColorPickerPopupShadowWidth);
         setProperty("antColorPickerPopupShadowStrength", kColorPickerPopupShadowStrength);
+        setProperty("antColorPickerPopupMotionEnabled", true);
+        setProperty("antColorPickerPopupMotionDistance", kColorPickerPopupMotionDistance);
+        setProperty("antColorPickerPopupUsesManualOutsideClose", true);
         setProperty("antColorPickerCoalescesDragRefresh", true);
         setProperty("antColorPickerLiveRefreshIntervalMs", kColorPickerLiveRefreshIntervalMs);
         setProperty("antColorPickerLiveRefreshCount", 0);
@@ -829,11 +844,44 @@ void AntColorPicker::setOpen(bool open)
         }
         static_cast<ColorPickerPopup*>(m_popup)->setCurrentColor(m_currentColor);
         updatePopupGeometry();
-        AntPopupMotion::show(m_popup);
+        if (!m_appEventFilterInstalled)
+        {
+            qApp->installEventFilter(this);
+            m_appEventFilterInstalled = true;
+        }
+        m_popup->setProperty("antColorPickerPopupEnterMotionStarted", true);
+        m_popup->setProperty("antColorPickerPopupLeaveMotionStarted", false);
+        m_popup->setProperty("antColorPickerPopupMotionSerial", ++m_popupMotionSerial);
+        AntPopupMotion::show(m_popup,
+                             m_popupOpensAbove ? AntPopupMotion::Placement::Top
+                                               : AntPopupMotion::Placement::Bottom,
+                             kColorPickerPopupMotionDistance);
     }
     else if (m_popup)
     {
-        AntPopupMotion::hide(m_popup);
+        if (m_appEventFilterInstalled)
+        {
+            qApp->removeEventFilter(this);
+            m_appEventFilterInstalled = false;
+        }
+        m_popup->setProperty("antColorPickerPopupLeaveMotionStarted", true);
+        const int motionSerial = ++m_popupMotionSerial;
+        m_popup->setProperty("antColorPickerPopupMotionSerial", motionSerial);
+        AntPopupMotion::hide(m_popup,
+                             m_popupOpensAbove ? AntPopupMotion::Placement::Top
+                                               : AntPopupMotion::Placement::Bottom,
+                             kColorPickerPopupMotionDistance);
+        QTimer::singleShot(kColorPickerPopupLeaveSettleMs, this, [this, motionSerial]() {
+            if (!m_popup || m_open || m_popup->property("antColorPickerPopupMotionSerial").toInt() != motionSerial)
+            {
+                return;
+            }
+            if (m_popup->isVisible())
+            {
+                m_popup->hide();
+            }
+            m_popup->setWindowOpacity(1.0);
+        });
     }
 
     update();
@@ -959,6 +1007,27 @@ void AntColorPicker::keyPressEvent(QKeyEvent* event)
     QWidget::keyPressEvent(event);
 }
 
+bool AntColorPicker::eventFilter(QObject* watched, QEvent* event)
+{
+    Q_UNUSED(watched)
+    if (m_open && m_popup &&
+        (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonDblClick))
+    {
+        const QPoint globalPos = colorPickerGlobalMousePos(static_cast<QMouseEvent*>(event));
+        const bool insideTrigger = rect().contains(mapFromGlobal(globalPos));
+        const bool insidePopup = m_popup->rect().contains(m_popup->mapFromGlobal(globalPos));
+        if (!insideTrigger && !insidePopup)
+        {
+            setOpen(false);
+        }
+    }
+    else if (m_open && event->type() == QEvent::ApplicationDeactivate)
+    {
+        setOpen(false);
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
 void AntColorPicker::openEditor()
 {
     setOpen(!m_open);
@@ -976,6 +1045,7 @@ void AntColorPicker::updatePopupGeometry()
 
     QPoint globalPos = mapToGlobal(QPoint(-kColorPickerPopupShadowMargin,
                                           height() + 4 - kColorPickerPopupShadowMargin));
+    m_popupOpensAbove = false;
     QRect available = QGuiApplication::primaryScreen() ? QGuiApplication::primaryScreen()->availableGeometry()
                                                        : QRect(globalPos, QSize(1280, 720));
     if (QScreen* screen = QGuiApplication::screenAt(mapToGlobal(rect().center())))
@@ -991,7 +1061,10 @@ void AntColorPicker::updatePopupGeometry()
     {
         globalPos.setY(mapToGlobal(QPoint(-kColorPickerPopupShadowMargin,
                                           -m_popup->height() + kColorPickerPopupShadowMargin - 4)).y());
+        m_popupOpensAbove = true;
     }
+    m_popup->setProperty("antColorPickerPopupMotionPlacement",
+                         m_popupOpensAbove ? QStringLiteral("top") : QStringLiteral("bottom"));
     m_popup->move(globalPos);
 }
 

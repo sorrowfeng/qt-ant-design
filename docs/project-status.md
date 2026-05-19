@@ -125,6 +125,8 @@ Follow-up: on Windows the HS drag field is now an isolated native child surface 
 
 Follow-up correction: the native child drag surface caused the HS cursor to stop visually following the mouse in the real example. The first correction used a dedicated cursor overlay, but that could leave white trail fragments inside the transparent popup. The current fix draws the cursor in the HS field itself while keeping cached-background dirty repaint for only the old/new cursor rectangles. The `colorPickerDragSmoothness` subtest sends 240 drag events, verifies cursor position on every event, keeps dispatch below 80ms in Debug, confirms live refresh is still coalesced, and scans the saturated field area for stray white pixels.
 
+Follow-up: `AntColorPicker` popup now uses a manual outside-click close path instead of relying on native popup auto-hide, so both trigger-close and outside-close go through the same 10px fade/slide enter and leave animation. The targeted `colorPicker` subtest verifies the motion properties and that close keeps the popup visible until the leave animation finishes.
+
 Latest targeted Win10 dock re-embed repaint cadence validation:
 
 ```powershell

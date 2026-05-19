@@ -45,6 +45,7 @@ Q_SIGNALS:
     void openChanged(bool open);
 
 private:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
@@ -60,6 +61,9 @@ private:
     bool m_open = false;
     bool m_hovered = false;
     bool m_pressed = false;
+    bool m_appEventFilterInstalled = false;
+    bool m_popupOpensAbove = false;
+    int m_popupMotionSerial = 0;
     QColor m_currentColor = Qt::white;
     QFrame* m_popup = nullptr;
 };
