@@ -3278,7 +3278,10 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     QCOMPARE(window.property("antWindowLegacySoftwareShadowMargin").toInt(), 14);
     QVERIFY(window.property("antWindowLegacySoftwareShadowInnerClearance").isValid());
     QCOMPARE(window.property("antWindowLegacySoftwareShadowInnerClearance").toInt(), 0);
+    const int shadowMargin = window.property("antWindowLegacySoftwareShadowMargin").toInt();
+    const QMargins shadowMargins(shadowMargin, shadowMargin, shadowMargin, shadowMargin);
     const QRect initialShadowGeometry = window.property("antWindowLegacySoftwareShadowGeometry").toRect();
+    QCOMPARE(initialShadowGeometry.marginsRemoved(shadowMargins), window.geometry());
     QVERIFY(initialShadowGeometry.contains(window.geometry()));
     QVERIFY(initialShadowGeometry.left() < window.geometry().left());
     QVERIFY(initialShadowGeometry.top() < window.geometry().top());
@@ -3292,6 +3295,32 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     QVERIFY(shadowWidget->windowFlags().testFlag(Qt::WindowTransparentForInput));
 #endif
     QTRY_COMPARE(shadowWidget->property("antWindowLegacySoftwareShadowClickThrough").toBool(), true);
+    QCOMPARE(window.property("antWindowLegacySoftwareShadowGeometryMode").toString(), QStringLiteral("qt-logical"));
+    QCOMPARE(shadowWidget->property("antWindowLegacySoftwareShadowGeometryMode").toString(), QStringLiteral("qt-logical"));
+    QTRY_COMPARE(shadowWidget->geometry(), initialShadowGeometry);
+
+    const HWND ownerHwnd = reinterpret_cast<HWND>(window.winId());
+    const HWND shadowHwnd = reinterpret_cast<HWND>(shadowWidget->winId());
+    QVERIFY(ownerHwnd != nullptr);
+    QVERIFY(shadowHwnd != nullptr);
+    RECT nativeShadowRect{};
+    QVERIFY(::GetWindowRect(shadowHwnd, &nativeShadowRect));
+    const qreal shadowDpr = qMax<qreal>(1.0, shadowWidget->devicePixelRatioF());
+    const int nativeShadowWidth = nativeShadowRect.right - nativeShadowRect.left;
+    const int nativeShadowHeight = nativeShadowRect.bottom - nativeShadowRect.top;
+    QVERIFY(qAbs(nativeShadowWidth - qRound(initialShadowGeometry.width() * shadowDpr)) <= 2);
+    QVERIFY(qAbs(nativeShadowHeight - qRound(initialShadowGeometry.height() * shadowDpr)) <= 2);
+
+    ::SendMessageW(ownerHwnd, WM_ENTERSIZEMOVE, 0, 0);
+    QCoreApplication::processEvents();
+    QCOMPARE(window.property("antWindowLegacyLiveResize").toBool(), false);
+    QTRY_VERIFY(shadowWidget->isVisible());
+    window.move(window.pos() + QPoint(18, 12));
+    QTRY_COMPARE(window.property("antWindowLegacySoftwareShadowGeometry").toRect().marginsRemoved(shadowMargins),
+                 window.geometry());
+    QTRY_COMPARE(shadowWidget->geometry(), window.property("antWindowLegacySoftwareShadowGeometry").toRect());
+    ::SendMessageW(ownerHwnd, WM_EXITSIZEMOVE, 0, 0);
+    QCoreApplication::processEvents();
 
     auto maxAlphaIn = [](const QImage& image, const QRect& sampleRect) {
         int maxAlpha = 0;
@@ -3305,7 +3334,6 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
         }
         return maxAlpha;
     };
-    const int shadowMargin = window.property("antWindowLegacySoftwareShadowMargin").toInt();
     const QImage shadowImage = shadowWidget->grab().toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
     QVERIFY(maxAlphaIn(shadowImage, QRect(0, shadowMargin, shadowMargin, shadowImage.height() - shadowMargin * 2)) > 0);
     QVERIFY(maxAlphaIn(shadowImage, QRect(shadowMargin, 0, shadowImage.width() - shadowMargin * 2, shadowMargin)) > 0);
@@ -3379,11 +3407,7 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
 
     const QRect resizedShadowGeometry = window.property("antWindowLegacySoftwareShadowGeometry").toRect();
     QVERIFY(resizedShadowGeometry.contains(window.geometry()));
-    QCOMPARE(resizedShadowGeometry.marginsRemoved(QMargins(window.property("antWindowLegacySoftwareShadowMargin").toInt(),
-                                                          window.property("antWindowLegacySoftwareShadowMargin").toInt(),
-                                                          window.property("antWindowLegacySoftwareShadowMargin").toInt(),
-                                                          window.property("antWindowLegacySoftwareShadowMargin").toInt())),
-             window.geometry());
+    QCOMPARE(resizedShadowGeometry.marginsRemoved(shadowMargins), window.geometry());
 #endif
 }
 

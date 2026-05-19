@@ -33,7 +33,7 @@
 - **现象**：拖拽 AntWindow 边缘改变尺寸时整窗闪动。
 - **根因**：Win10 上每次 `WM_SIZE` 都同步做了三件重活：`applyLegacyRoundedMask` 重设 1bit mask、`reapplyDwmFrameMargins` 同步 + 异步 queue 两次重应用、`updateLegacySoftwareShadow` 调 `SetWindowPos` 给独立的阴影 HWND 重定位。三者各自走不同的 HWND 合成路径，跨 HWND 不同步导致每帧错位 1-2 帧。
 - **解决**：参考 `AntDockWidget` 的策略，引入 `m_legacyLiveResize` 标志：
-  1. `nativeEvent` 收到 `WM_ENTERSIZEMOVE` / `WM_SIZING` 时设标志、隐藏阴影、强制一次方角绘制
+  1. `nativeEvent` 收到 resize hit-test 的 `WM_NCLBUTTONDOWN` 或 `WM_SIZING` 时设标志、隐藏阴影、强制一次方角绘制
   2. `resizeEvent` / `moveEvent` 在该标志下跳过 DWM frame 重应用和阴影 reposition，只更新 corner smoother
   3. `WM_EXITSIZEMOVE` 后延迟 16ms 一次性恢复 mask + DWM frame + 阴影
 - **改动文件**：`src/widgets/AntWindow.h`、`src/widgets/AntWindow.cpp`
@@ -42,7 +42,7 @@
 
 - **现象**：把 AntWindow 主窗口拖到不同 DPI 的副屏时，软件阴影的栅格化比例和窗口轮廓对不齐。
 - **根因**：`AntWindowLegacySoftwareShadow` 是一个独立 top-level HWND，它的 `QScreen::devicePixelRatio()` 来源于自己当前所在屏幕，**不会随主窗口跨屏自动同步**。Qt 给主窗口投递 `ScreenChangeInternal` / `DevicePixelRatioChange` 后主窗口正确按新 DPR 重建，但阴影 HWND 的 QScreen 还是旧的。
-- **解决**（局部解决，仍存在 "拖动时跟随" 问题，见下方未解决项）：
+- **解决**：
   1. `AntWindow::event()` 拦截 `QEvent::ScreenChangeInternal` 和 `QEvent::DevicePixelRatioChange`，把阴影 `QWindow::setScreen(newScreen)` 跟到主窗口的新屏幕，再 `applyNativeWindowFrame()` + `updateLegacySoftwareShadow()` 让 backing store 用新 DPR 重建
   2. `nativeEvent` 拦截 `WM_DPICHANGED`（Win32 权威 DPI 切换通知）做兜底，0-timer 异步同步阴影 screen
   3. `updateLegacySoftwareShadow()` 内每次更新都主动检查 `shadowWindow->screen() != hostScreen`，不一致就 `setScreen()`
@@ -65,7 +65,7 @@
 - **解决**：
   1. **画方角**：`AntWindowStyle::drawWindow` 检查 widget 的 `antWindowLegacyLiveResize` 属性，true 时不做圆角 clip，整个客户区完全不透明
   2. **关 smoother**：`updateCornerSmoother` 在 live-resize 时把半径设为 0，避免 `CompositionMode_DestinationIn` 产生 alpha=0 角落
-  3. **DWM 兜底**：进入 `WM_ENTERSIZEMOVE` 时主动调用 `DwmExtendFrameIntoClientArea(hwnd, {-1, -1, -1, -1})`（"sheet of glass"），让 DWM 接管整个客户区作为扩展 frame，alpha=0 区域显示 DWM 自己的 backdrop 而不是桌面
+  3. **DWM 兜底**：进入边缘缩放（resize hit-test 或 `WM_SIZING`）时主动调用 `DwmExtendFrameIntoClientArea(hwnd, {-1, -1, -1, -1})`（"sheet of glass"），让 DWM 接管整个客户区作为扩展 frame，alpha=0 区域显示 DWM 自己的 backdrop 而不是桌面
   4. `WM_EXITSIZEMOVE` 通过 `applyNativeWindowFrame()` 把 margins 恢复为 `{0, 0, 0, 0}`
 - **改动文件**：`src/widgets/AntWindow.cpp`、`src/styles/AntWindowStyle.cpp`
 
@@ -283,22 +283,24 @@
 - **解决**：`AntDockWidget` 在 manager 嵌入态改为自绘 token 容器背景，不再走原生 dock paint；dock 内容 QWidget 同步 `Window/Base/Button/Text/Placeholder` palette 并启用 `autoFillBackground`。`AntDockManager::DockArea` 增加暗色 palette、外框补绘、tab/pane/splitter token 化样式和 manager 自身背景填充，selected tab 与 pane 连成一体，inactive tab 使用 elevated/fill 层级。回归测试切换 dark 后检查 dock/content/area palette，并渲染 manager 截图确认 container/elevated 暗色 surface 可见且主体区域没有 stale light layout pixels。
 - **改动文件**：`src/widgets/AntDockManager.h`、`src/widgets/AntDockManager.cpp`、`src/widgets/AntDockWidget.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 38. AntWindow Win10 缩放比例下软件阴影位置/尺寸异常
+
+- **现象**：Windows 10 legacy frame 路径下，系统缩放为 125% / 150% 等非 100% 时，`AntWindow` 外侧软件阴影可能出现偏移、尺寸不贴合或拖动跨屏后与窗口轮廓不同步。
+- **根因**：`updateLegacySoftwareShadow()` 先用 Qt `setGeometry()` 设置阴影窗口几何，又把同一个 `QRect` 传给 Win32 `SetWindowPos()`。Qt 的 `QWidget::geometry()` 是逻辑像素，而 `SetWindowPos()` 在 per-monitor DPI aware 进程中使用物理像素，导致非 100% 缩放下阴影 HWND 被二次用错误单位定位/缩放。另一个问题是 `WM_ENTERSIZEMOVE` 同时覆盖移动和缩放，旧逻辑会把普通移动也标记为 live resize，拖动期间直接隐藏阴影并抑制 `moveEvent()` 跟随。
+- **解决**：
+  1. 阴影窗口的 move/size 只通过 Qt `setGeometry()` 完成，由 Qt 负责按目标屏幕 DPR 转换到 native 坐标
+  2. 后续 Win32 `SetWindowPos()` 仅带 `SWP_NOMOVE | SWP_NOSIZE`，只维护阴影位于 owner 后方的 z-order 和显示状态，不再传逻辑像素坐标
+  3. `m_legacyLiveResize` 只在 resize hit-test 或 `WM_SIZING` 时进入；普通窗口移动期间保持阴影可见，并由 `moveEvent()` 连续刷新阴影几何
+  4. 增加 `antWindowLegacySoftwareShadowGeometryMode` / DPR 诊断属性和回归测试，验证 Qt 逻辑几何、native HWND 物理尺寸和 live-move 跟随行为
+- **改动文件**：`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
-### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）
-
-- **现象**：把 AntWindow 拖到其他屏幕时，阴影位置/尺寸的更新和窗口轮廓对不齐——阴影应该实时跟着主窗口画，而不是在跨屏后才补正。
-- **与已解决问题 #5 的区别**：#5 只处理了 `WM_DPICHANGED` / `ScreenChangeInternal` 这类**离散事件**，阴影 HWND 在 DPI 切换的那一帧才同步。但 AntWindow `moveEvent` 在 live-drag 期间也被抑制（`if (m_legacyLiveResize) return`），所以拖拽中的连续 move 事件阴影完全不跟随。
-- **潜在排查方向**：
-  1. 拖动 AntWindow（不是 resize）时不应该走 `m_legacyLiveResize` 抑制——拖动期间 `WM_ENTERSIZEMOVE` 是 move 还是 resize 触发？需要区分这两种 size-move 模式
-  2. 或者让 `moveEvent` 始终更新阴影 HWND 位置，只在 resize 时跳过（拖动主要是 reposition，阴影 `SetWindowPos` 在同 DPI 内是便宜的）
-  3. 检查 `WM_DPICHANGED` 的处理是否在跨屏首帧就跟上了阴影 HWND 的 `setScreen()`
-
-### B. AntWindow 缩小尺寸时偶尔仍有闪动
+### A. AntWindow 缩小尺寸时偶尔仍有闪动
 
 - **现象**：已解决问题 #7 引入的 DWM `{-1,-1,-1,-1}` 兜底后大幅改善，但缩小时偶尔（约几帧出现一次）还能看到极短的闪动。
 - **推测原因**：
-  1. `DwmExtendFrameIntoClientArea` 设置生效本身也需要一帧——`WM_ENTERSIZEMOVE` 到第一个 `WM_SIZE` 之间的窗口可能 DWM backdrop 还没接管
+  1. `DwmExtendFrameIntoClientArea` 设置生效本身也需要一帧——进入边缘缩放到第一个 `WM_SIZE` 之间的窗口可能 DWM backdrop 还没接管
   2. Qt 在 `WA_TranslucentBackground=true` 下的 backing store flush 时机和 DWM 合成时钟之间仍有概率性错位
 - **潜在排查方向**：
   1. 在 `WM_NCCREATE` / `showEvent` 就预设 `{-1,-1,-1,-1}`，常态生效，只在显示时通过 paint 路径让背景不透明

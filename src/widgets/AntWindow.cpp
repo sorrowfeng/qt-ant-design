@@ -1597,6 +1597,32 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
             }
             return titleBarButtonForNativeHitTest(hitTestCode);
         };
+        const auto beginLegacyLiveResize = [this, hwnd]() {
+            if (!usesNativeCaptionFrameForWidget(this) && !m_legacyLiveResize &&
+                !isMaximized() && !isFullScreen())
+            {
+                m_legacyLiveResize = true;
+                setProperty("antWindowLegacyLiveResize", true);
+                hideLegacySoftwareShadow();
+                // Extend the DWM frame across the whole client area for the
+                // duration of an edge resize. DWM provides its own backdrop in
+                // the extended region, which masks the single-frame gap where
+                // Qt's backing store has not yet caught up with WM_SIZE.
+                const HWND targetHwnd = hwnd ? hwnd : reinterpret_cast<HWND>(winId());
+                DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
+                if (targetHwnd && resolveDwmApis(nullptr, &extendFrame) && extendFrame)
+                {
+                    const DwmMargins fullFrameMargins{-1, -1, -1, -1};
+                    extendFrame(targetHwnd, &fullFrameMargins);
+                }
+                // Force one repaint with square corners + smoother off before
+                // the first WM_SIZE lands, so the first resize frame is opaque
+                // to the edges. Pure window moves keep the normal rounded
+                // shadow visible and update it in moveEvent().
+                updateCornerSmoother();
+                update();
+            }
+        };
 
         switch (uMsg)
         {
@@ -1632,33 +1658,8 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
             });
             break;
         }
-        case WM_ENTERSIZEMOVE:
         case WM_SIZING:
-            if (!usesNativeCaptionFrameForWidget(this) && !m_legacyLiveResize &&
-                !isMaximized() && !isFullScreen())
-            {
-                m_legacyLiveResize = true;
-                setProperty("antWindowLegacyLiveResize", true);
-                hideLegacySoftwareShadow();
-                // Extend the DWM frame across the whole client area for the
-                // duration of the drag. DWM provides its own backdrop in the
-                // extended region, which masks the single-frame gap where
-                // Qt's backing store has not yet caught up with WM_SIZE — the
-                // root cause of the occasional transparent edge flash on
-                // shrink. The normal {0,0,0,0} margins are restored on
-                // WM_EXITSIZEMOVE via applyNativeWindowFrame().
-                DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
-                if (resolveDwmApis(nullptr, &extendFrame) && extendFrame)
-                {
-                    const DwmMargins fullFrameMargins{-1, -1, -1, -1};
-                    extendFrame(hwnd, &fullFrameMargins);
-                }
-                // Force one repaint with square corners + smoother off before
-                // the first WM_SIZE lands, so the very first resize frame is
-                // already fully opaque to the edges.
-                updateCornerSmoother();
-                update();
-            }
+            beginLegacyLiveResize();
             break;
         case WM_EXITSIZEMOVE:
             if (m_legacyLiveResize)
@@ -1676,6 +1677,10 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
                     guard->updateCornerSmoother();
                     guard->update();
                 });
+            }
+            else if (!usesNativeCaptionFrameForWidget(this))
+            {
+                updateLegacySoftwareShadow();
             }
             break;
         case WM_NCCALCSIZE:
@@ -1812,6 +1817,10 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
             }
             if (isNativeResizeHitTest(msg->wParam) || msg->wParam == HTCAPTION)
             {
+                if (isNativeResizeHitTest(msg->wParam))
+                {
+                    beginLegacyLiveResize();
+                }
                 m_pressedButton = TitleBarButton::None;
                 *result = ::DefWindowProcW(hwnd, uMsg, msg->wParam, lParam);
                 return true;
@@ -2433,23 +2442,33 @@ void AntWindow::updateLegacySoftwareShadow()
                                                      kLegacySoftwareShadowMargin);
     m_legacySoftwareShadow->setGeometry(shadowGeometry);
     setProperty("antWindowLegacySoftwareShadowGeometry", shadowGeometry);
+    setProperty("antWindowLegacySoftwareShadowGeometryMode", QStringLiteral("qt-logical"));
+    m_legacySoftwareShadow->setProperty("antWindowLegacySoftwareShadowGeometry", shadowGeometry);
+    m_legacySoftwareShadow->setProperty("antWindowLegacySoftwareShadowGeometryMode", QStringLiteral("qt-logical"));
     if (!m_legacySoftwareShadow->isVisible())
     {
         m_legacySoftwareShadow->show();
     }
+    m_legacySoftwareShadow->setProperty("antWindowLegacySoftwareShadowDevicePixelRatio",
+                                        m_legacySoftwareShadow->devicePixelRatioF());
 
     const HWND hwnd = reinterpret_cast<HWND>(winId());
     const HWND shadowHwnd = reinterpret_cast<HWND>(m_legacySoftwareShadow->winId());
     if (shadowHwnd && hwnd)
     {
         makeAntWindowShadowClickThrough(m_legacySoftwareShadow);
+        // QWidget::geometry() is expressed in Qt logical pixels while
+        // SetWindowPos() consumes native physical pixels on per-monitor-DPI
+        // Windows. Let Qt own the move/size conversion above, and only use the
+        // native call to keep the shadow directly behind the owner without
+        // reintroducing a scale-dependent offset at 125%/150% DPI.
         ::SetWindowPos(shadowHwnd,
                        hwnd,
-                       shadowGeometry.x(),
-                       shadowGeometry.y(),
-                       shadowGeometry.width(),
-                       shadowGeometry.height(),
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
     }
     else
     {
