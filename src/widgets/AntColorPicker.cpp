@@ -16,6 +16,7 @@
 #include <QRegularExpressionValidator>
 #include <QScreen>
 #include <QSizePolicy>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "core/AntPopupMotion.h"
@@ -29,6 +30,7 @@ constexpr int kColorPickerPopupPanelPadding = 12;
 constexpr int kColorPickerPopupContentWidth = 234;
 constexpr int kColorPickerPopupContentHeight = 248;
 constexpr int kColorPickerPopupShadowWidth = 12;
+constexpr int kColorPickerLiveRefreshIntervalMs = 16;
 constexpr qreal kColorPickerPopupShadowStrength = 0.30;
 }
 
@@ -439,6 +441,10 @@ public:
         setProperty("antColorPickerPopupShadowMargin", kColorPickerPopupShadowMargin);
         setProperty("antColorPickerPopupShadowWidth", kColorPickerPopupShadowWidth);
         setProperty("antColorPickerPopupShadowStrength", kColorPickerPopupShadowStrength);
+        setProperty("antColorPickerCoalescesDragRefresh", true);
+        setProperty("antColorPickerLiveRefreshIntervalMs", kColorPickerLiveRefreshIntervalMs);
+        setProperty("antColorPickerLiveRefreshCount", 0);
+        setProperty("antColorPickerLiveRefreshPending", false);
         setupUi();
     }
 
@@ -459,10 +465,13 @@ private:
     void updateSlidersFromColor();
     void updateHexField();
     void syncColor();
+    void scheduleLiveRefresh();
+    void flushLiveRefresh();
     void emitColor();
 
     void hideEvent(QHideEvent* event) override
     {
+        flushLiveRefresh();
         if (m_owner && m_owner->isOpen())
         {
             m_owner->setOpen(false);
@@ -514,6 +523,7 @@ private:
     AntColorPicker* m_owner = nullptr;
     QColor m_currentColor = Qt::white;
     bool m_updating = false;
+    bool m_liveRefreshPending = false;
 
     QWidget* m_hsField = nullptr;
     QWidget* m_hueSlider = nullptr;
@@ -537,7 +547,6 @@ void ColorPickerPopup::setupUi()
     m_hsField = new HueSatField(this);
     static_cast<HueSatField*>(m_hsField)->onChanged = [this]() {
         syncColor();
-        emitColor();
     };
     mainLayout->addWidget(m_hsField, 0, Qt::AlignHCenter);
 
@@ -545,7 +554,6 @@ void ColorPickerPopup::setupUi()
     static_cast<HueSlider*>(m_hueSlider)->onHueChanged = [this](int hue) {
         static_cast<HueSatField*>(m_hsField)->setHue(hue);
         syncColor();
-        emitColor();
     };
     mainLayout->addWidget(m_hueSlider, 0, Qt::AlignHCenter);
 
@@ -600,6 +608,8 @@ void ColorPickerPopup::setupUi()
 void ColorPickerPopup::updateFromColor(const QColor& color)
 {
     m_updating = true;
+    m_liveRefreshPending = false;
+    setProperty("antColorPickerLiveRefreshPending", false);
     m_currentColor = color;
     updateSlidersFromColor();
     updateHexField();
@@ -631,10 +641,43 @@ void ColorPickerPopup::syncColor()
     int h, s, v;
     static_cast<HueSatField*>(m_hsField)->setCurrentHsv(h, s, v);
     m_currentColor.setHsv(h, s, v);
+    m_updating = false;
+    scheduleLiveRefresh();
+}
+
+void ColorPickerPopup::scheduleLiveRefresh()
+{
+    if (m_liveRefreshPending)
+    {
+        return;
+    }
+
+    m_liveRefreshPending = true;
+    setProperty("antColorPickerLiveRefreshPending", true);
+    QTimer::singleShot(kColorPickerLiveRefreshIntervalMs, this, [this]() {
+        flushLiveRefresh();
+    });
+}
+
+void ColorPickerPopup::flushLiveRefresh()
+{
+    if (!m_liveRefreshPending)
+    {
+        return;
+    }
+
+    m_liveRefreshPending = false;
+    setProperty("antColorPickerLiveRefreshPending", false);
+
+    m_updating = true;
     static_cast<AlphaSlider*>(m_alphaSlider)->setColor(m_currentColor);
     updateHexField();
     static_cast<ColorPreview*>(m_previewNew)->setColor(m_currentColor);
     m_updating = false;
+
+    setProperty("antColorPickerLiveRefreshCount",
+                property("antColorPickerLiveRefreshCount").toInt() + 1);
+    emitColor();
 }
 
 void ColorPickerPopup::emitColor()

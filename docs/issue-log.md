@@ -405,6 +405,16 @@
 - **验证**:`TestAntQtExtensions::colorPicker` 通过,继续验证 popup 无原生阴影、底部 alpha 衰减、最外侧边缘透明以及 HS field 拖动缓存。
 - **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 47. AntColorPicker 拖动选色实时刷新卡顿
+
+- **现象**:HS 取色区域拖动时,指示器位置虽然能动,但实时颜色刷新仍有明显卡顿。
+- **根因**:#44 只缓存了 HS 色块背景,但每个 `mouseMove` 仍同步执行整条刷新链:更新 alpha slider、写入 HEX `QLineEdit`、重绘预览色块、刷新外部 trigger,并立即发送 `currentColorChanged` / `colorSelected`。这些外部刷新如果触发布局或业务联动,会反过来拖慢鼠标事件处理。
+- **解决**:将拖动链路拆成两级:
+  1. HS 指示器仍立即局部重绘,保证鼠标跟手。
+  2. HEX / alpha slider / preview / owner trigger / 对外信号合并到 16ms live refresh 定时器里,连续 `mouseMove` 只保留最新颜色并合帧刷新。弹窗隐藏前会 flush 一次 pending refresh,避免丢失最终颜色。
+- **验证**:`TestAntQtExtensions::colorPicker` 连续发送多次 HS field 拖动事件,断言背景缓存不重建,并验证多次拖动只合并成一次 live refresh / 一次 `colorSelected` / 一次 `currentColorChanged`。
+- **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 当前暂无记录。

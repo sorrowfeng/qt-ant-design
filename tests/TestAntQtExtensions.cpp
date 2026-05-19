@@ -3738,6 +3738,8 @@ void TestAntQtExtensions::colorPicker()
     QCOMPARE(popup->property("antColorPickerPopupShadowMargin").toInt(), 28);
     QCOMPARE(popup->property("antColorPickerPopupShadowWidth").toInt(), 12);
     QVERIFY(popup->property("antColorPickerPopupShadowStrength").toReal() <= 0.30);
+    QCOMPARE(popup->property("antColorPickerCoalescesDragRefresh").toBool(), true);
+    QCOMPARE(popup->property("antColorPickerLiveRefreshIntervalMs").toInt(), 16);
     const int popupShadowMargin = popup->property("antColorPickerPopupShadowMargin").toInt();
     const int popupShadowWidth = popup->property("antColorPickerPopupShadowWidth").toInt();
     QVERIFY(popupShadowMargin <= popupShadowWidth * 3);
@@ -3780,6 +3782,8 @@ void TestAntQtExtensions::colorPicker()
     }
     const int cacheBuildCount = hueSatField->property("antColorPickerFieldBackgroundCacheBuilds").toInt();
     QVERIFY(cacheBuildCount > 0);
+    QSignalSpy selectedSpy(w, &AntColorPicker::colorSelected);
+    const int refreshCountBeforeDrag = popup->property("antColorPickerLiveRefreshCount").toInt();
     QMouseEvent fieldPress(QEvent::MouseButtonPress,
                            QPointF(24, 24),
                            Qt::LeftButton,
@@ -3796,6 +3800,10 @@ void TestAntQtExtensions::colorPicker()
         QCoreApplication::sendEvent(hueSatField, &fieldMove);
     }
     QCoreApplication::processEvents();
+    QTRY_COMPARE(popup->property("antColorPickerLiveRefreshPending").toBool(), false);
+    QCOMPARE(popup->property("antColorPickerLiveRefreshCount").toInt(), refreshCountBeforeDrag + 1);
+    QCOMPARE(selectedSpy.count(), 1);
+    QCOMPARE(colorSpy.count(), 2);
     fieldImage.fill(Qt::transparent);
     {
         QPainter painter(&fieldImage);

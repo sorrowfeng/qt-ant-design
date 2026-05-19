@@ -117,6 +117,8 @@ Follow-up: the theme transition path now activates the visible window layout tre
 
 Follow-up: `AntColorPicker` popup shadow margin is now tightened to 28px for the 12px software shadow, removing the remaining bottom transparent top-level edge while preserving the soft shadow fade. The targeted `colorPicker` subtest checks the margin, native-shadow flags, bottom alpha fade, and cached hue/saturation drag path.
 
+Follow-up: `AntColorPicker` drag refresh now coalesces HEX / alpha slider / preview / owner trigger / public signal updates into a 16ms live-refresh timer while keeping the HS cursor repaint immediate. The targeted `colorPicker` subtest verifies repeated drag events reuse the cached field background and collapse into one live refresh.
+
 Latest targeted Win10 dock re-embed repaint cadence validation:
 
 ```powershell
