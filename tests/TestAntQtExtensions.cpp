@@ -517,19 +517,6 @@ bool nativeMouseDragFromWorkerForExtensionTest(QWidget* focusWidget, const QPoin
     return done && ok;
 }
 
-bool nativeWindowPrecedesInZOrderForExtensionTest(HWND first, HWND second)
-{
-    if (!first || !second) return false;
-
-    first = ::GetAncestor(first, GA_ROOT);
-    second = ::GetAncestor(second, GA_ROOT);
-    for (HWND hwnd = ::GetTopWindow(nullptr); hwnd; hwnd = ::GetWindow(hwnd, GW_HWNDNEXT))
-    {
-        if (hwnd == first) return true;
-        if (hwnd == second) return false;
-    }
-    return false;
-}
 #endif
 } // namespace
 
@@ -1647,32 +1634,25 @@ void TestAntQtExtensions::dockManager()
     QWidget* dropPreviewWindow = nullptr;
 #if defined(Q_OS_WIN)
     QTRY_VERIFY((dragPreviewWindow = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDragPreviewWindow"))) != nullptr);
-    QTRY_VERIFY((dropPreviewWindow = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDropPreviewWindow"))) != nullptr);
+    QTRY_VERIFY((dropPreviewWindow = manager->findChild<QWidget*>(QStringLiteral("AntDockDropPreviewWindow"))) != nullptr);
     QVERIFY(dragPreviewWindow->testAttribute(Qt::WA_TransparentForMouseEvents));
     QVERIFY(dropPreviewWindow->testAttribute(Qt::WA_TransparentForMouseEvents));
     QTRY_COMPARE(dragPreviewWindow->property("antDockTransparentToolWindowClickThrough").toBool(), true);
     QTRY_COMPARE(dropPreviewWindow->property("antDockTransparentToolWindowClickThrough").toBool(), true);
+    QVERIFY(!dropPreviewWindow->isWindow());
+    QVERIFY(!dropPreviewWindow->internalWinId());
 #endif
     QTRY_COMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::Center);
     const QRect managerGlobalRect = QRect(manager->mapToGlobal(QPoint(0, 0)), manager->size());
     QWidget* guideOverlay = manager->findChild<QWidget*>(QStringLiteral("AntDockGuideOverlay"));
     QVERIFY(guideOverlay != nullptr);
     QTRY_VERIFY(guideOverlay->isVisible());
-    QVERIFY(guideOverlay->isWindow());
+    QVERIFY(!guideOverlay->isWindow());
     QVERIFY(guideOverlay->testAttribute(Qt::WA_TransparentForMouseEvents));
-    QVERIFY(guideOverlay->windowFlags().testFlag(Qt::WindowStaysOnTopHint));
-    QCOMPARE(guideOverlay->geometry(), managerGlobalRect);
+    QCOMPARE(guideOverlay->geometry(), manager->rect());
 #if defined(Q_OS_WIN)
     QTRY_COMPARE(guideOverlay->property("antDockTransparentToolWindowClickThrough").toBool(), true);
-    const HWND guideHwnd = reinterpret_cast<HWND>(guideOverlay->winId());
-    const HWND dropPreviewHwnd = dropPreviewWindow ? reinterpret_cast<HWND>(dropPreviewWindow->winId()) : nullptr;
-    QVERIFY(guideHwnd != nullptr);
-    QVERIFY(dropPreviewHwnd != nullptr);
-    const LONG_PTR guideExStyle = ::GetWindowLongPtrW(guideHwnd, GWL_EXSTYLE);
-    QVERIFY((guideExStyle & WS_EX_TOPMOST) != 0);
-    QVERIFY((guideExStyle & WS_EX_TRANSPARENT) != 0);
-    QVERIFY2(nativeWindowPrecedesInZOrderForExtensionTest(guideHwnd, dropPreviewHwnd),
-             "Drop guide overlay HWND must stay above the drop preview HWND in the native Z-order.");
+    QVERIFY(!guideOverlay->internalWinId());
 #endif
     const QPoint guideLocalCenter = guideOverlay->mapFromGlobal(propertiesCenterGlobal);
     const QImage guideOverlayImage =
@@ -2067,11 +2047,24 @@ void TestAntQtExtensions::dockManager()
     if (QWidget* dragOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDragPreviewWindow")))
     {
         QVERIFY(!dragOverlay->isVisible());
+#if defined(Q_OS_WIN)
+        QVERIFY(!dragOverlay->internalWinId());
+#endif
     }
-    if (QWidget* dropOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDropPreviewWindow")))
+    if (QWidget* dropOverlay = manager->findChild<QWidget*>(QStringLiteral("AntDockDropPreviewWindow")))
     {
         QVERIFY(!dropOverlay->isVisible());
+#if defined(Q_OS_WIN)
+        QVERIFY(!dropOverlay->internalWinId());
+#endif
     }
+#if defined(Q_OS_WIN)
+    if (QWidget* guideOverlay = manager->findChild<QWidget*>(QStringLiteral("AntDockGuideOverlay")))
+    {
+        QVERIFY(!guideOverlay->isVisible());
+        QVERIFY(!guideOverlay->internalWinId());
+    }
+#endif
     QVERIFY(!explorer->isWindow());
     QVERIFY(!explorer->windowFlags().testFlag(Qt::Window));
     QVERIFY(!explorer->testAttribute(Qt::WA_TransparentForMouseEvents));
@@ -2160,11 +2153,24 @@ void TestAntQtExtensions::dockManager()
     if (QWidget* dragOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDragPreviewWindow")))
     {
         QVERIFY(!dragOverlay->isVisible());
+#if defined(Q_OS_WIN)
+        QVERIFY(!dragOverlay->internalWinId());
+#endif
     }
-    if (QWidget* dropOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDropPreviewWindow")))
+    if (QWidget* dropOverlay = manager->findChild<QWidget*>(QStringLiteral("AntDockDropPreviewWindow")))
     {
         QVERIFY(!dropOverlay->isVisible());
+#if defined(Q_OS_WIN)
+        QVERIFY(!dropOverlay->internalWinId());
+#endif
     }
+#if defined(Q_OS_WIN)
+    if (QWidget* guideOverlay = manager->findChild<QWidget*>(QStringLiteral("AntDockGuideOverlay")))
+    {
+        QVERIFY(!guideOverlay->isVisible());
+        QVERIFY(!guideOverlay->internalWinId());
+    }
+#endif
     QTRY_VERIFY(!explorer->titleBarWidget()->isVisible());
     QCOMPARE(explorer->property("antDockFloatingFrame").toBool(), false);
     QCOMPARE(explorer->property("antDockFloatingOwnedByManager").toBool(), false);
@@ -2438,6 +2444,21 @@ void TestAntQtExtensions::dockManager()
         QCOMPARE(windowExplorer->property("antDockNativeEmbeddedUsesQtBackingStore").toBool(), true);
         QVERIFY2(!windowExplorer->internalWinId(),
                  "A dock embedded back into an AntWindow must not keep a native child HWND on the Win10 legacy frame path.");
+        if (QWidget* dragOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDragPreviewWindow")))
+        {
+            QVERIFY(!dragOverlay->isVisible());
+            QVERIFY(!dragOverlay->internalWinId());
+        }
+        if (QWidget* dropOverlay = windowManager->findChild<QWidget*>(QStringLiteral("AntDockDropPreviewWindow")))
+        {
+            QVERIFY(!dropOverlay->isVisible());
+            QVERIFY(!dropOverlay->internalWinId());
+        }
+        if (QWidget* guideOverlay = windowManager->findChild<QWidget*>(QStringLiteral("AntDockGuideOverlay")))
+        {
+            QVERIFY(!guideOverlay->isVisible());
+            QVERIFY(!guideOverlay->internalWinId());
+        }
 
         QTRY_VERIFY(pageProbe->paintCount() > 0);
         const int repaintBefore = pageProbe->paintCount();
@@ -2498,13 +2519,17 @@ void TestAntQtExtensions::dockManager()
                                     .arg(QString::fromLatin1(edgeName))));
 
             const int forwardedBefore = host.property("antWindowChildHitTestForwarded").toInt();
+            const bool resizeHitStartedOnChildHwnd = nativeAtPoint != reinterpret_cast<HWND>(host.winId());
             releaseTopMostForExtensionTest(&host);
             QVERIFY2(nativeMouseDragFromWorkerForExtensionTest(&host, startGlobal, startGlobal + delta),
                      qPrintable(QStringLiteral("Native mouse drag should complete on the AntWindow %1 resize edge after a dock is re-embedded.")
                                     .arg(QString::fromLatin1(edgeName))));
-            QTRY_VERIFY2(host.property("antWindowChildHitTestForwarded").toInt() > forwardedBefore,
-                         qPrintable(QStringLiteral("The AntWindow %1 resize edge should forward child-HWND hit tests after a dock is re-embedded.")
-                                        .arg(QString::fromLatin1(edgeName))));
+            if (resizeHitStartedOnChildHwnd)
+            {
+                QTRY_VERIFY2(host.property("antWindowChildHitTestForwarded").toInt() > forwardedBefore,
+                             qPrintable(QStringLiteral("The AntWindow %1 resize edge should forward child-HWND hit tests after a dock is re-embedded.")
+                                            .arg(QString::fromLatin1(edgeName))));
+            }
 
             if (delta.x() != 0)
             {

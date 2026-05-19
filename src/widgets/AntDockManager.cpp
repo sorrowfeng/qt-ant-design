@@ -139,31 +139,6 @@ void makeTransparentToolWindowClickThrough(QWidget* widget)
     widget->setProperty(kTransparentToolWindowClickThroughProperty, true);
 }
 
-void raiseTransparentToolWindow(QWidget* widget)
-{
-    if (!widget)
-    {
-        return;
-    }
-
-    widget->raise();
-
-    const HWND hwnd = reinterpret_cast<HWND>(widget->winId());
-    if (!hwnd)
-    {
-        return;
-    }
-
-    makeTransparentToolWindowClickThrough(widget);
-    ::SetWindowPos(hwnd,
-                   HWND_TOPMOST,
-                   0,
-                   0,
-                   0,
-                   0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
-}
-
 bool handleTransparentToolWindowNativeEvent(QWidget* widget,
                                             const QByteArray& eventType,
                                             void* message,
@@ -979,21 +954,16 @@ private:
 
 public:
     explicit DockGuideOverlay(AntDockManager* manager)
-        : QWidget(manager,
-                  Qt::Tool |
-                  Qt::FramelessWindowHint |
-                  Qt::WindowStaysOnTopHint |
-                  Qt::NoDropShadowWindowHint),
+        : QWidget(manager),
           m_manager(manager)
     {
         setObjectName(QStringLiteral("AntDockGuideOverlay"));
-        setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_TransparentForMouseEvents);
-        setAttribute(Qt::WA_ShowWithoutActivating);
         setAttribute(Qt::WA_NoSystemBackground);
+        setAttribute(Qt::WA_DontCreateNativeAncestors);
         setAutoFillBackground(false);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
-        setWindowFlag(Qt::WindowTransparentForInput, true);
+#if defined(Q_OS_WIN)
+        setProperty(kTransparentToolWindowClickThroughProperty, true);
 #endif
         hide();
     }
@@ -1020,6 +990,22 @@ public:
         m_activePlacementIsEdge = false;
         update();
         Q_EMIT m_manager->activeDropGuideChanged(m_activePlacement);
+    }
+
+    void hideOverlay(bool destroyNativeHandle = false)
+    {
+        clearActivePlacement();
+#if defined(Q_OS_WIN)
+        forceHideNativeToolWindow(this);
+        if (destroyNativeHandle && internalWinId())
+        {
+            destroy(true, true);
+            setProperty("antDockTransientNativeHandleDestroyed", true);
+        }
+#else
+        Q_UNUSED(destroyNativeHandle)
+        hide();
+#endif
     }
 
     void updateFromGlobalPos(const QPoint& globalPos, const QRect& areaGlobalRect, const QRect& containerGlobalRect)
@@ -1049,7 +1035,10 @@ protected:
     void showEvent(QShowEvent* event) override
     {
         QWidget::showEvent(event);
-        makeTransparentToolWindowClickThrough(this);
+        if (isWindow())
+        {
+            makeTransparentToolWindowClickThrough(this);
+        }
     }
 
     bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
@@ -1384,11 +1373,17 @@ public:
         return isVisible() ? geometry() : QRect();
     }
 
-    void end()
+    void end(bool destroyNativeHandle = true)
     {
 #if defined(Q_OS_WIN)
         forceHideNativeToolWindow(this);
+        if (destroyNativeHandle && internalWinId())
+        {
+            destroy(true, true);
+            setProperty("antDockTransientNativeHandleDestroyed", true);
+        }
 #else
+        Q_UNUSED(destroyNativeHandle)
         hide();
 #endif
         m_pixmap = QPixmap();
@@ -1401,7 +1396,10 @@ protected:
     void showEvent(QShowEvent* event) override
     {
         QWidget::showEvent(event);
-        makeTransparentToolWindowClickThrough(this);
+        if (isWindow())
+        {
+            makeTransparentToolWindowClickThrough(this);
+        }
     }
 
     bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
@@ -1465,23 +1463,17 @@ class AntDockManager::DockDropPreviewWindow : public QWidget
 {
 public:
     explicit DockDropPreviewWindow(AntDockManager* manager)
-        : QWidget(nullptr,
-                  Qt::Tool |
-                  Qt::FramelessWindowHint |
-                  Qt::WindowStaysOnTopHint |
-                  Qt::NoDropShadowWindowHint),
+        : QWidget(manager),
           m_manager(manager)
     {
         setObjectName(QStringLiteral("AntDockDropPreviewWindow"));
-        setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_TransparentForMouseEvents);
-        setAttribute(Qt::WA_ShowWithoutActivating);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
-        setWindowFlag(Qt::WindowTransparentForInput, true);
-#endif
+        setAttribute(Qt::WA_NoSystemBackground);
+        setAttribute(Qt::WA_DontCreateNativeAncestors);
+        setAutoFillBackground(false);
         setFocusPolicy(Qt::NoFocus);
 #if defined(Q_OS_WIN)
-        setProperty(kTransparentToolWindowClickThroughProperty, false);
+        setProperty(kTransparentToolWindowClickThroughProperty, true);
 #endif
         hide();
     }
@@ -1504,7 +1496,8 @@ public:
         m_label = target.label;
         m_placement = target.placement;
 
-        const QRect windowRect = managerGlobalRect.united(m_targetGlobalRect).united(m_previewGlobalRect).adjusted(-18, -18, 18, 18);
+        Q_UNUSED(managerGlobalRect)
+        const QRect windowRect = m_manager ? m_manager->rect() : QRect(QPoint(0, 0), m_previewGlobalRect.size());
         if (geometry() != windowRect)
         {
             setGeometry(windowRect);
@@ -1513,16 +1506,13 @@ public:
         if (!isVisible())
         {
             show();
-#if defined(Q_OS_WIN)
-            makeTransparentToolWindowClickThrough(this);
-#endif
             raise();
             Q_EMIT m_manager->dropPreviewVisibleChanged(true);
         }
         update();
     }
 
-    void hideTarget()
+    void hideTarget(bool destroyNativeHandle = false)
     {
         const bool wasVisible = isVisible();
         m_targetGlobalRect = QRect();
@@ -1531,7 +1521,13 @@ public:
         m_placement = DockPlacement::None;
 #if defined(Q_OS_WIN)
         forceHideNativeToolWindow(this);
+        if (destroyNativeHandle && internalWinId())
+        {
+            destroy(true, true);
+            setProperty("antDockTransientNativeHandleDestroyed", true);
+        }
 #else
+        Q_UNUSED(destroyNativeHandle)
         hide();
 #endif
         if (wasVisible)
@@ -1545,7 +1541,10 @@ protected:
     void showEvent(QShowEvent* event) override
     {
         QWidget::showEvent(event);
-        makeTransparentToolWindowClickThrough(this);
+        if (isWindow())
+        {
+            makeTransparentToolWindowClickThrough(this);
+        }
     }
 
     bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
@@ -1699,7 +1698,7 @@ AntDockManager::~AntDockManager()
     stopDockDragTracking();
     if (m_dropPreviewWindow)
     {
-        m_dropPreviewWindow->hideTarget();
+        m_dropPreviewWindow->hideTarget(true);
         delete m_dropPreviewWindow;
         m_dropPreviewWindow = nullptr;
     }
@@ -1996,8 +1995,7 @@ void AntDockManager::setDropGuideEnabled(bool enabled)
     m_dropGuideVisible = enabled;
     if (!m_dropGuideVisible && m_dropGuideOverlay)
     {
-        m_dropGuideOverlay->clearActivePlacement();
-        m_dropGuideOverlay->hide();
+        m_dropGuideOverlay->hideOverlay(true);
     }
     Q_EMIT dropGuideEnabledChanged(m_dropGuideVisible);
     Q_EMIT dropGuideVisibleChanged(m_dropGuideVisible);
@@ -2543,7 +2541,11 @@ void AntDockManager::resizeEvent(QResizeEvent* event)
     QMainWindow::resizeEvent(event);
     if (m_dropGuideOverlay)
     {
-        m_dropGuideOverlay->setGeometry(QRect(mapToGlobal(QPoint(0, 0)), size()));
+        m_dropGuideOverlay->setGeometry(rect());
+    }
+    if (m_dropPreviewWindow)
+    {
+        m_dropPreviewWindow->setGeometry(rect());
     }
 }
 
@@ -3613,12 +3615,11 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
     {
         if (m_dropGuideOverlay)
         {
-            m_dropGuideOverlay->clearActivePlacement();
-            m_dropGuideOverlay->hide();
+            m_dropGuideOverlay->hideOverlay(true);
         }
         if (m_dropPreviewWindow)
         {
-            m_dropPreviewWindow->hideTarget();
+            m_dropPreviewWindow->hideTarget(true);
         }
         if (m_dragPreviewWindow)
         {
@@ -3666,12 +3667,11 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
     {
         if (m_dropGuideOverlay)
         {
-            m_dropGuideOverlay->clearActivePlacement();
-            m_dropGuideOverlay->hide();
+            m_dropGuideOverlay->hideOverlay(false);
         }
         if (m_dropPreviewWindow)
         {
-            m_dropPreviewWindow->hideTarget();
+            m_dropPreviewWindow->hideTarget(false);
         }
         clearRememberedDropTarget();
         return;
@@ -3704,22 +3704,17 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
     const QRect managerGlobalRect(mapToGlobal(QPoint(0, 0)), size());
     if (m_dropGuideVisible)
     {
-        m_dropGuideOverlay->setGeometry(managerGlobalRect);
+        m_dropGuideOverlay->setGeometry(rect());
         if (!m_dropGuideOverlay->isVisible())
         {
             m_dropGuideOverlay->show();
         }
-#if defined(Q_OS_WIN)
-        raiseTransparentToolWindow(m_dropGuideOverlay);
-#else
         m_dropGuideOverlay->raise();
-#endif
         m_dropGuideOverlay->updateFromGlobalPos(globalPos, areaGuideGlobalRect, containerGuideGlobalRect);
     }
     else
     {
-        m_dropGuideOverlay->clearActivePlacement();
-        m_dropGuideOverlay->hide();
+        m_dropGuideOverlay->hideOverlay(false);
     }
 
     if (m_dropPreviewWindow)
@@ -3731,17 +3726,13 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
             m_dropPreviewWindow->showTarget(target, managerGlobalRect);
             if (m_dropGuideVisible && m_dropGuideOverlay && m_dropGuideOverlay->isVisible())
             {
-#if defined(Q_OS_WIN)
-                raiseTransparentToolWindow(m_dropGuideOverlay);
-#else
                 m_dropGuideOverlay->raise();
-#endif
                 m_dropGuideOverlay->update();
             }
         }
         else
         {
-            m_dropPreviewWindow->hideTarget();
+            m_dropPreviewWindow->hideTarget(false);
         }
     }
 }
@@ -3750,11 +3741,10 @@ void AntDockManager::hideDropGuide(bool keepDropPreview)
 {
     if (!m_dropGuideOverlay) return;
 
-    m_dropGuideOverlay->clearActivePlacement();
-    m_dropGuideOverlay->hide();
+    m_dropGuideOverlay->hideOverlay(true);
     if (m_dropPreviewWindow && !keepDropPreview)
     {
-        m_dropPreviewWindow->hideTarget();
+        m_dropPreviewWindow->hideTarget(true);
     }
 }
 

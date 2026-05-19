@@ -269,11 +269,11 @@
 - **解决**：`AntWindowCornerSmoother` 保持非 native child，不再主动创建整窗 HWND；只有外部已经创建了 native handle 时才设置 Win32 透明扩展样式。无 native handle 时仅通过 Qt `WA_TransparentForMouseEvents` 保持输入穿透。回归测试强制 Win10 legacy frame policy，验证 smoother 没有 native HWND，并验证中心子控件 `update()` 后窗口截图能看到新绘制像素。
 - **改动文件**：`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
 
-### 36. Win10 DockWidget 浮窗回嵌后示例窗口停止自动刷新
+### 36. Win10 DockWidget 浮窗回嵌后示例窗口动画刷新停止
 
-- **现象**：Windows 10 下把 `AntDockWidget` 浮窗拖回主布局后，示例窗口客户区不再稳定自动 update，控件状态变化需要额外窗口事件才会显示。
-- **根因**：浮窗回嵌时旧逻辑会把 dock 或 dock area 继续提升成 native child HWND，并把它作为子 HWND 挂回布局。Win10 legacy frame 的透明窗口和 Qt backing-store 子控件混合时，native child 会破坏主窗口客户区的合成刷新节奏。
-- **解决**：`normalizeEmbeddedDockNativeWindow()` 改为纯 backing-store 收敛路径：回嵌 dock 设置回普通 Qt child widget，不再调用 `parentWidget->winId()`，也不再保留或重设 embedded child HWND；如果仍发现残留 native handle，会隐藏并销毁。回归测试强制 AntWindow legacy frame policy，验证回嵌后的 dock 没有 `internalWinId()`，并在同一窗口内用可绘制探针控件触发 `update()`，从窗口截图采样确认新颜色已经真实刷新。
+- **现象**：Windows 10 下把 `AntDockWidget` 浮窗拖回主布局后，示例窗口客户区动画刷新停止或明显卡住，控件状态变化需要额外窗口事件才会显示。
+- **根因**：浮窗回嵌时旧逻辑会把 dock 或 dock area 继续提升成 native child HWND；同时拖动过程中的 drop guide / drop preview 是透明 top-level layered tool window。Win10 legacy frame 的透明窗口、layered 工具窗和 Qt backing-store 子控件混合时，native 窗口栈会破坏主窗口客户区的合成刷新节奏。
+- **解决**：`normalizeEmbeddedDockNativeWindow()` 改为纯 backing-store 收敛路径：回嵌 dock 设置回普通 Qt child widget，不再调用 `parentWidget->winId()`，也不再保留或重设 embedded child HWND；如果仍发现残留 native handle，会隐藏并销毁。drop guide 和 drop preview 改成 `AntDockManager` 内部普通 child overlay，只通过 `raise()` 保持层级，不再创建 Win10 透明 top-level HWND；拖动结束时临时透明窗口也会隐藏并销毁 native handle。回归测试强制 AntWindow legacy frame policy，验证回嵌后的 dock、guide 和 preview 都没有残留 native handle，并在同一窗口内用可绘制探针控件触发 `update()`，从窗口截图采样确认新颜色已经真实刷新。
 - **改动文件**：`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
 ## 未解决
