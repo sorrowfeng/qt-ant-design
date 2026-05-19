@@ -2031,6 +2031,41 @@ QRect AntDockManager::dropPreviewRect() const
     return m_dropPreviewWindow ? m_dropPreviewWindow->previewGlobalRect() : QRect();
 }
 
+bool AntDockManager::isDockingSurfaceAvailable() const
+{
+    if (!isVisible())
+    {
+        return false;
+    }
+
+    QWidget* topLevel = window();
+    if (topLevel)
+    {
+        if (!topLevel->isVisible() || topLevel->isMinimized())
+        {
+            return false;
+        }
+        if (topLevel != this && !isVisibleTo(topLevel))
+        {
+            return false;
+        }
+    }
+
+    if (m_workspace)
+    {
+        if (!m_workspace->isVisible())
+        {
+            return false;
+        }
+        if (topLevel && topLevel != m_workspace && !m_workspace->isVisibleTo(topLevel))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool AntDockManager::savePerspective(const QString& name)
 {
     const QString key = name.trimmed();
@@ -3119,8 +3154,15 @@ void AntDockManager::finishDockDragTracking(const QPoint& globalPos)
 
     QPointer<AntDockManager> manager(this);
     QPointer<AntDockWidget> draggedDock(m_draggedDock);
-    DropTarget target = dropTargetAt(globalPos);
-    const bool releaseInsideManager = rect().contains(mapFromGlobal(globalPos));
+    const bool dockingSurfaceAvailable = isDockingSurfaceAvailable();
+    setProperty("antDockLastDropSurfaceAvailable", dockingSurfaceAvailable);
+    if (!dockingSurfaceAvailable)
+    {
+        setProperty("antDockLastHiddenSurfaceDropRejected", true);
+        clearRememberedDropTarget();
+    }
+    DropTarget target = dockingSurfaceAvailable ? dropTargetAt(globalPos) : DropTarget{};
+    const bool releaseInsideManager = dockingSurfaceAvailable && rect().contains(mapFromGlobal(globalPos));
     if (!target.valid && releaseInsideManager)
     {
         target = rememberedDropTarget();
@@ -3578,8 +3620,7 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
 {
     const bool draggingFloatingDock = m_draggedDock && m_draggedDock->isFloating();
     const bool dockingSurfaceVisible = m_dropGuideOverlay &&
-        isVisible() &&
-        (!window() || !window()->isMinimized());
+        isDockingSurfaceAvailable();
 
     if (!dockingSurfaceVisible && !draggingFloatingDock)
     {
@@ -3596,6 +3637,7 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
         {
             m_dragPreviewWindow->end();
         }
+        clearRememberedDropTarget();
         return;
     }
 
@@ -3644,6 +3686,7 @@ void AntDockManager::showDropGuideAt(const QPoint& globalPos)
         {
             m_dropPreviewWindow->hideTarget();
         }
+        clearRememberedDropTarget();
         return;
     }
 
@@ -3731,6 +3774,7 @@ void AntDockManager::hideDropGuide(bool keepDropPreview)
 AntDockManager::DropTarget AntDockManager::dropTargetAt(const QPoint& globalPos) const
 {
     DropTarget target;
+    if (!isDockingSurfaceAvailable()) return target;
     if (!rect().contains(mapFromGlobal(globalPos))) return target;
 
     const DockPlacement guidedPlacement = activeDropGuide();
@@ -3791,6 +3835,10 @@ AntDockManager::DropTarget AntDockManager::dropTargetAt(const QPoint& globalPos)
 AntDockManager::DropTarget AntDockManager::rememberedDropTarget() const
 {
     DropTarget target;
+    if (!isDockingSurfaceAvailable())
+    {
+        return target;
+    }
     if (!m_hasLastDropTarget || m_lastDropPlacement == DockPlacement::None)
     {
         return target;

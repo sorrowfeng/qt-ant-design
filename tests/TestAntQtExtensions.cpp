@@ -2299,12 +2299,14 @@ void TestAntQtExtensions::dockManager()
         QTRY_VERIFY(hiddenExplorer->isFloating());
         QTRY_VERIFY(hiddenExplorer->titleBarWidget()->isVisible());
 
+        QSignalSpy hiddenDockedSpy(hiddenManager, &AntDockManager::dockWidgetDocked);
         const QPoint floatingPosBeforeHiddenDrag = hiddenExplorer->pos();
         hiddenManager->hide();
         QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
         hiddenExplorer->show();
         hiddenExplorer->raise();
         QTRY_VERIFY(hiddenExplorer->isVisible());
+        QCOMPARE(hiddenManager->isDockingSurfaceAvailable(), false);
 
         QWidget* hiddenTitleBar = hiddenExplorer->titleBarWidget();
         QVERIFY(hiddenTitleBar != nullptr);
@@ -2339,6 +2341,13 @@ void TestAntQtExtensions::dockManager()
         QCOMPARE(hiddenManager->property("antDockDragActivated").toBool(), false);
         QVERIFY(!hiddenManager->isDropPreviewVisible());
         QCOMPARE(hiddenManager->activeDropGuide(), AntDockManager::DockPlacement::None);
+        QCoreApplication::sendPostedEvents(hiddenManager, QEvent::MetaCall);
+        QCOMPARE(hiddenDockedSpy.count(), 0);
+        QCOMPARE(hiddenExplorer->isFloating(), true);
+        QVERIFY(hiddenManager->floatingDockWidgets().contains(hiddenExplorer));
+        QCOMPARE(dockAreaForExtensionTest(hiddenExplorer), nullptr);
+        QCOMPARE(hiddenManager->property("antDockLastDropSurfaceAvailable").toBool(), false);
+        QCOMPARE(hiddenManager->property("antDockLastHiddenSurfaceDropRejected").toBool(), true);
 
         QSignalSpy hiddenRemovedSpy(hiddenManager, &AntDockManager::dockWidgetRemoved);
         hiddenManager->removeDockWidget(hiddenExplorer);

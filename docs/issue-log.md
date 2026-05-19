@@ -255,6 +255,13 @@
 - **解决**：嵌入态 dock 的 guided drop 现在在 release 事件返回前同步应用新布局，不再等 queued meta-call；浮动窗口回嵌这类生命周期更复杂的路径继续使用 queued apply，并保留 drop preview 直到布局切换真正应用，避免空白间隙。`restorePerspective()` 进入批量恢复模式，临时关闭 manager/workspace/dock 更新、延后 placeholder 刷新，并把仍会嵌入的 dock 暂挂到 manager child 上，不再临时顶层化；恢复 area 时批量添加 tab，仅最后设置当前 tab；`updateTheme()` 只有样式内容变化时才重新 `setStyleSheet()`。回归测试覆盖 restore 期间保留嵌入 dock、area 重建计数、stylesheet 不重复应用，以及嵌入态 guided drop 在 release 后立即完成布局切换。
 - **改动文件**：`src/widgets/AntDockManager.h`、`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 34. DockWidget 不可见时浮动窗口仍能嵌回布局
+
+- **现象**：`AntDockManager` 所在页面或 dock 工作区不可见时，已经浮动的 `AntDockWidget` 仍可能在拖动释放后嵌回隐藏布局。
+- **根因**：`showDropGuideAt()` 在不可见 surface 下会隐藏预览，但 `dropTargetAt()` 和 release fallback 仍按 manager 的历史 geometry 计算 drop target；隐藏页面虽然屏幕上不可见，`mapFromGlobal()` / `rect()` 仍可能让松手点落在旧布局范围内，最终生成有效落位。
+- **解决**：新增 `isDockingSurfaceAvailable()`，统一检查 manager、top-level window 和 workspace 是否实际可见且未最小化；`dropTargetAt()`、remembered target 和 release fallback 在 surface 不可用时都返回无效，隐藏 surface 下只允许浮动窗口继续移动，不允许 dock 回布局。回归测试覆盖隐藏 manager 后拖动浮窗：不会发出 docked 信号，不会有 queued 回嵌，浮窗仍保持 floating。
+- **改动文件**：`src/widgets/AntDockManager.h`、`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 跨屏拖动时阴影错位（动态跟随问题）

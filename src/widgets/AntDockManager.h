@@ -82,6 +82,7 @@ public:
     DockPlacement activeDropGuide() const;
     bool isDropPreviewVisible() const;
     QRect dropPreviewRect() const;
+    bool isDockingSurfaceAvailable() const;
 
     bool savePerspective(const QString& name);
     bool restorePerspective(const QString& name);
