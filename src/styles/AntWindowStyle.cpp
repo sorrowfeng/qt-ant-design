@@ -129,7 +129,15 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
     // square corners so the entire client rect is fully opaque; the rounded
     // outline is restored on WM_EXITSIZEMOVE.
     const bool liveResize = window->property("antWindowLegacyLiveResize").toBool();
-    const int cornerRadius = (maximized || liveResize) ? 0 : window->cornerRadius();
+    // The Win10 opaque path has no alpha channel in the backing store, no
+    // corner smoother, and an unreliable live-resize state machine. We
+    // accept square corners on that path (with the legacy software shadow
+    // providing the visible window outline) instead of trying to clip a
+    // rounded path against opaque pixels - the latter leaves the four
+    // outside-the-rounded-path corners showing the palette fill color and
+    // also occasionally gets stuck square after an interrupted resize loop.
+    const bool forceSquareCorners = window->usesLegacyOpaquePath();
+    const int cornerRadius = (maximized || liveResize || forceSquareCorners) ? 0 : window->cornerRadius();
     const QRectF windowRect(option->rect);
     QPainterPath windowPath;
     if (cornerRadius > 0)

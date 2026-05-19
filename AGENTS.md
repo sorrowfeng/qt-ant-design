@@ -24,7 +24,7 @@
 
 ## 项目状态
 
-- 同步日期：`2026-05-17`
+- 同步日期：`2026-05-20`
 - 状态总览：`docs/project-status.md`
 - 项目问题清单（已解决 + 待解决）：`docs/issue-log.md`
 - 已实现公开组件总数：`84`（`src/widgets` 有 `105` 个 `Ant*.h`，包含 `84` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`）

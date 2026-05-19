@@ -1,6 +1,6 @@
 # Project Status
 
-Updated: `2026-05-17`
+Updated: `2026-05-20`
 
 This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, and README component screenshot gallery.
 
@@ -94,6 +94,29 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Refreshed and corrected the README dark thumbnails for `AntCalendar`, `AntAnchor`, `AntSplitter`, `AntLayout`, and `AntScrollBar`; `AntCalendar` now themes its internal `QTableView` viewport, `AntLayoutFooter` uses `colorBgLayout`, and the Anchor/Splitter/ScrollBar demo surfaces no longer keep hard-coded light fills in dark mode.
 - Replaced the shared `image-basic` demo asset and refreshed the affected README component thumbnails for `AntAvatar` and `AntImage` in both light and dark modes.
 - Updated `AntQRCode`'s default value, example, and README light/dark thumbnails so the default QR code scans to the repository URL: `https://github.com/sorrowfeng/qt-ant-design`; the QRCode example now also exposes an editable `AntInput` and primary Regenerate button that call `AntQRCode::setValue()` to rebuild the embedded byte-mode + Reed-Solomon QR matrix.
+
+Latest Win10 AntWindow opaque-path validation:
+
+```powershell
+cmake --build build --config Debug --target qt-ant-design-example TestAntQtExtensions
+"build/tests/Debug/TestAntQtExtensions.exe" dockManager windowLegacyFramePolicyRestoresShadowAfterResize windowNativeHitTestSupportsSnapZones windowDwmFrameMarginsPreserveShadow
+```
+
+Result: on `2026-05-20`, Win10 AntWindow now takes a fully opaque path (no `WA_TranslucentBackground`, no `AntWindowCornerSmoother`, no DWM glass extension during edge resize, no `DWMWA_BORDER_COLOR` gray frame, and `WM_NCACTIVATE` / `WM_NCPAINT` consumed). The window paints square corners with the legacy software shadow drawing a square outline. The Win11 caption path is unchanged. User-reported symptoms cleared on real Win10 hardware: dock float/embed stutter, page-switch stutter, repeated-resize black screen, four-edge gray frame, refocus focus rectangle, and "corners stuck square after an interrupted resize loop". Two new issues recorded as unresolved in `docs/issue-log.md` items B (theme transition speed) and C (AntColorPicker popup multi-edge + drag stutter).
+
+Latest targeted Win10 dock re-embed repaint cadence validation:
+
+```powershell
+cmake --build build --config Debug --target TestAntQtExtensions
+for /L %i in (1,1,5) do "build/tests/Debug/TestAntQtExtensions.exe" dockManager
+```
+
+Result: the `dockManager` subtest passed `5 / 5` runs on `2026-05-19` with two Win10-only fixes against the float→re-embed stutter:
+
+1. `AntDockWidget::resetNativeFloatingWindowForEmbedding()` deletes `m_legacySoftwareShadow` outright on embed so no hidden top-level `WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE` HWND remains enrolled in DWM tracking, and clears the live-resize / DWM-frame / queued-frame-refresh property set so already-queued callbacks short-circuit.
+2. `queueDwmFrameRefresh()` timer guards: it now requires the widget to still be a window, the dock to still report `isFloating()`, and an existing `internalWinId()` (never calls `winId()`, which would force-create a new native child HWND on the embedded dock). Any other state skips the DWM re-extension.
+
+`PaintProbeWidget` was extended to record per-frame intervals; the dock re-embed scenario captures a baseline 12-frame / 16 ms-per-frame `pageProbe.setFillColor` cadence on the fresh host, floats then re-embeds, repeats the cadence, and asserts the post-embed max frame interval ≤ max(80 ms, 3 × baseline) plus zero residual native handles across `windowExplorer->findChildren<QWidget*>()` and zero `antDockNativeWindowFrameEnabled` / `antDockUsesNativeCaptionFrame` / `antDockLegacyLiveResize` flags. The new max-interval guard catches a stutter regression even when every paint is delivered (the previous test only checked `paintCount()` growth).
 
 Latest targeted DockWidget floating-window validation:
 

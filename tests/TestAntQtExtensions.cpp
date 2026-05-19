@@ -27,6 +27,7 @@
 #include <QWindow>
 
 #include <atomic>
+#include <algorithm>
 #include <thread>
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
@@ -122,9 +123,31 @@ public:
         update();
     }
 
+    void resetIntervalSamples()
+    {
+        m_intervalsMs.clear();
+        m_intervalTimer.invalidate();
+    }
+
+    QList<qint64> paintIntervalsMs() const
+    {
+        return m_intervalsMs;
+    }
+
+    qint64 maxPaintIntervalMs() const
+    {
+        if (m_intervalsMs.isEmpty()) return 0;
+        return *std::max_element(m_intervalsMs.cbegin(), m_intervalsMs.cend());
+    }
+
 protected:
     void paintEvent(QPaintEvent*) override
     {
+        if (m_intervalTimer.isValid())
+        {
+            m_intervalsMs.append(m_intervalTimer.elapsed());
+        }
+        m_intervalTimer.restart();
         ++m_paintCount;
         QPainter painter(this);
         painter.fillRect(rect(), m_fillColor);
@@ -133,6 +156,8 @@ protected:
 private:
     QColor m_fillColor = QColor(32, 112, 240);
     int m_paintCount = 0;
+    QElapsedTimer m_intervalTimer;
+    QList<qint64> m_intervalsMs;
 };
 
 int primaryLikePixelCountForExtensionTest(const QImage& image, QRect sampleRect)
@@ -2512,6 +2537,35 @@ void TestAntQtExtensions::dockManager()
         QTRY_COMPARE(switchBeforeSpy.count(), 1);
         QVERIFY(pageSwitch->isChecked());
 
+        // Capture a baseline animation cadence on the host AntWindow before
+        // ever floating a dock so we have a fresh-window paint interval to
+        // compare against the post-embed cadence. The Win10 re-embed stutter
+        // shows up as a per-frame interval inflation, not a missed paint
+        // count, so a baseline is what makes the regression check meaningful.
+        auto drivePageProbeCadence = [&](int frames, int frameIntervalMs) {
+            pageProbe->resetIntervalSamples();
+            for (int frame = 0; frame < frames; ++frame)
+            {
+                const QColor cadenceColor((37 + frame * 11) % 256,
+                                          (151 + frame * 7) % 256,
+                                          (211 + frame * 5) % 256);
+                pageProbe->setFillColor(cadenceColor);
+                QElapsedTimer frameTimer;
+                frameTimer.start();
+                while (frameTimer.elapsed() < frameIntervalMs)
+                {
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, frameIntervalMs);
+                }
+            }
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+        };
+        constexpr int kCadenceFrames = 12;
+        constexpr int kCadenceFrameIntervalMs = 16;
+        drivePageProbeCadence(kCadenceFrames, kCadenceFrameIntervalMs);
+        const qint64 baselineMaxIntervalMs = pageProbe->maxPaintIntervalMs();
+        QVERIFY2(!pageProbe->paintIntervalsMs().isEmpty(),
+                 "Baseline cadence should produce at least one interval sample.");
+
         windowManager->setDockWidgetFloating(
             windowExplorer,
             true,
@@ -2525,6 +2579,28 @@ void TestAntQtExtensions::dockManager()
         QCOMPARE(windowExplorer->property("antDockNativeEmbeddedUsesQtBackingStore").toBool(), true);
         QVERIFY2(!windowExplorer->internalWinId(),
                  "A dock embedded back into an AntWindow must not keep a native child HWND on the Win10 legacy frame path.");
+        // The Win10 legacy software shadow widget must be fully gone after
+        // re-embed: even a hidden top-level WS_EX_LAYERED window owned by
+        // the dock disturbs the host AntWindow compositor cadence.
+        QCOMPARE(windowExplorer->property("antDockLegacyShadowDestroyedOnEmbed").toBool(), true);
+        QVERIFY2(windowExplorer->findChild<QWidget*>(QStringLiteral("AntDockLegacySoftwareShadow")) == nullptr,
+                 "The dock legacy software shadow widget must be deleted on Win10 re-embed so no hidden layered HWND is left enrolled in DWM tracking.");
+        // The DWM frame / native frame flags must be cleared on embed: a
+        // queued frame-refresh fire from the float lifecycle could otherwise
+        // re-extend DWM frame margins on the embedded child and recreate a
+        // residual native HWND on the Win10 legacy frame path.
+        QCOMPARE(windowExplorer->property("antDockNativeWindowFrameEnabled").toBool(), false);
+        QCOMPARE(windowExplorer->property("antDockUsesNativeCaptionFrame").toBool(), false);
+        QCOMPARE(windowExplorer->property("antDockLegacyLiveResize").toBool(), false);
+        // No descendant of the dock should keep a native handle either; that
+        // would leave a stale child HWND parented under the manager's host.
+        const QList<QWidget*> embeddedDockDescendants = windowExplorer->findChildren<QWidget*>();
+        for (QWidget* desc : embeddedDockDescendants)
+        {
+            QVERIFY2(!desc->internalWinId(),
+                     qPrintable(QStringLiteral("Embedded dock descendant '%1' must not keep a native HWND after re-embed on Win10.")
+                                    .arg(desc->objectName().isEmpty() ? desc->metaObject()->className() : desc->objectName())));
+        }
         if (QWidget* dragOverlay = topLevelWidgetForExtensionTest(QStringLiteral("AntDockDragPreviewWindow")))
         {
             QVERIFY(!dragOverlay->isVisible());
@@ -2560,6 +2636,41 @@ void TestAntQtExtensions::dockManager()
                                 .arg(colorStringForExtensionTest(repaintColor),
                                      colorStringForExtensionTest(sampledColor))));
 
+        // Drive an identical animation-style cadence after re-embed and
+        // compare against the baseline. The Win10 dock re-embed stutter does
+        // not show up as a missing paint - it shows up as an inflated
+        // max-interval between consecutive paints. Compare directly against
+        // the baseline taken on the fresh host so we catch a real cadence
+        // regression even when both runs deliver every frame.
+        {
+            const int cadenceBefore = pageProbe->paintCount();
+            drivePageProbeCadence(kCadenceFrames, kCadenceFrameIntervalMs);
+            QTRY_VERIFY2(pageProbe->paintCount() >= cadenceBefore + kCadenceFrames,
+                         qPrintable(QStringLiteral("AntWindow child animation cadence stalled after dock float -> embed on Win10. paints before=%1 after=%2 expected>=%3")
+                                        .arg(cadenceBefore)
+                                        .arg(pageProbe->paintCount())
+                                        .arg(cadenceBefore + kCadenceFrames)));
+            const qint64 postEmbedMaxIntervalMs = pageProbe->maxPaintIntervalMs();
+            // Allow some slack for OS-level scheduling jitter, but a stutter
+            // regression (residual hidden layered HWND etc.) inflates the
+            // worst frame gap to several times the baseline. 3x the baseline
+            // (with a floor) is a comfortable threshold that still catches
+            // the issue. Tighten if needed.
+            const qint64 thresholdMs = qMax<qint64>(80, baselineMaxIntervalMs * 3);
+            QVERIFY2(postEmbedMaxIntervalMs <= thresholdMs,
+                     qPrintable(QStringLiteral("AntWindow child animation cadence regressed after dock float -> embed on Win10. baselineMax=%1ms postEmbedMax=%2ms threshold=%3ms")
+                                    .arg(baselineMaxIntervalMs)
+                                    .arg(postEmbedMaxIntervalMs)
+                                    .arg(thresholdMs)));
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+            const QPixmap cadenceGrab = host.grab();
+            const QImage cadenceImage = cadenceGrab.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+            const qreal cadenceDpr = qMax<qreal>(1.0, cadenceGrab.devicePixelRatio());
+            const QPoint cadenceSampleInImage(qRound(sampleInHost.x() * cadenceDpr),
+                                              qRound(sampleInHost.y() * cadenceDpr));
+            QVERIFY(cadenceImage.rect().contains(cadenceSampleInImage));
+        }
+
         QSignalSpy switchAfterSpy(pageSwitch, &AntSwitch::checkedChanged);
         QVERIFY(bringWidgetToFrontForExtensionTest(&host));
         {
@@ -2571,9 +2682,16 @@ void TestAntQtExtensions::dockManager()
             QWidget* nativeWidget = QWidget::find(reinterpret_cast<WId>(nativeAtPoint));
             QVERIFY(!nativeWidget || nativeWidget->objectName() != QStringLiteral("AntWindowCornerSmoother"));
             QVERIFY(qobject_cast<AntWave*>(nativeWidget) == nullptr);
+            // On the forced-legacy AntWindow path the corner smoother is
+            // intentionally not created (WA_TranslucentBackground + DWM
+            // glass combination causes compositor instability on Win10,
+            // so the opaque path skips both). On Win11 / non-legacy
+            // AntWindow construction the smoother still exists.
             QWidget* smoother = host.findChild<QWidget*>(QStringLiteral("AntWindowCornerSmoother"));
-            QVERIFY(smoother != nullptr);
-            QCOMPARE(smoother->property("antWindowCornerSmootherClickThrough").toBool(), true);
+            if (smoother)
+            {
+                QCOMPARE(smoother->property("antWindowCornerSmootherClickThrough").toBool(), true);
+            }
         }
         releaseTopMostForExtensionTest(&host);
         QVERIFY(nativeMouseClickForExtensionTest(&host, pageSwitch->mapToGlobal(pageSwitch->rect().center())));
@@ -2639,6 +2757,59 @@ void TestAntQtExtensions::dockManager()
         verifyHostResizeAfterDockEmbed(QPoint(host.width() / 2, host.height() - 2),
                                        QPoint(0, 96),
                                        "bottom");
+
+        // Multi-resize backing-store guard: rapidly grow/shrink the host
+        // many times to verify the AntWindow backing store still flushes
+        // non-blank frames after a dock float/embed cycle. Repeated WM_SIZE
+        // cycles are where the user-reported "黑屏" symptom shows up - if
+        // any residual Win10 state from the dock lifecycle starts blocking
+        // DWM frame acceptance, the host grab eventually returns the bg
+        // color only (all four corners of the content area become identical
+        // to the desktop / no content pixels).
+        {
+            host.setGeometry(80, 80, 880, 600);
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+            constexpr int kResizeCycles = 8;
+            int nonBlankFrameCount = 0;
+            QColor lastSeenContentColor;
+            const QPoint contentSampleLocal = pageSwitch->mapTo(&host, pageSwitch->rect().center());
+            for (int cycle = 0; cycle < kResizeCycles; ++cycle)
+            {
+                const int w = 760 + (cycle * 37) % 320;
+                const int h = 520 + (cycle * 29) % 220;
+                host.setGeometry(host.x(), host.y(), w, h);
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+                // Drive a paint on the embedded probe so we know there is
+                // a fresh content frame to grab.
+                pageProbe->setFillColor(QColor((47 + cycle * 13) % 256,
+                                               (157 + cycle * 7) % 256,
+                                               (211 + cycle * 5) % 256));
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+
+                const QPixmap cycleGrab = host.grab();
+                if (cycleGrab.isNull()) continue;
+                const QImage cycleImage = cycleGrab.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+                const qreal cycleDpr = qMax<qreal>(1.0, cycleGrab.devicePixelRatio());
+                const QPoint cycleSampleInImage(qRound(contentSampleLocal.x() * cycleDpr),
+                                                qRound(contentSampleLocal.y() * cycleDpr));
+                if (!cycleImage.rect().contains(cycleSampleInImage)) continue;
+                const QColor cycleSampledColor = cycleImage.pixelColor(cycleSampleInImage);
+                // Black = catastrophic backing-store failure (rgba 0,0,0,*).
+                // Any real pixel from AntSwitch / page background is non-black.
+                if (cycleSampledColor.red() > 4 || cycleSampledColor.green() > 4 || cycleSampledColor.blue() > 4)
+                {
+                    ++nonBlankFrameCount;
+                    lastSeenContentColor = cycleSampledColor;
+                }
+            }
+            QVERIFY2(nonBlankFrameCount >= kResizeCycles - 2,
+                     qPrintable(QStringLiteral("AntWindow backing store must keep producing non-blank frames across repeated resizes after dock float/embed on Win10. nonBlank=%1/%2 lastSample=%3")
+                                    .arg(nonBlankFrameCount)
+                                    .arg(kResizeCycles)
+                                    .arg(lastSeenContentColor.isValid()
+                                             ? colorStringForExtensionTest(lastSeenContentColor)
+                                             : QStringLiteral("invalid"))));
+        }
     }
 #endif
 
@@ -3273,12 +3444,20 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     QVERIFY(QTest::qWaitForWindowExposed(&window));
 
     QCOMPARE(window.property("antWindowUsesNativeCaptionFrame").toBool(), false);
+    // The Win10 legacy AntWindow path now skips both WA_TranslucentBackground
+    // and the corner smoother in exchange for compositor stability across
+    // repeated resize cycles. The smoother widget therefore does not exist on
+    // this path - only check its non-native invariant when it is present
+    // (i.e. when the test happens to run on a Win11-class build that took the
+    // translucent-background path before the legacy property was applied).
     QWidget* smoother = window.findChild<QWidget*>(QStringLiteral("AntWindowCornerSmoother"));
-    QVERIFY(smoother != nullptr);
-    QTRY_COMPARE(smoother->property("antWindowCornerSmootherClickThrough").toBool(), true);
-    QCOMPARE(smoother->property("antWindowCornerSmootherNativeHwnd").toBool(), false);
-    QVERIFY2(!smoother->internalWinId(),
-             "Win10 corner smoother must stay as a non-native child; a full-window native child overlay can freeze child repaint composition.");
+    if (smoother)
+    {
+        QTRY_COMPARE(smoother->property("antWindowCornerSmootherClickThrough").toBool(), true);
+        QCOMPARE(smoother->property("antWindowCornerSmootherNativeHwnd").toBool(), false);
+        QVERIFY2(!smoother->internalWinId(),
+                 "Win10 corner smoother must stay as a non-native child; a full-window native child overlay can freeze child repaint composition.");
+    }
     QTRY_VERIFY(probe->paintCount() > 0);
     const int paintCountBeforeProbeUpdate = probe->paintCount();
     const QColor probeColor(220, 40, 72);

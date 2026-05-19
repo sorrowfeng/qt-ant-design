@@ -623,7 +623,33 @@ void queueDwmFrameRefresh(QWidget* widget, bool useNativeCaption, const char* re
         {
             return;
         }
-        reapplyDwmFrameMargins(guard.data(), reinterpret_cast<HWND>(guard->winId()), useNativeCaption, reason);
+        // The dock may have been embedded back into a manager between the
+        // queue and the fire. In that case it is no longer a top-level
+        // window and must not be re-extended into DWM frame tracking; in
+        // particular, calling winId() on an embedded dock with
+        // WA_NativeWindow=false would force-create a brand-new native
+        // child HWND under the manager and re-enroll it in DWM, which
+        // disturbs the host AntWindow's compositor cadence on Win10. Only
+        // touch DWM state while we still own a top-level HWND that came
+        // from the floating path. Use internalWinId() rather than winId()
+        // so we never implicitly promote an embedded child.
+        if (!guard->isWindow())
+        {
+            return;
+        }
+        if (auto* dock = qobject_cast<AntDockWidget*>(guard.data()))
+        {
+            if (!dock->isFloating())
+            {
+                return;
+            }
+        }
+        const WId id = guard->internalWinId();
+        if (!id)
+        {
+            return;
+        }
+        reapplyDwmFrameMargins(guard.data(), reinterpret_cast<HWND>(id), useNativeCaption, reason);
     });
 }
 #endif
@@ -1030,11 +1056,38 @@ void AntDockWidget::resetNativeFloatingWindowForEmbedding()
                            SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
     }
     hideLegacySoftwareShadow();
+    // The Win10 legacy frame path is the only one that ever spawns a software
+    // shadow (Win11 keeps `useNativeCaption=true` and skips creation). Hiding
+    // the shadow is not enough on Win10: the widget keeps a top-level layered
+    // window enrolled in DWM tracking (`WS_EX_LAYERED | WS_EX_TRANSPARENT |
+    // WS_EX_NOACTIVATE`). Leaving that hidden layered HWND alive after the
+    // dock re-embeds disturbs the host AntWindow's compositor cadence, so
+    // user-visible animations / hover / click repaints stutter. Fully delete
+    // the shadow widget here; the next float will lazily recreate a fresh one.
+    if (m_legacySoftwareShadow)
+    {
+        delete m_legacySoftwareShadow;
+        m_legacySoftwareShadow = nullptr;
+        setProperty(kDockLegacyShadowEnabledProperty, false);
+    }
+    // Clear live-resize and DWM frame bookkeeping immediately. Without this the
+    // dock re-enters the embedded tab area while properties still claim it
+    // owns DWM-extended frame margins; any subsequent code path that consults
+    // `kDockNativeFrameEnabledProperty` (e.g. queued frame refresh fired from
+    // before the float-back) would happily re-enroll the freshly embedded
+    // child in DWM, recreating exactly the residual layered HWND the embed
+    // path is trying to evict.
+    m_legacyLiveResize = false;
+    setProperty(kDockLegacyLiveResizeProperty, false);
+    setProperty(kDockNativeFrameEnabledProperty, false);
+    setProperty(kDockUsesNativeCaptionFrameProperty, false);
+    setProperty(kDockDwmFrameRefreshQueuedProperty, false);
     // Destroy child native handles as well. A floating dock may contain child
     // HWNDs created while it was top-level; keeping them alive across reparent
     // can leave stale native children above the embedded layout.
     destroy(true, true);
     setProperty("antDockNativeFloatingHwndDestroyed", true);
+    setProperty("antDockLegacyShadowDestroyedOnEmbed", true);
 }
 #endif
 

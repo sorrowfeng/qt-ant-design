@@ -492,6 +492,11 @@ using RtlGetVersionFn = LONG(WINAPI*)(OSVERSIONINFOW*);
 constexpr DWORD kDwmUseImmersiveDarkMode = 20;
 constexpr DWORD kDwmWindowCornerPreference = 33;
 constexpr DWORD kDwmBorderColor = 34;
+// DWM border-color sentinel meaning "no border color" (DWMWA_COLOR_NONE).
+// Used to suppress the gray Win10 native resize-frame outline that DWM
+// draws around `WS_THICKFRAME` windows when the AntWindow takes the
+// no-translucent-background opaque path.
+constexpr COLORREF kDwmBorderColorNone = 0xFFFFFFFEu;
 constexpr int kDwmCornerDoNotRound = 1;
 constexpr int kDwmCornerRound = 2;
 constexpr int kDwmCornerRoundSmall = 3;
@@ -926,11 +931,31 @@ AntWindow::AntWindow(QWidget* parent)
     qRegisterMetaType<AntWindow::TitleBarButton>("AntWindow::TitleBarButton");
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_StyledBackground, false);
+#ifdef Q_OS_WIN
     // Required so the AA fragments produced by the corner-smoother overlay
     // survive in the backing store and reach the compositor as smooth corner
     // alpha. Without this, the 1-bit `setMask` would clip the painted
     // anti-aliased fragments and the corners would render jagged on Win10.
+    //
+    // EXPERIMENT (issue 40 follow-up): on the Win10 legacy frame path the
+    // combination of `WA_TranslucentBackground=true`, a `CompositionMode_
+    // DestinationIn` corner-smoother child, and repeated DWM frame margin
+    // re-extension across resize cycles drives DWM compositor state into
+    // failure modes that surface as "stutter after dock float/embed" and
+    // "black screen after repeated resizes". Disable the translucent +
+    // smoother path on Win10 and accept square corners as a visual
+    // compromise in exchange for stable compositor behavior. Win11 keeps
+    // the AA-corner code path because it does not rely on this same DWM
+    // glass interaction (Snap Layout caption + native rounded corners).
+    m_useTranslucentBackground = supportsNativeCaptionSnapLayouts();
+    if (m_useTranslucentBackground)
+    {
+        setAttribute(Qt::WA_TranslucentBackground, true);
+    }
+#else
     setAttribute(Qt::WA_TranslucentBackground, true);
+    m_useTranslucentBackground = true;
+#endif
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     installAntStyle<AntWindowStyle>(this);
@@ -957,10 +982,13 @@ AntWindow::AntWindow(QWidget* parent)
     }
 #endif
 
-    auto* smoother = new AntWindowCornerSmoother(this);
-    smoother->setCornerRadius(m_cornerRadius);
-    smoother->raise();
-    m_cornerSmoother = smoother;
+    if (m_useTranslucentBackground)
+    {
+        auto* smoother = new AntWindowCornerSmoother(this);
+        smoother->setCornerRadius(m_cornerRadius);
+        smoother->raise();
+        m_cornerSmoother = smoother;
+    }
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         syncTheme();
@@ -1156,6 +1184,14 @@ void AntWindow::toggleAlwaysOnTop()
 int AntWindow::cornerRadius() const
 {
     return m_cornerRadius;
+}
+
+bool AntWindow::usesLegacyOpaquePath() const
+{
+    // m_useTranslucentBackground is decided at construction time based on
+    // whether the build supports Win11 caption / Snap Layout. Anything else
+    // (Win10, forced legacy) takes the opaque path.
+    return !m_useTranslucentBackground;
 }
 
 void AntWindow::setCornerRadius(int radius)
@@ -1598,6 +1634,17 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
             return titleBarButtonForNativeHitTest(hitTestCode);
         };
         const auto beginLegacyLiveResize = [this, hwnd]() {
+            // On the Win10 opaque path the window already paints square
+            // corners + an opaque backing store all the time. There is no
+            // need to switch corner shape or shadow visibility during a
+            // resize - doing so just creates extra repaints (which is
+            // exactly what produced the "圆角变直角卡住" symptom). Only
+            // execute the live-resize state machine when this AntWindow is
+            // on the alpha-corner path that actually needs it.
+            if (!m_useTranslucentBackground)
+            {
+                return;
+            }
             if (!usesNativeCaptionFrameForWidget(this) && !m_legacyLiveResize &&
                 !isMaximized() && !isFullScreen())
             {
@@ -1608,12 +1655,23 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
                 // duration of an edge resize. DWM provides its own backdrop in
                 // the extended region, which masks the single-frame gap where
                 // Qt's backing store has not yet caught up with WM_SIZE.
-                const HWND targetHwnd = hwnd ? hwnd : reinterpret_cast<HWND>(winId());
-                DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
-                if (targetHwnd && resolveDwmApis(nullptr, &extendFrame) && extendFrame)
+                //
+                // Only meaningful when the window has WA_TranslucentBackground
+                // and a real alpha channel - on the Win10 opaque path (no
+                // translucent background) glass extension is unnecessary
+                // (the backing store is already opaque to the edges) and
+                // contributes to compositor state drift across repeated
+                // resize cycles, eventually producing the "black screen"
+                // symptom users see in the example.
+                if (m_useTranslucentBackground)
                 {
-                    const DwmMargins fullFrameMargins{-1, -1, -1, -1};
-                    extendFrame(targetHwnd, &fullFrameMargins);
+                    const HWND targetHwnd = hwnd ? hwnd : reinterpret_cast<HWND>(winId());
+                    DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
+                    if (targetHwnd && resolveDwmApis(nullptr, &extendFrame) && extendFrame)
+                    {
+                        const DwmMargins fullFrameMargins{-1, -1, -1, -1};
+                        extendFrame(targetHwnd, &fullFrameMargins);
+                    }
                 }
                 // Force one repaint with square corners + smoother off before
                 // the first WM_SIZE lands, so the first resize frame is opaque
@@ -1662,10 +1720,26 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
             beginLegacyLiveResize();
             break;
         case WM_EXITSIZEMOVE:
+        case WM_CAPTURECHANGED:
+        case WM_CANCELMODE:
+            // WM_EXITSIZEMOVE is the normal end of the modal resize loop. But
+            // Windows can also cancel the loop without firing WM_EXITSIZEMOVE
+            // - WM_CAPTURECHANGED fires when mouse capture is taken away (e.g.
+            // a system event steals focus mid-drag) and WM_CANCELMODE fires
+            // when modal state is explicitly cancelled. If we miss the
+            // termination signal, m_legacyLiveResize stays true forever and
+            // the next paint keeps drawing square corners (the symptom users
+            // see as "圆角变直角"). Handle all three the same way.
             if (m_legacyLiveResize)
             {
                 m_legacyLiveResize = false;
                 setProperty("antWindowLegacyLiveResize", false);
+                // Synchronously schedule a repaint with the rounded path
+                // visible. The deferred 16ms timer below handles the heavier
+                // frame/shadow/smoother refresh, but the corner shape itself
+                // should flip back immediately on the next paint - no need
+                // to wait a frame.
+                update();
                 QPointer<AntWindow> guard(this);
                 QTimer::singleShot(16, this, [guard]() {
                     if (!guard)
@@ -1678,7 +1752,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
                     guard->update();
                 });
             }
-            else if (!usesNativeCaptionFrameForWidget(this))
+            else if (uMsg == WM_EXITSIZEMOVE && !usesNativeCaptionFrameForWidget(this))
             {
                 updateLegacySoftwareShadow();
             }
@@ -1687,6 +1761,38 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
         {
             *result = 0;
             return true;
+        }
+        case WM_NCACTIVATE:
+        {
+            // On the Win10 opaque path the window still carries WS_THICKFRAME
+            // (needed for native edge resize hit-testing). When focus leaves
+            // and re-enters the window, DefWindowProc repaints the sizing
+            // border, producing a thin gray "focus" rectangle around the
+            // four edges. Suppress that visual update by passing lParam=-1
+            // to DefWindowProc - it still tracks the activation state but
+            // skips the non-client repaint. Win11 caption windows keep the
+            // default behavior so the title bar continues to dim/undim with
+            // focus.
+            if (!usesNativeCaptionFrameForWidget(this))
+            {
+                *result = ::DefWindowProcW(hwnd, WM_NCACTIVATE, msg->wParam, -1);
+                return true;
+            }
+            return false;
+        }
+        case WM_NCPAINT:
+        {
+            // Same rationale as WM_NCACTIVATE: any non-client paint on the
+            // opaque Win10 frameless window draws the WS_THICKFRAME sizing
+            // border that the user reads as a focus rectangle. Consume the
+            // message so no NC pixels are drawn. The custom Ant title bar
+            // and content are painted by Qt as normal client widgets.
+            if (!usesNativeCaptionFrameForWidget(this))
+            {
+                *result = 0;
+                return true;
+            }
+            return false;
         }
         case WM_NCHITTEST:
         {
@@ -2377,8 +2483,25 @@ void AntWindow::applyNativeWindowFrame()
     }
 
     const auto& token = antTheme->tokens();
-    const COLORREF borderColor = RGB(token.colorBorder.red(), token.colorBorder.green(), token.colorBorder.blue());
-    setWindowAttribute(hwnd, kDwmBorderColor, &borderColor, sizeof(borderColor));
+    // On the Win10 opaque path the window keeps WS_THICKFRAME without
+    // WS_CAPTION. DWM draws its own border around that frame, and a non-
+    // sentinel color produces a visible gray outline at the four edges
+    // (Windows' default "you can resize me here" cue). We don't want that
+    // chrome around a frameless Ant-styled window, so explicitly pass
+    // DWMWA_COLOR_NONE to suppress the DWM-drawn border. On the Win11
+    // caption path the DWM border is intentional - it forms the rounded
+    // outline that matches the native frame radius - so keep using the
+    // token border color there.
+    if (m_useTranslucentBackground)
+    {
+        const COLORREF borderColor = RGB(token.colorBorder.red(), token.colorBorder.green(), token.colorBorder.blue());
+        setWindowAttribute(hwnd, kDwmBorderColor, &borderColor, sizeof(borderColor));
+    }
+    else
+    {
+        const COLORREF noBorder = kDwmBorderColorNone;
+        setWindowAttribute(hwnd, kDwmBorderColor, &noBorder, sizeof(noBorder));
+    }
 
     const BOOL darkMode = antTheme->themeMode() == Ant::ThemeMode::Dark;
     setWindowAttribute(hwnd, kDwmUseImmersiveDarkMode, &darkMode, sizeof(darkMode));
@@ -2417,7 +2540,11 @@ void AntWindow::updateLegacySoftwareShadow()
     auto* shadow = static_cast<AntWindowLegacySoftwareShadow*>(m_legacySoftwareShadow);
     if (shadow)
     {
-        shadow->setCornerRadius(m_cornerRadius);
+        // On the Win10 opaque path the window itself is drawn with square
+        // corners (see AntWindowStyle::drawWindow), so the shadow must wrap
+        // a square panel too - otherwise the shadow's rounded inner cutout
+        // would leave four visible quarter-circle bites at the corners.
+        shadow->setCornerRadius(m_useTranslucentBackground ? m_cornerRadius : 0);
     }
 
     // Pin the shadow HWND to the same QScreen as the host window so its

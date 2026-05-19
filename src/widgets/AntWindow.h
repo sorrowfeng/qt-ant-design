@@ -61,6 +61,11 @@ public:
     void toggleAlwaysOnTop();
     int cornerRadius() const;
     void setCornerRadius(int radius);
+    // True when this AntWindow is taking the Win10 opaque path (no
+    // WA_TranslucentBackground, no AA corner smoother, no DWM glass
+    // extension, square corners). On Win11 / non-Windows this is false
+    // and the original alpha-corner path is used.
+    bool usesLegacyOpaquePath() const;
 
     bool isTitleBarButtonVisible(TitleBarButton button) const;
     void setTitleBarButtonVisible(TitleBarButton button, bool visible);
@@ -156,4 +161,5 @@ private:
     QWidget* m_legacySoftwareShadow = nullptr;
     QWidget* m_cornerSmoother = nullptr;
     bool m_legacyLiveResize = false;
+    bool m_useTranslucentBackground = true;
 };

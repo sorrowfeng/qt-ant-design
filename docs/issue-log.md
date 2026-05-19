@@ -305,29 +305,94 @@
   4. 增加 `antDockForceLegacyFramePolicy` 内部诊断属性，让当前系统也能强制覆盖 Win10 legacy shadow 路径；回归测试验证 Qt 逻辑几何、native HWND 物理尺寸和 ring region 状态
 - **改动文件**：`src/widgets/AntDockWidget.h`、`src/widgets/AntDockWidget.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 40. Win10 DockWidget 浮窗回嵌后动画/渲染更新仍会卡顿
+
+- **现象**：Windows 10 下，把 `AntDockWidget` 从布局拖成 float 浮动窗口，再重新嵌入 Dock 布局后，示例窗口内控件的动画、hover、点击状态和自动 repaint / update 仍可能出现明显卡顿或延迟刷新。表现不是完全冻结（已解决问题 #36 已处理过一轮确定性"刷新停止"），而是动画/渲染更新节奏不稳定。
+- **根因**：浮动 Dock 在 Win10 legacy frame 路径下会牵涉两类残留：
+  1. **`AntDockLegacySoftwareShadow` widget**：`updateLegacySoftwareShadow()` 懒加载一个 `Qt::Tool` 顶级 widget，其 HWND 携带 `WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE`，登记在 DWM 合成跟踪表中。回嵌时旧的 `resetNativeFloatingWindowForEmbedding()` 只调用 `hideLegacySoftwareShadow()` 隐藏 HWND，又通过 `destroy(true, true)` 销毁 Dock 自身 HWND，但 `m_legacySoftwareShadow` widget 实例（包括隐藏的 layered HWND 和 Qt 平台层的 QWindow 状态）继续留在进程中。该隐藏 layered 顶级窗口在 Win10 下会扰动同进程其他顶级窗口（特别是宿主 `AntWindow`）的 backing store 提交节奏，导致页面控件的动画/重绘节奏不稳定。
+  2. **`queueDwmFrameRefresh` 延迟回调**：`applyNativeWindowFrame()` 通过 `QTimer::singleShot(0, ...)` 排队一次 DWM frame 重应用。如果在 timer 触发前 Dock 已经从浮动状态回嵌成普通 child widget，旧回调依然会执行 `guard->winId()` —— 而嵌入态 Dock 的 `WA_NativeWindow=false` 让 `winId()` **强制为已经嵌入到 manager 的 child 重新创建一个本地子 HWND**，并把它再次 enroll 进 DWM frame extension。这恰好制造了"已经清掉一个残留 layered 顶级，又通过回调凭空生成一个新的本地子 HWND" 的循环。
+  Win11 不进入该路径（`useNativeCaption=true` 时 `updateLegacySoftwareShadow()` 直接 early-return 不创建 shadow widget，`queueDwmFrameRefresh` 携带的 `useNativeCaption=true` 也走另一条 DWM 路径），因此不受影响。
+- **解决**：
+  1. `AntDockWidget::resetNativeFloatingWindowForEmbedding()` 在 `hideLegacySoftwareShadow()` 之后显式 `delete m_legacySoftwareShadow` 并清空指针，让阴影 widget、QWindow 与底层 layered HWND 一并消失；下一次浮动时再由 `updateLegacySoftwareShadow()` 懒重建。同时立刻清掉 `kDockLegacyLiveResizeProperty` / `kDockNativeFrameEnabledProperty` / `kDockUsesNativeCaptionFrameProperty` / `kDockDwmFrameRefreshQueuedProperty` 四个属性，避免与已排队的回调发生混读。
+  2. `queueDwmFrameRefresh` 内部 timer 回调新增三道闸：必须仍 `isWindow()`、Dock 必须 `isFloating()`、必须有 `internalWinId()`（不再用 `winId()` 隐式创建 HWND）。任一条件不满足直接 return，不再触碰 DWM。这彻底杜绝了"回调触发时 Dock 已经嵌入，结果反而给嵌入态 child 生成本地 HWND" 的回路。
+  这两点改动都仅在 Win10 legacy frame 路径下生效（Win11 上 `m_legacySoftwareShadow` 始终为 `nullptr`，`delete nullptr` 为空操作；`queueDwmFrameRefresh` 在 Win11 路径上的所有 dock 嵌入态判断也是 short-circuit 的）。
+- **验证**：`tests/TestAntQtExtensions.cpp::dockManager()` 中已有的 forced-legacy-frame AntWindow 宿主回嵌场景：
+  1. `PaintProbeWidget` 扩展为记录每两次 `paintEvent` 之间的真实毫秒间隔，提供 `paintIntervalsMs()` / `maxPaintIntervalMs()` / `resetIntervalSamples()` API。
+  2. 在 `setDockWidgetFloating` 之前对宿主页面跑一次 12 帧 / 16 ms-per-frame 的 `pageProbe.setFillColor` 动画 cadence 作为**基线**，记下基线 max frame interval。
+  3. `dragFloatingDockBack` 回嵌之后立即断言：`antDockLegacyShadowDestroyedOnEmbed=true`、`findChild<AntDockLegacySoftwareShadow>` 为空、`antDockNativeWindowFrameEnabled=false`、`antDockUsesNativeCaptionFrame=false`、`antDockLegacyLiveResize=false`，并枚举 `windowExplorer->findChildren<QWidget*>()` 全部断言 `!desc->internalWinId()`。
+  4. 然后重复同一个 12 帧 / 16 ms-per-frame cadence，断言 post-embed 的 max frame interval ≤ max(80 ms, 3 × baseline)。该阈值能容忍 OS 级调度抖动，但仍能捕获回调导致的卡顿回归（残留 layered HWND 或回调凭空生成的本地 HWND 会让 worst frame gap 膨胀到基线的多倍）。
+  在我的环境上跑 `TestAntQtExtensions::dockManager` 5 / 5 通过。
+- **改动文件**：`src/widgets/AntDockWidget.cpp`、`tests/TestAntQtExtensions.cpp`
+
+### 41. Win10 AntWindow 走 opaque 路径(直角+阴影),修复拖回卡顿/黑屏/灰边/focus 框/圆角卡死
+
+- **现象**：上一轮 #40 修复后,Win10 真机依然能复现一连串症状:
+  1. Dock 浮动→回嵌后,主窗口控件 hover/click 动效卡顿
+  2. 切换主页(侧栏导航)卡顿
+  3. 多次缩放主窗体后,整个窗口黑屏
+  4. 主窗口四边出现灰色方框(Windows native 边框颜色)
+  5. 从其他应用切回主窗口时出现 focus 框
+  6. 缩放后圆角有时会卡死成直角,不再恢复
+- **根因**:Win10 上 `AntWindow` 同时启用 `Qt::WA_TranslucentBackground=true`、`AntWindowCornerSmoother` 用 `CompositionMode_DestinationIn` 擦角、并在 `beginLegacyLiveResize` 时调用 `DwmExtendFrameIntoClientArea({-1,-1,-1,-1})` "全玻璃扩展"。这三件事组合起来,在 Win10 DWM 合成器上是不稳定状态——反复 resize 会让 DWM 合成器拒绝接受新帧(黑屏),hover 路径上多余的 alpha-erase pass 让 backing store 提交节奏抖动(动效卡顿),并放大 Dock 浮窗 lifecycle 残留对主窗口的扰动(#40 修了一部分,但还是抑制不住根因)。同时 `setWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ...)` 给 `WS_THICKFRAME` 没 `WS_CAPTION` 的窗口画了灰色边框,`WM_NCACTIVATE` / `WM_NCPAINT` 在 focus 切换时也会重绘 NC sizing border。圆角"卡死"则源自 `m_legacyLiveResize` 状态机依赖 `WM_EXITSIZEMOVE` 复位——`WM_CAPTURECHANGED` / `WM_CANCELMODE` 等异常 modal 终止路径会让 flag 卡在 true,后续 paint 全部画方角。Win11 caption 路径完全不进入这套机制,所以不受影响。
+- **解决**:让 Win10 走"直角 + 阴影"opaque 路径,与 Win11 的"圆角 + alpha 角 + DWM glass"路径完全分离:
+  1. `AntWindow` 构造函数检测 `supportsNativeCaptionSnapLayouts()`,Win10 下 `m_useTranslucentBackground=false`,**不**设 `WA_TranslucentBackground`,**不**创建 `AntWindowCornerSmoother`。新增公共接口 `bool usesLegacyOpaquePath() const` 供 style/shadow 查询。
+  2. `AntWindowStyle::drawWindow` 在 `usesLegacyOpaquePath()` 时强制 `cornerRadius=0`,直接画方角,不再 `setClipPath`。
+  3. `AntWindowLegacySoftwareShadow::setCornerRadius` 在 opaque 路径传 0,画方形阴影贴合方角窗口轮廓;阴影本身保留(提供窗口可见外沿)。
+  4. `beginLegacyLiveResize` lambda 在 opaque 路径 short-circuit return:不进入 `m_legacyLiveResize=true` 状态,不藏阴影,不调用 `DwmExtendFrameIntoClientArea({-1,-1,-1,-1})`。整条 live-resize 状态机在 Win10 上变成 no-op,从根本消除"圆角卡死"。
+  5. `applyNativeWindowFrame` 在 opaque 路径用 `DWMWA_COLOR_NONE` (`0xFFFFFFFE`) 显式让 DWM 不画边框,消除四边灰色方框。
+  6. `nativeEvent` 在 opaque 路径拦截 `WM_NCACTIVATE`(透传给 `DefWindowProcW` 但 `lParam=-1` 跳过 NC 重绘)和 `WM_NCPAINT`(直接吞掉返回 0),消除 focus 框。
+  7. `WM_EXITSIZEMOVE | WM_CAPTURECHANGED | WM_CANCELMODE` 三个消息共用同一条复位路径,并立即同步 `update()` 一次,作为 alpha-corner 路径上 modal loop 异常终止的兜底(opaque 路径上 flag 永远是 false,这段代码是 dead code,但保留以备将来恢复 Win10 圆角)。
+  Win11 caption 路径完全不变(`m_useTranslucentBackground=true`)。
+- **验证**:
+  - `TestAntQtExtensions::dockManager` + `windowLegacyFramePolicyRestoresShadowAfterResize` + `windowNativeHitTestSupportsSnapZones` + `windowDwmFrameMarginsPreserveShadow` 全部通过
+  - `windowLegacyFramePolicyRestoresShadowAfterResize` 测试更新:smoother 在 opaque 路径上不存在,把"必须存在"改为"存在时检查 click-through 与非 native"
+  - `dockManager` 内部那段"forced-legacy 宿主"场景同样跳过 smoother 必现断言
+  - example 真机验证(用户回报):卡顿、黑屏、灰边、focus 框、圆角卡死全部消失。视觉代价:Win10 主窗口圆角降级为方角(阴影保留)
+- **改动文件**:`src/widgets/AntWindow.h`、`src/widgets/AntWindow.cpp`、`src/styles/AntWindowStyle.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 ### A. AntWindow 缩小尺寸时偶尔仍有闪动
 
-- **现象**：已解决问题 #7 引入的 DWM `{-1,-1,-1,-1}` 兜底后大幅改善，但缩小时偶尔（约几帧出现一次）还能看到极短的闪动。
-- **推测原因**：
+- **现象**:已解决问题 #7 引入的 DWM `{-1,-1,-1,-1}` 兜底后大幅改善,但缩小时偶尔(约几帧出现一次)还能看到极短的闪动。
+- **适用范围**:仅 Win11 caption 路径(`m_useTranslucentBackground=true`)。Win10 opaque 路径在 #41 之后完全跳过 `WA_TranslucentBackground` + DWM glass 组合,不会出现该症状。
+- **推测原因**:
   1. `DwmExtendFrameIntoClientArea` 设置生效本身也需要一帧——进入边缘缩放到第一个 `WM_SIZE` 之间的窗口可能 DWM backdrop 还没接管
   2. Qt 在 `WA_TranslucentBackground=true` 下的 backing store flush 时机和 DWM 合成时钟之间仍有概率性错位
-- **潜在排查方向**：
-  1. 在 `WM_NCCREATE` / `showEvent` 就预设 `{-1,-1,-1,-1}`，常态生效，只在显示时通过 paint 路径让背景不透明
-  2. 尝试 `WM_WINDOWPOSCHANGING` 拦截，比 `WM_SIZE` 更早，可以在新尺寸到达 DWM 之前先确保 backdrop
-  3. 评估完全放弃 `WA_TranslucentBackground`，圆角在 Win10 上接受方角降级（视觉妥协换稳定不闪）
+- **潜在排查方向**:
+  1. 在 `WM_NCCREATE` / `showEvent` 就预设 `{-1,-1,-1,-1}`,常态生效,只在显示时通过 paint 路径让背景不透明
+  2. 尝试 `WM_WINDOWPOSCHANGING` 拦截,比 `WM_SIZE` 更早,可以在新尺寸到达 DWM 之前先确保 backdrop
+  3. 评估 Win11 路径也降级为 opaque + 方角(视觉妥协换稳定不闪),与 Win10 路径统一
 
-### B. Win10 DockWidget 浮窗回嵌后动画/渲染更新仍会卡顿
+### B. AntWindow 主题切换速度变慢
 
-- **现象**：Windows 10 下，把 `AntDockWidget` 从布局拖成 float 浮动窗口，再重新嵌入 Dock 布局后，示例窗口内控件的动画、hover、点击状态和自动 repaint / update 仍可能出现明显卡顿或延迟刷新。
-- **与已解决问题 #36 的区别**：#36 已处理“回嵌后主窗口动画刷新停止”的一轮确定性问题，包括 embedded dock/native child HWND 收敛、drop guide / preview 非 top-level 化和回嵌后截图采样验证。但当前 Win10 真机仍存在残留卡顿，表现不是完全冻结，而是动画/渲染更新节奏不稳定。
-- **当前状态**：待在 Windows 10 真机环境继续复现和修复。
-- **潜在排查方向**：
-  1. 回嵌后再次枚举 `AntWindow` / `AntDockWidget` / DockArea / guide / preview / software shadow 相关 native HWND，确认没有隐藏或透明 layered/tool/native child 残留在主窗口客户区上方
-  2. 对比回嵌前后 `QWidget::internalWinId()`、`WindowFromPoint()`、Win32 owner / transientParent、`WS_EX_LAYERED` / `WS_EX_TRANSPARENT` / `WS_EX_NOACTIVATE` 等 native 栈状态
-  3. 检查回嵌流程中是否仍有 `winId()` 调用把普通 child widget 强制提升成 native child，尤其是阴影、wave、corner smoother、dock title/content 及测试辅助 overlay
-  4. 在 Win10 真机上给控件动画定时器和 `QEvent::UpdateRequest` / `QEvent::Paint` 加临时计数，区分是 Qt paint 没投递、已投递但 backing store 没合成，还是被透明 HWND 覆盖导致视觉上没刷新
+- **现象**:点击标题栏的 Light/Dark 切换按钮,从主题真正变化到 overlay 揭示动画结束,整体耗时变长,过渡不像之前那么干脆。
+- **适用范围**:Win10 / Win11 似乎都能感觉到,Win10 opaque 路径上(#41 修复后)更明显。
+- **推测原因**:
+  1. `AntWindowThemeTransitionOverlay` 用 `WA_TranslucentBackground=true` + `CompositionMode_DestinationIn` 风格的 reveal 动画,绘制时要先 capture 旧 frame、再 draw 新 frame——Win10 上没有 backing store alpha 通道时,overlay 仍是 translucent child 而宿主是 opaque,可能让 overlay 和宿主 backing store 走两套不同合成路径
+  2. 主题切换同时触发整个 widget tree 的 `themeChanged` 信号广播,例 84 个公开组件全部 invalidate + repaint。如果某个组件 (`AntCard` / `AntList` / `AntTable`) 在 `themeChanged` 槽里做了重活(palette 全量重设、子 widget 递归 update),会拉长总耗时
+  3. AntWindow 的标题栏 hover / pin / theme 按钮自己也在重画,叠加 overlay 动画的 16 ms precise timer
+- **潜在排查方向**:
+  1. 在 `AntWindowThemeTransitionOverlay::advanceAnimation` / `paintEvent` 里加 `QElapsedTimer` 打点,看每帧实际耗时与动画总时长,先确认是 overlay 自己慢还是底下 widget tree repaint 慢
+  2. 关掉 overlay 看主题切换有多快,如果 overlay 关掉就快,说明 overlay 是瓶颈
+  3. 检查最近改动是否给 `themeChanged` 槽加了新的重活(palette 递归、子 style 再创建等)
+  4. 评估在主题切换期间临时禁用 `AntCard` / `AntList` 等组件的 hover 动画,避免和 overlay 动画抢调度
+
+### C. AntColorPicker 弹窗下方多重边缘 + 拖动选色卡顿
+
+- **现象**:点击 `AntColorPicker` 触发器弹出颜色面板时:
+  1. 弹窗的下边缘(可能也包括左右下角)出现明显的多层 / 重影边框,看起来像是阴影裁切边界 + 面板边框 + 系统边框叠加
+  2. 在 HS 取色区域(色相 / 饱和度大方块)按住鼠标拖动选色时,鼠标位置与采样指示器更新明显跟不上,有可见延迟
+- **适用范围**:Win10 / Win11 都能复现(待用户细分)。
+- **推测原因**:
+  1. **多重边缘**:`AntColorPicker` 弹层是自绘面板,`AntTheme::drawEffectShadow` 在面板外画柔和阴影,弹层 widget 还有自己的 1px 边框。如果弹层有透明留白但又被 Qt::Tool / Qt::Popup 加了系统 drop shadow(`CS_DROPSHADOW`),或者阴影绘制超出 widget 几何被裁切到 widget 边沿,就会出现"阴影边 + 面板边 + 系统边"三层叠
+  2. **拖动卡顿**:HS field 鼠标拖动可能在 `mouseMoveEvent` 里同步重算 HSV 转 RGB / 重画 HS field + Hue / Alpha 滑条 / 预览色块 / RGB-HEX 输入框五块区域,每帧都 invalidate 整个面板而不是 dirty rect,再加上整个弹层透明阴影需要 alpha 合成,Win10 上累积出可见延迟
+- **潜在排查方向**:
+  1. 截屏比对弹窗下边缘,确认到底是几层"边",分别归到 widget border / 软件阴影 / 系统 drop shadow / 阴影裁切
+  2. 检查 `AntColorPicker` 弹层 widget flags(是否 Qt::Popup,是否带 `Qt::NoDropShadowWindowHint`,是否设了 `setAttribute(Qt::WA_TranslucentBackground)` 但又被裁切)
+  3. 给 `mouseMoveEvent` 加节流(throttling)——每 16 ms 至多一次重画,避免每个 WM_MOUSEMOVE 都跑一遍 HSV 计算和整面板 repaint
+  4. 把 HS field / Hue / Alpha / 预览块 拆成独立子 widget,只 `update()` 真正变化的那个,不要整面板 invalidate
+  5. 确认弹层是否走了 `AntStyleBase` 的 `installPaintFilter`,如果是,在 HS field 拖动期间是否会触发不必要的 style polish
 
 ## 关联测试
 
