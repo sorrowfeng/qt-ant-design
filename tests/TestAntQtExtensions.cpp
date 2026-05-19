@@ -161,6 +161,38 @@ private:
     QList<qint64> m_intervalsMs;
 };
 
+class ThemeSizedWidget : public QWidget
+{
+public:
+    explicit ThemeSizedWidget(QWidget* parent = nullptr)
+        : QWidget(parent)
+    {
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+            updateGeometry();
+            update();
+        });
+    }
+
+    QSize sizeHint() const override
+    {
+        return QSize(180, antTheme->themeMode() == Ant::ThemeMode::Dark ? 96 : 32);
+    }
+
+    QSize minimumSizeHint() const override
+    {
+        return sizeHint();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.fillRect(rect(), antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor(30, 120, 210)
+                                                                                : QColor(210, 80, 60));
+    }
+};
+
 int primaryLikePixelCountForExtensionTest(const QImage& image, QRect sampleRect)
 {
     if (image.isNull()) return 0;
@@ -3064,15 +3096,23 @@ void TestAntQtExtensions::windowThemeButtonShowsTransitionOverlay()
 
     AntWindow window;
     window.resize(640, 420);
-    window.setCentralWidget(new QWidget);
+    auto* content = new QWidget;
+    auto* layout = new QVBoxLayout(content);
+    layout->setContentsMargins(0, 0, 0, 0);
+    auto* themeSized = new ThemeSizedWidget(content);
+    layout->addWidget(themeSized);
+    layout->addStretch();
+    window.setCentralWidget(content);
     window.show();
     QVERIFY(QTest::qWaitForWindowExposed(&window));
+    QCOMPARE(themeSized->height(), 32);
 
     QTest::mouseClick(&window,
                       Qt::LeftButton,
                       Qt::NoModifier,
                       window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center());
     QCOMPARE(antTheme->themeMode(), Ant::ThemeMode::Dark);
+    QCOMPARE(themeSized->height(), 96);
 
     auto* overlay = window.findChild<QWidget*>(QStringLiteral("AntWindowThemeTransitionOverlay"));
     QVERIFY(overlay != nullptr);

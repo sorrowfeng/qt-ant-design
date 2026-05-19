@@ -389,6 +389,14 @@
   5. 回归测试验证 popup 无原生阴影/无 QFrame frame、底部透明边缘不被阴影裁切、下方阴影 alpha 逐步衰减,并验证 HS field 连续拖动不会重建背景缓存。
 - **改动文件**:`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 45. AntWindow 主题切换后 Showcase 文字被截断
+
+- **现象**:点击 `AntWindow` 标题栏 Light/Dark 切换后,Showcase 首屏里的弹窗预览文字顶部显示不完整,像是新主题字体已经生效但布局高度仍停留在旧状态。
+- **根因**:#43 为了提速移除了主题切换中的完整 `processEvents()`。这避免了绘制/动画/输入事件被同步塞进点击流程,但也让 `themeChanged` 触发的 `updateGeometry()` / `LayoutRequest` 尚未应用时就捕获了新主题帧。结果 overlay 的 new-frame 可能使用"新字体度量 + 旧 layout geometry",多行文本在固定卡片里出现截断。
+- **解决**:在 `AntWindow::startThemeModeTransition()` 切换主题后、捕获 new-frame 前,递归激活当前窗口的布局树:对子 widget `ensurePolished()`,对布局执行 `invalidate()` + `activate()`。这样只刷新布局,不恢复完整事件循环,既保留 #43 的速度优化,又确保新主题帧和真实界面都使用更新后的 geometry。
+- **验证**:`TestAntQtExtensions::windowThemeButtonShowsTransitionOverlay` 新增一个随主题切换改变 `sizeHint()` 的控件,断言点击主题按钮返回时布局高度已从 32 立即更新到 96;同时保留 transition overlay 的 render 捕获和模式断言。
+- **改动文件**:`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
+
 ## 未解决
 
 当前暂无记录。

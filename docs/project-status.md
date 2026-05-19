@@ -113,6 +113,8 @@ ctest --test-dir build -C Debug -R "^TestAntQtExtensions$" --output-on-failure
 
 Result: `TestAntQtExtensions` passed on `2026-05-20`. The test now verifies that `AntWindow` theme transition capture uses synchronous `render()` without event-loop capture, uses 220 ms / 16 ms transition timing, switches Win10 opaque-path windows to a light crossfade overlay, and keeps the Win11 caption path on circular reveal. The same target verifies `AntColorPicker` popup windows have no QFrame/native shadow edge, their bottom software shadow fades without a hard stacked line, and the hue/saturation field reuses its cached background while dragging so only the indicator region repaints.
 
+Follow-up: the theme transition path now activates the visible window layout tree before capturing the new themed frame, preventing Showcase wrapped text from being painted with new font metrics inside stale geometry. The targeted `windowThemeButtonShowsTransitionOverlay` subtest checks that a theme-dependent `sizeHint()` change is applied immediately when the theme button click returns.
+
 Latest targeted Win10 dock re-embed repaint cadence validation:
 
 ```powershell

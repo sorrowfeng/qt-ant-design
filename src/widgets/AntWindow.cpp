@@ -7,6 +7,7 @@
 #include <QGuiApplication>
 #include <QHideEvent>
 #include <QHoverEvent>
+#include <QLayout>
 #include <QLineF>
 #include <QMargins>
 #include <QMetaType>
@@ -72,6 +73,27 @@ QPixmap captureAntWindowFrame(QWidget* widget)
     QPainter painter(&frame);
     widget->render(&painter, QPoint(), QRegion(), QWidget::DrawWindowBackground | QWidget::DrawChildren);
     return frame;
+}
+
+void activateAntWindowLayoutTree(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    widget->ensurePolished();
+    const auto childWidgets = widget->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (auto* child : childWidgets)
+    {
+        activateAntWindowLayoutTree(child);
+    }
+
+    if (auto* layout = widget->layout())
+    {
+        layout->invalidate();
+        layout->activate();
+    }
 }
 
 #if defined(Q_OS_WIN)
@@ -2364,6 +2386,7 @@ void AntWindow::startThemeModeTransition()
     antTheme->toggleThemeMode();
 
     overlay->hide();
+    activateAntWindowLayoutTree(this);
     const QPixmap newFrame = captureAntWindowFrame(this);
     overlay->setNewFrame(newFrame);
     overlay->show();
