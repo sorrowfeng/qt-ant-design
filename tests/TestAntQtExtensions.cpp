@@ -2082,19 +2082,10 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(explorer->property("antDockNativeMouseCaptureCleared").toBool(), true);
     QCOMPARE(explorer->property("antDockNativeFloatingHwndDestroyed").toBool(), true);
     QCOMPARE(explorer->property("antDockNativeEmbeddedChildFrame").toBool(), true);
-    if (const WId explorerId = explorer->internalWinId())
-    {
-        HWND capturedHwnd = ::GetCapture();
-        HWND explorerHwnd = reinterpret_cast<HWND>(explorerId);
-        QVERIFY(!capturedHwnd || (capturedHwnd != explorerHwnd && !::IsChild(explorerHwnd, capturedHwnd)));
-        const LONG_PTR nativeStyle = ::GetWindowLongPtrW(explorerHwnd, GWL_STYLE);
-        const LONG_PTR nativeExStyle = ::GetWindowLongPtrW(explorerHwnd, GWL_EXSTYLE);
-        QVERIFY((nativeStyle & WS_CHILD) != 0);
-        QVERIFY((nativeStyle & WS_POPUP) == 0);
-        QVERIFY((nativeExStyle & WS_EX_TOPMOST) == 0);
-        QVERIFY((nativeExStyle & WS_EX_TRANSPARENT) == 0);
-        QVERIFY((nativeExStyle & WS_EX_NOACTIVATE) == 0);
-    }
+    QCOMPARE(explorer->property("antDockNativeEmbeddedParentApplied").toBool(), false);
+    QCOMPARE(explorer->property("antDockNativeEmbeddedUsesQtBackingStore").toBool(), true);
+    QVERIFY2(!explorer->internalWinId(),
+             "Embedded AntDockWidget must stay non-native after float -> dock so Win10 AntWindow repaint composition remains live.");
 #endif
     QVERIFY(dockedSpy.count() >= 1);
     manager->setDockWidgetFloating(explorer, true, savedFloatingGeometry);
@@ -2187,19 +2178,10 @@ void TestAntQtExtensions::dockManager()
     QCOMPARE(explorer->property("antDockNativeMouseCaptureCleared").toBool(), true);
     QCOMPARE(explorer->property("antDockNativeFloatingHwndDestroyed").toBool(), true);
     QCOMPARE(explorer->property("antDockNativeEmbeddedChildFrame").toBool(), true);
-    if (const WId explorerId = explorer->internalWinId())
-    {
-        HWND capturedHwnd = ::GetCapture();
-        HWND explorerHwnd = reinterpret_cast<HWND>(explorerId);
-        QVERIFY(!capturedHwnd || (capturedHwnd != explorerHwnd && !::IsChild(explorerHwnd, capturedHwnd)));
-        const LONG_PTR nativeStyle = ::GetWindowLongPtrW(explorerHwnd, GWL_STYLE);
-        const LONG_PTR nativeExStyle = ::GetWindowLongPtrW(explorerHwnd, GWL_EXSTYLE);
-        QVERIFY((nativeStyle & WS_CHILD) != 0);
-        QVERIFY((nativeStyle & WS_POPUP) == 0);
-        QVERIFY((nativeExStyle & WS_EX_TOPMOST) == 0);
-        QVERIFY((nativeExStyle & WS_EX_TRANSPARENT) == 0);
-        QVERIFY((nativeExStyle & WS_EX_NOACTIVATE) == 0);
-    }
+    QCOMPARE(explorer->property("antDockNativeEmbeddedParentApplied").toBool(), false);
+    QCOMPARE(explorer->property("antDockNativeEmbeddedUsesQtBackingStore").toBool(), true);
+    QVERIFY2(!explorer->internalWinId(),
+             "Embedded AntDockWidget must stay non-native after float -> dock so Win10 AntWindow repaint composition remains live.");
 #endif
 
     auto* embeddedClickSwitch = new AntSwitch(manager);
@@ -2399,6 +2381,7 @@ void TestAntQtExtensions::dockManager()
     if (nativeMouseInputAvailableForExtensionTest())
     {
         AntWindow host;
+        host.setProperty("antWindowForceLegacyFramePolicy", true);
         host.setGeometry(80, 80, 900, 620);
         auto* page = new QWidget;
         auto* pageLayout = new QVBoxLayout(page);
@@ -2409,6 +2392,10 @@ void TestAntQtExtensions::dockManager()
         pageSwitch->setObjectName(QStringLiteral("dockAntWindowPageSwitch"));
         pageSwitch->setFixedSize(92, 28);
         pageLayout->addWidget(pageSwitch);
+
+        auto* pageProbe = new PaintProbeWidget(page);
+        pageProbe->setFixedHeight(48);
+        pageLayout->addWidget(pageProbe);
 
         auto* windowManager = new AntDockManager(page);
         windowManager->setMinimumHeight(360);
@@ -2447,6 +2434,29 @@ void TestAntQtExtensions::dockManager()
         dragFloatingDockBack(windowExplorer, windowInspector);
         QTRY_VERIFY(!windowExplorer->isFloating());
         QTRY_VERIFY(dockAreaForExtensionTest(windowExplorer) != nullptr);
+        QCOMPARE(windowExplorer->property("antDockNativeEmbeddedParentApplied").toBool(), false);
+        QCOMPARE(windowExplorer->property("antDockNativeEmbeddedUsesQtBackingStore").toBool(), true);
+        QVERIFY2(!windowExplorer->internalWinId(),
+                 "A dock embedded back into an AntWindow must not keep a native child HWND on the Win10 legacy frame path.");
+
+        QTRY_VERIFY(pageProbe->paintCount() > 0);
+        const int repaintBefore = pageProbe->paintCount();
+        const QColor repaintColor(42, 176, 120);
+        pageProbe->setFillColor(repaintColor);
+        QTRY_VERIFY(pageProbe->paintCount() > repaintBefore);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+        const QPixmap hostGrab = host.grab();
+        const QImage hostImage = hostGrab.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        const qreal devicePixelRatio = qMax<qreal>(1.0, hostGrab.devicePixelRatio());
+        const QPoint sampleInHost = pageProbe->mapTo(&host, pageProbe->rect().center());
+        const QPoint sampleInImage(qRound(sampleInHost.x() * devicePixelRatio),
+                                   qRound(sampleInHost.y() * devicePixelRatio));
+        QVERIFY(hostImage.rect().contains(sampleInImage));
+        const QColor sampledColor = hostImage.pixelColor(sampleInImage);
+        QVERIFY2(colorNearForExtensionTest(sampledColor, repaintColor, 24),
+                 qPrintable(QStringLiteral("AntWindow child repaint should stay visible after dock float -> embed on the Win10 frame path. expected=%1 actual=%2")
+                                .arg(colorStringForExtensionTest(repaintColor),
+                                     colorStringForExtensionTest(sampledColor))));
 
         QSignalSpy switchAfterSpy(pageSwitch, &AntSwitch::checkedChanged);
         QVERIFY(bringWidgetToFrontForExtensionTest(&host));

@@ -357,46 +357,33 @@ void normalizeEmbeddedDockNativeWindow(AntDockWidget* dockWidget, QWidget* paren
         return;
     }
 
-    HWND dockHwnd = nullptr;
-    if (dockWidget->internalWinId())
+    dockWidget->setAttribute(Qt::WA_NativeWindow, false);
+    dockWidget->setAttribute(Qt::WA_DontCreateNativeAncestors, true);
+    if (QWidget* content = dockWidget->widget())
     {
-        dockHwnd = reinterpret_cast<HWND>(dockWidget->internalWinId());
-    }
-    if (!dockHwnd)
-    {
-        dockWidget->setProperty("antDockNativeEmbeddedChildFrame", true);
-        return;
+        content->setAttribute(Qt::WA_NativeWindow, false);
+        content->setAttribute(Qt::WA_DontCreateNativeAncestors, true);
     }
 
-    HWND parentHwnd = reinterpret_cast<HWND>(parentWidget->winId());
-    if (parentHwnd)
+    if (const WId dockId = dockWidget->internalWinId())
     {
-        ::SetParent(dockHwnd, parentHwnd);
-        dockWidget->setProperty("antDockNativeEmbeddedParentApplied", true);
+        HWND dockHwnd = reinterpret_cast<HWND>(dockId);
+        ::ShowWindow(dockHwnd, SW_HIDE);
+        ::SetWindowLongPtrW(dockHwnd, GWLP_HWNDPARENT, 0);
+        ::SetParent(dockHwnd, nullptr);
+        dockWidget->resetNativeFloatingWindowForEmbedding();
+        dockWidget->setProperty("antDockNativeEmbeddedHwndDestroyed", true);
     }
-
-    LONG_PTR style = ::GetWindowLongPtrW(dockHwnd, GWL_STYLE);
-    style |= WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-    style &= ~(WS_POPUP | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
-    ::SetWindowLongPtrW(dockHwnd, GWL_STYLE, style);
-
-    LONG_PTR exStyle = ::GetWindowLongPtrW(dockHwnd, GWL_EXSTYLE);
-    exStyle &= ~(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_APPWINDOW |
-                 WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE);
-    ::SetWindowLongPtrW(dockHwnd, GWL_EXSTYLE, exStyle);
-    ::EnableWindow(dockHwnd, TRUE);
-    ::SetWindowPos(dockHwnd,
-                   nullptr,
-                   0,
-                   0,
-                   0,
-                   0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
-                       SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    else
+    {
+        dockWidget->setProperty("antDockNativeEmbeddedHwndDestroyed", false);
+    }
 
     dockWidget->setProperty("antDockNativeEmbeddedChildFrame", true);
-    dockWidget->setProperty("antDockNativeEmbeddedStyle", static_cast<qulonglong>(style));
-    dockWidget->setProperty("antDockNativeEmbeddedExStyle", static_cast<qulonglong>(exStyle));
+    dockWidget->setProperty("antDockNativeEmbeddedParentApplied", false);
+    dockWidget->setProperty("antDockNativeEmbeddedUsesQtBackingStore", true);
+    dockWidget->setProperty("antDockNativeEmbeddedStyle", static_cast<qulonglong>(0));
+    dockWidget->setProperty("antDockNativeEmbeddedExStyle", static_cast<qulonglong>(0));
 }
 #endif
 
