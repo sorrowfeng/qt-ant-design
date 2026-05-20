@@ -2872,7 +2872,7 @@ void TestAntQtExtensions::window()
     QCOMPARE(w->isMinimizeButtonVisible(), true);
     QCOMPARE(w->isMaximizeButtonVisible(), true);
     QCOMPARE(w->isCloseButtonVisible(), true);
-    QCOMPARE(w->isCloseConfirmationEnabled(), true);
+    QCOMPARE(w->isCloseConfirmationEnabled(), false);
     QCOMPARE(w->closeConfirmationTitle(), QStringLiteral("Exit application?"));
     QCOMPARE(w->closeConfirmationContent(), QStringLiteral("The window will close. Do you want to exit?"));
     QCOMPARE(w->closeConfirmationOkText(), QStringLiteral("Exit"));
@@ -2931,12 +2931,15 @@ void TestAntQtExtensions::window()
     QSignalSpy closeConfirmContentSpy(w, &AntWindow::closeConfirmationContentChanged);
     QSignalSpy closeConfirmOkSpy(w, &AntWindow::closeConfirmationOkTextChanged);
     QSignalSpy closeConfirmCancelSpy(w, &AntWindow::closeConfirmationCancelTextChanged);
-    w->setCloseConfirmationEnabled(false);
-    QCOMPARE(w->isCloseConfirmationEnabled(), false);
-    QCOMPARE(closeConfirmEnabledSpy.count(), 1);
     w->setCloseConfirmationEnabled(true);
     QCOMPARE(w->isCloseConfirmationEnabled(), true);
+    QCOMPARE(closeConfirmEnabledSpy.count(), 1);
+    w->setCloseConfirmationEnabled(false);
+    QCOMPARE(w->isCloseConfirmationEnabled(), false);
     QCOMPARE(closeConfirmEnabledSpy.count(), 2);
+    w->setCloseConfirmationEnabled(true);
+    QCOMPARE(w->isCloseConfirmationEnabled(), true);
+    QCOMPARE(closeConfirmEnabledSpy.count(), 3);
     w->setCloseConfirmationTitle(QStringLiteral("Leave workspace?"));
     w->setCloseConfirmationContent(QStringLiteral("Unsaved preview state will be closed."));
     w->setCloseConfirmationOkText(QStringLiteral("Exit"));
@@ -2984,8 +2987,17 @@ void TestAntQtExtensions::window()
     QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
 
+    AntWindow defaultCloseWindow;
+    defaultCloseWindow.resize(320, 240);
+    defaultCloseWindow.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&defaultCloseWindow));
+    defaultCloseWindow.close();
+    QTRY_VERIFY(!defaultCloseWindow.isVisible());
+    QVERIFY(defaultCloseWindow.findChild<AntModal*>(QStringLiteral("AntWindowCloseConfirmationModal")) == nullptr);
+
     AntWindow confirmWindow;
     confirmWindow.resize(640, 420);
+    confirmWindow.setCloseConfirmationEnabled(true);
     confirmWindow.setCloseConfirmationTitle(QStringLiteral("Leave workspace?"));
     confirmWindow.setCloseConfirmationContent(QStringLiteral("Close this AntWindow now?"));
     confirmWindow.setCloseConfirmationOkText(QStringLiteral("Exit"));

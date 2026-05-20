@@ -127,7 +127,7 @@ Follow-up correction: the native child drag surface caused the HS cursor to stop
 
 Follow-up: `AntColorPicker` popup now uses a manual outside-click close path instead of relying on native popup auto-hide, so both trigger-close and outside-close go through the same 10px fade/slide enter and leave animation. The targeted `colorPicker` subtest verifies the motion properties and that close keeps the popup visible until the leave animation finishes.
 
-Follow-up: `AntWindow` close now defaults to an `AntModal` confirmation flow with public APIs for enabling/disabling the confirmation and customizing title, content, exit text, and cancel-exit text. `forceClose()` is available for automation or programmatic shutdown paths that should bypass confirmation. The targeted `window` subtest verifies cancel keeps the window open, confirm closes it, and custom text is propagated to the Modal.
+Follow-up: `AntWindow` close confirmation is now opt-in through `setCloseConfirmationEnabled(true)`, and public APIs customize the Modal title, content, exit text, and cancel-exit text. `forceClose()` is available for automation or programmatic shutdown paths that should bypass confirmation. The targeted `window` subtest verifies the default close path skips the Modal, cancel keeps the window open after opt-in, confirm closes it, and custom text is propagated to the Modal.
 
 Latest targeted Win10 dock re-embed repaint cadence validation:
 

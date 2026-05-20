@@ -177,7 +177,7 @@ private:
     bool m_minimizeButtonVisible = true;
     bool m_maximizeButtonVisible = true;
     bool m_closeButtonVisible = true;
-    bool m_closeConfirmationEnabled = true;
+    bool m_closeConfirmationEnabled = false;
     bool m_closingWithoutConfirmation = false;
     QString m_closeConfirmationTitle = QStringLiteral("Exit application?");
     QString m_closeConfirmationContent = QStringLiteral("The window will close. Do you want to exit?");
