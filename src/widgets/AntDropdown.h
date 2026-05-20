@@ -2,6 +2,8 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QFont>
+#include <QMargins>
 #include <QPointer>
 #include <QStringList>
 #include <QWidget>
@@ -66,6 +68,9 @@ private:
     QRect popupGeometry(const QRect& targetRect, const QSize& popupSize, Ant::DropdownPlacement placement) const;
     Ant::DropdownPlacement resolvedPlacement(const QRect& targetRect, const QSize& popupSize, const QRect& screenRect) const;
     int popupContentWidth() const;
+    QMargins popupContentMargins() const;
+    void invalidatePopupCaches();
+    void syncDropdownPerfCounters() const;
     void updatePopupGeometry(const QPoint& contextPos = QPoint());
     void installTarget(QWidget* target);
     void uninstallTarget();
@@ -88,4 +93,23 @@ private:
     QTimer* m_hoverTicker = nullptr;
     int m_offTicks = 0;
     QPoint m_lastContextPos;
+    bool m_popupSizeDirty = true;
+    bool m_popupGeometryCacheValid = false;
+    QRect m_lastPopupGeometry;
+    Ant::DropdownPlacement m_lastGeometryPlacement = Ant::DropdownPlacement::BottomLeft;
+
+    mutable bool m_contentWidthCacheValid = false;
+    mutable QStringList m_contentWidthCacheLabels;
+    mutable QFont m_contentWidthCacheFont;
+    mutable int m_contentWidthCacheTokenFontSize = 0;
+    mutable int m_contentWidthCachePaddingSM = 0;
+    mutable int m_contentWidthCachePaddingXS = 0;
+    mutable int m_cachedContentWidth = 0;
+    mutable int m_contentWidthCacheHitCount = 0;
+    mutable int m_contentWidthCacheMissCount = 0;
+    int m_geometryApplyCount = 0;
+    int m_geometrySkipCount = 0;
+    int m_marginApplyCount = 0;
+    int m_menuWidthApplyCount = 0;
+    int m_popupAdjustSizeCount = 0;
 };

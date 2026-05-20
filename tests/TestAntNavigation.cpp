@@ -5,6 +5,8 @@
 #include <QLineEdit>
 #include <QMargins>
 #include <QMouseEvent>
+#include <QPushButton>
+#include <QResizeEvent>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QStyle>
@@ -22,6 +24,7 @@ class TestAntNavigation : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void dropdownCachesPopupGeometry();
     void paginationQuickJumperEditsCurrentPage();
     void anchorCachesLayoutAndCoalescesScroll();
     void breadcrumbCachesLayoutAndScopesHover();
@@ -283,6 +286,47 @@ void TestAntNavigation::propertiesAndSignals()
     anchor->addLink("Section 2", 100);
     QSignalSpy activeIdxSpy(anchor, &AntAnchor::activeIndexChanged);
     Q_UNUSED(activeIdxSpy);
+}
+
+void TestAntNavigation::dropdownCachesPopupGeometry()
+{
+    QWidget host;
+    host.resize(420, 260);
+    QPushButton target(QStringLiteral("Actions"), &host);
+    target.resize(120, 32);
+    target.move(40, 40);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    AntDropdown dropdown(&host);
+    dropdown.setTarget(&target);
+    dropdown.setTrigger(Ant::DropdownTrigger::Click);
+    dropdown.addItem(QStringLiteral("download"), QStringLiteral("Download"));
+    dropdown.addItem(QStringLiteral("archive"), QStringLiteral("Archive"));
+
+    dropdown.setOpen(true);
+    QTRY_VERIFY_WITH_TIMEOUT(dropdown.isOpen(), 300);
+    QTRY_VERIFY_WITH_TIMEOUT(dropdown.menu()->isVisible(), 300);
+    QVERIFY(dropdown.property("antDropdownGeometryApplyCount").toInt() > 0);
+    QVERIFY(dropdown.property("antDropdownContentWidthCacheMissCount").toInt() > 0);
+
+    const int contentHitsBefore = dropdown.property("antDropdownContentWidthCacheHitCount").toInt();
+    const int geometrySkipsBefore = dropdown.property("antDropdownGeometrySkipCount").toInt();
+    QResizeEvent sameResize(target.size(), target.size());
+    QCoreApplication::sendEvent(&target, &sameResize);
+    QVERIFY(dropdown.property("antDropdownContentWidthCacheHitCount").toInt() > contentHitsBefore);
+    QVERIFY(dropdown.property("antDropdownGeometrySkipCount").toInt() > geometrySkipsBefore);
+
+    const int marginAppliesBefore = dropdown.property("antDropdownMarginApplyCount").toInt();
+    dropdown.setArrowVisible(true);
+    QVERIFY(dropdown.property("antDropdownMarginApplyCount").toInt() > marginAppliesBefore);
+
+    const int contentMissesBefore = dropdown.property("antDropdownContentWidthCacheMissCount").toInt();
+    dropdown.addItem(QStringLiteral("settings"), QStringLiteral("Longer settings label"));
+    QVERIFY(dropdown.property("antDropdownContentWidthCacheMissCount").toInt() > contentMissesBefore);
+
+    dropdown.setOpen(false);
+    QTRY_VERIFY_WITH_TIMEOUT(!dropdown.isOpen(), 300);
 }
 
 void TestAntNavigation::paginationQuickJumperEditsCurrentPage()
