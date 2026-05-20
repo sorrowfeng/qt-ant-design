@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `25` components are optimized from this pass, and `59` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `26` components are optimized from this pass, and `58` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntPlainTextEdit` | Visual font/palette application is now cached by theme tokens so content edits do not restyle the editor. Resize-grip hover now routes mouse events from the editor's internal children through one coordinate path, updates cursor state only on real hover changes, and repaints only the grip dirty region. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe plainTextEdit`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntNavItem` | Label palette/font updates now run only when active or theme inputs change instead of during every paint. The self-painted background, active indicator colour, and indicator rectangle are cached by size, active, hover, and theme state, with enter/leave/resize/theme changes invalidating the cache. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe navItem`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntMenuBar` | Menu-bar action geometry is now cached and invalidated only on action, resize, font, style, layout-direction, or theme changes, so hover movement can repaint the old/new action rectangles instead of scheduling an extra full-bar update. Menu item display text and text widths are cached by raw text and font for both sizing and paint paths. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe menuBar`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntDockWidget` | Title-bar button icons now render into a DPR-aware pixmap cache keyed by icon, color, size, and DPR instead of rereading SVG resources on every button paint. Title-bar chrome/theme refreshes now skip redundant palette, font, margin, button-size, and geometry work when floating/closable/theme inputs are unchanged. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe dockWidget`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -198,7 +199,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntLog` | P0 | Use document-cursor appends, cached level formats, disabled undo history, and batched trim operations so large append bursts avoid moving the visible cursor or repeatedly shifting entries one by one. | Optimized |
 | `AntMenuBar` | P1 | Cache action rectangles and text metrics; repaint only old/new hover action during pointer movement and invalidate geometry on action/layout/theme inputs. | Optimized |
 | `AntNavItem` | P1 | Move label palette/font updates out of paint, cache hover/active background and indicator geometry, and invalidate on hover, active, resize, and theme inputs. | Optimized |
-| `AntPlainTextEdit` | P1 | Keep theme/style wrapper cheap, update resize grip only on hover/drag, and avoid repolish on plain text content edits. | Plan ready |
+| `AntPlainTextEdit` | P1 | Cache visual font/palette application by theme tokens, route resize-grip mouse events from internal children through one coordinate path, and dirty-update the grip region only when hover state changes. | Optimized |
 | `AntRibbon` | P0 | Cache page/group/action layout, repaint only active tab/group on hover, and defer collapsed popup layout until opened. | Plan ready |
 | `AntScrollArea` | P1 | Avoid redundant scrollbar replacement/palette updates on theme changes; keep gesture scrolling independent from full viewport repaint. | Plan ready |
 | `AntScrollBar` | P0 | Dirty-update handle/track hover rects, stop auto-hide timers when not needed, and avoid full parent viewport invalidation. | Plan ready |
@@ -321,7 +322,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 | `AntLog` | `TestAntQtExtensions` | Verify large append batches, level filtering if present, scrolling to bottom, visible-line rendering, and no full-history remeasure per paint. |
 | `AntMenuBar` | `TestAntQtExtensions` | Verify action hover/trigger/menu open, theme switching, and old/new action dirty repaint. |
 | `AntNavItem` | `TestAntVisualRegression` | Verify hover/active/click states, sidebar navigation, icon/text layout cache, and item-local repaint. |
-| `AntPlainTextEdit` | `TestAntQtExtensions` | Verify text editing, context menu, resize grip, variants/theme, and no style repolish on content edits. |
+| `AntPlainTextEdit` | `TestAntQtExtensions` | Verify text editing, context menu, resize grip drag, variants/theme, no visual restyle on content edits, and no repeated cursor/dirty-region updates for unchanged grip hover. |
 | `AntRibbon` | `TestAntQtExtensions` | Verify page/group/action layout, collapse/expand animation, popup mode, embedded controls, and active-group repaint. |
 | `AntScrollArea` | `TestAntQtExtensions` | Verify custom scrollbars, gesture scrolling, theme switching, and no redundant viewport repaint. |
 | `AntScrollBar` | `TestAntQtExtensions` | Verify hover/drag/autohide, orientation, parent scrolling, and handle/track dirty updates. |

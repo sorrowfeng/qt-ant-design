@@ -1,9 +1,13 @@
 #include "AntPlainTextEdit.h"
 
 #include <QContextMenuEvent>
+#include <QCursor>
 #include <QFocusEvent>
+#include <QFont>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPalette>
+#include <QWidget>
 
 #include "../styles/AntPlainTextEditStyle.h"
 #include "AntScrollBar.h"
@@ -19,27 +23,19 @@ AntPlainTextEdit::AntPlainTextEdit(QWidget* parent)
     setVerticalScrollBar(new AntScrollBar(Qt::Vertical, this));
     setHorizontalScrollBar(new AntScrollBar(Qt::Horizontal, this));
     setFrameShape(QFrame::NoFrame);
-    viewport()->installEventFilter(this);
+    setMouseTracking(true);
+    installEventFilter(this);
+    const auto resizeGripSources = findChildren<QWidget*>();
+    for (auto* source : resizeGripSources)
+    {
+        source->installEventFilter(this);
+        source->setMouseTracking(true);
+    }
 
-    auto applyVisualState = [this]() {
-        const auto& token = antTheme->tokens();
-        QFont f = font();
-        f.setPixelSize(token.fontSize);
-        setFont(f);
-
-        QPalette pal = palette();
-        pal.setColor(QPalette::Base, Qt::transparent);
-        pal.setColor(QPalette::Text, token.colorText);
-        pal.setColor(QPalette::PlaceholderText, token.colorTextPlaceholder);
-        pal.setColor(QPalette::Disabled, QPalette::Text, token.colorTextDisabled);
-        pal.setColor(QPalette::Disabled, QPalette::PlaceholderText, token.colorTextDisabled);
-        setPalette(pal);
-        viewport()->setAutoFillBackground(false);
-        viewport()->setPalette(pal);
-    };
     applyVisualState();
+    syncPlainTextEditPerfCounters();
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this, applyVisualState]() {
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         applyVisualState();
         update();
     });
@@ -57,6 +53,10 @@ void AntPlainTextEdit::setVariant(Ant::Variant variant)
 {
     if (m_variant == variant) return;
     m_variant = variant;
+    if (m_variant != Ant::Variant::Outlined)
+    {
+        setResizeGripHovered(false);
+    }
     update();
     Q_EMIT variantChanged(m_variant);
 }
@@ -126,7 +126,9 @@ void AntPlainTextEdit::contextMenuEvent(QContextMenuEvent* event)
 
 bool AntPlainTextEdit::eventFilter(QObject* watched, QEvent* event)
 {
-    if (watched == viewport())
+    auto* sourceWidget = qobject_cast<QWidget*>(watched);
+    const bool resizeGripEventSource = sourceWidget == this || (sourceWidget && isAncestorOf(sourceWidget));
+    if (resizeGripEventSource)
     {
         switch (event->type())
         {
@@ -135,17 +137,20 @@ bool AntPlainTextEdit::eventFilter(QObject* watched, QEvent* event)
         case QEvent::MouseButtonRelease:
         {
             auto* mouseEvent = static_cast<QMouseEvent*>(event);
-            const QPoint widgetPos = viewport()->mapTo(this, mouseEvent->position().toPoint());
-            if (handleResizeGripMouseEvent(mouseEvent, widgetPos))
+            if (sourceWidget)
             {
-                return true;
+                const QPoint widgetPos = sourceWidget->mapTo(this, mouseEvent->position().toPoint());
+                if (handleResizeGripMouseEvent(mouseEvent, widgetPos))
+                {
+                    return true;
+                }
             }
             break;
         }
         case QEvent::Leave:
-            if (!m_resizing)
+            if (!m_resizing && !rect().contains(mapFromGlobal(QCursor::pos())))
             {
-                viewport()->unsetCursor();
+                setResizeGripHovered(false);
             }
             break;
         default:
@@ -171,7 +176,7 @@ bool AntPlainTextEdit::handleResizeGripMouseEvent(QMouseEvent* event, const QPoi
     const bool overGrip = resizeGripRect().contains(widgetPos);
     if (event->type() == QEvent::MouseMove && !m_resizing)
     {
-        overGrip ? viewport()->setCursor(Qt::SizeFDiagCursor) : viewport()->unsetCursor();
+        setResizeGripHovered(overGrip);
         return false;
     }
 
@@ -180,7 +185,7 @@ bool AntPlainTextEdit::handleResizeGripMouseEvent(QMouseEvent* event, const QPoi
         m_resizing = true;
         m_resizeStartGlobal = event->globalPosition().toPoint();
         m_resizeStartSize = size();
-        viewport()->setCursor(Qt::SizeFDiagCursor);
+        setResizeGripHovered(true);
         event->accept();
         return true;
     }
@@ -200,10 +205,82 @@ bool AntPlainTextEdit::handleResizeGripMouseEvent(QMouseEvent* event, const QPoi
     if (event->type() == QEvent::MouseButtonRelease && m_resizing)
     {
         m_resizing = false;
-        overGrip ? viewport()->setCursor(Qt::SizeFDiagCursor) : viewport()->unsetCursor();
+        setResizeGripHovered(overGrip);
         event->accept();
         return true;
     }
 
     return false;
+}
+
+void AntPlainTextEdit::applyVisualState()
+{
+    const auto& token = antTheme->tokens();
+    if (m_cachedVisualFontSize == token.fontSize &&
+        m_cachedTextColor == token.colorText &&
+        m_cachedPlaceholderColor == token.colorTextPlaceholder &&
+        m_cachedDisabledTextColor == token.colorTextDisabled)
+    {
+        return;
+    }
+
+    QFont f = font();
+    f.setPixelSize(token.fontSize);
+    setFont(f);
+
+    QPalette pal = palette();
+    pal.setColor(QPalette::Base, Qt::transparent);
+    pal.setColor(QPalette::Text, token.colorText);
+    pal.setColor(QPalette::PlaceholderText, token.colorTextPlaceholder);
+    pal.setColor(QPalette::Disabled, QPalette::Text, token.colorTextDisabled);
+    pal.setColor(QPalette::Disabled, QPalette::PlaceholderText, token.colorTextDisabled);
+    setPalette(pal);
+    viewport()->setAutoFillBackground(false);
+    viewport()->setPalette(pal);
+
+    m_cachedVisualFontSize = token.fontSize;
+    m_cachedTextColor = token.colorText;
+    m_cachedPlaceholderColor = token.colorTextPlaceholder;
+    m_cachedDisabledTextColor = token.colorTextDisabled;
+    ++m_visualStateApplyCount;
+    syncPlainTextEditPerfCounters();
+}
+
+void AntPlainTextEdit::setResizeGripHovered(bool hovered)
+{
+    if (m_resizeGripHovered == hovered)
+    {
+        return;
+    }
+
+    m_resizeGripHovered = hovered;
+    if (m_resizeGripHovered || m_resizing)
+    {
+        setCursor(Qt::SizeFDiagCursor);
+        viewport()->setCursor(Qt::SizeFDiagCursor);
+    }
+    else
+    {
+        unsetCursor();
+        viewport()->unsetCursor();
+    }
+    ++m_resizeGripCursorUpdateCount;
+    updateResizeGripRegion();
+    syncPlainTextEditPerfCounters();
+}
+
+void AntPlainTextEdit::updateResizeGripRegion()
+{
+    update(resizeGripRect().adjusted(-2, -2, 2, 2));
+    ++m_resizeGripDirtyUpdateCount;
+    syncPlainTextEditPerfCounters();
+}
+
+void AntPlainTextEdit::syncPlainTextEditPerfCounters() const
+{
+    auto* self = const_cast<AntPlainTextEdit*>(this);
+    self->setProperty("antPlainTextEditVisualStateApplyCount", m_visualStateApplyCount);
+    self->setProperty("antPlainTextEditResizeGripHovered", m_resizeGripHovered);
+    self->setProperty("antPlainTextEditResizeGripCursorUpdateCount", m_resizeGripCursorUpdateCount);
+    self->setProperty("antPlainTextEditResizeGripDirtyUpdateCount", m_resizeGripDirtyUpdateCount);
 }

@@ -2,11 +2,13 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
 #include <QPlainTextEdit>
 
 #include "core/AntTypes.h"
 
 class QMouseEvent;
+class QEvent;
 
 class QT_ANT_DESIGN_EXPORT AntPlainTextEdit : public QPlainTextEdit
 {
@@ -37,11 +39,23 @@ protected:
 private:
     QRect resizeGripRect() const;
     bool handleResizeGripMouseEvent(QMouseEvent* event, const QPoint& widgetPos);
+    void applyVisualState();
+    void setResizeGripHovered(bool hovered);
+    void updateResizeGripRegion();
+    void syncPlainTextEditPerfCounters() const;
 
     Ant::Variant m_variant = Ant::Variant::Outlined;
     QString m_placeholderText;
     bool m_focused = false;
     bool m_resizing = false;
+    bool m_resizeGripHovered = false;
     QPoint m_resizeStartGlobal;
     QSize m_resizeStartSize;
+    int m_cachedVisualFontSize = -1;
+    QColor m_cachedTextColor;
+    QColor m_cachedPlaceholderColor;
+    QColor m_cachedDisabledTextColor;
+    int m_visualStateApplyCount = 0;
+    int m_resizeGripCursorUpdateCount = 0;
+    int m_resizeGripDirtyUpdateCount = 0;
 };

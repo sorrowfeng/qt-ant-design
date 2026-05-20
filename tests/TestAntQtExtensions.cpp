@@ -1002,6 +1002,10 @@ void TestAntQtExtensions::plainTextEdit()
     antTheme->setThemeMode(Ant::ThemeMode::Default);
     auto* w = new AntPlainTextEdit;
     QCOMPARE(w->variant(), Ant::Variant::Outlined);
+    const int visualApplyCount = w->property("antPlainTextEditVisualStateApplyCount").toInt();
+    QVERIFY(visualApplyCount >= 1);
+    w->setPlainText(QStringLiteral("content edit should not restyle"));
+    QCOMPARE(w->property("antPlainTextEditVisualStateApplyCount").toInt(), visualApplyCount);
 
     QSignalSpy varSpy(w, &AntPlainTextEdit::variantChanged);
     w->setVariant(Ant::Variant::Filled);
@@ -1020,10 +1024,36 @@ void TestAntQtExtensions::plainTextEdit()
     resizable->setFixedSize(180, 80);
     resizable->show();
     QVERIFY(QTest::qWaitForWindowExposed(resizable));
-    const QPoint grip = resizable->viewport()->mapFrom(resizable, QPoint(resizable->width() - 4, resizable->height() - 4));
-    QTest::mousePress(resizable->viewport(), Qt::LeftButton, Qt::NoModifier, grip);
-    QTest::mouseMove(resizable->viewport(), grip + QPoint(32, 18));
-    QTest::mouseRelease(resizable->viewport(), Qt::LeftButton, Qt::NoModifier, grip + QPoint(32, 18));
+    const QPoint grip(resizable->width() - 4, resizable->height() - 4);
+    auto sendMouseToResizableChild = [resizable](QEvent::Type type, const QPoint& widgetPos,
+                                                 Qt::MouseButton button, Qt::MouseButtons buttons) {
+        QWidget* source = resizable->childAt(widgetPos);
+        if (!source)
+        {
+            source = resizable;
+        }
+        const QPoint sourcePos = source->mapFrom(resizable, widgetPos);
+        QMouseEvent event(type, QPointF(sourcePos), QPointF(source->mapToGlobal(sourcePos)),
+                          button, buttons, Qt::NoModifier);
+        QCoreApplication::sendEvent(source, &event);
+    };
+    sendMouseToResizableChild(QEvent::MouseMove, grip, Qt::NoButton, Qt::NoButton);
+    QCoreApplication::processEvents();
+    QVERIFY(resizable->property("antPlainTextEditResizeGripHovered").toBool());
+    const int gripCursorUpdates = resizable->property("antPlainTextEditResizeGripCursorUpdateCount").toInt();
+    const int gripDirtyUpdates = resizable->property("antPlainTextEditResizeGripDirtyUpdateCount").toInt();
+    sendMouseToResizableChild(QEvent::MouseMove, grip, Qt::NoButton, Qt::NoButton);
+    QCoreApplication::processEvents();
+    QCOMPARE(resizable->property("antPlainTextEditResizeGripCursorUpdateCount").toInt(), gripCursorUpdates);
+    QCOMPARE(resizable->property("antPlainTextEditResizeGripDirtyUpdateCount").toInt(), gripDirtyUpdates);
+    const QPoint outsideGrip(8, 8);
+    sendMouseToResizableChild(QEvent::MouseMove, outsideGrip, Qt::NoButton, Qt::NoButton);
+    QCoreApplication::processEvents();
+    QCOMPARE(resizable->property("antPlainTextEditResizeGripHovered").toBool(), false);
+    QVERIFY(resizable->property("antPlainTextEditResizeGripCursorUpdateCount").toInt() > gripCursorUpdates);
+    sendMouseToResizableChild(QEvent::MouseButtonPress, grip, Qt::LeftButton, Qt::LeftButton);
+    sendMouseToResizableChild(QEvent::MouseMove, grip + QPoint(32, 18), Qt::NoButton, Qt::LeftButton);
+    sendMouseToResizableChild(QEvent::MouseButtonRelease, grip + QPoint(32, 18), Qt::LeftButton, Qt::NoButton);
     QCOMPARE(resizable->size(), QSize(212, 98));
 
     auto* w2 = new AntPlainTextEdit("Initial text");
