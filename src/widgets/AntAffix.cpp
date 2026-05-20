@@ -5,6 +5,7 @@
 #include <QEvent>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QTimer>
 
 AntAffix::AntAffix(QObject* parent)
     : QObject(parent)
@@ -24,7 +25,8 @@ void AntAffix::setOffsetTop(int offset)
     m_offsetTop = offset;
     m_hasOffsetTop = true;
     m_hasOffsetBottom = false;
-    if (m_affixedWidget) checkAffixState();
+    resetCheckCache();
+    if (m_affixedWidget) scheduleAffixCheck();
     Q_EMIT offsetTopChanged(m_offsetTop);
 }
 
@@ -35,7 +37,8 @@ void AntAffix::setOffsetBottom(int offset)
     m_offsetBottom = offset;
     m_hasOffsetBottom = true;
     m_hasOffsetTop = false;
-    if (m_affixedWidget) checkAffixState();
+    resetCheckCache();
+    if (m_affixedWidget) scheduleAffixCheck();
     Q_EMIT offsetBottomChanged(m_offsetBottom);
 }
 
@@ -56,6 +59,8 @@ void AntAffix::setAffixedWidget(QWidget* widget)
         m_originalSize = m_affixedWidget->size();
         findScrollContainer();
         attachScrollMonitor();
+        resetCheckCache();
+        scheduleAffixCheck();
     }
 }
 
@@ -68,6 +73,8 @@ void AntAffix::setScrollTarget(QWidget* target)
     m_scrollTarget = target;
     findScrollContainer();
     attachScrollMonitor();
+    resetCheckCache();
+    scheduleAffixCheck();
 }
 
 bool AntAffix::isAffixed() const { return m_isAffixed; }
@@ -78,9 +85,10 @@ bool AntAffix::eventFilter(QObject* watched, QEvent* event)
     {
         if (event->type() == QEvent::Wheel ||
             event->type() == QEvent::Scroll ||
-            event->type() == QEvent::Resize)
+            event->type() == QEvent::Resize ||
+            event->type() == QEvent::Move)
         {
-            checkAffixState();
+            scheduleAffixCheck();
         }
     }
     return QObject::eventFilter(watched, event);
@@ -122,26 +130,78 @@ void AntAffix::attachScrollMonitor()
     if (m_scrollViewport)
     {
         m_scrollViewport->installEventFilter(this);
+        setProperty("antAffixUsesQueuedChecks", true);
+    }
+
+    if (auto* area = qobject_cast<QAbstractScrollArea*>(m_scrollTarget))
+    {
+        if (area->verticalScrollBar())
+        {
+            m_verticalScrollConnection = connect(area->verticalScrollBar(), &QScrollBar::valueChanged,
+                                                this, [this]() { scheduleAffixCheck(); });
+        }
+        if (area->horizontalScrollBar())
+        {
+            m_horizontalScrollConnection = connect(area->horizontalScrollBar(), &QScrollBar::valueChanged,
+                                                  this, [this]() { scheduleAffixCheck(); });
+        }
     }
 }
 
 void AntAffix::detachScrollMonitor()
 {
+    if (m_verticalScrollConnection)
+    {
+        disconnect(m_verticalScrollConnection);
+        m_verticalScrollConnection = QMetaObject::Connection();
+    }
+    if (m_horizontalScrollConnection)
+    {
+        disconnect(m_horizontalScrollConnection);
+        m_horizontalScrollConnection = QMetaObject::Connection();
+    }
     if (m_scrollViewport)
     {
         m_scrollViewport->removeEventFilter(this);
         m_scrollViewport = nullptr;
     }
+    m_checkQueued = false;
+    setProperty("antAffixCheckQueued", false);
+}
+
+void AntAffix::scheduleAffixCheck()
+{
+    if (!m_affixedWidget || !m_scrollViewport)
+    {
+        return;
+    }
+    if (m_checkQueued)
+    {
+        setProperty("antAffixQueuedCheckCoalesced", true);
+        return;
+    }
+
+    m_checkQueued = true;
+    setProperty("antAffixCheckQueued", true);
+    QTimer::singleShot(0, this, [this]() {
+        m_checkQueued = false;
+        setProperty("antAffixCheckQueued", false);
+        checkAffixState();
+    });
 }
 
 void AntAffix::checkAffixState()
 {
     if (!m_affixedWidget || !m_scrollViewport) return;
+    ++m_affixCheckCount;
+    setProperty("antAffixCheckCount", m_affixCheckCount);
 
-    // Get widget position relative to viewport
-    QPoint widgetPosInViewport = m_affixedWidget->mapTo(m_scrollViewport, QPoint(0, 0));
-    int viewportHeight = m_scrollViewport->height();
-    int widgetHeight = m_affixedWidget->height();
+    QWidget* referenceWidget = (m_isAffixed && m_placeholder) ? m_placeholder : m_affixedWidget;
+    const QPoint widgetPosInViewport = referenceWidget->mapTo(m_scrollViewport, QPoint(0, 0));
+    const int viewportHeight = m_scrollViewport->height();
+    const int widgetHeight = referenceWidget->height();
+    const QRect widgetViewportRect(widgetPosInViewport, referenceWidget->size());
+    const QSize viewportSize = m_scrollViewport->size();
 
     bool shouldAffix = false;
 
@@ -154,9 +214,28 @@ void AntAffix::checkAffixState()
         shouldAffix = (widgetPosInViewport.y() + widgetHeight) > (viewportHeight - m_offsetBottom);
     }
 
+    if (widgetViewportRect == m_lastWidgetViewportRect
+        && viewportSize == m_lastViewportSize
+        && shouldAffix == m_lastShouldAffix)
+    {
+        setProperty("antAffixLastCheckSkipped", true);
+        return;
+    }
+
+    m_lastWidgetViewportRect = widgetViewportRect;
+    m_lastViewportSize = viewportSize;
+    m_lastShouldAffix = shouldAffix;
+    ++m_effectiveAffixCheckCount;
+    setProperty("antAffixLastCheckSkipped", false);
+    setProperty("antAffixEffectiveCheckCount", m_effectiveAffixCheckCount);
+
     if (shouldAffix && !m_isAffixed)
     {
         applyAffixed();
+    }
+    else if (shouldAffix && m_isAffixed)
+    {
+        updateAffixedGeometry();
     }
     else if (!shouldAffix && m_isAffixed)
     {
@@ -258,5 +337,31 @@ void AntAffix::removeAffixed()
 
     m_affixedWidget->show();
     m_isAffixed = false;
+    resetCheckCache();
     Q_EMIT affixStateChanged(false);
+}
+
+void AntAffix::updateAffixedGeometry()
+{
+    if (!m_affixedWidget || !m_scrollViewport || !m_isAffixed)
+    {
+        return;
+    }
+
+    if (m_hasOffsetTop)
+    {
+        m_affixedWidget->setGeometry(0, m_offsetTop, m_scrollViewport->width(), m_originalSize.height());
+    }
+    else if (m_hasOffsetBottom)
+    {
+        m_affixedWidget->setGeometry(0, m_scrollViewport->height() - m_offsetBottom - m_originalSize.height(),
+                                     m_scrollViewport->width(), m_originalSize.height());
+    }
+}
+
+void AntAffix::resetCheckCache()
+{
+    m_lastWidgetViewportRect = QRect();
+    m_lastViewportSize = QSize();
+    m_lastShouldAffix = false;
 }

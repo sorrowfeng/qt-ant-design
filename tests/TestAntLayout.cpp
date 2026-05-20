@@ -1,6 +1,10 @@
 #include <QSignalSpy>
+#include <QCoreApplication>
 #include <QSizePolicy>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QTest>
+#include <QVBoxLayout>
 #include "widgets/AntDivider.h"
 #include "widgets/AntFlex.h"
 #include "widgets/AntGrid.h"
@@ -266,6 +270,48 @@ void TestAntLayout::affix()
     w->setOffsetBottom(50);
     QCOMPARE(w->offsetBottom(), 50);
     QCOMPARE(botSpy.count(), 1);
+
+    QScrollArea area;
+    auto* content = new QWidget;
+    auto* layout = new QVBoxLayout(content);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    auto* header = new QWidget;
+    header->setFixedHeight(32);
+    auto* filler = new QWidget;
+    filler->setMinimumHeight(420);
+    layout->addWidget(header);
+    layout->addWidget(filler);
+    area.setWidget(content);
+    area.setWidgetResizable(true);
+    area.resize(220, 120);
+    area.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&area));
+
+    AntAffix affix;
+    affix.setAffixedWidget(header);
+    affix.setScrollTarget(&area);
+    affix.setOffsetTop(0);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(affix.property("antAffixUsesQueuedChecks").toBool(), true);
+    const int checksBeforeScroll = affix.property("antAffixCheckCount").toInt();
+    area.verticalScrollBar()->setValue(24);
+    area.verticalScrollBar()->setValue(48);
+    area.verticalScrollBar()->setValue(72);
+    QCOMPARE(affix.property("antAffixCheckQueued").toBool(), true);
+    QCOMPARE(affix.property("antAffixQueuedCheckCoalesced").toBool(), true);
+    QCoreApplication::processEvents();
+    QCOMPARE(affix.isAffixed(), true);
+    QCOMPARE(affix.property("antAffixCheckCount").toInt(), checksBeforeScroll + 1);
+
+    const int effectiveChecks = affix.property("antAffixEffectiveCheckCount").toInt();
+    QEvent moveEvent(QEvent::Move);
+    QCoreApplication::sendEvent(area.viewport(), &moveEvent);
+    QCoreApplication::sendEvent(area.viewport(), &moveEvent);
+    QCoreApplication::processEvents();
+    QCOMPARE(affix.property("antAffixLastCheckSkipped").toBool(), true);
+    QCOMPARE(affix.property("antAffixEffectiveCheckCount").toInt(), effectiveChecks);
 }
 
 QTEST_MAIN(TestAntLayout)

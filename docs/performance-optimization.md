@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `9` components are optimized from this pass, and `75` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `10` components are optimized from this pass, and `74` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-20` | `AntAffix` | Scroll, wheel, move, resize, and scrollbar value changes now schedule one coalesced affix check for the next event turn. Repeated unchanged geometry checks are skipped, affixed state uses the placeholder as the reference anchor, and affixed geometry updates on viewport resize without forcing duplicate state transitions. | `cmake --build build --config Debug --target TestAntLayout`, `TestAntLayout.exe affix`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-20` | `AntTree` | Visible-node flattening is now cached and reused across paint, hit testing, size hints, and scroll clamping until tree data or expansion state changes. Hover transitions repaint only the previous/current row instead of invalidating the whole tree. | `cmake --build build --config Debug --target TestAntDataDisplayB TestAntAdvancedInteractions`, `TestAntDataDisplayB.exe treeCachesFlattenedVisibleNodes`, `TestAntAdvancedInteractions.exe treeExpandCheckAndSelectFlow`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-20` | `AntTimeline` | Vertical paint now reuses cached item heights keyed by width, reverse order, token font sizes, spacing, and dot size. Dot colors are parsed once per item data/theme refresh, and title/content fonts and metrics are built once per paint instead of once per item. | `cmake --build build --config Debug --target TestAntDataDisplayB`, `TestAntDataDisplayB.exe timelineCachesPaintLayoutAndColors`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-20` | `AntTag` | Tag size hints now cache text/icon/close width calculations until layout-affecting inputs, font, style, or theme changes. Custom and semantic color parsing is cached per color/theme refresh, and mouse-move repaint is skipped unless hover or close-hover state actually changes. | `cmake --build build --config Debug --target TestAntTag`, `TestAntTag.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -160,7 +161,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 
 | Component | Priority | Optimization plan | Progress |
 | --- | --- | --- | --- |
-| `AntAffix` | P1 | Throttle scroll-event geometry checks, skip work when pinned state and target rect are unchanged, and update only on relevant container move/resize/scroll. | Plan ready |
+| `AntAffix` | P1 | Coalesce scroll/resize/move/scrollbar events into one queued affix check, skip unchanged geometry, and update affixed geometry only when the viewport changes. | Optimized |
 | `AntApp` | P2 | Keep as a lightweight context wrapper; ensure message/modal/notification lookups are cached and do not scan object trees repeatedly. | Plan ready |
 | `AntConfigProvider` | P1 | Batch theme/config changes and emit one consolidated refresh when multiple tokens change together. | Plan ready |
 | `AntDivider` | P2 | Cache text metrics and line positions; repaint only on text/orientation/theme changes. | Plan ready |

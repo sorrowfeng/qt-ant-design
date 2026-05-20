@@ -3,6 +3,8 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QObject>
+#include <QRect>
+#include <QSize>
 #include <QWidget>
 
 class QAbstractScrollArea;
@@ -41,9 +43,12 @@ private:
     void findScrollContainer();
     void attachScrollMonitor();
     void detachScrollMonitor();
+    void scheduleAffixCheck();
     void checkAffixState();
     void applyAffixed();
     void removeAffixed();
+    void updateAffixedGeometry();
+    void resetCheckCache();
 
     int m_offsetTop = 0;
     int m_offsetBottom = 0;
@@ -57,4 +62,12 @@ private:
     QPoint m_originalPos;
     QWidget* m_originalParent = nullptr;
     QSize m_originalSize;
+    bool m_checkQueued = false;
+    QRect m_lastWidgetViewportRect;
+    QSize m_lastViewportSize;
+    bool m_lastShouldAffix = false;
+    int m_affixCheckCount = 0;
+    int m_effectiveAffixCheckCount = 0;
+    QMetaObject::Connection m_verticalScrollConnection;
+    QMetaObject::Connection m_horizontalScrollConnection;
 };
