@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QRect>
 #include <QScrollBar>
 
 class AntScrollBarStyle;
@@ -36,8 +37,13 @@ protected:
 
 private:
     void initStyle();
+    QRect sliderHandleRect() const;
+    void updateSliderRegion(const QRect& previousHandle = QRect());
+    void syncScrollBarPerfCounters() const;
 
     bool m_autoHide = true;
     bool m_hovered = false;
     bool m_pressed = false;
+    int m_sliderRegionUpdateCount = 0;
+    int m_themeRefreshCount = 0;
 };

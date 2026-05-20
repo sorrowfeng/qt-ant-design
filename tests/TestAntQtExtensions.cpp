@@ -1106,13 +1106,51 @@ void TestAntQtExtensions::scrollArea()
 
 void TestAntQtExtensions::scrollBar()
 {
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
     auto* w = new AntScrollBar;
     QCOMPARE(w->autoHide(), true);
+    w->resize(8, 120);
+    w->setRange(0, 100);
+    w->setPageStep(20);
+    w->show();
+    QVERIFY(QTest::qWaitForWindowExposed(w));
 
     QSignalSpy hideSpy(w, &AntScrollBar::autoHideChanged);
+    const int initialSliderUpdates = w->property("antScrollBarSliderRegionUpdateCount").toInt();
     w->setAutoHide(false);
     QCOMPARE(w->autoHide(), false);
     QCOMPARE(hideSpy.count(), 1);
+    QCOMPARE(w->property("antScrollBarSliderRegionUpdateCount").toInt(), initialSliderUpdates + 1);
+    w->setAutoHide(false);
+    QCOMPARE(w->property("antScrollBarSliderRegionUpdateCount").toInt(), initialSliderUpdates + 1);
+
+    QEnterEvent enterEvent(QPointF(4, 12), QPointF(4, 12), QPointF(w->mapToGlobal(QPoint(4, 12))));
+    QCoreApplication::sendEvent(w, &enterEvent);
+    QCOMPARE(w->isHoveredState(), true);
+    const int hoverSliderUpdates = w->property("antScrollBarSliderRegionUpdateCount").toInt();
+    QCoreApplication::sendEvent(w, &enterEvent);
+    QCOMPARE(w->property("antScrollBarSliderRegionUpdateCount").toInt(), hoverSliderUpdates);
+
+    QEvent leaveEvent(QEvent::Leave);
+    QCoreApplication::sendEvent(w, &leaveEvent);
+    QCOMPARE(w->isHoveredState(), false);
+    QVERIFY(w->property("antScrollBarSliderRegionUpdateCount").toInt() > hoverSliderUpdates);
+
+    const int beforePressUpdates = w->property("antScrollBarSliderRegionUpdateCount").toInt();
+    QTest::mousePress(w, Qt::LeftButton, Qt::NoModifier, QPoint(4, 12));
+    QCOMPARE(w->isPressedState(), true);
+    QVERIFY(w->property("antScrollBarSliderRegionUpdateCount").toInt() > beforePressUpdates);
+    const int beforeReleaseUpdates = w->property("antScrollBarSliderRegionUpdateCount").toInt();
+    QTest::mouseRelease(w, Qt::LeftButton, Qt::NoModifier, QPoint(4, 12));
+    QCOMPARE(w->isPressedState(), false);
+    QVERIFY(w->property("antScrollBarSliderRegionUpdateCount").toInt() > beforeReleaseUpdates);
+
+    const int beforeThemeRefreshes = w->property("antScrollBarThemeRefreshCount").toInt();
+    const int beforeThemeSliderUpdates = w->property("antScrollBarSliderRegionUpdateCount").toInt();
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QVERIFY(w->property("antScrollBarThemeRefreshCount").toInt() > beforeThemeRefreshes);
+    QVERIFY(w->property("antScrollBarSliderRegionUpdateCount").toInt() > beforeThemeSliderUpdates);
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
 
     auto* w2 = new AntScrollBar(Qt::Horizontal);
     QCOMPARE(w2->orientation(), Qt::Horizontal);

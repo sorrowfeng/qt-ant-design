@@ -1,6 +1,7 @@
 #include "AntScrollBar.h"
 
 #include <QMouseEvent>
+#include <QStyle>
 #include <QStyleOptionSlider>
 
 #include "../styles/AntScrollBarStyle.h"
@@ -32,7 +33,7 @@ void AntScrollBar::setAutoHide(bool autoHide)
     }
 
     m_autoHide = autoHide;
-    update();
+    updateSliderRegion();
     Q_EMIT autoHideChanged(m_autoHide);
 }
 
@@ -66,15 +67,21 @@ QSize AntScrollBar::minimumSizeHint() const
 
 void AntScrollBar::enterEvent(QEnterEvent* event)
 {
-    m_hovered = true;
-    update();
+    if (!m_hovered)
+    {
+        m_hovered = true;
+        updateSliderRegion();
+    }
     QScrollBar::enterEvent(event);
 }
 
 void AntScrollBar::leaveEvent(QEvent* event)
 {
-    m_hovered = false;
-    update();
+    if (m_hovered)
+    {
+        m_hovered = false;
+        updateSliderRegion();
+    }
     QScrollBar::leaveEvent(event);
 }
 
@@ -82,8 +89,11 @@ void AntScrollBar::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        m_pressed = true;
-        update();
+        if (!m_pressed)
+        {
+            m_pressed = true;
+            updateSliderRegion();
+        }
     }
     QScrollBar::mousePressEvent(event);
 }
@@ -92,8 +102,11 @@ void AntScrollBar::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        m_pressed = false;
-        update();
+        if (m_pressed)
+        {
+            m_pressed = false;
+            updateSliderRegion();
+        }
     }
     QScrollBar::mouseReleaseEvent(event);
 }
@@ -102,7 +115,7 @@ void AntScrollBar::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange)
     {
-        update();
+        updateSliderRegion();
     }
     QScrollBar::changeEvent(event);
 }
@@ -117,9 +130,39 @@ void AntScrollBar::initStyle()
     setStyle(scrollBarStyle);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        style()->unpolish(this);
-        style()->polish(this);
-        updateGeometry();
-        update();
+        ++m_themeRefreshCount;
+        updateSliderRegion();
     });
+    syncScrollBarPerfCounters();
+}
+
+QRect AntScrollBar::sliderHandleRect() const
+{
+    QStyleOptionSlider option;
+    initStyleOption(&option);
+    return style()->subControlRect(QStyle::CC_ScrollBar, &option, QStyle::SC_ScrollBarSlider, this);
+}
+
+void AntScrollBar::updateSliderRegion(const QRect& previousHandle)
+{
+    QRect dirty = sliderHandleRect();
+    if (previousHandle.isValid())
+    {
+        dirty = dirty.united(previousHandle);
+    }
+    if (!dirty.isValid())
+    {
+        dirty = rect();
+    }
+
+    update(dirty.adjusted(-2, -2, 2, 2).intersected(rect()));
+    ++m_sliderRegionUpdateCount;
+    syncScrollBarPerfCounters();
+}
+
+void AntScrollBar::syncScrollBarPerfCounters() const
+{
+    auto* self = const_cast<AntScrollBar*>(this);
+    self->setProperty("antScrollBarSliderRegionUpdateCount", m_sliderRegionUpdateCount);
+    self->setProperty("antScrollBarThemeRefreshCount", m_themeRefreshCount);
 }

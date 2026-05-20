@@ -92,7 +92,6 @@ qreal handleAlphaFor(const QWidget* widget, const QStyle::State& state)
 AntScrollBarStyle::AntScrollBarStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntScrollBar>();
 }
 
 void AntScrollBarStyle::polish(QWidget* widget)
