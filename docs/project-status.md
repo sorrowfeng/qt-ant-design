@@ -19,12 +19,13 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `10` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `11` controls optimized in the current pass |
 
 ## Recent Completed Work
 
 - Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, serialized splitter/tab/floating named perspectives, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, threshold-activated translucent drag previews, toggleable center/edge drop guide squares, deterministic guided drop placement, manager-owned floating dock windows using the AntWindow-style Windows native frame/DWM rounded-corner/shadow path, double-click maximize/restore, and drag-back-to-layout support.
 - Added `docs/performance-optimization.md` as the starting point for the performance pass, with conservative optimization rules, validation expectations, priority order, and per-component progress/test tables covering all `84` public components.
+- Optimized `AntApp` by caching feedback host resolution for message/modal/notification entry calls and by restoring nested app instances safely when wrappers are destroyed.
 - Optimized `AntAffix` by coalescing high-frequency scroll/resize checks, skipping unchanged geometry, and updating affixed geometry without duplicate state transitions.
 - Optimized `AntTree` by caching flattened visible nodes across paint, hit testing, size hints, and scroll bounds, and by scoping hover repaint to changed rows.
 - Optimized `AntTimeline` by caching vertical item-height layout and parsed dot colors, while reusing title/content font metrics during paint.

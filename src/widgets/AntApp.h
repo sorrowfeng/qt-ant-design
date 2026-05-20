@@ -3,7 +3,10 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QObject>
+#include <QPointer>
 #include <QWidget>
+
+#include <functional>
 
 class AntMessage;
 class AntModal;
@@ -15,8 +18,10 @@ class QT_ANT_DESIGN_EXPORT AntApp : public QObject
 
 public:
     explicit AntApp(QWidget* rootWidget, QObject* parent = nullptr);
+    ~AntApp() override;
 
     QWidget* rootWidget() const;
+    QWidget* feedbackHost() const;
 
     static AntApp* instance();
 
@@ -26,6 +31,10 @@ public:
     void showNotification(const QString& title, const QString& body);
 
 private:
-    QWidget* m_root = nullptr;
+    QPointer<QWidget> m_root;
+    mutable QPointer<QWidget> m_feedbackHost;
+    mutable bool m_feedbackHostResolved = false;
+    mutable int m_feedbackHostResolveCount = 0;
+
     static AntApp* s_instance;
 };

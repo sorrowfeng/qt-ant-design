@@ -639,9 +639,35 @@ private slots:
 
 void TestAntQtExtensions::app()
 {
-    auto* root = new QWidget;
-    auto* w = new AntApp(root);
-    QCOMPARE(w->rootWidget(), root);
+    QWidget root;
+
+    {
+        AntApp app(&root);
+        QCOMPARE(app.rootWidget(), &root);
+        QCOMPARE(app.feedbackHost(), &root);
+        QCOMPARE(app.property("antAppFeedbackHostCacheHit").toBool(), false);
+        QCOMPARE(app.property("antAppFeedbackHostResolveCount").toInt(), 1);
+        QCOMPARE(AntApp::instance(), &app);
+
+        app.showMessage(QStringLiteral("Cached"), 10);
+        QCOMPARE(app.feedbackHost(), &root);
+        QCOMPARE(app.property("antAppFeedbackHostCacheHit").toBool(), true);
+        QCOMPARE(app.property("antAppFeedbackHostResolveCount").toInt(), 1);
+
+        QWidget nestedRoot(&root);
+        {
+            AntApp nestedApp(&nestedRoot);
+            QCOMPARE(AntApp::instance(), &nestedApp);
+            QCOMPARE(nestedApp.feedbackHost(), &nestedRoot);
+            nestedApp.showModal(QStringLiteral("Title"), QStringLiteral("Body"));
+            nestedApp.showNotification(QStringLiteral("Title"), QStringLiteral("Body"));
+            QCOMPARE(nestedApp.property("antAppFeedbackHostResolveCount").toInt(), 1);
+        }
+
+        QCOMPARE(AntApp::instance(), &app);
+    }
+
+    QCOMPARE(AntApp::instance(), nullptr);
 }
 
 void TestAntQtExtensions::configProvider()
