@@ -25,6 +25,7 @@ class TestAntDataDisplayB : public QObject
 private slots:
     void propertiesAndSignals();
     void listWidgetCompatibilityApis();
+    void listBulkInsertionCoalescesLayout();
     void listInternalScrolling();
     void listUsesExpandingLayoutPolicy();
     void tableHoverUsesRowScopedUpdates();
@@ -505,6 +506,38 @@ void TestAntDataDisplayB::listWidgetCompatibilityApis()
     QCOMPARE(taken->parentWidget(), nullptr);
     delete taken;
     QCOMPARE(list.count(), 3);
+}
+
+void TestAntDataDisplayB::listBulkInsertionCoalescesLayout()
+{
+    AntList list;
+    QStringList labels;
+    for (int i = 0; i < 40; ++i)
+    {
+        labels.append(QStringLiteral("Item %1").arg(i));
+    }
+
+    list.addItems(labels);
+    QCOMPARE(list.count(), labels.size());
+    QCOMPARE(list.item(0)->text(), QStringLiteral("Item 0"));
+    QCOMPARE(list.item(39)->text(), QStringLiteral("Item 39"));
+    QCOMPARE(list.property("antListLastBulkOperation").toString(), QStringLiteral("addItems"));
+    QCOMPARE(list.property("antListLastBulkItemCount").toInt(), labels.size());
+    QCOMPARE(list.property("antListLastBulkLayoutCount").toInt(), 1);
+
+    list.insertItems(2, {QStringLiteral("Inserted A"), QStringLiteral("Inserted B")});
+    QCOMPARE(list.count(), 42);
+    QCOMPARE(list.item(2)->text(), QStringLiteral("Inserted A"));
+    QCOMPARE(list.item(3)->text(), QStringLiteral("Inserted B"));
+    QCOMPARE(list.property("antListLastBulkOperation").toString(), QStringLiteral("insertItems"));
+    QCOMPARE(list.property("antListLastBulkItemCount").toInt(), 2);
+    QCOMPARE(list.property("antListLastBulkLayoutCount").toInt(), 1);
+
+    list.resize(240, 160);
+    list.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&list));
+    QVERIFY(list.maximumScrollOffset() > 0);
+    QVERIFY(list.visualItemRect(list.item(0)).isValid());
 }
 
 void TestAntDataDisplayB::listInternalScrolling()

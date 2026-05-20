@@ -776,10 +776,23 @@ void AntList::addItem(const QString& text)
 
 void AntList::addItems(const QStringList& labels)
 {
+    if (labels.isEmpty())
+    {
+        return;
+    }
     for (const QString& label : labels)
     {
-        addItem(label);
+        auto* listItem = new AntListItem;
+        listItem->setText(label);
+        adoptItem(listItem);
+        m_items.append(listItem);
     }
+    syncLayout();
+    updateGeometry();
+    update();
+    setProperty("antListLastBulkOperation", QStringLiteral("addItems"));
+    setProperty("antListLastBulkItemCount", labels.size());
+    setProperty("antListLastBulkLayoutCount", 1);
 }
 
 void AntList::insertItem(int index, AntListItem* item)
@@ -805,12 +818,25 @@ void AntList::insertItem(int index, const QString& text)
 
 void AntList::insertItems(int index, const QStringList& labels)
 {
+    if (labels.isEmpty())
+    {
+        return;
+    }
     int insertIndex = qBound(0, index, m_items.size());
     for (const QString& label : labels)
     {
-        insertItem(insertIndex, label);
+        auto* listItem = new AntListItem;
+        listItem->setText(label);
+        adoptItem(listItem);
+        m_items.insert(insertIndex, listItem);
         ++insertIndex;
     }
+    syncLayout();
+    updateGeometry();
+    update();
+    setProperty("antListLastBulkOperation", QStringLiteral("insertItems"));
+    setProperty("antListLastBulkItemCount", labels.size());
+    setProperty("antListLastBulkLayoutCount", 1);
 }
 
 void AntList::removeItem(AntListItem* item)
