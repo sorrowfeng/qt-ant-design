@@ -1,8 +1,11 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QAction>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMargins>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QStyle>
 #include <QVBoxLayout>
 #include "widgets/AntBreadcrumb.h"
@@ -19,6 +22,7 @@ class TestAntNavigation : public QObject
 private slots:
     void propertiesAndSignals();
     void paginationQuickJumperEditsCurrentPage();
+    void anchorCachesLayoutAndCoalescesScroll();
     void tabsNormalizePageLayoutMargins();
 };
 
@@ -309,6 +313,56 @@ void TestAntNavigation::paginationQuickJumperEditsCurrentPage()
     QTest::keyClick(jumper, Qt::Key_Return);
 
     QCOMPARE(pagination.current(), pagination.pageCount());
+}
+
+void TestAntNavigation::anchorCachesLayoutAndCoalescesScroll()
+{
+    AntAnchor anchor;
+    anchor.addLink(QStringLiteral("Section 1"), 0);
+    anchor.addLink(QStringLiteral("Section 2"), 100);
+    anchor.addLink(QStringLiteral("Section 3"), 200);
+    anchor.resize(160, 120);
+    anchor.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&anchor));
+
+    const auto labels = anchor.findChildren<QLabel*>();
+    QCOMPARE(labels.size(), 3);
+
+    QTest::mouseClick(labels.at(0), Qt::LeftButton);
+    QCOMPARE(anchor.activeIndex(), 0);
+    QVERIFY(anchor.property("antAnchorLinkRectCacheMissCount").toInt() > 0);
+
+    const int cacheHitsBefore = anchor.property("antAnchorLinkRectCacheHitCount").toInt();
+    QTest::mouseClick(labels.at(1), Qt::LeftButton);
+    QCOMPARE(anchor.activeIndex(), 1);
+    QVERIFY(anchor.property("antAnchorLinkRectCacheHitCount").toInt() > cacheHitsBefore);
+
+    const int labelVisualApplies = anchor.property("antAnchorLabelVisualApplyCount").toInt();
+    anchor.update();
+    QCoreApplication::processEvents();
+    QCOMPARE(anchor.property("antAnchorLabelVisualApplyCount").toInt(), labelVisualApplies);
+
+    QScrollArea area;
+    auto* content = new QWidget;
+    content->resize(100, 500);
+    area.setWidget(content);
+    area.resize(100, 120);
+    area.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&area));
+
+    AntAnchor scrollAnchor;
+    scrollAnchor.addLink(QStringLiteral("Intro"), 0);
+    scrollAnchor.addLink(QStringLiteral("Middle"), 100);
+    scrollAnchor.addLink(QStringLiteral("End"), 200);
+    scrollAnchor.setScrollArea(&area);
+    QCoreApplication::processEvents();
+
+    const int scrollResolvesBefore = scrollAnchor.property("antAnchorScrollResolveCount").toInt();
+    area.verticalScrollBar()->setValue(40);
+    area.verticalScrollBar()->setValue(140);
+    area.verticalScrollBar()->setValue(240);
+    QTRY_COMPARE(scrollAnchor.activeIndex(), 2);
+    QCOMPARE(scrollAnchor.property("antAnchorScrollResolveCount").toInt(), scrollResolvesBefore + 1);
 }
 
 void TestAntNavigation::tabsNormalizePageLayoutMargins()

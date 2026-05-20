@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `35` components are optimized from this pass, and `49` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `36` components are optimized from this pass, and `48` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntAnchor` | Link indicator rectangles are now cached and invalidated only on link layout, resize, or theme changes. Active label font/palette state is applied on state/theme changes instead of during every paint, indicator animation frames repaint only the old/new indicator union, and scroll value bursts coalesce into one active-section resolve. | `cmake --build build --config Debug --target TestAntNavigation`, `TestAntNavigation.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntTypography` | Repeated text measurement now reuses a width/font/token-aware cache across `sizeHint()` and `heightForWidth()`, copy-button hit rectangles are cached for paint and mouse interaction, copy hover/press updates repaint only the icon region, and the style now uses the widget's shared font construction path. | `cmake --build build --config Debug --target TestAntTypography`, `TestAntTypography.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntFloatButton` | Position updates now skip unchanged moves, open group children reuse cached geometry and visibility state instead of repeating `setGeometry()`/`show()`/`raise()`, repeated badge/content setters avoid redundant updates, and theme refresh is widget-owned instead of style-level global refresh. | `cmake --build build --config Debug --target TestAntFloatButton`, `TestAntFloatButton.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntButton` | Loading spinner frames now repaint only the spinner indicator region, the spinner timer pauses while the button is hidden, and theme refresh remains widget-owned instead of also using a style-level global refresh path. | `cmake --build build --config Debug --target TestAntButton`, `TestAntButton.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -110,7 +111,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 
 | Component | Priority | Optimization plan | Progress |
 | --- | --- | --- | --- |
-| `AntAnchor` | P1 | Cache link rectangles and indicator geometry; animate only the indicator dirty rect; throttle scroll-container active-section recalculation. | Plan ready |
+| `AntAnchor` | P1 | Cache link indicator rectangles, apply label visual state only on active/theme changes, repaint only indicator dirty regions during animation, and coalesce scroll bursts into one active-section resolve. | Optimized |
 | `AntBreadcrumb` | P2 | Cache item text widths and separator positions; repaint only changed hover item and previous hover item. | Plan ready |
 | `AntDropdown` | P0 | Lazily build popup menu content, reuse popup shell, cache placement/arrow geometry, and keep outside-click closing on one lightweight path. | Plan ready |
 | `AntMenu` | P0 | Cache item layout, submenu placement, and shortcut text metrics; repaint only affected menu rows during hover/selection; avoid style repolish for action text changes. | Plan ready |
@@ -233,7 +234,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 
 | Component | Automated target(s) | Interaction and performance validation |
 | --- | --- | --- |
-| `AntAnchor` | `TestAntNavigation` | Verify scroll tracking, active link changes, indicator animation, many-anchor scroll latency, and no missed active updates after throttling. |
+| `AntAnchor` | `TestAntNavigation` | Verify scroll tracking, active link changes, cached link indicator geometry, label visual state reuse after repaint, coalesced scroll bursts, indicator animation, and no missed active updates after throttling. |
 | `AntBreadcrumb` | `TestAntNavigation` | Verify item hover/click, separators, disabled items, theme switching, and dirty repaint only for changed breadcrumb items. |
 | `AntDropdown` | `TestAntInteractions`, `TestAntNavigation`, `TestAntPopupLifecycle` | Verify click/hover/context triggers, placement/arrow, outside close, popup motion, and repeated open/close latency. |
 | `AntMenu` | `TestAntInteractions`, `TestAntNavigation`, `TestAntVisualRegression` | Verify action sync, hover/selection, submenu behavior, shortcut text, large menu movement, and row-scoped repaint. |
