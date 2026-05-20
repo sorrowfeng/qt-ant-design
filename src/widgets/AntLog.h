@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QTextCharFormat>
 #include <QVector>
 #include <QWidget>
 
@@ -50,9 +51,12 @@ private:
     void updateTheme();
     void rebuildDocument();
     void insertEntry(const Entry& entry);
+    QTextCharFormat formatForLevel(Level level) const;
+    void updateDiagnostics(int trimmedCount = 0);
 
     QPlainTextEdit* m_view = nullptr;
     QVector<Entry> m_entries;
+    QVector<QTextCharFormat> m_levelFormats;
     int m_maxEntries = 5000;
     bool m_autoScroll = true;
 };

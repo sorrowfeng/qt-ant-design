@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `1` component is optimized from this pass, and `83` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `2` components are optimized from this pass, and `82` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-20` | `AntLog` | Appends now use a document cursor instead of moving the visible editor cursor, level text formats are cached per theme, undo/redo storage is disabled for log output, and entry trimming removes overflow in one batch. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe log` |
 | `2026-05-20` | `AntIcon` | Cached enum path generation and resource SVG rendered pixmaps by icon name, colors, size, and DPR. Rotation and spin still use painter transforms, so visible motion is preserved while repeated paints avoid qrc reads and SVG renderer setup. | `cmake --build build --config Debug --target TestAntIcon`, `TestAntIcon.exe`, `cmake --build build --config Debug --target TestAntButton`, `TestAntButton.exe` |
 
 ## Shared Optimization Rules
@@ -171,7 +172,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | --- | --- | --- | --- |
 | `AntDockManager` | P0 | Cache dock tree geometry, drop-guide hit zones, and preview rectangles; apply embedded layout changes synchronously but avoid redundant full tree rebuilds during embedded drags. | Watching |
 | `AntDockWidget` | P0 | Cache title-bar button/title geometry, minimize floating-window native churn, and scope drag/float/embedded repaint to affected panes. | Watching |
-| `AntLog` | P0 | Add visible-row/windowed rendering for large logs, batch append updates, and avoid measuring all historical lines on every paint. | Plan ready |
+| `AntLog` | P0 | Use document-cursor appends, cached level formats, disabled undo history, and batched trim operations so large append bursts avoid moving the visible cursor or repeatedly shifting entries one by one. | Optimized |
 | `AntMenuBar` | P1 | Cache action rectangles and text metrics; repaint only old/new hover or active action. | Plan ready |
 | `AntNavItem` | P1 | Cache icon/text/active indicator geometry, repaint only old/new hover or active item regions, and avoid full sidebar updates during navigation hover. | Plan ready |
 | `AntPlainTextEdit` | P1 | Keep theme/style wrapper cheap, update resize grip only on hover/drag, and avoid repolish on plain text content edits. | Plan ready |

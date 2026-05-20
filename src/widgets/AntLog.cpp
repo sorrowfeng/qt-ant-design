@@ -4,6 +4,7 @@
 #include <QPalette>
 #include <QPlainTextEdit>
 #include <QScrollBar>
+#include <QSignalBlocker>
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTime>
@@ -16,6 +17,7 @@
 
 namespace
 {
+constexpr int kLevelCount = 5;
 
 QColor levelColor(AntLog::Level level)
 {
@@ -49,6 +51,12 @@ QString levelTag(AntLog::Level level)
     return QStringLiteral("INFO");
 }
 
+int levelIndex(AntLog::Level level)
+{
+    const int index = static_cast<int>(level);
+    return index >= 0 && index < kLevelCount ? index : static_cast<int>(AntLog::Info);
+}
+
 } // namespace
 
 AntLog::AntLog(QWidget* parent)
@@ -59,6 +67,7 @@ AntLog::AntLog(QWidget* parent)
 
     m_view = new QPlainTextEdit(this);
     m_view->setReadOnly(true);
+    m_view->setUndoRedoEnabled(false);
     m_view->setFrameShape(QFrame::NoFrame);
     m_view->setVerticalScrollBar(new AntScrollBar(Qt::Vertical, m_view));
     m_view->setHorizontalScrollBar(new AntScrollBar(Qt::Horizontal, m_view));
@@ -70,7 +79,9 @@ AntLog::AntLog(QWidget* parent)
 
     layout->addWidget(m_view);
 
+    m_levelFormats.resize(kLevelCount);
     updateTheme();
+    updateDiagnostics();
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         updateTheme();
         rebuildDocument();
@@ -84,8 +95,10 @@ void AntLog::setMaxEntries(int n)
     if (m_maxEntries == n) return;
     m_maxEntries = n;
     m_view->document()->setMaximumBlockCount(m_maxEntries);
+    const int sizeBefore = m_entries.size();
     trimEntries();
     rebuildDocument();
+    updateDiagnostics(sizeBefore - m_entries.size());
     Q_EMIT maxEntriesChanged(m_maxEntries);
 }
 
@@ -112,6 +125,7 @@ void AntLog::clear()
 {
     m_entries.clear();
     m_view->clear();
+    updateDiagnostics();
 }
 
 void AntLog::appendEntry(Level level, const QString& message)
@@ -121,8 +135,10 @@ void AntLog::appendEntry(Level level, const QString& message)
     entry.level = level;
     entry.message = message;
     m_entries.append(entry);
+    const int sizeBeforeTrim = m_entries.size();
     trimEntries();
     insertEntry(entry);
+    updateDiagnostics(sizeBeforeTrim - m_entries.size());
 
     if (m_autoScroll)
     {
@@ -134,9 +150,10 @@ void AntLog::appendEntry(Level level, const QString& message)
 void AntLog::trimEntries()
 {
     const int maxEntries = qMax(1, m_maxEntries);
-    while (m_entries.size() > maxEntries)
+    const int extra = m_entries.size() - maxEntries;
+    if (extra > 0)
     {
-        m_entries.removeFirst();
+        m_entries.erase(m_entries.begin(), m_entries.begin() + extra);
     }
 }
 
@@ -160,31 +177,70 @@ void AntLog::updateTheme()
     m_view->viewport()->setPalette(pal);
     m_view->setStyleSheet(QStringLiteral("QPlainTextEdit { background-color: %1; border: none; }")
                               .arg(background.name()));
+
+    for (int i = 0; i < m_levelFormats.size(); ++i)
+    {
+        QTextCharFormat fmt;
+        fmt.setForeground(levelColor(static_cast<Level>(i)));
+        m_levelFormats[i] = fmt;
+    }
 }
 
 void AntLog::rebuildDocument()
 {
     const bool shouldScroll = m_autoScroll;
-    m_view->clear();
-    for (const Entry& entry : std::as_const(m_entries))
+    const bool updatesEnabled = m_view->updatesEnabled();
+    QSignalBlocker blocker(m_view->document());
+    m_view->setUpdatesEnabled(false);
     {
-        insertEntry(entry);
+        m_view->clear();
+        QTextCursor cursor(m_view->document());
+        cursor.movePosition(QTextCursor::End);
+        cursor.beginEditBlock();
+        for (const Entry& entry : std::as_const(m_entries))
+        {
+            const QString line = QStringLiteral("[%1] [%2] %3").arg(entry.timestamp, levelTag(entry.level), entry.message);
+            cursor.insertText(line + QStringLiteral("\n"), formatForLevel(entry.level));
+        }
+        cursor.endEditBlock();
     }
+    m_view->setUpdatesEnabled(updatesEnabled);
+    m_view->viewport()->update();
     if (shouldScroll)
     {
         auto* sb = m_view->verticalScrollBar();
         sb->setValue(sb->maximum());
     }
+    updateDiagnostics();
 }
 
 void AntLog::insertEntry(const Entry& entry)
 {
     const QString line = QStringLiteral("[%1] [%2] %3").arg(entry.timestamp, levelTag(entry.level), entry.message);
-    QTextCharFormat fmt;
-    fmt.setForeground(levelColor(entry.level));
 
-    QTextCursor cursor = m_view->textCursor();
+    QTextCursor cursor(m_view->document());
     cursor.movePosition(QTextCursor::End);
-    cursor.insertText(line + QStringLiteral("\n"), fmt);
-    m_view->setTextCursor(cursor);
+    cursor.insertText(line + QStringLiteral("\n"), formatForLevel(entry.level));
+    setProperty("antLogUsesDocumentCursor", true);
+}
+
+QTextCharFormat AntLog::formatForLevel(Level level) const
+{
+    const int index = levelIndex(level);
+    if (index >= 0 && index < m_levelFormats.size())
+    {
+        return m_levelFormats.at(index);
+    }
+
+    QTextCharFormat fmt;
+    fmt.setForeground(levelColor(level));
+    return fmt;
+}
+
+void AntLog::updateDiagnostics(int trimmedCount)
+{
+    setProperty("antLogEntryCount", m_entries.size());
+    setProperty("antLogDocumentBlockCount", m_view ? m_view->document()->blockCount() : 0);
+    setProperty("antLogLastTrimmedCount", qMax(0, trimmedCount));
+    setProperty("antLogUndoRedoEnabled", m_view ? m_view->isUndoRedoEnabled() : false);
 }

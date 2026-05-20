@@ -806,6 +806,33 @@ void TestAntQtExtensions::log()
     w->info("test message");
     w->warning("warning message");
     w->error("error message");
+    QCOMPARE(w->property("antLogUsesDocumentCursor").toBool(), true);
+    QCOMPARE(w->property("antLogUndoRedoEnabled").toBool(), false);
+
+    w->setMaxEntries(128);
+    QCOMPARE(w->maxEntries(), 128);
+    QCOMPARE(maxSpy.count(), 2);
+
+    QElapsedTimer appendTimer;
+    appendTimer.start();
+    for (int i = 0; i < 700; ++i)
+    {
+        w->info(QStringLiteral("bulk message %1").arg(i));
+    }
+    const qint64 appendElapsed = appendTimer.elapsed();
+    QVERIFY2(appendElapsed < 3000, qPrintable(QStringLiteral("AntLog bulk append took %1 ms").arg(appendElapsed)));
+    QCOMPARE(w->property("antLogEntryCount").toInt(), 128);
+    QVERIFY(view->document()->blockCount() <= w->maxEntries());
+    QVERIFY(!view->toPlainText().contains(QStringLiteral("bulk message 0")));
+    QVERIFY(view->toPlainText().contains(QStringLiteral("bulk message 699")));
+
+    w->setMaxEntries(64);
+    QCOMPARE(w->maxEntries(), 64);
+    QCOMPARE(maxSpy.count(), 3);
+    QCOMPARE(w->property("antLogEntryCount").toInt(), 64);
+    QCOMPARE(w->property("antLogLastTrimmedCount").toInt(), 64);
+    QVERIFY(view->document()->blockCount() <= w->maxEntries());
+    QVERIFY(view->toPlainText().contains(QStringLiteral("bulk message 699")));
 
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     QCOMPARE(view->palette().color(QPalette::Base), antTheme->tokens().colorFillQuaternary);

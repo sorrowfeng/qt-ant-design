@@ -133,6 +133,8 @@ Follow-up: `AntWindow` close confirmation is now opt-in through `setCloseConfirm
 
 Follow-up: the performance pass started with `AntIcon`. Built-in enum path generation is now cached, and resource SVG icons are rendered into `QPixmapCache` entries keyed by icon name, color pair, size, and device pixel ratio. Rotation and spin remain painter transforms, so visible animation is preserved while repeated paints avoid qrc file reads and `QSvgRenderer` setup. Targeted validation covered `TestAntIcon` plus `TestAntButton` as a representative icon consumer.
 
+Follow-up: `AntLog` now appends through a `QTextDocument` cursor instead of moving the visible `QPlainTextEdit` cursor, disables undo history for log output, caches per-level text formats on theme changes, and trims overflow entries in one batch. The targeted `log` subtest now covers bulk append, max-entry trimming, document block count bounds, theme refresh, and the optimized document-cursor path.
+
 Latest targeted Win10 dock re-embed repaint cadence validation:
 
 ```powershell
