@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `24` components are optimized from this pass, and `60` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `25` components are optimized from this pass, and `59` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntNavItem` | Label palette/font updates now run only when active or theme inputs change instead of during every paint. The self-painted background, active indicator colour, and indicator rectangle are cached by size, active, hover, and theme state, with enter/leave/resize/theme changes invalidating the cache. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe navItem`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntMenuBar` | Menu-bar action geometry is now cached and invalidated only on action, resize, font, style, layout-direction, or theme changes, so hover movement can repaint the old/new action rectangles instead of scheduling an extra full-bar update. Menu item display text and text widths are cached by raw text and font for both sizing and paint paths. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe menuBar`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntDockWidget` | Title-bar button icons now render into a DPR-aware pixmap cache keyed by icon, color, size, and DPR instead of rereading SVG resources on every button paint. Title-bar chrome/theme refreshes now skip redundant palette, font, margin, button-size, and geometry work when floating/closable/theme inputs are unchanged. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe dockWidget`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntDockManager` | Drag hit testing now caches visible dock-area global hit zones by layout state and reuses the last same-position drop-target query when the guide state is unchanged. Move and release paths no longer rescan dock areas or recompute preview placement for the same cursor point. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe dockManager`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -196,7 +197,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntDockWidget` | P0 | Cache title-bar button icon pixmaps and skip redundant title-bar chrome/theme refreshes when inputs are unchanged. Continue watching floating-window native churn and drag/embedded repaint scope under Windows resize paths. | Optimized |
 | `AntLog` | P0 | Use document-cursor appends, cached level formats, disabled undo history, and batched trim operations so large append bursts avoid moving the visible cursor or repeatedly shifting entries one by one. | Optimized |
 | `AntMenuBar` | P1 | Cache action rectangles and text metrics; repaint only old/new hover action during pointer movement and invalidate geometry on action/layout/theme inputs. | Optimized |
-| `AntNavItem` | P1 | Cache icon/text/active indicator geometry, repaint only old/new hover or active item regions, and avoid full sidebar updates during navigation hover. | Plan ready |
+| `AntNavItem` | P1 | Move label palette/font updates out of paint, cache hover/active background and indicator geometry, and invalidate on hover, active, resize, and theme inputs. | Optimized |
 | `AntPlainTextEdit` | P1 | Keep theme/style wrapper cheap, update resize grip only on hover/drag, and avoid repolish on plain text content edits. | Plan ready |
 | `AntRibbon` | P0 | Cache page/group/action layout, repaint only active tab/group on hover, and defer collapsed popup layout until opened. | Plan ready |
 | `AntScrollArea` | P1 | Avoid redundant scrollbar replacement/palette updates on theme changes; keep gesture scrolling independent from full viewport repaint. | Plan ready |

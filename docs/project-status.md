@@ -19,12 +19,13 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `24` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `25` controls optimized in the current pass |
 
 ## Recent Completed Work
 
 - Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, serialized splitter/tab/floating named perspectives, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, threshold-activated translucent drag previews, toggleable center/edge drop guide squares, deterministic guided drop placement, manager-owned floating dock windows using the AntWindow-style Windows native frame/DWM rounded-corner/shadow path, double-click maximize/restore, and drag-back-to-layout support.
 - Added `docs/performance-optimization.md` as the starting point for the performance pass, with conservative optimization rules, validation expectations, priority order, and per-component progress/test tables covering all `84` public components.
+- Optimized `AntNavItem` by moving label style updates out of paint and caching hover/active background plus indicator geometry.
 - Optimized `AntMenuBar` by caching action geometry and menu item text metrics, with hover movement repainting only old/new action regions.
 - Optimized `AntDockWidget` title-bar work by caching button icon pixmaps and skipping redundant chrome/theme refreshes when dock state inputs are unchanged.
 - Optimized `AntDockManager` drag hit testing by caching visible dock-area hit zones and reusing same-position drop-target queries across drag move/release handling.

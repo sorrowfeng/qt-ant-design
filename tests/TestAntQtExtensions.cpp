@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <QContextMenuEvent>
 #include <QElapsedTimer>
+#include <QEnterEvent>
 #include <QEventLoop>
 #include <QGraphicsOpacityEffect>
 #include <QGuiApplication>
@@ -51,6 +52,7 @@
 #include "widgets/AntToolBar.h"
 #include "widgets/AntMenu.h"
 #include "widgets/AntMenuBar.h"
+#include "widgets/AntNavItem.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntWidget.h"
@@ -680,6 +682,7 @@ private slots:
     void toolButton();
     void toolBar();
     void menuBar();
+    void navItem();
     void dockWidget();
     void dockManager();
     void widget();
@@ -1418,6 +1421,62 @@ void TestAntQtExtensions::menuBar()
     QCoreApplication::processEvents();
     QCOMPARE(w->property("antMenuBarActionGeometryCacheSize").toInt(), 0);
     delete w;
+}
+
+void TestAntQtExtensions::navItem()
+{
+    AntNavItem item(QStringLiteral("Dashboard"));
+    QSignalSpy activeSpy(&item, &AntNavItem::activeChanged);
+    item.resize(220, 36);
+    item.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&item));
+
+    auto renderNavItem = [&item]() {
+        const qreal dpr = item.devicePixelRatioF();
+        QImage image((QSizeF(item.size()) * dpr).toSize(), QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(dpr);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        item.render(&painter);
+    };
+
+    renderNavItem();
+    const int initialPaintCacheBuilds = item.property("antNavItemPaintCacheBuildCount").toInt();
+    QVERIFY(initialPaintCacheBuilds >= 1);
+    const int initialVisualApplies = item.property("antNavItemVisualStateApplyCount").toInt();
+    QVERIFY(initialVisualApplies >= 1);
+
+    renderNavItem();
+    QCOMPARE(item.property("antNavItemPaintCacheBuildCount").toInt(), initialPaintCacheBuilds);
+    QCOMPARE(item.property("antNavItemVisualStateApplyCount").toInt(), initialVisualApplies);
+
+    QEnterEvent enterEvent(QPointF(12, 12),
+                           QPointF(12, 12),
+                           QPointF(item.mapToGlobal(QPoint(12, 12))));
+    QCoreApplication::sendEvent(&item, &enterEvent);
+    QCOMPARE(item.property("antNavItemPaintCacheValid").toBool(), false);
+    renderNavItem();
+    const int hoverPaintCacheBuilds = item.property("antNavItemPaintCacheBuildCount").toInt();
+    QVERIFY(hoverPaintCacheBuilds > initialPaintCacheBuilds);
+    renderNavItem();
+    QCOMPARE(item.property("antNavItemPaintCacheBuildCount").toInt(), hoverPaintCacheBuilds);
+
+    item.setActive(true);
+    QCOMPARE(activeSpy.count(), 1);
+    QVERIFY(item.property("antNavItemVisualStateApplyCount").toInt() > initialVisualApplies);
+    const int activeVisualApplies = item.property("antNavItemVisualStateApplyCount").toInt();
+    item.setActive(true);
+    QCOMPARE(activeSpy.count(), 1);
+    QCOMPARE(item.property("antNavItemVisualStateApplyCount").toInt(), activeVisualApplies);
+
+    renderNavItem();
+    const int activePaintCacheBuilds = item.property("antNavItemPaintCacheBuildCount").toInt();
+    QVERIFY(activePaintCacheBuilds > hoverPaintCacheBuilds);
+
+    QEvent leaveEvent(QEvent::Leave);
+    QCoreApplication::sendEvent(&item, &leaveEvent);
+    renderNavItem();
+    QVERIFY(item.property("antNavItemPaintCacheBuildCount").toInt() > activePaintCacheBuilds);
 }
 
 void TestAntQtExtensions::dockWidget()
