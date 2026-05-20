@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QPoint>
 #include <QWidget>
 
 class QGridLayout;
@@ -48,9 +49,24 @@ Q_SIGNALS:
 
 private:
     void relayout();
+    void ensureColumnStretch();
+    QPoint appendPlacement(int span, int offset);
+    void syncPerfCounters();
 
     int m_gutter = 0;
     QGridLayout* m_grid = nullptr;
-    struct ColInfo { QWidget* widget = nullptr; int span = 24; int offset = 0; };
+    struct ColInfo
+    {
+        QWidget* widget = nullptr;
+        int span = 24;
+        int offset = 0;
+        int row = 0;
+        int column = 0;
+    };
     QList<ColInfo> m_cols;
+    int m_currentRow = 0;
+    int m_currentCol = 0;
+    int m_placementBuildCount = 0;
+    int m_relayoutCount = 0;
+    bool m_columnStretchInitialized = false;
 };

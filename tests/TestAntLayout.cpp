@@ -1,5 +1,6 @@
 #include <QSignalSpy>
 #include <QCoreApplication>
+#include <QGridLayout>
 #include <QImage>
 #include <QPainter>
 #include <QSizePolicy>
@@ -205,11 +206,48 @@ void TestAntLayout::grid()
     row->setGutter(16);
     QCOMPARE(row->gutter(), 16);
     QCOMPARE(gutSpy.count(), 1);
+    QCOMPARE(row->property("antGridPlacementBuildCount").toInt(), 0);
+    QCOMPARE(row->property("antGridRelayoutCount").toInt(), 0);
+    QCOMPARE(row->property("antGridColumnStretchInitialized").toBool(), true);
 
     auto* c1 = new QWidget;
     row->addWidget(c1, 12, 0);
+    QCOMPARE(row->property("antGridPlacementBuildCount").toInt(), 1);
+    QCOMPARE(row->property("antGridRelayoutCount").toInt(), 0);
     auto* c2 = new QWidget;
     row->addWidget(c2, 12, 0);
+    QCOMPARE(row->property("antGridPlacementBuildCount").toInt(), 2);
+    QCOMPARE(row->property("antGridRelayoutCount").toInt(), 0);
+
+    auto* grid = qobject_cast<QGridLayout*>(row->layout());
+    QVERIFY(grid);
+    auto* col1 = qobject_cast<AntCol*>(c1->parentWidget());
+    auto* col2 = qobject_cast<AntCol*>(c2->parentWidget());
+    QVERIFY(col1);
+    QVERIFY(col2);
+
+    int itemRow = -1;
+    int itemColumn = -1;
+    int rowSpan = -1;
+    int columnSpan = -1;
+    grid->getItemPosition(grid->indexOf(col1), &itemRow, &itemColumn, &rowSpan, &columnSpan);
+    QCOMPARE(itemRow, 0);
+    QCOMPARE(itemColumn, 0);
+    QCOMPARE(rowSpan, 1);
+    QCOMPARE(columnSpan, 12);
+
+    grid->getItemPosition(grid->indexOf(col2), &itemRow, &itemColumn, &rowSpan, &columnSpan);
+    QCOMPARE(itemRow, 0);
+    QCOMPARE(itemColumn, 12);
+    QCOMPARE(rowSpan, 1);
+    QCOMPARE(columnSpan, 12);
+
+    const int placementBuilds = row->property("antGridPlacementBuildCount").toInt();
+    row->setGutter(20);
+    QCOMPARE(row->gutter(), 20);
+    QCOMPARE(gutSpy.count(), 2);
+    QCOMPARE(row->property("antGridPlacementBuildCount").toInt(), placementBuilds);
+    QCOMPARE(row->property("antGridRelayoutCount").toInt(), 0);
 }
 
 void TestAntLayout::space()

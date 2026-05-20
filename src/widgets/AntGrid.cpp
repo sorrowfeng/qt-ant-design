@@ -1,6 +1,7 @@
 #include "AntGrid.h"
 
 #include <QGridLayout>
+#include <QVBoxLayout>
 
 // ---- AntCol ----
 
@@ -37,6 +38,8 @@ AntRow::AntRow(QWidget* parent)
     m_grid = new QGridLayout(this);
     m_grid->setContentsMargins(0, 0, 0, 0);
     m_grid->setSpacing(0);
+    ensureColumnStretch();
+    syncPerfCounters();
 }
 
 int AntRow::gutter() const { return m_gutter; }
@@ -45,6 +48,7 @@ void AntRow::setGutter(int px)
     if (m_gutter == px) return;
     m_gutter = px;
     m_grid->setSpacing(px);
+    updateGeometry();
     Q_EMIT gutterChanged(m_gutter);
 }
 
@@ -58,13 +62,17 @@ void AntRow::addWidget(QWidget* widget, int span, int offset)
     colLayout->setContentsMargins(0, 0, 0, 0);
     colLayout->addWidget(widget);
 
-    m_cols.append({col, span, offset});
-    relayout();
+    ensureColumnStretch();
+    const QPoint placement = appendPlacement(span, offset);
+    m_cols.append({col, span, offset, placement.y(), placement.x()});
+    m_grid->addWidget(col, placement.y(), placement.x(), 1, span);
+    col->show();
+    updateGeometry();
+    syncPerfCounters();
 }
 
 void AntRow::relayout()
 {
-    // Clear grid
     QLayoutItem* item;
     while ((item = m_grid->takeAt(0)) != nullptr)
     {
@@ -72,19 +80,55 @@ void AntRow::relayout()
         delete item;
     }
 
-    int currentCol = 0;
-    int row = 0;
-    for (const auto& ci : m_cols)
+    m_currentRow = 0;
+    m_currentCol = 0;
+    for (auto& ci : m_cols)
     {
-        int start = currentCol + ci.offset;
-        if (start + ci.span > 24) { ++row; currentCol = 0; start = ci.offset; }
-        m_grid->addWidget(ci.widget, row, start, 1, ci.span);
-        currentCol = start + ci.span;
-        if (currentCol >= 24) { ++row; currentCol = 0; }
+        const QPoint placement = appendPlacement(ci.span, ci.offset);
+        ci.row = placement.y();
+        ci.column = placement.x();
+        m_grid->addWidget(ci.widget, ci.row, ci.column, 1, ci.span);
         ci.widget->show();
     }
 
-    // Set column stretch
+    ++m_relayoutCount;
+    updateGeometry();
+    syncPerfCounters();
+}
+
+void AntRow::ensureColumnStretch()
+{
+    if (m_columnStretchInitialized) return;
     for (int i = 0; i < 24; ++i)
         m_grid->setColumnStretch(i, 1);
+    m_columnStretchInitialized = true;
+}
+
+QPoint AntRow::appendPlacement(int span, int offset)
+{
+    int start = m_currentCol + offset;
+    if (start + span > 24)
+    {
+        ++m_currentRow;
+        m_currentCol = 0;
+        start = offset;
+    }
+
+    const QPoint placement(start, m_currentRow);
+    m_currentCol = start + span;
+    if (m_currentCol >= 24)
+    {
+        ++m_currentRow;
+        m_currentCol = 0;
+    }
+
+    ++m_placementBuildCount;
+    return placement;
+}
+
+void AntRow::syncPerfCounters()
+{
+    setProperty("antGridPlacementBuildCount", m_placementBuildCount);
+    setProperty("antGridRelayoutCount", m_relayoutCount);
+    setProperty("antGridColumnStretchInitialized", m_columnStretchInitialized);
 }
