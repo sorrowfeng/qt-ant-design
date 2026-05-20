@@ -3,6 +3,7 @@
 #include <QEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QResizeEvent>
 
 #include <algorithm>
 
@@ -15,6 +16,7 @@ AntBreadcrumb::AntBreadcrumb(QWidget* parent)
     installAntStyle<AntBreadcrumbStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    syncBreadcrumbPerfCounters();
 }
 
 QString AntBreadcrumb::separator() const { return m_separator; }
@@ -76,18 +78,8 @@ AntBreadcrumbItem AntBreadcrumb::itemAt(int index) const
 QSize AntBreadcrumb::sizeHint() const
 {
     const auto& token = antTheme->tokens();
-    int width = token.paddingXS;
-    for (int i = 0; i < m_items.size(); ++i)
-    {
-        width += itemWidth(m_items.at(i));
-        if (i < m_items.size() - 1 && !m_items.at(i).separatorOnly)
-        {
-            QFont f = font();
-            f.setPixelSize(token.fontSize);
-            width += QFontMetrics(f).horizontalAdvance(m_separator) + token.marginXS * 2;
-        }
-    }
-    return QSize(std::max(width, 160), token.controlHeight);
+    ensureBreadcrumbLayoutCache();
+    return QSize(std::max(m_cachedTotalWidth, 160), token.controlHeight);
 }
 
 QSize AntBreadcrumb::minimumSizeHint() const
@@ -105,8 +97,18 @@ void AntBreadcrumb::mouseMoveEvent(QMouseEvent* event)
     const int index = itemIndexAt(event->pos());
     if (m_hoveredIndex != index)
     {
+        const QRect dirtyRect = itemDirtyRect(m_hoveredIndex).united(itemDirtyRect(index));
         m_hoveredIndex = index;
-        update();
+        if (dirtyRect.isValid())
+        {
+            ++m_hoverScopedUpdateCount;
+            syncBreadcrumbPerfCounters();
+            update(dirtyRect);
+        }
+        else
+        {
+            update();
+        }
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -134,41 +136,51 @@ void AntBreadcrumb::leaveEvent(QEvent* event)
 {
     if (m_hoveredIndex != -1)
     {
+        const QRect dirtyRect = itemDirtyRect(m_hoveredIndex);
         m_hoveredIndex = -1;
-        update();
+        if (dirtyRect.isValid())
+        {
+            ++m_hoverScopedUpdateCount;
+            syncBreadcrumbPerfCounters();
+            update(dirtyRect);
+        }
+        else
+        {
+            update();
+        }
     }
     QWidget::leaveEvent(event);
 }
 
+void AntBreadcrumb::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::FontChange ||
+        event->type() == QEvent::ApplicationFontChange ||
+        event->type() == QEvent::StyleChange)
+    {
+        updateBreadcrumbGeometry();
+    }
+    QWidget::changeEvent(event);
+}
+
+void AntBreadcrumb::resizeEvent(QResizeEvent* event)
+{
+    invalidateBreadcrumbLayoutCache();
+    QWidget::resizeEvent(event);
+}
+
 QVector<QRect> AntBreadcrumb::itemRects() const
 {
-    const auto& token = antTheme->tokens();
-    QVector<QRect> rects;
-    int x = token.paddingXS;
-    const int h = height() > 0 ? height() : sizeHint().height();
-    QFont f = font();
-    f.setPixelSize(token.fontSize);
-    const int separatorWidth = QFontMetrics(f).horizontalAdvance(m_separator) + token.marginXS * 2;
-
-    for (int i = 0; i < m_items.size(); ++i)
-    {
-        const int w = itemWidth(m_items.at(i));
-        rects.append(QRect(x, 0, w, h));
-        x += w;
-        if (i < m_items.size() - 1 && !m_items.at(i).separatorOnly)
-        {
-            x += separatorWidth;
-        }
-    }
-    return rects;
+    ensureBreadcrumbLayoutCache();
+    return m_cachedItemRects;
 }
 
 int AntBreadcrumb::itemIndexAt(const QPoint& pos) const
 {
-    const auto rects = itemRects();
-    for (int i = 0; i < rects.size(); ++i)
+    ensureBreadcrumbLayoutCache();
+    for (int i = 0; i < m_cachedItemRects.size(); ++i)
     {
-        if (rects.at(i).contains(pos))
+        if (m_cachedItemRects.at(i).contains(pos))
         {
             const AntBreadcrumbItem& item = m_items.at(i);
             if (item.separatorOnly || item.disabled || isLastRouteItem(i))
@@ -221,5 +233,103 @@ QColor AntBreadcrumb::itemColor(const AntBreadcrumbItem& item, int index, bool h
 
 void AntBreadcrumb::updateBreadcrumbGeometry()
 {
+    invalidateBreadcrumbLayoutCache();
+    ++m_geometryUpdateCount;
+    syncBreadcrumbPerfCounters();
     updateGeometry();
+}
+
+void AntBreadcrumb::invalidateBreadcrumbLayoutCache() const
+{
+    m_layoutCacheValid = false;
+}
+
+void AntBreadcrumb::ensureBreadcrumbLayoutCache() const
+{
+    const auto& token = antTheme->tokens();
+    QFont f = font();
+    f.setPixelSize(token.fontSize);
+    const int h = height() > 0 ? height() : token.controlHeight;
+
+    if (m_layoutCacheValid &&
+        m_cachedHeight == h &&
+        m_cachedFont == f &&
+        m_cachedSeparator == m_separator &&
+        m_cachedTokenFontSize == token.fontSize &&
+        m_cachedPaddingXS == token.paddingXS &&
+        m_cachedMarginXS == token.marginXS &&
+        m_cachedItemRects.size() == m_items.size() &&
+        m_cachedItemWidths.size() == m_items.size())
+    {
+        ++m_layoutCacheHitCount;
+        syncBreadcrumbPerfCounters();
+        return;
+    }
+
+    QFontMetrics fm(f);
+    const int separatorWidth = fm.horizontalAdvance(m_separator) + token.marginXS * 2;
+    int x = token.paddingXS;
+
+    m_cachedItemRects.clear();
+    m_cachedItemWidths.clear();
+    m_cachedItemRects.reserve(m_items.size());
+    m_cachedItemWidths.reserve(m_items.size());
+
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        const AntBreadcrumbItem& item = m_items.at(i);
+        int w = 0;
+        if (item.separatorOnly)
+        {
+            const QString sep = item.separator.isEmpty() ? m_separator : item.separator;
+            w = fm.horizontalAdvance(sep) + token.marginXS * 2;
+        }
+        else
+        {
+            w = fm.horizontalAdvance(item.title) + (item.iconText.isEmpty() ? 0 : 22);
+        }
+
+        m_cachedItemWidths.append(w);
+        m_cachedItemRects.append(QRect(x, 0, w, h));
+        x += w;
+        if (i < m_items.size() - 1 && !item.separatorOnly)
+        {
+            x += separatorWidth;
+        }
+    }
+
+    m_cachedTotalWidth = x;
+    m_cachedHeight = h;
+    m_cachedFont = f;
+    m_cachedSeparator = m_separator;
+    m_cachedTokenFontSize = token.fontSize;
+    m_cachedPaddingXS = token.paddingXS;
+    m_cachedMarginXS = token.marginXS;
+    m_layoutCacheValid = true;
+    ++m_layoutCacheMissCount;
+    syncBreadcrumbPerfCounters();
+}
+
+QRect AntBreadcrumb::itemDirtyRect(int index) const
+{
+    if (index < 0)
+    {
+        return {};
+    }
+    ensureBreadcrumbLayoutCache();
+    if (index >= m_cachedItemRects.size())
+    {
+        return {};
+    }
+    const auto& token = antTheme->tokens();
+    return m_cachedItemRects.at(index).adjusted(-token.marginXS, 0, token.marginXS, 0).intersected(rect());
+}
+
+void AntBreadcrumb::syncBreadcrumbPerfCounters() const
+{
+    auto* self = const_cast<AntBreadcrumb*>(this);
+    self->setProperty("antBreadcrumbLayoutCacheHitCount", m_layoutCacheHitCount);
+    self->setProperty("antBreadcrumbLayoutCacheMissCount", m_layoutCacheMissCount);
+    self->setProperty("antBreadcrumbHoverScopedUpdateCount", m_hoverScopedUpdateCount);
+    self->setProperty("antBreadcrumbGeometryUpdateCount", m_geometryUpdateCount);
 }

@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMargins>
+#include <QMouseEvent>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QStyle>
@@ -23,6 +24,7 @@ private slots:
     void propertiesAndSignals();
     void paginationQuickJumperEditsCurrentPage();
     void anchorCachesLayoutAndCoalescesScroll();
+    void breadcrumbCachesLayoutAndScopesHover();
     void tabsNormalizePageLayoutMargins();
 };
 
@@ -363,6 +365,40 @@ void TestAntNavigation::anchorCachesLayoutAndCoalescesScroll()
     area.verticalScrollBar()->setValue(240);
     QTRY_COMPARE(scrollAnchor.activeIndex(), 2);
     QCOMPARE(scrollAnchor.property("antAnchorScrollResolveCount").toInt(), scrollResolvesBefore + 1);
+}
+
+void TestAntNavigation::breadcrumbCachesLayoutAndScopesHover()
+{
+    AntBreadcrumb breadcrumb;
+    breadcrumb.addItem(QStringLiteral("Home"), QStringLiteral("/"));
+    breadcrumb.addItem(QStringLiteral("Library"), QStringLiteral("/library"));
+    breadcrumb.addItem(QStringLiteral("Data"));
+    breadcrumb.resize(240, breadcrumb.sizeHint().height());
+    breadcrumb.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&breadcrumb));
+
+    const int missesBefore = breadcrumb.property("antBreadcrumbLayoutCacheMissCount").toInt();
+    const QSize firstHint = breadcrumb.sizeHint();
+    QVERIFY(firstHint.width() > 0);
+    QVERIFY(breadcrumb.property("antBreadcrumbLayoutCacheMissCount").toInt() >= missesBefore);
+
+    const int hitsBefore = breadcrumb.property("antBreadcrumbLayoutCacheHitCount").toInt();
+    QCOMPARE(breadcrumb.sizeHint(), firstHint);
+    QVERIFY(breadcrumb.property("antBreadcrumbLayoutCacheHitCount").toInt() > hitsBefore);
+
+    const int hoverUpdatesBefore = breadcrumb.property("antBreadcrumbHoverScopedUpdateCount").toInt();
+    QMouseEvent hoverMove(QEvent::MouseMove,
+                          QPointF(16, breadcrumb.height() / 2),
+                          Qt::NoButton,
+                          Qt::NoButton,
+                          Qt::NoModifier);
+    QCoreApplication::sendEvent(&breadcrumb, &hoverMove);
+    QVERIFY(breadcrumb.property("antBreadcrumbHoverScopedUpdateCount").toInt() > hoverUpdatesBefore);
+
+    const int missesBeforeSeparator = breadcrumb.property("antBreadcrumbLayoutCacheMissCount").toInt();
+    breadcrumb.setSeparator(QStringLiteral(">"));
+    (void)breadcrumb.sizeHint();
+    QVERIFY(breadcrumb.property("antBreadcrumbLayoutCacheMissCount").toInt() > missesBeforeSeparator);
 }
 
 void TestAntNavigation::tabsNormalizePageLayoutMargins()
