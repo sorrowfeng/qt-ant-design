@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
 #include <QVector>
 #include <QWidget>
 
@@ -61,13 +62,28 @@ Q_SIGNALS:
     void itemClicked(int index);
 
 protected:
+    void changeEvent(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
 
 private:
+    friend class AntTimelineStyle;
+    void invalidateLayoutCache();
+    void invalidateColorCache();
+
     QVector<AntTimelineItem> m_items;
     Ant::TimelineMode m_mode = Ant::TimelineMode::Start;
     Ant::TimelineOrientation m_orientation = Ant::TimelineOrientation::Vertical;
     Ant::TimelineDotVariant m_dotVariant = Ant::TimelineDotVariant::Outlined;
     bool m_reverse = false;
+    mutable bool m_verticalLayoutCacheDirty = true;
+    mutable int m_cachedVerticalWidth = -1;
+    mutable int m_cachedTitleFontSize = -1;
+    mutable int m_cachedContentFontSize = -1;
+    mutable int m_cachedItemSpacing = -1;
+    mutable int m_cachedDotSize = -1;
+    mutable bool m_cachedReverse = false;
+    mutable QVector<int> m_cachedVerticalItemHeights;
+    mutable bool m_dotColorCacheDirty = true;
+    mutable QVector<QColor> m_cachedDotColors;
 };

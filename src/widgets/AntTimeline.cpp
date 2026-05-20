@@ -1,5 +1,6 @@
 #include "AntTimeline.h"
 
+#include <QEvent>
 #include <QMouseEvent>
 #include <QSizePolicy>
 
@@ -22,6 +23,7 @@ void AntTimeline::setMode(Ant::TimelineMode mode)
         return;
     }
     m_mode = mode;
+    invalidateLayoutCache();
     update();
     Q_EMIT modeChanged(m_mode);
 }
@@ -35,6 +37,7 @@ void AntTimeline::setOrientation(Ant::TimelineOrientation orientation)
         return;
     }
     m_orientation = orientation;
+    invalidateLayoutCache();
     updateGeometry();
     update();
     Q_EMIT orientationChanged(m_orientation);
@@ -62,6 +65,7 @@ void AntTimeline::setReverse(bool reverse)
         return;
     }
     m_reverse = reverse;
+    invalidateLayoutCache();
     update();
     Q_EMIT reverseChanged(m_reverse);
 }
@@ -80,6 +84,8 @@ AntTimelineItem AntTimeline::itemAt(int index) const
 void AntTimeline::addItem(const AntTimelineItem& item)
 {
     m_items.push_back(item);
+    invalidateLayoutCache();
+    invalidateColorCache();
     updateGeometry();
     update();
 }
@@ -97,6 +103,8 @@ void AntTimeline::insertItem(int index, const AntTimelineItem& item)
         return;
     }
     m_items.insert(index, item);
+    invalidateLayoutCache();
+    invalidateColorCache();
     updateGeometry();
     update();
 }
@@ -108,6 +116,8 @@ void AntTimeline::removeItem(int index)
         return;
     }
     m_items.remove(index);
+    invalidateLayoutCache();
+    invalidateColorCache();
     updateGeometry();
     update();
 }
@@ -115,6 +125,8 @@ void AntTimeline::removeItem(int index)
 void AntTimeline::clearItems()
 {
     m_items.clear();
+    invalidateLayoutCache();
+    invalidateColorCache();
     updateGeometry();
     update();
 }
@@ -138,6 +150,18 @@ QSize AntTimeline::sizeHint() const
 QSize AntTimeline::minimumSizeHint() const
 {
     return QSize(200, 80);
+}
+
+void AntTimeline::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::FontChange
+        || event->type() == QEvent::ApplicationFontChange
+        || event->type() == QEvent::StyleChange)
+    {
+        invalidateLayoutCache();
+        updateGeometry();
+    }
+    QWidget::changeEvent(event);
 }
 
 void AntTimeline::paintEvent(QPaintEvent* event)
@@ -179,4 +203,17 @@ void AntTimeline::mousePressEvent(QMouseEvent* event)
         }
     }
     QWidget::mousePressEvent(event);
+}
+
+void AntTimeline::invalidateLayoutCache()
+{
+    m_verticalLayoutCacheDirty = true;
+    m_cachedVerticalWidth = -1;
+    m_cachedVerticalItemHeights.clear();
+}
+
+void AntTimeline::invalidateColorCache()
+{
+    m_dotColorCacheDirty = true;
+    m_cachedDotColors.clear();
 }

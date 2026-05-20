@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `7` components are optimized from this pass, and `77` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `8` components are optimized from this pass, and `76` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-20` | `AntTimeline` | Vertical paint now reuses cached item heights keyed by width, reverse order, token font sizes, spacing, and dot size. Dot colors are parsed once per item data/theme refresh, and title/content fonts and metrics are built once per paint instead of once per item. | `cmake --build build --config Debug --target TestAntDataDisplayB`, `TestAntDataDisplayB.exe timelineCachesPaintLayoutAndColors`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-20` | `AntTag` | Tag size hints now cache text/icon/close width calculations until layout-affecting inputs, font, style, or theme changes. Custom and semantic color parsing is cached per color/theme refresh, and mouse-move repaint is skipped unless hover or close-hover state actually changes. | `cmake --build build --config Debug --target TestAntTag`, `TestAntTag.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-20` | `AntStatistic` | Formatted display text is now owned by the widget and refreshed only when value, precision, separator, countdown mode, or countdown format changes. The style reads the cached text instead of recomputing number/countdown formatting on every paint. | `cmake --build build --config Debug --target TestAntDataDisplayA`, `TestAntDataDisplayA.exe statisticFormattedValueCache`, `TestAntDataDisplayA.exe propertiesAndSignals` |
 | `2026-05-20` | `AntQRCode` | QR modules now render into a DPR-aware transparent pixmap cache keyed by matrix revision, logical size, DPR, and foreground color. Status overlays, borders, and center icons remain separate so visual states still repaint normally without rebuilding the module layer. | `cmake --build build --config Debug --target TestAntDataDisplayB`, `TestAntDataDisplayB.exe qrCodeReusesRenderedModuleCache`, `TestAntDataDisplayB.exe propertiesAndSignals` |
@@ -151,7 +152,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntStatistic` | P2 | Cache formatted value/countdown text in the widget and refresh it only when value, precision, separator, countdown mode, or countdown format changes; keep text layout caching as a later pass. | Optimized |
 | `AntTable` | P0 | Hover and leave now repaint only the previous/current row dirty rectangles. Continue with cached visible geometry, sorter/selection rects, and header-cell dirty updates in a later pass. | Optimized |
 | `AntTag` | P2 | Cache size-hint text/icon/close metrics and parsed tag colors; repaint mouse hover only when hover or close-hover state changes. Continue with text-layout rect caching if future profiling shows paint cost in dense tag lists. | Optimized |
-| `AntTimeline` | P1 | Cache item positions and line geometry; repaint only changed item/status segment. | Plan ready |
+| `AntTimeline` | P1 | Cache vertical item height layout and parsed dot colors; reuse title/content fonts and metrics inside paint. Continue with item/connector dirty-region repaint if future interaction states are added. | Optimized |
 | `AntTree` | P0 | Cache flattened visible nodes, row rects, connector paths, and checkbox rects; update only changed nodes and visible range. | Plan ready |
 
 ### Layout And Misc

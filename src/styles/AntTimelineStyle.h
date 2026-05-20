@@ -18,6 +18,9 @@ public:
     QSize sizeFromContents(ContentsType type, const QStyleOption* option, const QSize& size, const QWidget* widget = nullptr) const override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
+protected:
+    void onThemeUpdate(QWidget* widget) override;
+
 private:
     void drawTimeline(const QStyleOption* option, QPainter* painter, const QWidget* widget) const;
 };

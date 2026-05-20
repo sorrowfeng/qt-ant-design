@@ -61,6 +61,16 @@ bool AntTimelineStyle::eventFilter(QObject* watched, QEvent* event)
     return QProxyStyle::eventFilter(watched, event);
 }
 
+void AntTimelineStyle::onThemeUpdate(QWidget* widget)
+{
+    if (auto* timeline = qobject_cast<AntTimeline*>(widget))
+    {
+        timeline->invalidateLayoutCache();
+        timeline->invalidateColorCache();
+    }
+    AntStyleBase::onThemeUpdate(widget);
+}
+
 namespace
 {
 struct TimelineMetrics
@@ -162,19 +172,13 @@ int horizontalDotY(const AntTimeline* timeline, int index, int widgetHeight, con
     return (index % 2 == 0) ? m.sideMargin : (widgetHeight - m.sideMargin - m.dotSize);
 }
 
-int itemHeightForVertical(const AntTimelineItem& item, const TimelineMetrics& m, int textWidth)
+int itemHeightForVertical(const AntTimelineItem& item, const TimelineMetrics& m, int textWidth,
+                          const QFontMetrics& titleFm, const QFontMetrics& contentFm)
 {
-    QFont titleFont;
-    titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(QFont::Normal);
-    const QFontMetrics titleFm(titleFont);
     int totalHeight = titleFm.height() + 4;
 
     if (!item.content.isEmpty())
     {
-        QFont contentFont;
-        contentFont.setPixelSize(m.contentFontSize);
-        const QFontMetrics contentFm(contentFont);
         const QRect contentBounding = contentFm.boundingRect(
             QRect(0, 0, qMax(40, textWidth), 10000), Qt::TextWordWrap, item.content);
         totalHeight += contentBounding.height() + 8;
@@ -184,6 +188,7 @@ int itemHeightForVertical(const AntTimelineItem& item, const TimelineMetrics& m,
     totalHeight += m.itemSpacing;
     return totalHeight;
 }
+
 } // namespace
 
 void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -208,23 +213,69 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    if (timeline->orientation() == Ant::TimelineOrientation::Vertical)
+    QFont titleFont = painter->font();
+    titleFont.setPixelSize(m.titleFontSize);
+    titleFont.setWeight(QFont::Normal);
+    const QFontMetrics titleFm(titleFont);
+
+    QFont contentFont = painter->font();
+    contentFont.setPixelSize(m.contentFontSize);
+    contentFont.setWeight(QFont::Normal);
+    const QFontMetrics contentFm(contentFont);
+
+    const bool colorCacheHit = !timeline->m_dotColorCacheDirty
+        && timeline->m_cachedDotColors.size() == count;
+    if (!colorCacheHit)
     {
-        // Pre-calculate item heights for dynamic sizing
-        QVector<int> itemHeights;
-        itemHeights.reserve(count);
+        timeline->m_cachedDotColors.clear();
+        timeline->m_cachedDotColors.reserve(count);
         for (int i = 0; i < count; ++i)
         {
-            const int estimatedTextWidth = widgetWidth / 2 - m.sideMargin - m.dotSize - m.gap;
-            itemHeights.push_back(itemHeightForVertical(timeline->itemAt(i), m, estimatedTextWidth));
+            timeline->m_cachedDotColors.push_back(timelineDotColor(timeline->itemAt(i).color));
         }
+        timeline->m_dotColorCacheDirty = false;
+    }
+    if (timeline->orientation() == Ant::TimelineOrientation::Vertical)
+    {
+        const bool layoutCacheHit = !timeline->m_verticalLayoutCacheDirty
+            && timeline->m_cachedVerticalWidth == widgetWidth
+            && timeline->m_cachedTitleFontSize == m.titleFontSize
+            && timeline->m_cachedContentFontSize == m.contentFontSize
+            && timeline->m_cachedItemSpacing == m.itemSpacing
+            && timeline->m_cachedDotSize == m.dotSize
+            && timeline->m_cachedReverse == timeline->isReverse()
+            && timeline->m_cachedVerticalItemHeights.size() == count;
+        if (!layoutCacheHit)
+        {
+            timeline->m_cachedVerticalItemHeights.clear();
+            timeline->m_cachedVerticalItemHeights.reserve(count);
+            const int estimatedTextWidth = widgetWidth / 2 - m.sideMargin - m.dotSize - m.gap;
+            for (int i = 0; i < count; ++i)
+            {
+                const int displayIndex = timeline->isReverse() ? (count - 1 - i) : i;
+                timeline->m_cachedVerticalItemHeights.push_back(
+                    itemHeightForVertical(timeline->itemAt(displayIndex), m, estimatedTextWidth, titleFm, contentFm));
+            }
+            timeline->m_cachedVerticalWidth = widgetWidth;
+            timeline->m_cachedTitleFontSize = m.titleFontSize;
+            timeline->m_cachedContentFontSize = m.contentFontSize;
+            timeline->m_cachedItemSpacing = m.itemSpacing;
+            timeline->m_cachedDotSize = m.dotSize;
+            timeline->m_cachedReverse = timeline->isReverse();
+            timeline->m_verticalLayoutCacheDirty = false;
+        }
+        auto* mutableTimeline = const_cast<AntTimeline*>(timeline);
+        mutableTimeline->setProperty("antTimelineLayoutCacheHit", layoutCacheHit);
+        mutableTimeline->setProperty("antTimelineColorCacheHit", colorCacheHit);
+        mutableTimeline->setProperty("antTimelineCachedItemCount", count);
+        const QVector<int>& itemHeights = timeline->m_cachedVerticalItemHeights;
 
         int y = m.sideMargin;
         for (int i = 0; i < count; ++i)
         {
             const int displayIndex = timeline->isReverse() ? (count - 1 - i) : i;
             const AntTimelineItem item = timeline->itemAt(displayIndex);
-            const QColor dotColor = timelineDotColor(item.color);
+            const QColor dotColor = timeline->m_cachedDotColors.at(displayIndex);
             const int currentHeight = itemHeights.at(i);
 
             const int dotX = verticalDotX(timeline, i, widgetWidth, m);
@@ -278,9 +329,6 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
             const int textW = verticalTextWidth(textX, widgetWidth, m);
 
             // Draw title
-            QFont titleFont;
-            titleFont.setPixelSize(m.titleFontSize);
-            titleFont.setWeight(QFont::Normal);
             painter->setFont(titleFont);
             painter->setPen(token.colorText);
             const QRect titleRect(textX, dotTopY, textW, m.titleFontSize + 4);
@@ -289,9 +337,6 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
             // Draw content
             if (!item.content.isEmpty())
             {
-                QFont contentFont;
-                contentFont.setPixelSize(m.contentFontSize);
-                contentFont.setWeight(QFont::Normal);
                 painter->setFont(contentFont);
                 painter->setPen(token.colorTextSecondary);
                 const QRect contentRect(textX, dotTopY + m.titleFontSize + 8, textW,
@@ -304,6 +349,10 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
     }
     else // Horizontal
     {
+        auto* mutableTimeline = const_cast<AntTimeline*>(timeline);
+        mutableTimeline->setProperty("antTimelineLayoutCacheHit", false);
+        mutableTimeline->setProperty("antTimelineColorCacheHit", colorCacheHit);
+        mutableTimeline->setProperty("antTimelineCachedItemCount", count);
         const int itemWidth = qMax(120, (widgetWidth - 2 * m.sideMargin) / qMax(1, count));
 
         int x = m.sideMargin;
@@ -311,7 +360,7 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
         {
             const int displayIndex = timeline->isReverse() ? (count - 1 - i) : i;
             const AntTimelineItem item = timeline->itemAt(displayIndex);
-            const QColor dotColor = timelineDotColor(item.color);
+            const QColor dotColor = timeline->m_cachedDotColors.at(displayIndex);
 
             const int dotY = horizontalDotY(timeline, i, widgetHeight, m);
             const int dotX = x;
@@ -387,9 +436,6 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
             }
 
             // Draw title
-            QFont titleFont;
-            titleFont.setPixelSize(m.titleFontSize);
-            titleFont.setWeight(QFont::Normal);
             painter->setFont(titleFont);
             painter->setPen(token.colorText);
             const QRect titleRect(dotX, textY, itemWidth, m.titleFontSize + 4);
@@ -398,9 +444,6 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
             // Draw content
             if (!item.content.isEmpty())
             {
-                QFont contentFont;
-                contentFont.setPixelSize(m.contentFontSize);
-                contentFont.setWeight(QFont::Normal);
                 painter->setFont(contentFont);
                 painter->setPen(token.colorTextSecondary);
                 const QRect contentRect(dotX, textY + m.titleFontSize + 8, itemWidth,

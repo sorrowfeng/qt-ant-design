@@ -31,6 +31,7 @@ private slots:
     void tableHoverUsesRowScopedUpdates();
     void tableSelectionCompatibilityApis();
     void qrCodeReusesRenderedModuleCache();
+    void timelineCachesPaintLayoutAndColors();
     void listSelectionHighlightUsesBalancedInset();
 };
 
@@ -665,6 +666,51 @@ void TestAntDataDisplayB::tableSelectionCompatibilityApis()
 
     table.setRows(rows);
     QCOMPARE(table.currentRowIndex(), -1);
+}
+
+void TestAntDataDisplayB::timelineCachesPaintLayoutAndColors()
+{
+    AntTimeline timeline;
+    timeline.resize(420, 260);
+    timeline.addItem(QStringLiteral("Created"),
+                     QStringLiteral("A longer description that wraps and exercises cached vertical item metrics."),
+                     QStringLiteral("blue"));
+    timeline.addItem(QStringLiteral("Reviewed"), QStringLiteral("Short note."), QStringLiteral("green"));
+    timeline.addItem(QStringLiteral("Released"),
+                     QStringLiteral("Another wrapped line so repeated paints do not remeasure every item."),
+                     QStringLiteral("#722ed1"));
+
+    auto renderTimeline = [&timeline]() {
+        QImage image(timeline.size(), QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        timeline.render(&painter);
+    };
+
+    renderTimeline();
+    QCOMPARE(timeline.property("antTimelineLayoutCacheHit").toBool(), false);
+    QCOMPARE(timeline.property("antTimelineColorCacheHit").toBool(), false);
+    QCOMPARE(timeline.property("antTimelineCachedItemCount").toInt(), 3);
+
+    renderTimeline();
+    QCOMPARE(timeline.property("antTimelineLayoutCacheHit").toBool(), true);
+    QCOMPARE(timeline.property("antTimelineColorCacheHit").toBool(), true);
+
+    timeline.setReverse(true);
+    renderTimeline();
+    QCOMPARE(timeline.property("antTimelineLayoutCacheHit").toBool(), false);
+    QCOMPARE(timeline.property("antTimelineColorCacheHit").toBool(), true);
+
+    renderTimeline();
+    QCOMPARE(timeline.property("antTimelineLayoutCacheHit").toBool(), true);
+    QCOMPARE(timeline.property("antTimelineColorCacheHit").toBool(), true);
+
+    timeline.addItem(QStringLiteral("Archived"), QStringLiteral("Cache invalidates after data changes."),
+                     QStringLiteral("red"));
+    renderTimeline();
+    QCOMPARE(timeline.property("antTimelineLayoutCacheHit").toBool(), false);
+    QCOMPARE(timeline.property("antTimelineColorCacheHit").toBool(), false);
+    QCOMPARE(timeline.property("antTimelineCachedItemCount").toInt(), 4);
 }
 
 void TestAntDataDisplayB::qrCodeReusesRenderedModuleCache()
