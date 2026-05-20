@@ -195,6 +195,44 @@ protected:
     }
 };
 
+class ThemeSizedAntWidget : public AntWidget
+{
+public:
+    explicit ThemeSizedAntWidget(QWidget* parent = nullptr)
+        : AntWidget(parent)
+    {
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        setMinimumSize(80, 24);
+    }
+
+    QSize sizeHint() const override
+    {
+        return QSize(180, currentTheme() == Ant::ThemeMode::Dark ? 96 : 32);
+    }
+
+    QSize minimumSizeHint() const override
+    {
+        return sizeHint();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.fillRect(rect(), tokens().colorBgContainer);
+    }
+
+    void onThemeChanged(Ant::ThemeMode mode) override
+    {
+        Q_UNUSED(mode)
+        ++m_onThemeChangedCount;
+        setProperty("antWidgetOnThemeChangedCount", m_onThemeChangedCount);
+    }
+
+private:
+    int m_onThemeChangedCount = 0;
+};
+
 class ThemeModeRestorerForExtensionTest
 {
 public:
@@ -3001,9 +3039,55 @@ void TestAntQtExtensions::dockManager()
 
 void TestAntQtExtensions::widget()
 {
-    auto* w = new AntWidget;
-    QVERIFY(w->currentTheme() == Ant::ThemeMode::Default ||
-            w->currentTheme() == Ant::ThemeMode::Dark);
+    ThemeModeRestorerForExtensionTest guard;
+
+    AntWidget w;
+    QVERIFY(w.currentTheme() == Ant::ThemeMode::Default ||
+            w.currentTheme() == Ant::ThemeMode::Dark);
+    QCOMPARE(w.property("antWidgetThemeChangeCount").toInt(), 0);
+    QCOMPARE(w.property("antWidgetThemeRepolishCount").toInt(), 0);
+    QCOMPARE(w.property("antWidgetUpdateGeometryCount").toInt(), 0);
+    QCOMPARE(w.property("antWidgetSurfaceUpdateCount").toInt(), 0);
+
+    ThemeSizedAntWidget sized;
+    sized.resize(180, 64);
+    sized.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&sized));
+
+    antTheme->setThemeMode(guard.alternateMode());
+    QCoreApplication::processEvents();
+
+    QCOMPARE(w.currentTheme(), guard.alternateMode());
+    QCOMPARE(w.property("antWidgetThemeChangeCount").toInt(), 1);
+    QCOMPARE(w.property("antWidgetThemeRepolishCount").toInt(), 0);
+    QCOMPARE(w.property("antWidgetUpdateGeometryCount").toInt(), 0);
+    QCOMPARE(w.property("antWidgetSurfaceUpdateCount").toInt(), 1);
+
+    QCOMPARE(sized.property("antWidgetThemeChangeCount").toInt(), 1);
+    QCOMPARE(sized.property("antWidgetThemeRepolishCount").toInt(), 0);
+    QCOMPARE(sized.property("antWidgetUpdateGeometryCount").toInt(), 1);
+    QCOMPARE(sized.property("antWidgetSurfaceUpdateCount").toInt(), 1);
+    QCOMPARE(sized.property("antWidgetOnThemeChangedCount").toInt(), 1);
+    QCOMPARE(sized.property("antWidgetCachedSizeHint").toSize(), sized.sizeHint());
+
+    const QImage alternateImage = renderForExtensionTest(&sized);
+    QVERIFY2(colorNearForExtensionTest(alternateImage.pixelColor(alternateImage.rect().center()),
+                                       antTheme->tokens().colorBgContainer),
+             qPrintable(QStringLiteral("AntWidget should repaint with current theme container color, actual %1 expected %2")
+                            .arg(colorStringForExtensionTest(alternateImage.pixelColor(alternateImage.rect().center())),
+                                 colorStringForExtensionTest(antTheme->tokens().colorBgContainer))));
+
+    antTheme->setThemeMode(guard.alternateMode() == Ant::ThemeMode::Dark ? Ant::ThemeMode::Default
+                                                                         : Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(w.property("antWidgetThemeChangeCount").toInt(), 2);
+    QCOMPARE(w.property("antWidgetThemeRepolishCount").toInt(), 0);
+    QCOMPARE(w.property("antWidgetUpdateGeometryCount").toInt(), 0);
+    QCOMPARE(w.property("antWidgetSurfaceUpdateCount").toInt(), 2);
+    QCOMPARE(sized.property("antWidgetThemeChangeCount").toInt(), 2);
+    QCOMPARE(sized.property("antWidgetUpdateGeometryCount").toInt(), 2);
+    QCOMPARE(sized.property("antWidgetOnThemeChangedCount").toInt(), 2);
 }
 
 void TestAntQtExtensions::window()
