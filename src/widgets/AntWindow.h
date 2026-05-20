@@ -4,10 +4,13 @@
 
 #include <QAbstractNativeEventFilter>
 #include <QMainWindow>
+#include <QPointer>
 
 #include "core/AntTypes.h"
 
+class AntModal;
 class QEvent;
+class QCloseEvent;
 class QHideEvent;
 class QMouseEvent;
 class QMoveEvent;
@@ -27,6 +30,11 @@ class QT_ANT_DESIGN_EXPORT AntWindow : public QMainWindow, public QAbstractNativ
     Q_PROPERTY(bool minimizeButtonVisible READ isMinimizeButtonVisible WRITE setMinimizeButtonVisible NOTIFY minimizeButtonVisibleChanged)
     Q_PROPERTY(bool maximizeButtonVisible READ isMaximizeButtonVisible WRITE setMaximizeButtonVisible NOTIFY maximizeButtonVisibleChanged)
     Q_PROPERTY(bool closeButtonVisible READ isCloseButtonVisible WRITE setCloseButtonVisible NOTIFY closeButtonVisibleChanged)
+    Q_PROPERTY(bool closeConfirmationEnabled READ isCloseConfirmationEnabled WRITE setCloseConfirmationEnabled NOTIFY closeConfirmationEnabledChanged)
+    Q_PROPERTY(QString closeConfirmationTitle READ closeConfirmationTitle WRITE setCloseConfirmationTitle NOTIFY closeConfirmationTitleChanged)
+    Q_PROPERTY(QString closeConfirmationContent READ closeConfirmationContent WRITE setCloseConfirmationContent NOTIFY closeConfirmationContentChanged)
+    Q_PROPERTY(QString closeConfirmationOkText READ closeConfirmationOkText WRITE setCloseConfirmationOkText NOTIFY closeConfirmationOkTextChanged)
+    Q_PROPERTY(QString closeConfirmationCancelText READ closeConfirmationCancelText WRITE setCloseConfirmationCancelText NOTIFY closeConfirmationCancelTextChanged)
     Q_PROPERTY(int cornerRadius READ cornerRadius WRITE setCornerRadius NOTIFY cornerRadiusChanged)
 
 public:
@@ -77,12 +85,23 @@ public:
     bool isMinimizeButtonVisible() const;
     bool isMaximizeButtonVisible() const;
     bool isCloseButtonVisible() const;
+    bool isCloseConfirmationEnabled() const;
+    QString closeConfirmationTitle() const;
+    QString closeConfirmationContent() const;
+    QString closeConfirmationOkText() const;
+    QString closeConfirmationCancelText() const;
 
     void setPinButtonVisible(bool visible);
     void setThemeButtonVisible(bool visible);
     void setMinimizeButtonVisible(bool visible);
     void setMaximizeButtonVisible(bool visible);
     void setCloseButtonVisible(bool visible);
+    void setCloseConfirmationEnabled(bool enabled);
+    void setCloseConfirmationTitle(const QString& title);
+    void setCloseConfirmationContent(const QString& content);
+    void setCloseConfirmationOkText(const QString& text);
+    void setCloseConfirmationCancelText(const QString& text);
+    void forceClose();
 
 Q_SIGNALS:
     void windowTitleChanged(const QString& title);
@@ -93,6 +112,11 @@ Q_SIGNALS:
     void minimizeButtonVisibleChanged(bool visible);
     void maximizeButtonVisibleChanged(bool visible);
     void closeButtonVisibleChanged(bool visible);
+    void closeConfirmationEnabledChanged(bool enabled);
+    void closeConfirmationTitleChanged(const QString& title);
+    void closeConfirmationContentChanged(const QString& content);
+    void closeConfirmationOkTextChanged(const QString& text);
+    void closeConfirmationCancelTextChanged(const QString& text);
     void cornerRadiusChanged(int radius);
     void minimizeRequested();
     void maximizeRequested();
@@ -106,6 +130,7 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
     void changeEvent(QEvent* event) override;
     void moveEvent(QMoveEvent* event) override;
     void hideEvent(QHideEvent* event) override;
@@ -128,6 +153,8 @@ private:
     bool handleTitleBarMouseRelease(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button);
     bool handleTitleBarMouseDoubleClick(const QPoint& pos, Qt::MouseButton button);
     void handleButtonClicked(TitleBarButton button);
+    void showCloseConfirmationModal();
+    void syncCloseConfirmationModal();
     void startThemeModeTransition();
     void emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible);
     void applyManualSnap(const QPoint& globalPos);
@@ -150,6 +177,12 @@ private:
     bool m_minimizeButtonVisible = true;
     bool m_maximizeButtonVisible = true;
     bool m_closeButtonVisible = true;
+    bool m_closeConfirmationEnabled = true;
+    bool m_closingWithoutConfirmation = false;
+    QString m_closeConfirmationTitle = QStringLiteral("Exit application?");
+    QString m_closeConfirmationContent = QStringLiteral("The window will close. Do you want to exit?");
+    QString m_closeConfirmationOkText = QStringLiteral("Exit");
+    QString m_closeConfirmationCancelText = QStringLiteral("Cancel");
     int m_cornerRadius = 8;
     TitleBarButton m_hoveredButton = TitleBarButton::None;
     TitleBarButton m_pressedButton = TitleBarButton::None;
@@ -158,6 +191,7 @@ private:
     AntRibbon* m_ribbon = nullptr;
     bool m_ribbonVisible = true;
     QWidget* m_themeTransitionOverlay = nullptr;
+    QPointer<AntModal> m_closeConfirmationModal;
     QWidget* m_legacySoftwareShadow = nullptr;
     QWidget* m_cornerSmoother = nullptr;
     bool m_legacyLiveResize = false;

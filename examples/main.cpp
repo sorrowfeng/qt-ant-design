@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
     const int smokeExitMs = parser.value(smokeExitOption).toInt(&ok);
     if (ok && smokeExitMs >= 0)
     {
-        QTimer::singleShot(smokeExitMs, &window, &QWidget::close);
+        QTimer::singleShot(smokeExitMs, &window, &AntWindow::forceClose);
     }
 
     return app.exec();

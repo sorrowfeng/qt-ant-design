@@ -1,5 +1,6 @@
 #include "AntWindow.h"
 
+#include <QCloseEvent>
 #include <QCoreApplication>
 #include <QCursor>
 #include <QElapsedTimer>
@@ -30,6 +31,7 @@
 #include <utility>
 
 #include "../styles/AntWindowStyle.h"
+#include "AntModal.h"
 #include "AntRibbon.h"
 #include "core/AntTheme.h"
 
@@ -1383,6 +1385,31 @@ bool AntWindow::isCloseButtonVisible() const
     return m_closeButtonVisible;
 }
 
+bool AntWindow::isCloseConfirmationEnabled() const
+{
+    return m_closeConfirmationEnabled;
+}
+
+QString AntWindow::closeConfirmationTitle() const
+{
+    return m_closeConfirmationTitle;
+}
+
+QString AntWindow::closeConfirmationContent() const
+{
+    return m_closeConfirmationContent;
+}
+
+QString AntWindow::closeConfirmationOkText() const
+{
+    return m_closeConfirmationOkText;
+}
+
+QString AntWindow::closeConfirmationCancelText() const
+{
+    return m_closeConfirmationCancelText;
+}
+
 void AntWindow::setPinButtonVisible(bool visible)
 {
     setTitleBarButtonVisible(TitleBarButton::Pin, visible);
@@ -1406,6 +1433,79 @@ void AntWindow::setMaximizeButtonVisible(bool visible)
 void AntWindow::setCloseButtonVisible(bool visible)
 {
     setTitleBarButtonVisible(TitleBarButton::Close, visible);
+}
+
+void AntWindow::setCloseConfirmationEnabled(bool enabled)
+{
+    if (m_closeConfirmationEnabled == enabled)
+    {
+        return;
+    }
+
+    m_closeConfirmationEnabled = enabled;
+    if (!m_closeConfirmationEnabled && m_closeConfirmationModal)
+    {
+        m_closeConfirmationModal->setOpen(false);
+    }
+    Q_EMIT closeConfirmationEnabledChanged(m_closeConfirmationEnabled);
+}
+
+void AntWindow::setCloseConfirmationTitle(const QString& title)
+{
+    if (m_closeConfirmationTitle == title)
+    {
+        return;
+    }
+
+    m_closeConfirmationTitle = title;
+    syncCloseConfirmationModal();
+    Q_EMIT closeConfirmationTitleChanged(m_closeConfirmationTitle);
+}
+
+void AntWindow::setCloseConfirmationContent(const QString& content)
+{
+    if (m_closeConfirmationContent == content)
+    {
+        return;
+    }
+
+    m_closeConfirmationContent = content;
+    syncCloseConfirmationModal();
+    Q_EMIT closeConfirmationContentChanged(m_closeConfirmationContent);
+}
+
+void AntWindow::setCloseConfirmationOkText(const QString& text)
+{
+    if (m_closeConfirmationOkText == text)
+    {
+        return;
+    }
+
+    m_closeConfirmationOkText = text;
+    syncCloseConfirmationModal();
+    Q_EMIT closeConfirmationOkTextChanged(m_closeConfirmationOkText);
+}
+
+void AntWindow::setCloseConfirmationCancelText(const QString& text)
+{
+    if (m_closeConfirmationCancelText == text)
+    {
+        return;
+    }
+
+    m_closeConfirmationCancelText = text;
+    syncCloseConfirmationModal();
+    Q_EMIT closeConfirmationCancelTextChanged(m_closeConfirmationCancelText);
+}
+
+void AntWindow::forceClose()
+{
+    m_closingWithoutConfirmation = true;
+    if (m_closeConfirmationModal)
+    {
+        m_closeConfirmationModal->setOpen(false);
+    }
+    close();
 }
 
 void AntWindow::moveToCenter()
@@ -1589,6 +1689,23 @@ void AntWindow::mouseDoubleClickEvent(QMouseEvent* event)
     }
 
     QMainWindow::mouseDoubleClickEvent(event);
+}
+
+void AntWindow::closeEvent(QCloseEvent* event)
+{
+    if (!m_closeConfirmationEnabled || m_closingWithoutConfirmation)
+    {
+        m_closingWithoutConfirmation = false;
+        if (m_closeConfirmationModal)
+        {
+            m_closeConfirmationModal->setOpen(false);
+        }
+        QMainWindow::closeEvent(event);
+        return;
+    }
+
+    event->ignore();
+    showCloseConfirmationModal();
 }
 
 void AntWindow::changeEvent(QEvent* event)
@@ -2346,6 +2463,46 @@ void AntWindow::handleButtonClicked(TitleBarButton button)
     default:
         break;
     }
+}
+
+void AntWindow::showCloseConfirmationModal()
+{
+    if (!m_closeConfirmationModal)
+    {
+        auto* modal = new AntModal(this);
+        modal->setObjectName(QStringLiteral("AntWindowCloseConfirmationModal"));
+        modal->setShowCancel(true);
+        modal->setClosable(false);
+        modal->setMaskClosable(false);
+        modal->setCentered(false);
+        modal->setDialogWidth(416);
+        modal->setCommandIconType(Ant::IconType::ExclamationCircle);
+        connect(modal, &AntModal::confirmed, this, [this]() {
+            m_closingWithoutConfirmation = true;
+            close();
+        });
+        connect(modal, &AntModal::canceled, this, [this]() {
+            m_closingWithoutConfirmation = false;
+        });
+        m_closeConfirmationModal = modal;
+    }
+
+    syncCloseConfirmationModal();
+    m_closeConfirmationModal->setOpen(true);
+    m_closeConfirmationModal->raise();
+}
+
+void AntWindow::syncCloseConfirmationModal()
+{
+    if (!m_closeConfirmationModal)
+    {
+        return;
+    }
+
+    m_closeConfirmationModal->setTitle(m_closeConfirmationTitle);
+    m_closeConfirmationModal->setContent(m_closeConfirmationContent);
+    m_closeConfirmationModal->setOkText(m_closeConfirmationOkText);
+    m_closeConfirmationModal->setCancelText(m_closeConfirmationCancelText);
 }
 
 void AntWindow::startThemeModeTransition()

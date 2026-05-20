@@ -44,6 +44,8 @@
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntRibbon.h"
 #include "widgets/AntSwitch.h"
+#include "widgets/AntButton.h"
+#include "widgets/AntModal.h"
 #include "widgets/AntToolButton.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntMenu.h"
@@ -2870,6 +2872,11 @@ void TestAntQtExtensions::window()
     QCOMPARE(w->isMinimizeButtonVisible(), true);
     QCOMPARE(w->isMaximizeButtonVisible(), true);
     QCOMPARE(w->isCloseButtonVisible(), true);
+    QCOMPARE(w->isCloseConfirmationEnabled(), true);
+    QCOMPARE(w->closeConfirmationTitle(), QStringLiteral("Exit application?"));
+    QCOMPARE(w->closeConfirmationContent(), QStringLiteral("The window will close. Do you want to exit?"));
+    QCOMPARE(w->closeConfirmationOkText(), QStringLiteral("Exit"));
+    QCOMPARE(w->closeConfirmationCancelText(), QStringLiteral("Cancel"));
     QCOMPARE(w->cornerRadius(), 8);
     QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Pin), true);
     QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Theme), true);
@@ -2919,6 +2926,30 @@ void TestAntQtExtensions::window()
     w->setTitleBarButtonVisible(AntWindow::TitleBarButton::Maximize, true);
     w->setTitleBarButtonVisible(AntWindow::TitleBarButton::Close, true);
 
+    QSignalSpy closeConfirmEnabledSpy(w, &AntWindow::closeConfirmationEnabledChanged);
+    QSignalSpy closeConfirmTitleSpy(w, &AntWindow::closeConfirmationTitleChanged);
+    QSignalSpy closeConfirmContentSpy(w, &AntWindow::closeConfirmationContentChanged);
+    QSignalSpy closeConfirmOkSpy(w, &AntWindow::closeConfirmationOkTextChanged);
+    QSignalSpy closeConfirmCancelSpy(w, &AntWindow::closeConfirmationCancelTextChanged);
+    w->setCloseConfirmationEnabled(false);
+    QCOMPARE(w->isCloseConfirmationEnabled(), false);
+    QCOMPARE(closeConfirmEnabledSpy.count(), 1);
+    w->setCloseConfirmationEnabled(true);
+    QCOMPARE(w->isCloseConfirmationEnabled(), true);
+    QCOMPARE(closeConfirmEnabledSpy.count(), 2);
+    w->setCloseConfirmationTitle(QStringLiteral("Leave workspace?"));
+    w->setCloseConfirmationContent(QStringLiteral("Unsaved preview state will be closed."));
+    w->setCloseConfirmationOkText(QStringLiteral("Exit"));
+    w->setCloseConfirmationCancelText(QStringLiteral("Cancel exit"));
+    QCOMPARE(w->closeConfirmationTitle(), QStringLiteral("Leave workspace?"));
+    QCOMPARE(w->closeConfirmationContent(), QStringLiteral("Unsaved preview state will be closed."));
+    QCOMPARE(w->closeConfirmationOkText(), QStringLiteral("Exit"));
+    QCOMPARE(w->closeConfirmationCancelText(), QStringLiteral("Cancel exit"));
+    QCOMPARE(closeConfirmTitleSpy.count(), 1);
+    QCOMPARE(closeConfirmContentSpy.count(), 1);
+    QCOMPARE(closeConfirmOkSpy.count(), 0);
+    QCOMPARE(closeConfirmCancelSpy.count(), 1);
+
     QSignalSpy alwaysOnTopSpy(w, &AntWindow::alwaysOnTopChanged);
     w->setAlwaysOnTop(true);
     QCOMPARE(w->isAlwaysOnTop(), true);
@@ -2952,6 +2983,57 @@ void TestAntQtExtensions::window()
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntWindow confirmWindow;
+    confirmWindow.resize(640, 420);
+    confirmWindow.setCloseConfirmationTitle(QStringLiteral("Leave workspace?"));
+    confirmWindow.setCloseConfirmationContent(QStringLiteral("Close this AntWindow now?"));
+    confirmWindow.setCloseConfirmationOkText(QStringLiteral("Exit"));
+    confirmWindow.setCloseConfirmationCancelText(QStringLiteral("Cancel exit"));
+    confirmWindow.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&confirmWindow));
+
+    confirmWindow.close();
+    QVERIFY(confirmWindow.isVisible());
+    auto* modal = confirmWindow.findChild<AntModal*>(QStringLiteral("AntWindowCloseConfirmationModal"));
+    QVERIFY(modal != nullptr);
+    QTRY_VERIFY(modal->isOpen());
+    QCOMPARE(modal->title(), QStringLiteral("Leave workspace?"));
+    QCOMPARE(modal->content(), QStringLiteral("Close this AntWindow now?"));
+    QCOMPARE(modal->okText(), QStringLiteral("Exit"));
+    QCOMPARE(modal->cancelText(), QStringLiteral("Cancel exit"));
+
+    auto findModalButton = [](AntModal* target, const QString& text) -> AntButton* {
+        const auto buttons = target->findChildren<AntButton*>();
+        for (auto* button : buttons)
+        {
+            if (button->text() == text)
+            {
+                return button;
+            }
+        }
+        return nullptr;
+    };
+
+    auto* cancelButton = findModalButton(modal, QStringLiteral("Cancel exit"));
+    QVERIFY(cancelButton != nullptr);
+    cancelButton->click();
+    QTRY_VERIFY(!modal->isOpen());
+    QVERIFY(confirmWindow.isVisible());
+
+    confirmWindow.close();
+    QTRY_VERIFY(modal->isOpen());
+    auto* okButton = findModalButton(modal, QStringLiteral("Exit"));
+    QVERIFY(okButton != nullptr);
+    okButton->click();
+    QTRY_VERIFY(!confirmWindow.isVisible());
+
+    AntWindow forceCloseWindow;
+    forceCloseWindow.resize(320, 240);
+    forceCloseWindow.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&forceCloseWindow));
+    forceCloseWindow.forceClose();
+    QTRY_VERIFY(!forceCloseWindow.isVisible());
 }
 
 void TestAntQtExtensions::windowTitleBarButtonsHandleChildDeliveredClicks()

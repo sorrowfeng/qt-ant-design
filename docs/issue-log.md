@@ -455,6 +455,14 @@
 - **验证**:`TestAntQtExtensions::colorPicker` 验证弹层使用手动外部关闭路径、动效开关与距离属性,并在关闭后确认 popup 进入离场动画路径,直到动画结束才隐藏。
 - **改动文件**:`src/widgets/AntColorPicker.h`、`src/widgets/AntColorPicker.cpp`、`tests/TestAntQtExtensions.cpp`
 
+### 53. AntWindow 关闭窗口缺少退出确认
+
+- **现象**:点击 AntWindow 标题栏关闭按钮或系统关闭时会直接关闭窗口,无法让用户选择退出或取消退出。
+- **根因**:AntWindow 只在标题栏关闭按钮上发出 `closeRequested()` 后调用 `close()`,没有统一拦截 `closeEvent()` 并复用 Modal 确认流程。
+- **解决**:新增关闭确认 API:`closeConfirmationEnabled`、`closeConfirmationTitle`、`closeConfirmationContent`、`closeConfirmationOkText`、`closeConfirmationCancelText`,并在 `closeEvent()` 中默认弹出 `AntModal` 确认框。取消按钮只关闭 Modal 并保留窗口,确认按钮通过 `forceClose()` 跳过二次确认并真正关闭窗口;示例程序 smoke 自动退出也改用 `forceClose()`。
+- **验证**:`TestAntQtExtensions::window` 覆盖默认属性、自定义文案/按钮文本、取消退出保留窗口、确认退出关闭窗口,以及 `forceClose()` 直接关闭路径。
+- **改动文件**:`src/widgets/AntWindow.h`、`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`、`examples/main.cpp`
+
 ## 未解决
 
 当前暂无记录。
