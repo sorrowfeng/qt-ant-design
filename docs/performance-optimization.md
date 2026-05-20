@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `29` components are optimized from this pass, and `55` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `30` components are optimized from this pass, and `54` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntStatusBar` | Status-bar item, permanent-item, divider, and message rectangles are now cached and shared by paint and hit testing. Hover and message changes repaint only the cached item/message regions instead of the full bar. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe statusBar`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntScrollBar` | Hover, press, auto-hide, enabled-state, and theme refresh paths now repaint only the slider handle region instead of the full scrollbar. The style no longer registers its own global theme repolish path; the widget handles theme refresh with a scoped handle update. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe scrollBar`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntScrollArea` | Theme application now caches surface colors and the current content widget. Replacing content only applies the content palette, while unchanged scroll-area and viewport palette work is skipped; real theme changes still update the scroll area, viewport, and content, then repaint the viewport once. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe scrollArea`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntRibbon` | Tab layout rectangles are now cached by width, collapse-button visibility, font, and page titles, then reused across paint, hover hit testing, and indicator targeting. Hover and indicator animation paths repaint only the affected tab/button/indicator regions instead of scheduling full-ribbon updates. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe ribbon`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -206,7 +207,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntRibbon` | P0 | Cache tab layout rectangles by width, collapse-button visibility, font, and page titles; reuse the cache across paint/hit-test/indicator paths and repaint only affected tab, collapse button, and indicator regions during hover and indicator animation. | Optimized |
 | `AntScrollArea` | P1 | Cache theme surface colors and the current content widget so content replacement applies only content palette work, while real theme changes update scroll area, viewport, and content once. Gesture setup remains independent from repaint work. | Optimized |
 | `AntScrollBar` | P0 | Dirty-update only the slider handle region for hover, press, auto-hide, enabled-state, and theme refresh paths; theme changes are handled by the widget without style repolish. | Optimized |
-| `AntStatusBar` | P1 | Cache item widths and message layout; repaint only changed item/message region. | Plan ready |
+| `AntStatusBar` | P1 | Cache item, permanent-item, divider, and message rectangles for both paint and hit testing; repaint only changed item/message regions. | Optimized |
 | `AntToolBar` | P1 | Cache action/button layout and repaint only affected action on hover/press/theme icon change. | Plan ready |
 | `AntToolButton` | P1 | Cache icon/arrow geometry, pause spinner only when hidden or not loading, and update only arrow/spinner/button dirty region during animation. | Plan ready |
 
@@ -329,7 +330,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 | `AntRibbon` | `TestAntQtExtensions` | Verify page/group/action layout, collapse/expand animation, popup mode, embedded controls, cached tab layout reuse, and tab/collapse/indicator-region repaint. |
 | `AntScrollArea` | `TestAntQtExtensions` | Verify custom scrollbars, gesture toggles, theme switching, content replacement, cached palette reuse, and no redundant viewport repaint on content-only updates. |
 | `AntScrollBar` | `TestAntQtExtensions` | Verify hover, press/release, auto-hide, orientation, theme refresh, repeated-state no-op handling, and handle-region dirty updates. |
-| `AntStatusBar` | `TestAntQtExtensions` | Verify left/right items, separators, messages, size grip, and item/message-region repaint. |
+| `AntStatusBar` | `TestAntQtExtensions` | Verify left/right items, separators, messages, size grip, cached layout reuse, and item/message-region repaint. |
 | `AntToolBar` | `TestAntQtExtensions` | Verify action add/remove/trigger, floating shadow, embedded buttons, and action-local repaint. |
 | `AntToolButton` | `TestAntQtExtensions` | Verify menu/default action, arrow animation, loading spinner, hidden-state timer behavior, and dirty-region animation updates. |
 

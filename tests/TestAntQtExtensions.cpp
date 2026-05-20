@@ -1248,6 +1248,39 @@ void TestAntQtExtensions::statusBar()
 
     auto item = w->itemAt(0);
     QCOMPARE(item.text, "Item 1");
+
+    w->resize(360, w->sizeHint().height());
+    w->show();
+    QVERIFY(QTest::qWaitForWindowExposed(w));
+
+    const QImage initialStatusPaint = renderForExtensionTest(w);
+    QVERIFY(!initialStatusPaint.isNull());
+    const int layoutBuildsAfterPaint = w->property("antStatusBarLayoutBuildCount").toInt();
+    QVERIFY(layoutBuildsAfterPaint > 0);
+
+    const QPoint itemPoint(14, w->height() / 2);
+    QMouseEvent moveToItem(QEvent::MouseMove, itemPoint, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(w, &moveToItem);
+    QCOMPARE(w->hoveredRegularIndex(), 0);
+    const int regionUpdatesAfterHover = w->property("antStatusBarRegionUpdateCount").toInt();
+    const int layoutBuildsAfterHover = w->property("antStatusBarLayoutBuildCount").toInt();
+    QCoreApplication::sendEvent(w, &moveToItem);
+    QCOMPARE(w->property("antStatusBarRegionUpdateCount").toInt(), regionUpdatesAfterHover);
+    QCOMPARE(w->property("antStatusBarLayoutBuildCount").toInt(), layoutBuildsAfterHover);
+
+    QEvent leaveStatus(QEvent::Leave);
+    QCoreApplication::sendEvent(w, &leaveStatus);
+    QCOMPARE(w->hoveredRegularIndex(), -1);
+    QVERIFY(w->property("antStatusBarRegionUpdateCount").toInt() > regionUpdatesAfterHover);
+
+    const int messageRegionUpdates = w->property("antStatusBarMessageRegionUpdateCount").toInt();
+    const int regionUpdatesBeforeMessage = w->property("antStatusBarRegionUpdateCount").toInt();
+    w->setMessage(QStringLiteral("Updated"));
+    QCOMPARE(w->property("antStatusBarMessageRegionUpdateCount").toInt(), messageRegionUpdates + 1);
+    QVERIFY(w->property("antStatusBarRegionUpdateCount").toInt() > regionUpdatesBeforeMessage);
+    const int layoutBuildsBeforeRepeatMessage = w->property("antStatusBarLayoutBuildCount").toInt();
+    w->setMessage(QStringLiteral("Updated"));
+    QCOMPARE(w->property("antStatusBarLayoutBuildCount").toInt(), layoutBuildsBeforeRepeatMessage);
 }
 
 void TestAntQtExtensions::toolButton()

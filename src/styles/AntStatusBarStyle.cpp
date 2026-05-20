@@ -61,9 +61,22 @@ bool AntStatusBarStyle::eventFilter(QObject* watched, QEvent* event)
     return QProxyStyle::eventFilter(watched, event);
 }
 
+void AntStatusBarStyle::onThemeUpdate(QWidget* widget)
+{
+    auto* statusBar = qobject_cast<AntStatusBar*>(widget);
+    if (!statusBar)
+    {
+        AntStyleBase::onThemeUpdate(widget);
+        return;
+    }
+
+    statusBar->invalidateLayoutCache();
+    statusBar->updateGeometry();
+    statusBar->update();
+}
+
 namespace
 {
-constexpr int kSizeGripWidth = 20;
 constexpr int kSizeGripDotRadius = 1;
 constexpr int kSizeGripDotSpacing = 4;
 constexpr int kSizeGripMargin = 4;
@@ -102,34 +115,25 @@ void AntStatusBarStyle::drawStatusBar(const QStyleOption* option, QPainter* pain
     const int dividerY = (h - dividerHeight) / 2;
     const int permCount = statusBar->permanentItemCount();
     const int regCount = statusBar->itemCount();
-    const int rightX = statusBar->hasSizeGrip() ? w - kSizeGripWidth : w;
-    const int dividerWidth = token.lineWidth + token.paddingXXS * 2;
+    const QVector<QRect>& permanentRects = statusBar->permanentItemRects();
+    const QVector<QRect>& regularRects = statusBar->regularItemRects();
 
-    // --- Draw permanent items (right-aligned, iterating right to left) ---
-    int rx = rightX - token.paddingXS;
-    for (int i = permCount - 1; i >= 0; --i)
+    // --- Draw permanent items (right-aligned) ---
+    const QVector<int>& permanentDividers = statusBar->permanentDividerXs();
+    painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+    for (int dx : permanentDividers)
+    {
+        painter->drawLine(dx, dividerY, dx, dividerY + dividerHeight);
+    }
+
+    for (int i = 0; i < permCount; ++i)
     {
         const AntStatusBarItem item = statusBar->permanentItemAt(i);
-
-        // Draw divider to the right of this item (between items, not at edge)
-        if (i < permCount - 1)
+        const QRect itemRect = permanentRects.value(i);
+        if (!itemRect.isValid())
         {
-            const int dx = rx - dividerWidth / 2;
-            painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-            painter->drawLine(dx, dividerY, dx, dividerY + dividerHeight);
-            rx -= dividerWidth;
+            continue;
         }
-
-        // Compute item width
-        int textWidth = fm.horizontalAdvance(item.text);
-        if (!item.icon.isEmpty())
-        {
-            textWidth += iconSize + token.paddingXXS;
-        }
-        const int itemWidth = textWidth + token.paddingXS * 2;
-        rx -= itemWidth;
-
-        const QRect itemRect(rx, 0, itemWidth, h);
 
         // Hover background
         if (i == statusBar->hoveredPermanentIndex())
@@ -152,19 +156,14 @@ void AntStatusBarStyle::drawStatusBar(const QStyleOption* option, QPainter* pain
     }
 
     // --- Draw regular items (left-aligned) ---
-    int x = token.paddingXS;
     for (int i = 0; i < regCount; ++i)
     {
         const AntStatusBarItem item = statusBar->itemAt(i);
-
-        // Compute item width
-        int textWidth = fm.horizontalAdvance(item.text);
-        if (!item.icon.isEmpty())
+        const QRect itemRect = regularRects.value(i);
+        if (!itemRect.isValid())
         {
-            textWidth += iconSize + token.paddingXXS;
+            continue;
         }
-        const int itemWidth = textWidth + token.paddingXS * 2;
-        const QRect itemRect(x, 0, itemWidth, h);
 
         // Hover background
         if (i == statusBar->hoveredRegularIndex())
@@ -184,28 +183,22 @@ void AntStatusBarStyle::drawStatusBar(const QStyleOption* option, QPainter* pain
         painter->drawText(QRect(tx, itemRect.top(), itemRect.right() - tx, itemRect.height()),
                           Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine,
                           item.text);
+    }
 
-        x += itemWidth;
-
-        // Divider between regular items
-        if (i < regCount - 1)
-        {
-            const int dx = x + token.paddingXXS;
-            painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-            painter->drawLine(dx, dividerY, dx, dividerY + dividerHeight);
-            x += dividerWidth;
-        }
+    const QVector<int>& regularDividers = statusBar->regularDividerXs();
+    painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+    for (int dx : regularDividers)
+    {
+        painter->drawLine(dx, dividerY, dx, dividerY + dividerHeight);
     }
 
     // --- Draw message in stretch area ---
     if (!statusBar->message().isEmpty())
     {
-        const int msgLeft = x + token.paddingXS;
-        const int msgRight = (permCount > 0) ? rx : rightX;
-        if (msgRight > msgLeft)
+        const QRect msgRect = statusBar->messageAreaRect();
+        if (msgRect.isValid())
         {
             painter->setPen(token.colorTextSecondary);
-            const QRect msgRect(msgLeft, 0, msgRight - msgLeft, h);
             const QString elidedMsg = fm.elidedText(statusBar->message(), Qt::ElideRight, msgRect.width());
             painter->drawText(msgRect, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine, elidedMsg);
         }
