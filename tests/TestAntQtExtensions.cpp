@@ -1077,14 +1077,30 @@ void TestAntQtExtensions::scrollArea()
     QCOMPARE(w->isGestureEnabled(), false);
     QCOMPARE(gestureSpy.count(), 1);
 
+    const int surfacePaletteApplyCount = w->property("antScrollAreaSurfacePaletteApplyCount").toInt();
+    const int viewportPaletteApplyCount = w->property("antScrollAreaViewportPaletteApplyCount").toInt();
+    const int initialContentPaletteApplyCount = w->property("antScrollAreaContentPaletteApplyCount").toInt();
     auto* content = new QWidget;
     w->setWidget(content);
+    QCOMPARE(w->property("antScrollAreaSurfacePaletteApplyCount").toInt(), surfacePaletteApplyCount);
+    QCOMPARE(w->property("antScrollAreaViewportPaletteApplyCount").toInt(), viewportPaletteApplyCount);
+    QCOMPARE(w->property("antScrollAreaContentPaletteApplyCount").toInt(), initialContentPaletteApplyCount + 1);
     QCOMPARE(w->viewport()->palette().color(QPalette::Base), antTheme->tokens().colorBgContainer);
     QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
 
+    auto* replacementContent = new QWidget;
+    w->setWidget(replacementContent);
+    QCOMPARE(w->property("antScrollAreaSurfacePaletteApplyCount").toInt(), surfacePaletteApplyCount);
+    QCOMPARE(w->property("antScrollAreaViewportPaletteApplyCount").toInt(), viewportPaletteApplyCount);
+    QCOMPARE(w->property("antScrollAreaContentPaletteApplyCount").toInt(), initialContentPaletteApplyCount + 2);
+
+    const int viewportUpdatesBeforeTheme = w->property("antScrollAreaViewportUpdateCount").toInt();
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QVERIFY(w->property("antScrollAreaSurfacePaletteApplyCount").toInt() > surfacePaletteApplyCount);
+    QVERIFY(w->property("antScrollAreaViewportPaletteApplyCount").toInt() > viewportPaletteApplyCount);
+    QVERIFY(w->property("antScrollAreaViewportUpdateCount").toInt() > viewportUpdatesBeforeTheme);
     QCOMPARE(w->viewport()->palette().color(QPalette::Base), antTheme->tokens().colorBgContainer);
-    QCOMPARE(content->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+    QCOMPARE(replacementContent->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
     antTheme->setThemeMode(Ant::ThemeMode::Default);
 }
 

@@ -6,6 +6,27 @@
 #include "AntScrollBar.h"
 #include "core/AntTheme.h"
 
+namespace
+{
+
+void applySurfaceColors(QPalette& palette, const QColor& bg, const QColor& text)
+{
+    palette.setColor(QPalette::Window, bg);
+    palette.setColor(QPalette::Base, bg);
+    palette.setColor(QPalette::Text, text);
+    palette.setColor(QPalette::WindowText, text);
+}
+
+bool surfaceColorsMatch(const QPalette& palette, const QColor& bg, const QColor& text)
+{
+    return palette.color(QPalette::Window) == bg &&
+           palette.color(QPalette::Base) == bg &&
+           palette.color(QPalette::Text) == text &&
+           palette.color(QPalette::WindowText) == text;
+}
+
+} // namespace
+
 AntScrollArea::AntScrollArea(QWidget* parent)
     : QScrollArea(parent)
 {
@@ -25,11 +46,15 @@ AntScrollArea::AntScrollArea(QWidget* parent)
 
     updateTheme();
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateTheme();
-        update();
-        if (viewport())
+        if (updateTheme())
         {
-            viewport()->update();
+            update();
+            if (viewport())
+            {
+                viewport()->update();
+                ++m_viewportUpdateCount;
+                syncScrollAreaPerfCounters();
+            }
         }
     });
 
@@ -72,30 +97,71 @@ void AntScrollArea::setEnableGesture(bool enable)
     Q_EMIT enableGestureChanged(m_enableGesture);
 }
 
-void AntScrollArea::updateTheme()
+bool AntScrollArea::updateTheme()
 {
     const auto& token = antTheme->tokens();
-    QPalette pal = palette();
-    pal.setColor(QPalette::Window, token.colorBgContainer);
-    pal.setColor(QPalette::Base, token.colorBgContainer);
-    pal.setColor(QPalette::Text, token.colorText);
-    pal.setColor(QPalette::WindowText, token.colorText);
-    setPalette(pal);
-    setAutoFillBackground(false);
+    const QColor bg = token.colorBgContainer;
+    const QColor text = token.colorText;
+    const bool themeChanged = !m_themeCacheValid || m_cachedBgColor != bg || m_cachedTextColor != text;
+    bool surfaceChanged = false;
+
+    if (themeChanged || !surfaceColorsMatch(palette(), bg, text))
+    {
+        QPalette pal = palette();
+        applySurfaceColors(pal, bg, text);
+        setPalette(pal);
+        ++m_surfacePaletteApplyCount;
+        surfaceChanged = true;
+    }
+
+    if (autoFillBackground())
+    {
+        setAutoFillBackground(false);
+    }
 
     if (viewport())
     {
-        viewport()->setAutoFillBackground(true);
-        viewport()->setPalette(pal);
+        if (!viewport()->autoFillBackground())
+        {
+            viewport()->setAutoFillBackground(true);
+        }
+        if (themeChanged || !surfaceColorsMatch(viewport()->palette(), bg, text))
+        {
+            QPalette viewportPalette = viewport()->palette();
+            applySurfaceColors(viewportPalette, bg, text);
+            viewport()->setPalette(viewportPalette);
+            ++m_viewportPaletteApplyCount;
+            surfaceChanged = true;
+        }
     }
 
-    if (QWidget* content = widget())
+    QWidget* content = widget();
+    if (content)
     {
-        QPalette contentPalette = content->palette();
-        contentPalette.setColor(QPalette::Window, token.colorBgContainer);
-        contentPalette.setColor(QPalette::Base, token.colorBgContainer);
-        contentPalette.setColor(QPalette::Text, token.colorText);
-        contentPalette.setColor(QPalette::WindowText, token.colorText);
-        content->setPalette(contentPalette);
+        const bool contentChanged = m_cachedContentWidget != content;
+        if (themeChanged || contentChanged || !surfaceColorsMatch(content->palette(), bg, text))
+        {
+            QPalette contentPalette = content->palette();
+            applySurfaceColors(contentPalette, bg, text);
+            content->setPalette(contentPalette);
+            content->update();
+            ++m_contentPaletteApplyCount;
+        }
     }
+
+    m_cachedBgColor = bg;
+    m_cachedTextColor = text;
+    m_cachedContentWidget = content;
+    m_themeCacheValid = true;
+    syncScrollAreaPerfCounters();
+    return surfaceChanged;
+}
+
+void AntScrollArea::syncScrollAreaPerfCounters() const
+{
+    auto* self = const_cast<AntScrollArea*>(this);
+    self->setProperty("antScrollAreaSurfacePaletteApplyCount", m_surfacePaletteApplyCount);
+    self->setProperty("antScrollAreaViewportPaletteApplyCount", m_viewportPaletteApplyCount);
+    self->setProperty("antScrollAreaContentPaletteApplyCount", m_contentPaletteApplyCount);
+    self->setProperty("antScrollAreaViewportUpdateCount", m_viewportUpdateCount);
 }

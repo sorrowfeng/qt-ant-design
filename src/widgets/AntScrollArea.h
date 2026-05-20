@@ -2,6 +2,8 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
+#include <QPointer>
 #include <QScrollArea>
 
 class AntScrollBar;
@@ -28,10 +30,19 @@ Q_SIGNALS:
     void enableGestureChanged(bool enable);
 
 private:
-    void updateTheme();
+    bool updateTheme();
+    void syncScrollAreaPerfCounters() const;
 
     AntScrollBar* m_vScrollBar = nullptr;
     AntScrollBar* m_hScrollBar = nullptr;
     bool m_autoHideScrollBar = true;
     bool m_enableGesture = true;
+    bool m_themeCacheValid = false;
+    QColor m_cachedBgColor;
+    QColor m_cachedTextColor;
+    QPointer<QWidget> m_cachedContentWidget;
+    int m_surfacePaletteApplyCount = 0;
+    int m_viewportPaletteApplyCount = 0;
+    int m_contentPaletteApplyCount = 0;
+    int m_viewportUpdateCount = 0;
 };
