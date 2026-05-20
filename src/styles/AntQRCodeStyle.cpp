@@ -13,50 +13,10 @@
 namespace
 {
 
-int qrModuleCount(const AntQRCode* qr)
-{
-    const auto& matrix = qr->qrMatrix();
-    return matrix.isEmpty() ? 0 : matrix.size();
-}
-
-qreal qrModuleSize(const AntQRCode* qr, const QRect& contentRect)
-{
-    const int count = qrModuleCount(qr);
-    if (count == 0) return 0;
-    return static_cast<qreal>(contentRect.width()) / count;
-}
-
 QRect qrContentRect(const AntQRCode* qr, const QRect& widgetRect)
 {
     const int borderPadding = qr->isBordered() ? 12 : 0;
     return widgetRect.adjusted(borderPadding, borderPadding, -borderPadding, -borderPadding);
-}
-
-void drawQRMatrix(QPainter* painter, const AntQRCode* qr, const QRect& contentRect)
-{
-    const auto& matrix = qr->qrMatrix();
-    const int count = matrix.size();
-    if (count == 0) return;
-
-    const qreal moduleSize = qrModuleSize(qr, contentRect);
-    const auto& token = antTheme->tokens();
-
-    QColor fg = qr->color();
-    if (!fg.isValid()) fg = token.colorText;
-
-    for (int r = 0; r < count; ++r)
-    {
-        for (int c = 0; c < count; ++c)
-        {
-            if (matrix[r][c])
-            {
-                QRectF moduleRect(contentRect.x() + c * moduleSize,
-                                  contentRect.y() + r * moduleSize,
-                                  moduleSize, moduleSize);
-                painter->fillRect(moduleRect, fg);
-            }
-        }
-    }
 }
 
 void drawQRIcon(QPainter* painter, const AntQRCode* qr, const QRect& contentRect)
@@ -243,7 +203,10 @@ void AntQRCodeStyle::drawQRCode(const QStyleOption* option, QPainter* painter, c
 
     // QR modules
     QRect contentRect = qrContentRect(qr, option->rect);
-    drawQRMatrix(painter, qr, contentRect);
+    QColor fg = qr->color();
+    if (!fg.isValid()) fg = token.colorText;
+    const qreal dpr = painter->device() ? painter->device()->devicePixelRatioF() : 1.0;
+    painter->drawPixmap(contentRect, qr->cachedQrPixmap(contentRect.size(), dpr, fg));
 
     // Center icon
     drawQRIcon(painter, qr, contentRect);

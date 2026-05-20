@@ -30,6 +30,7 @@ private slots:
     void listUsesExpandingLayoutPolicy();
     void tableHoverUsesRowScopedUpdates();
     void tableSelectionCompatibilityApis();
+    void qrCodeReusesRenderedModuleCache();
     void listSelectionHighlightUsesBalancedInset();
 };
 
@@ -664,6 +665,33 @@ void TestAntDataDisplayB::tableSelectionCompatibilityApis()
 
     table.setRows(rows);
     QCOMPARE(table.currentRowIndex(), -1);
+}
+
+void TestAntDataDisplayB::qrCodeReusesRenderedModuleCache()
+{
+    AntQRCode qr;
+    const QSize moduleSize(132, 132);
+    const QColor foreground(QStringLiteral("#1677ff"));
+
+    const QPixmap first = qr.cachedQrPixmap(moduleSize, 1.0, foreground);
+    QVERIFY(!first.isNull());
+    const qint64 firstKey = first.cacheKey();
+
+    const QPixmap second = qr.cachedQrPixmap(moduleSize, 1.0, foreground);
+    QCOMPARE(second.cacheKey(), firstKey);
+
+    qr.setStatus(Ant::QRCodeStatus::Expired);
+    const QPixmap statusOnly = qr.cachedQrPixmap(moduleSize, 1.0, foreground);
+    QCOMPARE(statusOnly.cacheKey(), firstKey);
+
+    const QPixmap highDpi = qr.cachedQrPixmap(moduleSize, 2.0, foreground);
+    QVERIFY(!highDpi.isNull());
+    QVERIFY(highDpi.cacheKey() != firstKey);
+    QCOMPARE(qRound(highDpi.devicePixelRatio() * 1000.0), 2000);
+
+    qr.setValue(QStringLiteral("https://example.com/cache-bust"));
+    const QPixmap changedPayload = qr.cachedQrPixmap(moduleSize, 1.0, foreground);
+    QVERIFY(changedPayload.cacheKey() != firstKey);
 }
 
 void TestAntDataDisplayB::listSelectionHighlightUsesBalancedInset()

@@ -3,6 +3,7 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QIcon>
+#include <QPixmap>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -43,6 +44,7 @@ public:
 
     void refresh();
     QVector<QVector<bool>> qrMatrix() const;
+    QPixmap cachedQrPixmap(const QSize& logicalSize, qreal devicePixelRatio, const QColor& foreground) const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -64,6 +66,7 @@ protected:
 
 private:
     void regenerateMatrix();
+    void invalidateQrPixmapCache();
 
     QString m_value;
     int m_qrSize = 160;
@@ -75,4 +78,10 @@ private:
     bool m_bordered = true;
     Ant::QRCodeStatus m_status = Ant::QRCodeStatus::Active;
     QVector<QVector<bool>> m_qrMatrix;
+    int m_matrixRevision = 0;
+    mutable QPixmap m_cachedQrPixmap;
+    mutable QSize m_cachedQrPixmapSize;
+    mutable int m_cachedQrPixmapDpr = 0;
+    mutable QRgb m_cachedQrPixmapColor = 0;
+    mutable int m_cachedQrPixmapRevision = -1;
 };

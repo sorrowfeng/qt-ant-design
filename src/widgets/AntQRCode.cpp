@@ -2,6 +2,7 @@
 
 #include <QMouseEvent>
 #include <QPainter>
+#include <QtMath>
 
 #include "core/AntQRGenerator.h"
 #include "core/AntTheme.h"
@@ -121,6 +122,56 @@ void AntQRCode::refresh()
 
 QVector<QVector<bool>> AntQRCode::qrMatrix() const { return m_qrMatrix; }
 
+QPixmap AntQRCode::cachedQrPixmap(const QSize& logicalSize, qreal devicePixelRatio, const QColor& foreground) const
+{
+    const QSize boundedSize(qMax(1, logicalSize.width()), qMax(1, logicalSize.height()));
+    const qreal boundedDpr = qMax<qreal>(1.0, devicePixelRatio);
+    const int dprKey = qRound(boundedDpr * 1000.0);
+    const QRgb colorKey = foreground.rgba();
+
+    const bool cacheValid = !m_cachedQrPixmap.isNull() &&
+                            m_cachedQrPixmapSize == boundedSize &&
+                            m_cachedQrPixmapDpr == dprKey &&
+                            m_cachedQrPixmapColor == colorKey &&
+                            m_cachedQrPixmapRevision == m_matrixRevision;
+    if (cacheValid)
+    {
+        return m_cachedQrPixmap;
+    }
+
+    const QSize pixelSize(qMax(1, qCeil(boundedSize.width() * boundedDpr)),
+                          qMax(1, qCeil(boundedSize.height() * boundedDpr)));
+    QPixmap pixmap(pixelSize);
+    pixmap.setDevicePixelRatio(boundedDpr);
+    pixmap.fill(Qt::transparent);
+
+    const int count = m_qrMatrix.size();
+    if (count > 0)
+    {
+        QPainter painter(&pixmap);
+        painter.setRenderHint(QPainter::Antialiasing, false);
+        const qreal moduleW = static_cast<qreal>(boundedSize.width()) / count;
+        const qreal moduleH = static_cast<qreal>(boundedSize.height()) / count;
+        for (int row = 0; row < count; ++row)
+        {
+            for (int col = 0; col < count; ++col)
+            {
+                if (m_qrMatrix.at(row).at(col))
+                {
+                    painter.fillRect(QRectF(col * moduleW, row * moduleH, moduleW, moduleH), foreground);
+                }
+            }
+        }
+    }
+
+    m_cachedQrPixmap = pixmap;
+    m_cachedQrPixmapSize = boundedSize;
+    m_cachedQrPixmapDpr = dprKey;
+    m_cachedQrPixmapColor = colorKey;
+    m_cachedQrPixmapRevision = m_matrixRevision;
+    return m_cachedQrPixmap;
+}
+
 QSize AntQRCode::sizeHint() const
 {
     return QSize(m_qrSize, m_qrSize);
@@ -156,4 +207,15 @@ void AntQRCode::mousePressEvent(QMouseEvent* event)
 void AntQRCode::regenerateMatrix()
 {
     m_qrMatrix = Ant::AntQRGenerator::generate(m_value, m_errorLevel);
+    ++m_matrixRevision;
+    invalidateQrPixmapCache();
+}
+
+void AntQRCode::invalidateQrPixmapCache()
+{
+    m_cachedQrPixmap = QPixmap();
+    m_cachedQrPixmapSize = QSize();
+    m_cachedQrPixmapDpr = 0;
+    m_cachedQrPixmapColor = 0;
+    m_cachedQrPixmapRevision = -1;
 }
