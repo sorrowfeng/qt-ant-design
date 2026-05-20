@@ -1,6 +1,8 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QDateTime>
 #include <QLabel>
+#include <QRegularExpression>
 #include "core/AntTheme.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntCard.h"
@@ -14,6 +16,7 @@ class TestAntDataDisplayA : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void statisticFormattedValueCache();
     void cardTitlePaletteTracksTheme();
 };
 
@@ -145,11 +148,13 @@ void TestAntDataDisplayA::propertiesAndSignals()
     QSignalSpy valSpy(s, &AntStatistic::valueChanged);
     s->setValue(1234.56);
     QCOMPARE(s->value(), 1234.56);
+    QCOMPARE(s->formattedValue(), QStringLiteral("1,234"));
     QCOMPARE(valSpy.count(), 1);
 
     QSignalSpy precSpy(s, &AntStatistic::precisionChanged);
     s->setPrecision(2);
     QCOMPARE(s->precision(), 2);
+    QCOMPARE(s->formattedValue(), QStringLiteral("1,234.56"));
     QCOMPARE(precSpy.count(), 1);
 
     QSignalSpy prefixSpy(s, &AntStatistic::prefixChanged);
@@ -265,6 +270,36 @@ void TestAntDataDisplayA::propertiesAndSignals()
     e->setImageSize(QSize(100, 100));
     QCOMPARE(e->imageSize(), QSize(100, 100));
     QCOMPARE(eSizeSpy.count(), 1);
+}
+
+void TestAntDataDisplayA::statisticFormattedValueCache()
+{
+    AntStatistic statistic;
+    QCOMPARE(statistic.formattedValue(), QStringLiteral("0"));
+
+    statistic.setValue(1234567.89);
+    QCOMPARE(statistic.formattedValue(), QStringLiteral("1,234,567"));
+    const QString roundedValue = statistic.formattedValue();
+    QCOMPARE(statistic.formattedValue(), roundedValue);
+
+    statistic.setPrecision(2);
+    QCOMPARE(statistic.formattedValue(), QStringLiteral("1,234,567.89"));
+
+    statistic.setGroupSeparator(QString());
+    QCOMPARE(statistic.formattedValue(), QStringLiteral("1234567.89"));
+
+    statistic.setGroupSeparator(QStringLiteral(" "));
+    QCOMPARE(statistic.formattedValue(), QStringLiteral("1 234 567.89"));
+
+    statistic.setValue(QDateTime::currentMSecsSinceEpoch() / 1000.0 + 65.0);
+    statistic.setCountdownMode(true);
+    statistic.setCountdownFormat(QStringLiteral("mm:ss"));
+    const QRegularExpression countdownPattern(QStringLiteral("^01:0[0-5]$"));
+    QVERIFY2(countdownPattern.match(statistic.formattedValue()).hasMatch(),
+             qPrintable(QStringLiteral("unexpected countdown value: %1").arg(statistic.formattedValue())));
+
+    statistic.setCountdownMode(false);
+    QVERIFY(!statistic.formattedValue().contains(QLatin1Char(':')));
 }
 
 void TestAntDataDisplayA::cardTitlePaletteTracksTheme()

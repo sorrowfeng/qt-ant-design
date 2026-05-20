@@ -13,6 +13,7 @@ AntStatistic::AntStatistic(QWidget* parent)
     : QWidget(parent)
 {
     installAntStyle<AntStatisticStyle>(this);
+    refreshFormattedValue();
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 
@@ -45,6 +46,7 @@ void AntStatistic::setValue(double value)
         return;
     }
     m_value = value;
+    refreshFormattedValue();
     update();
     Q_EMIT valueChanged(m_value);
 }
@@ -59,6 +61,7 @@ void AntStatistic::setPrecision(int precision)
         return;
     }
     m_precision = clamped;
+    refreshFormattedValue();
     updateGeometry();
     update();
     Q_EMIT precisionChanged(m_precision);
@@ -73,6 +76,7 @@ void AntStatistic::setGroupSeparator(const QString& separator)
         return;
     }
     m_groupSeparator = separator;
+    refreshFormattedValue();
     update();
     Q_EMIT groupSeparatorChanged(m_groupSeparator);
 }
@@ -126,6 +130,8 @@ void AntStatistic::setValueWidget(QWidget* widget)
     update();
 }
 
+QString AntStatistic::formattedValue() const { return m_formattedValue; }
+
 bool AntStatistic::isCountdownMode() const { return m_countdownMode; }
 
 void AntStatistic::setCountdownMode(bool countdown)
@@ -135,12 +141,14 @@ void AntStatistic::setCountdownMode(bool countdown)
         return;
     }
     m_countdownMode = countdown;
+    refreshFormattedValue();
     if (m_countdownMode)
     {
         if (!m_countdownTimer)
         {
             m_countdownTimer = new QTimer(this);
             connect(m_countdownTimer, &QTimer::timeout, this, [this]() {
+                const bool changed = refreshFormattedValue();
                 const double now = QDateTime::currentMSecsSinceEpoch() / 1000.0;
                 const double remaining = m_value - now;
                 if (remaining <= 0)
@@ -148,7 +156,10 @@ void AntStatistic::setCountdownMode(bool countdown)
                     m_countdownTimer->stop();
                     Q_EMIT countdownFinished();
                 }
-                update();
+                if (changed || remaining <= 0)
+                {
+                    update();
+                }
             });
         }
         m_countdownTimer->start(1000);
@@ -173,7 +184,8 @@ void AntStatistic::setCountdownFormat(const QString& format)
         return;
     }
     m_countdownFormat = format;
-    if (m_countdownMode)
+    const bool changed = refreshFormattedValue();
+    if (m_countdownMode && changed)
     {
         update();
     }
@@ -279,7 +291,7 @@ QRect AntStatistic::valueRect() const
     return QRect(m.padding, top, width() - m.padding * 2, valueHeight);
 }
 
-QString AntStatistic::formattedValue() const
+QString AntStatistic::formatValueForCurrentState() const
 {
     // Countdown mode: format remaining time
     if (m_countdownMode)
@@ -339,6 +351,17 @@ QString AntStatistic::formattedValue() const
     }
 
     return intPart + fracPart;
+}
+
+bool AntStatistic::refreshFormattedValue()
+{
+    const QString nextValue = formatValueForCurrentState();
+    if (m_formattedValue == nextValue)
+    {
+        return false;
+    }
+    m_formattedValue = nextValue;
+    return true;
 }
 
 void AntStatistic::syncValueWidgetGeometry()

@@ -43,6 +43,7 @@ public:
     void setSuffix(const QString& suffix);
 
     void setValueWidget(QWidget* widget);
+    QString formattedValue() const;
 
     bool isCountdownMode() const;
     void setCountdownMode(bool countdown);
@@ -81,7 +82,8 @@ private:
     Metrics metrics() const;
     QRect titleRect() const;
     QRect valueRect() const;
-    QString formattedValue() const;
+    QString formatValueForCurrentState() const;
+    bool refreshFormattedValue();
     void syncValueWidgetGeometry();
 
     QString m_title;
@@ -93,5 +95,6 @@ private:
     QPointer<QWidget> m_valueWidget;
     bool m_countdownMode = false;
     QString m_countdownFormat = QStringLiteral("HH:mm:ss");
+    QString m_formattedValue;
     QTimer* m_countdownTimer = nullptr;
 };

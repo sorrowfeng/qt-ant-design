@@ -1,6 +1,5 @@
 #include "AntStatisticStyle.h"
 
-#include <QDateTime>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QPainter>
@@ -56,70 +55,6 @@ QRect statisticValueRect(const AntStatistic* stat, const QRect& widgetRect, cons
     const int valueHeight = QFontMetrics(valueFont).height();
 
     return QRect(m.padding, top, widgetRect.width() - m.padding * 2, valueHeight);
-}
-
-QString statisticFormattedValue(const AntStatistic* stat)
-{
-    if (stat->isCountdownMode())
-    {
-        const double now = QDateTime::currentMSecsSinceEpoch() / 1000.0;
-        const double remaining = qMax(0.0, stat->value() - now);
-        const int totalSecs = static_cast<int>(remaining);
-        const int days = totalSecs / 86400;
-        const QString format = stat->countdownFormat();
-        const bool hasDayToken = format.contains(QStringLiteral("DD"));
-        const int hours = hasDayToken ? (totalSecs % 86400) / 3600 : totalSecs / 3600;
-        const int minutes = (totalSecs % 3600) / 60;
-        const int seconds = totalSecs % 60;
-
-        QString result = format;
-        result.replace(QStringLiteral("DD"), QString::number(days));
-        result.replace(QStringLiteral("HH"), QString::number(hours).rightJustified(2, QChar('0')));
-        result.replace(QStringLiteral("mm"), QString::number(minutes).rightJustified(2, QChar('0')));
-        result.replace(QStringLiteral("ss"), QString::number(seconds).rightJustified(2, QChar('0')));
-        return result;
-    }
-
-    const double value = stat->value();
-    const int precision = stat->precision();
-    const QString separator = stat->groupSeparator();
-
-    QString numStr;
-    if (precision > 0)
-    {
-        numStr = QString::number(value, 'f', precision);
-    }
-    else
-    {
-        numStr = QString::number(static_cast<qlonglong>(value));
-    }
-
-    if (separator.isEmpty())
-    {
-        return numStr;
-    }
-
-    int dotIdx = numStr.indexOf('.');
-    QString intPart = dotIdx >= 0 ? numStr.left(dotIdx) : numStr;
-    QString fracPart = dotIdx >= 0 ? numStr.mid(dotIdx) : QString();
-
-    bool negative = intPart.startsWith('-');
-    if (negative)
-    {
-        intPart.remove(0, 1);
-    }
-
-    for (int i = intPart.size() - 3; i > 0; i -= 3)
-    {
-        intPart.insert(i, separator);
-    }
-
-    if (negative)
-    {
-        intPart.prepend('-');
-    }
-
-    return intPart + fracPart;
 }
 
 } // namespace
@@ -214,7 +149,7 @@ void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* pain
     valueFont.setWeight(QFont::Normal);
     QFontMetrics valueFm(valueFont);
 
-    const QString formatted = statisticFormattedValue(stat);
+    const QString formatted = stat->formattedValue();
     int contentWidth = valueFm.horizontalAdvance(formatted);
 
     if (!prefix.isEmpty())

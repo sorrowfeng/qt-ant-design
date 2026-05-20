@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `5` components are optimized from this pass, and `79` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `6` components are optimized from this pass, and `78` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-20` | `AntStatistic` | Formatted display text is now owned by the widget and refreshed only when value, precision, separator, countdown mode, or countdown format changes. The style reads the cached text instead of recomputing number/countdown formatting on every paint. | `cmake --build build --config Debug --target TestAntDataDisplayA`, `TestAntDataDisplayA.exe statisticFormattedValueCache`, `TestAntDataDisplayA.exe propertiesAndSignals` |
 | `2026-05-20` | `AntQRCode` | QR modules now render into a DPR-aware transparent pixmap cache keyed by matrix revision, logical size, DPR, and foreground color. Status overlays, borders, and center icons remain separate so visual states still repaint normally without rebuilding the module layer. | `cmake --build build --config Debug --target TestAntDataDisplayB`, `TestAntDataDisplayB.exe qrCodeReusesRenderedModuleCache`, `TestAntDataDisplayB.exe propertiesAndSignals` |
 | `2026-05-20` | `AntList` | Bulk `addItems()` and `insertItems()` now adopt all new rows first and coalesce layout, geometry, and repaint work into one pass instead of repeating the full list update for every item. | `cmake --build build --config Debug --target TestAntDataDisplayB`, `TestAntDataDisplayB.exe listBulkInsertionCoalescesLayout`, `TestAntDataDisplayB.exe listInternalScrolling` |
 | `2026-05-20` | `AntTable` | Hover and leave transitions now compute row dirty rectangles and repaint only the previous/current row instead of scheduling a full table update. A targeted test asserts the row-scoped update path directly. | `cmake --build build --config Debug --target TestAntDataDisplayB`, `TestAntDataDisplayB.exe tableHoverUsesRowScopedUpdates`, `TestAntAdvancedInteractions.exe tableSortSelectionAndPaginationFlow` |
@@ -146,7 +147,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntImage` | P1 | Cache scaled image pixmap per target size/DPR and reuse preview overlay; avoid rescaling during unchanged paints. | Plan ready |
 | `AntList` | P0 | Bulk add/insert coalesces row adoption into one layout, geometry, and repaint pass. Continue with cached item heights/visible range and row-scoped selection updates in a later pass. | Optimized |
 | `AntQRCode` | P1 | Cache generated QR module pixmaps by matrix revision, logical size, DPR, and foreground color. Keep status overlays, borders, and center icons separate so state-only repaint does not rebuild the module layer. | Optimized |
-| `AntStatistic` | P2 | Cache formatted value/title/suffix layout; only recompute on value/precision/locale/font changes. | Plan ready |
+| `AntStatistic` | P2 | Cache formatted value/countdown text in the widget and refresh it only when value, precision, separator, countdown mode, or countdown format changes; keep text layout caching as a later pass. | Optimized |
 | `AntTable` | P0 | Hover and leave now repaint only the previous/current row dirty rectangles. Continue with cached visible geometry, sorter/selection rects, and header-cell dirty updates in a later pass. | Optimized |
 | `AntTag` | P2 | Cache text/icon/close rects; update only tag bounds on hover/checked/close states. | Plan ready |
 | `AntTimeline` | P1 | Cache item positions and line geometry; repaint only changed item/status segment. | Plan ready |
