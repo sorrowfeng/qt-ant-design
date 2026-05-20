@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QFont>
 #include <QIcon>
 #include <QRectF>
 #include <QVector>
@@ -178,6 +179,10 @@ private:
     QRect collapseButtonRect() const;
     int tabAt(const QPoint& pos) const;
     QRectF targetIndicatorRect(int index) const;
+    void invalidateTabLayoutCache();
+    void updateRibbonRegion(const QRect& rect);
+    void updateRibbonRegion(const QRectF& rect);
+    void syncRibbonPerfCounters() const;
     void syncIndicatorRect();
     void animateIndicator(const QRectF& from, const QRectF& to);
     void updatePageVisibility();
@@ -202,6 +207,14 @@ private:
     QRectF m_indicatorRect;
     bool m_indicatorReady = false;
     qreal m_contentHeight = ContentHeight;
+    mutable bool m_tabLayoutCacheDirty = true;
+    mutable int m_tabLayoutCacheWidth = -1;
+    mutable bool m_tabLayoutCacheCollapseButtonVisible = true;
+    mutable QFont m_tabLayoutCacheFont;
+    mutable QVector<QString> m_tabLayoutCacheTitles;
+    mutable QVector<QRect> m_tabLayoutCacheRects;
+    mutable int m_tabLayoutBuildCount = 0;
+    int m_ribbonRegionUpdateCount = 0;
     QPropertyAnimation* m_indicatorAnimation = nullptr;
     QPropertyAnimation* m_contentAnimation = nullptr;
 };

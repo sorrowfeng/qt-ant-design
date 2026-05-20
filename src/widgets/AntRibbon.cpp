@@ -571,9 +571,11 @@ AntRibbon::AntRibbon(QWidget* parent)
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         syncTheme();
+        invalidateTabLayoutCache();
         update();
     });
     syncTheme();
+    syncRibbonPerfCounters();
 }
 
 AntRibbonPage* AntRibbon::addPage(const QString& title, const QString& key)
@@ -588,6 +590,7 @@ AntRibbonPage* AntRibbon::insertPage(int index, const QString& title, const QStr
     m_pages.insert(index, page);
     m_stack->insertWidget(index, page);
     connectPage(page);
+    invalidateTabLayoutCache();
 
     if (m_currentPageIndex < 0)
     {
@@ -638,6 +641,7 @@ void AntRibbon::removePage(const QString& key)
                 Q_EMIT currentPageKeyChanged(currentPageKey());
             }
             updateStackSize();
+            invalidateTabLayoutCache();
             updateGeometry();
             update();
             return;
@@ -654,6 +658,7 @@ void AntRibbon::clearPages()
         page->deleteLater();
     }
     m_currentPageIndex = -1;
+    invalidateTabLayoutCache();
     if (m_indicatorAnimation)
     {
         m_indicatorAnimation->stop();
@@ -781,6 +786,7 @@ void AntRibbon::setCollapseButtonVisible(bool visible)
         return;
     }
     m_collapseButtonVisible = visible;
+    invalidateTabLayoutCache();
     syncIndicatorRect();
     update();
     Q_EMIT collapseButtonVisibleChanged(m_collapseButtonVisible);
@@ -797,8 +803,9 @@ void AntRibbon::setIndicatorRect(const QRectF& rect)
     {
         return;
     }
+    const QRect dirty = m_indicatorRect.toAlignedRect().united(rect.toAlignedRect()).adjusted(-2, -2, 2, 2);
     m_indicatorRect = rect;
-    update();
+    updateRibbonRegion(dirty);
 }
 
 qreal AntRibbon::contentHeight() const
@@ -905,6 +912,7 @@ void AntRibbon::paintEvent(QPaintEvent* event)
 void AntRibbon::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
+    invalidateTabLayoutCache();
     updateScrollAreaGeometry();
     updateStackSize();
     if (!m_indicatorAnimation || m_indicatorAnimation->state() != QAbstractAnimation::Running)
@@ -917,11 +925,20 @@ void AntRibbon::mouseMoveEvent(QMouseEvent* event)
 {
     const int oldTab = m_hoveredTab;
     const bool oldCollapse = m_collapseHovered;
+    const QVector<QRect> tabs = tabRects();
+    const QRect oldTabRect = oldTab >= 0 && oldTab < tabs.size() ? tabs.at(oldTab) : QRect();
+    const QRect oldCollapseRect = oldCollapse ? collapseButtonRect() : QRect();
     m_hoveredTab = tabAt(event->pos());
     m_collapseHovered = m_collapseButtonVisible && collapseButtonRect().contains(event->pos());
     if (oldTab != m_hoveredTab || oldCollapse != m_collapseHovered)
     {
-        update();
+        QRect dirty = oldTabRect.united(m_hoveredTab >= 0 && m_hoveredTab < tabs.size() ? tabs.at(m_hoveredTab) : QRect());
+        dirty = dirty.united(oldCollapseRect);
+        if (m_collapseHovered)
+        {
+            dirty = dirty.united(collapseButtonRect());
+        }
+        updateRibbonRegion(dirty.adjusted(-2, -2, 2, 2));
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -953,9 +970,19 @@ void AntRibbon::mousePressEvent(QMouseEvent* event)
 
 void AntRibbon::leaveEvent(QEvent* event)
 {
+    const QVector<QRect> tabs = tabRects();
+    QRect dirty;
+    if (m_hoveredTab >= 0 && m_hoveredTab < tabs.size())
+    {
+        dirty = dirty.united(tabs.at(m_hoveredTab));
+    }
+    if (m_collapseHovered)
+    {
+        dirty = dirty.united(collapseButtonRect());
+    }
     m_hoveredTab = -1;
     m_collapseHovered = false;
-    update();
+    updateRibbonRegion(dirty.adjusted(-2, -2, 2, 2));
     QWidget::leaveEvent(event);
 }
 
@@ -964,6 +991,7 @@ void AntRibbon::changeEvent(QEvent* event)
     if (event->type() == QEvent::EnabledChange || event->type() == QEvent::FontChange)
     {
         syncTheme();
+        invalidateTabLayoutCache();
         update();
     }
     QWidget::changeEvent(event);
@@ -988,13 +1016,29 @@ QString AntRibbon::normalizedKey(const QString& title, const QString& key) const
 
 QVector<QRect> AntRibbon::tabRects() const
 {
+    QVector<QString> titles;
+    titles.reserve(m_pages.size());
+    for (AntRibbonPage* page : m_pages)
+    {
+        titles.append(page ? page->title() : QString());
+    }
+
+    if (!m_tabLayoutCacheDirty &&
+        m_tabLayoutCacheWidth == width() &&
+        m_tabLayoutCacheCollapseButtonVisible == m_collapseButtonVisible &&
+        m_tabLayoutCacheFont == font() &&
+        m_tabLayoutCacheTitles == titles)
+    {
+        return m_tabLayoutCacheRects;
+    }
+
     QVector<QRect> rects;
     QFontMetrics fm(font());
     int x = 8;
     const int rightLimit = m_collapseButtonVisible ? width() - CollapseButtonWidth - 8 : width() - 8;
-    for (AntRibbonPage* page : m_pages)
+    for (const QString& title : std::as_const(titles))
     {
-        const int tabWidth = qMax(72, fm.horizontalAdvance(page->title()) + 32);
+        const int tabWidth = qMax(72, fm.horizontalAdvance(title) + 32);
         if (x + tabWidth > rightLimit)
         {
             rects.append(QRect(x, 0, qMax(48, rightLimit - x), TabBarHeight));
@@ -1003,7 +1047,16 @@ QVector<QRect> AntRibbon::tabRects() const
         rects.append(QRect(x, 0, tabWidth, TabBarHeight));
         x += tabWidth + 4;
     }
-    return rects;
+
+    m_tabLayoutCacheDirty = false;
+    m_tabLayoutCacheWidth = width();
+    m_tabLayoutCacheCollapseButtonVisible = m_collapseButtonVisible;
+    m_tabLayoutCacheFont = font();
+    m_tabLayoutCacheTitles = titles;
+    m_tabLayoutCacheRects = rects;
+    ++m_tabLayoutBuildCount;
+    syncRibbonPerfCounters();
+    return m_tabLayoutCacheRects;
 }
 
 QRect AntRibbon::collapseButtonRect() const
@@ -1046,6 +1099,35 @@ void AntRibbon::syncIndicatorRect()
     const QRectF target = targetIndicatorRect(m_currentPageIndex);
     m_indicatorReady = !target.isNull();
     setIndicatorRect(target);
+}
+
+void AntRibbon::invalidateTabLayoutCache()
+{
+    m_tabLayoutCacheDirty = true;
+}
+
+void AntRibbon::updateRibbonRegion(const QRect& rect)
+{
+    if (!rect.isValid())
+    {
+        return;
+    }
+
+    update(rect.intersected(this->rect()));
+    ++m_ribbonRegionUpdateCount;
+    syncRibbonPerfCounters();
+}
+
+void AntRibbon::updateRibbonRegion(const QRectF& rect)
+{
+    updateRibbonRegion(rect.toAlignedRect());
+}
+
+void AntRibbon::syncRibbonPerfCounters() const
+{
+    auto* self = const_cast<AntRibbon*>(this);
+    self->setProperty("antRibbonTabLayoutBuildCount", m_tabLayoutBuildCount);
+    self->setProperty("antRibbonRegionUpdateCount", m_ribbonRegionUpdateCount);
 }
 
 void AntRibbon::animateIndicator(const QRectF& from, const QRectF& to)
@@ -1157,6 +1239,8 @@ void AntRibbon::restoreScrollAreaParent()
 void AntRibbon::connectPage(AntRibbonPage* page)
 {
     connect(page, &AntRibbonPage::titleChanged, this, [this]() {
+        invalidateTabLayoutCache();
+        syncIndicatorRect();
         updateGeometry();
         update();
     });

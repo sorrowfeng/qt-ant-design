@@ -1338,7 +1338,24 @@ void TestAntQtExtensions::ribbon()
     QCOMPARE(clipboardTitle->mapTo(ribbon, QPoint(0, 0)).y(), controlsTitle->mapTo(ribbon, QPoint(0, 0)).y());
     ribbon->setCurrentPageIndex(1);
     QTRY_COMPARE(ribbon->currentPageIndex(), 1);
-    QTest::mouseMove(ribbon, QPoint(28, 20));
+    auto sendRibbonMove = [ribbon](const QPoint& pos) {
+        QMouseEvent event(QEvent::MouseMove, QPointF(pos), QPointF(ribbon->mapToGlobal(pos)),
+                          Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(ribbon, &event);
+    };
+    sendRibbonMove(QPoint(28, 20));
+    QCoreApplication::processEvents();
+    const int tabLayoutBuildsAfterHover = ribbon->property("antRibbonTabLayoutBuildCount").toInt();
+    const int ribbonRegionUpdatesAfterHover = ribbon->property("antRibbonRegionUpdateCount").toInt();
+    sendRibbonMove(QPoint(28, 20));
+    QCoreApplication::processEvents();
+    QCOMPARE(ribbon->property("antRibbonTabLayoutBuildCount").toInt(), tabLayoutBuildsAfterHover);
+    QCOMPARE(ribbon->property("antRibbonRegionUpdateCount").toInt(), ribbonRegionUpdatesAfterHover);
+    sendRibbonMove(QPoint(112, 20));
+    QCoreApplication::processEvents();
+    QCOMPARE(ribbon->property("antRibbonTabLayoutBuildCount").toInt(), tabLayoutBuildsAfterHover);
+    QVERIFY(ribbon->property("antRibbonRegionUpdateCount").toInt() > ribbonRegionUpdatesAfterHover);
+    sendRibbonMove(QPoint(28, 20));
     QCoreApplication::processEvents();
     const QImage hoverImage = renderForExtensionTest(ribbon);
     const QColor hoveredTabBackground = hoverImage.pixelColor(18, 14);
