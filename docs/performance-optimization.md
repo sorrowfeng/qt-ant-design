@@ -23,7 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. Code optimization work has not started from this document yet.
+Current summary: `84 / 84` components have an initial plan. `1` component is optimized from this pass, and `83` remain in planned or watching states.
+
+Latest completed optimization:
+
+| Date | Component | Change | Validation |
+| --- | --- | --- | --- |
+| `2026-05-20` | `AntIcon` | Cached enum path generation and resource SVG rendered pixmaps by icon name, colors, size, and DPR. Rotation and spin still use painter transforms, so visible motion is preserved while repeated paints avoid qrc reads and SVG renderer setup. | `cmake --build build --config Debug --target TestAntIcon`, `TestAntIcon.exe`, `cmake --build build --config Debug --target TestAntButton`, `TestAntButton.exe` |
 
 ## Shared Optimization Rules
 
@@ -63,7 +69,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | --- | --- | --- | --- |
 | `AntButton` | P1 | Cache rendered icon paths/spinner geometry per size/state; only run loading timer while visible and loading; update spinner arc region instead of whole button when possible. | Plan ready |
 | `AntFloatButton` | P1 | Reuse button/group geometry, cache badge/icon render output, and limit expand/collapse repaint to the affected group bounds. | Plan ready |
-| `AntIcon` | P0 | Add a shared rendered pixmap/path cache keyed by icon name, theme color, DPR, size, rotation, and two-tone state; avoid reparsing SVG resources in hot paint paths. | Plan ready |
+| `AntIcon` | P0 | Cache enum paths and rendered resource pixmaps keyed by icon name, colors, size, and DPR. Keep rotation/spin outside the cache through painter transforms so motion remains unchanged. | Optimized |
 | `AntTypography` | P1 | Cache text layout/metrics and copy/ellipsis hit regions by text, width, font, and mode; avoid geometry refresh when only visual state changes. | Plan ready |
 
 ### Navigation

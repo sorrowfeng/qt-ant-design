@@ -1,5 +1,6 @@
 #include <QImage>
 #include <QPainter>
+#include <QPixmapCache>
 #include <QSignalSpy>
 #include <QTest>
 #include <QList>
@@ -15,6 +16,30 @@ private slots:
 
 void TestAntIcon::propertiesAndSignals()
 {
+    auto renderIcon = [](AntIcon& icon) {
+        QImage image(icon.size(), QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(icon.devicePixelRatioF());
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        icon.render(&painter);
+        painter.end();
+        return image;
+    };
+
+    auto hasPaintedPixel = [](const QImage& image) {
+        for (int y = 0; y < image.height(); ++y)
+        {
+            for (int x = 0; x < image.width(); ++x)
+            {
+                if (qAlpha(image.pixel(x, y)) > 0)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
     auto* w = new AntIcon;
     QCOMPARE(w->iconType(), Ant::IconType::None);
     QCOMPARE(w->iconName(), QString());
@@ -87,25 +112,35 @@ void TestAntIcon::propertiesAndSignals()
     AntIcon official(QStringLiteral("GithubFilled"));
     official.setIconSize(24);
     official.resize(24, 24);
-    QImage rendered(official.size(), QImage::Format_ARGB32_Premultiplied);
-    rendered.fill(Qt::transparent);
-    QPainter painter(&rendered);
-    official.render(&painter);
-    painter.end();
+    QVERIFY(hasPaintedPixel(renderIcon(official)));
 
-    bool hasPaintedPixel = false;
-    for (int y = 0; y < rendered.height() && !hasPaintedPixel; ++y)
-    {
-        for (int x = 0; x < rendered.width(); ++x)
-        {
-            if (qAlpha(rendered.pixel(x, y)) > 0)
-            {
-                hasPaintedPixel = true;
-                break;
-            }
-        }
-    }
-    QVERIFY(hasPaintedPixel);
+    QPixmapCache::clear();
+    AntIcon cachedOfficial(QStringLiteral("GithubFilled"));
+    cachedOfficial.setIconSize(24);
+    cachedOfficial.setColor(QColor("#123456"));
+    cachedOfficial.resize(24, 24);
+    QVERIFY(hasPaintedPixel(renderIcon(cachedOfficial)));
+    QCOMPARE(cachedOfficial.property("antIconRenderCacheSource").toString(), QStringLiteral("resource"));
+    QCOMPARE(cachedOfficial.property("antIconRenderCacheHit").toBool(), false);
+
+    const QString firstCacheKey = cachedOfficial.property("antIconRenderCacheKey").toString();
+    QVERIFY(!firstCacheKey.isEmpty());
+    QVERIFY(hasPaintedPixel(renderIcon(cachedOfficial)));
+    QCOMPARE(cachedOfficial.property("antIconRenderCacheHit").toBool(), true);
+    QCOMPARE(cachedOfficial.property("antIconRenderCacheKey").toString(), firstCacheKey);
+
+    cachedOfficial.setRotate(90);
+    QVERIFY(hasPaintedPixel(renderIcon(cachedOfficial)));
+    QCOMPARE(cachedOfficial.property("antIconRenderCacheHit").toBool(), true);
+    QCOMPARE(cachedOfficial.property("antIconRenderCacheKey").toString(), firstCacheKey);
+
+    const int spinAngleBefore = cachedOfficial.spinAngle();
+    cachedOfficial.setSpin(true);
+    QTRY_VERIFY(cachedOfficial.spinAngle() != spinAngleBefore);
+    QVERIFY(hasPaintedPixel(renderIcon(cachedOfficial)));
+    QCOMPARE(cachedOfficial.property("antIconRenderCacheHit").toBool(), true);
+    QCOMPARE(cachedOfficial.property("antIconRenderCacheKey").toString(), firstCacheKey);
+    cachedOfficial.setSpin(false);
 
     const QList<Ant::IconType> outlinedReferenceIcons = {
         Ant::IconType::Home,

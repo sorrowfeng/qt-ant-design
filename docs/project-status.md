@@ -131,6 +131,8 @@ Follow-up: `AntColorPicker` popup now uses a manual outside-click close path ins
 
 Follow-up: `AntWindow` close confirmation is now opt-in through `setCloseConfirmationEnabled(true)`, and public APIs customize the Modal title, content, exit text, and cancel-exit text. `forceClose()` is available for automation or programmatic shutdown paths that should bypass confirmation. The targeted `window` subtest verifies the default close path skips the Modal, cancel keeps the window open after opt-in, confirm closes it, and custom text is propagated to the Modal.
 
+Follow-up: the performance pass started with `AntIcon`. Built-in enum path generation is now cached, and resource SVG icons are rendered into `QPixmapCache` entries keyed by icon name, color pair, size, and device pixel ratio. Rotation and spin remain painter transforms, so visible animation is preserved while repeated paints avoid qrc file reads and `QSvgRenderer` setup. Targeted validation covered `TestAntIcon` plus `TestAntButton` as a representative icon consumer.
+
 Latest targeted Win10 dock re-embed repaint cadence validation:
 
 ```powershell

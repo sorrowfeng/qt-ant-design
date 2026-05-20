@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QEvent>
+#include <QHash>
 #include <QPainter>
 #include <QPainterPathStroker>
 #include <QTransform>
@@ -382,6 +383,12 @@ QString normalizedIconBaseName(const QString& iconName, Ant::IconTheme* parsedTh
 
     return normalized;
 }
+
+quint64 builtinPathCacheKey(Ant::IconType type, Ant::IconTheme theme)
+{
+    return (static_cast<quint64>(static_cast<uint>(type)) << 32) |
+           static_cast<quint64>(static_cast<uint>(theme));
+}
 }
 
 AntIcon::AntIcon(QWidget* parent)
@@ -618,6 +625,14 @@ void AntIcon::changeEvent(QEvent* event)
 
 AntIcon::IconPaths AntIcon::builtinPaths(Ant::IconType type, Ant::IconTheme theme)
 {
+    static QHash<quint64, IconPaths> cache;
+    const quint64 cacheKey = builtinPathCacheKey(type, theme);
+    const auto cached = cache.constFind(cacheKey);
+    if (cached != cache.cend())
+    {
+        return cached.value();
+    }
+
     IconPaths result;
     result.useStroke = theme == Ant::IconTheme::Outlined;
     QPainterPathStroker stroker;
@@ -812,6 +827,7 @@ AntIcon::IconPaths AntIcon::builtinPaths(Ant::IconType type, Ant::IconTheme them
             break;
         }
     }
+    cache.insert(cacheKey, result);
     return result;
 }
 

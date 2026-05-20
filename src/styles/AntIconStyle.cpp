@@ -2,8 +2,10 @@
 
 #include <QEvent>
 #include <QFile>
+#include <QHash>
 #include <QPainter>
 #include <QPainterPathStroker>
+#include <QPixmapCache>
 #include <QStyleOption>
 #include <QSvgRenderer>
 #include <QTransform>
@@ -567,24 +569,96 @@ QColor officialTwoToneSecondaryColor(const QColor& primary)
     return AntPalette::tint(primary, 0.92);
 }
 
+QString colorCacheKey(const QColor& color)
+{
+    return QString::number(static_cast<qulonglong>(color.rgba()), 16);
+}
+
+QString resourceSvgTemplate(const QString& iconName)
+{
+    static QHash<QString, QString> cache;
+    const auto cached = cache.constFind(iconName);
+    if (cached != cache.cend())
+    {
+        return cached.value();
+    }
+
+    QFile file(QStringLiteral(":/qt-ant-design/icons/antd/%1.svg").arg(iconName));
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        cache.insert(iconName, QString());
+        return QString();
+    }
+
+    const QString svgTemplate = QString::fromUtf8(file.readAll());
+    cache.insert(iconName, svgTemplate);
+    return svgTemplate;
+}
+
+QString renderedResourceIconCacheKey(const QString& iconName,
+                                     const QSize& pixelSize,
+                                     qreal devicePixelRatio,
+                                     const QColor& primaryColor,
+                                     const QColor& secondaryColor)
+{
+    return QStringLiteral("qt-ant-design/AntIcon/resource/%1/%2x%3/%4/%5/%6")
+        .arg(iconName,
+             QString::number(pixelSize.width()),
+             QString::number(pixelSize.height()),
+             QString::number(qRound(devicePixelRatio * 100.0)),
+             colorCacheKey(primaryColor),
+             colorCacheKey(secondaryColor));
+}
+
+void setIconRenderCacheDiagnostics(const QWidget* widget,
+                                   bool hit,
+                                   const QString& source,
+                                   const QString& cacheKey)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    auto* mutableWidget = const_cast<QWidget*>(widget);
+    mutableWidget->setProperty("antIconRenderCacheHit", hit);
+    mutableWidget->setProperty("antIconRenderCacheSource", source);
+    mutableWidget->setProperty("antIconRenderCacheKey", cacheKey);
+}
+
 bool drawResourceIcon(const QString& iconName,
                       const QRectF& iconRect,
                       const QColor& primaryColor,
                       const QColor& secondaryColor,
-                      QPainter* painter)
+                      QPainter* painter,
+                      const QWidget* widget)
 {
     if (iconName.isEmpty() || !painter)
     {
         return false;
     }
 
-    QFile file(QStringLiteral(":/qt-ant-design/icons/antd/%1.svg").arg(iconName));
-    if (!file.open(QIODevice::ReadOnly))
+    const qreal devicePixelRatio = painter->device() ? painter->device()->devicePixelRatioF() : 1.0;
+    const QSize pixelSize(qMax(1, qRound(iconRect.width() * devicePixelRatio)),
+                          qMax(1, qRound(iconRect.height() * devicePixelRatio)));
+    const QString cacheKey = renderedResourceIconCacheKey(iconName, pixelSize, devicePixelRatio, primaryColor, secondaryColor);
+
+    QPixmap cachedPixmap;
+    if (QPixmapCache::find(cacheKey, &cachedPixmap))
+    {
+        const QSizeF sourceSize(cachedPixmap.width() / cachedPixmap.devicePixelRatioF(),
+                                cachedPixmap.height() / cachedPixmap.devicePixelRatioF());
+        painter->drawPixmap(iconRect, cachedPixmap, QRectF(QPointF(0, 0), sourceSize));
+        setIconRenderCacheDiagnostics(widget, true, QStringLiteral("resource"), cacheKey);
+        return true;
+    }
+
+    QString svg = resourceSvgTemplate(iconName);
+    if (svg.isEmpty())
     {
         return false;
     }
 
-    QString svg = QString::fromUtf8(file.readAll());
     svg.replace(QStringLiteral("__PRIMARY__"), primaryColor.name(QColor::HexRgb));
     svg.replace(QStringLiteral("__SECONDARY__"), secondaryColor.name(QColor::HexRgb));
 
@@ -593,7 +667,23 @@ bool drawResourceIcon(const QString& iconName,
     {
         return false;
     }
-    renderer.render(painter, iconRect);
+
+    QPixmap pixmap(pixelSize);
+    pixmap.setDevicePixelRatio(devicePixelRatio);
+    pixmap.fill(Qt::transparent);
+    {
+        QPainter pixmapPainter(&pixmap);
+        pixmapPainter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+        renderer.render(&pixmapPainter, QRectF(QPointF(0, 0),
+                                               QSizeF(pixelSize.width() / devicePixelRatio,
+                                                      pixelSize.height() / devicePixelRatio)));
+    }
+    QPixmapCache::insert(cacheKey, pixmap);
+
+    const QSizeF sourceSize(pixmap.width() / pixmap.devicePixelRatioF(),
+                            pixmap.height() / pixmap.devicePixelRatioF());
+    painter->drawPixmap(iconRect, pixmap, QRectF(QPointF(0, 0), sourceSize));
+    setIconRenderCacheDiagnostics(widget, false, QStringLiteral("resource"), cacheKey);
     return true;
 }
 
@@ -775,18 +865,6 @@ void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const
     const Ant::IconTheme iconTheme = icon->iconTheme();
     const bool enabled = icon->isEnabled();
 
-    AntIcon::IconPaths paths;
-    if (icon->hasCustomPath())
-    {
-        paths.primary = icon->customPrimaryPath();
-        paths.secondary = icon->customSecondaryPath();
-        paths.useStroke = iconTheme == Ant::IconTheme::Outlined;
-    }
-    else
-    {
-        paths = AntIcon::builtinPaths(iconType, iconTheme);
-    }
-
     painter->translate(widget->rect().center());
     painter->rotate(icon->rotate() + (icon->isSpin() ? icon->spinAngle() : 0));
     painter->translate(-widget->rect().center());
@@ -802,10 +880,22 @@ void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const
     }
 
     const QColor resourceSecondaryColor = !enabled ? token.colorBgContainerDisabled : officialTwoToneSecondaryColor(primaryColor);
-    if (!icon->hasCustomPath() && drawResourceIcon(icon->resolvedIconName(), iconRect, primaryColor, resourceSecondaryColor, painter))
+    if (!icon->hasCustomPath() && drawResourceIcon(icon->resolvedIconName(), iconRect, primaryColor, resourceSecondaryColor, painter, widget))
     {
         painter->restore();
         return;
+    }
+
+    AntIcon::IconPaths paths;
+    if (icon->hasCustomPath())
+    {
+        paths.primary = icon->customPrimaryPath();
+        paths.secondary = icon->customSecondaryPath();
+        paths.useStroke = iconTheme == Ant::IconTheme::Outlined;
+    }
+    else
+    {
+        paths = AntIcon::builtinPaths(iconType, iconTheme);
     }
 
     if (paths.primary.isEmpty() && paths.secondary.isEmpty())
