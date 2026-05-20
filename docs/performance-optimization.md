@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `11` components are optimized from this pass, and `73` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `12` components are optimized from this pass, and `72` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-20` | `AntConfigProvider` | Property setters now schedule one queued `configChanged` refresh per event turn, exposing a revision counter for consumers/tests while keeping individual property signals intact. `apply()` skips the global theme path when the requested mode is already active. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe configProvider`, `cmake --build build --config Debug --target qt-ant-design-example`, `cmake --build build --config Debug --target TestAntMetaProperties`, `TestAntMetaProperties.exe` |
 | `2026-05-20` | `AntApp` | Feedback host lookup is now cached through a `QPointer`-backed path, so message/modal/notification entry calls reuse the resolved root context instead of repeating host resolution. The singleton instance stack now restores nested wrappers on destruction and clears stale instances. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe app`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-20` | `AntAffix` | Scroll, wheel, move, resize, and scrollbar value changes now schedule one coalesced affix check for the next event turn. Repeated unchanged geometry checks are skipped, affixed state uses the placeholder as the reference anchor, and affixed geometry updates on viewport resize without forcing duplicate state transitions. | `cmake --build build --config Debug --target TestAntLayout`, `TestAntLayout.exe affix`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-20` | `AntTree` | Visible-node flattening is now cached and reused across paint, hit testing, size hints, and scroll clamping until tree data or expansion state changes. Hover transitions repaint only the previous/current row instead of invalidating the whole tree. | `cmake --build build --config Debug --target TestAntDataDisplayB TestAntAdvancedInteractions`, `TestAntDataDisplayB.exe treeCachesFlattenedVisibleNodes`, `TestAntAdvancedInteractions.exe treeExpandCheckAndSelectFlow`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -164,7 +165,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | --- | --- | --- | --- |
 | `AntAffix` | P1 | Coalesce scroll/resize/move/scrollbar events into one queued affix check, skip unchanged geometry, and update affixed geometry only when the viewport changes. | Optimized |
 | `AntApp` | P2 | Cache feedback host resolution through a guarded root/parent/active-window path and restore nested app instances on destruction. Continue with real message/modal/notification plumbing when those entrypoints are expanded. | Optimized |
-| `AntConfigProvider` | P1 | Batch theme/config changes and emit one consolidated refresh when multiple tokens change together. | Plan ready |
+| `AntConfigProvider` | P1 | Property setters coalesce into one queued `configChanged` signal and revision increment per event turn; `apply()` avoids redundant global theme refresh when the requested mode is already active. | Optimized |
 | `AntDivider` | P2 | Cache text metrics and line positions; repaint only on text/orientation/theme changes. | Plan ready |
 | `AntFlex` | P1 | Cache child layout pass results and invalidate only on child size hint, gap, wrap, orientation, or geometry changes. | Plan ready |
 | `AntGrid` | P1 | Cache row/column width calculations and invalidate only on span/gutter/container-width changes. | Plan ready |

@@ -14,6 +14,7 @@ class QT_ANT_DESIGN_EXPORT AntConfigProvider : public QObject
     Q_PROPERTY(QColor primaryColor READ primaryColor WRITE setPrimaryColor NOTIFY primaryColorChanged)
     Q_PROPERTY(int fontSize READ fontSize WRITE setFontSize NOTIFY fontSizeChanged)
     Q_PROPERTY(int borderRadius READ borderRadius WRITE setBorderRadius NOTIFY borderRadiusChanged)
+    Q_PROPERTY(int revision READ revision NOTIFY configChanged)
 
 public:
     explicit AntConfigProvider(QObject* parent = nullptr);
@@ -30,6 +31,8 @@ public:
     int borderRadius() const;
     void setBorderRadius(int radius);
 
+    int revision() const;
+
     void apply();
 
 Q_SIGNALS:
@@ -37,10 +40,15 @@ Q_SIGNALS:
     void primaryColorChanged(const QColor& color);
     void fontSizeChanged(int size);
     void borderRadiusChanged(int radius);
+    void configChanged();
 
 private:
+    void scheduleConfigChanged();
+
     Ant::ThemeMode m_themeMode = Ant::ThemeMode::Default;
     QColor m_primaryColor;
     int m_fontSize = 14;
     int m_borderRadius = 6;
+    bool m_configChangedScheduled = false;
+    int m_revision = 0;
 };

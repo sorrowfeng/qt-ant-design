@@ -195,6 +195,29 @@ protected:
     }
 };
 
+class ThemeModeRestorerForExtensionTest
+{
+public:
+    ThemeModeRestorerForExtensionTest()
+        : m_originalMode(antTheme->themeMode())
+    {
+    }
+
+    ~ThemeModeRestorerForExtensionTest()
+    {
+        antTheme->setThemeMode(m_originalMode);
+        QCoreApplication::processEvents();
+    }
+
+    Ant::ThemeMode alternateMode() const
+    {
+        return m_originalMode == Ant::ThemeMode::Dark ? Ant::ThemeMode::Default : Ant::ThemeMode::Dark;
+    }
+
+private:
+    Ant::ThemeMode m_originalMode;
+};
+
 int primaryLikePixelCountForExtensionTest(const QImage& image, QRect sampleRect)
 {
     if (image.isNull()) return 0;
@@ -672,30 +695,58 @@ void TestAntQtExtensions::app()
 
 void TestAntQtExtensions::configProvider()
 {
-    auto* w = new AntConfigProvider;
-    QCOMPARE(w->themeMode(), Ant::ThemeMode::Default);
-    QCOMPARE(w->fontSize(), 14);
-    QCOMPARE(w->borderRadius(), 6);
+    ThemeModeRestorerForExtensionTest themeGuard;
+    AntConfigProvider provider;
 
-    QSignalSpy themeSpy(w, &AntConfigProvider::themeModeChanged);
-    w->setThemeMode(Ant::ThemeMode::Dark);
-    QCOMPARE(w->themeMode(), Ant::ThemeMode::Dark);
+    QCOMPARE(provider.themeMode(), Ant::ThemeMode::Default);
+    QCOMPARE(provider.fontSize(), 14);
+    QCOMPARE(provider.borderRadius(), 6);
+    QCOMPARE(provider.revision(), 0);
+
+    QSignalSpy configSpy(&provider, &AntConfigProvider::configChanged);
+    QSignalSpy themeSpy(&provider, &AntConfigProvider::themeModeChanged);
+    provider.setThemeMode(themeGuard.alternateMode());
+    QCOMPARE(provider.themeMode(), themeGuard.alternateMode());
     QCOMPARE(themeSpy.count(), 1);
 
-    QSignalSpy colorSpy(w, &AntConfigProvider::primaryColorChanged);
-    w->setPrimaryColor(Qt::blue);
-    QCOMPARE(w->primaryColor(), QColor(Qt::blue));
+    QSignalSpy colorSpy(&provider, &AntConfigProvider::primaryColorChanged);
+    provider.setPrimaryColor(Qt::blue);
+    QCOMPARE(provider.primaryColor(), QColor(Qt::blue));
     QCOMPARE(colorSpy.count(), 1);
 
-    QSignalSpy fontSpy(w, &AntConfigProvider::fontSizeChanged);
-    w->setFontSize(16);
-    QCOMPARE(w->fontSize(), 16);
+    QSignalSpy fontSpy(&provider, &AntConfigProvider::fontSizeChanged);
+    provider.setFontSize(16);
+    QCOMPARE(provider.fontSize(), 16);
     QCOMPARE(fontSpy.count(), 1);
 
-    QSignalSpy radiusSpy(w, &AntConfigProvider::borderRadiusChanged);
-    w->setBorderRadius(8);
-    QCOMPARE(w->borderRadius(), 8);
+    QSignalSpy radiusSpy(&provider, &AntConfigProvider::borderRadiusChanged);
+    provider.setBorderRadius(8);
+    QCOMPARE(provider.borderRadius(), 8);
     QCOMPARE(radiusSpy.count(), 1);
+    QCOMPARE(configSpy.count(), 0);
+    QCOMPARE(provider.revision(), 0);
+
+    QTRY_COMPARE(configSpy.count(), 1);
+    QCOMPARE(provider.revision(), 1);
+
+    provider.setFontSize(16);
+    provider.setBorderRadius(8);
+    QCoreApplication::processEvents();
+    QCOMPARE(configSpy.count(), 1);
+    QCOMPARE(provider.revision(), 1);
+
+    provider.setFontSize(17);
+    provider.setBorderRadius(9);
+    QTRY_COMPARE(configSpy.count(), 2);
+    QCOMPARE(provider.revision(), 2);
+
+    QSignalSpy globalThemeSpy(antTheme, &AntTheme::themeChanged);
+    provider.apply();
+    QCOMPARE(antTheme->themeMode(), provider.themeMode());
+    QCOMPARE(globalThemeSpy.count(), 1);
+
+    provider.apply();
+    QCOMPARE(globalThemeSpy.count(), 1);
 }
 
 void TestAntQtExtensions::formItem()

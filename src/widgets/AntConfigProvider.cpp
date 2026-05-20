@@ -2,6 +2,8 @@
 
 #include "core/AntTheme.h"
 
+#include <QTimer>
+
 AntConfigProvider::AntConfigProvider(QObject* parent)
     : QObject(parent)
 {
@@ -13,6 +15,7 @@ void AntConfigProvider::setThemeMode(Ant::ThemeMode mode)
     if (m_themeMode == mode) return;
     m_themeMode = mode;
     Q_EMIT themeModeChanged(m_themeMode);
+    scheduleConfigChanged();
 }
 
 QColor AntConfigProvider::primaryColor() const { return m_primaryColor; }
@@ -21,6 +24,7 @@ void AntConfigProvider::setPrimaryColor(const QColor& color)
     if (m_primaryColor == color) return;
     m_primaryColor = color;
     Q_EMIT primaryColorChanged(m_primaryColor);
+    scheduleConfigChanged();
 }
 
 int AntConfigProvider::fontSize() const { return m_fontSize; }
@@ -29,6 +33,7 @@ void AntConfigProvider::setFontSize(int size)
     if (m_fontSize == size) return;
     m_fontSize = size;
     Q_EMIT fontSizeChanged(m_fontSize);
+    scheduleConfigChanged();
 }
 
 int AntConfigProvider::borderRadius() const { return m_borderRadius; }
@@ -37,10 +42,30 @@ void AntConfigProvider::setBorderRadius(int radius)
     if (m_borderRadius == radius) return;
     m_borderRadius = radius;
     Q_EMIT borderRadiusChanged(m_borderRadius);
+    scheduleConfigChanged();
 }
+
+int AntConfigProvider::revision() const { return m_revision; }
 
 void AntConfigProvider::apply()
 {
-    if (!m_primaryColor.isValid()) return;
-    antTheme->setThemeMode(m_themeMode);
+    if (antTheme->themeMode() != m_themeMode)
+    {
+        antTheme->setThemeMode(m_themeMode);
+    }
+}
+
+void AntConfigProvider::scheduleConfigChanged()
+{
+    if (m_configChangedScheduled)
+    {
+        return;
+    }
+
+    m_configChangedScheduled = true;
+    QTimer::singleShot(0, this, [this]() {
+        m_configChangedScheduled = false;
+        ++m_revision;
+        Q_EMIT configChanged();
+    });
 }
