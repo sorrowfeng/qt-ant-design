@@ -392,6 +392,7 @@ void TestAntLayout::sider()
 void TestAntLayout::masonry()
 {
     auto* w = new AntMasonry;
+    w->resize(416, 300);
     QCOMPARE(w->columns(), 3);
     QCOMPARE(w->spacing(), 8);
 
@@ -406,10 +407,44 @@ void TestAntLayout::masonry()
     QCOMPARE(spSpy.count(), 1);
 
     auto* i1 = new QWidget;
+    i1->setMinimumHeight(80);
     auto* i2 = new QWidget;
+    i2->setMinimumHeight(40);
+    auto* i3 = new QWidget;
+    i3->setMinimumHeight(60);
+
     w->addWidget(i1);
+    QCOMPARE(w->property("antMasonryFullRelayoutCount").toInt(), 1);
+    QCOMPARE(w->property("antMasonryIncrementalLayoutCount").toInt(), 0);
+    QCOMPARE(w->property("antMasonryCachedColumnWidth").toInt(), 92);
+    QCOMPARE(i1->geometry(), QRect(0, 0, 92, 80));
+
     w->addWidget(i2);
+    QCOMPARE(w->property("antMasonryFullRelayoutCount").toInt(), 1);
+    QCOMPARE(w->property("antMasonryIncrementalLayoutCount").toInt(), 1);
+    QCOMPARE(i2->geometry(), QRect(108, 0, 92, 40));
+
+    w->addWidget(i3);
+    QCOMPARE(w->property("antMasonryFullRelayoutCount").toInt(), 1);
+    QCOMPARE(w->property("antMasonryIncrementalLayoutCount").toInt(), 2);
+    QCOMPARE(i3->geometry(), QRect(216, 0, 92, 60));
+
+    const int fullRelayouts = w->property("antMasonryFullRelayoutCount").toInt();
+    QResizeEvent sameWidthEvent(QSize(416, 260), QSize(416, 300));
+    QCoreApplication::sendEvent(w, &sameWidthEvent);
+    QCOMPARE(w->property("antMasonryFullRelayoutCount").toInt(), fullRelayouts);
+
+    w->resize(500, 260);
+    QResizeEvent widerEvent(QSize(500, 260), QSize(416, 260));
+    QCoreApplication::sendEvent(w, &widerEvent);
+    QCOMPARE(w->property("antMasonryFullRelayoutCount").toInt(), fullRelayouts + 1);
+    QCOMPARE(w->property("antMasonryCachedColumnWidth").toInt(), 113);
+    QCOMPARE(i1->geometry(), QRect(0, 0, 113, 80));
+    QCOMPARE(i2->geometry(), QRect(129, 0, 113, 40));
+    QCOMPARE(i3->geometry(), QRect(258, 0, 113, 60));
+
     w->clear();
+    QCOMPARE(w->minimumHeight(), 0);
 }
 
 void TestAntLayout::affix()
