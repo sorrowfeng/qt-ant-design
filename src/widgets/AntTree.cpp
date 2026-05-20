@@ -108,6 +108,7 @@ void AntTree::setTreeData(const QVector<AntTreeNode>& data)
     m_scrollY = 0;
     m_hoveredRow = -1;
     m_selectedKeys.clear();
+    invalidateFlatCache();
     clampScrollY();
     update();
 }
@@ -131,6 +132,7 @@ void AntTree::addNode(const QString& parentKey, const AntTreeNode& node)
             parent->children.append(node);
         }
     }
+    invalidateFlatCache();
     clampScrollY();
     update();
 }
@@ -139,6 +141,7 @@ void AntTree::removeNode(const QString& key)
 {
     removeNodeRecursive(m_data, key);
     m_selectedKeys.removeAll(key);
+    invalidateFlatCache();
     clampScrollY();
     update();
 }
@@ -174,6 +177,7 @@ void AntTree::clear()
     m_selectedKeys.clear();
     m_scrollY = 0;
     m_hoveredRow = -1;
+    invalidateFlatCache();
     updateGeometry();
     update();
 }
@@ -218,6 +222,7 @@ void AntTree::setExpandedKeys(const QStringList& keys)
             n->expanded = true;
         }
     }
+    invalidateFlatCache();
     clampScrollY();
     update();
 }
@@ -268,6 +273,7 @@ void AntTree::setNodeExpanded(const QString& key, bool expanded)
     }
 
     node->expanded = expanded;
+    invalidateFlatCache();
     clampScrollY();
     updateGeometry();
     update();
@@ -336,6 +342,7 @@ void AntTree::mousePressEvent(QMouseEvent* event)
     if (x >= indent && x < indent + ArrowZoneWidth && !node->isLeaf && !node->children.isEmpty())
     {
         node->expanded = !node->expanded;
+        invalidateFlatCache();
         clampScrollY();
         update();
         Q_EMIT nodeExpanded(node->key, node->expanded);
@@ -393,8 +400,9 @@ void AntTree::mouseMoveEvent(QMouseEvent* event)
     const int row = rowAtPoint(event->pos());
     if (m_hoveredRow != row)
     {
+        const int previousRow = m_hoveredRow;
         m_hoveredRow = row;
-        update();
+        updateRows(previousRow, m_hoveredRow);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -403,8 +411,9 @@ void AntTree::leaveEvent(QEvent* event)
 {
     if (m_hoveredRow != -1)
     {
+        const int previousRow = m_hoveredRow;
         m_hoveredRow = -1;
-        update();
+        updateRows(previousRow, m_hoveredRow);
     }
     QWidget::leaveEvent(event);
 }
@@ -425,9 +434,19 @@ void AntTree::wheelEvent(QWheelEvent* event)
 
 QVector<FlatNode> AntTree::flattenVisible() const
 {
-    QVector<FlatNode> result;
-    flattenRecursive(m_data, 0, result);
-    return result;
+    const bool hit = !m_flatCacheDirty;
+    if (!hit)
+    {
+        m_cachedFlatNodes.clear();
+        flattenRecursive(m_data, 0, m_cachedFlatNodes);
+        m_flatCacheDirty = false;
+        ++m_flatCacheBuildCount;
+    }
+    auto* mutableTree = const_cast<AntTree*>(this);
+    mutableTree->setProperty("antTreeFlatCacheHit", hit);
+    mutableTree->setProperty("antTreeFlatNodeCount", m_cachedFlatNodes.size());
+    mutableTree->setProperty("antTreeFlatCacheBuildCount", m_flatCacheBuildCount);
+    return m_cachedFlatNodes;
 }
 
 int AntTree::rowAtPoint(const QPoint& pos) const
@@ -443,6 +462,38 @@ int AntTree::rowAtPoint(const QPoint& pos) const
         return -1;
     }
     return row;
+}
+
+QRect AntTree::rowRect(int row) const
+{
+    if (row < 0)
+    {
+        return QRect();
+    }
+    return QRect(0, row * RowHeight - m_scrollY, width(), RowHeight);
+}
+
+void AntTree::updateRows(int previousRow, int currentRow)
+{
+    int dirtyCount = 0;
+    if (previousRow >= 0)
+    {
+        update(rowRect(previousRow));
+        ++dirtyCount;
+    }
+    if (currentRow >= 0 && currentRow != previousRow)
+    {
+        update(rowRect(currentRow));
+        ++dirtyCount;
+    }
+    setProperty("antTreeLastUpdateMode", dirtyCount > 0 ? QStringLiteral("row") : QStringLiteral("none"));
+    setProperty("antTreeLastRowUpdateCount", dirtyCount);
+}
+
+void AntTree::invalidateFlatCache()
+{
+    m_flatCacheDirty = true;
+    m_cachedFlatNodes.clear();
 }
 
 void AntTree::flattenRecursive(const QVector<AntTreeNode>& nodes, int depth, QVector<FlatNode>& result) const

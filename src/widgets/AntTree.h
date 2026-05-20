@@ -104,6 +104,9 @@ protected:
 private:
     QVector<FlatNode> flattenVisible() const;
     int rowAtPoint(const QPoint& pos) const;
+    QRect rowRect(int row) const;
+    void updateRows(int previousRow, int currentRow);
+    void invalidateFlatCache();
     void flattenRecursive(const QVector<AntTreeNode>& nodes, int depth, QVector<FlatNode>& result) const;
     void updateCheckState(AntTreeNode& node);
     void collectCheckedKeys(const QVector<AntTreeNode>& nodes, QStringList& keys) const;
@@ -129,6 +132,9 @@ private:
     int m_scrollY = 0;
     int m_hoveredRow = -1;
     QStringList m_selectedKeys;
+    mutable bool m_flatCacheDirty = true;
+    mutable QVector<FlatNode> m_cachedFlatNodes;
+    mutable int m_flatCacheBuildCount = 0;
 
     friend class AntTreeStyle;
 };
