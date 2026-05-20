@@ -32,6 +32,7 @@ void AntTag::setText(const QString& text)
         return;
     }
     m_text = text;
+    invalidateSizeHintCache();
     updateGeometry();
     update();
     Q_EMIT textChanged(m_text);
@@ -46,6 +47,7 @@ void AntTag::setColor(const QString& color)
         return;
     }
     m_color = color;
+    invalidateColorCache();
     update();
     Q_EMIT colorChanged(m_color);
 }
@@ -59,6 +61,7 @@ void AntTag::setIconText(const QString& iconText)
         return;
     }
     m_iconText = iconText;
+    invalidateSizeHintCache();
     updateGeometry();
     update();
     Q_EMIT iconTextChanged(m_iconText);
@@ -73,6 +76,7 @@ void AntTag::setClosable(bool closable)
         return;
     }
     m_closable = closable;
+    invalidateSizeHintCache();
     updateGeometry();
     update();
     Q_EMIT closableChanged(m_closable);
@@ -119,18 +123,37 @@ void AntTag::setVariant(Ant::TagVariant variant)
 
 QSize AntTag::sizeHint() const
 {
+    if (!m_sizeHintDirty)
+    {
+        return m_cachedSizeHint;
+    }
+
     const auto& token = antTheme->tokens();
     QFont f = font();
     f.setPixelSize(token.fontSizeSM);
     const int textWidth = QFontMetrics(f).horizontalAdvance(m_text);
     const int iconWidth = m_iconText.isEmpty() ? 0 : 18;
     const int closeWidth = m_closable ? 18 : 0;
-    return QSize(textWidth + iconWidth + closeWidth + 18, 24);
+    m_cachedSizeHint = QSize(textWidth + iconWidth + closeWidth + 18, 24);
+    m_sizeHintDirty = false;
+    return m_cachedSizeHint;
 }
 
 QSize AntTag::minimumSizeHint() const
 {
     return QSize(32, 22);
+}
+
+void AntTag::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::FontChange
+        || event->type() == QEvent::ApplicationFontChange
+        || event->type() == QEvent::StyleChange)
+    {
+        invalidateSizeHintCache();
+        updateGeometry();
+    }
+    QWidget::changeEvent(event);
 }
 
 void AntTag::paintEvent(QPaintEvent* event)
@@ -140,13 +163,26 @@ void AntTag::paintEvent(QPaintEvent* event)
 
 void AntTag::mouseMoveEvent(QMouseEvent* event)
 {
-    m_hovered = rect().contains(event->pos());
+    const bool hovered = rect().contains(event->pos());
     const bool closeHovered = m_closable && closeRect().contains(event->pos());
+    const bool hoveredChanged = m_hovered != hovered;
+    const bool closeChanged = m_closeHovered != closeHovered;
+    if (hoveredChanged)
+    {
+        m_hovered = hovered;
+    }
     if (m_closeHovered != closeHovered)
     {
         m_closeHovered = closeHovered;
     }
-    update();
+    if (hoveredChanged)
+    {
+        update();
+    }
+    else if (closeChanged)
+    {
+        update(closeRect().adjusted(-2, -2, 2, 2));
+    }
     QWidget::mouseMoveEvent(event);
 }
 
@@ -175,15 +211,20 @@ void AntTag::mouseReleaseEvent(QMouseEvent* event)
             event->accept();
             return;
         }
+        bool stateUpdated = false;
         if (inside)
         {
             if (m_checkable)
             {
                 setChecked(!m_checked);
+                stateUpdated = true;
             }
             Q_EMIT clicked();
         }
-        update();
+        if (!stateUpdated)
+        {
+            update();
+        }
         event->accept();
         return;
     }
@@ -216,29 +257,8 @@ bool AntTag::isCloseHoveredState() const
 
 QColor AntTag::baseColor() const
 {
-    if (m_color.compare(QStringLiteral("success"), Qt::CaseInsensitive) == 0)
-    {
-        return antTheme->tokens().colorSuccess;
-    }
-    if (m_color.compare(QStringLiteral("warning"), Qt::CaseInsensitive) == 0)
-    {
-        return antTheme->tokens().colorWarning;
-    }
-    if (m_color.compare(QStringLiteral("error"), Qt::CaseInsensitive) == 0)
-    {
-        return antTheme->tokens().colorError;
-    }
-    if (m_color.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0)
-    {
-        return antTheme->tokens().colorPrimary;
-    }
-    const QColor preset = AntPalette::presetColor(m_color);
-    if (preset.isValid())
-    {
-        return preset;
-    }
-    const QColor parsed(m_color);
-    return parsed.isValid() ? parsed : antTheme->tokens().colorText;
+    ensureColorCache();
+    return m_cachedBaseColor;
 }
 
 QColor AntTag::backgroundColor() const
@@ -303,5 +323,60 @@ QColor AntTag::textColor() const
 
 bool AntTag::hasCustomColor() const
 {
-    return !m_color.trimmed().isEmpty();
+    ensureColorCache();
+    return m_cachedHasCustomColor;
+}
+
+void AntTag::invalidateSizeHintCache()
+{
+    m_sizeHintDirty = true;
+    m_cachedSizeHint = QSize();
+}
+
+void AntTag::invalidateColorCache()
+{
+    m_colorCacheDirty = true;
+    m_cachedBaseColor = QColor();
+    m_cachedHasCustomColor = false;
+}
+
+void AntTag::ensureColorCache() const
+{
+    if (!m_colorCacheDirty)
+    {
+        return;
+    }
+
+    const QString color = m_color.trimmed();
+    m_cachedHasCustomColor = !color.isEmpty();
+    if (color.compare(QStringLiteral("success"), Qt::CaseInsensitive) == 0)
+    {
+        m_cachedBaseColor = antTheme->tokens().colorSuccess;
+    }
+    else if (color.compare(QStringLiteral("warning"), Qt::CaseInsensitive) == 0)
+    {
+        m_cachedBaseColor = antTheme->tokens().colorWarning;
+    }
+    else if (color.compare(QStringLiteral("error"), Qt::CaseInsensitive) == 0)
+    {
+        m_cachedBaseColor = antTheme->tokens().colorError;
+    }
+    else if (color.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0)
+    {
+        m_cachedBaseColor = antTheme->tokens().colorPrimary;
+    }
+    else
+    {
+        const QColor preset = AntPalette::presetColor(color);
+        if (preset.isValid())
+        {
+            m_cachedBaseColor = preset;
+        }
+        else
+        {
+            const QColor parsed(color);
+            m_cachedBaseColor = parsed.isValid() ? parsed : antTheme->tokens().colorText;
+        }
+    }
+    m_colorCacheDirty = false;
 }

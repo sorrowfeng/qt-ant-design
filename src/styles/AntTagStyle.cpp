@@ -62,6 +62,16 @@ bool AntTagStyle::eventFilter(QObject* watched, QEvent* event)
     return QProxyStyle::eventFilter(watched, event);
 }
 
+void AntTagStyle::onThemeUpdate(QWidget* widget)
+{
+    if (auto* tag = qobject_cast<AntTag*>(widget))
+    {
+        tag->invalidateSizeHintCache();
+        tag->invalidateColorCache();
+    }
+    AntStyleBase::onThemeUpdate(widget);
+}
+
 void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
     const auto* tag = qobject_cast<const AntTag*>(widget);
@@ -76,40 +86,8 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
 
     const QRectF pill = option->rect.adjusted(0.5, 1.5, -0.5, -1.5);
 
-    // Replicate baseColor()
-    const QString color = tag->color();
-    QColor base;
-    if (color.compare(QStringLiteral("success"), Qt::CaseInsensitive) == 0)
-    {
-        base = token.colorSuccess;
-    }
-    else if (color.compare(QStringLiteral("warning"), Qt::CaseInsensitive) == 0)
-    {
-        base = token.colorWarning;
-    }
-    else if (color.compare(QStringLiteral("error"), Qt::CaseInsensitive) == 0)
-    {
-        base = token.colorError;
-    }
-    else if (color.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0)
-    {
-        base = token.colorPrimary;
-    }
-    else
-    {
-        const QColor preset = AntPalette::presetColor(color);
-        if (preset.isValid())
-        {
-            base = preset;
-        }
-        else
-        {
-            const QColor parsed(color);
-            base = parsed.isValid() ? parsed : token.colorText;
-        }
-    }
-
-    const bool hasCustom = !color.trimmed().isEmpty();
+    const QColor base = tag->baseColor();
+    const bool hasCustom = tag->hasCustomColor();
     const bool hovered = option->state & QStyle::State_MouseOver;
     const bool enabled = option->state & QStyle::State_Enabled;
     const bool checkable = tag->isCheckable();
@@ -219,7 +197,7 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
 
     if (closable)
     {
-        const QRect close(option->rect.width() - 19, option->rect.height() / 2 - 8, 16, 16);
+        const QRect close = tag->closeRect();
         AntStyleBase::drawCrispRoundedRect(painter, close, Qt::NoPen, Qt::transparent,
             token.borderRadiusXS, token.borderRadiusXS);
         QColor closeColor = enabled ? token.colorTextTertiary : token.colorTextDisabled;

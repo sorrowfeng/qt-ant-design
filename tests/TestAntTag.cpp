@@ -8,6 +8,7 @@ class TestAntTag : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void sizeHintInvalidatesForLayoutInputs();
 };
 
 void TestAntTag::propertiesAndSignals()
@@ -65,6 +66,32 @@ void TestAntTag::propertiesAndSignals()
 
     auto* textTag = new AntTag("My Tag");
     QCOMPARE(textTag->text(), "My Tag");
+}
+
+void TestAntTag::sizeHintInvalidatesForLayoutInputs()
+{
+    AntTag tag(QStringLiteral("Short"));
+
+    const QSize initial = tag.sizeHint();
+    QCOMPARE(tag.sizeHint(), initial);
+
+    tag.setText(QStringLiteral("A much longer tag"));
+    const QSize longText = tag.sizeHint();
+    QVERIFY(longText.width() > initial.width());
+    QCOMPARE(tag.sizeHint(), longText);
+
+    tag.setIconText(QStringLiteral("i"));
+    const QSize withIcon = tag.sizeHint();
+    QVERIFY(withIcon.width() > longText.width());
+
+    tag.setClosable(true);
+    const QSize withClose = tag.sizeHint();
+    QVERIFY(withClose.width() > withIcon.width());
+
+    tag.setClosable(false);
+    const QSize withoutClose = tag.sizeHint();
+    QVERIFY(withoutClose.width() < withClose.width());
+    QCOMPARE(tag.sizeHint(), withoutClose);
 }
 
 QTEST_MAIN(TestAntTag)

@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -61,6 +62,7 @@ Q_SIGNALS:
     void clicked();
 
 protected:
+    void changeEvent(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
@@ -77,6 +79,9 @@ private:
     QColor borderColor() const;
     QColor textColor() const;
     bool hasCustomColor() const;
+    void invalidateSizeHintCache();
+    void invalidateColorCache();
+    void ensureColorCache() const;
 
     QString m_text;
     QString m_color;
@@ -88,4 +93,9 @@ private:
     bool m_closeHovered = false;
     bool m_pressed = false;
     Ant::TagVariant m_variant = Ant::TagVariant::Filled;
+    mutable bool m_sizeHintDirty = true;
+    mutable QSize m_cachedSizeHint;
+    mutable bool m_colorCacheDirty = true;
+    mutable bool m_cachedHasCustomColor = false;
+    mutable QColor m_cachedBaseColor;
 };
