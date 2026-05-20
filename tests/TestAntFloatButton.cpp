@@ -1,5 +1,9 @@
 #include <QSignalSpy>
 #include <QTest>
+#include <QCoreApplication>
+#include <QEvent>
+#include <QWidget>
+
 #include "widgets/AntFloatButton.h"
 
 class TestAntFloatButton : public QObject
@@ -54,6 +58,41 @@ void TestAntFloatButton::propertiesAndSignals()
     QCOMPARE(w->badgeDot(), true);
     w->setBadgeCount(5);
     QCOMPARE(w->badgeCount(), 5);
+
+    auto* host = new QWidget;
+    host->resize(240, 240);
+    auto* group = new AntFloatButton(host);
+    auto* child = new AntFloatButton;
+    group->addChild(child);
+    host->show();
+    group->show();
+    QVERIFY(QTest::qWaitForWindowExposed(host));
+    QTRY_VERIFY(group->property("antFloatButtonPositionApplyCount").toInt() > 0);
+
+    group->setOpen(true);
+    QCOMPARE(group->isOpen(), true);
+    QVERIFY(child->isVisible());
+    const int childLayoutApplies = group->property("antFloatButtonChildLayoutApplyCount").toInt();
+    QVERIFY(childLayoutApplies > 0);
+
+    const int positionSkips = group->property("antFloatButtonPositionSkipCount").toInt();
+    QEvent showAgain(QEvent::Show);
+    QCoreApplication::sendEvent(host, &showAgain);
+    QTRY_VERIFY(group->property("antFloatButtonPositionSkipCount").toInt() > positionSkips);
+    QCOMPARE(group->property("antFloatButtonChildLayoutApplyCount").toInt(), childLayoutApplies);
+
+    const int positionApplies = group->property("antFloatButtonPositionApplyCount").toInt();
+    host->resize(260, 260);
+    QTRY_VERIFY(group->property("antFloatButtonPositionApplyCount").toInt() > positionApplies);
+    QVERIFY(group->property("antFloatButtonChildLayoutApplyCount").toInt() > childLayoutApplies);
+
+    const int contentSizeApplies = group->property("antFloatButtonContentSizeApplyCount").toInt();
+    group->setFloatButtonShape(Ant::FloatButtonShape::Square);
+    group->setContent(QStringLiteral("Support"));
+    QVERIFY(group->property("antFloatButtonContentSizeApplyCount").toInt() > contentSizeApplies);
+    const int contentSizeAfterText = group->property("antFloatButtonContentSizeApplyCount").toInt();
+    group->setContent(QStringLiteral("Support"));
+    QCOMPARE(group->property("antFloatButtonContentSizeApplyCount").toInt(), contentSizeAfterText);
 }
 
 QTEST_MAIN(TestAntFloatButton)

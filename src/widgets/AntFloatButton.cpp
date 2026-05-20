@@ -27,6 +27,18 @@ AntFloatButton::AntFloatButton(QWidget* parent)
     {
         parentWidget()->installEventFilter(this);
     }
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updateContentSize();
+        m_childLayoutDirty = true;
+        if (m_open)
+        {
+            layoutChildren();
+        }
+        update();
+    });
+
+    syncFloatButtonPerfCounters();
 }
 
 QString AntFloatButton::icon() const { return m_icon; }
@@ -45,14 +57,7 @@ void AntFloatButton::setContent(const QString& content)
 {
     if (m_content == content) return;
     m_content = content;
-    if (!m_content.isEmpty() && m_shape == Ant::FloatButtonShape::Square)
-    {
-        // Adjust width for text
-        QFont f = font();
-        f.setPixelSize(antTheme->tokens().fontSizeSM);
-        const int textWidth = QFontMetrics(f).horizontalAdvance(m_content);
-        setFixedSize(qMax(40, textWidth + 32), 40);
-    }
+    updateContentSize();
     update();
     Q_EMIT contentChanged(m_content);
 }
@@ -73,6 +78,7 @@ void AntFloatButton::setFloatButtonShape(Ant::FloatButtonShape shape)
 {
     if (m_shape == shape) return;
     m_shape = shape;
+    updateContentSize();
     update();
     Q_EMIT floatButtonShapeChanged(m_shape);
 }
@@ -81,6 +87,10 @@ bool AntFloatButton::badgeDot() const { return m_badgeDot; }
 
 void AntFloatButton::setBadgeDot(bool dot)
 {
+    if (m_badgeDot == dot && (!dot || m_badgeCount == 0))
+    {
+        return;
+    }
     m_badgeDot = dot;
     m_badgeCount = 0;
     update();
@@ -90,6 +100,10 @@ int AntFloatButton::badgeCount() const { return m_badgeCount; }
 
 void AntFloatButton::setBadgeCount(int count)
 {
+    if (m_badgeCount == count && !m_badgeDot)
+    {
+        return;
+    }
     m_badgeCount = count;
     m_badgeDot = false;
     update();
@@ -102,6 +116,11 @@ void AntFloatButton::addChild(AntFloatButton* child)
     child->setParent(parentWidget() ? parentWidget() : this);
     child->hide();
     child->installEventFilter(this);
+    m_childLayoutDirty = true;
+    if (m_open)
+    {
+        layoutChildren();
+    }
 }
 
 void AntFloatButton::removeChild(AntFloatButton* child)
@@ -110,6 +129,11 @@ void AntFloatButton::removeChild(AntFloatButton* child)
     child->removeEventFilter(this);
     m_children.removeOne(child);
     child->hide();
+    m_childLayoutDirty = true;
+    if (m_open)
+    {
+        layoutChildren();
+    }
 }
 
 QVector<AntFloatButton*> AntFloatButton::childButtons() const { return m_children; }
@@ -118,6 +142,10 @@ Ant::Trigger AntFloatButton::groupTrigger() const { return m_groupTrigger; }
 
 void AntFloatButton::setGroupTrigger(Ant::Trigger trigger)
 {
+    if (m_groupTrigger == trigger)
+    {
+        return;
+    }
     m_groupTrigger = trigger;
 }
 
@@ -127,6 +155,7 @@ void AntFloatButton::setOpen(bool open)
 {
     if (m_open == open) return;
     m_open = open;
+    m_childLayoutDirty = true;
     layoutChildren();
     update();
     Q_EMIT openChanged(m_open);
@@ -136,6 +165,10 @@ QString AntFloatButton::closeIcon() const { return m_closeIcon; }
 
 void AntFloatButton::setCloseIcon(const QString& icon)
 {
+    if (m_closeIcon == icon)
+    {
+        return;
+    }
     m_closeIcon = icon;
     if (m_open) update();
 }
@@ -158,6 +191,10 @@ int AntFloatButton::visibilityHeight() const { return m_visibilityHeight; }
 
 void AntFloatButton::setVisibilityHeight(int height)
 {
+    if (m_visibilityHeight == height)
+    {
+        return;
+    }
     m_visibilityHeight = height;
 }
 
@@ -165,6 +202,10 @@ int AntFloatButton::scrollDuration() const { return m_scrollDuration; }
 
 void AntFloatButton::setScrollDuration(int duration)
 {
+    if (m_scrollDuration == duration)
+    {
+        return;
+    }
     m_scrollDuration = duration;
 }
 
@@ -330,12 +371,24 @@ void AntFloatButton::updatePosition()
                       ? p->height() - height() - margin
                       : margin;
 
-    move(x, y);
+    const QPoint targetPos(x, y);
+    const bool moved = pos() != targetPos;
+    if (moved)
+    {
+        move(targetPos);
+        m_childLayoutDirty = true;
+        ++m_positionApplyCount;
+    }
+    else
+    {
+        ++m_positionSkipCount;
+    }
 
-    if (m_open)
+    if (m_open && (moved || m_childLayoutDirty))
     {
         layoutChildren();
     }
+    syncFloatButtonPerfCounters();
 }
 
 void AntFloatButton::layoutChildren()
@@ -343,6 +396,7 @@ void AntFloatButton::layoutChildren()
     const int spacing = 12;
     const int childSize = 32;
     int yOffset = 0;
+    bool changed = false;
 
     for (int i = m_children.size() - 1; i >= 0; --i)
     {
@@ -350,17 +404,67 @@ void AntFloatButton::layoutChildren()
         if (m_open)
         {
             yOffset -= (childSize + spacing);
-            child->setFixedSize(childSize, childSize);
-            child->move(pos().x() + (width() - childSize) / 2, pos().y() + yOffset);
-            child->show();
-            child->raise();
+            const QRect childGeometry(pos().x() + (width() - childSize) / 2,
+                                      pos().y() + yOffset,
+                                      childSize,
+                                      childSize);
+            bool childChanged = false;
+            if (child->geometry() != childGeometry)
+            {
+                child->setGeometry(childGeometry);
+                childChanged = true;
+            }
+            if (!child->isVisible())
+            {
+                child->show();
+                childChanged = true;
+            }
+            if (childChanged)
+            {
+                child->raise();
+                changed = true;
+            }
         }
         else
         {
-            child->hide();
+            if (child->isVisible())
+            {
+                child->hide();
+                changed = true;
+            }
         }
     }
-    raise();
+    if (changed)
+    {
+        raise();
+        ++m_childLayoutApplyCount;
+    }
+    else
+    {
+        ++m_childLayoutSkipCount;
+    }
+    m_childLayoutDirty = false;
+    syncFloatButtonPerfCounters();
+}
+
+void AntFloatButton::updateContentSize()
+{
+    QFont f = font();
+    f.setPixelSize(antTheme->tokens().fontSizeSM);
+    const int textWidth = m_content.isEmpty() ? 0 : QFontMetrics(f).horizontalAdvance(m_content);
+    const QSize targetSize = (!m_content.isEmpty() && m_shape == Ant::FloatButtonShape::Square)
+        ? QSize(qMax(40, textWidth + 32), 40)
+        : QSize(40, 40);
+
+    if (size() == targetSize && minimumSize() == targetSize && maximumSize() == targetSize)
+    {
+        return;
+    }
+
+    setFixedSize(targetSize);
+    m_childLayoutDirty = true;
+    ++m_contentSizeApplyCount;
+    syncFloatButtonPerfCounters();
 }
 
 void AntFloatButton::checkBackTopVisibility()
@@ -400,4 +504,14 @@ void AntFloatButton::animateScrollToTop()
     anim->setEndValue(0);
     anim->setEasingCurve(QEasingCurve::OutCubic);
     anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+void AntFloatButton::syncFloatButtonPerfCounters() const
+{
+    auto* self = const_cast<AntFloatButton*>(this);
+    self->setProperty("antFloatButtonPositionApplyCount", m_positionApplyCount);
+    self->setProperty("antFloatButtonPositionSkipCount", m_positionSkipCount);
+    self->setProperty("antFloatButtonChildLayoutApplyCount", m_childLayoutApplyCount);
+    self->setProperty("antFloatButtonChildLayoutSkipCount", m_childLayoutSkipCount);
+    self->setProperty("antFloatButtonContentSizeApplyCount", m_contentSizeApplyCount);
 }

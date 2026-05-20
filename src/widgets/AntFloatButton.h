@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <QTimer>
 #include <QVector>
+#include <QPoint>
 
 #include "core/AntTypes.h"
 
@@ -87,8 +88,10 @@ protected:
 private:
     void updatePosition();
     void layoutChildren();
+    void updateContentSize();
     void checkBackTopVisibility();
     void animateScrollToTop();
+    void syncFloatButtonPerfCounters() const;
 
     // Main props
     QString m_icon;
@@ -117,4 +120,10 @@ private:
     bool m_hovered = false;
     bool m_pressed = false;
     QTimer* m_positionTimer = nullptr;
+    bool m_childLayoutDirty = true;
+    int m_positionApplyCount = 0;
+    int m_positionSkipCount = 0;
+    int m_childLayoutApplyCount = 0;
+    int m_childLayoutSkipCount = 0;
+    int m_contentSizeApplyCount = 0;
 };

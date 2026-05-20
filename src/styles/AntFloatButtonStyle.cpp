@@ -96,7 +96,6 @@ void drawBadgeIndicator(QPainter* painter, const AntFloatButton* fb, const QRect
 AntFloatButtonStyle::AntFloatButtonStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntFloatButton>();
 }
 
 void AntFloatButtonStyle::polish(QWidget* widget)
