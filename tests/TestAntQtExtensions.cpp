@@ -16,6 +16,7 @@
 #include <QMouseEvent>
 #include <QPlainTextEdit>
 #include <QComboBox>
+#include <QPixmap>
 #include <QAction>
 #include <QHideEvent>
 #include <QSignalSpy>
@@ -1391,6 +1392,21 @@ void TestAntQtExtensions::dockWidget()
     QWidget* titleBar = lockedFloat->titleBarWidget();
     QVERIFY(titleBar != nullptr);
     QTRY_VERIFY(titleBar->isVisible());
+    auto* closeButton = titleBar->findChild<QWidget*>(QStringLiteral("AntDockTitleCloseButton"));
+    QVERIFY(closeButton != nullptr);
+    QTRY_VERIFY(closeButton->isVisible());
+    closeButton->grab();
+    const int closeIconRenderCount = closeButton->property("antDockTitleButtonIconRenderCount").toInt();
+    QVERIFY(closeIconRenderCount >= 1);
+    closeButton->grab();
+    QCOMPARE(closeButton->property("antDockTitleButtonIconRenderCount").toInt(), closeIconRenderCount);
+    QCOMPARE(closeButton->property("antDockTitleButtonIconCacheHit").toBool(), true);
+
+    const int chromeApplyCount = titleBar->property("antDockTitleBarChromeApplyCount").toInt();
+    lockedFloat->setFeatures(lockedFloat->features() & ~QDockWidget::DockWidgetMovable);
+    QCoreApplication::processEvents();
+    QCOMPARE(titleBar->property("antDockTitleBarChromeApplyCount").toInt(), chromeApplyCount);
+
     const QPoint titlePoint = titleBar->rect().center();
     QMouseEvent blockedDoubleClick(QEvent::MouseButtonDblClick,
                                    QPointF(titlePoint),

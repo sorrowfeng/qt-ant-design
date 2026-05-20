@@ -11,6 +11,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
+#include <QPixmap>
 #include <QPointer>
 #include <QRegion>
 #include <QResizeEvent>
@@ -19,6 +20,7 @@
 #include <QSvgRenderer>
 #include <QTimer>
 #include <QWindow>
+#include <QtMath>
 
 #include "core/AntTheme.h"
 
@@ -69,17 +71,17 @@ QRectF centeredIconRect(const QRect& buttonRect, qreal iconSize = 14.0)
                   iconSize);
 }
 
-bool drawAntdIcon(const QString& iconName, const QRectF& iconRect, const QColor& color, QPainter* painter)
+QPixmap renderAntdIconPixmap(const QString& iconName, qreal iconSize, const QColor& color, qreal devicePixelRatio)
 {
-    if (iconName.isEmpty() || iconRect.isEmpty() || !painter)
+    if (iconName.isEmpty() || iconSize <= 0.0)
     {
-        return false;
+        return {};
     }
 
     QFile file(QStringLiteral(":/qt-ant-design/icons/antd/%1.svg").arg(iconName));
     if (!file.open(QIODevice::ReadOnly))
     {
-        return false;
+        return {};
     }
 
     QString svg = QString::fromUtf8(file.readAll());
@@ -89,11 +91,19 @@ bool drawAntdIcon(const QString& iconName, const QRectF& iconRect, const QColor&
     QSvgRenderer renderer(svg.toUtf8());
     if (!renderer.isValid())
     {
-        return false;
+        return {};
     }
 
-    renderer.render(painter, iconRect);
-    return true;
+    const qreal dpr = qMax<qreal>(1.0, devicePixelRatio);
+    const QSize pixelSize(qMax(1, qCeil(iconSize * dpr)), qMax(1, qCeil(iconSize * dpr)));
+    QPixmap pixmap(pixelSize);
+    pixmap.setDevicePixelRatio(dpr);
+    pixmap.fill(Qt::transparent);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    renderer.render(&painter, QRectF(0, 0, iconSize, iconSize));
+    return pixmap;
 }
 
 #if defined(Q_OS_WIN)
@@ -742,6 +752,29 @@ protected:
         QWidget::mouseReleaseEvent(event);
     }
 
+    QPixmap cachedIconPixmap(const QString& iconName, const QColor& iconColor, qreal iconSize)
+    {
+        const qreal dpr = qMax<qreal>(1.0, devicePixelRatioF());
+        const QString cacheKey = QStringLiteral("%1|%2|%3|%4")
+                                     .arg(iconName,
+                                          iconColor.name(QColor::HexArgb),
+                                          QString::number(iconSize, 'f', 2),
+                                          QString::number(dpr, 'f', 2));
+        if (!m_iconPixmap.isNull() && m_iconCacheKey == cacheKey)
+        {
+            setProperty("antDockTitleButtonIconCacheHit", true);
+            return m_iconPixmap;
+        }
+
+        m_iconPixmap = renderAntdIconPixmap(iconName, iconSize, iconColor, dpr);
+        m_iconCacheKey = cacheKey;
+        ++m_iconRenderCount;
+        setProperty("antDockTitleButtonIconCacheHit", false);
+        setProperty("antDockTitleButtonIconCacheKey", cacheKey);
+        setProperty("antDockTitleButtonIconRenderCount", m_iconRenderCount);
+        return m_iconPixmap;
+    }
+
     void paintEvent(QPaintEvent*) override
     {
         const auto& token = antTheme->tokens();
@@ -781,7 +814,13 @@ protected:
 
         const QColor iconColor = destructive && m_hovered ? QColor(Qt::white)
                                                           : (m_hovered ? token.colorTextSecondary : token.colorText);
-        drawAntdIcon(iconName, centeredIconRect(rect()), iconColor, &painter);
+        constexpr qreal iconSize = 14.0;
+        const QRectF iconRect = centeredIconRect(rect(), iconSize);
+        const QPixmap icon = cachedIconPixmap(iconName, iconColor, iconSize);
+        if (!icon.isNull())
+        {
+            painter.drawPixmap(iconRect.topLeft(), icon);
+        }
     }
 
 private:
@@ -789,6 +828,9 @@ private:
     AntDockWidget* m_dock = nullptr;
     bool m_hovered = false;
     bool m_pressed = false;
+    QString m_iconCacheKey;
+    QPixmap m_iconPixmap;
+    int m_iconRenderCount = 0;
 };
 
 class DockTitleBar : public QWidget
@@ -844,6 +886,19 @@ public:
     void updateTheme()
     {
         const auto& token = antTheme->tokens();
+        const bool floating = m_dock->isFloating();
+        const int titleFontSize = floating ? token.fontSizeLG : token.fontSize;
+        const int leftMargin = floating ? 12 : 8;
+        const int spacing = floating ? 8 : 4;
+        if (m_themeInitialized &&
+            m_cachedTextColor == token.colorText &&
+            m_cachedTitleFontSize == titleFontSize &&
+            m_cachedLeftMargin == leftMargin &&
+            m_cachedSpacing == spacing)
+        {
+            return;
+        }
+
         QPalette pal = palette();
         pal.setColor(QPalette::WindowText, token.colorText);
         pal.setColor(QPalette::ButtonText, token.colorText);
@@ -857,14 +912,21 @@ public:
         m_iconLabel->setPalette(titlePalette);
 
         QFont f = m_titleLabel->font();
-        f.setPixelSize(m_dock->isFloating() ? token.fontSizeLG : token.fontSize);
+        f.setPixelSize(titleFontSize);
         f.setWeight(QFont::DemiBold);
         m_titleLabel->setFont(f);
         if (m_layout)
         {
-            m_layout->setContentsMargins(m_dock->isFloating() ? 12 : 8, 0, 0, 0);
-            m_layout->setSpacing(m_dock->isFloating() ? 8 : 4);
+            m_layout->setContentsMargins(leftMargin, 0, 0, 0);
+            m_layout->setSpacing(spacing);
         }
+        m_themeInitialized = true;
+        m_cachedTextColor = token.colorText;
+        m_cachedTitleFontSize = titleFontSize;
+        m_cachedLeftMargin = leftMargin;
+        m_cachedSpacing = spacing;
+        ++m_themeApplyCount;
+        setProperty("antDockTitleBarThemeApplyCount", m_themeApplyCount);
         update();
     }
 
@@ -872,13 +934,31 @@ public:
     {
         const bool floating = m_dock->isFloating();
         const bool closable = m_dock->features().testFlag(QDockWidget::DockWidgetClosable);
+        const QSize closeButtonSize = floating ? QSize(kFloatingTitleButtonWidth, kFloatingTitleBarHeight)
+                                               : QSize(26, kEmbeddedTitleBarHeight);
+        const int titleBarHeight = floating ? kFloatingTitleBarHeight : kEmbeddedTitleBarHeight;
+        if (m_chromeInitialized &&
+            m_cachedChromeFloating == floating &&
+            m_cachedChromeClosable == closable &&
+            m_cachedCloseButtonSize == closeButtonSize &&
+            m_cachedTitleBarHeight == titleBarHeight)
+        {
+            return;
+        }
+
         m_minimizeButton->setVisible(floating);
         m_maximizeButton->setVisible(floating);
         m_closeButton->setVisible(closable);
         m_closeButton->setEnabled(closable);
-        m_closeButton->setFixedSize(floating ? QSize(kFloatingTitleButtonWidth, kFloatingTitleBarHeight)
-                                             : QSize(26, kEmbeddedTitleBarHeight));
-        setProperty("antDockTitleBarHeight", floating ? kFloatingTitleBarHeight : kEmbeddedTitleBarHeight);
+        m_closeButton->setFixedSize(closeButtonSize);
+        setProperty("antDockTitleBarHeight", titleBarHeight);
+        m_chromeInitialized = true;
+        m_cachedChromeFloating = floating;
+        m_cachedChromeClosable = closable;
+        m_cachedCloseButtonSize = closeButtonSize;
+        m_cachedTitleBarHeight = titleBarHeight;
+        ++m_chromeApplyCount;
+        setProperty("antDockTitleBarChromeApplyCount", m_chromeApplyCount);
         updateTheme();
         updateGeometry();
         update();
@@ -980,6 +1060,18 @@ private:
     DockTitleButton* m_minimizeButton = nullptr;
     DockTitleButton* m_maximizeButton = nullptr;
     DockTitleButton* m_closeButton = nullptr;
+    bool m_themeInitialized = false;
+    QColor m_cachedTextColor;
+    int m_cachedTitleFontSize = -1;
+    int m_cachedLeftMargin = -1;
+    int m_cachedSpacing = -1;
+    int m_themeApplyCount = 0;
+    bool m_chromeInitialized = false;
+    bool m_cachedChromeFloating = false;
+    bool m_cachedChromeClosable = false;
+    QSize m_cachedCloseButtonSize;
+    int m_cachedTitleBarHeight = -1;
+    int m_chromeApplyCount = 0;
 };
 
 } // namespace

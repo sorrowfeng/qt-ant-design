@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `22` components are optimized from this pass, and `62` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `23` components are optimized from this pass, and `61` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntDockWidget` | Title-bar button icons now render into a DPR-aware pixmap cache keyed by icon, color, size, and DPR instead of rereading SVG resources on every button paint. Title-bar chrome/theme refreshes now skip redundant palette, font, margin, button-size, and geometry work when floating/closable/theme inputs are unchanged. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe dockWidget`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntDockManager` | Drag hit testing now caches visible dock-area global hit zones by layout state and reuses the last same-position drop-target query when the guide state is unchanged. Move and release paths no longer rescan dock areas or recompute preview placement for the same cursor point. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe dockManager`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntWindow` | Title-bar button rectangles are now cached by window width and visible-button mask, so paint, hover, mouse, and native hit-test paths reuse the same layout. Button press/hover/visibility changes now repaint only the affected title-bar button strip instead of the full title bar. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe window`, `TestAntQtExtensions.exe windowTitleBarButtonsHandleChildDeliveredClicks windowTitleBarButtonsTriggerOnRelease windowTitleBarHoverStateClearsOnLeave`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntWidget` | Theme changes now use a lightweight surface update by default. The widget caches its style, palette key, size hint, and minimum size hint, then repolishes only when style/palette inputs changed and calls `updateGeometry()` only when cached hints changed. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe widget`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -191,7 +192,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | Component | Priority | Optimization plan | Progress |
 | --- | --- | --- | --- |
 | `AntDockManager` | P0 | Cache dock-area hit zones and same-position drop-target queries during drag, while keeping embedded layout changes synchronous. Continue watching full dock-tree rebuilds and floating-window churn under complex workspace changes. | Optimized |
-| `AntDockWidget` | P0 | Cache title-bar button/title geometry, minimize floating-window native churn, and scope drag/float/embedded repaint to affected panes. | Watching |
+| `AntDockWidget` | P0 | Cache title-bar button icon pixmaps and skip redundant title-bar chrome/theme refreshes when inputs are unchanged. Continue watching floating-window native churn and drag/embedded repaint scope under Windows resize paths. | Optimized |
 | `AntLog` | P0 | Use document-cursor appends, cached level formats, disabled undo history, and batched trim operations so large append bursts avoid moving the visible cursor or repeatedly shifting entries one by one. | Optimized |
 | `AntMenuBar` | P1 | Cache action rectangles and text metrics; repaint only old/new hover or active action. | Plan ready |
 | `AntNavItem` | P1 | Cache icon/text/active indicator geometry, repaint only old/new hover or active item regions, and avoid full sidebar updates during navigation hover. | Plan ready |
