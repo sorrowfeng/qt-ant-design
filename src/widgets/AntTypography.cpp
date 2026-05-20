@@ -47,6 +47,7 @@ AntTypography::AntTypography(QWidget* parent)
     installAntStyle<AntTypographyStyle>(this);
     setMouseTracking(true);
     updateSizePolicy();
+    syncTypographyPerfCounters();
 }
 
 AntTypography::AntTypography(const QString& text, QWidget* parent)
@@ -64,6 +65,7 @@ void AntTypography::setText(const QString& text)
         return;
     }
     m_text = text;
+    invalidateTypographyCaches();
     updateGeometry();
     update();
     Q_EMIT textChanged(m_text);
@@ -97,6 +99,7 @@ void AntTypography::setTitle(bool title)
         return;
     }
     m_title = title;
+    invalidateTypographyCaches();
     updateGeometry();
     update();
     Q_EMIT titleChanged(m_title);
@@ -111,6 +114,7 @@ void AntTypography::setTitleLevel(Ant::TypographyTitleLevel level)
         return;
     }
     m_titleLevel = level;
+    invalidateTypographyCaches();
     if (m_title)
     {
         updateGeometry();
@@ -128,6 +132,7 @@ void AntTypography::setParagraph(bool paragraph)
         return;
     }
     m_paragraph = paragraph;
+    invalidateTypographyCaches();
     updateSizePolicy();
     updateGeometry();
     update();
@@ -174,6 +179,7 @@ void AntTypography::setStrong(bool strong)
         return;
     }
     m_strong = strong;
+    invalidateTypographyCaches();
     updateGeometry();
     update();
     Q_EMIT strongChanged(m_strong);
@@ -188,6 +194,7 @@ void AntTypography::setUnderline(bool underline)
         return;
     }
     m_underline = underline;
+    invalidateCopyButtonRectCache();
     update();
     Q_EMIT underlineChanged(m_underline);
 }
@@ -214,6 +221,7 @@ void AntTypography::setCode(bool code)
         return;
     }
     m_code = code;
+    invalidateTypographyCaches();
     updateGeometry();
     update();
     Q_EMIT codeChanged(m_code);
@@ -241,6 +249,7 @@ void AntTypography::setItalic(bool italic)
         return;
     }
     m_italic = italic;
+    invalidateTypographyCaches();
     update();
     Q_EMIT italicChanged(m_italic);
 }
@@ -254,6 +263,7 @@ void AntTypography::setCopyable(bool copyable)
         return;
     }
     m_copyable = copyable;
+    invalidateTypographyCaches();
     updateGeometry();
     update();
     Q_EMIT copyableChanged(m_copyable);
@@ -268,6 +278,7 @@ void AntTypography::setEllipsis(bool ellipsis)
         return;
     }
     m_ellipsis = ellipsis;
+    invalidateTypographyCaches();
     updateSizePolicy();
     updateGeometry();
     update();
@@ -284,6 +295,7 @@ void AntTypography::setEllipsisRows(int rows)
         return;
     }
     m_ellipsisRows = clamped;
+    invalidateTypographyCaches();
     if (m_ellipsis)
     {
         updateGeometry();
@@ -314,6 +326,7 @@ void AntTypography::setAlignment(Qt::Alignment alignment)
         return;
     }
     m_alignment = normalized;
+    invalidateCopyButtonRectCache();
     update();
     Q_EMIT alignmentChanged(m_alignment);
 }
@@ -331,6 +344,7 @@ void AntTypography::setPixelSize(int pixelSize)
     QFont f = font();
     f.setPixelSize(m_pixelSize);
     setFont(f);
+    invalidateTypographyCaches();
     updateGeometry();
     update();
 }
@@ -388,9 +402,30 @@ QSize AntTypography::measuredSize(int width) const
 {
     const auto& token = antTheme->tokens();
     QFont f = createFont();
+    if (m_measuredSizeCacheValid &&
+        m_measuredSizeCacheWidth == width &&
+        m_measuredSizeCacheText == m_text &&
+        m_measuredSizeCacheFont == f &&
+        m_measuredSizeCacheCode == m_code &&
+        m_measuredSizeCacheParagraph == m_paragraph &&
+        m_measuredSizeCacheEllipsis == m_ellipsis &&
+        m_measuredSizeCacheCopyable == m_copyable &&
+        m_measuredSizeCacheRows == m_ellipsisRows &&
+        m_measuredSizeCacheTokenFontSize == token.fontSize &&
+        m_measuredSizeCachePaddingXS == token.paddingXS &&
+        m_measuredSizeCachePaddingXXS == token.paddingXXS &&
+        m_measuredSizeCacheLineWidth == token.lineWidth)
+    {
+        ++m_measuredSizeCacheHitCount;
+        syncTypographyPerfCounters();
+        return m_measuredSizeCacheValue;
+    }
+
+    ++m_measuredSizeCacheMissCount;
     QFontMetrics fm(f);
 
     const int copyBtnWidth = m_copyable ? token.fontSize + token.paddingXXS * 2 : 0;
+    QSize measured;
 
     if (m_code)
     {
@@ -399,10 +434,9 @@ QSize AntTypography::measuredSize(int width) const
         const int codePadBottom = qMax(1, qRound(f.pixelSize() * 0.1));
         const int textW = fm.horizontalAdvance(m_text) + codePadX * 2 + copyBtnWidth;
         const int textH = fm.height() + codePadTop + codePadBottom + token.lineWidth * 2;
-        return QSize(qMax(60, textW), qMax(fm.height(), textH));
+        measured = QSize(qMax(60, textW), qMax(fm.height(), textH));
     }
-
-    if (m_paragraph || m_ellipsis)
+    else if (m_paragraph || m_ellipsis)
     {
         const int availWidth = qMax(1, width > 0 ? width : 400);
         QRect textRect(0, 0, qMax(1, availWidth - copyBtnWidth), QWIDGETSIZE_MAX);
@@ -412,12 +446,31 @@ QSize AntTypography::measuredSize(int width) const
             textRect.setHeight(fm.height() * m_ellipsisRows);
         }
         QRect br = fm.boundingRect(textRect, flags, m_text);
-        return QSize(qMax(120, br.width() + copyBtnWidth + token.paddingXS), br.height() + token.paddingXS);
+        measured = QSize(qMax(120, br.width() + copyBtnWidth + token.paddingXS), br.height() + token.paddingXS);
+    }
+    else
+    {
+        const int textW = fm.horizontalAdvance(m_text) + copyBtnWidth;
+        const int textH = fm.height() + 4;
+        measured = QSize(qMax(60, textW), qMax(24, textH));
     }
 
-    const int textW = fm.horizontalAdvance(m_text) + copyBtnWidth;
-    const int textH = fm.height() + 4;
-    return QSize(qMax(60, textW), qMax(24, textH));
+    m_measuredSizeCacheValid = true;
+    m_measuredSizeCacheWidth = width;
+    m_measuredSizeCacheText = m_text;
+    m_measuredSizeCacheFont = f;
+    m_measuredSizeCacheCode = m_code;
+    m_measuredSizeCacheParagraph = m_paragraph;
+    m_measuredSizeCacheEllipsis = m_ellipsis;
+    m_measuredSizeCacheCopyable = m_copyable;
+    m_measuredSizeCacheRows = m_ellipsisRows;
+    m_measuredSizeCacheTokenFontSize = token.fontSize;
+    m_measuredSizeCachePaddingXS = token.paddingXS;
+    m_measuredSizeCachePaddingXXS = token.paddingXXS;
+    m_measuredSizeCacheLineWidth = token.lineWidth;
+    m_measuredSizeCacheValue = measured;
+    syncTypographyPerfCounters();
+    return measured;
 }
 
 void AntTypography::updateSizePolicy()
@@ -442,7 +495,7 @@ void AntTypography::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && m_copyable && copyButtonRect().contains(event->pos()))
     {
         m_copyPressed = true;
-        update();
+        update(copyButtonRect());
         event->accept();
         return;
     }
@@ -461,8 +514,9 @@ void AntTypography::mouseMoveEvent(QMouseEvent* event)
     const bool copyHovered = m_copyable && copyButtonRect().contains(event->pos());
     if (m_copyHovered != copyHovered)
     {
+        const QRect dirtyRect = copyButtonRect();
         m_copyHovered = copyHovered;
-        update();
+        update(dirtyRect);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -481,12 +535,12 @@ void AntTypography::mouseReleaseEvent(QMouseEvent* event)
                 if (m_copied)
                 {
                     m_copied = false;
-                    update();
+                    update(copyButtonRect());
                 }
             });
             Q_EMIT copied(m_text);
         }
-        update();
+        update(copyButtonRect());
         event->accept();
         return;
     }
@@ -512,8 +566,9 @@ void AntTypography::leaveEvent(QEvent* event)
 {
     if (m_copyHovered)
     {
+        const QRect dirtyRect = copyButtonRect();
         m_copyHovered = false;
-        update();
+        update(dirtyRect);
     }
     QWidget::leaveEvent(event);
 }
@@ -529,6 +584,10 @@ void AntTypography::changeEvent(QEvent* event)
     {
         syncDisabledState(!isEnabled());
     }
+    else if (event->type() == QEvent::FontChange || event->type() == QEvent::ApplicationFontChange)
+    {
+        invalidateTypographyCaches();
+    }
     QWidget::changeEvent(event);
 }
 
@@ -536,6 +595,26 @@ void AntTypography::updateInteractionCursor()
 {
     setCursor(m_disabled ? Qt::ForbiddenCursor
                          : (m_type == Ant::TypographyType::Link ? Qt::PointingHandCursor : Qt::ArrowCursor));
+}
+
+void AntTypography::invalidateTypographyCaches()
+{
+    m_measuredSizeCacheValid = false;
+    invalidateCopyButtonRectCache();
+}
+
+void AntTypography::invalidateCopyButtonRectCache()
+{
+    m_copyButtonRectCacheValid = false;
+}
+
+void AntTypography::syncTypographyPerfCounters() const
+{
+    auto* self = const_cast<AntTypography*>(this);
+    self->setProperty("antTypographyMeasuredSizeCacheHitCount", m_measuredSizeCacheHitCount);
+    self->setProperty("antTypographyMeasuredSizeCacheMissCount", m_measuredSizeCacheMissCount);
+    self->setProperty("antTypographyCopyRectCacheHitCount", m_copyButtonRectCacheHitCount);
+    self->setProperty("antTypographyCopyRectCacheMissCount", m_copyButtonRectCacheMissCount);
 }
 
 int AntTypography::fontSizeForLevel() const
@@ -641,15 +720,39 @@ QRect AntTypography::copyButtonRect() const
     }
     const auto& token = antTheme->tokens();
     QFont f = createFont();
+    const Qt::Alignment align = normalizedTypographyAlignment(m_alignment);
+    if (m_copyButtonRectCacheValid &&
+        m_copyButtonRectCacheSize == size() &&
+        m_copyButtonRectCacheText == m_text &&
+        m_copyButtonRectCacheFont == f &&
+        m_copyButtonRectCacheAlignment == align &&
+        m_copyButtonRectCacheTokenFontSize == token.fontSize &&
+        m_copyButtonRectCachePaddingXXS == token.paddingXXS)
+    {
+        ++m_copyButtonRectCacheHitCount;
+        syncTypographyPerfCounters();
+        return m_copyButtonRectCacheValue;
+    }
+
+    ++m_copyButtonRectCacheMissCount;
     QFontMetrics fm(f);
     const int iconSize = token.fontSize;
     const int gap = token.paddingXXS;
     const int btnW = iconSize + gap * 2;
-    const Qt::Alignment align = normalizedTypographyAlignment(m_alignment);
     QRect textArea(0, 0, qMax(0, width() - btnW), height());
     const QRect textBounds = fm.boundingRect(textArea, align | Qt::TextSingleLine, m_text);
     const int preferredX = textBounds.right() + 1 + gap;
     const int x = qBound(0, preferredX, qMax(0, width() - btnW));
     const int y = qMax(0, alignedTop(rect(), iconSize + gap, align));
-    return QRect(x, y, btnW, iconSize + gap);
+    const QRect copyRect(x, y, btnW, iconSize + gap);
+    m_copyButtonRectCacheValid = true;
+    m_copyButtonRectCacheSize = size();
+    m_copyButtonRectCacheText = m_text;
+    m_copyButtonRectCacheFont = f;
+    m_copyButtonRectCacheAlignment = align;
+    m_copyButtonRectCacheTokenFontSize = token.fontSize;
+    m_copyButtonRectCachePaddingXXS = token.paddingXXS;
+    m_copyButtonRectCacheValue = copyRect;
+    syncTypographyPerfCounters();
+    return copyRect;
 }

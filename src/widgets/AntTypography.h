@@ -2,7 +2,10 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QFont>
 #include <QPointer>
+#include <QRect>
+#include <QSize>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -123,6 +126,8 @@ protected:
     void changeEvent(QEvent* event) override;
 
 private:
+    friend class AntTypographyStyle;
+
     int fontSizeForLevel() const;
     QFont createFont() const;
     QColor textColor() const;
@@ -130,6 +135,9 @@ private:
     void updateSizePolicy();
     void updateInteractionCursor();
     void syncDisabledState(bool disabled);
+    void invalidateTypographyCaches();
+    void invalidateCopyButtonRectCache();
+    void syncTypographyPerfCounters() const;
     QRect textDrawRect() const;
     QRect copyButtonRect() const;
 
@@ -155,4 +163,32 @@ private:
     bool m_copied = false;
     bool m_pressed = false;
     QString m_href;
+
+    mutable bool m_measuredSizeCacheValid = false;
+    mutable int m_measuredSizeCacheWidth = 0;
+    mutable QString m_measuredSizeCacheText;
+    mutable QFont m_measuredSizeCacheFont;
+    mutable bool m_measuredSizeCacheCode = false;
+    mutable bool m_measuredSizeCacheParagraph = false;
+    mutable bool m_measuredSizeCacheEllipsis = false;
+    mutable bool m_measuredSizeCacheCopyable = false;
+    mutable int m_measuredSizeCacheRows = 1;
+    mutable int m_measuredSizeCacheTokenFontSize = 0;
+    mutable int m_measuredSizeCachePaddingXS = 0;
+    mutable int m_measuredSizeCachePaddingXXS = 0;
+    mutable int m_measuredSizeCacheLineWidth = 0;
+    mutable QSize m_measuredSizeCacheValue;
+    mutable int m_measuredSizeCacheHitCount = 0;
+    mutable int m_measuredSizeCacheMissCount = 0;
+
+    mutable bool m_copyButtonRectCacheValid = false;
+    mutable QSize m_copyButtonRectCacheSize;
+    mutable QString m_copyButtonRectCacheText;
+    mutable QFont m_copyButtonRectCacheFont;
+    mutable Qt::Alignment m_copyButtonRectCacheAlignment = Qt::AlignLeft | Qt::AlignVCenter;
+    mutable int m_copyButtonRectCacheTokenFontSize = 0;
+    mutable int m_copyButtonRectCachePaddingXXS = 0;
+    mutable QRect m_copyButtonRectCacheValue;
+    mutable int m_copyButtonRectCacheHitCount = 0;
+    mutable int m_copyButtonRectCacheMissCount = 0;
 };

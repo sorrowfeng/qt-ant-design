@@ -54,6 +54,7 @@ private slots:
     void wordWrapAdaptsToLayoutWidth();
     void sizePolicyCanBeCustomized();
     void copyInteractionState();
+    void measurementAndCopyRectCaches();
 };
 
 void TestAntTypography::propertiesAndSignals()
@@ -317,6 +318,38 @@ void TestAntTypography::copyInteractionState()
     QCOMPARE(copiedSpy.count(), 1);
     QVERIFY(!w.isCopyPressed());
     QVERIFY(w.isCopied());
+}
+
+void TestAntTypography::measurementAndCopyRectCaches()
+{
+    AntTypography paragraph(QStringLiteral("A long typography paragraph should reuse the same measured height when the layout asks repeatedly."));
+    paragraph.setWordWrap(true);
+
+    const int initialMeasureHits = paragraph.property("antTypographyMeasuredSizeCacheHitCount").toInt();
+    const int initialMeasureMisses = paragraph.property("antTypographyMeasuredSizeCacheMissCount").toInt();
+    const int firstHeight = paragraph.heightForWidth(180);
+    QVERIFY(firstHeight > 0);
+    QVERIFY(paragraph.property("antTypographyMeasuredSizeCacheMissCount").toInt() > initialMeasureMisses);
+
+    QCOMPARE(paragraph.heightForWidth(180), firstHeight);
+    QVERIFY(paragraph.property("antTypographyMeasuredSizeCacheHitCount").toInt() > initialMeasureHits);
+
+    const int missesBeforeTextChange = paragraph.property("antTypographyMeasuredSizeCacheMissCount").toInt();
+    paragraph.setText(QStringLiteral("Changing the paragraph text should invalidate the cached measurement and calculate a fresh height."));
+    QVERIFY(paragraph.heightForWidth(180) > 0);
+    QVERIFY(paragraph.property("antTypographyMeasuredSizeCacheMissCount").toInt() > missesBeforeTextChange);
+
+    AntTypography copyable(QStringLiteral("Copy cache"));
+    copyable.setCopyable(true);
+    copyable.resize(copyable.sizeHint());
+    const QPoint copyPoint(qMax(1, copyable.width() - 8), qMax(1, copyable.height() / 2));
+
+    const int initialCopyHits = copyable.property("antTypographyCopyRectCacheHitCount").toInt();
+    QMouseEvent firstMove(QEvent::MouseMove, QPointF(copyPoint), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QApplication::sendEvent(&copyable, &firstMove);
+    QMouseEvent secondMove(QEvent::MouseMove, QPointF(copyPoint), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QApplication::sendEvent(&copyable, &secondMove);
+    QVERIFY(copyable.property("antTypographyCopyRectCacheHitCount").toInt() > initialCopyHits);
 }
 
 QTEST_MAIN(TestAntTypography)

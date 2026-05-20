@@ -12,64 +12,6 @@
 namespace
 {
 
-int titleFontSizeForLevel(Ant::TypographyTitleLevel level)
-{
-    switch (level)
-    {
-    case Ant::TypographyTitleLevel::H1:
-        return 38;
-    case Ant::TypographyTitleLevel::H2:
-        return 30;
-    case Ant::TypographyTitleLevel::H3:
-        return 24;
-    case Ant::TypographyTitleLevel::H4:
-        return 20;
-    case Ant::TypographyTitleLevel::H5:
-        return 16;
-    default:
-        return 14;
-    }
-}
-
-QFont buildFont(const AntTypography* typo, const QFont& baseFont)
-{
-    const auto& token = antTheme->tokens();
-    QFont f = baseFont;
-
-    if (typo->isTitle())
-    {
-        f.setPixelSize(titleFontSizeForLevel(typo->titleLevel()));
-        f.setWeight(QFont::DemiBold);
-    }
-    else if (typo->isCode())
-    {
-        f.setFamily(QStringLiteral("Consolas, Courier New, monospace"));
-        f.setPixelSize(qMax(1, qRound(token.fontSize * 0.85)));
-    }
-    else
-    {
-        f.setPixelSize(token.fontSize);
-    }
-
-    if (typo->isStrong())
-    {
-        f.setWeight(QFont::DemiBold);
-    }
-    if (typo->isItalic())
-    {
-        f.setItalic(true);
-    }
-    if (typo->isUnderline())
-    {
-        f.setUnderline(true);
-    }
-    if (typo->pixelSize() > 0)
-    {
-        f.setPixelSize(typo->pixelSize());
-    }
-    return f;
-}
-
 QColor textColorForType(const AntTypography* typo, const QStyleOption* option)
 {
     const auto& token = antTheme->tokens();
@@ -171,19 +113,6 @@ void drawCheckIcon(QPainter* painter, const QRect& rect, const QColor& color)
 }
 
 QRect typographyAlignedRect(const QRect& bounds, const QSize& requestedSize, Qt::Alignment alignment);
-
-QRect copyIconRect(const QRect& optionRect, const QFontMetrics& fm, const QString& text, int reservedWidth, Qt::Alignment alignment)
-{
-    const auto& token = antTheme->tokens();
-    const int iconSize = token.fontSize;
-    const int gap = token.paddingXXS;
-    QRect textArea(optionRect.left(), optionRect.top(), qMax(0, optionRect.width() - reservedWidth), optionRect.height());
-    const QRect textBounds = fm.boundingRect(textArea, alignment | Qt::TextSingleLine, text);
-    const int preferredX = textBounds.right() + 1 + gap;
-    const int x = qBound(optionRect.left(), preferredX, optionRect.right() - reservedWidth + 1);
-    const int y = typographyAlignedRect(optionRect, QSize(reservedWidth, iconSize + gap), alignment).top();
-    return QRect(x, y, iconSize + gap, iconSize + gap);
-}
 
 Qt::Alignment normalizedAlignment(Qt::Alignment alignment)
 {
@@ -292,7 +221,6 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
     }
 
     const auto& token = antTheme->tokens();
-    const QFont widgetFont = typo->font();
     const QString text = typo->text();
 
     if (text.isEmpty())
@@ -303,7 +231,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    QFont font = buildFont(typo, widgetFont);
+    QFont font = typo->createFont();
     QFontMetrics fm(font);
     const QColor color = textColorForType(typo, option);
     const Qt::Alignment align = normalizedAlignment(typo->alignment());
@@ -442,7 +370,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
             copyColor = token.colorLinkHover;
         }
 
-        const QRect iconRect = copyIconRect(option->rect, fm, text, copyBtnWidth, align);
+        const QRect iconRect = typo->copyButtonRect();
         if (typo->isCopied())
         {
             drawCheckIcon(painter, iconRect, copyColor);
