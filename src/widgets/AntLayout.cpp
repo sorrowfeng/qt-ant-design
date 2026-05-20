@@ -292,6 +292,7 @@ AntLayout::AntLayout(QWidget* parent)
     : QWidget(parent)
 {
     installAntStyle<AntLayoutStyle>(this);
+    syncPerfCounters();
 }
 
 bool AntLayout::hasSider() const { return m_hasSider; }
@@ -306,6 +307,7 @@ void AntLayout::setBorderRadius(int radius)
         return;
     }
     m_borderRadius = radius;
+    m_maskDirty = true;
     syncMask();
     update();
     Q_EMIT borderRadiusChanged(m_borderRadius);
@@ -327,6 +329,7 @@ void AntLayout::setHeader(AntLayoutHeader* header)
         m_header->setParent(this);
         m_header->show();
     }
+    m_layoutDirty = true;
     syncLayout();
     updateGeometry();
     update();
@@ -353,6 +356,7 @@ void AntLayout::setFooter(AntLayoutFooter* footer)
         m_footer->setParent(this);
         m_footer->show();
     }
+    m_layoutDirty = true;
     syncLayout();
     updateGeometry();
     update();
@@ -379,6 +383,7 @@ void AntLayout::setContent(AntLayoutContent* content)
         m_content->setParent(this);
         m_content->show();
     }
+    m_layoutDirty = true;
     syncLayout();
     updateGeometry();
     update();
@@ -395,9 +400,28 @@ void AntLayout::addSider(AntLayoutSider* sider)
     {
         return;
     }
+    if (m_siders.contains(sider))
+    {
+        return;
+    }
     sider->setParent(this);
     m_siders.append(sider);
+    auto syncSiderLayout = [this, sider]() {
+        if (!m_siders.contains(sider))
+        {
+            return;
+        }
+        m_layoutDirty = true;
+        syncLayout();
+        updateGeometry();
+    };
+    m_siderConnections.insert(sider, {
+        connect(sider, &AntLayoutSider::collapsedChanged, this, syncSiderLayout),
+        connect(sider, &AntLayoutSider::widthChanged, this, syncSiderLayout),
+        connect(sider, &AntLayoutSider::collapsedWidthChanged, this, syncSiderLayout),
+    });
     updateHasSider();
+    m_layoutDirty = true;
     syncLayout();
     updateGeometry();
     update();
@@ -409,9 +433,18 @@ void AntLayout::removeSider(AntLayoutSider* sider)
     {
         return;
     }
-    m_siders.removeAll(sider);
+    if (!m_siders.removeOne(sider))
+    {
+        return;
+    }
+    const auto connections = m_siderConnections.take(sider);
+    for (const auto& connection : connections)
+    {
+        disconnect(connection);
+    }
     sider->setParent(nullptr);
     updateHasSider();
+    m_layoutDirty = true;
     syncLayout();
     updateGeometry();
     update();
@@ -466,81 +499,124 @@ void AntLayout::paintEvent(QPaintEvent* event)
 
 void AntLayout::resizeEvent(QResizeEvent* event)
 {
+    if (event->size() != event->oldSize())
+    {
+        m_layoutDirty = true;
+        m_maskDirty = true;
+    }
     syncLayout();
     syncMask();
     QWidget::resizeEvent(event);
 }
 
+int AntLayout::siderVisualWidth(QWidget* sider) const
+{
+    if (!sider)
+    {
+        return 0;
+    }
+    auto* layoutSider = qobject_cast<AntLayoutSider*>(sider);
+    return layoutSider ? (layoutSider->isCollapsed() ? layoutSider->collapsedWidth() : layoutSider->siderWidth())
+                       : sider->sizeHint().width();
+}
+
+bool AntLayout::applyRegionGeometry(QWidget* widget, const QRect& geometry)
+{
+    if (!widget)
+    {
+        return false;
+    }
+
+    bool changed = false;
+    if (widget->geometry() != geometry)
+    {
+        widget->setGeometry(geometry);
+        ++m_geometryApplyCount;
+        changed = true;
+    }
+    if (!widget->isVisible())
+    {
+        widget->show();
+    }
+    return changed;
+}
+
 void AntLayout::syncLayout()
 {
+    const QSize currentSize = size();
+    if (!m_layoutDirty && m_lastLayoutSize == currentSize)
+    {
+        syncPerfCounters();
+        return;
+    }
+
+    m_layoutDirty = false;
+    m_lastLayoutSize = currentSize;
+    ++m_layoutSyncCount;
+
     const int w = width();
     const int h = height();
 
-    // Calculate sider widths
-    int totalSiderWidth = 0;
-    for (auto* s : m_siders)
-    {
-        if (s)
-        {
-            auto* sider = qobject_cast<AntLayoutSider*>(s);
-            const int sw = sider ? (sider->isCollapsed() ? sider->collapsedWidth() : sider->siderWidth()) : s->sizeHint().width();
-            totalSiderWidth += sw;
-        }
-    }
-
-    // Header
     int y = 0;
     if (m_header)
     {
         const int hh = m_header->sizeHint().height();
-        m_header->setGeometry(0, 0, w, hh);
-        m_header->show();
+        applyRegionGeometry(m_header, QRect(0, 0, w, hh));
         y += hh;
     }
 
-    // Footer
     int contentBottom = h;
     if (m_footer)
     {
         const int fh = m_footer->sizeHint().height();
         contentBottom = h - fh;
-        m_footer->setGeometry(0, contentBottom, w, fh);
-        m_footer->show();
+        applyRegionGeometry(m_footer, QRect(0, contentBottom, w, fh));
     }
 
-    // Siders + Content
     int x = 0;
+    const int contentHeight = qMax(0, contentBottom - y);
     for (auto* s : m_siders)
     {
         if (s)
         {
-            auto* sider = qobject_cast<AntLayoutSider*>(s);
-            const int sw = sider ? (sider->isCollapsed() ? sider->collapsedWidth() : sider->siderWidth()) : s->sizeHint().width();
-            s->setGeometry(x, y, sw, contentBottom - y);
-            s->show();
+            const int sw = qMax(0, siderVisualWidth(s));
+            applyRegionGeometry(s, QRect(x, y, sw, contentHeight));
             x += sw;
         }
     }
 
     if (m_content)
     {
-        m_content->setGeometry(x, y, w - x - totalSiderWidth + x - (totalSiderWidth > 0 ? 0 : 0), contentBottom - y);
-        m_content->setGeometry(x, y, w - x, contentBottom - y);
-        m_content->show();
+        applyRegionGeometry(m_content, QRect(x, y, qMax(0, w - x), contentHeight));
     }
+    syncPerfCounters();
 }
 
 void AntLayout::syncMask()
 {
+    const QRect currentRect = rect();
+    if (!m_maskDirty && m_lastMaskRect == currentRect && m_lastMaskRadius == m_borderRadius)
+    {
+        syncPerfCounters();
+        return;
+    }
+
+    m_maskDirty = false;
+    m_lastMaskRect = currentRect;
+    m_lastMaskRadius = m_borderRadius;
+    ++m_maskSyncCount;
+
     if (m_borderRadius <= 0 || rect().isEmpty())
     {
         clearMask();
+        syncPerfCounters();
         return;
     }
 
     QPainterPath path;
     path.addRoundedRect(QRectF(rect()), m_borderRadius, m_borderRadius);
     setMask(QRegion(path.toFillPolygon().toPolygon()));
+    syncPerfCounters();
 }
 
 void AntLayout::updateHasSider()
@@ -551,4 +627,11 @@ void AntLayout::updateHasSider()
         m_hasSider = has;
         Q_EMIT hasSiderChanged(m_hasSider);
     }
+}
+
+void AntLayout::syncPerfCounters()
+{
+    setProperty("antLayoutSyncCount", m_layoutSyncCount);
+    setProperty("antLayoutGeometryApplyCount", m_geometryApplyCount);
+    setProperty("antLayoutMaskSyncCount", m_maskSyncCount);
 }

@@ -3,6 +3,7 @@
 #include <QGridLayout>
 #include <QImage>
 #include <QPainter>
+#include <QResizeEvent>
 #include <QSizePolicy>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -289,6 +290,7 @@ void TestAntLayout::space()
 void TestAntLayout::layout()
 {
     auto* w = new AntLayout;
+    w->resize(640, 360);
     QCOMPARE(w->hasSider(), false);
     QCOMPARE(w->borderRadius(), 0);
 
@@ -308,6 +310,42 @@ void TestAntLayout::layout()
     auto* content = new AntLayoutContent;
     w->setContent(content);
     QCOMPARE(w->content(), content);
+
+    auto* sider = new AntLayoutSider;
+    sider->setWidth(180);
+    sider->setCollapsedWidth(72);
+
+    QSignalSpy hasSiderSpy(w, &AntLayout::hasSiderChanged);
+    w->addSider(sider);
+    QCOMPARE(w->hasSider(), true);
+    QCOMPARE(hasSiderSpy.count(), 1);
+    QCOMPARE(w->siderCount(), 1);
+    QCOMPARE(w->siderAt(0), sider);
+
+    QCOMPARE(header->geometry(), QRect(0, 0, 640, 64));
+    QCOMPARE(footer->geometry(), QRect(0, 290, 640, 70));
+    QCOMPARE(sider->geometry(), QRect(0, 64, 180, 226));
+    QCOMPARE(content->geometry(), QRect(180, 64, 460, 226));
+
+    const int syncCount = w->property("antLayoutSyncCount").toInt();
+    const int applyCount = w->property("antLayoutGeometryApplyCount").toInt();
+    QResizeEvent sameSizeEvent(QSize(640, 360), QSize(640, 360));
+    QCoreApplication::sendEvent(w, &sameSizeEvent);
+    QCOMPARE(w->property("antLayoutSyncCount").toInt(), syncCount);
+    QCOMPARE(w->property("antLayoutGeometryApplyCount").toInt(), applyCount);
+
+    w->resize(800, 360);
+    QResizeEvent widerEvent(QSize(800, 360), QSize(640, 360));
+    QCoreApplication::sendEvent(w, &widerEvent);
+    QVERIFY(w->property("antLayoutSyncCount").toInt() > syncCount);
+    QCOMPARE(header->geometry(), QRect(0, 0, 800, 64));
+    QCOMPARE(footer->geometry(), QRect(0, 290, 800, 70));
+    QCOMPARE(sider->geometry(), QRect(0, 64, 180, 226));
+    QCOMPARE(content->geometry(), QRect(180, 64, 620, 226));
+
+    sider->setCollapsed(true);
+    QCOMPARE(sider->geometry(), QRect(0, 64, 72, 226));
+    QCOMPARE(content->geometry(), QRect(72, 64, 728, 226));
 }
 
 void TestAntLayout::sider()

@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QHash>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -152,14 +153,26 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
+    int siderVisualWidth(QWidget* sider) const;
+    bool applyRegionGeometry(QWidget* widget, const QRect& geometry);
     void syncLayout();
     void syncMask();
     void updateHasSider();
+    void syncPerfCounters();
 
     QWidget* m_header = nullptr;
     QWidget* m_footer = nullptr;
     QWidget* m_content = nullptr;
     QVector<QWidget*> m_siders;
+    QHash<QWidget*, QVector<QMetaObject::Connection>> m_siderConnections;
     bool m_hasSider = false;
     int m_borderRadius = 0;
+    QSize m_lastLayoutSize;
+    QRect m_lastMaskRect;
+    int m_lastMaskRadius = -1;
+    int m_layoutSyncCount = 0;
+    int m_geometryApplyCount = 0;
+    int m_maskSyncCount = 0;
+    bool m_layoutDirty = true;
+    bool m_maskDirty = true;
 };
