@@ -25,6 +25,7 @@ class TestAntNavigation : public QObject
 private slots:
     void propertiesAndSignals();
     void dropdownCachesPopupGeometry();
+    void menuCachesLayoutAndScopesRows();
     void paginationQuickJumperEditsCurrentPage();
     void anchorCachesLayoutAndCoalescesScroll();
     void breadcrumbCachesLayoutAndScopesHover();
@@ -327,6 +328,62 @@ void TestAntNavigation::dropdownCachesPopupGeometry()
 
     dropdown.setOpen(false);
     QTRY_VERIFY_WITH_TIMEOUT(!dropdown.isOpen(), 300);
+}
+
+void TestAntNavigation::menuCachesLayoutAndScopesRows()
+{
+    AntMenu menu;
+    menu.addItem(QStringLiteral("home"), QStringLiteral("Home"));
+    menu.addItem(QStringLiteral("about"), QStringLiteral("About"));
+    menu.addSubMenu(QStringLiteral("more"), QStringLiteral("More"));
+    menu.addSubItem(QStringLiteral("more"), QStringLiteral("settings"), QStringLiteral("Settings"));
+    menu.resize(240, 160);
+    menu.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&menu));
+
+    (void)menu.sizeHint();
+    const int cacheHitsBefore = menu.property("antMenuVisibleLayoutCacheHitCount").toInt();
+    (void)menu.sizeHint();
+    QVERIFY(menu.property("antMenuVisibleLayoutCacheHitCount").toInt() > cacheHitsBefore);
+
+    const int scopedBeforeHover = menu.property("antMenuScopedItemUpdateCount").toInt();
+    QMouseEvent firstHover(QEvent::MouseMove,
+                           QPointF(20, 20),
+                           QPointF(menu.mapToGlobal(QPoint(20, 20))),
+                           Qt::NoButton,
+                           Qt::NoButton,
+                           Qt::NoModifier);
+    QCoreApplication::sendEvent(&menu, &firstHover);
+    QVERIFY(menu.property("antMenuScopedItemUpdateCount").toInt() > scopedBeforeHover);
+
+    const int scopedBeforeSecondHover = menu.property("antMenuScopedItemUpdateCount").toInt();
+    QMouseEvent secondHover(QEvent::MouseMove,
+                            QPointF(20, 60),
+                            QPointF(menu.mapToGlobal(QPoint(20, 60))),
+                            Qt::NoButton,
+                            Qt::NoButton,
+                            Qt::NoModifier);
+    QCoreApplication::sendEvent(&menu, &secondHover);
+    QVERIFY(menu.property("antMenuScopedItemUpdateCount").toInt() > scopedBeforeSecondHover);
+
+    const int buildsBeforeSelection = menu.property("antMenuVisibleLayoutBuildCount").toInt();
+    const int scopedBeforeSelection = menu.property("antMenuScopedItemUpdateCount").toInt();
+    menu.setSelectedKey(QStringLiteral("about"));
+    QCOMPARE(menu.property("antMenuVisibleLayoutBuildCount").toInt(), buildsBeforeSelection);
+    QVERIFY(menu.property("antMenuScopedItemUpdateCount").toInt() > scopedBeforeSelection);
+
+    AntMenu actionMenu;
+    auto* action = new QAction(QStringLiteral("&Open"), &actionMenu);
+    action->setData(QStringLiteral("open"));
+    actionMenu.addAction(action);
+    actionMenu.resize(240, 80);
+    (void)actionMenu.sizeHint();
+
+    const int actionBuildsBefore = actionMenu.property("antMenuVisibleLayoutBuildCount").toInt();
+    const int actionScopedBefore = actionMenu.property("antMenuScopedItemUpdateCount").toInt();
+    action->setEnabled(false);
+    QCOMPARE(actionMenu.property("antMenuVisibleLayoutBuildCount").toInt(), actionBuildsBefore);
+    QVERIFY(actionMenu.property("antMenuScopedItemUpdateCount").toInt() > actionScopedBefore);
 }
 
 void TestAntNavigation::paginationQuickJumperEditsCurrentPage()

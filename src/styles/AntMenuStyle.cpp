@@ -11,7 +11,6 @@
 AntMenuStyle::AntMenuStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntMenu>();
 }
 
 void AntMenuStyle::polish(QWidget* widget)

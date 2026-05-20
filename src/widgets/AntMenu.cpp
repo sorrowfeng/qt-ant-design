@@ -237,6 +237,12 @@ AntMenu::AntMenu(QWidget* parent)
     m_subMenuCloseTimer = new QTimer(this);
     m_subMenuCloseTimer->setSingleShot(true);
     connect(m_subMenuCloseTimer, &QTimer::timeout, this, &AntMenu::hideSubMenuPopup);
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateVisibleItems();
+        updateGeometry();
+        update();
+    });
+    syncMenuPerfCounters();
 }
 
 AntMenu::~AntMenu()
@@ -329,8 +335,9 @@ void AntMenu::setSelectedKey(const QString& key)
     {
         return;
     }
+    const QString previousKey = m_selectedKey;
     m_selectedKey = key;
-    update();
+    updateSelectionRegion(previousKey, m_selectedKey);
     Q_EMIT selectedKeyChanged(m_selectedKey);
 }
 
@@ -681,8 +688,9 @@ void AntMenu::mouseMoveEvent(QMouseEvent* event)
     const int index = itemAt(event->pos());
     if (m_hoveredIndex != index)
     {
+        const int previous = m_hoveredIndex;
         m_hoveredIndex = index;
-        update();
+        updateItemStateRegion(previous, m_hoveredIndex);
     }
     if (isPopupMode() && index >= 0 && index < m_items.size() && m_items.at(index).subMenu && !m_items.at(index).disabled)
     {
@@ -702,8 +710,9 @@ void AntMenu::mousePressEvent(QMouseEvent* event)
         const int index = itemAt(event->pos());
         if (index >= 0)
         {
+            const int previous = m_pressedIndex;
             m_pressedIndex = index;
-            update();
+            updateItemStateRegion(previous, m_pressedIndex);
             activateItem(index);
             event->accept();
             return;
@@ -716,8 +725,9 @@ void AntMenu::mouseReleaseEvent(QMouseEvent* event)
 {
     if (m_pressedIndex != -1)
     {
+        const int previous = m_pressedIndex;
         m_pressedIndex = -1;
-        update();
+        updateItemStateRegion(previous, m_pressedIndex);
     }
     QWidget::mouseReleaseEvent(event);
 }
@@ -726,8 +736,9 @@ void AntMenu::leaveEvent(QEvent* event)
 {
     if (m_hoveredIndex != -1)
     {
+        const int previous = m_hoveredIndex;
         m_hoveredIndex = -1;
-        update();
+        updateItemStateRegion(previous, m_hoveredIndex);
     }
     if (isPopupMode())
     {
@@ -762,8 +773,31 @@ void AntMenu::keyPressEvent(QKeyEvent* event)
     QWidget::keyPressEvent(event);
 }
 
+void AntMenu::changeEvent(QEvent* event)
+{
+    if (event && (event->type() == QEvent::FontChange ||
+                  event->type() == QEvent::ApplicationFontChange ||
+                  event->type() == QEvent::StyleChange ||
+                  event->type() == QEvent::LayoutDirectionChange))
+    {
+        invalidateVisibleItems();
+        updateGeometry();
+    }
+    QWidget::changeEvent(event);
+}
+
 QList<AntMenu::VisibleItem> AntMenu::visibleItems() const
 {
+    const QSize cacheSize(width(), height());
+    if (m_visibleItemsCacheValid &&
+        m_visibleItemsCacheRevision == m_visibleItemsRevision &&
+        m_visibleItemsCacheSize == cacheSize)
+    {
+        ++m_visibleItemsCacheHitCount;
+        syncMenuPerfCounters();
+        return m_cachedVisibleItems;
+    }
+
     const auto& token = antTheme->tokens();
     QList<VisibleItem> visible;
     if (m_mode == Ant::MenuMode::Horizontal)
@@ -781,11 +815,17 @@ QList<AntMenu::VisibleItem> AntMenu::visibleItems() const
             visible.append({i, QRect(x, 0, w, h)});
             x += w;
         }
+        m_cachedVisibleItems = visible;
+        m_visibleItemsCacheSize = cacheSize;
+        m_visibleItemsCacheRevision = m_visibleItemsRevision;
+        m_visibleItemsCacheValid = true;
+        ++m_visibleItemsBuildCount;
+        syncMenuPerfCounters();
         return visible;
     }
 
     int y = m_compact ? token.paddingXXS : token.paddingXS;
-    const int w = width() > 0 ? width() : sizeHint().width();
+    const int w = width() > 0 ? width() : (m_inlineCollapsed ? 80 : (m_compact ? 120 : 240));
     for (int i = 0; i < m_items.size(); ++i)
     {
         const AntMenuItem& item = m_items.at(i);
@@ -800,6 +840,12 @@ QList<AntMenu::VisibleItem> AntMenu::visibleItems() const
         visible.append({i, QRect(0, y, w, h)});
         y += h;
     }
+    m_cachedVisibleItems = visible;
+    m_visibleItemsCacheSize = cacheSize;
+    m_visibleItemsCacheRevision = m_visibleItemsRevision;
+    m_visibleItemsCacheValid = true;
+    ++m_visibleItemsBuildCount;
+    syncMenuPerfCounters();
     return visible;
 }
 
@@ -861,6 +907,22 @@ int AntMenu::nextSelectableVisibleIndex(int from, int direction) const
     return -1;
 }
 
+int AntMenu::indexForKey(const QString& key) const
+{
+    if (key.isEmpty())
+    {
+        return -1;
+    }
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        if (m_items.at(i).key == key)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 bool AntMenu::isOpen(const QString& key) const
 {
     return m_openKeys.contains(key);
@@ -902,6 +964,100 @@ qreal AntMenu::subMenuProgress(const QString& key) const
         return qBound<qreal>(0.0, m_subMenuProgress.value(key), 1.0);
     }
     return isOpen(key) ? 1.0 : 0.0;
+}
+
+bool AntMenu::selectionAffectsItem(const AntMenuItem& item, const QString& oldKey, const QString& newKey) const
+{
+    if (item.key == oldKey || item.key == newKey)
+    {
+        return true;
+    }
+    if (!item.subMenu)
+    {
+        return false;
+    }
+    for (const AntMenuItem& child : std::as_const(m_items))
+    {
+        if (child.parentKey == item.key && (child.key == oldKey || child.key == newKey))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+QRect AntMenu::itemDirtyRect(int itemIndex) const
+{
+    const QRect r = itemRect(itemIndex);
+    if (r.isNull())
+    {
+        return {};
+    }
+    return r.adjusted(-2, -2, 2, 2).intersected(rect());
+}
+
+void AntMenu::updateItemStateRegion(int oldIndex, int newIndex)
+{
+    QRect dirty;
+    const QRect oldRect = itemDirtyRect(oldIndex);
+    const QRect newRect = itemDirtyRect(newIndex);
+    if (!oldRect.isNull())
+    {
+        dirty = oldRect;
+    }
+    if (!newRect.isNull())
+    {
+        dirty = dirty.isNull() ? newRect : dirty.united(newRect);
+    }
+    if (dirty.isNull())
+    {
+        return;
+    }
+    ++m_scopedItemUpdateCount;
+    syncMenuPerfCounters();
+    update(dirty);
+}
+
+void AntMenu::updateSelectionRegion(const QString& oldKey, const QString& newKey)
+{
+    QRect dirty;
+    for (const VisibleItem& visible : visibleItems())
+    {
+        if (!selectionAffectsItem(m_items.at(visible.index), oldKey, newKey))
+        {
+            continue;
+        }
+        const QRect r = visible.rect.adjusted(-2, -2, 2, 2).intersected(rect());
+        if (!r.isNull())
+        {
+            dirty = dirty.isNull() ? r : dirty.united(r);
+        }
+    }
+    if (dirty.isNull())
+    {
+        return;
+    }
+    ++m_scopedItemUpdateCount;
+    syncMenuPerfCounters();
+    update(dirty);
+}
+
+void AntMenu::invalidateVisibleItems()
+{
+    ++m_visibleItemsRevision;
+    if (m_visibleItemsRevision == 0)
+    {
+        m_visibleItemsRevision = 1;
+    }
+    m_visibleItemsCacheValid = false;
+}
+
+void AntMenu::syncMenuPerfCounters() const
+{
+    auto* self = const_cast<AntMenu*>(this);
+    self->setProperty("antMenuVisibleLayoutCacheHitCount", m_visibleItemsCacheHitCount);
+    self->setProperty("antMenuVisibleLayoutBuildCount", m_visibleItemsBuildCount);
+    self->setProperty("antMenuScopedItemUpdateCount", m_scopedItemUpdateCount);
 }
 
 void AntMenu::toggleOpen(const QString& key)
@@ -962,11 +1118,11 @@ void AntMenu::removeActionItem(QAction* action)
         if (m_items.at(i).action == action)
         {
             const QString key = m_items.at(i).key;
-            m_items.removeAt(i);
             if (m_selectedKey == key)
             {
                 setSelectedKey(QString());
             }
+            m_items.removeAt(i);
             m_openKeys.removeAll(key);
             m_subMenuProgress.remove(key);
         }
@@ -988,7 +1144,32 @@ void AntMenu::updateActionItem(QAction* action)
             continue;
         }
         const QString previousKey = m_items.at(i).key;
-        m_items[i] = itemFromAction(action);
+        const AntMenuItem previousItem = m_items.at(i);
+        const AntMenuItem updatedItem = itemFromAction(action);
+        const bool sameItem = previousItem.key == updatedItem.key &&
+                              previousItem.label == updatedItem.label &&
+                              previousItem.iconText == updatedItem.iconText &&
+                              previousItem.iconType == updatedItem.iconType &&
+                              previousItem.extra == updatedItem.extra &&
+                              previousItem.parentKey == updatedItem.parentKey &&
+                              previousItem.level == updatedItem.level &&
+                              previousItem.disabled == updatedItem.disabled &&
+                              previousItem.danger == updatedItem.danger &&
+                              previousItem.divider == updatedItem.divider &&
+                              previousItem.subMenu == updatedItem.subMenu;
+        if (sameItem)
+        {
+            return;
+        }
+        const bool geometryDirty = previousItem.label != updatedItem.label ||
+                                   previousItem.iconText != updatedItem.iconText ||
+                                   previousItem.iconType != updatedItem.iconType ||
+                                   previousItem.extra != updatedItem.extra ||
+                                   previousItem.parentKey != updatedItem.parentKey ||
+                                   previousItem.level != updatedItem.level ||
+                                   previousItem.divider != updatedItem.divider ||
+                                   previousItem.subMenu != updatedItem.subMenu;
+        m_items[i] = updatedItem;
         if (m_selectedKey == previousKey)
         {
             m_selectedKey = m_items.at(i).key;
@@ -1000,8 +1181,15 @@ void AntMenu::updateActionItem(QAction* action)
                 key = m_items.at(i).key;
             }
         }
-        updateMenuGeometry();
-        update();
+        if (geometryDirty)
+        {
+            updateMenuGeometry();
+            update();
+        }
+        else
+        {
+            updateItemStateRegion(i, i);
+        }
         return;
     }
 }
@@ -1123,6 +1311,7 @@ void AntMenu::showSubMenuPopup(int itemIndex)
     m_subMenuPopup->rebuild(item.key);
     const QRect geometry = popupGeometryForItem(itemIndex, m_subMenuPopup->sizeHint().expandedTo(m_subMenuPopup->size()));
     m_subMenuPopup->setGeometry(geometry);
+    const int previousPopupIndex = indexForKey(m_popupParentKey);
     m_popupParentKey = item.key;
     AntPopupMotion::show(m_subMenuPopup, m_mode == Ant::MenuMode::Horizontal
                                           ? AntPopupMotion::Placement::Bottom
@@ -1131,7 +1320,7 @@ void AntMenu::showSubMenuPopup(int itemIndex)
     {
         qApp->installEventFilter(this);
     }
-    update();
+    updateItemStateRegion(previousPopupIndex, itemIndex);
 }
 
 void AntMenu::hideSubMenuPopup()
@@ -1149,8 +1338,9 @@ void AntMenu::hideSubMenuPopup()
     }
     if (!m_popupParentKey.isEmpty())
     {
+        const int previousPopupIndex = indexForKey(m_popupParentKey);
         m_popupParentKey.clear();
-        update();
+        updateItemStateRegion(previousPopupIndex, -1);
     }
 }
 
@@ -1189,8 +1379,9 @@ void AntMenu::handleSubMenuPopupHidden()
     }
     if (!m_popupParentKey.isEmpty())
     {
+        const int previousPopupIndex = indexForKey(m_popupParentKey);
         m_popupParentKey.clear();
-        update();
+        updateItemStateRegion(previousPopupIndex, -1);
     }
 }
 
@@ -1446,8 +1637,13 @@ void AntMenu::drawItem(QPainter& painter, const AntMenuItem& item, const QRect& 
 
 void AntMenu::updateMenuGeometry()
 {
+    invalidateVisibleItems();
     updateGeometry();
-    if (parentWidget() && layout())
+    if (parentWidget() && parentWidget()->layout())
+    {
+        parentWidget()->layout()->invalidate();
+    }
+    if (layout())
     {
         layout()->invalidate();
     }

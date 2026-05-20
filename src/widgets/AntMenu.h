@@ -138,6 +138,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private:
     class SubMenuPopup;
@@ -153,11 +154,18 @@ private:
     int itemAt(const QPoint& pos) const;
     int selectedVisibleIndex() const;
     int nextSelectableVisibleIndex(int from, int direction) const;
+    int indexForKey(const QString& key) const;
     bool isOpen(const QString& key) const;
     bool isPopupMode() const;
     bool isItemSelected(const AntMenuItem& item) const;
     bool isSubMenuVisible(const QString& key) const;
     qreal subMenuProgress(const QString& key) const;
+    bool selectionAffectsItem(const AntMenuItem& item, const QString& oldKey, const QString& newKey) const;
+    QRect itemDirtyRect(int itemIndex) const;
+    void updateItemStateRegion(int oldIndex, int newIndex);
+    void updateSelectionRegion(const QString& oldKey, const QString& newKey);
+    void invalidateVisibleItems();
+    void syncMenuPerfCounters() const;
     void insertActionItem(QAction* action, QAction* before);
     void removeActionItem(QAction* action);
     void updateActionItem(QAction* action);
@@ -200,4 +208,12 @@ private:
     int m_inlineIndent = 24;
     int m_hoveredIndex = -1;
     int m_pressedIndex = -1;
+    quint64 m_visibleItemsRevision = 1;
+    mutable bool m_visibleItemsCacheValid = false;
+    mutable quint64 m_visibleItemsCacheRevision = 0;
+    mutable QSize m_visibleItemsCacheSize;
+    mutable QList<VisibleItem> m_cachedVisibleItems;
+    mutable int m_visibleItemsCacheHitCount = 0;
+    mutable int m_visibleItemsBuildCount = 0;
+    int m_scopedItemUpdateCount = 0;
 };

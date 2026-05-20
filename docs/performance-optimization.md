@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `38` components are optimized from this pass, and `46` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `39` components are optimized from this pass, and `45` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntMenu` | Visible item rectangles are now cached and reused by paint, hit testing, keyboard navigation, size hints, and submenu popup placement. Hover, press, selection, popup-parent highlight, and non-geometry action state changes repaint only affected rows, while theme refresh is owned by the widget instead of an extra style-level refresh path. | `cmake --build build --config Debug --target TestAntNavigation`, `TestAntNavigation.exe`, `cmake --build build --config Debug --target TestAntInteractions`, `TestAntInteractions.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntDropdown` | Popup content width is now cached by labels, font, and token metrics. Repeated target resize/move with unchanged placement skips popup `setGeometry()`/`update()`, popup margins and menu fixed width are applied only when changed, and item changes invalidate popup sizing before reuse. | `cmake --build build --config Debug --target TestAntNavigation`, `TestAntNavigation.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntBreadcrumb` | Item widths, item rectangles, separator spacing, and total size are now cached by font, token metrics, separator, height, and item list. Paint and hit testing reuse the same cached geometry, separator changes invalidate the cache, and hover enter/leave repaint only the old/new item dirty regions. | `cmake --build build --config Debug --target TestAntNavigation`, `TestAntNavigation.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntAnchor` | Link indicator rectangles are now cached and invalidated only on link layout, resize, or theme changes. Active label font/palette state is applied on state/theme changes instead of during every paint, indicator animation frames repaint only the old/new indicator union, and scroll value bursts coalesce into one active-section resolve. | `cmake --build build --config Debug --target TestAntNavigation`, `TestAntNavigation.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -116,7 +117,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntAnchor` | P1 | Cache link indicator rectangles, apply label visual state only on active/theme changes, repaint only indicator dirty regions during animation, and coalesce scroll bursts into one active-section resolve. | Optimized |
 | `AntBreadcrumb` | P2 | Cache item widths, item rectangles, separator spacing, and total size for size, paint, and hit-test paths; repaint only old/new hover item dirty regions. | Optimized |
 | `AntDropdown` | P0 | Cache popup content width, apply popup margins/menu width only when changed, skip repeated popup geometry applications, and keep outside-click closing on one lightweight path. | Optimized |
-| `AntMenu` | P0 | Cache item layout, submenu placement, and shortcut text metrics; repaint only affected menu rows during hover/selection; avoid style repolish for action text changes. | Plan ready |
+| `AntMenu` | P0 | Cache visible item layout for paint, hit testing, size hints, keyboard navigation, and submenu placement; repaint only affected rows during hover/press/selection/action state changes; keep theme refresh widget-owned. | Optimized |
 | `AntPagination` | P1 | Cache page-button rectangles and text metrics; recalculate only when page count, current page, or size changes. | Plan ready |
 | `AntSteps` | P1 | Cache step connector/title/description layout; dirty-update current/previous/current-hover steps instead of full widget. | Plan ready |
 | `AntTabs` | P0 | Cache tab rectangles and card paths, coalesce tab drag/reorder layout updates, and repaint only indicator plus old/new active tab during animation. | Plan ready |
@@ -239,7 +240,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 | `AntAnchor` | `TestAntNavigation` | Verify scroll tracking, active link changes, cached link indicator geometry, label visual state reuse after repaint, coalesced scroll bursts, indicator animation, and no missed active updates after throttling. |
 | `AntBreadcrumb` | `TestAntNavigation` | Verify item hover/click, separators, disabled items, cached layout reuse, separator-driven invalidation, theme switching, and dirty repaint only for changed breadcrumb items. |
 | `AntDropdown` | `TestAntInteractions`, `TestAntNavigation`, `TestAntPopupLifecycle` | Verify click/hover/context triggers, placement/arrow, outside close, popup motion, popup content-width cache reuse, geometry skip behavior, and repeated open/close latency. |
-| `AntMenu` | `TestAntInteractions`, `TestAntNavigation`, `TestAntVisualRegression` | Verify action sync, hover/selection, submenu behavior, shortcut text, large menu movement, and row-scoped repaint. |
+| `AntMenu` | `TestAntInteractions`, `TestAntNavigation`, `TestAntVisualRegression` | Verify action sync, hover/selection, submenu behavior, shortcut text, visible-layout cache reuse, action state changes without layout rebuild, large menu movement, and row-scoped repaint. |
 | `AntPagination` | `TestAntNavigation`, `TestAntVisualRegression` | Verify page changes, quick jumper, page size changes, disabled states, and button-geometry cache invalidation. |
 | `AntSteps` | `TestAntNavigation`, `TestAntVisualRegression` | Verify current/error/clickable steps, horizontal/vertical modes, connector drawing, and old/new step dirty updates. |
 | `AntTabs` | `TestAntAdvancedInteractions`, `TestAntNavigation`, `TestAntStressLifecycle`, `TestAntVisualRegression` | Verify active indicator animation, card/line/editable modes, tab close/disable fallback, tab drag/reorder, and content layout stability. |
