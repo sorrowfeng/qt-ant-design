@@ -1045,6 +1045,49 @@ void TestAntQtExtensions::splitter()
     w->addWidget(c1);
     w->addWidget(c2);
     QCOMPARE(w->count(), 2);
+    QCOMPARE(w->property("antSplitterHandlePaletteRefreshCount").toInt(), 1);
+
+    w->resize(240, 80);
+    w->show();
+    QVERIFY(QTest::qWaitForWindowExposed(w));
+    QCoreApplication::processEvents();
+
+    auto* handle = qobject_cast<AntSplitterHandle*>(w->handle(1));
+    QVERIFY(handle);
+    QVERIFY(!handle->size().isEmpty());
+
+    QImage firstPaint(handle->size(), QImage::Format_ARGB32_Premultiplied);
+    firstPaint.fill(Qt::transparent);
+    handle->render(&firstPaint);
+    QCOMPARE(handle->property("antSplitterHandleColorResolveCount").toInt(), 1);
+
+    QImage secondPaint(handle->size(), QImage::Format_ARGB32_Premultiplied);
+    secondPaint.fill(Qt::transparent);
+    handle->render(&secondPaint);
+    QCOMPARE(handle->property("antSplitterHandleColorResolveCount").toInt(), 1);
+    QVERIFY(handle->property("antSplitterHandlePaintCount").toInt() >= 2);
+    QVERIFY2(colorNearForExtensionTest(secondPaint.pixelColor(secondPaint.rect().center()), antTheme->tokens().colorBorder),
+             qPrintable(QStringLiteral("splitter handle color should match cached border color, actual %1 expected %2")
+                            .arg(colorStringForExtensionTest(secondPaint.pixelColor(secondPaint.rect().center())),
+                                 colorStringForExtensionTest(antTheme->tokens().colorBorder))));
+
+    const auto previousTheme = antTheme->themeMode();
+    const auto nextTheme = previousTheme == Ant::ThemeMode::Dark ? Ant::ThemeMode::Default : Ant::ThemeMode::Dark;
+    const int paletteRefreshes = w->property("antSplitterHandlePaletteRefreshCount").toInt();
+    antTheme->setThemeMode(nextTheme);
+    QCoreApplication::processEvents();
+    QCOMPARE(w->property("antSplitterHandlePaletteRefreshCount").toInt(), paletteRefreshes + 1);
+
+    QImage afterThemePaint(handle->size(), QImage::Format_ARGB32_Premultiplied);
+    afterThemePaint.fill(Qt::transparent);
+    handle->render(&afterThemePaint);
+    QCOMPARE(handle->property("antSplitterHandleColorResolveCount").toInt(), 2);
+    QVERIFY2(colorNearForExtensionTest(afterThemePaint.pixelColor(afterThemePaint.rect().center()), antTheme->tokens().colorBorder),
+             qPrintable(QStringLiteral("splitter handle color should update after theme change, actual %1 expected %2")
+                            .arg(colorStringForExtensionTest(afterThemePaint.pixelColor(afterThemePaint.rect().center())),
+                                 colorStringForExtensionTest(antTheme->tokens().colorBorder))));
+
+    antTheme->setThemeMode(previousTheme);
 }
 
 void TestAntQtExtensions::statusBar()
