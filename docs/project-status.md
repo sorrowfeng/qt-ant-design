@@ -19,12 +19,13 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `20` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `21` controls optimized in the current pass |
 
 ## Recent Completed Work
 
 - Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, serialized splitter/tab/floating named perspectives, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, threshold-activated translucent drag previews, toggleable center/edge drop guide squares, deterministic guided drop placement, manager-owned floating dock windows using the AntWindow-style Windows native frame/DWM rounded-corner/shadow path, double-click maximize/restore, and drag-back-to-layout support.
 - Added `docs/performance-optimization.md` as the starting point for the performance pass, with conservative optimization rules, validation expectations, priority order, and per-component progress/test tables covering all `84` public components.
+- Optimized `AntWindow` title-bar interaction by caching button rectangles and repainting only affected title-bar button regions during hover, press, and visibility changes.
 - Optimized `AntWidget` theme handling by caching style, palette, and size-hint inputs so normal theme switches avoid repolish and geometry refresh unless those inputs changed.
 - Optimized `AntSplitter` by caching handle colors at the parent splitter level and invalidating handle paint caches only on hover or theme revision changes.
 - Optimized `AntSpace` by caching size hints, invalidating them from child layout events, and appending items without rebuilding the whole layout.

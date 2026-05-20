@@ -58,6 +58,11 @@ constexpr auto kLegacySoftwareShadowObjectName = "AntWindowLegacySoftwareShadow"
 constexpr int kLegacySoftwareShadowMargin = 14;
 constexpr int kLegacySoftwareShadowInnerClearance = 0;
 
+int titleBarButtonIndex(AntWindow::TitleBarButton button)
+{
+    return static_cast<int>(button);
+}
+
 QPixmap captureAntWindowFrame(QWidget* widget)
 {
     if (!widget || widget->width() <= 0 || widget->height() <= 0)
@@ -1023,6 +1028,7 @@ AntWindow::AntWindow(QWidget* parent)
     installAntStyle<AntWindowStyle>(this);
     setMinimumSize(400, 300);
     syncTheme();
+    syncTitleBarPerfCounters();
 
 #ifdef Q_OS_WIN
     m_contentWidget = new AntWindowContentWidget(this);
@@ -1319,40 +1325,31 @@ void AntWindow::setTitleBarButtonVisible(TitleBarButton button, bool visible)
         return;
     }
 
+    const QRect oldButtonStrip = titleBarButtonStripRect();
     *target = visible;
     if (!visible && m_hoveredButton == button)
     {
         m_hoveredButton = TitleBarButton::None;
     }
+    if (!visible && m_pressedButton == button)
+    {
+        m_pressedButton = TitleBarButton::None;
+    }
 
-    update(titleBarRect());
+    invalidateTitleBarButtonRectCache();
+    updateTitleBarRegion(oldButtonStrip.united(titleBarButtonStripRect()));
     emitTitleBarButtonVisibleChanged(button, visible);
 }
 
 QRect AntWindow::titleBarButtonRect(TitleBarButton button) const
 {
-    if (!isTitleBarButtonVisible(button))
+    if (button == TitleBarButton::None || !isTitleBarButtonVisible(button))
     {
         return {};
     }
 
-    int right = width();
-    for (TitleBarButton current : kTitleBarButtonsRightToLeft)
-    {
-        if (!isTitleBarButtonVisible(current))
-        {
-            continue;
-        }
-
-        right -= TitleBarButtonWidth;
-        const QRect rect(right, 0, TitleBarButtonWidth, TitleBarHeight);
-        if (current == button)
-        {
-            return rect;
-        }
-    }
-
-    return {};
+    ensureTitleBarButtonRectCache();
+    return m_titleBarButtonRectCache[titleBarButtonIndex(button)];
 }
 
 AntWindow::TitleBarButton AntWindow::hoveredTitleBarButton() const
@@ -1740,6 +1737,7 @@ void AntWindow::hideEvent(QHideEvent* event)
 void AntWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
+    invalidateTitleBarButtonRectCache();
 #ifdef Q_OS_WIN
     // Always reapply the rounded mask — it controls which pixels of the
     // backing store the compositor shows, so if we leave it at the previous
@@ -2094,7 +2092,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
             if (button != TitleBarButton::None)
             {
                 m_pressedButton = button;
-                update(titleBarButtonRect(button));
+                updateTitleBarRegion(titleBarButtonRect(button));
                 *result = 0;
                 return true;
             }
@@ -2122,7 +2120,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
                 {
                     handleButtonClicked(pressedButton);
                 }
-                update(titleBarRect());
+                updateTitleBarRegion(titleBarButtonRect(pressedButton));
                 *result = 0;
                 return true;
             }
@@ -2255,9 +2253,10 @@ AntWindow::TitleBarButton AntWindow::buttonAtPosition(const QPoint& pos) const
         return TitleBarButton::None;
     }
 
+    ensureTitleBarButtonRectCache();
     for (TitleBarButton button : kTitleBarButtonsRightToLeft)
     {
-        if (titleBarButtonRect(button).contains(pos))
+        if (m_titleBarButtonRectCache[titleBarButtonIndex(button)].contains(pos))
         {
             return button;
         }
@@ -2295,11 +2294,11 @@ void AntWindow::setHoveredTitleBarButton(TitleBarButton button)
     m_hoveredButton = button;
     if (oldHovered != TitleBarButton::None)
     {
-        update(titleBarButtonRect(oldHovered));
+        updateTitleBarRegion(titleBarButtonRect(oldHovered));
     }
     if (m_hoveredButton != TitleBarButton::None)
     {
-        update(titleBarButtonRect(m_hoveredButton));
+        updateTitleBarRegion(titleBarButtonRect(m_hoveredButton));
     }
 }
 
@@ -2318,7 +2317,7 @@ bool AntWindow::handleTitleBarMousePress(const QPoint& pos, const QPoint& global
     if (isButtonArea(pos))
     {
         m_pressedButton = buttonAtPosition(pos);
-        update(titleBarRect());
+        updateTitleBarRegion(titleBarButtonRect(m_pressedButton));
         return true;
     }
 
@@ -2392,7 +2391,7 @@ bool AntWindow::handleTitleBarMouseRelease(const QPoint& pos, const QPoint& glob
         {
             handleButtonClicked(pressedButton);
         }
-        update(titleBarRect());
+        updateTitleBarRegion(titleBarButtonRect(pressedButton));
         return true;
     }
 
@@ -2463,6 +2462,93 @@ void AntWindow::handleButtonClicked(TitleBarButton button)
     default:
         break;
     }
+}
+
+void AntWindow::ensureTitleBarButtonRectCache() const
+{
+    const int mask = titleBarButtonVisibilityMask();
+    if (m_titleBarButtonCacheWidth == width() && m_titleBarButtonCacheMask == mask)
+    {
+        return;
+    }
+
+    for (QRect& rect : m_titleBarButtonRectCache)
+    {
+        rect = QRect();
+    }
+
+    int right = width();
+    for (TitleBarButton button : kTitleBarButtonsRightToLeft)
+    {
+        if (!isTitleBarButtonVisible(button))
+        {
+            continue;
+        }
+
+        right -= TitleBarButtonWidth;
+        m_titleBarButtonRectCache[titleBarButtonIndex(button)] = QRect(right,
+                                                                       0,
+                                                                       TitleBarButtonWidth,
+                                                                       TitleBarHeight);
+    }
+
+    m_titleBarButtonCacheWidth = width();
+    m_titleBarButtonCacheMask = mask;
+    ++m_titleBarButtonRectCacheRebuildCount;
+    syncTitleBarPerfCounters();
+}
+
+void AntWindow::invalidateTitleBarButtonRectCache() const
+{
+    m_titleBarButtonCacheWidth = -1;
+    m_titleBarButtonCacheMask = -1;
+    syncTitleBarPerfCounters();
+}
+
+int AntWindow::titleBarButtonVisibilityMask() const
+{
+    int mask = 0;
+    for (TitleBarButton button : kTitleBarButtonsRightToLeft)
+    {
+        if (isTitleBarButtonVisible(button))
+        {
+            mask |= (1 << titleBarButtonIndex(button));
+        }
+    }
+    return mask;
+}
+
+QRect AntWindow::titleBarButtonStripRect() const
+{
+    ensureTitleBarButtonRectCache();
+    QRect strip;
+    for (TitleBarButton button : kTitleBarButtonsRightToLeft)
+    {
+        strip = strip.united(m_titleBarButtonRectCache[titleBarButtonIndex(button)]);
+    }
+    return strip;
+}
+
+void AntWindow::updateTitleBarRegion(const QRect& rect)
+{
+    const QRect dirty = rect.intersected(titleBarRect());
+    if (dirty.isEmpty())
+    {
+        return;
+    }
+
+    update(dirty);
+    ++m_titleBarDirtyUpdateCount;
+    syncTitleBarPerfCounters();
+}
+
+void AntWindow::syncTitleBarPerfCounters() const
+{
+    auto* self = const_cast<AntWindow*>(this);
+    self->setProperty("antWindowTitleBarButtonRectCacheRebuildCount", m_titleBarButtonRectCacheRebuildCount);
+    self->setProperty("antWindowTitleBarDirtyUpdateCount", m_titleBarDirtyUpdateCount);
+    self->setProperty("antWindowTitleBarButtonCacheWidth", m_titleBarButtonCacheWidth);
+    self->setProperty("antWindowTitleBarButtonCacheMask", m_titleBarButtonCacheMask);
 }
 
 void AntWindow::showCloseConfirmationModal()

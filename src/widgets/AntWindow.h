@@ -5,6 +5,9 @@
 #include <QAbstractNativeEventFilter>
 #include <QMainWindow>
 #include <QPointer>
+#include <QRect>
+
+#include <array>
 
 #include "core/AntTypes.h"
 
@@ -153,6 +156,12 @@ private:
     bool handleTitleBarMouseRelease(const QPoint& pos, const QPoint& globalPos, Qt::MouseButton button);
     bool handleTitleBarMouseDoubleClick(const QPoint& pos, Qt::MouseButton button);
     void handleButtonClicked(TitleBarButton button);
+    void ensureTitleBarButtonRectCache() const;
+    void invalidateTitleBarButtonRectCache() const;
+    int titleBarButtonVisibilityMask() const;
+    QRect titleBarButtonStripRect() const;
+    void updateTitleBarRegion(const QRect& rect);
+    void syncTitleBarPerfCounters() const;
     void showCloseConfirmationModal();
     void syncCloseConfirmationModal();
     void startThemeModeTransition();
@@ -186,6 +195,11 @@ private:
     int m_cornerRadius = 8;
     TitleBarButton m_hoveredButton = TitleBarButton::None;
     TitleBarButton m_pressedButton = TitleBarButton::None;
+    mutable std::array<QRect, 6> m_titleBarButtonRectCache;
+    mutable int m_titleBarButtonCacheWidth = -1;
+    mutable int m_titleBarButtonCacheMask = -1;
+    mutable int m_titleBarButtonRectCacheRebuildCount = 0;
+    int m_titleBarDirtyUpdateCount = 0;
     QWidget* m_contentWidget = nullptr;
     QWidget* m_centralContentWidget = nullptr;
     AntRibbon* m_ribbon = nullptr;

@@ -3121,22 +3121,32 @@ void TestAntQtExtensions::window()
     QCOMPARE(titleSpy.count(), 1);
 
     w->resize(640, 400);
+    QCOMPARE(w->property("antWindowTitleBarButtonRectCacheRebuildCount").toInt(), 0);
+    const QRect closeButtonRect = w->titleBarButtonRect(AntWindow::TitleBarButton::Close);
+    QVERIFY(!closeButtonRect.isNull());
+    QCOMPARE(w->property("antWindowTitleBarButtonRectCacheRebuildCount").toInt(), 1);
     QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Pin).isNull());
     QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Theme).isNull());
     QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Minimize).isNull());
     QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Maximize).isNull());
-    QVERIFY(!w->titleBarButtonRect(AntWindow::TitleBarButton::Close).isNull());
+    QCOMPARE(w->titleBarButtonRect(AntWindow::TitleBarButton::Close), closeButtonRect);
+    QCOMPARE(w->property("antWindowTitleBarButtonRectCacheRebuildCount").toInt(), 1);
 
     QSignalSpy visibilitySpy(w, &AntWindow::titleBarButtonVisibilityChanged);
     QSignalSpy pinVisibilitySpy(w, &AntWindow::pinButtonVisibleChanged);
+    const int dirtyUpdatesBeforeVisibility = w->property("antWindowTitleBarDirtyUpdateCount").toInt();
     w->setPinButtonVisible(false);
     QCOMPARE(w->isPinButtonVisible(), false);
     QCOMPARE(w->isTitleBarButtonVisible(AntWindow::TitleBarButton::Pin), false);
     QVERIFY(w->titleBarButtonRect(AntWindow::TitleBarButton::Pin).isNull());
+    QCOMPARE(w->property("antWindowTitleBarButtonRectCacheRebuildCount").toInt(), 2);
+    QCOMPARE(w->property("antWindowTitleBarDirtyUpdateCount").toInt(), dirtyUpdatesBeforeVisibility + 1);
     QCOMPARE(pinVisibilitySpy.count(), 1);
     QCOMPARE(visibilitySpy.count(), 1);
     w->setTitleBarButtonVisible(AntWindow::TitleBarButton::Pin, true);
     QCOMPARE(w->isPinButtonVisible(), true);
+    QCOMPARE(w->property("antWindowTitleBarButtonRectCacheRebuildCount").toInt(), 3);
+    QCOMPARE(w->property("antWindowTitleBarDirtyUpdateCount").toInt(), dirtyUpdatesBeforeVisibility + 2);
     QCOMPARE(pinVisibilitySpy.count(), 2);
     QCOMPARE(visibilitySpy.count(), 2);
 
