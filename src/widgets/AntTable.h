@@ -3,6 +3,7 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QMap>
+#include <QRect>
 #include <QStringList>
 #include <QVector>
 #include <QWidget>
@@ -148,6 +149,10 @@ private:
     int bodyHeight() const;
     int visibleRowCount() const;
     int rowAtPos(const QPoint& pos) const;
+    QRect tableBodyRect() const;
+    QRect rowUpdateRect(int displayIndex) const;
+    void updateRow(int displayIndex);
+    void updateRows(int firstDisplayIndex, int secondDisplayIndex);
     QString columnKeyAtPos(const QPoint& pos) const;
     bool isInSelectionColumn(const QPoint& pos) const;
     bool isInHeader(const QPoint& pos) const;

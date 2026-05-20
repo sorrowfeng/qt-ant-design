@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `2` components are optimized from this pass, and `82` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `3` components are optimized from this pass, and `81` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-20` | `AntTable` | Hover and leave transitions now compute row dirty rectangles and repaint only the previous/current row instead of scheduling a full table update. A targeted test asserts the row-scoped update path directly. | `cmake --build build --config Debug --target TestAntDataDisplayB`, `TestAntDataDisplayB.exe tableHoverUsesRowScopedUpdates`, `TestAntAdvancedInteractions.exe tableSortSelectionAndPaginationFlow` |
 | `2026-05-20` | `AntLog` | Appends now use a document cursor instead of moving the visible editor cursor, level text formats are cached per theme, undo/redo storage is disabled for log output, and entry trimming removes overflow in one batch. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe log` |
 | `2026-05-20` | `AntIcon` | Cached enum path generation and resource SVG rendered pixmaps by icon name, colors, size, and DPR. Rotation and spin still use painter transforms, so visible motion is preserved while repeated paints avoid qrc reads and SVG renderer setup. | `cmake --build build --config Debug --target TestAntIcon`, `TestAntIcon.exe`, `cmake --build build --config Debug --target TestAntButton`, `TestAntButton.exe` |
 
@@ -144,7 +145,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntList` | P0 | Cache item row heights/visible range, update only changed/visible rows, and avoid full relayout on selection or hover. | Plan ready |
 | `AntQRCode` | P1 | Cache generated QR matrix/image by text, icon, status, level, size, and DPR; regenerate only on payload/status-size changes. | Plan ready |
 | `AntStatistic` | P2 | Cache formatted value/title/suffix layout; only recompute on value/precision/locale/font changes. | Plan ready |
-| `AntTable` | P0 | Cache column widths, row heights, visible rows, sorter/selection rects; repaint only changed rows/header cells and separate sorting from paint. | Plan ready |
+| `AntTable` | P0 | Hover and leave now repaint only the previous/current row dirty rectangles. Continue with cached visible geometry, sorter/selection rects, and header-cell dirty updates in a later pass. | Optimized |
 | `AntTag` | P2 | Cache text/icon/close rects; update only tag bounds on hover/checked/close states. | Plan ready |
 | `AntTimeline` | P1 | Cache item positions and line geometry; repaint only changed item/status segment. | Plan ready |
 | `AntTree` | P0 | Cache flattened visible nodes, row rects, connector paths, and checkbox rects; update only changed nodes and visible range. | Plan ready |

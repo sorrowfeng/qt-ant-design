@@ -2,7 +2,9 @@
 #include <QTest>
 #include <QAbstractItemView>
 #include <QColor>
+#include <QCoreApplication>
 #include <QImage>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QVBoxLayout>
 #include "core/AntTheme.h"
@@ -25,6 +27,7 @@ private slots:
     void listWidgetCompatibilityApis();
     void listInternalScrolling();
     void listUsesExpandingLayoutPolicy();
+    void tableHoverUsesRowScopedUpdates();
     void tableSelectionCompatibilityApis();
     void listSelectionHighlightUsesBalancedInset();
 };
@@ -557,6 +560,39 @@ void TestAntDataDisplayB::listUsesExpandingLayoutPolicy()
     QCOMPARE(list->width(), host.width());
     QCOMPARE(list->height(), host.height());
     QVERIFY(list->maximumScrollOffset() > 0);
+}
+
+void TestAntDataDisplayB::tableHoverUsesRowScopedUpdates()
+{
+    AntTable table;
+    table.resize(360, 240);
+    table.addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 140});
+    table.addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 80});
+    for (int i = 0; i < 5; ++i)
+    {
+        AntTableRow row;
+        row.data[QStringLiteral("name")] = QStringLiteral("User %1").arg(i);
+        row.data[QStringLiteral("age")] = i + 20;
+        table.addRow(row);
+    }
+
+    const auto sendMouseMove = [&table](const QPoint& pos) {
+        QMouseEvent event(QEvent::MouseMove, QPointF(pos), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(&table, &event);
+    };
+
+    sendMouseMove(QPoint(120, 72));
+    QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("row"));
+    QCOMPARE(table.property("antTableLastRowUpdateCount").toInt(), 1);
+
+    sendMouseMove(QPoint(120, 128));
+    QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("row"));
+    QCOMPARE(table.property("antTableLastRowUpdateCount").toInt(), 2);
+
+    QEvent leaveEvent(QEvent::Leave);
+    QCoreApplication::sendEvent(&table, &leaveEvent);
+    QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("row"));
+    QCOMPARE(table.property("antTableLastRowUpdateCount").toInt(), 1);
 }
 
 void TestAntDataDisplayB::tableSelectionCompatibilityApis()

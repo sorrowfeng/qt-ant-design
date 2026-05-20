@@ -595,8 +595,9 @@ void AntTable::mouseMoveEvent(QMouseEvent* event)
     const int row = rowAtPos(event->pos());
     if (m_hoveredRow != row)
     {
+        const int previousHoveredRow = m_hoveredRow;
         m_hoveredRow = row;
-        update();
+        updateRows(previousHoveredRow, m_hoveredRow);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -605,8 +606,9 @@ void AntTable::leaveEvent(QEvent* event)
 {
     if (m_hoveredRow != -1)
     {
+        const int previousHoveredRow = m_hoveredRow;
         m_hoveredRow = -1;
-        update();
+        updateRow(previousHoveredRow);
     }
     QWidget::leaveEvent(event);
 }
@@ -725,6 +727,64 @@ int AntTable::rowAtPos(const QPoint& pos) const
         return -1;
     }
     return rowIdx;
+}
+
+QRect AntTable::tableBodyRect() const
+{
+    const TableMetrics m = metrics();
+    return QRect(0, m.headerHeight, width(), qMax(0, bodyHeight()));
+}
+
+QRect AntTable::rowUpdateRect(int displayIndex) const
+{
+    const int start = pageStartIndex();
+    const int end = pageEndIndex();
+    if (displayIndex < start || displayIndex >= end)
+    {
+        return QRect();
+    }
+
+    const TableMetrics m = metrics();
+    const int localIndex = displayIndex - start;
+    const int rowTop = m.headerHeight + localIndex * m.rowHeight - m_scrollY;
+    const QRect rowRect(0, rowTop, width(), m.rowHeight);
+    return rowRect.intersected(tableBodyRect());
+}
+
+void AntTable::updateRow(int displayIndex)
+{
+    const QRect dirtyRect = rowUpdateRect(displayIndex);
+    const int dirtyCount = dirtyRect.isValid() ? 1 : 0;
+    setProperty("antTableLastUpdateMode", dirtyCount > 0 ? QStringLiteral("row") : QStringLiteral("none"));
+    setProperty("antTableLastRowUpdateCount", dirtyCount);
+    if (dirtyRect.isValid())
+    {
+        update(dirtyRect);
+    }
+}
+
+void AntTable::updateRows(int firstDisplayIndex, int secondDisplayIndex)
+{
+    int dirtyCount = 0;
+    const QRect firstRect = rowUpdateRect(firstDisplayIndex);
+    if (firstRect.isValid())
+    {
+        update(firstRect);
+        ++dirtyCount;
+    }
+
+    if (secondDisplayIndex != firstDisplayIndex)
+    {
+        const QRect secondRect = rowUpdateRect(secondDisplayIndex);
+        if (secondRect.isValid())
+        {
+            update(secondRect);
+            ++dirtyCount;
+        }
+    }
+
+    setProperty("antTableLastUpdateMode", dirtyCount > 0 ? QStringLiteral("row") : QStringLiteral("none"));
+    setProperty("antTableLastRowUpdateCount", dirtyCount);
 }
 
 QString AntTable::columnKeyAtPos(const QPoint& pos) const
