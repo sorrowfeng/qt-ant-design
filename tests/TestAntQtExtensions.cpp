@@ -1358,8 +1358,66 @@ void TestAntQtExtensions::menuBar()
     QVERIFY(w->actions().isEmpty());
 
     auto* menu = w->addMenu("File");
+    auto* editMenu = w->addMenu("&Edit");
+    auto* viewMenu = w->addMenu("View");
     QVERIFY(menu != nullptr);
+    QVERIFY(editMenu != nullptr);
+    QVERIFY(viewMenu != nullptr);
     QVERIFY(!w->actions().isEmpty());
+    w->resize(260, antTheme->tokens().controlHeight);
+    w->show();
+    QVERIFY(QTest::qWaitForWindowExposed(w));
+
+    auto renderMenuBar = [w]() {
+        const qreal dpr = w->devicePixelRatioF();
+        QImage image((QSizeF(w->size()) * dpr).toSize(), QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(dpr);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        w->render(&painter);
+    };
+    renderMenuBar();
+    const int textMetricBuildCount = w->property("antMenuBarTextMetricCacheBuildCount").toInt();
+    QVERIFY(textMetricBuildCount >= 3);
+    const int textMetricHitCount = w->property("antMenuBarTextMetricCacheHitCount").toInt();
+    renderMenuBar();
+    QCOMPARE(w->property("antMenuBarTextMetricCacheBuildCount").toInt(), textMetricBuildCount);
+    QVERIFY(w->property("antMenuBarTextMetricCacheHitCount").toInt() > textMetricHitCount);
+
+    QAction* fileAction = menu->menuAction();
+    QAction* editAction = editMenu->menuAction();
+    const QPoint filePoint = w->actionGeometry(fileAction).center();
+    const QPoint editPoint = w->actionGeometry(editAction).center();
+    QMouseEvent moveFileEvent(QEvent::MouseMove,
+                              QPointF(filePoint),
+                              QPointF(w->mapToGlobal(filePoint)),
+                              Qt::NoButton,
+                              Qt::NoButton,
+                              Qt::NoModifier);
+    QCoreApplication::sendEvent(w, &moveFileEvent);
+    QCOMPARE(w->property("antMenuBarScopedHoverUpdate").toBool(), true);
+    const int actionGeometryBuildsAfterFile =
+        w->property("antMenuBarActionGeometryCacheBuildCount").toInt();
+    QVERIFY(actionGeometryBuildsAfterFile >= 1);
+
+    QMouseEvent moveEditEvent(QEvent::MouseMove,
+                              QPointF(editPoint),
+                              QPointF(w->mapToGlobal(editPoint)),
+                              Qt::NoButton,
+                              Qt::NoButton,
+                              Qt::NoModifier);
+    QCoreApplication::sendEvent(w, &moveEditEvent);
+    QCOMPARE(w->property("antMenuBarScopedHoverUpdate").toBool(), true);
+    const int actionGeometryBuildsAfterEdit =
+        w->property("antMenuBarActionGeometryCacheBuildCount").toInt();
+    QVERIFY(actionGeometryBuildsAfterEdit >= actionGeometryBuildsAfterFile);
+    QCoreApplication::sendEvent(w, &moveEditEvent);
+    QCOMPARE(w->property("antMenuBarActionGeometryCacheBuildCount").toInt(), actionGeometryBuildsAfterEdit);
+
+    w->resize(300, antTheme->tokens().controlHeight);
+    QCoreApplication::processEvents();
+    QCOMPARE(w->property("antMenuBarActionGeometryCacheSize").toInt(), 0);
+    delete w;
 }
 
 void TestAntQtExtensions::dockWidget()

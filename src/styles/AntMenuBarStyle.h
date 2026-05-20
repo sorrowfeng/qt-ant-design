@@ -4,6 +4,11 @@
 
 #include "core/AntStyleBase.h"
 
+#include <QHash>
+#include <QString>
+
+class QFont;
+
 class QT_ANT_DESIGN_EXPORT AntMenuBarStyle : public AntStyleBase
 {
     Q_OBJECT
@@ -20,4 +25,19 @@ public:
 
 protected:
     void onThemeUpdate(QWidget* w) override;
+
+private:
+    struct CachedTextMetric
+    {
+        QString displayText;
+        int width = 0;
+    };
+
+    CachedTextMetric cachedTextMetric(const QString& text, const QFont& font, const QWidget* widget) const;
+    void syncTextMetricCounters(const QWidget* widget) const;
+    void clearTextMetricCache() const;
+
+    mutable QHash<QString, CachedTextMetric> m_textMetricCache;
+    mutable int m_textMetricCacheBuildCount = 0;
+    mutable int m_textMetricCacheHitCount = 0;
 };
