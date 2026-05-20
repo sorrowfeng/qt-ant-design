@@ -30,6 +30,7 @@
 #include <QVBoxLayout>
 #include <QWindow>
 
+#include <algorithm>
 #include <functional>
 
 #include "AntDockWidget.h"
@@ -691,17 +692,6 @@ using AntDockInternal::deserializeDockPerspective;
 using AntDockInternal::dockPersistentId;
 using AntDockInternal::isLegacyDockPerspective;
 using AntDockInternal::serializeDockPerspective;
-
-struct AntDockManager::DropTarget
-{
-    bool valid = false;
-    bool containerTarget = false;
-    AntDockWidget* dockWidget = nullptr;
-    DockPlacement placement = DockPlacement::None;
-    QRect targetGlobalRect;
-    QRect previewGlobalRect;
-    QString label;
-};
 
 class AntDockManager::Workspace : public QWidget
 {
@@ -1720,6 +1710,7 @@ AntDockManager::AntDockManager(QWidget* parent)
 
     updateTheme();
     updatePlaceholderState();
+    syncDockPerfCounters();
 }
 
 AntDockManager::~AntDockManager()
@@ -1972,6 +1963,7 @@ bool AntDockManager::moveDockWidgetTab(AntDockWidget* dockWidget, int index)
     }
 
     const int to = area->dockIndex(dockWidget);
+    invalidateDockAreaHitZoneCache();
     Q_EMIT dockWidgetTabMoved(dockWidget, from, to);
     Q_EMIT dockLayoutChanged();
     return true;
@@ -2568,6 +2560,7 @@ bool AntDockManager::eventFilter(QObject* watched, QEvent* event)
 void AntDockManager::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
+    invalidateDockAreaHitZoneCache();
     if (m_dropGuideOverlay)
     {
         m_dropGuideOverlay->setGeometry(rect());
@@ -2605,9 +2598,11 @@ bool AntDockManager::prepareDockWidget(AntDockWidget* dockWidget)
         connect(dockWidget, &QObject::destroyed, this, [this, dockWidget]() {
             m_docks.remove(dockWidget);
             m_dockAreas.remove(dockWidget);
+            invalidateDockAreaHitZoneCache();
             updatePlaceholderState();
         });
         connect(dockWidget, &QDockWidget::visibilityChanged, this, [this]() {
+            invalidateDockAreaHitZoneCache();
             updatePlaceholderState();
         });
         connect(dockWidget,
@@ -2621,6 +2616,7 @@ bool AntDockManager::prepareDockWidget(AntDockWidget* dockWidget)
             }
         });
         connect(dockWidget, &QDockWidget::topLevelChanged, this, [this, dockWidget](bool topLevel) {
+            invalidateDockAreaHitZoneCache();
             updatePlaceholderState();
             // When the dock transitions to floating, Qt's setWindowFlags() inside
             // AntDockWidget::updateFloatingFrame() destroys and recreates the
@@ -2680,6 +2676,9 @@ AntDockManager::DockArea* AntDockManager::createDockArea()
     {
         area->tabBar()->installEventFilter(this);
     }
+    connect(area, &QTabWidget::currentChanged, this, [this]() {
+        invalidateDockAreaHitZoneCache();
+    });
     return area;
 }
 
@@ -2710,6 +2709,7 @@ AntDockManager::DockArea* AntDockManager::firstDockArea() const
 void AntDockManager::setRootDockWidget(QWidget* widget)
 {
     if (m_rootDockWidget == widget) return;
+    invalidateDockAreaHitZoneCache();
 
     if (m_rootDockWidget && m_rootDockWidget->parentWidget() == m_workspace)
     {
@@ -2731,6 +2731,7 @@ void AntDockManager::setRootDockWidget(QWidget* widget)
 
 void AntDockManager::refreshDockLayoutNow()
 {
+    invalidateDockAreaHitZoneCache();
     if (m_workspace && m_workspace->layout())
     {
         m_workspace->layout()->activate();
@@ -2752,6 +2753,7 @@ void AntDockManager::refreshDockLayoutNow()
 void AntDockManager::insertDockWidget(AntDockWidget* dockWidget, DockArea* targetArea, DockPlacement placement, bool containerDrop)
 {
     if (!dockWidget) return;
+    invalidateDockAreaHitZoneCache();
     if (placement == DockPlacement::None) placement = DockPlacement::Left;
     clearFloatingDockOwner(dockWidget);
 
@@ -2912,6 +2914,7 @@ void AntDockManager::splitAreaWithWidget(QWidget* targetWidget, QWidget* newWidg
 
 void AntDockManager::removeDockFromArea(AntDockWidget* dockWidget, bool detach)
 {
+    invalidateDockAreaHitZoneCache();
     DockArea* area = areaForDock(dockWidget);
     if (!area) return;
 
@@ -2929,6 +2932,7 @@ void AntDockManager::removeDockFromArea(AntDockWidget* dockWidget, bool detach)
 
 void AntDockManager::pruneEmptyArea(DockArea* area)
 {
+    invalidateDockAreaHitZoneCache();
     if (!area || area->count() > 0) return;
 
     QWidget* parent = area->parentWidget();
@@ -2946,6 +2950,7 @@ void AntDockManager::pruneEmptyArea(DockArea* area)
 
 void AntDockManager::collapseSplitter(QWidget* splitterWidget)
 {
+    invalidateDockAreaHitZoneCache();
     auto* splitter = qobject_cast<QSplitter*>(splitterWidget);
     if (!splitter) return;
 
@@ -3164,6 +3169,7 @@ void AntDockManager::startDockDragTracking(AntDockWidget* dockWidget, const QPoi
     m_dragPreviewOffset = dockWidget ? globalPos - dockWidget->mapToGlobal(QPoint(0, 0)) : QPoint(24, 18);
     m_draggedDockPreviousOpacity = dockWidget ? dockWidget->windowOpacity() : 1.0;
     m_draggedDockOpacityChanged = false;
+    invalidateDockAreaHitZoneCache();
     clearRememberedDropTarget();
     if (!m_appEventFilterInstalled && qApp)
     {
@@ -3277,6 +3283,7 @@ void AntDockManager::stopDockDragTracking(bool keepDropPreview)
     m_tabReorderArea = nullptr;
     m_tabReorderIndex = -1;
     m_dragPreviewOffset = QPoint();
+    clearDropTargetQueryCache();
     if (m_dragPreviewWindow)
     {
         m_dragPreviewWindow->end();
@@ -3801,23 +3808,27 @@ AntDockManager::DropTarget AntDockManager::dropTargetAt(const QPoint& globalPos)
     const DockPlacement guidedPlacement = activeDropGuide();
     const bool guidedContainerDrop = guidedPlacement != DockPlacement::None &&
         m_dropGuideOverlay && m_dropGuideOverlay->activePlacementIsEdge();
+    if (m_hasDropTargetQueryCache &&
+        m_cachedDropTargetGlobal == globalPos &&
+        m_cachedDropTargetGuidedPlacement == guidedPlacement &&
+        m_cachedDropTargetGuidedContainerDrop == guidedContainerDrop)
+    {
+        ++m_dropTargetCacheHitCount;
+        syncDockPerfCounters();
+        return m_cachedDropTarget;
+    }
 
-    AntDockWidget* targetDock = guidedContainerDrop ? nullptr : dockWidgetAt(globalPos);
+    ++m_dropTargetComputeCount;
+    const DockAreaHitZone* hitZone = guidedContainerDrop ? nullptr : dockAreaHitZoneAt(globalPos);
+    AntDockWidget* targetDock = hitZone ? dockForHitZone(*hitZone) : nullptr;
     QRect targetRect;
     if (guidedContainerDrop && m_rootDockWidget)
     {
         targetRect = QRect(m_rootDockWidget->mapToGlobal(QPoint(0, 0)), m_rootDockWidget->size());
     }
-    else if (targetDock)
+    else if (hitZone)
     {
-        if (DockArea* area = areaForDock(targetDock))
-        {
-            targetRect = QRect(area->mapToGlobal(QPoint(0, 0)), area->size());
-        }
-        else
-        {
-            targetRect = QRect(targetDock->mapToGlobal(QPoint(0, 0)), targetDock->size());
-        }
+        targetRect = hitZone->globalRect;
     }
     else if (m_rootDockWidget)
     {
@@ -3832,7 +3843,11 @@ AntDockManager::DropTarget AntDockManager::dropTargetAt(const QPoint& globalPos)
         targetRect = QRect(mapToGlobal(rect().topLeft()), rect().size());
     }
 
-    if (targetRect.isEmpty()) return target;
+    if (targetRect.isEmpty())
+    {
+        cacheDropTargetQuery(globalPos, guidedPlacement, guidedContainerDrop, target);
+        return target;
+    }
 
     DockPlacement placement = guidedPlacement;
     if (placement == DockPlacement::None)
@@ -3841,7 +3856,11 @@ AntDockManager::DropTarget AntDockManager::dropTargetAt(const QPoint& globalPos)
     }
 
     const QRect previewRect = previewRectForTarget(targetRect, placement);
-    if (placement == DockPlacement::None || previewRect.isEmpty()) return target;
+    if (placement == DockPlacement::None || previewRect.isEmpty())
+    {
+        cacheDropTargetQuery(globalPos, guidedPlacement, guidedContainerDrop, target);
+        return target;
+    }
 
     target.valid = true;
     target.containerTarget = guidedContainerDrop || (!targetDock && placement != DockPlacement::Center);
@@ -3850,6 +3869,7 @@ AntDockManager::DropTarget AntDockManager::dropTargetAt(const QPoint& globalPos)
     target.targetGlobalRect = targetRect;
     target.previewGlobalRect = previewRect;
     target.label = dropTargetLabel(targetDock, placement);
+    cacheDropTargetQuery(globalPos, guidedPlacement, guidedContainerDrop, target);
     return target;
 }
 
@@ -3909,8 +3929,21 @@ void AntDockManager::clearRememberedDropTarget()
 
 AntDockWidget* AntDockManager::dockWidgetAt(const QPoint& globalPos) const
 {
-    AntDockWidget* best = nullptr;
-    int bestArea = 0;
+    ++m_dockAreaHitTestCount;
+    const DockAreaHitZone* hitZone = dockAreaHitZoneAt(globalPos);
+    AntDockWidget* dock = hitZone ? dockForHitZone(*hitZone) : nullptr;
+    syncDockPerfCounters();
+    return dock;
+}
+
+void AntDockManager::ensureDockAreaHitZoneCache() const
+{
+    if (!m_dockAreaHitZonesDirty)
+    {
+        return;
+    }
+
+    m_dockAreaHitZones.clear();
     QSet<DockArea*> visited;
     for (auto it = m_dockAreas.constBegin(); it != m_dockAreas.constEnd(); ++it)
     {
@@ -3919,30 +3952,101 @@ AntDockWidget* AntDockManager::dockWidgetAt(const QPoint& globalPos) const
         visited.insert(area);
 
         const QRect globalRect(area->mapToGlobal(QPoint(0, 0)), area->size());
-        if (!globalRect.contains(globalPos)) continue;
+        if (globalRect.isEmpty() || !area->isVisible()) continue;
 
-        const int areaSize = globalRect.width() * globalRect.height();
-        if (!best || areaSize < bestArea)
+        DockAreaHitZone hitZone;
+        hitZone.area = area;
+        hitZone.globalRect = globalRect;
+        hitZone.areaSize = globalRect.width() * globalRect.height();
+        hitZone.currentDock = qobject_cast<AntDockWidget*>(area->currentWidget());
+        hitZone.docks = area->dockWidgets();
+        m_dockAreaHitZones.append(hitZone);
+    }
+
+    std::sort(m_dockAreaHitZones.begin(), m_dockAreaHitZones.end(), [](const DockAreaHitZone& a, const DockAreaHitZone& b) {
+        return a.areaSize < b.areaSize;
+    });
+
+    m_dockAreaHitZonesDirty = false;
+    ++m_dockAreaHitZoneRebuildCount;
+    syncDockPerfCounters();
+}
+
+void AntDockManager::invalidateDockAreaHitZoneCache() const
+{
+    if (m_dockAreaHitZonesDirty)
+    {
+        clearDropTargetQueryCache();
+        return;
+    }
+
+    m_dockAreaHitZonesDirty = true;
+    m_dockAreaHitZones.clear();
+    clearDropTargetQueryCache();
+    syncDockPerfCounters();
+}
+
+const AntDockManager::DockAreaHitZone* AntDockManager::dockAreaHitZoneAt(const QPoint& globalPos) const
+{
+    ensureDockAreaHitZoneCache();
+    for (const DockAreaHitZone& hitZone : m_dockAreaHitZones)
+    {
+        if (hitZone.globalRect.contains(globalPos))
         {
-            auto* currentDock = qobject_cast<AntDockWidget*>(it.value()->currentWidget());
-            if (!currentDock || currentDock == m_draggedDock)
-            {
-                const auto docks = it.value()->dockWidgets();
-                for (AntDockWidget* dock : docks)
-                {
-                    if (dock && dock != m_draggedDock)
-                    {
-                        currentDock = dock;
-                        break;
-                    }
-                }
-            }
-            if (!currentDock) continue;
-            best = currentDock;
-            bestArea = areaSize;
+            return &hitZone;
         }
     }
-    return best;
+    return nullptr;
+}
+
+AntDockWidget* AntDockManager::dockForHitZone(const DockAreaHitZone& hitZone) const
+{
+    AntDockWidget* currentDock = hitZone.currentDock;
+    if (currentDock && currentDock != m_draggedDock)
+    {
+        return currentDock;
+    }
+
+    for (AntDockWidget* dock : hitZone.docks)
+    {
+        if (dock && dock != m_draggedDock)
+        {
+            return dock;
+        }
+    }
+    return nullptr;
+}
+
+void AntDockManager::clearDropTargetQueryCache() const
+{
+    m_hasDropTargetQueryCache = false;
+    m_cachedDropTargetGlobal = QPoint();
+    m_cachedDropTargetGuidedPlacement = DockPlacement::None;
+    m_cachedDropTargetGuidedContainerDrop = false;
+    m_cachedDropTarget = DropTarget{};
+}
+
+void AntDockManager::cacheDropTargetQuery(const QPoint& globalPos,
+                                          DockPlacement guidedPlacement,
+                                          bool guidedContainerDrop,
+                                          const DropTarget& target) const
+{
+    m_hasDropTargetQueryCache = true;
+    m_cachedDropTargetGlobal = globalPos;
+    m_cachedDropTargetGuidedPlacement = guidedPlacement;
+    m_cachedDropTargetGuidedContainerDrop = guidedContainerDrop;
+    m_cachedDropTarget = target;
+    syncDockPerfCounters();
+}
+
+void AntDockManager::syncDockPerfCounters() const
+{
+    auto* self = const_cast<AntDockManager*>(this);
+    self->setProperty("antDockAreaHitZoneRebuildCount", m_dockAreaHitZoneRebuildCount);
+    self->setProperty("antDockAreaHitZoneCount", m_dockAreaHitZones.size());
+    self->setProperty("antDockAreaHitTestCount", m_dockAreaHitTestCount);
+    self->setProperty("antDockDropTargetComputeCount", m_dropTargetComputeCount);
+    self->setProperty("antDockDropTargetCacheHitCount", m_dropTargetCacheHitCount);
 }
 
 AntDockManager::DockPlacement AntDockManager::placementForTarget(const QPoint& globalPos, const QRect& targetGlobalRect) const

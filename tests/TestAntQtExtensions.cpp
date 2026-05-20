@@ -1897,6 +1897,12 @@ void TestAntQtExtensions::dockManager()
                                       Qt::NoModifier);
     QCoreApplication::sendEvent(explorerTabBar, &moveToPropertiesEvent);
     QTRY_VERIFY(manager->isDropPreviewVisible());
+    QTRY_VERIFY(manager->property("antDockAreaHitZoneRebuildCount").toInt() >= 1);
+    const int hitZoneRebuildsAfterCenterMove =
+        manager->property("antDockAreaHitZoneRebuildCount").toInt();
+    const int dropTargetComputesAfterCenterMove =
+        manager->property("antDockDropTargetComputeCount").toInt();
+    QVERIFY(dropTargetComputesAfterCenterMove >= 1);
     QWidget* dragPreviewWindow = nullptr;
     QWidget* dropPreviewWindow = nullptr;
 #if defined(Q_OS_WIN)
@@ -1961,10 +1967,15 @@ void TestAntQtExtensions::dockManager()
     QCoreApplication::sendEvent(explorerTabBar, &moveEvent);
     QTRY_VERIFY(manager->isDropPreviewVisible());
     QTRY_COMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::Right);
+    QCOMPARE(manager->property("antDockAreaHitZoneRebuildCount").toInt(), hitZoneRebuildsAfterCenterMove);
     QVERIFY(!manager->dropPreviewRect().isEmpty());
     QVERIFY2(manager->dropPreviewRect().left() >= managerGlobalRect.center().x(),
              "Right edge guide preview must target the right half of the dock container.");
     const int layoutCountBeforeRightDrop = layoutSpy.count();
+    const int rightDropComputesBeforeRelease =
+        manager->property("antDockDropTargetComputeCount").toInt();
+    const int rightDropCacheHitsBeforeRelease =
+        manager->property("antDockDropTargetCacheHitCount").toInt();
     QMouseEvent releaseRightEvent(QEvent::MouseButtonRelease,
                                   QPointF(rightGuideMove),
                                   QPointF(rightGuideGlobal),
@@ -1974,6 +1985,8 @@ void TestAntQtExtensions::dockManager()
     QCoreApplication::sendEvent(explorerTabBar, &releaseRightEvent);
     QVERIFY2(layoutSpy.count() > layoutCountBeforeRightDrop,
              "Embedded guided dock drops should apply the new layout before the release event returns.");
+    QCOMPARE(manager->property("antDockDropTargetComputeCount").toInt(), rightDropComputesBeforeRelease);
+    QVERIFY(manager->property("antDockDropTargetCacheHitCount").toInt() > rightDropCacheHitsBeforeRelease);
     QCOMPARE(manager->property("antDockLastGuidedDropSynchronous").toBool(), true);
     QVERIFY(manager->property("antDockLastGuidedDropElapsedMs").isValid());
     QVERIFY(!manager->isDropPreviewVisible());

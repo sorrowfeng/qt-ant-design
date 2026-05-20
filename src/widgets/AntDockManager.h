@@ -11,6 +11,7 @@
 #include <QRect>
 #include <QSet>
 #include <QStringList>
+#include <QVector>
 
 class AntDockWidget;
 class QEvent;
@@ -123,7 +124,25 @@ private:
     class DockDragPreviewWindow;
     class DockDropPreviewWindow;
 
-    struct DropTarget;
+    struct DropTarget
+    {
+        bool valid = false;
+        bool containerTarget = false;
+        AntDockWidget* dockWidget = nullptr;
+        DockPlacement placement = DockPlacement::None;
+        QRect targetGlobalRect;
+        QRect previewGlobalRect;
+        QString label;
+    };
+
+    struct DockAreaHitZone
+    {
+        DockArea* area = nullptr;
+        QRect globalRect;
+        int areaSize = 0;
+        AntDockWidget* currentDock = nullptr;
+        QList<AntDockWidget*> docks;
+    };
 
     bool prepareDockWidget(AntDockWidget* dockWidget);
     DockArea* createDockArea();
@@ -158,6 +177,16 @@ private:
     void rememberDropTarget(const DropTarget& target);
     void clearRememberedDropTarget();
     AntDockWidget* dockWidgetAt(const QPoint& globalPos) const;
+    void ensureDockAreaHitZoneCache() const;
+    void invalidateDockAreaHitZoneCache() const;
+    const DockAreaHitZone* dockAreaHitZoneAt(const QPoint& globalPos) const;
+    AntDockWidget* dockForHitZone(const DockAreaHitZone& hitZone) const;
+    void clearDropTargetQueryCache() const;
+    void cacheDropTargetQuery(const QPoint& globalPos,
+                              DockPlacement guidedPlacement,
+                              bool guidedContainerDrop,
+                              const DropTarget& target) const;
+    void syncDockPerfCounters() const;
     DockPlacement placementForTarget(const QPoint& globalPos, const QRect& targetGlobalRect) const;
     QRect previewRectForTarget(const QRect& targetGlobalRect, DockPlacement placement) const;
     QString dropTargetLabel(AntDockWidget* dockWidget, DockPlacement placement) const;
@@ -196,6 +225,17 @@ private:
     QRect m_lastDropTargetRect;
     QRect m_lastDropPreviewRect;
     QString m_lastDropLabel;
+    mutable QVector<DockAreaHitZone> m_dockAreaHitZones;
+    mutable bool m_dockAreaHitZonesDirty = true;
+    mutable bool m_hasDropTargetQueryCache = false;
+    mutable QPoint m_cachedDropTargetGlobal;
+    mutable DockPlacement m_cachedDropTargetGuidedPlacement = DockPlacement::None;
+    mutable bool m_cachedDropTargetGuidedContainerDrop = false;
+    mutable DropTarget m_cachedDropTarget;
+    mutable int m_dockAreaHitZoneRebuildCount = 0;
+    mutable int m_dockAreaHitTestCount = 0;
+    mutable int m_dropTargetComputeCount = 0;
+    mutable int m_dropTargetCacheHitCount = 0;
     QString m_appliedDockStyleSheet;
     int m_autoObjectNameCounter = 0;
 };
