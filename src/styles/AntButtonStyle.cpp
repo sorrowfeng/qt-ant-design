@@ -161,7 +161,6 @@ void drawButtonFocusOutline(QPainter& painter, const QRectF& bodyRect, int radiu
 AntButtonStyle::AntButtonStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntButton>();
 }
 
 void AntButtonStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `32` components are optimized from this pass, and `52` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `33` components are optimized from this pass, and `51` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntButton` | Loading spinner frames now repaint only the spinner indicator region, the spinner timer pauses while the button is hidden, and theme refresh remains widget-owned instead of also using a style-level global refresh path. | `cmake --build build --config Debug --target TestAntButton`, `TestAntButton.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntToolButton` | Loading spinner frames now repaint only the spinner indicator region, dropdown arrow animation repaints only the arrow region, and the spinner timer pauses while the button is hidden. Theme refresh is owned by the widget instead of an additional style-level global refresh path. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe toolButton`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntToolBar` | Action add/change now synchronizes only the affected toolbar button instead of scanning every direct button. Theme refresh remains toolbar-owned, button updates skip unchanged palette/style/geometry work, and toolbar button text metrics are cached across size and paint paths. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe toolBar`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntStatusBar` | Status-bar item, permanent-item, divider, and message rectangles are now cached and shared by paint and hit testing. Hover and message changes repaint only the cached item/message regions instead of the full bar. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe statusBar`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -98,7 +99,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 
 | Component | Priority | Optimization plan | Progress |
 | --- | --- | --- | --- |
-| `AntButton` | P1 | Cache rendered icon paths/spinner geometry per size/state; only run loading timer while visible and loading; update spinner arc region instead of whole button when possible. | Plan ready |
+| `AntButton` | P1 | Run the loading timer only while visible and loading, repaint spinner frames through the spinner indicator region, and keep theme refresh widget-owned instead of duplicating the style global refresh path. | Optimized |
 | `AntFloatButton` | P1 | Reuse button/group geometry, cache badge/icon render output, and limit expand/collapse repaint to the affected group bounds. | Plan ready |
 | `AntIcon` | P0 | Cache enum paths and rendered resource pixmaps keyed by icon name, colors, size, and DPR. Keep rotation/spin outside the cache through painter transforms so motion remains unchanged. | Optimized |
 | `AntTypography` | P1 | Cache text layout/metrics and copy/ellipsis hit regions by text, width, font, and mode; avoid geometry refresh when only visual state changes. | Plan ready |
@@ -221,7 +222,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 
 | Component | Automated target(s) | Interaction and performance validation |
 | --- | --- | --- |
-| `AntButton` | `TestAntButton`, `TestAntFeedback` when wave/loading is touched | Verify hover/press/focus/disabled, icon buttons, loading spinner motion, and repeated state toggles without full-button repaint churn. |
+| `AntButton` | `TestAntButton`, `TestAntFeedback` when wave/loading is touched | Verify hover/press/focus/disabled, icon buttons, visible loading spinner motion, hidden-state timer pause, and spinner-region repaint. |
 | `AntFloatButton` | `TestAntFloatButton` | Verify group expand/collapse, BackTop, badge, hover motion, and no extra repaint outside the floating group bounds. |
 | `AntIcon` | `TestAntIcon`, plus one representative consumer such as `TestAntButton` | Verify all icon modes still render, theme color changes invalidate cache, DPR/size changes are crisp, and repeated icon paint avoids reparsing. |
 | `AntTypography` | `TestAntTypography` | Verify title/text/paragraph/link, wrapping, ellipsis, copy feedback, theme switching, and layout metrics after cached text layout changes. |

@@ -2,8 +2,10 @@
 
 #include <QEvent>
 #include <QFocusEvent>
+#include <QHideEvent>
 #include <QMouseEvent>
 #include <QPointer>
+#include <QShowEvent>
 #include <QStyleOptionButton>
 
 #include "../styles/AntButtonStyle.h"
@@ -36,11 +38,12 @@ AntButton::AntButton(QWidget* parent)
     });
     connect(&m_spinnerTimer, &QTimer::timeout, this, [this]() {
         m_spinnerAngle = (m_spinnerAngle + 6) % 360;
-        update();
+        updateSpinnerRegion();
     });
 
     updateCursorState();
     updateGeometryFromState();
+    syncButtonPerfCounters();
 }
 
 AntButton::AntButton(const QString& text, QWidget* parent)
@@ -93,7 +96,7 @@ void AntButton::setLoading(bool loading)
         return;
     m_loading = loading;
     updateCursorState();
-    m_loading ? m_spinnerTimer.start(16) : m_spinnerTimer.stop();
+    updateSpinnerTimer();
     updateGeometryFromState();
     update();
     Q_EMIT loadingChanged(m_loading);
@@ -268,6 +271,18 @@ void AntButton::changeEvent(QEvent* event)
     QPushButton::changeEvent(event);
 }
 
+void AntButton::showEvent(QShowEvent* event)
+{
+    QPushButton::showEvent(event);
+    updateSpinnerTimer();
+}
+
+void AntButton::hideEvent(QHideEvent* event)
+{
+    QPushButton::hideEvent(event);
+    updateSpinnerTimer();
+}
+
 AntButton::Metrics AntButton::metrics() const
 {
     const auto& token = antTheme->tokens();
@@ -360,6 +375,70 @@ void AntButton::updateGeometryFromState()
     setMaximumHeight(totalHeight);
     setSizePolicy(m_block ? QSizePolicy::Expanding : QSizePolicy::Minimum, QSizePolicy::Fixed);
     updateGeometry();
+}
+
+QRect AntButton::spinnerIndicatorRect() const
+{
+    if (!m_loading)
+    {
+        return {};
+    }
+
+    const Metrics m = metrics();
+    const int focusPadding = focusPaddingFor();
+    const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
+    if (!bodyRect.isValid())
+    {
+        return {};
+    }
+
+    const QRectF body(bodyRect);
+    const QRectF textArea = contentRect(m);
+    const bool spinnerOnly = text().isEmpty();
+    const QRectF spinnerRect = spinnerOnly
+        ? QRectF(body.center().x() - m.iconSize / 2.0, body.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize)
+        : QRectF(textArea.left(), textArea.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
+    return spinnerRect.toAlignedRect().adjusted(-4, -4, 4, 4).intersected(rect());
+}
+
+void AntButton::updateSpinnerRegion()
+{
+    const QRect dirty = spinnerIndicatorRect();
+    if (!dirty.isValid())
+    {
+        return;
+    }
+
+    update(dirty);
+    ++m_spinnerRegionUpdateCount;
+    syncButtonPerfCounters();
+}
+
+void AntButton::updateSpinnerTimer()
+{
+    const bool shouldRun = m_loading && isVisible();
+    if (m_spinnerTimer.isActive() == shouldRun)
+    {
+        syncButtonPerfCounters();
+        return;
+    }
+
+    if (shouldRun)
+    {
+        m_spinnerTimer.start(16);
+    }
+    else
+    {
+        m_spinnerTimer.stop();
+    }
+    syncButtonPerfCounters();
+}
+
+void AntButton::syncButtonPerfCounters() const
+{
+    auto* self = const_cast<AntButton*>(this);
+    self->setProperty("antButtonSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
+    self->setProperty("antButtonSpinnerTimerActive", m_spinnerTimer.isActive());
 }
 
 int AntButton::spinnerAngle() const

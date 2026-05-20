@@ -75,8 +75,19 @@ void TestAntButton::cursorAndSizeParity()
 
     btn->setLoading(true);
     QCOMPARE(btn->cursor().shape(), Qt::ArrowCursor);
+    btn->resize(btn->sizeHint());
+    btn->show();
+    QVERIFY(QTest::qWaitForWindowExposed(btn));
+    QVERIFY(btn->property("antButtonSpinnerTimerActive").toBool());
     const int initialAngle = btn->spinnerAngle();
-    QTRY_VERIFY_WITH_TIMEOUT(btn->spinnerAngle() > initialAngle, 100);
+    const int spinnerUpdatesBeforeWait = btn->property("antButtonSpinnerRegionUpdateCount").toInt();
+    QTRY_VERIFY_WITH_TIMEOUT(btn->spinnerAngle() != initialAngle, 100);
+    QVERIFY(btn->property("antButtonSpinnerRegionUpdateCount").toInt() > spinnerUpdatesBeforeWait);
+    btn->hide();
+    QVERIFY(!btn->property("antButtonSpinnerTimerActive").toBool());
+    const int spinnerUpdatesWhileHidden = btn->property("antButtonSpinnerRegionUpdateCount").toInt();
+    QTest::qWait(80);
+    QCOMPARE(btn->property("antButtonSpinnerRegionUpdateCount").toInt(), spinnerUpdatesWhileHidden);
 
     btn->setEnabled(false);
     QCOMPARE(btn->cursor().shape(), Qt::ForbiddenCursor);

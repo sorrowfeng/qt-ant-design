@@ -7,6 +7,9 @@
 
 #include "core/AntTypes.h"
 
+class QHideEvent;
+class QShowEvent;
+
 class QT_ANT_DESIGN_EXPORT AntButton : public QPushButton
 {
     Q_OBJECT
@@ -70,6 +73,8 @@ protected:
     void focusInEvent(QFocusEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
     bool hitButton(const QPoint& pos) const override;
 
 private:
@@ -88,6 +93,10 @@ private:
     QColor waveColor() const;
     void updateCursorState();
     void updateGeometryFromState();
+    QRect spinnerIndicatorRect() const;
+    void updateSpinnerRegion();
+    void updateSpinnerTimer();
+    void syncButtonPerfCounters() const;
 
     Ant::ButtonType m_buttonType = Ant::ButtonType::Default;
     Ant::Size m_buttonSize = Ant::Size::Middle;
@@ -103,4 +112,5 @@ private:
     QTimer m_spinnerTimer;
     Ant::IconType m_buttonIconType = Ant::IconType::None;
     QColor m_buttonIconColor;
+    int m_spinnerRegionUpdateCount = 0;
 };
