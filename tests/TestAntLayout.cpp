@@ -275,16 +275,60 @@ void TestAntLayout::space()
     w->setWrap(true);
     QCOMPARE(w->isWrap(), true);
     QCOMPARE(wrapSpy.count(), 1);
+    const int rebuildsAfterWrap = w->property("antSpaceRebuildCount").toInt();
 
     auto* i1 = new QWidget;
+    i1->setMinimumSize(28, 12);
     auto* i2 = new QWidget;
+    i2->setMinimumSize(32, 16);
     w->addItem(i1);
+    QCOMPARE(w->property("antSpaceRebuildCount").toInt(), rebuildsAfterWrap);
+    QCOMPARE(w->property("antSpaceIncrementalAddCount").toInt(), 1);
+    QCOMPARE(i1->parentWidget(), w);
+
     w->addItem(i2);
+    QCOMPARE(w->property("antSpaceRebuildCount").toInt(), rebuildsAfterWrap);
+    QCOMPARE(w->property("antSpaceIncrementalAddCount").toInt(), 2);
+    QCOMPARE(i2->parentWidget(), w);
     QCOMPARE(w->itemCount(), 2);
     QCOMPARE(w->itemAt(0), i1);
 
+    const int sizeHintComputes = w->property("antSpaceSizeHintComputeCount").toInt();
+    const QSize firstHint = w->sizeHint();
+    const QSize secondHint = w->sizeHint();
+    QCOMPARE(firstHint, secondHint);
+    QCOMPARE(w->property("antSpaceSizeHintComputeCount").toInt(), sizeHintComputes + 1);
+    QCOMPARE(w->property("antSpaceSizeHintDirty").toBool(), true);
+
+    const int minHintComputes = w->property("antSpaceMinimumSizeHintComputeCount").toInt();
+    const QSize firstMinHint = w->minimumSizeHint();
+    const QSize secondMinHint = w->minimumSizeHint();
+    QCOMPARE(firstMinHint, secondMinHint);
+    QCOMPARE(w->property("antSpaceMinimumSizeHintComputeCount").toInt(), minHintComputes + 1);
+    QCOMPARE(w->property("antSpaceSizeHintDirty").toBool(), false);
+
+    QEvent layoutRequest(QEvent::LayoutRequest);
+    QCoreApplication::sendEvent(i2, &layoutRequest);
+    QCOMPARE(w->property("antSpaceSizeHintDirty").toBool(), true);
+    w->sizeHint();
+    QCOMPARE(w->property("antSpaceSizeHintComputeCount").toInt(), sizeHintComputes + 2);
+
+    const int spacingUpdates = w->property("antSpaceSpacingUpdateCount").toInt();
+    w->setCustomSpacing(12);
+    QCOMPARE(w->customSpacing(), 12);
+    QCOMPARE(w->property("antSpaceSpacingUpdateCount").toInt(), spacingUpdates + 1);
+    w->setCustomSpacing(12);
+    QCOMPARE(w->property("antSpaceSpacingUpdateCount").toInt(), spacingUpdates + 1);
+
+    auto* i0 = new QWidget;
+    const int rebuildsBeforeInsert = w->property("antSpaceRebuildCount").toInt();
+    w->insertItem(0, i0);
+    QCOMPARE(w->itemAt(0), i0);
+    QCOMPARE(w->property("antSpaceRebuildCount").toInt(), rebuildsBeforeInsert + 1);
+
     w->clearItems();
     QCOMPARE(w->itemCount(), 0);
+    QCOMPARE(w->property("antSpaceSeparatorCopyCount").toInt(), 0);
 }
 
 void TestAntLayout::layout()

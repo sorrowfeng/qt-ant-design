@@ -56,12 +56,20 @@ Q_SIGNALS:
     void wrapChanged(bool wrap);
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
 private:
     int spacingValue() const;
+    Qt::Alignment childAlignment() const;
+    QBoxLayout* createLayoutForOrientation();
+    void clearSeparatorCopies();
+    QWidget* createSeparatorCopy();
+    void appendWidgetToLayout(QWidget* widget, int itemIndex);
+    void invalidateSizeCache();
     void rebuildLayout();
+    void syncPerfCounters() const;
 
     Ant::Orientation m_orientation = Ant::Orientation::Horizontal;
     Ant::Size m_size = Ant::Size::Small;
@@ -70,5 +78,15 @@ private:
     Qt::Alignment m_alignment = Qt::Alignment();
     QVector<QPointer<QWidget>> m_items;
     QPointer<QWidget> m_separator;
+    QVector<QPointer<QWidget>> m_separatorCopies;
     QBoxLayout* m_layout = nullptr;
+    mutable QSize m_cachedSizeHint;
+    mutable QSize m_cachedMinimumSizeHint;
+    mutable bool m_sizeHintDirty = true;
+    mutable bool m_minimumSizeHintDirty = true;
+    mutable int m_rebuildCount = 0;
+    mutable int m_incrementalAddCount = 0;
+    mutable int m_spacingUpdateCount = 0;
+    mutable int m_sizeHintComputeCount = 0;
+    mutable int m_minimumSizeHintComputeCount = 0;
 };
