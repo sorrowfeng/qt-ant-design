@@ -1,5 +1,7 @@
 #include <QSignalSpy>
 #include <QCoreApplication>
+#include <QImage>
+#include <QPainter>
 #include <QSizePolicy>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -69,6 +71,39 @@ void TestAntLayout::divider()
 
     auto* w2 = new AntDivider("Text");
     QCOMPARE(w2->text(), "Text");
+
+    AntDivider cached(QStringLiteral("Cached"));
+    cached.resize(260, 36);
+    QImage image(cached.size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        cached.render(&painter);
+    }
+    QCOMPARE(cached.property("antDividerPaintCacheBuildCount").toInt(), 1);
+
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        cached.render(&painter);
+    }
+    QCOMPARE(cached.property("antDividerPaintCacheBuildCount").toInt(), 1);
+
+    cached.setTitlePlacement(Ant::DividerTitlePlacement::End);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        cached.render(&painter);
+    }
+    QCOMPARE(cached.property("antDividerPaintCacheBuildCount").toInt(), 2);
+
+    cached.setText(QStringLiteral("Cached divider"));
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        cached.render(&painter);
+    }
+    QCOMPARE(cached.property("antDividerPaintCacheBuildCount").toInt(), 3);
 }
 
 void TestAntLayout::flex()

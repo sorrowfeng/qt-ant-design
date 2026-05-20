@@ -1,5 +1,6 @@
 #include "AntDivider.h"
 
+#include <QFontMetrics>
 #include <QPainter>
 
 #include <algorithm>
@@ -29,6 +30,7 @@ void AntDivider::setText(const QString& text)
         return;
     }
     m_text = text;
+    invalidatePaintCache();
     updateGeometry();
     update();
     Q_EMIT textChanged(m_text);
@@ -43,6 +45,7 @@ void AntDivider::setPlain(bool plain)
         return;
     }
     m_plain = plain;
+    invalidatePaintCache();
     updateGeometry();
     update();
     Q_EMIT plainChanged(m_plain);
@@ -57,6 +60,7 @@ void AntDivider::setOrientation(Ant::Orientation orientation)
         return;
     }
     m_orientation = orientation;
+    invalidatePaintCache();
     setSizePolicy(m_orientation == Ant::Orientation::Horizontal ? QSizePolicy::Expanding : QSizePolicy::Fixed,
                   m_orientation == Ant::Orientation::Horizontal ? QSizePolicy::Fixed : QSizePolicy::Preferred);
     updateGeometry();
@@ -73,6 +77,7 @@ void AntDivider::setTitlePlacement(Ant::DividerTitlePlacement placement)
         return;
     }
     m_titlePlacement = placement;
+    invalidatePaintCache();
     update();
     Q_EMIT titlePlacementChanged(m_titlePlacement);
 }
@@ -86,6 +91,7 @@ void AntDivider::setVariant(Ant::DividerVariant variant)
         return;
     }
     m_variant = variant;
+    invalidatePaintCache();
     update();
     Q_EMIT variantChanged(m_variant);
 }
@@ -99,6 +105,7 @@ void AntDivider::setDividerSize(Ant::Size size)
         return;
     }
     m_dividerSize = size;
+    invalidatePaintCache();
     updateGeometry();
     update();
     Q_EMIT dividerSizeChanged(m_dividerSize);
@@ -128,6 +135,118 @@ QSize AntDivider::minimumSizeHint() const
 void AntDivider::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
+}
+
+const AntDivider::PaintCache& AntDivider::paintCache(const QRect& rect) const
+{
+    const auto& token = antTheme->tokens();
+    const QFont currentFont = font();
+    const QColor lineColor = token.colorSplit;
+    const QColor textColor = token.colorText;
+    const Ant::ThemeMode mode = antTheme->themeMode();
+
+    if (m_paintCache.valid &&
+        m_paintCache.rect == rect &&
+        m_paintCache.text == m_text &&
+        m_paintCache.baseFont == currentFont &&
+        m_paintCache.lineColor == lineColor &&
+        m_paintCache.textColor == textColor &&
+        m_paintCache.themeMode == mode &&
+        m_paintCache.orientation == m_orientation &&
+        m_paintCache.titlePlacement == m_titlePlacement &&
+        m_paintCache.variant == m_variant &&
+        m_paintCache.plain == m_plain &&
+        m_paintCache.tokenFontSize == token.fontSize &&
+        m_paintCache.tokenFontSizeLG == token.fontSizeLG &&
+        m_paintCache.lineWidth == token.lineWidth)
+    {
+        return m_paintCache;
+    }
+
+    const int previousBuildCount = m_paintCache.buildCount;
+    m_paintCache = PaintCache{};
+    m_paintCache.valid = true;
+    m_paintCache.rect = rect;
+    m_paintCache.text = m_text;
+    m_paintCache.baseFont = currentFont;
+    m_paintCache.lineColor = lineColor;
+    m_paintCache.textColor = textColor;
+    m_paintCache.themeMode = mode;
+    m_paintCache.orientation = m_orientation;
+    m_paintCache.titlePlacement = m_titlePlacement;
+    m_paintCache.variant = m_variant;
+    m_paintCache.plain = m_plain;
+    m_paintCache.horizontal = m_orientation == Ant::Orientation::Horizontal;
+    m_paintCache.hasTitle = !m_text.isEmpty();
+    m_paintCache.tokenFontSize = token.fontSize;
+    m_paintCache.tokenFontSizeLG = token.fontSizeLG;
+    m_paintCache.lineWidth = token.lineWidth;
+    m_paintCache.buildCount = previousBuildCount + 1;
+
+    Qt::PenStyle penStyle = Qt::SolidLine;
+    if (m_variant == Ant::DividerVariant::Dashed)
+    {
+        penStyle = Qt::DashLine;
+    }
+    else if (m_variant == Ant::DividerVariant::Dotted)
+    {
+        penStyle = Qt::DotLine;
+    }
+    m_paintCache.linePen = QPen(lineColor, token.lineWidth, penStyle);
+
+    if (m_paintCache.horizontal)
+    {
+        const int y = rect.height() / 2;
+        if (!m_paintCache.hasTitle)
+        {
+            m_paintCache.firstLine = QLineF(rect.left(), y, rect.right(), y);
+        }
+        else
+        {
+            QFont titleFont = currentFont;
+            titleFont.setPixelSize(m_plain ? token.fontSize : token.fontSizeLG);
+            titleFont.setWeight(m_plain ? QFont::Normal : QFont::Medium);
+            const QFontMetrics fm(titleFont);
+            m_paintCache.titleFont = titleFont;
+            m_paintCache.textWidth = fm.horizontalAdvance(m_text);
+            m_paintCache.textPadding = titleFont.pixelSize();
+            const int totalTextWidth = m_paintCache.textWidth + m_paintCache.textPadding * 2;
+
+            int blockX = rect.left() + (rect.width() - totalTextWidth) / 2;
+            if (m_titlePlacement == Ant::DividerTitlePlacement::Start)
+            {
+                blockX = rect.left() + qRound(rect.width() * 0.05);
+            }
+            else if (m_titlePlacement == Ant::DividerTitlePlacement::End)
+            {
+                blockX = rect.right() - qRound(rect.width() * 0.05) - totalTextWidth;
+            }
+            blockX = qBound(rect.left(), blockX, rect.right() - totalTextWidth);
+
+            m_paintCache.firstLine = QLineF(rect.left(), y, blockX, y);
+            m_paintCache.secondLine = QLineF(blockX + totalTextWidth, y, rect.right(), y);
+            m_paintCache.textRect = QRect(blockX + m_paintCache.textPadding,
+                                          y - fm.height() / 2 - 1,
+                                          m_paintCache.textWidth,
+                                          fm.height());
+        }
+    }
+    else
+    {
+        const int x = rect.width() / 2;
+        const int lineHeight = qRound(token.fontSize * 0.9);
+        const int y1 = rect.top() + (rect.height() - lineHeight) / 2;
+        const int y2 = y1 + lineHeight;
+        m_paintCache.firstLine = QLineF(x, y1, x, y2);
+    }
+
+    const_cast<AntDivider*>(this)->setProperty("antDividerPaintCacheBuildCount", m_paintCache.buildCount);
+    return m_paintCache;
+}
+
+void AntDivider::invalidatePaintCache()
+{
+    m_paintCache.valid = false;
 }
 
 int AntDivider::horizontalMargin() const

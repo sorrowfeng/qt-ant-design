@@ -2,12 +2,18 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
+#include <QFont>
+#include <QLineF>
+#include <QPen>
+#include <QRect>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
 class QPaintEvent;
 class QPainter;
+class AntDividerStyle;
 
 class QT_ANT_DESIGN_EXPORT AntDivider : public QWidget
 {
@@ -56,6 +62,39 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 
 private:
+    friend class AntDividerStyle;
+
+    struct PaintCache
+    {
+        bool valid = false;
+        QRect rect;
+        QString text;
+        QFont baseFont;
+        QFont titleFont;
+        QColor lineColor;
+        QColor textColor;
+        Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
+        Ant::Orientation orientation = Ant::Orientation::Horizontal;
+        Ant::DividerTitlePlacement titlePlacement = Ant::DividerTitlePlacement::Center;
+        Ant::DividerVariant variant = Ant::DividerVariant::Solid;
+        bool plain = false;
+        bool horizontal = true;
+        bool hasTitle = false;
+        int tokenFontSize = 0;
+        int tokenFontSizeLG = 0;
+        int lineWidth = 0;
+        int textWidth = 0;
+        int textPadding = 0;
+        QRect textRect;
+        QLineF firstLine;
+        QLineF secondLine;
+        QPen linePen;
+        int buildCount = 0;
+    };
+
+    const PaintCache& paintCache(const QRect& rect) const;
+    void invalidatePaintCache();
+
     int horizontalMargin() const;
     int textFontSize() const;
     QPen dividerPen() const;
@@ -68,4 +107,5 @@ private:
     Ant::DividerTitlePlacement m_titlePlacement = Ant::DividerTitlePlacement::Center;
     Ant::DividerVariant m_variant = Ant::DividerVariant::Solid;
     Ant::Size m_dividerSize = Ant::Size::Large;
+    mutable PaintCache m_paintCache;
 };
