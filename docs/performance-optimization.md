@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `13` components are optimized from this pass, and `71` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `14` components are optimized from this pass, and `70` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-20` | `AntFlex` | The horizontal wrap layout now caches geometry passes by rect, spacing, margins, wrap state, and item count, reusing computed child rects for repeated `setGeometry()` and `heightForWidth()` calls until the layout is invalidated. Size hints are also cached for unchanged item counts and spacing. | `cmake --build build --config Debug --target TestAntLayout`, `TestAntLayout.exe flex`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-20` | `AntDivider` | Divider title metrics, title font, line pen, text rect, and line segment geometry are now cached by rect, text, font, placement, variant, orientation, and theme tokens. Repeated paints reuse the cached layout until a real visual/layout input changes. | `cmake --build build --config Debug --target TestAntLayout`, `TestAntLayout.exe divider`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-20` | `AntConfigProvider` | Property setters now schedule one queued `configChanged` refresh per event turn, exposing a revision counter for consumers/tests while keeping individual property signals intact. `apply()` skips the global theme path when the requested mode is already active. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe configProvider`, `cmake --build build --config Debug --target qt-ant-design-example`, `cmake --build build --config Debug --target TestAntMetaProperties`, `TestAntMetaProperties.exe` |
 | `2026-05-20` | `AntApp` | Feedback host lookup is now cached through a `QPointer`-backed path, so message/modal/notification entry calls reuse the resolved root context instead of repeating host resolution. The singleton instance stack now restores nested wrappers on destruction and clears stale instances. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe app`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -168,7 +169,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntApp` | P2 | Cache feedback host resolution through a guarded root/parent/active-window path and restore nested app instances on destruction. Continue with real message/modal/notification plumbing when those entrypoints are expanded. | Optimized |
 | `AntConfigProvider` | P1 | Property setters coalesce into one queued `configChanged` signal and revision increment per event turn; `apply()` avoids redundant global theme refresh when the requested mode is already active. | Optimized |
 | `AntDivider` | P2 | Cache title font/text metrics, line pen, text rect, and horizontal/vertical line geometry; invalidate only when text, font, placement, variant, orientation, rect, or theme tokens change. | Optimized |
-| `AntFlex` | P1 | Cache child layout pass results and invalidate only on child size hint, gap, wrap, orientation, or geometry changes. | Plan ready |
+| `AntFlex` | P1 | Cache wrap-layout geometry and size hints across repeated layout queries; invalidate on item add/remove, spacing, wrap, orientation, or parent geometry changes. Continue with child size-hint event filtering if dense dynamic forms need a deeper pass. | Optimized |
 | `AntGrid` | P1 | Cache row/column width calculations and invalidate only on span/gutter/container-width changes. | Plan ready |
 | `AntLayout` | P1 | Cache region geometry for header/sider/content/footer and repaint only changed regions on collapse/theme changes. | Plan ready |
 | `AntMasonry` | P0 | Cache column assignment and item heights; recompute incrementally when one item changes instead of rebuilding all columns. | Plan ready |

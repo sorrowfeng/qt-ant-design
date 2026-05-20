@@ -131,6 +131,53 @@ void TestAntLayout::flex()
     auto* child = new QWidget;
     w->addWidget(child);
     w->addStretch();
+
+    AntFlex cachedFlex;
+    cachedFlex.setWrap(true);
+    cachedFlex.resize(90, 90);
+
+    auto* first = new QWidget;
+    first->setFixedSize(40, 20);
+    cachedFlex.addWidget(first);
+
+    auto* second = new QWidget;
+    second->setFixedSize(40, 20);
+    cachedFlex.addWidget(second);
+
+    auto* third = new QWidget;
+    third->setFixedSize(40, 20);
+    cachedFlex.addWidget(third);
+
+    cachedFlex.layout()->setGeometry(cachedFlex.rect());
+    QCOMPARE(cachedFlex.property("antFlexLayoutBuildCount").toInt(), 1);
+    QCOMPARE(third->geometry().top(), 28);
+
+    cachedFlex.layout()->setGeometry(cachedFlex.rect());
+    QCOMPARE(cachedFlex.property("antFlexLayoutBuildCount").toInt(), 1);
+
+    const QSize firstHint = cachedFlex.sizeHint();
+    QCOMPARE(cachedFlex.property("antFlexSizeHintBuildCount").toInt(), 1);
+    QCOMPARE(cachedFlex.sizeHint(), firstHint);
+    QCOMPARE(cachedFlex.property("antFlexSizeHintBuildCount").toInt(), 1);
+
+    cachedFlex.setGap(12);
+    const QSize secondHint = cachedFlex.sizeHint();
+    QCOMPARE(cachedFlex.property("antFlexSizeHintBuildCount").toInt(), 2);
+    QVERIFY(secondHint.width() > firstHint.width());
+
+    const int layoutBuildsBeforeGapGeometry = cachedFlex.property("antFlexLayoutBuildCount").toInt();
+    cachedFlex.layout()->setGeometry(cachedFlex.rect());
+    QCOMPARE(cachedFlex.property("antFlexLayoutBuildCount").toInt(), layoutBuildsBeforeGapGeometry + 1);
+    QCOMPARE(third->geometry().top(), 64);
+
+    const int layoutBuildsAfterGapGeometry = cachedFlex.property("antFlexLayoutBuildCount").toInt();
+    cachedFlex.layout()->setGeometry(cachedFlex.rect());
+    QCOMPARE(cachedFlex.property("antFlexLayoutBuildCount").toInt(), layoutBuildsAfterGapGeometry);
+
+    QCOMPARE(cachedFlex.layout()->heightForWidth(90), 84);
+    QCOMPARE(cachedFlex.property("antFlexLayoutBuildCount").toInt(), layoutBuildsAfterGapGeometry + 1);
+    QCOMPARE(cachedFlex.layout()->heightForWidth(90), 84);
+    QCOMPARE(cachedFlex.property("antFlexLayoutBuildCount").toInt(), layoutBuildsAfterGapGeometry + 1);
 }
 
 void TestAntLayout::grid()

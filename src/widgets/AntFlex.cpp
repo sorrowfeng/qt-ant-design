@@ -4,6 +4,7 @@
 #include <QLayoutItem>
 #include <QStyle>
 #include <QVBoxLayout>
+#include <QVector>
 
 namespace
 {
@@ -43,6 +44,7 @@ public:
     void addItem(QLayoutItem* item) override
     {
         m_items.append(item);
+        invalidate();
     }
 
     int count() const override
@@ -57,7 +59,13 @@ public:
 
     QLayoutItem* takeAt(int index) override
     {
-        return index >= 0 && index < m_items.size() ? m_items.takeAt(index) : nullptr;
+        if (index < 0 || index >= m_items.size())
+        {
+            return nullptr;
+        }
+        QLayoutItem* item = m_items.takeAt(index);
+        invalidate();
+        return item;
     }
 
     Qt::Orientations expandingDirections() const override
@@ -78,6 +86,14 @@ public:
     QSize sizeHint() const override
     {
         const QMargins margins = contentsMargins();
+        if (m_sizeHintCache.valid &&
+            m_sizeHintCache.spacing == spacing() &&
+            m_sizeHintCache.margins == margins &&
+            m_sizeHintCache.itemCount == m_items.size())
+        {
+            return m_sizeHintCache.size;
+        }
+
         int width = margins.left() + margins.right();
         int height = 0;
         for (const QLayoutItem* item : m_items)
@@ -90,7 +106,19 @@ public:
             width += itemSize.width();
             height = qMax(height, itemSize.height());
         }
-        return QSize(width, height + margins.top() + margins.bottom());
+
+        const int previousBuildCount = m_sizeHintCache.buildCount;
+        m_sizeHintCache.valid = true;
+        m_sizeHintCache.spacing = spacing();
+        m_sizeHintCache.margins = margins;
+        m_sizeHintCache.itemCount = m_items.size();
+        m_sizeHintCache.size = QSize(width, height + margins.top() + margins.bottom());
+        m_sizeHintCache.buildCount = previousBuildCount + 1;
+        if (QWidget* owner = parentWidget())
+        {
+            owner->setProperty("antFlexSizeHintBuildCount", m_sizeHintCache.buildCount);
+        }
+        return m_sizeHintCache.size;
     }
 
     QSize minimumSize() const override
@@ -111,14 +139,61 @@ public:
         doLayout(rect, false);
     }
 
+    void invalidate() override
+    {
+        m_layoutCache.valid = false;
+        m_sizeHintCache.valid = false;
+        QLayout::invalidate();
+    }
+
 private:
     int doLayout(const QRect& rect, bool testOnly) const
+    {
+        if (!layoutCacheMatches(rect))
+        {
+            rebuildLayoutCache(rect);
+        }
+
+        if (!testOnly)
+        {
+            const int count = qMin(m_items.size(), m_layoutCache.itemRects.size());
+            for (int i = 0; i < count; ++i)
+            {
+                m_items.at(i)->setGeometry(m_layoutCache.itemRects.at(i));
+            }
+        }
+
+        return m_layoutCache.height;
+    }
+
+    bool layoutCacheMatches(const QRect& rect) const
+    {
+        return m_layoutCache.valid &&
+               m_layoutCache.rect == rect &&
+               m_layoutCache.spacing == spacing() &&
+               m_layoutCache.margins == contentsMargins() &&
+               m_layoutCache.allowWrap == m_allowWrap &&
+               m_layoutCache.itemCount == m_items.size();
+    }
+
+    void rebuildLayoutCache(const QRect& rect) const
     {
         const QMargins margins = contentsMargins();
         const QRect effectiveRect = rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
         int x = effectiveRect.x();
         int y = effectiveRect.y();
         int lineHeight = 0;
+
+        const int previousBuildCount = m_layoutCache.buildCount;
+        m_layoutCache = LayoutCache{};
+        m_layoutCache.valid = true;
+        m_layoutCache.rect = rect;
+        m_layoutCache.spacing = spacing();
+        m_layoutCache.margins = margins;
+        m_layoutCache.allowWrap = m_allowWrap;
+        m_layoutCache.itemCount = m_items.size();
+        m_layoutCache.itemRects.reserve(m_items.size());
+        m_layoutCache.buildCount = previousBuildCount + 1;
 
         for (QLayoutItem* item : m_items)
         {
@@ -131,20 +206,46 @@ private:
                 lineHeight = 0;
             }
 
-            if (!testOnly)
-            {
-                item->setGeometry(QRect(QPoint(x, y), itemSize));
-            }
+            m_layoutCache.itemRects.append(QRect(QPoint(x, y), itemSize));
 
             x += itemSize.width() + spacing();
             lineHeight = qMax(lineHeight, itemSize.height());
         }
 
-        return y + lineHeight - rect.y() + margins.bottom();
+        m_layoutCache.height = y + lineHeight - rect.y() + margins.bottom();
+        if (QWidget* owner = parentWidget())
+        {
+            owner->setProperty("antFlexLayoutBuildCount", m_layoutCache.buildCount);
+        }
     }
+
+    struct LayoutCache
+    {
+        bool valid = false;
+        QRect rect;
+        int spacing = -1;
+        QMargins margins;
+        bool allowWrap = false;
+        int itemCount = 0;
+        QVector<QRect> itemRects;
+        int height = 0;
+        int buildCount = 0;
+    };
+
+    struct SizeHintCache
+    {
+        bool valid = false;
+        int spacing = -1;
+        QMargins margins;
+        int itemCount = 0;
+        QSize size;
+        int buildCount = 0;
+    };
 
     QList<QLayoutItem*> m_items;
     bool m_allowWrap = false;
+    mutable LayoutCache m_layoutCache;
+    mutable SizeHintCache m_sizeHintCache;
 };
 }
 
@@ -168,7 +269,11 @@ void AntFlex::setGap(int px)
 {
     if (m_gap == px) return;
     m_gap = px;
-    if (m_layout) m_layout->setSpacing(px);
+    if (m_layout)
+    {
+        m_layout->setSpacing(px);
+        m_layout->invalidate();
+    }
     Q_EMIT gapChanged(m_gap);
 }
 
