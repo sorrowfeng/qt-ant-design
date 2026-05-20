@@ -5,6 +5,7 @@
 #include <QStyleOption>
 #include <QStyleOptionToolButton>
 #include <QToolButton>
+#include <QVariant>
 
 #include "widgets/AntToolBar.h"
 
@@ -33,17 +34,42 @@ QRect centeredButtonRect(const QRect& rect, const ToolBarButtonMetrics& metrics)
     const int top = rect.top() + (rect.height() - metrics.height) / 2;
     return QRect(rect.left(), top, rect.width(), metrics.height);
 }
+
+QString buttonTextMetricKey(const QToolButton* button, const QFont& font)
+{
+    return button->text() + QLatin1Char('|') + font.toString();
+}
+
+int cachedButtonTextWidth(const QToolButton* button, const QFont& font)
+{
+    if (!button)
+    {
+        return 0;
+    }
+
+    const QString key = buttonTextMetricKey(button, font);
+    const QVariant cachedWidth = button->property("antToolBarButtonTextMetricWidth");
+    auto* mutableButton = const_cast<QToolButton*>(button);
+    if (button->property("antToolBarButtonTextMetricKey").toString() == key &&
+        cachedWidth.isValid())
+    {
+        mutableButton->setProperty("antToolBarButtonTextMetricHitCount",
+                                   button->property("antToolBarButtonTextMetricHitCount").toInt() + 1);
+        return cachedWidth.toInt();
+    }
+
+    const int width = QFontMetrics(font).horizontalAdvance(button->text());
+    mutableButton->setProperty("antToolBarButtonTextMetricKey", key);
+    mutableButton->setProperty("antToolBarButtonTextMetricWidth", width);
+    mutableButton->setProperty("antToolBarButtonTextMetricBuildCount",
+                               button->property("antToolBarButtonTextMetricBuildCount").toInt() + 1);
+    return width;
+}
 } // namespace
 
 AntToolBarStyle::AntToolBarStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntToolBar>();
-}
-
-void AntToolBarStyle::onThemeUpdate(QWidget* w)
-{
-    w->update();
 }
 
 void AntToolBarStyle::drawControl(ControlElement element, const QStyleOption* option,
@@ -98,7 +124,7 @@ QSize AntToolBarStyle::sizeFromContents(ContentsType type, const QStyleOption* o
 
         QFont font = button ? button->font() : QFont();
         font.setPixelSize(token.fontSize);
-        int width = button ? QFontMetrics(font).horizontalAdvance(button->text()) : size.width();
+        int width = button ? cachedButtonTextWidth(button, font) : size.width();
         if (button && !button->icon().isNull())
         {
             width += metrics.iconSize + 6;
@@ -208,8 +234,7 @@ void AntToolBarStyle::drawToolBarButton(const QStyleOptionComplex* option, QPain
     painter->setPen(text);
 
     const QString label = button->text();
-    const QFontMetrics fm(font);
-    const int textWidth = fm.horizontalAdvance(label);
+    const int textWidth = cachedButtonTextWidth(button, font);
     const bool hasIcon = !button->icon().isNull();
     const int contentWidth = textWidth + (hasIcon ? metrics.iconSize + 6 : 0);
     int cursorX = outer.left() + qMax(metrics.paddingX, (outer.width() - contentWidth) / 2);

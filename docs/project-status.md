@@ -19,7 +19,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `30` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `31` controls optimized in the current pass |
 
 ## Recent Completed Work
 
@@ -31,6 +31,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Optimized `AntScrollArea` by caching theme surface colors and content-widget palette state so content replacement does not repaint or repalette the viewport unnecessarily.
 - Optimized `AntScrollBar` by scoping hover, press, auto-hide, enabled-state, and theme repaint work to the slider handle region.
 - Optimized `AntStatusBar` by caching item, divider, and message layout rectangles and scoping hover/message repaint to changed regions.
+- Optimized `AntToolBar` by syncing action-created buttons incrementally, skipping unchanged button chrome work, and caching button text metrics across size and paint paths.
 - Optimized `AntMenuBar` by caching action geometry and menu item text metrics, with hover movement repainting only old/new action regions.
 - Optimized `AntDockWidget` title-bar work by caching button icon pixmaps and skipping redundant chrome/theme refreshes when dock state inputs are unchanged.
 - Optimized `AntDockManager` drag hit testing by caching visible dock-area hit zones and reusing same-position drop-target queries across drag move/release handling.

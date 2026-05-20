@@ -1344,6 +1344,38 @@ void TestAntQtExtensions::toolBar()
     QTest::mouseClick(button, Qt::LeftButton, Qt::NoModifier, button->rect().center());
     QCOMPARE(actionSpy.count(), 1);
 
+    const int scansAfterFirstAction = w->property("antToolBarButtonScanCount").toInt();
+    const int syncsAfterFirstAction = w->property("antToolBarButtonSyncCount").toInt();
+    const int geometryAfterFirstAction = w->property("antToolBarButtonGeometryUpdateCount").toInt();
+    auto* openAction = w->addAction(QStringLiteral("Open"));
+    auto* openButton = qobject_cast<QToolButton*>(w->widgetForAction(openAction));
+    QVERIFY(openButton != nullptr);
+    QVERIFY(openButton->property("antToolBarButton").toBool());
+    QCOMPARE(w->property("antToolBarButtonScanCount").toInt(), scansAfterFirstAction);
+    QVERIFY(w->property("antToolBarButtonSyncCount").toInt() > syncsAfterFirstAction);
+    QVERIFY(w->property("antToolBarButtonGeometryUpdateCount").toInt() > geometryAfterFirstAction);
+
+    const int scansBeforeActionChange = w->property("antToolBarButtonScanCount").toInt();
+    const int syncsBeforeActionChange = w->property("antToolBarButtonSyncCount").toInt();
+    const int geometryBeforeActionChange = w->property("antToolBarButtonGeometryUpdateCount").toInt();
+    action->setText(QStringLiteral("Create"));
+    QCOMPARE(w->property("antToolBarButtonScanCount").toInt(), scansBeforeActionChange);
+    QVERIFY(w->property("antToolBarButtonSyncCount").toInt() > syncsBeforeActionChange);
+    QVERIFY(w->property("antToolBarButtonGeometryUpdateCount").toInt() > geometryBeforeActionChange);
+
+    w->resize(260, 48);
+    w->show();
+    QVERIFY(QTest::qWaitForWindowExposed(w));
+    const QImage firstToolBarPaint = renderForExtensionTest(w);
+    QVERIFY(!firstToolBarPaint.isNull());
+    const int metricBuildsAfterPaint = button->property("antToolBarButtonTextMetricBuildCount").toInt();
+    const int metricHitsAfterPaint = button->property("antToolBarButtonTextMetricHitCount").toInt();
+    QVERIFY(metricBuildsAfterPaint > 0);
+    const QImage secondToolBarPaint = renderForExtensionTest(w);
+    QVERIFY(!secondToolBarPaint.isNull());
+    QCOMPARE(button->property("antToolBarButtonTextMetricBuildCount").toInt(), metricBuildsAfterPaint);
+    QVERIFY(button->property("antToolBarButtonTextMetricHitCount").toInt() > metricHitsAfterPaint);
+
     auto* w2 = new AntToolBar("My Toolbar");
     QVERIFY(w2 != nullptr);
 }

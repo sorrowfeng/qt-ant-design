@@ -22,9 +22,6 @@ public:
     int pixelMetric(PixelMetric metric, const QStyleOption* option,
                     const QWidget* widget) const override;
 
-protected:
-    void onThemeUpdate(QWidget* w) override;
-
 private:
     void drawToolBarButton(const QStyleOptionComplex* option, QPainter* painter,
                            const QWidget* widget) const;
