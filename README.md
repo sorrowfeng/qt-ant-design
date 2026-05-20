@@ -43,6 +43,7 @@ The project focuses on:
 
 - Status snapshot: [docs/project-status.md](docs/project-status.md)
 - Per-component reliability coverage: [docs/reliability-coverage.md](docs/reliability-coverage.md)
+- Per-component performance optimization progress: [docs/performance-optimization.md](docs/performance-optimization.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
 - Current CTest target count: `37`; latest full component reliability sweep: `37 / 37` passed on `2026-05-10`
