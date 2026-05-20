@@ -1,8 +1,10 @@
 #include "AntToolButton.h"
 
 #include <QEvent>
+#include <QHideEvent>
 #include <QMouseEvent>
 #include <QPropertyAnimation>
+#include <QShowEvent>
 #include <QStyleOptionToolButton>
 #include <QTimer>
 
@@ -32,7 +34,7 @@ AntToolButton::AntToolButton(QWidget* parent)
     m_spinnerTimer = new QTimer(this);
     connect(m_spinnerTimer, &QTimer::timeout, this, [this]() {
         m_spinnerAngle = (m_spinnerAngle + 30) % 360;
-        update();
+        updateSpinnerRegion();
     });
 
     m_arrowAnimation = new QPropertyAnimation(this, "arrowRotation", this);
@@ -49,6 +51,7 @@ AntToolButton::AntToolButton(QWidget* parent)
     });
 
     updateGeometryFromState();
+    syncToolButtonPerfCounters();
 }
 
 AntToolButton::AntToolButton(const QString& text, QWidget* parent)
@@ -95,7 +98,7 @@ void AntToolButton::setLoading(bool loading)
 {
     if (m_loading == loading) return;
     m_loading = loading;
-    m_loading ? m_spinnerTimer->start(80) : m_spinnerTimer->stop();
+    updateSpinnerTimer();
     updateGeometryFromState();
     update();
     Q_EMIT loadingChanged(m_loading);
@@ -107,7 +110,7 @@ void AntToolButton::setArrowRotation(qreal rotation)
 {
     if (qFuzzyCompare(m_arrowRotation, rotation)) return;
     m_arrowRotation = rotation;
-    update();
+    updateArrowRegion();
     Q_EMIT arrowRotationChanged(m_arrowRotation);
 }
 
@@ -171,6 +174,18 @@ void AntToolButton::changeEvent(QEvent* event)
     QToolButton::changeEvent(event);
 }
 
+void AntToolButton::showEvent(QShowEvent* event)
+{
+    QToolButton::showEvent(event);
+    updateSpinnerTimer();
+}
+
+void AntToolButton::hideEvent(QHideEvent* event)
+{
+    QToolButton::hideEvent(event);
+    updateSpinnerTimer();
+}
+
 AntToolButton::Metrics AntToolButton::metrics() const
 {
     const auto& token = antTheme->tokens();
@@ -216,6 +231,103 @@ void AntToolButton::updateGeometryFromState()
     setMinimumHeight(m.height);
     setMaximumHeight(m.height);
     updateGeometry();
+}
+
+QRect AntToolButton::spinnerIndicatorRect() const
+{
+    if (!m_loading)
+    {
+        return {};
+    }
+
+    const Metrics m = metrics();
+    QRectF contentRect = QRectF(rect()).adjusted(m.paddingX, 0, -m.paddingX, 0);
+    if (!icon().isNull())
+    {
+        contentRect.adjust(m.iconSize + 6, 0, 0, 0);
+    }
+    if (menu() || popupMode() == QToolButton::MenuButtonPopup)
+    {
+        const qreal arrowW = m.arrowSize + 8;
+        contentRect.adjust(0, 0, -(arrowW + 2), 0);
+    }
+
+    const QRectF spinnerRect(contentRect.left(),
+                             contentRect.center().y() - m.iconSize / 2.0,
+                             m.iconSize,
+                             m.iconSize);
+    return spinnerRect.toAlignedRect().adjusted(-3, -3, 3, 3).intersected(rect());
+}
+
+QRect AntToolButton::arrowIndicatorRect() const
+{
+    if (!menu() && popupMode() != QToolButton::MenuButtonPopup)
+    {
+        return {};
+    }
+
+    const Metrics m = metrics();
+    QRectF contentRect = QRectF(rect()).adjusted(m.paddingX, 0, -m.paddingX, 0);
+    if (!icon().isNull())
+    {
+        contentRect.adjust(m.iconSize + 6, 0, 0, 0);
+    }
+
+    const qreal arrowW = m.arrowSize + 8;
+    const QRectF arrowRect(contentRect.right() - arrowW,
+                           contentRect.center().y() - m.arrowSize / 2.0,
+                           m.arrowSize,
+                           m.arrowSize);
+    return arrowRect.toAlignedRect().adjusted(-3, -3, 3, 3).intersected(rect());
+}
+
+void AntToolButton::updateSpinnerRegion()
+{
+    updateIndicatorRegion(spinnerIndicatorRect(), m_spinnerRegionUpdateCount);
+}
+
+void AntToolButton::updateArrowRegion()
+{
+    updateIndicatorRegion(arrowIndicatorRect(), m_arrowRegionUpdateCount);
+}
+
+void AntToolButton::updateIndicatorRegion(const QRect& rect, int& counter)
+{
+    if (rect.isValid())
+    {
+        update(rect);
+        ++counter;
+        syncToolButtonPerfCounters();
+    }
+}
+
+void AntToolButton::updateSpinnerTimer()
+{
+    const bool shouldRun = m_loading && isVisible();
+    if (m_spinnerTimer->isActive() == shouldRun)
+    {
+        syncToolButtonPerfCounters();
+        return;
+    }
+
+    if (shouldRun)
+    {
+        m_spinnerTimer->start(80);
+    }
+    else
+    {
+        m_spinnerTimer->stop();
+    }
+    syncToolButtonPerfCounters();
+}
+
+void AntToolButton::syncToolButtonPerfCounters() const
+{
+    auto* self = const_cast<AntToolButton*>(this);
+    self->setProperty("antToolButtonSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
+    self->setProperty("antToolButtonArrowRegionUpdateCount", m_arrowRegionUpdateCount);
+    self->setProperty("antToolButtonSpinnerTimerActive",
+                      m_spinnerTimer && m_spinnerTimer->isActive());
 }
 
 int AntToolButton::spinnerAngle() const

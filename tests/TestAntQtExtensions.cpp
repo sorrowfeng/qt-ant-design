@@ -13,6 +13,7 @@
 #include <QFrame>
 #include <QMargins>
 #include <QMainWindow>
+#include <QMenu>
 #include <QMetaType>
 #include <QMouseEvent>
 #include <QPlainTextEdit>
@@ -1316,6 +1317,39 @@ void TestAntQtExtensions::toolButton()
     w->setArrowRotation(90.0);
     QCOMPARE(w->arrowRotation(), 90.0);
     QCOMPARE(arrowSpy.count(), 1);
+
+    w->resize(w->sizeHint());
+    w->show();
+    QVERIFY(QTest::qWaitForWindowExposed(w));
+    QVERIFY(w->property("antToolButtonSpinnerTimerActive").toBool());
+    const int spinnerUpdatesBeforeWait = w->property("antToolButtonSpinnerRegionUpdateCount").toInt();
+    QTRY_VERIFY(w->property("antToolButtonSpinnerRegionUpdateCount").toInt() > spinnerUpdatesBeforeWait);
+    w->hide();
+    QVERIFY(!w->property("antToolButtonSpinnerTimerActive").toBool());
+    const int spinnerUpdatesWhileHidden = w->property("antToolButtonSpinnerRegionUpdateCount").toInt();
+    QTest::qWait(120);
+    QCOMPARE(w->property("antToolButtonSpinnerRegionUpdateCount").toInt(), spinnerUpdatesWhileHidden);
+    w->show();
+    QVERIFY(QTest::qWaitForWindowExposed(w));
+    QVERIFY(w->property("antToolButtonSpinnerTimerActive").toBool());
+    w->setLoading(false);
+    QVERIFY(!w->property("antToolButtonSpinnerTimerActive").toBool());
+
+    auto* menuButton = new AntToolButton(QStringLiteral("Menu"));
+    auto* menu = new QMenu(menuButton);
+    menu->addAction(QStringLiteral("One"));
+    menuButton->setMenu(menu);
+    menuButton->resize(menuButton->sizeHint());
+    menuButton->show();
+    QVERIFY(QTest::qWaitForWindowExposed(menuButton));
+    const int arrowRegionUpdates = menuButton->property("antToolButtonArrowRegionUpdateCount").toInt();
+    QSignalSpy menuArrowSpy(menuButton, &AntToolButton::arrowRotationChanged);
+    menuButton->setArrowRotation(45.0);
+    QCOMPARE(menuArrowSpy.count(), 1);
+    QCOMPARE(menuButton->property("antToolButtonArrowRegionUpdateCount").toInt(), arrowRegionUpdates + 1);
+    menuButton->setArrowRotation(45.0);
+    QCOMPARE(menuArrowSpy.count(), 1);
+    QCOMPARE(menuButton->property("antToolButtonArrowRegionUpdateCount").toInt(), arrowRegionUpdates + 1);
 
     auto* w2 = new AntToolButton("Click");
     QCOMPARE(w2->text(), "Click");

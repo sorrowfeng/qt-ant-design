@@ -138,7 +138,6 @@ void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int
 AntToolButtonStyle::AntToolButtonStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntToolButton>();
 }
 
 void AntToolButtonStyle::drawComplexControl(ComplexControl control, const QStyleOptionComplex* option,

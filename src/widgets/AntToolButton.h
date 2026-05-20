@@ -7,7 +7,9 @@
 #include "core/AntTypes.h"
 
 class AntMenu;
+class QHideEvent;
 class QPropertyAnimation;
+class QShowEvent;
 
 class QT_ANT_DESIGN_EXPORT AntToolButton : public QToolButton
 {
@@ -55,6 +57,8 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
 
 private:
     struct Metrics
@@ -69,6 +73,13 @@ private:
     Metrics metrics() const;
     int cornerRadius(const Metrics& m) const;
     void updateGeometryFromState();
+    QRect spinnerIndicatorRect() const;
+    QRect arrowIndicatorRect() const;
+    void updateSpinnerRegion();
+    void updateArrowRegion();
+    void updateIndicatorRegion(const QRect& rect, int& counter);
+    void updateSpinnerTimer();
+    void syncToolButtonPerfCounters() const;
 
     Ant::ButtonType m_buttonType = Ant::ButtonType::Default;
     Ant::Size m_buttonSize = Ant::Size::Middle;
@@ -80,4 +91,6 @@ private:
     int m_spinnerAngle = 0;
     QTimer* m_spinnerTimer = nullptr;
     QPropertyAnimation* m_arrowAnimation = nullptr;
+    int m_spinnerRegionUpdateCount = 0;
+    int m_arrowRegionUpdateCount = 0;
 };

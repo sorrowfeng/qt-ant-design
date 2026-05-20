@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `31` components are optimized from this pass, and `53` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `32` components are optimized from this pass, and `52` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntToolButton` | Loading spinner frames now repaint only the spinner indicator region, dropdown arrow animation repaints only the arrow region, and the spinner timer pauses while the button is hidden. Theme refresh is owned by the widget instead of an additional style-level global refresh path. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe toolButton`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntToolBar` | Action add/change now synchronizes only the affected toolbar button instead of scanning every direct button. Theme refresh remains toolbar-owned, button updates skip unchanged palette/style/geometry work, and toolbar button text metrics are cached across size and paint paths. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe toolBar`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntStatusBar` | Status-bar item, permanent-item, divider, and message rectangles are now cached and shared by paint and hit testing. Hover and message changes repaint only the cached item/message regions instead of the full bar. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe statusBar`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntScrollBar` | Hover, press, auto-hide, enabled-state, and theme refresh paths now repaint only the slider handle region instead of the full scrollbar. The style no longer registers its own global theme repolish path; the widget handles theme refresh with a scoped handle update. | `cmake --build build --config Debug --target TestAntQtExtensions`, `TestAntQtExtensions.exe scrollBar`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -210,7 +211,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntScrollBar` | P0 | Dirty-update only the slider handle region for hover, press, auto-hide, enabled-state, and theme refresh paths; theme changes are handled by the widget without style repolish. | Optimized |
 | `AntStatusBar` | P1 | Cache item, permanent-item, divider, and message rectangles for both paint and hit testing; repaint only changed item/message regions. | Optimized |
 | `AntToolBar` | P1 | Synchronize action-created buttons incrementally, skip unchanged palette/style/geometry work, keep theme refresh toolbar-owned, and cache button text metrics for size and paint paths. | Optimized |
-| `AntToolButton` | P1 | Cache icon/arrow geometry, pause spinner only when hidden or not loading, and update only arrow/spinner/button dirty region during animation. | Plan ready |
+| `AntToolButton` | P1 | Pause the spinner timer while hidden, repaint only spinner and arrow indicator regions during animation, and keep theme refresh widget-owned instead of duplicating the style global refresh path. | Optimized |
 
 ## Per-Component Test Plan
 
@@ -333,7 +334,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 | `AntScrollBar` | `TestAntQtExtensions` | Verify hover, press/release, auto-hide, orientation, theme refresh, repeated-state no-op handling, and handle-region dirty updates. |
 | `AntStatusBar` | `TestAntQtExtensions` | Verify left/right items, separators, messages, size grip, cached layout reuse, and item/message-region repaint. |
 | `AntToolBar` | `TestAntQtExtensions` | Verify action add/remove/trigger, floating shadow, embedded buttons, action-local synchronization, and cached button text metrics. |
-| `AntToolButton` | `TestAntQtExtensions` | Verify menu/default action, arrow animation, loading spinner, hidden-state timer behavior, and dirty-region animation updates. |
+| `AntToolButton` | `TestAntQtExtensions` | Verify menu/default action, arrow animation, loading spinner, hidden-state timer behavior, and spinner/arrow dirty-region animation updates. |
 
 ## First Implementation Candidates
 
