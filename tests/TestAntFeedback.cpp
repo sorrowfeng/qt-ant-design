@@ -43,6 +43,7 @@ private slots:
     void skeleton();
     void skeletonCachesLayoutAndScopesShimmer();
     void spin();
+    void spinCachesLayoutAndScopesAnimation();
     void tooltip();
     void tour();
 };
@@ -981,12 +982,52 @@ void TestAntFeedback::spin()
 
     auto* animated = new AntSpin;
     animated->show();
+    QVERIFY(QTest::qWaitForWindowExposed(animated));
+    QTRY_VERIFY_WITH_TIMEOUT(animated->property("antSpinAnimationTimerActive").toBool(), 120);
     const int startAngle = animated->angle();
-    QTest::qWait(55);
+    QTRY_VERIFY_WITH_TIMEOUT(animated->angle() != startAngle, 120);
     const int angleDelta = (animated->angle() - startAngle + 360) % 360;
     QVERIFY(angleDelta > 0);
-    QVERIFY(angleDelta <= 25);
+    QVERIFY(angleDelta <= 40);
     animated->hide();
+    QTRY_VERIFY_WITH_TIMEOUT(!animated->property("antSpinAnimationTimerActive").toBool(), 120);
+}
+
+void TestAntFeedback::spinCachesLayoutAndScopesAnimation()
+{
+    AntSpin spin;
+    spin.resize(160, 84);
+    spin.setDescription(QStringLiteral("Loading cached"));
+    spin.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&spin));
+
+    spin.grab();
+    const int layoutBuilds = spin.property("antSpinLayoutBuildCount").toInt();
+    const int layoutHits = spin.property("antSpinLayoutCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+
+    spin.grab();
+    QCOMPARE(spin.property("antSpinLayoutBuildCount").toInt(), layoutBuilds);
+    QVERIFY(spin.property("antSpinLayoutCacheHitCount").toInt() > layoutHits);
+
+    QTRY_VERIFY_WITH_TIMEOUT(spin.property("antSpinAnimationTimerActive").toBool(), 120);
+    const int animationUpdates = spin.property("antSpinSpinnerRegionUpdateCount").toInt();
+    QTRY_VERIFY_WITH_TIMEOUT(spin.property("antSpinSpinnerRegionUpdateCount").toInt() > animationUpdates, 160);
+    QCOMPARE(spin.property("antSpinLastUpdateMode").toString(), QStringLiteral("animation"));
+
+    const int buildsBeforePercent = spin.property("antSpinLayoutBuildCount").toInt();
+    spin.setPercent(42);
+    QCOMPARE(spin.property("antSpinLastUpdateMode").toString(), QStringLiteral("percent"));
+    QTRY_VERIFY_WITH_TIMEOUT(!spin.property("antSpinAnimationTimerActive").toBool(), 120);
+    spin.grab();
+    QVERIFY(spin.property("antSpinLayoutBuildCount").toInt() > buildsBeforePercent);
+
+    spin.setPercent(-1);
+    QTRY_VERIFY_WITH_TIMEOUT(spin.property("antSpinAnimationTimerActive").toBool(), 120);
+    spin.hide();
+    const int pausedAngle = spin.angle();
+    QTest::qWait(60);
+    QCOMPARE(spin.angle(), pausedAngle);
 }
 
 void TestAntFeedback::tooltip()

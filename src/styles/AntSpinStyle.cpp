@@ -4,101 +4,18 @@
 #include <QPainter>
 #include <QStyleOption>
 
-#include <algorithm>
 #include <cmath>
 
 #include "widgets/AntSpin.h"
 
 namespace
 {
-struct SpinMetrics
-{
-    int indicatorSize = 20;
-    int dotSize = 6;
-    int fontSize = 14;
-    int spacing = 8;
-};
-
-SpinMetrics metricsFor(const AntSpin* spin)
-{
-    const auto& token = antTheme->tokens();
-    SpinMetrics metrics;
-    metrics.fontSize = token.fontSize;
-
-    if (!spin)
-    {
-        return metrics;
-    }
-
-    if (spin->spinSize() == Ant::Size::Small)
-    {
-        metrics.indicatorSize = 14;
-        metrics.dotSize = 4;
-        metrics.fontSize = token.fontSizeSM;
-        metrics.spacing = 6;
-    }
-    else if (spin->spinSize() == Ant::Size::Large)
-    {
-        metrics.indicatorSize = 32;
-        metrics.dotSize = 8;
-        metrics.fontSize = token.fontSizeLG;
-        metrics.spacing = 10;
-    }
-
-    return metrics;
-}
-
-void drawIndeterminate(QPainter& painter, const AntSpin* spin, const QRectF& rect)
-{
-    const auto& token = antTheme->tokens();
-    const SpinMetrics metrics = metricsFor(spin);
-    const QPointF center = rect.center();
-    const qreal radius = rect.width() / 2.0 - metrics.dotSize / 2.0;
-    constexpr qreal Pi = 3.14159265358979323846;
-
-    for (int index = 0; index < 4; ++index)
-    {
-        const qreal radians = (spin->angle() + index * 90) * Pi / 180.0;
-        QColor color = token.colorPrimary;
-        color.setAlphaF(0.35 + 0.16 * index);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(color);
-        const QPointF dot(center.x() + std::cos(radians) * radius,
-                          center.y() + std::sin(radians) * radius);
-        painter.drawEllipse(dot, metrics.dotSize / 2.0, metrics.dotSize / 2.0);
-    }
-}
-
-void drawPercent(QPainter& painter, const AntSpin* spin, const QRectF& rect)
-{
-    const auto& token = antTheme->tokens();
-    const SpinMetrics metrics = metricsFor(spin);
-    const QRectF arcRect = rect.adjusted(2, 2, -2, -2);
-    const int lineWidth = std::max(2, metrics.indicatorSize / 10);
-
-    painter.setPen(QPen(token.colorFillTertiary, lineWidth, Qt::SolidLine, Qt::RoundCap));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawArc(arcRect, 0, 360 * 16);
-
-    painter.setPen(QPen(token.colorPrimary, lineWidth, Qt::SolidLine, Qt::RoundCap));
-    painter.drawArc(arcRect, 90 * 16, -spin->percent() * 360 * 16 / 100);
-
-    if (spin->spinSize() != Ant::Size::Small)
-    {
-        QFont font = painter.font();
-        font.setPixelSize(spin->spinSize() == Ant::Size::Large ? 10 : 8);
-        font.setWeight(QFont::DemiBold);
-        painter.setFont(font);
-        painter.setPen(token.colorTextSecondary);
-        painter.drawText(rect, Qt::AlignCenter, QStringLiteral("%1").arg(spin->percent()));
-    }
-}
+constexpr qreal Pi = 3.14159265358979323846;
 }
 
 AntSpinStyle::AntSpinStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntSpin>();
 }
 
 void AntSpinStyle::polish(QWidget* widget)
@@ -140,7 +57,7 @@ bool AntSpinStyle::eventFilter(QObject* watched, QEvent* event)
         option.rect = spin->rect();
         QPainter painter(spin);
         drawPrimitive(QStyle::PE_Widget, &option, &painter, spin);
-        return false;
+        return true;
     }
 
     return QProxyStyle::eventFilter(watched, event);
@@ -154,35 +71,58 @@ void AntSpinStyle::drawSpin(const QStyleOption* option, QPainter* painter, const
         return;
     }
 
-    const auto& token = antTheme->tokens();
-    const SpinMetrics metrics = metricsFor(spin);
-    const int totalHeight = metrics.indicatorSize
-        + (spin->description().isEmpty() ? 0 : metrics.spacing + metrics.fontSize);
-    const QRectF indicator((option->rect.width() - metrics.indicatorSize) / 2.0,
-                           (option->rect.height() - totalHeight) / 2.0,
-                           metrics.indicatorSize,
-                           metrics.indicatorSize);
+    Q_UNUSED(option)
+
+    const auto& layout = spin->spinLayout();
+    if (!layout.effectiveSpinning)
+    {
+        return;
+    }
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
     if (spin->percent() >= 0)
     {
-        drawPercent(*painter, spin, indicator);
+        painter->setPen(QPen(layout.trackColor, layout.percentLineWidth, Qt::SolidLine, Qt::RoundCap));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawArc(layout.arcRect, 0, 360 * 16);
+
+        painter->setPen(QPen(layout.primaryColor, layout.percentLineWidth, Qt::SolidLine, Qt::RoundCap));
+        painter->drawArc(layout.arcRect, 90 * 16, -spin->percent() * 360 * 16 / 100);
+
+        if (spin->spinSize() != Ant::Size::Small)
+        {
+            QFont font = painter->font();
+            font.setPixelSize(layout.percentFontSize);
+            font.setWeight(QFont::DemiBold);
+            painter->setFont(font);
+            painter->setPen(layout.textColor);
+            painter->drawText(layout.indicatorRect, Qt::AlignCenter, layout.percentText);
+        }
     }
     else
     {
-        drawIndeterminate(*painter, spin, indicator);
+        for (int index = 0; index < 4; ++index)
+        {
+            const qreal radians = (spin->angle() + index * 90) * Pi / 180.0;
+            QColor color = layout.primaryColor;
+            color.setAlphaF(0.35 + 0.16 * index);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(color);
+            const QPointF dot(layout.indicatorCenter.x() + std::cos(radians) * layout.dotTravelRadius,
+                              layout.indicatorCenter.y() + std::sin(radians) * layout.dotTravelRadius);
+            painter->drawEllipse(dot, layout.metrics.dotSize / 2.0, layout.metrics.dotSize / 2.0);
+        }
     }
 
     if (!spin->description().isEmpty())
     {
         QFont font = painter->font();
-        font.setPixelSize(metrics.fontSize);
+        font.setPixelSize(layout.metrics.fontSize);
         painter->setFont(font);
-        painter->setPen(token.colorTextSecondary);
-        const QRectF textRect(0, indicator.bottom() + metrics.spacing, option->rect.width(), metrics.fontSize + 4);
-        painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignTop, spin->description());
+        painter->setPen(layout.textColor);
+        painter->drawText(layout.textRect, Qt::AlignHCenter | Qt::AlignTop, layout.description);
     }
 
     painter->restore();

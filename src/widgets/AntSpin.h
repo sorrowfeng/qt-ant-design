@@ -2,10 +2,16 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
+#include <QPointF>
+#include <QRectF>
+#include <QSize>
+#include <QString>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
+class AntSpinStyle;
 class QEvent;
 class QHideEvent;
 class QPaintEvent;
@@ -58,6 +64,8 @@ protected:
     void changeEvent(QEvent* event) override;
 
 private:
+    friend class AntSpinStyle;
+
     struct Metrics
     {
         int indicatorSize = 20;
@@ -66,7 +74,42 @@ private:
         int spacing = 8;
     };
 
+    struct SpinLayoutCache
+    {
+        bool valid = false;
+        QSize widgetSize;
+        Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
+        int tokenFontSize = 0;
+        int tokenFontSizeSM = 0;
+        int tokenFontSizeLG = 0;
+        bool enabled = true;
+        bool effectiveSpinning = true;
+        Ant::Size spinSize = Ant::Size::Middle;
+        QString description;
+        int percent = -1;
+        Metrics metrics;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QRectF indicatorRect;
+        QRectF textRect;
+        QRectF arcRect;
+        QPointF indicatorCenter;
+        qreal dotTravelRadius = 0.0;
+        int percentLineWidth = 2;
+        int percentFontSize = 8;
+        QColor primaryColor;
+        QColor trackColor;
+        QColor textColor;
+        QString percentText;
+    };
+
     Metrics metrics() const;
+    const SpinLayoutCache& spinLayout() const;
+    void invalidateSpinLayout() const;
+    QRect spinIndicatorDirtyRect() const;
+    QRect spinVisualRect() const;
+    void requestSpinUpdate(const QRect& region, const QString& mode);
+    void syncSpinPerfCounters() const;
     void updateAnimationState();
 
     bool m_spinning = true;
@@ -78,4 +121,10 @@ private:
     int m_angle = 0;
     QTimer* m_animationTimer = nullptr;
     QTimer* m_delayTimer = nullptr;
+    mutable SpinLayoutCache m_layoutCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    int m_spinnerRegionUpdateCount = 0;
+    int m_visualRegionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };
