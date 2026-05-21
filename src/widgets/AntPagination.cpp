@@ -14,7 +14,6 @@
 
 #include "../styles/AntPaginationStyle.h"
 #include "core/AntTheme.h"
-#include "styles/AntIconPainter.h"
 
 AntPagination::AntPagination(QWidget* parent)
     : QWidget(parent)
@@ -24,9 +23,13 @@ AntPagination::AntPagination(QWidget* parent)
     setFocusPolicy(Qt::StrongFocus);
     ensureQuickJumperEdit();
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidatePageItems();
+        updateGeometry();
         syncQuickJumperEdit();
+        update();
     });
     syncQuickJumperEdit();
+    syncPaginationPerfCounters();
 }
 
 int AntPagination::current() const { return m_current; }
@@ -39,7 +42,7 @@ void AntPagination::setCurrent(int current)
         return;
     }
     m_current = next;
-    syncQuickJumperEdit();
+    updatePaginationGeometry();
     update();
     Q_EMIT currentChanged(m_current);
     Q_EMIT change(m_current, m_pageSize);
@@ -88,6 +91,7 @@ void AntPagination::setDisabled(bool disabled)
         return;
     }
     m_disabled = disabled;
+    invalidatePageItems();
     syncQuickJumperEdit();
     update();
     Q_EMIT disabledChanged(m_disabled);
@@ -208,8 +212,9 @@ void AntPagination::mouseMoveEvent(QMouseEvent* event)
     const int index = itemAt(event->pos());
     if (m_hoveredIndex != index)
     {
+        const int previous = m_hoveredIndex;
         m_hoveredIndex = index;
-        update();
+        updateItemStateRegion(previous, m_hoveredIndex);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -234,8 +239,9 @@ void AntPagination::leaveEvent(QEvent* event)
 {
     if (m_hoveredIndex != -1)
     {
+        const int previous = m_hoveredIndex;
         m_hoveredIndex = -1;
-        update();
+        updateItemStateRegion(previous, m_hoveredIndex);
     }
     QWidget::leaveEvent(event);
 }
@@ -263,8 +269,27 @@ void AntPagination::resizeEvent(QResizeEvent* event)
     syncQuickJumperEdit();
 }
 
+void AntPagination::changeEvent(QEvent* event)
+{
+    if (event && (event->type() == QEvent::FontChange ||
+                  event->type() == QEvent::ApplicationFontChange ||
+                  event->type() == QEvent::StyleChange ||
+                  event->type() == QEvent::LayoutDirectionChange))
+    {
+        updatePaginationGeometry();
+    }
+    QWidget::changeEvent(event);
+}
+
 QVector<AntPagination::PageItem> AntPagination::pageItems() const
 {
+    if (m_pageItemsCacheValid && m_pageItemsCacheRevision == m_pageItemsRevision)
+    {
+        ++m_pageItemsCacheHitCount;
+        syncPaginationPerfCounters();
+        return m_cachedPageItems;
+    }
+
     const auto& token = antTheme->tokens();
     QVector<PageItem> items;
     const int size = itemSize();
@@ -345,7 +370,12 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
         append(ItemKind::QuickJumper, pageCount(), QString(), true, false, itemSize() + token.paddingLG);
         append(ItemKind::Text, 0, QStringLiteral("Page"), false, false, pageWidth);
     }
-    return items;
+    m_cachedPageItems = items;
+    m_pageItemsCacheRevision = m_pageItemsRevision;
+    m_pageItemsCacheValid = true;
+    ++m_pageItemsBuildCount;
+    syncPaginationPerfCounters();
+    return m_cachedPageItems;
 }
 
 int AntPagination::itemAt(const QPoint& pos) const
@@ -386,20 +416,6 @@ int AntPagination::fontSize() const
     return m_paginationSize == Ant::Size::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSize;
 }
 
-int AntPagination::rangeStart() const
-{
-    if (m_total <= 0)
-    {
-        return 0;
-    }
-    return (m_current - 1) * m_pageSize + 1;
-}
-
-int AntPagination::rangeEnd() const
-{
-    return std::min(m_total, m_current * m_pageSize);
-}
-
 QColor AntPagination::itemTextColor(const PageItem& item, bool hovered) const
 {
     const auto& token = antTheme->tokens();
@@ -430,45 +446,6 @@ QColor AntPagination::itemBackgroundColor(const PageItem& item, bool hovered) co
         return m_disabled ? token.colorBgContainerDisabled : token.colorBgContainer;
     }
     return hovered ? token.colorFillQuaternary : token.colorBgContainer;
-}
-
-void AntPagination::drawItem(QPainter& painter, const PageItem& item, bool hovered) const
-{
-    const auto& token = antTheme->tokens();
-    if (item.kind != ItemKind::Text)
-    {
-        painter.setPen(QPen(item.active ? token.colorPrimary : token.colorBorder, token.lineWidth));
-        painter.setBrush(itemBackgroundColor(item, hovered));
-        painter.drawRoundedRect(item.rect.adjusted(0, 0, -1, -1), token.borderRadius, token.borderRadius);
-    }
-    const QColor color = itemTextColor(item, hovered);
-    const qreal side = qMin(item.rect.width(), item.rect.height()) * 0.44;
-    const QRectF iconRect(item.rect.center().x() - side / 2.0,
-                          item.rect.center().y() - side / 2.0,
-                          side,
-                          side);
-    bool drewIcon = false;
-    switch (item.kind)
-    {
-    case ItemKind::Prev:
-        drewIcon = AntIconPainter::drawIcon(painter, Ant::IconType::Left, iconRect, color);
-        break;
-    case ItemKind::Next:
-        drewIcon = AntIconPainter::drawIcon(painter, Ant::IconType::Right, iconRect, color);
-        break;
-    case ItemKind::JumpPrev:
-    case ItemKind::JumpNext:
-        AntIconPainter::drawEllipsis(painter, iconRect, color);
-        drewIcon = true;
-        break;
-    default:
-        break;
-    }
-    if (!drewIcon)
-    {
-        painter.setPen(color);
-        painter.drawText(item.rect, Qt::AlignCenter | Qt::TextSingleLine, item.text);
-    }
 }
 
 void AntPagination::activateItem(const PageItem& item)
@@ -503,8 +480,59 @@ void AntPagination::normalizeCurrent()
 
 void AntPagination::updatePaginationGeometry()
 {
+    invalidatePageItems();
     updateGeometry();
     syncQuickJumperEdit();
+}
+
+void AntPagination::invalidatePageItems()
+{
+    ++m_pageItemsRevision;
+    if (m_pageItemsRevision == 0)
+    {
+        m_pageItemsRevision = 1;
+    }
+    m_pageItemsCacheValid = false;
+}
+
+QRect AntPagination::itemDirtyRect(int itemIndex) const
+{
+    const auto items = pageItems();
+    if (itemIndex < 0 || itemIndex >= items.size())
+    {
+        return {};
+    }
+    return items.at(itemIndex).rect.adjusted(-2, -2, 2, 2).intersected(rect());
+}
+
+void AntPagination::updateItemStateRegion(int oldIndex, int newIndex)
+{
+    QRect dirty;
+    const QRect oldRect = itemDirtyRect(oldIndex);
+    const QRect newRect = itemDirtyRect(newIndex);
+    if (!oldRect.isNull())
+    {
+        dirty = oldRect;
+    }
+    if (!newRect.isNull())
+    {
+        dirty = dirty.isNull() ? newRect : dirty.united(newRect);
+    }
+    if (dirty.isNull())
+    {
+        return;
+    }
+    ++m_scopedItemUpdateCount;
+    syncPaginationPerfCounters();
+    update(dirty);
+}
+
+void AntPagination::syncPaginationPerfCounters() const
+{
+    auto* self = const_cast<AntPagination*>(this);
+    self->setProperty("antPaginationPageItemsCacheHitCount", m_pageItemsCacheHitCount);
+    self->setProperty("antPaginationPageItemsBuildCount", m_pageItemsBuildCount);
+    self->setProperty("antPaginationScopedItemUpdateCount", m_scopedItemUpdateCount);
 }
 
 void AntPagination::ensureQuickJumperEdit()

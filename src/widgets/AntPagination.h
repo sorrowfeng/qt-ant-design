@@ -88,8 +88,11 @@ protected:
     void leaveEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private:
+    friend class AntPaginationStyle;
+
     enum class ItemKind
     {
         Prev,
@@ -117,14 +120,15 @@ private:
     int itemSize() const;
     int itemSpacing() const;
     int fontSize() const;
-    int rangeStart() const;
-    int rangeEnd() const;
     QColor itemTextColor(const PageItem& item, bool hovered) const;
     QColor itemBackgroundColor(const PageItem& item, bool hovered) const;
-    void drawItem(QPainter& painter, const PageItem& item, bool hovered) const;
     void activateItem(const PageItem& item);
     void normalizeCurrent();
     void updatePaginationGeometry();
+    void invalidatePageItems();
+    QRect itemDirtyRect(int itemIndex) const;
+    void updateItemStateRegion(int oldIndex, int newIndex);
+    void syncPaginationPerfCounters() const;
     void ensureQuickJumperEdit();
     QRect quickJumperInputRect() const;
     void syncQuickJumperEdit();
@@ -143,4 +147,11 @@ private:
     int m_hoveredIndex = -1;
     QLineEdit* m_quickJumperEdit = nullptr;
     QIntValidator* m_quickJumperValidator = nullptr;
+    quint64 m_pageItemsRevision = 1;
+    mutable bool m_pageItemsCacheValid = false;
+    mutable quint64 m_pageItemsCacheRevision = 0;
+    mutable QVector<PageItem> m_cachedPageItems;
+    mutable int m_pageItemsCacheHitCount = 0;
+    mutable int m_pageItemsBuildCount = 0;
+    int m_scopedItemUpdateCount = 0;
 };

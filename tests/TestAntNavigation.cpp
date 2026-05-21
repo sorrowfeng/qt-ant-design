@@ -27,6 +27,7 @@ private slots:
     void dropdownCachesPopupGeometry();
     void menuCachesLayoutAndScopesRows();
     void paginationQuickJumperEditsCurrentPage();
+    void paginationCachesButtonGeometry();
     void anchorCachesLayoutAndCoalescesScroll();
     void breadcrumbCachesLayoutAndScopesHover();
     void tabsNormalizePageLayoutMargins();
@@ -416,6 +417,58 @@ void TestAntNavigation::paginationQuickJumperEditsCurrentPage()
     QTest::keyClick(jumper, Qt::Key_Return);
 
     QCOMPARE(pagination.current(), pagination.pageCount());
+}
+
+void TestAntNavigation::paginationCachesButtonGeometry()
+{
+    AntPagination pagination;
+    pagination.setTotal(200);
+    pagination.setCurrent(5);
+    pagination.resize(pagination.sizeHint());
+    pagination.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pagination));
+
+    (void)pagination.sizeHint();
+    const int cacheHitsBefore = pagination.property("antPaginationPageItemsCacheHitCount").toInt();
+    (void)pagination.sizeHint();
+    QVERIFY(pagination.property("antPaginationPageItemsCacheHitCount").toInt() > cacheHitsBefore);
+
+    const int scopedBeforeHover = pagination.property("antPaginationScopedItemUpdateCount").toInt();
+    QMouseEvent firstHover(QEvent::MouseMove,
+                           QPointF(20, pagination.height() / 2.0),
+                           QPointF(pagination.mapToGlobal(QPoint(20, pagination.height() / 2))),
+                           Qt::NoButton,
+                           Qt::NoButton,
+                           Qt::NoModifier);
+    QCoreApplication::sendEvent(&pagination, &firstHover);
+    QVERIFY(pagination.property("antPaginationScopedItemUpdateCount").toInt() > scopedBeforeHover);
+
+    const int scopedBeforeSameHover = pagination.property("antPaginationScopedItemUpdateCount").toInt();
+    QCoreApplication::sendEvent(&pagination, &firstHover);
+    QCOMPARE(pagination.property("antPaginationScopedItemUpdateCount").toInt(), scopedBeforeSameHover);
+
+    const int scopedBeforeSecondHover = pagination.property("antPaginationScopedItemUpdateCount").toInt();
+    QMouseEvent secondHover(QEvent::MouseMove,
+                            QPointF(56, pagination.height() / 2.0),
+                            QPointF(pagination.mapToGlobal(QPoint(56, pagination.height() / 2))),
+                            Qt::NoButton,
+                            Qt::NoButton,
+                            Qt::NoModifier);
+    QCoreApplication::sendEvent(&pagination, &secondHover);
+    QVERIFY(pagination.property("antPaginationScopedItemUpdateCount").toInt() > scopedBeforeSecondHover);
+
+    const int buildsBeforeCurrent = pagination.property("antPaginationPageItemsBuildCount").toInt();
+    pagination.setCurrent(6);
+    QVERIFY(pagination.property("antPaginationPageItemsBuildCount").toInt() > buildsBeforeCurrent);
+
+    const int buildsBeforeQuickJumper = pagination.property("antPaginationPageItemsBuildCount").toInt();
+    pagination.setShowQuickJumper(true);
+    pagination.resize(pagination.sizeHint());
+    QVERIFY(pagination.property("antPaginationPageItemsBuildCount").toInt() > buildsBeforeQuickJumper);
+
+    auto* jumper = pagination.findChild<QLineEdit*>(QStringLiteral("AntPaginationQuickJumper"));
+    QVERIFY(jumper);
+    QTRY_VERIFY(jumper->isVisible());
 }
 
 void TestAntNavigation::anchorCachesLayoutAndCoalescesScroll()
