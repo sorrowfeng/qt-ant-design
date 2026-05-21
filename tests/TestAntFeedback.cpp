@@ -37,6 +37,7 @@ private slots:
     void popover();
     void popoverCachesLayoutAndSkipsPlacementWork();
     void progress();
+    void progressCachesGeometryAndScopesUpdates();
     void result();
     void skeleton();
     void spin();
@@ -726,6 +727,49 @@ void TestAntFeedback::progress()
     w->setCircleSize(160);
     QCOMPARE(w->circleSize(), 160);
     QCOMPARE(circleSpy.count(), 1);
+}
+
+void TestAntFeedback::progressCachesGeometryAndScopesUpdates()
+{
+    AntProgress progress;
+    progress.resize(320, 40);
+    progress.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&progress));
+
+    progress.grab();
+    const int layoutBuilds = progress.property("antProgressLayoutBuildCount").toInt();
+    const int layoutHits = progress.property("antProgressLayoutCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+
+    progress.grab();
+    QCOMPARE(progress.property("antProgressLayoutBuildCount").toInt(), layoutBuilds);
+    QVERIFY(progress.property("antProgressLayoutCacheHitCount").toInt() > layoutHits);
+
+    const int valueUpdates = progress.property("antProgressValueRegionUpdateCount").toInt();
+    progress.setPercent(42);
+    QCOMPARE(progress.property("antProgressLastUpdateMode").toString(), QStringLiteral("value"));
+    QVERIFY(progress.property("antProgressValueRegionUpdateCount").toInt() > valueUpdates);
+
+    progress.setStatus(Ant::ProgressStatus::Active);
+    const int activeUpdates = progress.property("antProgressActiveRegionUpdateCount").toInt();
+    QTRY_VERIFY_WITH_TIMEOUT(progress.property("antProgressActiveRegionUpdateCount").toInt() > activeUpdates, 220);
+    QCOMPARE(progress.property("antProgressLastUpdateMode").toString(), QStringLiteral("active"));
+
+    progress.hide();
+    const int hiddenActiveUpdates = progress.property("antProgressActiveRegionUpdateCount").toInt();
+    QTest::qWait(120);
+    QCOMPARE(progress.property("antProgressActiveRegionUpdateCount").toInt(), hiddenActiveUpdates);
+
+    progress.setStatus(Ant::ProgressStatus::Normal);
+    progress.setProgressType(Ant::ProgressType::Circle);
+    progress.resize(progress.sizeHint());
+    progress.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&progress));
+    progress.grab();
+    const int circleValueUpdates = progress.property("antProgressValueRegionUpdateCount").toInt();
+    progress.setPercent(68);
+    QCOMPARE(progress.property("antProgressLastUpdateMode").toString(), QStringLiteral("value"));
+    QVERIFY(progress.property("antProgressValueRegionUpdateCount").toInt() > circleValueUpdates);
 }
 
 void TestAntFeedback::result()

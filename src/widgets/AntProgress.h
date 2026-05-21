@@ -3,13 +3,16 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QColor>
+#include <QFont>
+#include <QRectF>
+#include <QSize>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
+class AntProgressStyle;
 class QEvent;
 class QPaintEvent;
-class QPainter;
 class QShowEvent;
 class QTimer;
 
@@ -78,16 +81,60 @@ protected:
     void changeEvent(QEvent* event) override;
 
 private:
+    friend class AntProgressStyle;
+
+    struct ProgressLayoutCache
+    {
+        bool valid = false;
+        QSize widgetSize;
+        QFont font;
+        Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
+        int tokenFontSize = 0;
+        int tokenFontSizeSM = 0;
+        bool enabled = true;
+        int percent = 0;
+        int strokeWidth = 8;
+        int circleSize = 120;
+        Ant::ProgressType progressType = Ant::ProgressType::Line;
+        Ant::ProgressStatus status = Ant::ProgressStatus::Normal;
+        bool showInfo = true;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QColor progressColor;
+        QColor railColor;
+        QColor infoColor;
+        QString infoText;
+        bool hasStatusIcon = false;
+        QRectF lineBarRect;
+        QRectF lineFilledRect;
+        QRectF lineInfoRect;
+        QRectF lineStatusIconRect;
+        QRectF circleArcRect;
+        QRectF circleStatusIconRect;
+        qreal circleVisualSize = 0.0;
+        qreal circleLineWidth = 0.0;
+        int circleStartAngle = 0;
+        int circleFullSpan = 0;
+        int circleProgressSpan = 0;
+        int circleInfoFontSize = 12;
+    };
+
     QColor progressColor() const;
     QColor railColor() const;
     QString infoText() const;
+    const ProgressLayoutCache& progressLayout() const;
+    void invalidateProgressLayout() const;
+    void requestProgressUpdate(const QRect& region, const QString& mode);
+    QRect progressDirtyRectForPercent(int oldPercent, int newPercent) const;
+    QRect lineFilledRectForPercent(int percent) const;
+    QRect progressVisualRect() const;
+    QRect activeDirtyRect() const;
+    void syncProgressPerfCounters() const;
     void updateAnimationState();
     int percentForValue(int value) const;
     int valueForPercent(int percent) const;
     void syncPercentFromValue();
     void setValueAndPercent(int value, int percent);
-    void drawLineProgress(QPainter& painter) const;
-    void drawCircleProgress(QPainter& painter) const;
 
     int m_percent = 0;
     int m_minimum = 0;
@@ -100,4 +147,11 @@ private:
     int m_circleSize = 120;
     int m_activeOffset = 0;
     QTimer* m_activeTimer = nullptr;
+    mutable ProgressLayoutCache m_layoutCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    int m_valueRegionUpdateCount = 0;
+    int m_activeRegionUpdateCount = 0;
+    int m_visualRegionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };

@@ -1,7 +1,6 @@
 #include "AntProgress.h"
 
 #include <QHideEvent>
-#include <QPainter>
 #include <QSizePolicy>
 #include <QShowEvent>
 #include <QTimer>
@@ -9,7 +8,6 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
-#include "styles/AntIconPainter.h"
 #include "styles/AntProgressStyle.h"
 #include "styles/AntPalette.h"
 
@@ -35,20 +33,6 @@ QColor progressInfoColor(Ant::ProgressStatus status, int percent)
     }
     return token.colorTextSecondary;
 }
-
-void drawProgressStatusIcon(QPainter& painter, const QRectF& rect, Ant::ProgressStatus status, int percent)
-{
-    const QColor color = progressInfoColor(status, percent);
-    const Ant::IconType iconType = status == Ant::ProgressStatus::Exception
-        ? Ant::IconType::CloseCircle
-        : Ant::IconType::CheckCircle;
-    AntIconPainter::drawIcon(painter,
-                             iconType,
-                             rect,
-                             color,
-                             Ant::IconTheme::Filled,
-                             antTheme->tokens().colorTextLightSolid);
-}
 } // namespace
 
 AntProgress::AntProgress(QWidget* parent)
@@ -59,10 +43,16 @@ AntProgress::AntProgress(QWidget* parent)
     m_activeTimer = new QTimer(this);
     connect(m_activeTimer, &QTimer::timeout, this, [this]() {
         m_activeOffset = (m_activeOffset + 6) % 120;
-        update();
+        requestProgressUpdate(activeDirtyRect(), QStringLiteral("active"));
+    });
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateProgressLayout();
+        requestProgressUpdate(progressVisualRect(), QStringLiteral("theme"));
     });
 
     updateAnimationState();
+    syncProgressPerfCounters();
 }
 
 int AntProgress::percent() const { return m_percent; }
@@ -105,8 +95,9 @@ void AntProgress::setRange(int minimum, int maximum)
 
     if (rangeWasChanged || oldValue != m_value || oldPercent != m_percent)
     {
+        invalidateProgressLayout();
         updateAnimationState();
-        update();
+        requestProgressUpdate(progressDirtyRectForPercent(oldPercent, m_percent), QStringLiteral("value"));
     }
     if (rangeWasChanged)
     {
@@ -146,9 +137,10 @@ void AntProgress::setProgressType(Ant::ProgressType type)
     m_progressType = type;
     setSizePolicy(m_progressType == Ant::ProgressType::Line ? QSizePolicy::Expanding : QSizePolicy::Fixed,
                   QSizePolicy::Fixed);
+    invalidateProgressLayout();
     updateAnimationState();
     updateGeometry();
-    update();
+    requestProgressUpdate(rect(), QStringLiteral("type"));
     Q_EMIT progressTypeChanged(m_progressType);
 }
 
@@ -161,8 +153,9 @@ void AntProgress::setStatus(Ant::ProgressStatus status)
         return;
     }
     m_status = status;
+    invalidateProgressLayout();
     updateAnimationState();
-    update();
+    requestProgressUpdate(progressVisualRect(), QStringLiteral("status"));
     Q_EMIT statusChanged(m_status);
 }
 
@@ -175,8 +168,9 @@ void AntProgress::setShowInfo(bool showInfo)
         return;
     }
     m_showInfo = showInfo;
+    invalidateProgressLayout();
     updateGeometry();
-    update();
+    requestProgressUpdate(rect(), QStringLiteral("showInfo"));
     Q_EMIT showInfoChanged(m_showInfo);
 }
 
@@ -197,8 +191,9 @@ void AntProgress::setStrokeWidth(int width)
         return;
     }
     m_strokeWidth = width;
+    invalidateProgressLayout();
     updateGeometry();
-    update();
+    requestProgressUpdate(rect(), QStringLiteral("strokeWidth"));
     Q_EMIT strokeWidthChanged(m_strokeWidth);
 }
 
@@ -212,27 +207,20 @@ void AntProgress::setCircleSize(int size)
         return;
     }
     m_circleSize = size;
+    invalidateProgressLayout();
     updateGeometry();
-    update();
+    requestProgressUpdate(rect(), QStringLiteral("circleSize"));
     Q_EMIT circleSizeChanged(m_circleSize);
 }
 
 QSize AntProgress::sizeHint() const
 {
-    if (m_progressType == Ant::ProgressType::Line)
-    {
-        return QSize(260, std::max(24, m_strokeWidth + 12));
-    }
-    return QSize(m_circleSize, m_circleSize);
+    return progressLayout().sizeHint;
 }
 
 QSize AntProgress::minimumSizeHint() const
 {
-    if (m_progressType == Ant::ProgressType::Line)
-    {
-        return QSize(96, std::max(20, m_strokeWidth + 8));
-    }
-    return QSize(48, 48);
+    return progressLayout().minimumSizeHint;
 }
 
 void AntProgress::paintEvent(QPaintEvent* event)
@@ -256,7 +244,9 @@ void AntProgress::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange)
     {
-        update();
+        invalidateProgressLayout();
+        updateAnimationState();
+        requestProgressUpdate(progressVisualRect(), QStringLiteral("enabled"));
     }
     QWidget::changeEvent(event);
 }
@@ -298,9 +288,210 @@ QString AntProgress::infoText() const
     return QStringLiteral("%1%").arg(m_percent);
 }
 
+const AntProgress::ProgressLayoutCache& AntProgress::progressLayout() const
+{
+    const auto& token = antTheme->tokens();
+    if (m_layoutCache.valid &&
+        m_layoutCache.widgetSize == size() &&
+        m_layoutCache.font == font() &&
+        m_layoutCache.themeMode == antTheme->themeMode() &&
+        m_layoutCache.tokenFontSize == token.fontSize &&
+        m_layoutCache.tokenFontSizeSM == token.fontSizeSM &&
+        m_layoutCache.enabled == isEnabled() &&
+        m_layoutCache.percent == m_percent &&
+        m_layoutCache.strokeWidth == m_strokeWidth &&
+        m_layoutCache.circleSize == m_circleSize &&
+        m_layoutCache.progressType == m_progressType &&
+        m_layoutCache.status == m_status &&
+        m_layoutCache.showInfo == m_showInfo)
+    {
+        ++m_layoutCacheHitCount;
+        syncProgressPerfCounters();
+        return m_layoutCache;
+    }
+
+    ++m_layoutBuildCount;
+    ProgressLayoutCache cache;
+    cache.valid = true;
+    cache.widgetSize = size();
+    cache.font = font();
+    cache.themeMode = antTheme->themeMode();
+    cache.tokenFontSize = token.fontSize;
+    cache.tokenFontSizeSM = token.fontSizeSM;
+    cache.enabled = isEnabled();
+    cache.percent = m_percent;
+    cache.strokeWidth = m_strokeWidth;
+    cache.circleSize = m_circleSize;
+    cache.progressType = m_progressType;
+    cache.status = m_status;
+    cache.showInfo = m_showInfo;
+    cache.progressColor = progressColor();
+    cache.railColor = railColor();
+    cache.infoColor = progressInfoColor(m_status, m_percent);
+    cache.infoText = infoText();
+    cache.hasStatusIcon = progressHasStatusIcon(m_status, m_percent);
+
+    if (m_progressType == Ant::ProgressType::Line)
+    {
+        cache.sizeHint = QSize(260, std::max(24, m_strokeWidth + 12));
+        cache.minimumSizeHint = QSize(96, std::max(20, m_strokeWidth + 8));
+
+        const int infoWidth = m_showInfo ? 48 : 0;
+        QRectF bar(0, (height() - m_strokeWidth) / 2.0, width() - infoWidth - 8, m_strokeWidth);
+        if (!m_showInfo)
+        {
+            bar.setWidth(width());
+        }
+        bar = bar.adjusted(1, 0, -1, 0);
+        if (bar.width() < 0)
+        {
+            bar.setWidth(0);
+        }
+        cache.lineBarRect = bar;
+        cache.lineFilledRect = bar;
+        cache.lineFilledRect.setWidth(bar.width() * m_percent / 100.0);
+
+        if (m_showInfo)
+        {
+            cache.lineInfoRect = QRectF(width() - infoWidth, 0, infoWidth, height());
+            const qreal mark = 12.0;
+            cache.lineStatusIconRect = QRectF(cache.lineInfoRect.center().x() - mark / 2.0,
+                                              cache.lineInfoRect.center().y() - mark / 2.0,
+                                              mark,
+                                              mark);
+        }
+    }
+    else
+    {
+        cache.sizeHint = QSize(m_circleSize, m_circleSize);
+        cache.minimumSizeHint = QSize(48, 48);
+
+        cache.circleVisualSize = std::min(width(), height());
+        cache.circleLineWidth = std::max<qreal>(2.0, m_strokeWidth);
+        cache.circleArcRect = QRectF((width() - cache.circleVisualSize) / 2.0 + cache.circleLineWidth,
+                                     (height() - cache.circleVisualSize) / 2.0 + cache.circleLineWidth,
+                                     cache.circleVisualSize - cache.circleLineWidth * 2,
+                                     cache.circleVisualSize - cache.circleLineWidth * 2);
+        cache.circleStartAngle = m_progressType == Ant::ProgressType::Dashboard ? 225 * 16 : 90 * 16;
+        cache.circleFullSpan = m_progressType == Ant::ProgressType::Dashboard ? -270 * 16 : -360 * 16;
+        cache.circleProgressSpan = cache.circleFullSpan * m_percent / 100;
+        cache.circleInfoFontSize = std::max(12, static_cast<int>(cache.circleVisualSize / 7));
+        const qreal mark = std::max<qreal>(18.0, cache.circleVisualSize / 3.6);
+        const QPointF center = rect().center();
+        cache.circleStatusIconRect = QRectF(center.x() - mark / 2.0,
+                                           center.y() - mark / 2.0,
+                                           mark,
+                                           mark);
+    }
+
+    m_layoutCache = cache;
+    syncProgressPerfCounters();
+    return m_layoutCache;
+}
+
+void AntProgress::invalidateProgressLayout() const
+{
+    m_layoutCache.valid = false;
+}
+
+void AntProgress::requestProgressUpdate(const QRect& region, const QString& mode)
+{
+    m_lastUpdateMode = mode;
+    if (mode == QStringLiteral("active"))
+    {
+        ++m_activeRegionUpdateCount;
+    }
+    else if (mode == QStringLiteral("value"))
+    {
+        ++m_valueRegionUpdateCount;
+    }
+    else
+    {
+        ++m_visualRegionUpdateCount;
+    }
+    syncProgressPerfCounters();
+
+    if (region.isValid() && !region.isEmpty())
+    {
+        update(region);
+        return;
+    }
+    update();
+}
+
+QRect AntProgress::lineFilledRectForPercent(int percent) const
+{
+    const auto& layout = progressLayout();
+    QRectF filled = layout.lineBarRect;
+    filled.setWidth(layout.lineBarRect.width() * std::clamp(percent, 0, 100) / 100.0);
+    return filled.toAlignedRect().adjusted(-2, -2, 2, 2).intersected(rect());
+}
+
+QRect AntProgress::progressDirtyRectForPercent(int oldPercent, int newPercent) const
+{
+    const auto& layout = progressLayout();
+    if (layout.progressType != Ant::ProgressType::Line)
+    {
+        return rect();
+    }
+
+    QRect dirty = lineFilledRectForPercent(oldPercent).united(lineFilledRectForPercent(newPercent));
+    if (layout.showInfo)
+    {
+        dirty = dirty.united(layout.lineInfoRect.toAlignedRect().adjusted(-2, -2, 2, 2));
+    }
+    if (dirty.isEmpty())
+    {
+        dirty = layout.lineBarRect.toAlignedRect().adjusted(-2, -2, 2, 2);
+    }
+    return dirty.intersected(rect());
+}
+
+QRect AntProgress::progressVisualRect() const
+{
+    const auto& layout = progressLayout();
+    if (layout.progressType != Ant::ProgressType::Line)
+    {
+        return rect();
+    }
+
+    QRect visual = layout.lineBarRect.toAlignedRect().adjusted(-2, -2, 2, 2);
+    if (layout.showInfo)
+    {
+        visual = visual.united(layout.lineInfoRect.toAlignedRect().adjusted(-2, -2, 2, 2));
+    }
+    return visual.intersected(rect());
+}
+
+QRect AntProgress::activeDirtyRect() const
+{
+    const auto& layout = progressLayout();
+    if (layout.progressType != Ant::ProgressType::Line)
+    {
+        return rect();
+    }
+    return layout.lineFilledRect.toAlignedRect().adjusted(-2, -2, 2, 2).intersected(rect());
+}
+
+void AntProgress::syncProgressPerfCounters() const
+{
+    auto* self = const_cast<AntProgress*>(this);
+    self->setProperty("antProgressLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antProgressLayoutCacheHitCount", m_layoutCacheHitCount);
+    self->setProperty("antProgressValueRegionUpdateCount", m_valueRegionUpdateCount);
+    self->setProperty("antProgressActiveRegionUpdateCount", m_activeRegionUpdateCount);
+    self->setProperty("antProgressVisualRegionUpdateCount", m_visualRegionUpdateCount);
+    self->setProperty("antProgressLastUpdateMode", m_lastUpdateMode);
+}
+
 void AntProgress::updateAnimationState()
 {
-    const bool shouldAnimate = isVisible() && isEnabled() && m_progressType == Ant::ProgressType::Line && m_status == Ant::ProgressStatus::Active && m_percent < 100;
+    const bool shouldAnimate = isVisible() &&
+        isEnabled() &&
+        m_progressType == Ant::ProgressType::Line &&
+        m_status == Ant::ProgressStatus::Active &&
+        m_percent > 0 &&
+        m_percent < 100;
     if (shouldAnimate && !m_activeTimer->isActive())
     {
         m_activeTimer->start(40);
@@ -346,10 +537,15 @@ void AntProgress::setValueAndPercent(int value, int percent)
     {
         return;
     }
+    const int oldPercent = m_percent;
     m_value = value;
     m_percent = percent;
+    invalidateProgressLayout();
     updateAnimationState();
-    update();
+    if (percentWasChanged)
+    {
+        requestProgressUpdate(progressDirtyRectForPercent(oldPercent, m_percent), QStringLiteral("value"));
+    }
     if (valueWasChanged)
     {
         Q_EMIT valueChanged(m_value);
@@ -357,100 +553,5 @@ void AntProgress::setValueAndPercent(int value, int percent)
     if (percentWasChanged)
     {
         Q_EMIT percentChanged(m_percent);
-    }
-}
-
-void AntProgress::drawLineProgress(QPainter& painter) const
-{
-    const auto& token = antTheme->tokens();
-    const int infoWidth = m_showInfo ? 48 : 0;
-    QRectF bar(0, (height() - m_strokeWidth) / 2.0, width() - infoWidth - 8, m_strokeWidth);
-    if (!m_showInfo)
-    {
-        bar.setWidth(width());
-    }
-    bar = bar.adjusted(1, 0, -1, 0);
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(railColor());
-    painter.drawRoundedRect(bar, m_strokeWidth / 2.0, m_strokeWidth / 2.0);
-
-    QRectF filled = bar;
-    filled.setWidth(bar.width() * m_percent / 100.0);
-    painter.setBrush(progressColor());
-    painter.drawRoundedRect(filled, m_strokeWidth / 2.0, m_strokeWidth / 2.0);
-
-    if (m_status == Ant::ProgressStatus::Active && m_percent > 0 && m_percent < 100)
-    {
-        QLinearGradient shine(filled.left() + m_activeOffset - 90, 0, filled.left() + m_activeOffset, 0);
-        shine.setColorAt(0.0, QColor(255, 255, 255, 0));
-        shine.setColorAt(0.5, QColor(255, 255, 255, 110));
-        shine.setColorAt(1.0, QColor(255, 255, 255, 0));
-        painter.setBrush(shine);
-        painter.drawRoundedRect(filled, m_strokeWidth / 2.0, m_strokeWidth / 2.0);
-    }
-
-    if (m_showInfo)
-    {
-        const QRectF infoRect(width() - infoWidth, 0, infoWidth, height());
-        if (progressHasStatusIcon(m_status, m_percent))
-        {
-            const qreal mark = 12.0;
-            drawProgressStatusIcon(painter,
-                                   QRectF(infoRect.center().x() - mark / 2.0,
-                                          infoRect.center().y() - mark / 2.0,
-                                          mark,
-                                          mark),
-                                   m_status,
-                                   m_percent);
-        }
-        else
-        {
-            QFont f = painter.font();
-            f.setPixelSize(token.fontSizeSM);
-            f.setWeight(QFont::Normal);
-            painter.setFont(f);
-            painter.setPen(progressInfoColor(m_status, m_percent));
-            painter.drawText(infoRect, Qt::AlignCenter, infoText());
-        }
-    }
-}
-
-void AntProgress::drawCircleProgress(QPainter& painter) const
-{
-    const auto& token = antTheme->tokens();
-    const qreal size = std::min(width(), height());
-    const qreal lineWidth = std::max<qreal>(2.0, m_strokeWidth);
-    const QRectF arc((width() - size) / 2.0 + lineWidth,
-                     (height() - size) / 2.0 + lineWidth,
-                     size - lineWidth * 2,
-                     size - lineWidth * 2);
-
-    const int startAngle = m_progressType == Ant::ProgressType::Dashboard ? 225 * 16 : 90 * 16;
-    const int fullSpan = m_progressType == Ant::ProgressType::Dashboard ? -270 * 16 : -360 * 16;
-    const int progressSpan = fullSpan * m_percent / 100;
-
-    painter.setPen(QPen(railColor(), lineWidth, Qt::SolidLine, Qt::RoundCap));
-    painter.drawArc(arc, startAngle, fullSpan);
-    painter.setPen(QPen(progressColor(), lineWidth, Qt::SolidLine, Qt::RoundCap));
-    painter.drawArc(arc, startAngle, progressSpan);
-
-    if (m_showInfo)
-    {
-        if (progressHasStatusIcon(m_status, m_percent))
-        {
-            const qreal mark = std::max<qreal>(18.0, size / 3.6);
-            const QPointF c = rect().center();
-            drawProgressStatusIcon(painter, QRectF(c.x() - mark / 2.0, c.y() - mark / 2.0, mark, mark), m_status, m_percent);
-        }
-        else
-        {
-            QFont f = painter.font();
-            f.setPixelSize(std::max(12, static_cast<int>(size / 7)));
-            f.setWeight(QFont::DemiBold);
-            painter.setFont(f);
-            painter.setPen(token.colorText);
-            painter.drawText(rect(), Qt::AlignCenter, infoText());
-        }
     }
 }
