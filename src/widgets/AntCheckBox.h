@@ -2,12 +2,15 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QFont>
+#include <QPainterPath>
 #include <QWidget>
 
 class QEvent;
 class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
+class AntCheckBoxStyle;
 
 class QT_ANT_DESIGN_EXPORT AntCheckBox : public QWidget
 {
@@ -61,6 +64,22 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 private:
+    friend class AntCheckBoxStyle;
+
+    struct LayoutData
+    {
+        QRectF indicatorRect;
+        QRectF textRect;
+        QPainterPath checkPath;
+        QRectF indeterminateRect;
+        QSize sizeHint;
+    };
+
+    const LayoutData& layoutData() const;
+    QRect indicatorDirtyRect() const;
+    void invalidateLayoutCache();
+    void updateIndicatorRegion();
+    void syncCheckBoxPerfCounters() const;
     QRectF indicatorRect() const;
     QColor indicatorBorderColor() const;
     QColor indicatorBackgroundColor() const;
@@ -71,4 +90,13 @@ private:
     bool m_hovered = false;
     bool m_pressed = false;
     QString m_text;
+    quint64 m_layoutRevision = 1;
+    mutable bool m_layoutCacheValid = false;
+    mutable quint64 m_layoutCacheRevision = 0;
+    mutable QSize m_layoutCacheWidgetSize;
+    mutable QFont m_layoutCacheFont;
+    mutable LayoutData m_cachedLayout;
+    mutable int m_layoutCacheHitCount = 0;
+    mutable int m_layoutBuildCount = 0;
+    int m_indicatorScopedUpdateCount = 0;
 };

@@ -1,8 +1,11 @@
 #include "AntCheckBox.h"
 
+#include <algorithm>
 #include <QEvent>
+#include <QFontMetrics>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QPainterPath>
 #include <QSizePolicy>
 
 #include "../styles/AntCheckBoxStyle.h"
@@ -28,12 +31,15 @@ AntCheckBox::AntCheckBox(QWidget* parent)
     setStyle(checkboxStyle);
 
     connect(antTheme, &AntTheme::themeModeChanged, this, [this]() {
+        invalidateLayoutCache();
         update();
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateLayoutCache();
         updateGeometry();
         update();
     });
+    syncCheckBoxPerfCounters();
 }
 
 AntCheckBox::AntCheckBox(const QString& text, QWidget* parent)
@@ -84,7 +90,7 @@ void AntCheckBox::setCheckState(Qt::CheckState state)
         return;
     }
 
-    update();
+    updateIndicatorRegion();
     if (oldChecked != m_checked)
     {
         Q_EMIT checkedChanged(m_checked);
@@ -170,6 +176,7 @@ void AntCheckBox::setText(const QString& text)
     }
 
     m_text = text;
+    invalidateLayoutCache();
     updateGeometry();
     update();
     Q_EMIT textChanged(m_text);
@@ -177,13 +184,7 @@ void AntCheckBox::setText(const QString& text)
 
 QSize AntCheckBox::sizeHint() const
 {
-    constexpr int indicatorSize = 16;
-    constexpr int textSpacing = 8;
-    QFont f = font();
-    f.setPixelSize(antTheme->tokens().fontSize);
-    QFontMetrics fm(f);
-    const int textWidth = m_text.isEmpty() ? 0 : textSpacing + fm.horizontalAdvance(m_text);
-    return QSize(indicatorSize + textWidth, std::max(indicatorSize, fm.height()));
+    return layoutData().sizeHint;
 }
 
 QSize AntCheckBox::minimumSizeHint() const
@@ -193,16 +194,23 @@ QSize AntCheckBox::minimumSizeHint() const
 
 void AntCheckBox::enterEvent(QEnterEvent* event)
 {
-    m_hovered = true;
-    update();
+    if (!m_hovered)
+    {
+        m_hovered = true;
+        updateIndicatorRegion();
+    }
     QWidget::enterEvent(event);
 }
 
 void AntCheckBox::leaveEvent(QEvent* event)
 {
+    const bool changed = m_hovered || m_pressed;
     m_hovered = false;
     m_pressed = false;
-    update();
+    if (changed)
+    {
+        updateIndicatorRegion();
+    }
     QWidget::leaveEvent(event);
 }
 
@@ -211,7 +219,7 @@ void AntCheckBox::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && isEnabled())
     {
         m_pressed = true;
-        update();
+        updateIndicatorRegion();
         event->accept();
         return;
     }
@@ -234,7 +242,7 @@ void AntCheckBox::mouseReleaseEvent(QMouseEvent* event)
                 AntWave::triggerRect(this, box, antTheme->tokens().colorPrimary, 2, true);
             }
         }
-        update();
+        updateIndicatorRegion();
         event->accept();
         return;
     }
@@ -246,6 +254,12 @@ void AntCheckBox::changeEvent(QEvent* event)
     if (event->type() == QEvent::EnabledChange)
     {
         setCursor(isEnabled() ? Qt::PointingHandCursor : Qt::ArrowCursor);
+        update();
+    }
+    else if (event->type() == QEvent::FontChange || event->type() == QEvent::ApplicationFontChange || event->type() == QEvent::StyleChange)
+    {
+        invalidateLayoutCache();
+        updateGeometry();
         update();
     }
     QWidget::changeEvent(event);
@@ -265,7 +279,7 @@ void AntCheckBox::keyPressEvent(QKeyEvent* event)
 
 QRectF AntCheckBox::indicatorRect() const
 {
-    return QRectF(0.5, (height() - IndicatorSize) / 2.0 + 0.5, IndicatorSize - 1, IndicatorSize - 1);
+    return layoutData().indicatorRect;
 }
 
 QColor AntCheckBox::indicatorBorderColor() const
@@ -304,4 +318,87 @@ bool AntCheckBox::isHoveredState() const
 bool AntCheckBox::isPressedState() const
 {
     return m_pressed;
+}
+
+const AntCheckBox::LayoutData& AntCheckBox::layoutData() const
+{
+    QFont f = font();
+    f.setPixelSize(antTheme->tokens().fontSize);
+    const QSize widgetSize = size();
+    if (m_layoutCacheValid &&
+        m_layoutCacheRevision == m_layoutRevision &&
+        m_layoutCacheWidgetSize == widgetSize &&
+        m_layoutCacheFont == f)
+    {
+        ++m_layoutCacheHitCount;
+        syncCheckBoxPerfCounters();
+        return m_cachedLayout;
+    }
+
+    constexpr int textSpacing = 8;
+    QFontMetrics fm(f);
+    const int textWidth = m_text.isEmpty() ? 0 : textSpacing + fm.horizontalAdvance(m_text);
+    const int hintHeight = std::max(IndicatorSize, fm.height());
+
+    LayoutData data;
+    data.indicatorRect = QRectF(0.5, (height() - IndicatorSize) / 2.0 + 0.5, IndicatorSize - 1, IndicatorSize - 1);
+    data.textRect = QRectF(data.indicatorRect.right() + textSpacing,
+                           0,
+                           std::max<qreal>(0, width() - data.indicatorRect.right() - textSpacing),
+                           height());
+    data.sizeHint = QSize(IndicatorSize + textWidth, hintHeight);
+
+    const QRectF mark = data.indicatorRect.adjusted(3.5, 3.5, -3.0, -3.0);
+    data.checkPath.moveTo(mark.left(), mark.center().y());
+    data.checkPath.lineTo(mark.left() + mark.width() * 0.36, mark.bottom() - 1.0);
+    data.checkPath.lineTo(mark.right(), mark.top() + 1.0);
+    data.indeterminateRect = QRectF(data.indicatorRect.left() + 4,
+                                    data.indicatorRect.center().y() - 1.5,
+                                    data.indicatorRect.width() - 8,
+                                    3);
+
+    m_cachedLayout = data;
+    m_layoutCacheRevision = m_layoutRevision;
+    m_layoutCacheWidgetSize = widgetSize;
+    m_layoutCacheFont = f;
+    m_layoutCacheValid = true;
+    ++m_layoutBuildCount;
+    syncCheckBoxPerfCounters();
+    return m_cachedLayout;
+}
+
+QRect AntCheckBox::indicatorDirtyRect() const
+{
+    return layoutData().indicatorRect.toAlignedRect().adjusted(-4, -4, 4, 4).intersected(rect());
+}
+
+void AntCheckBox::invalidateLayoutCache()
+{
+    ++m_layoutRevision;
+    if (m_layoutRevision == 0)
+    {
+        m_layoutRevision = 1;
+    }
+    m_layoutCacheValid = false;
+}
+
+void AntCheckBox::updateIndicatorRegion()
+{
+    const QRect dirty = indicatorDirtyRect();
+    if (dirty.isNull())
+    {
+        update();
+        return;
+    }
+    ++m_indicatorScopedUpdateCount;
+    syncCheckBoxPerfCounters();
+    update(dirty);
+}
+
+void AntCheckBox::syncCheckBoxPerfCounters() const
+{
+    auto* self = const_cast<AntCheckBox*>(this);
+    self->setProperty("antCheckBoxLayoutCacheHitCount", m_layoutCacheHitCount);
+    self->setProperty("antCheckBoxLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antCheckBoxIndicatorScopedUpdateCount", m_indicatorScopedUpdateCount);
 }

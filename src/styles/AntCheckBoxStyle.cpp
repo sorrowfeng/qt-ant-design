@@ -4,7 +4,6 @@
 #include <QPainter>
 #include <QStyleOptionButton>
 
-#include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntCheckBox.h"
 
@@ -17,7 +16,6 @@ constexpr int TextSpacing = 8;
 AntCheckBoxStyle::AntCheckBoxStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntCheckBox>();
 }
 
 void AntCheckBoxStyle::polish(QWidget* widget)
@@ -52,27 +50,11 @@ void AntCheckBoxStyle::drawControl(ControlElement element, const QStyleOption* o
 
         const auto& token = antTheme->tokens();
         const bool enabled = bopt->state.testFlag(QStyle::State_Enabled);
-        const bool hovered = bopt->state.testFlag(QStyle::State_MouseOver);
-        const bool pressed = bopt->state.testFlag(QStyle::State_Sunken);
-        const QRectF box(0.5, (bopt->rect.height() - IndicatorSize) / 2.0 + 0.5, IndicatorSize - 1, IndicatorSize - 1);
+        const auto& layout = checkbox->layoutData();
+        const QRectF box = layout.indicatorRect;
 
-        QColor border;
-        QColor background;
-        if (!enabled)
-        {
-            border = token.colorBorder;
-            background = token.colorBgContainerDisabled;
-        }
-        else if (checkbox->isChecked() && !checkbox->isIndeterminate())
-        {
-            border = hovered ? token.colorPrimaryHover : token.colorPrimary;
-            background = (hovered || pressed) ? token.colorPrimaryHover : token.colorPrimary;
-        }
-        else
-        {
-            border = hovered ? token.colorPrimary : token.colorBorder;
-            background = token.colorBgContainer;
-        }
+        const QColor border = checkbox->indicatorBorderColor();
+        const QColor background = checkbox->indicatorBackgroundColor();
 
         painter->save();
         painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
@@ -81,15 +63,17 @@ void AntCheckBoxStyle::drawControl(ControlElement element, const QStyleOption* o
 
         if (checkbox->isChecked() && !checkbox->isIndeterminate())
         {
-            AntIconPainter::drawIcon(*painter,
-                                     Ant::IconType::Check,
-                                     box.adjusted(3, 3, -3, -3),
-                                     enabled ? token.colorTextLightSolid : token.colorTextDisabled);
+            painter->setPen(QPen(enabled ? token.colorTextLightSolid : token.colorTextDisabled,
+                                  2.0,
+                                  Qt::SolidLine,
+                                  Qt::RoundCap,
+                                  Qt::RoundJoin));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawPath(layout.checkPath);
         }
         else if (checkbox->isIndeterminate())
         {
-            const QRectF mark(box.left() + 4, box.center().y() - 1.5, box.width() - 8, 3);
-            AntStyleBase::drawCrispRoundedRect(painter, mark.toRect(),
+            AntStyleBase::drawCrispRoundedRect(painter, layout.indeterminateRect.toRect(),
                 Qt::NoPen, enabled ? token.colorPrimary : token.colorTextDisabled, 1.5, 1.5);
         }
 
@@ -107,8 +91,7 @@ void AntCheckBoxStyle::drawControl(ControlElement element, const QStyleOption* o
             f.setPixelSize(token.fontSize);
             painter->setFont(f);
             painter->setPen(enabled ? token.colorText : token.colorTextDisabled);
-            const QRectF textRect(box.right() + TextSpacing, 0, bopt->rect.width() - box.right() - TextSpacing, bopt->rect.height());
-            painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, checkbox->text());
+            painter->drawText(layout.textRect, Qt::AlignLeft | Qt::AlignVCenter, checkbox->text());
         }
         painter->restore();
         return;
