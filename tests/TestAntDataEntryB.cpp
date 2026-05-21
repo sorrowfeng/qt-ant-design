@@ -23,6 +23,7 @@ private slots:
     void cascaderPopupClosesOnOutsideClick();
     void cascaderPopupCachesColumnsAndScopesHover();
     void datePickerPopupCachesCellsAndScopesHover();
+    void timePickerPopupCachesRowsAndScopesHover();
 };
 
 namespace
@@ -60,6 +61,17 @@ QPoint datePickerPopupCellCenter(int column, int row)
     constexpr qreal cellHeight = 34.0;
     return QPoint(qRound(shadowMargin + gridLeftInset + (column + 0.5) * cellWidth),
                   qRound(topMargin + gridTopInset + (row + 0.5) * cellHeight));
+}
+
+QPoint timePickerPopupCellCenter(int column, int row)
+{
+    constexpr int shadowMargin = 32;
+    constexpr int topMargin = 12;
+    constexpr int panelWidth = 168;
+    constexpr qreal columnWidth = panelWidth / 3.0;
+    constexpr qreal rowHeight = 28.0;
+    return QPoint(qRound(shadowMargin + (column + 0.5) * columnWidth),
+                  qRound(topMargin + 8 + row * rowHeight + 12));
 }
 
 void sendMouseMove(QWidget* target, const QPoint& point)
@@ -519,6 +531,55 @@ void TestAntDataEntryB::datePickerPopupCachesCellsAndScopesHover()
     QTest::keyClick(&picker, Qt::Key_Right);
     sendMouseMove(popup, datePickerPopupCellCenter(0, 0));
     QVERIFY(picker.property("antDatePickerPopupDayCacheBuildCount").toInt() > buildsBeforeMonthChange);
+}
+
+void TestAntDataEntryB::timePickerPopupCachesRowsAndScopesHover()
+{
+    AntTimePicker picker;
+    picker.setSelectedTime(QTime(10, 20, 30));
+    picker.resize(picker.sizeHint());
+    picker.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&picker));
+
+    picker.setOpen(true);
+    QTRY_VERIFY_WITH_TIMEOUT(picker.isOpen(), 300);
+    auto* popup = picker.findChild<QFrame*>(QStringLiteral("AntTimePickerPopup"));
+    QVERIFY(popup);
+    QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
+    QVERIFY(picker.property("antTimePickerPopupGeometryApplyCount").toInt() > 0);
+
+    const QPoint firstRow = timePickerPopupCellCenter(0, 1);
+    const int scopedRowsBeforeHover = picker.property("antTimePickerPopupScopedRowUpdateCount").toInt();
+    sendMouseMove(popup, firstRow);
+    QVERIFY(picker.property("antTimePickerPopupLayoutBuildCount").toInt() > 0);
+    QVERIFY(picker.property("antTimePickerPopupScopedRowUpdateCount").toInt() > scopedRowsBeforeHover);
+
+    const int scopedRowsBeforeSameHover = picker.property("antTimePickerPopupScopedRowUpdateCount").toInt();
+    const int layoutHitsBeforeSameHover = picker.property("antTimePickerPopupLayoutCacheHitCount").toInt();
+    sendMouseMove(popup, firstRow);
+    QCOMPARE(picker.property("antTimePickerPopupScopedRowUpdateCount").toInt(), scopedRowsBeforeSameHover);
+    QVERIFY(picker.property("antTimePickerPopupLayoutCacheHitCount").toInt() > layoutHitsBeforeSameHover);
+
+    const int scopedRowsBeforeSecondHover = picker.property("antTimePickerPopupScopedRowUpdateCount").toInt();
+    sendMouseMove(popup, timePickerPopupCellCenter(1, 1));
+    QVERIFY(picker.property("antTimePickerPopupScopedRowUpdateCount").toInt() > scopedRowsBeforeSecondHover);
+
+    const int scopedColumnsBeforeTimeChange = picker.property("antTimePickerPopupScopedColumnUpdateCount").toInt();
+    picker.setSelectedTime(QTime(11, 20, 30));
+    QVERIFY(picker.property("antTimePickerPopupScopedColumnUpdateCount").toInt() > scopedColumnsBeforeTimeChange);
+    QCOMPARE(picker.property("antTimePickerPopupLastUpdateMode").toString(), QStringLiteral("time"));
+
+    const int scopedColumnsBeforeStepChange = picker.property("antTimePickerPopupScopedColumnUpdateCount").toInt();
+    picker.setMinuteStep(15);
+    QVERIFY(picker.property("antTimePickerPopupScopedColumnUpdateCount").toInt() > scopedColumnsBeforeStepChange);
+    QCOMPARE(picker.property("antTimePickerPopupLastUpdateMode").toString(), QStringLiteral("step"));
+
+    picker.setOpen(false);
+    QTRY_VERIFY_WITH_TIMEOUT(!popup->isVisible(), 500);
+    const int geometrySkipsBeforeReopen = picker.property("antTimePickerPopupGeometrySkipCount").toInt();
+    picker.setOpen(true);
+    QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
+    QVERIFY(picker.property("antTimePickerPopupGeometrySkipCount").toInt() > geometrySkipsBeforeReopen);
 }
 
 QTEST_MAIN(TestAntDataEntryB)

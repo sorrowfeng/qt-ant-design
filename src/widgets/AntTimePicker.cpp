@@ -8,6 +8,7 @@
 #include <QPainter>
 #include <QSizePolicy>
 #include <QStringList>
+#include <QVector>
 #include <QWheelEvent>
 
 #include <algorithm>
@@ -33,9 +34,11 @@ public:
           m_owner(owner)
     {
         setAttribute(Qt::WA_TranslucentBackground, true);
+        setObjectName(QStringLiteral("AntTimePickerPopup"));
         setMouseTracking(true);
         resize(kTimePickerPopupPanelWidth + kTimePickerPopupShadowMargin * 2,
                kTimePickerPopupPanelHeight + kTimePickerPopupTopMargin + kTimePickerPopupShadowMargin);
+        syncPopupPerfCounters();
     }
 
 protected:
@@ -63,21 +66,43 @@ protected:
 
     void mouseMoveEvent(QMouseEvent* event) override
     {
+        const int oldColumn = m_hoveredColumn;
+        const int oldRow = m_hoveredRow;
         m_hoveredColumn = columnAt(event->position());
         m_hoveredRow = rowAt(event->position());
         const bool clickable = (m_hoveredColumn >= 0 && m_hoveredRow >= 0)
             || nowRect().contains(event->position())
             || okRect().contains(event->position());
-        setCursor(clickable ? Qt::PointingHandCursor : Qt::ArrowCursor);
-        update();
+        if (m_cursorClickable != clickable)
+        {
+            m_cursorClickable = clickable;
+            setCursor(clickable ? Qt::PointingHandCursor : Qt::ArrowCursor);
+        }
+        if (oldColumn != m_hoveredColumn || oldRow != m_hoveredRow)
+        {
+            ++m_scopedRowUpdateCount;
+            updatePopupRegion(rowDirtyRect(oldColumn, oldRow).united(rowDirtyRect(m_hoveredColumn, m_hoveredRow)),
+                              QStringLiteral("hover"));
+        }
         QFrame::mouseMoveEvent(event);
     }
 
     void leaveEvent(QEvent* event) override
     {
+        const int oldColumn = m_hoveredColumn;
+        const int oldRow = m_hoveredRow;
         m_hoveredColumn = -1;
         m_hoveredRow = -1;
-        update();
+        if (m_cursorClickable)
+        {
+            m_cursorClickable = false;
+            setCursor(Qt::ArrowCursor);
+        }
+        if (oldColumn >= 0 && oldRow >= 0)
+        {
+            ++m_scopedRowUpdateCount;
+            updatePopupRegion(rowDirtyRect(oldColumn, oldRow), QStringLiteral("hover"));
+        }
         QFrame::leaveEvent(event);
     }
 
@@ -93,7 +118,6 @@ protected:
         {
             m_owner->setPanelTime(QTime::currentTime());
             m_owner->setSelectedTime(m_owner->m_panelTime);
-            update();
             event->accept();
             return;
         }
@@ -128,7 +152,6 @@ protected:
             }
             m_owner->setPanelTime(next);
             m_owner->setSelectedTime(next);
-            update();
             event->accept();
             return;
         }
@@ -174,58 +197,77 @@ protected:
     }
 
 private:
+    struct PopupLayoutCache
+    {
+        QSize widgetSize;
+        QRectF panelRect;
+        QRectF columnsRect;
+        QRectF footerRect;
+        QRectF nowRect;
+        QRectF okRect;
+        QVector<QRectF> columnRects;
+        QVector<QVector<QRectF>> rowRects;
+        bool valid = false;
+    };
+
     QRectF panelRect() const
     {
-        return rect().adjusted(kTimePickerPopupShadowMargin,
-                               kTimePickerPopupTopMargin,
-                               -kTimePickerPopupShadowMargin,
-                               -kTimePickerPopupShadowMargin);
+        return layoutCache().panelRect;
     }
 
     QRectF columnsRect() const
     {
-        const QRectF panel = panelRect();
-        return QRectF(panel.left(), panel.top() + 8, panel.width(), 8 * 28);
+        return layoutCache().columnsRect;
     }
 
     QRectF footerRect() const
     {
-        const QRectF panel = panelRect();
-        return QRectF(panel.left(), panel.bottom() - 48, panel.width(), 48);
+        return layoutCache().footerRect;
     }
 
     QRectF nowRect() const
     {
-        const QRectF footer = footerRect();
-        return QRectF(footer.left() + 12, footer.top() + 8, 64, 30);
+        return layoutCache().nowRect;
     }
 
     QRectF okRect() const
     {
-        const QRectF footer = footerRect();
-        return QRectF(footer.right() - 70, footer.top() + 8, 56, 30);
+        return layoutCache().okRect;
     }
 
     int columnAt(const QPointF& pos) const
     {
-        const QRectF columns = columnsRect();
-        if (!columns.contains(pos))
+        const auto& cache = layoutCache();
+        if (!cache.columnsRect.contains(pos))
         {
             return -1;
         }
-        const int col = static_cast<int>((pos.x() - columns.left()) / (columns.width() / 3.0));
-        return std::clamp(col, 0, 2);
+        for (int column = 0; column < cache.columnRects.size(); ++column)
+        {
+            if (cache.columnRects.at(column).contains(pos))
+            {
+                return column;
+            }
+        }
+        return -1;
     }
 
     int rowAt(const QPointF& pos) const
     {
-        const QRectF columns = columnsRect();
-        if (!columns.contains(pos))
+        const int column = columnAt(pos);
+        if (column < 0)
         {
             return -1;
         }
-        const int row = static_cast<int>((pos.y() - columns.top()) / 28.0);
-        return row >= 0 && row < 8 ? row : -1;
+        const auto& rows = layoutCache().rowRects.at(column);
+        for (int row = 0; row < rows.size(); ++row)
+        {
+            if (rows.at(row).contains(pos))
+            {
+                return row;
+            }
+        }
+        return -1;
     }
 
     int valueForRow(int column, int row) const
@@ -246,8 +288,7 @@ private:
     {
         Q_UNUSED(panel)
         const auto& token = antTheme->tokens();
-        const QRectF columns = columnsRect();
-        const qreal colW = columns.width() / 3.0;
+        const auto& cache = layoutCache();
 
         QFont valueFont = painter.font();
         valueFont.setPixelSize(token.fontSize);
@@ -255,7 +296,7 @@ private:
 
         for (int c = 0; c < 3; ++c)
         {
-            const QRectF colRect(columns.left() + c * colW, columns.top(), colW, columns.height());
+            const QRectF colRect = cache.columnRects.at(c);
             if (c > 0)
             {
                 painter.setPen(QPen(token.colorSplit, token.lineWidth));
@@ -264,7 +305,7 @@ private:
 
             for (int r = 0; r < 8; ++r)
             {
-                const QRectF rowRect(colRect.left() + 4, colRect.top() + r * 28, colRect.width() - 8, 24);
+                const QRectF rowRect = cache.rowRects.at(c).at(r);
                 const bool selected = r == 0;
                 const bool hovered = c == m_hoveredColumn && r == m_hoveredRow;
                 if (selected)
@@ -311,9 +352,154 @@ private:
         painter.drawText(okRect(), Qt::AlignCenter, QStringLiteral("OK"));
     }
 
+    const PopupLayoutCache& layoutCache() const
+    {
+        if (m_layoutCache.valid && m_layoutCache.widgetSize == size())
+        {
+            ++m_layoutCacheHitCount;
+            syncPopupPerfCounters();
+            return m_layoutCache;
+        }
+
+        m_layoutCache.widgetSize = size();
+        m_layoutCache.panelRect = rect().adjusted(kTimePickerPopupShadowMargin,
+                                                  kTimePickerPopupTopMargin,
+                                                  -kTimePickerPopupShadowMargin,
+                                                  -kTimePickerPopupShadowMargin);
+        m_layoutCache.columnsRect = QRectF(m_layoutCache.panelRect.left(),
+                                           m_layoutCache.panelRect.top() + 8,
+                                           m_layoutCache.panelRect.width(),
+                                           8 * 28);
+        m_layoutCache.footerRect = QRectF(m_layoutCache.panelRect.left(),
+                                          m_layoutCache.panelRect.bottom() - 48,
+                                          m_layoutCache.panelRect.width(),
+                                          48);
+        m_layoutCache.nowRect = QRectF(m_layoutCache.footerRect.left() + 12,
+                                       m_layoutCache.footerRect.top() + 8,
+                                       64,
+                                       30);
+        m_layoutCache.okRect = QRectF(m_layoutCache.footerRect.right() - 70,
+                                      m_layoutCache.footerRect.top() + 8,
+                                      56,
+                                      30);
+        m_layoutCache.columnRects.clear();
+        m_layoutCache.rowRects.clear();
+        m_layoutCache.columnRects.reserve(3);
+        m_layoutCache.rowRects.reserve(3);
+
+        const qreal columnWidth = m_layoutCache.columnsRect.width() / 3.0;
+        for (int column = 0; column < 3; ++column)
+        {
+            const QRectF columnRect(m_layoutCache.columnsRect.left() + column * columnWidth,
+                                    m_layoutCache.columnsRect.top(),
+                                    columnWidth,
+                                    m_layoutCache.columnsRect.height());
+            m_layoutCache.columnRects.append(columnRect);
+            QVector<QRectF> rows;
+            rows.reserve(8);
+            for (int row = 0; row < 8; ++row)
+            {
+                rows.append(QRectF(columnRect.left() + 4,
+                                   columnRect.top() + row * 28,
+                                   columnRect.width() - 8,
+                                   24));
+            }
+            m_layoutCache.rowRects.append(rows);
+        }
+
+        m_layoutCache.valid = true;
+        ++m_layoutBuildCount;
+        syncPopupPerfCounters();
+        return m_layoutCache;
+    }
+
+    QRect rowDirtyRect(int column, int row) const
+    {
+        const auto& cache = layoutCache();
+        if (column < 0 || column >= cache.rowRects.size()
+            || row < 0 || row >= cache.rowRects.at(column).size())
+        {
+            return QRect();
+        }
+        return cache.rowRects.at(column).at(row).adjusted(-3, -3, 3, 3).toAlignedRect().intersected(rect());
+    }
+
+    QRect columnDirtyRect(int column) const
+    {
+        const auto& cache = layoutCache();
+        if (column < 0 || column >= cache.columnRects.size())
+        {
+            return QRect();
+        }
+        return cache.columnRects.at(column).adjusted(-2, -2, 2, 2).toAlignedRect().intersected(rect());
+    }
+
+    void updatePopupRegion(const QRect& dirty, const QString& mode)
+    {
+        QRect updateRect = dirty;
+        if (!updateRect.isValid() || updateRect.isEmpty())
+        {
+            updateRect = rect();
+        }
+        ++m_regionUpdateCount;
+        setProperty("antTimePickerPopupLastUpdateMode", mode);
+        syncPopupPerfCounters();
+        update(updateRect);
+    }
+
+public:
+    void refreshForPanelTimeChange(const QTime& oldTime, const QTime& newTime)
+    {
+        QRect dirty;
+        for (int column = 0; column < 3; ++column)
+        {
+            const int oldValue = column == 0 ? oldTime.hour() : (column == 1 ? oldTime.minute() : oldTime.second());
+            const int newValue = column == 0 ? newTime.hour() : (column == 1 ? newTime.minute() : newTime.second());
+            if (!oldTime.isValid() || !newTime.isValid() || oldValue != newValue)
+            {
+                dirty = dirty.united(columnDirtyRect(column));
+            }
+        }
+        ++m_scopedColumnUpdateCount;
+        updatePopupRegion(dirty, QStringLiteral("time"));
+    }
+
+    void refreshForStepChange(int column)
+    {
+        ++m_scopedColumnUpdateCount;
+        updatePopupRegion(columnDirtyRect(column), QStringLiteral("step"));
+    }
+
+private:
+    void syncPopupPerfCounters() const
+    {
+        auto* self = const_cast<AntTimePickerPopup*>(this);
+        self->setProperty("antTimePickerPopupLayoutBuildCount", m_layoutBuildCount);
+        self->setProperty("antTimePickerPopupLayoutCacheHitCount", m_layoutCacheHitCount);
+        self->setProperty("antTimePickerPopupScopedRowUpdateCount", m_scopedRowUpdateCount);
+        self->setProperty("antTimePickerPopupScopedColumnUpdateCount", m_scopedColumnUpdateCount);
+        self->setProperty("antTimePickerPopupRegionUpdateCount", m_regionUpdateCount);
+        if (m_owner)
+        {
+            m_owner->setProperty("antTimePickerPopupLayoutBuildCount", m_layoutBuildCount);
+            m_owner->setProperty("antTimePickerPopupLayoutCacheHitCount", m_layoutCacheHitCount);
+            m_owner->setProperty("antTimePickerPopupScopedRowUpdateCount", m_scopedRowUpdateCount);
+            m_owner->setProperty("antTimePickerPopupScopedColumnUpdateCount", m_scopedColumnUpdateCount);
+            m_owner->setProperty("antTimePickerPopupRegionUpdateCount", m_regionUpdateCount);
+            m_owner->setProperty("antTimePickerPopupLastUpdateMode", property("antTimePickerPopupLastUpdateMode"));
+        }
+    }
+
     AntTimePicker* m_owner = nullptr;
     int m_hoveredColumn = -1;
     int m_hoveredRow = -1;
+    bool m_cursorClickable = false;
+    mutable PopupLayoutCache m_layoutCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    int m_scopedRowUpdateCount = 0;
+    int m_scopedColumnUpdateCount = 0;
+    int m_regionUpdateCount = 0;
 };
 
 AntTimePicker::AntTimePicker(QWidget* parent)
@@ -331,6 +517,7 @@ AntTimePicker::AntTimePicker(QWidget* parent)
     m_popup = new AntTimePickerPopup(this);
 
     updateCursor();
+    syncTimePickerPerfCounters();
 }
 
 AntTimePicker::~AntTimePicker()
@@ -348,6 +535,7 @@ void AntTimePicker::setSelectedTime(const QTime& time)
     {
         return;
     }
+    const QTime oldPanelTime = m_panelTime;
     m_selectedTime = nextTime;
     if (m_selectedTime.isValid())
     {
@@ -356,7 +544,14 @@ void AntTimePicker::setSelectedTime(const QTime& time)
     update();
     if (m_popup)
     {
-        m_popup->update();
+        if (oldPanelTime != m_panelTime)
+        {
+            static_cast<AntTimePickerPopup*>(m_popup)->refreshForPanelTimeChange(oldPanelTime, m_panelTime);
+        }
+        else
+        {
+            m_popup->update();
+        }
     }
     Q_EMIT selectedTimeChanged(m_selectedTime);
     Q_EMIT timeChanged(m_selectedTime);
@@ -601,6 +796,10 @@ void AntTimePicker::setHourStep(int step)
         return;
     }
     m_hourStep = step;
+    if (m_popup)
+    {
+        static_cast<AntTimePickerPopup*>(m_popup)->refreshForStepChange(0);
+    }
     Q_EMIT hourStepChanged(m_hourStep);
 }
 
@@ -614,6 +813,10 @@ void AntTimePicker::setMinuteStep(int step)
         return;
     }
     m_minuteStep = step;
+    if (m_popup)
+    {
+        static_cast<AntTimePickerPopup*>(m_popup)->refreshForStepChange(1);
+    }
     Q_EMIT minuteStepChanged(m_minuteStep);
 }
 
@@ -627,6 +830,10 @@ void AntTimePicker::setSecondStep(int step)
         return;
     }
     m_secondStep = step;
+    if (m_popup)
+    {
+        static_cast<AntTimePickerPopup*>(m_popup)->refreshForStepChange(2);
+    }
     Q_EMIT secondStepChanged(m_secondStep);
 }
 
@@ -863,8 +1070,26 @@ void AntTimePicker::updatePopupGeometry()
     {
         return;
     }
-    m_popup->move(mapToGlobal(QPoint(-kTimePickerPopupShadowMargin,
-                                     height() + 4 - kTimePickerPopupShadowMargin)));
+    const QPoint target = mapToGlobal(QPoint(-kTimePickerPopupShadowMargin,
+                                             height() + 4 - kTimePickerPopupShadowMargin));
+    if (m_hasPopupGeometryTarget && m_lastPopupGeometryTarget == target)
+    {
+        ++m_popupGeometrySkipCount;
+        if (m_popup->pos() != target)
+        {
+            m_popup->move(target);
+        }
+        syncTimePickerPerfCounters();
+        return;
+    }
+    if (m_popup->pos() != target)
+    {
+        m_popup->move(target);
+    }
+    m_lastPopupGeometryTarget = target;
+    m_hasPopupGeometryTarget = true;
+    ++m_popupGeometryApplyCount;
+    syncTimePickerPerfCounters();
 }
 
 void AntTimePicker::setPanelTime(const QTime& time)
@@ -874,10 +1099,16 @@ void AntTimePicker::setPanelTime(const QTime& time)
     {
         return;
     }
-    m_panelTime = QTime(nextTime.hour(), nextTime.minute(), nextTime.second(), nextTime.msec());
+    const QTime nextPanelTime(nextTime.hour(), nextTime.minute(), nextTime.second(), nextTime.msec());
+    if (m_panelTime == nextPanelTime)
+    {
+        return;
+    }
+    const QTime oldPanelTime = m_panelTime;
+    m_panelTime = nextPanelTime;
     if (m_popup)
     {
-        m_popup->update();
+        static_cast<AntTimePickerPopup*>(m_popup)->refreshForPanelTimeChange(oldPanelTime, m_panelTime);
     }
 }
 
@@ -979,4 +1210,11 @@ QTime AntTimePicker::boundedTime(const QTime& time) const
         return m_maximumTime;
     }
     return time;
+}
+
+void AntTimePicker::syncTimePickerPerfCounters() const
+{
+    auto* self = const_cast<AntTimePicker*>(this);
+    self->setProperty("antTimePickerPopupGeometryApplyCount", m_popupGeometryApplyCount);
+    self->setProperty("antTimePickerPopupGeometrySkipCount", m_popupGeometrySkipCount);
 }

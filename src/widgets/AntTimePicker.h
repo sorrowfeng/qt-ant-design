@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QPoint>
 #include <QTime>
 #include <QWidget>
 
@@ -156,6 +157,7 @@ private:
     void updateCursor();
     int normalizeStep(int step, int maximum) const;
     QTime boundedTime(const QTime& time) const;
+    void syncTimePickerPerfCounters() const;
 
     QTime m_selectedTime;
     QTime m_panelTime;
@@ -178,4 +180,8 @@ private:
     int m_minuteStep = 1;
     int m_secondStep = 1;
     QFrame* m_popup = nullptr;
+    QPoint m_lastPopupGeometryTarget;
+    bool m_hasPopupGeometryTarget = false;
+    int m_popupGeometryApplyCount = 0;
+    int m_popupGeometrySkipCount = 0;
 };
