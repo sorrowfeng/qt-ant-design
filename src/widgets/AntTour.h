@@ -35,6 +35,7 @@ Q_SIGNALS:
 
 private:
     void showStep(int index);
+    void syncTourPerfCounters() const;
     QDialog* m_overlay = nullptr;
     QList<AntTourStep> m_steps;
     int m_current = -1;

@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QDialog>
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPainter>
@@ -62,6 +63,20 @@ public:
     AntButton* closeBtn = nullptr;
     QWidget* target = nullptr;
     QWidget* tooltip = nullptr;
+    QRect targetRect;
+    QRect spotlightRect;
+    QString cachedTitle;
+    QString cachedDescription;
+    QString cachedNextText;
+    bool cachedPrevVisible = false;
+    int targetGeometryApplyCount = 0;
+    int targetGeometrySkipCount = 0;
+    int tooltipGeometryApplyCount = 0;
+    int tooltipGeometrySkipCount = 0;
+    int contentApplyCount = 0;
+    int contentSkipCount = 0;
+    int dirtyUpdateCount = 0;
+    QString lastUpdateMode;
 
     TourOverlay(QWidget* parent)
         : QDialog(parent, Qt::FramelessWindowHint)
@@ -116,13 +131,132 @@ public:
         tooltip->adjustSize();
     }
 
-    void setTarget(QWidget* t)
+    ~TourOverlay() override
     {
+        if (target)
+        {
+            target->removeEventFilter(this);
+        }
+    }
+
+    QRect setTarget(QWidget* t)
+    {
+        if (target == t)
+        {
+            return updateTargetGeometry();
+        }
+        if (target)
+        {
+            target->removeEventFilter(this);
+        }
         target = t;
-        update();
+        if (target)
+        {
+            target->installEventFilter(this);
+        }
+        return updateTargetGeometry();
+    }
+
+    QRect updateTargetGeometry()
+    {
+        QRect nextTargetRect;
+        QRect nextSpotlightRect;
+        if (target && target->isVisible())
+        {
+            QPoint tl = target->mapToGlobal(QPoint(0, 0));
+            tl = mapFromGlobal(tl);
+            nextTargetRect = QRect(tl, target->size());
+            nextSpotlightRect = nextTargetRect.adjusted(-8, -8, 8, 8);
+        }
+
+        if (nextTargetRect == targetRect && nextSpotlightRect == spotlightRect)
+        {
+            ++targetGeometrySkipCount;
+            lastUpdateMode = QStringLiteral("targetSkip");
+            return QRect();
+        }
+
+        const QRect dirty = spotlightRect.united(nextSpotlightRect).adjusted(-6, -6, 6, 6).intersected(rect());
+        targetRect = nextTargetRect;
+        spotlightRect = nextSpotlightRect;
+        ++targetGeometryApplyCount;
+        ++dirtyUpdateCount;
+        lastUpdateMode = QStringLiteral("target");
+        if (!dirty.isEmpty())
+        {
+            update(dirty);
+        }
+        else
+        {
+            update();
+        }
+        return dirty;
+    }
+
+    bool syncContent(const AntTourStep& step, bool isLast, bool prevVisible)
+    {
+        const QString nextText = isLast ? QStringLiteral("Finish") : QStringLiteral("Next");
+        if (cachedTitle == step.title &&
+            cachedDescription == step.description &&
+            cachedNextText == nextText &&
+            cachedPrevVisible == prevVisible)
+        {
+            ++contentSkipCount;
+            lastUpdateMode = QStringLiteral("contentSkip");
+            return false;
+        }
+
+        cachedTitle = step.title;
+        cachedDescription = step.description;
+        cachedNextText = nextText;
+        cachedPrevVisible = prevVisible;
+        titleLabel->setText(step.title);
+        descLabel->setText(step.description);
+        nextBtn->setText(nextText);
+        prevBtn->setVisible(prevVisible);
+        ++contentApplyCount;
+        lastUpdateMode = QStringLiteral("content");
+        return true;
+    }
+
+    bool syncTooltipGeometry(const QRect& geometry)
+    {
+        if (tooltip->geometry() == geometry)
+        {
+            ++tooltipGeometrySkipCount;
+            lastUpdateMode = QStringLiteral("tooltipSkip");
+            return false;
+        }
+        tooltip->setGeometry(geometry);
+        ++tooltipGeometryApplyCount;
+        lastUpdateMode = QStringLiteral("tooltip");
+        return true;
     }
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (watched == target)
+        {
+            switch (event->type())
+            {
+            case QEvent::Move:
+            case QEvent::Resize:
+            case QEvent::Show:
+            case QEvent::Hide:
+                updateTargetGeometry();
+                break;
+            case QEvent::Destroy:
+                target = nullptr;
+                updateTargetGeometry();
+                break;
+            default:
+                break;
+            }
+        }
+        return QDialog::eventFilter(watched, event);
+    }
+
     void paintEvent(QPaintEvent*) override
     {
         const auto& token = antTheme->tokens();
@@ -130,25 +264,21 @@ protected:
         p.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
         p.fillRect(rect(), QColor(0, 0, 0, 115));
 
-        if (target && target->isVisible())
+        if (target && target->isVisible() && !spotlightRect.isEmpty())
         {
-            QPoint tl = target->mapToGlobal(QPoint(0, 0));
-            tl = mapFromGlobal(tl);
-            QRect targetR(tl, target->size());
-            const QRect spotlight = targetR.adjusted(-8, -8, 8, 8);
             const int radius = token.borderRadius;
 
             // Clear the mask over the target
             p.setCompositionMode(QPainter::CompositionMode_Clear);
             QPainterPath clearPath;
-            clearPath.addRoundedRect(QRectF(spotlight), radius, radius);
+            clearPath.addRoundedRect(QRectF(spotlightRect), radius, radius);
             p.fillPath(clearPath, Qt::black);
             p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
             // Draw highlight border
             p.setPen(QPen(token.colorBgContainer, 2));
             p.setBrush(Qt::NoBrush);
-            p.drawRoundedRect(QRectF(spotlight).adjusted(1, 1, -1, -1), radius, radius);
+            p.drawRoundedRect(QRectF(spotlightRect).adjusted(1, 1, -1, -1), radius, radius);
         }
     }
 };
@@ -184,6 +314,7 @@ void AntTour::start(int index)
 
     showStep(index);
     m_overlay->show();
+    syncTourPerfCounters();
 }
 
 void AntTour::next()
@@ -201,6 +332,7 @@ void AntTour::close()
 {
     if (m_overlay) { m_overlay->close(); m_overlay->deleteLater(); m_overlay = nullptr; }
     m_current = -1;
+    syncTourPerfCounters();
     Q_EMIT finished();
 }
 
@@ -212,8 +344,8 @@ void AntTour::showStep(int index)
 
     auto* overlay = dynamic_cast<TourOverlay*>(m_overlay);
     const auto& token = antTheme->tokens();
-    overlay->titleLabel->setText(step.title);
-    overlay->descLabel->setText(step.description);
+    bool isLast = (index == m_steps.size() - 1);
+    const bool contentChanged = overlay->syncContent(step, isLast, index > 0);
     QPalette titlePalette = overlay->titleLabel->palette();
     titlePalette.setColor(QPalette::WindowText, token.colorText);
     overlay->titleLabel->setPalette(titlePalette);
@@ -223,30 +355,44 @@ void AntTour::showStep(int index)
     overlay->setTarget(step.target);
 
     // Position tooltip near target
-    if (step.target)
+    if (step.target && overlay->targetRect.isValid())
     {
-        QPoint tp = step.target->mapToGlobal(QPoint(0, 0));
-        tp = m_overlay->mapFromGlobal(tp);
-        QRect targetR(tp, step.target->size());
-        overlay->tooltip->adjustSize();
-        int tx = targetR.center().x() - overlay->tooltip->width() / 2;
+        if (contentChanged)
+        {
+            overlay->tooltip->adjustSize();
+        }
+        const QRect targetR = overlay->targetRect;
+        const QSize tooltipSize = overlay->tooltip->size();
+        int tx = targetR.center().x() - tooltipSize.width() / 2;
         int ty = targetR.bottom() + 20;
         if (tx < 16) tx = 16;
-        if (tx + overlay->tooltip->width() > m_overlay->width() - 16)
+        if (tx + tooltipSize.width() > m_overlay->width() - 16)
         {
-            tx = m_overlay->width() - overlay->tooltip->width() - 16;
+            tx = m_overlay->width() - tooltipSize.width() - 16;
         }
-        if (ty + overlay->tooltip->height() > m_overlay->height() - 16)
+        if (ty + tooltipSize.height() > m_overlay->height() - 16)
         {
-            ty = targetR.top() - overlay->tooltip->height() - 20;
+            ty = targetR.top() - tooltipSize.height() - 20;
         }
-        overlay->tooltip->move(tx, ty);
+        overlay->syncTooltipGeometry(QRect(QPoint(tx, ty), tooltipSize));
     }
 
-    bool isLast = (index == m_steps.size() - 1);
-    overlay->nextBtn->setText(isLast ? QStringLiteral("Finish") : QStringLiteral("Next"));
-    overlay->prevBtn->setVisible(index > 0);
-    overlay->update();
-
+    syncTourPerfCounters();
     Q_EMIT stepChanged(m_current);
+}
+
+void AntTour::syncTourPerfCounters() const
+{
+    auto* self = const_cast<AntTour*>(this);
+    const auto* overlay = dynamic_cast<const TourOverlay*>(m_overlay);
+    self->setProperty("antTourOverlayVisible", overlay && overlay->isVisible());
+    self->setProperty("antTourCurrentIndex", m_current);
+    self->setProperty("antTourTargetGeometryApplyCount", overlay ? overlay->targetGeometryApplyCount : 0);
+    self->setProperty("antTourTargetGeometrySkipCount", overlay ? overlay->targetGeometrySkipCount : 0);
+    self->setProperty("antTourTooltipGeometryApplyCount", overlay ? overlay->tooltipGeometryApplyCount : 0);
+    self->setProperty("antTourTooltipGeometrySkipCount", overlay ? overlay->tooltipGeometrySkipCount : 0);
+    self->setProperty("antTourContentApplyCount", overlay ? overlay->contentApplyCount : 0);
+    self->setProperty("antTourContentSkipCount", overlay ? overlay->contentSkipCount : 0);
+    self->setProperty("antTourDirtyUpdateCount", overlay ? overlay->dirtyUpdateCount : 0);
+    self->setProperty("antTourLastUpdateMode", overlay ? overlay->lastUpdateMode : QString());
 }

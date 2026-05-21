@@ -47,6 +47,7 @@ private slots:
     void tooltip();
     void tooltipCachesLayoutAndSkipsPlacementWork();
     void tour();
+    void tourCachesTargetAndTooltipGeometry();
 };
 
 void TestAntFeedback::alert()
@@ -1150,6 +1151,46 @@ void TestAntFeedback::tour()
 
     w->close();
     QCOMPARE(finishedSpy.count(), 1);
+}
+
+void TestAntFeedback::tourCachesTargetAndTooltipGeometry()
+{
+    QWidget host;
+    host.resize(360, 180);
+    AntButton step1(QStringLiteral("Step 1"), &host);
+    AntButton step2(QStringLiteral("Step 2"), &host);
+    step1.move(24, 48);
+    step2.move(224, 48);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    auto* tour = new AntTour(&host);
+    tour->addStep({&step1, QStringLiteral("Step 1"), QStringLiteral("First step")});
+    tour->addStep({&step2, QStringLiteral("Step 2"), QStringLiteral("Second step")});
+
+    QSignalSpy stepSpy(tour, &AntTour::stepChanged);
+    tour->start(0);
+    QCOMPARE(stepSpy.count(), 1);
+    QVERIFY(tour->property("antTourTargetGeometryApplyCount").toInt() > 0);
+    QVERIFY(tour->property("antTourTooltipGeometryApplyCount").toInt() > 0);
+    QVERIFY(tour->property("antTourContentApplyCount").toInt() > 0);
+
+    const int targetSkips = tour->property("antTourTargetGeometrySkipCount").toInt();
+    const int tooltipSkips = tour->property("antTourTooltipGeometrySkipCount").toInt();
+    const int contentSkips = tour->property("antTourContentSkipCount").toInt();
+    tour->start(0);
+    QVERIFY(tour->property("antTourTargetGeometrySkipCount").toInt() > targetSkips);
+    QVERIFY(tour->property("antTourTooltipGeometrySkipCount").toInt() > tooltipSkips);
+    QVERIFY(tour->property("antTourContentSkipCount").toInt() > contentSkips);
+
+    const int targetApplies = tour->property("antTourTargetGeometryApplyCount").toInt();
+    const int dirtyUpdates = tour->property("antTourDirtyUpdateCount").toInt();
+    tour->next();
+    QVERIFY(tour->property("antTourTargetGeometryApplyCount").toInt() > targetApplies);
+    QVERIFY(tour->property("antTourDirtyUpdateCount").toInt() > dirtyUpdates);
+    QCOMPARE(tour->property("antTourCurrentIndex").toInt(), 1);
+
+    tour->close();
 }
 
 QTEST_MAIN(TestAntFeedback)
