@@ -1,5 +1,6 @@
 #include "AntDatePicker.h"
 
+#include <array>
 #include <QFocusEvent>
 #include <QFrame>
 #include <QHideEvent>
@@ -34,6 +35,12 @@ public:
         setMouseTracking(true);
         resize(kDatePickerPopupPanelWidth + kDatePickerPopupShadowMargin * 2,
                kDatePickerPopupPanelHeight + kDatePickerPopupTopMargin + kDatePickerPopupShadowMargin);
+        syncPopupPerfCounters();
+    }
+
+    void invalidateDayCache()
+    {
+        m_dayCacheValid = false;
     }
 
 protected:
@@ -62,20 +69,32 @@ protected:
 
     void mouseMoveEvent(QMouseEvent* event) override
     {
-        m_hoveredDate = dateAt(event->position());
-        const bool overButton = previousYearRect().contains(event->position())
+        const QDate oldHoveredDate = m_hoveredDate;
+        const bool oldOverButton = m_hoveringButton;
+        const QDate nextHoveredDate = dateAt(event->position());
+        const bool nextOverButton = previousYearRect().contains(event->position())
             || previousRect().contains(event->position())
             || nextRect().contains(event->position())
             || nextYearRect().contains(event->position());
-        setCursor((m_hoveredDate.isValid() || overButton) ? Qt::PointingHandCursor : Qt::ArrowCursor);
-        update();
+        if (oldHoveredDate == nextHoveredDate && oldOverButton == nextOverButton)
+        {
+            QFrame::mouseMoveEvent(event);
+            return;
+        }
+
+        m_hoveredDate = nextHoveredDate;
+        m_hoveringButton = nextOverButton;
+        setCursor((m_hoveredDate.isValid() || m_hoveringButton) ? Qt::PointingHandCursor : Qt::ArrowCursor);
+        updateDateCells(oldHoveredDate, m_hoveredDate);
         QFrame::mouseMoveEvent(event);
     }
 
     void leaveEvent(QEvent* event) override
     {
+        const QDate oldHoveredDate = m_hoveredDate;
         m_hoveredDate = QDate();
-        update();
+        m_hoveringButton = false;
+        updateDateCells(oldHoveredDate, m_hoveredDate);
         QFrame::leaveEvent(event);
     }
 
@@ -171,6 +190,15 @@ private:
         return QRectF(panel.left() + 14, panel.top() + 88, panel.width() - 28, 6 * 34);
     }
 
+    struct DayCell
+    {
+        QDate date;
+        QRectF cellRect;
+        QRectF innerRect;
+        bool inPanelMonth = false;
+        bool enabled = false;
+    };
+
     QDate firstGridDate() const
     {
         const QDate first(m_owner->m_panelDate.year(), m_owner->m_panelDate.month(), 1);
@@ -178,22 +206,92 @@ private:
         return first.addDays(-sundayBasedOffset);
     }
 
-    QDate dateAt(const QPointF& pos) const
+    const std::array<DayCell, 42>& dayCells() const
     {
-        const QRectF grid = gridRect();
-        if (!grid.contains(pos))
+        if (!m_owner)
         {
-            return QDate();
+            return m_dayCells;
         }
+
+        const QDate panelMonth(m_owner->m_panelDate.year(), m_owner->m_panelDate.month(), 1);
+        if (m_dayCacheValid &&
+            m_dayCacheSize == size() &&
+            m_dayCachePanelMonth == panelMonth &&
+            m_dayCacheMinimumDate == m_owner->m_minimumDate &&
+            m_dayCacheMaximumDate == m_owner->m_maximumDate)
+        {
+            ++m_dayCacheHitCount;
+            syncPopupPerfCounters();
+            return m_dayCells;
+        }
+
+        const QRectF grid = gridRect();
         const qreal cellW = grid.width() / 7.0;
         const qreal cellH = grid.height() / 6.0;
-        const int col = static_cast<int>((pos.x() - grid.left()) / cellW);
-        const int row = static_cast<int>((pos.y() - grid.top()) / cellH);
-        if (col < 0 || col > 6 || row < 0 || row > 5)
+        const QDate first = firstGridDate();
+        for (int i = 0; i < 42; ++i)
         {
-            return QDate();
+            const QDate date = first.addDays(i);
+            const int row = i / 7;
+            const int col = i % 7;
+            const QRectF cell(grid.left() + col * cellW, grid.top() + row * cellH, cellW, cellH);
+            m_dayCells[static_cast<std::size_t>(i)] = {
+                date,
+                cell,
+                QRectF(cell.center().x() - 14, cell.center().y() - 14, 28, 28),
+                date.year() == panelMonth.year() && date.month() == panelMonth.month(),
+                m_owner->isDateInRange(date),
+            };
         }
-        return firstGridDate().addDays(row * 7 + col);
+
+        m_dayCacheSize = size();
+        m_dayCachePanelMonth = panelMonth;
+        m_dayCacheMinimumDate = m_owner->m_minimumDate;
+        m_dayCacheMaximumDate = m_owner->m_maximumDate;
+        m_dayCacheValid = true;
+        ++m_dayCacheBuildCount;
+        syncPopupPerfCounters();
+        return m_dayCells;
+    }
+
+    QRect dateCellDirtyRect(const QDate& date) const
+    {
+        if (!date.isValid())
+        {
+            return QRect();
+        }
+        for (const auto& day : dayCells())
+        {
+            if (day.date == date)
+            {
+                return day.cellRect.toAlignedRect().adjusted(-2, -2, 2, 2).intersected(rect());
+            }
+        }
+        return QRect();
+    }
+
+    void updateDateCells(const QDate& oldDate, const QDate& newDate)
+    {
+        QRect dirty = dateCellDirtyRect(oldDate).united(dateCellDirtyRect(newDate));
+        if (dirty.isNull())
+        {
+            return;
+        }
+        ++m_scopedDateCellUpdateCount;
+        syncPopupPerfCounters();
+        update(dirty);
+    }
+
+    QDate dateAt(const QPointF& pos) const
+    {
+        for (const auto& day : dayCells())
+        {
+            if (day.cellRect.contains(pos))
+            {
+                return day.date;
+            }
+        }
+        return QDate();
     }
 
     void drawHeader(QPainter& painter, const QRectF& panel) const
@@ -249,54 +347,54 @@ private:
     {
         Q_UNUSED(panel)
         const auto& token = antTheme->tokens();
-        const QRectF grid = gridRect();
-        const qreal cellW = grid.width() / 7.0;
-        const qreal cellH = grid.height() / 6.0;
         const QDate today = QDate::currentDate();
-        const QDate first = firstGridDate();
 
         QFont font = painter.font();
         font.setPixelSize(token.fontSize);
         font.setWeight(QFont::Normal);
         painter.setFont(font);
 
-        for (int i = 0; i < 42; ++i)
+        for (const auto& day : dayCells())
         {
-            const QDate date = first.addDays(i);
-            const int row = i / 7;
-            const int col = i % 7;
-            const QRectF cell(grid.left() + col * cellW, grid.top() + row * cellH, cellW, cellH);
-            const QRectF inner(cell.center().x() - 14, cell.center().y() - 14, 28, 28);
-            const bool inMonth = date.month() == m_owner->m_panelDate.month();
-            const bool selected = m_owner->m_selectedDate.isValid() && date == m_owner->m_selectedDate;
-            const bool isToday = date == today;
-            const bool dateEnabled = m_owner->isDateInRange(date);
-            const bool hovered = dateEnabled && date == m_hoveredDate;
+            const bool selected = m_owner->m_selectedDate.isValid() && day.date == m_owner->m_selectedDate;
+            const bool isToday = day.date == today;
+            const bool hovered = day.enabled && day.date == m_hoveredDate;
 
             if (hovered && !selected)
             {
                 painter.setPen(Qt::NoPen);
                 painter.setBrush(token.colorFillQuaternary);
-                painter.drawRoundedRect(inner, token.borderRadiusSM, token.borderRadiusSM);
+                painter.drawRoundedRect(day.innerRect, token.borderRadiusSM, token.borderRadiusSM);
             }
             if (selected)
             {
                 painter.setPen(Qt::NoPen);
                 painter.setBrush(token.colorPrimary);
-                painter.drawRoundedRect(inner, token.borderRadiusSM, token.borderRadiusSM);
+                painter.drawRoundedRect(day.innerRect, token.borderRadiusSM, token.borderRadiusSM);
             }
             else if (isToday)
             {
                 painter.setPen(QPen(token.colorPrimary, token.lineWidth));
                 painter.setBrush(Qt::NoBrush);
-                painter.drawRoundedRect(inner.adjusted(0.5, 0.5, -0.5, -0.5), token.borderRadiusSM, token.borderRadiusSM);
+                painter.drawRoundedRect(day.innerRect.adjusted(0.5, 0.5, -0.5, -0.5), token.borderRadiusSM, token.borderRadiusSM);
             }
 
             painter.setPen(selected
                                ? token.colorTextLightSolid
-                               : ((inMonth && dateEnabled) ? token.colorText : token.colorTextDisabled));
-            painter.drawText(cell, Qt::AlignCenter, QString::number(date.day()));
+                               : ((day.inPanelMonth && day.enabled) ? token.colorText : token.colorTextDisabled));
+            painter.drawText(day.cellRect, Qt::AlignCenter, QString::number(day.date.day()));
         }
+    }
+
+    void syncPopupPerfCounters() const
+    {
+        if (!m_owner)
+        {
+            return;
+        }
+        m_owner->setProperty("antDatePickerPopupDayCacheBuildCount", m_dayCacheBuildCount);
+        m_owner->setProperty("antDatePickerPopupDayCacheHitCount", m_dayCacheHitCount);
+        m_owner->setProperty("antDatePickerPopupScopedCellUpdateCount", m_scopedDateCellUpdateCount);
     }
 
     void drawChevron(QPainter& painter, const QRectF& rect, bool left) const
@@ -319,6 +417,16 @@ private:
 
     AntDatePicker* m_owner = nullptr;
     QDate m_hoveredDate;
+    bool m_hoveringButton = false;
+    mutable bool m_dayCacheValid = false;
+    mutable QSize m_dayCacheSize;
+    mutable QDate m_dayCachePanelMonth;
+    mutable QDate m_dayCacheMinimumDate;
+    mutable QDate m_dayCacheMaximumDate;
+    mutable std::array<DayCell, 42> m_dayCells;
+    mutable int m_dayCacheBuildCount = 0;
+    mutable int m_dayCacheHitCount = 0;
+    int m_scopedDateCellUpdateCount = 0;
 };
 
 AntDatePicker::AntDatePicker(QWidget* parent)
@@ -842,6 +950,7 @@ void AntDatePicker::setPanelDate(const QDate& date)
     m_panelDate = QDate(nextDate.year(), nextDate.month(), 1);
     if (m_popup)
     {
+        static_cast<AntDatePickerPopup*>(m_popup)->invalidateDayCache();
         m_popup->update();
     }
 }

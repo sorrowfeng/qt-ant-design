@@ -2,6 +2,7 @@
 #include <QTest>
 #include <QCoreApplication>
 #include <QFrame>
+#include <QMouseEvent>
 #include <QWheelEvent>
 #include <QWidget>
 #include "widgets/AntCascader.h"
@@ -19,6 +20,7 @@ private slots:
     void propertiesAndSignals();
     void cascaderPopupClosesOnOutsideClick();
     void cascaderPopupCachesColumnsAndScopesHover();
+    void datePickerPopupCachesCellsAndScopesHover();
 };
 
 namespace
@@ -30,6 +32,43 @@ QPoint cascaderPopupCellCenter(int column, int row, int rowHeight = 32)
     constexpr int columnWidth = 112;
     return QPoint(shadow + padding + column * columnWidth + columnWidth / 2,
                   shadow + padding + row * rowHeight + rowHeight / 2);
+}
+
+QFrame* directVisibleFrameChild(QWidget* owner)
+{
+    const auto frames = owner->findChildren<QFrame*>(QString(), Qt::FindDirectChildrenOnly);
+    for (QFrame* frame : frames)
+    {
+        if (frame && frame->isVisible())
+        {
+            return frame;
+        }
+    }
+    return nullptr;
+}
+
+QPoint datePickerPopupCellCenter(int column, int row)
+{
+    constexpr int shadowMargin = 32;
+    constexpr int topMargin = 12;
+    constexpr int panelWidth = 288;
+    constexpr int gridLeftInset = 14;
+    constexpr int gridTopInset = 88;
+    constexpr qreal cellWidth = (panelWidth - gridLeftInset * 2) / 7.0;
+    constexpr qreal cellHeight = 34.0;
+    return QPoint(qRound(shadowMargin + gridLeftInset + (column + 0.5) * cellWidth),
+                  qRound(topMargin + gridTopInset + (row + 0.5) * cellHeight));
+}
+
+void sendMouseMove(QWidget* target, const QPoint& point)
+{
+    QMouseEvent event(QEvent::MouseMove,
+                      QPointF(point),
+                      QPointF(target->mapToGlobal(point)),
+                      Qt::NoButton,
+                      Qt::NoButton,
+                      Qt::NoModifier);
+    QCoreApplication::sendEvent(target, &event);
 }
 } // namespace
 
@@ -395,6 +434,44 @@ void TestAntDataEntryB::cascaderPopupCachesColumnsAndScopesHover()
     cascader.setOpen(true);
     QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
     QVERIFY(cascader.property("antCascaderPopupGeometrySkipCount").toInt() > geometrySkipsBefore);
+}
+
+void TestAntDataEntryB::datePickerPopupCachesCellsAndScopesHover()
+{
+    AntDatePicker picker;
+    picker.setDisplayFormat(QStringLiteral("yyyy-MM-dd"));
+    picker.setSelectedDate(QDate(2026, 4, 1));
+    picker.resize(picker.sizeHint());
+    picker.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&picker));
+
+    picker.setOpen(true);
+    QTRY_VERIFY_WITH_TIMEOUT(picker.isOpen(), 300);
+    auto* popup = directVisibleFrameChild(&picker);
+    QVERIFY(popup);
+    QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
+
+    const QPoint firstCell = datePickerPopupCellCenter(3, 2);
+    const int scopedBeforeHover = picker.property("antDatePickerPopupScopedCellUpdateCount").toInt();
+    sendMouseMove(popup, firstCell);
+    QVERIFY(picker.property("antDatePickerPopupDayCacheBuildCount").toInt() > 0);
+    QVERIFY(picker.property("antDatePickerPopupScopedCellUpdateCount").toInt() > scopedBeforeHover);
+
+    const int scopedBeforeSameHover = picker.property("antDatePickerPopupScopedCellUpdateCount").toInt();
+    const int cacheHitsBeforeSameHover = picker.property("antDatePickerPopupDayCacheHitCount").toInt();
+    sendMouseMove(popup, firstCell);
+    QCOMPARE(picker.property("antDatePickerPopupScopedCellUpdateCount").toInt(), scopedBeforeSameHover);
+    QVERIFY(picker.property("antDatePickerPopupDayCacheHitCount").toInt() > cacheHitsBeforeSameHover);
+
+    const int scopedBeforeSecondHover = picker.property("antDatePickerPopupScopedCellUpdateCount").toInt();
+    sendMouseMove(popup, datePickerPopupCellCenter(4, 2));
+    QVERIFY(picker.property("antDatePickerPopupScopedCellUpdateCount").toInt() > scopedBeforeSecondHover);
+
+    const int buildsBeforeMonthChange = picker.property("antDatePickerPopupDayCacheBuildCount").toInt();
+    picker.setFocus();
+    QTest::keyClick(&picker, Qt::Key_Right);
+    sendMouseMove(popup, datePickerPopupCellCenter(0, 0));
+    QVERIFY(picker.property("antDatePickerPopupDayCacheBuildCount").toInt() > buildsBeforeMonthChange);
 }
 
 QTEST_MAIN(TestAntDataEntryB)

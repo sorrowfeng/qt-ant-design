@@ -14,6 +14,7 @@ class QFrame;
 class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
+class AntDatePickerStyle;
 
 class QT_ANT_DESIGN_EXPORT AntDatePicker : public QWidget
 {
@@ -115,6 +116,7 @@ protected:
 
 private:
     friend class AntDatePickerPopup;
+    friend class AntDatePickerStyle;
 
     struct Metrics
     {
