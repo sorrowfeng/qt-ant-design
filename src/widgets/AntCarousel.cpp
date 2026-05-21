@@ -2,10 +2,13 @@
 
 #include <QAbstractAnimation>
 #include <QEasingCurve>
+#include <QEvent>
+#include <QHideEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPropertyAnimation>
 #include <QResizeEvent>
+#include <QShowEvent>
 #include <QTimer>
 
 #include <algorithm>
@@ -76,10 +79,9 @@ AntCarousel::AntCarousel(QWidget* parent)
     m_timer = new QTimer(this);
     m_timer->setInterval(m_interval);
     connect(m_timer, &QTimer::timeout, this, [this]() {
-        if (m_slides.isEmpty()) return;
+        if (m_slides.size() <= 1) return;
         setCurrentIndex(m_currentIndex + 1);
     });
-    if (m_autoPlay) m_timer->start();
 
     m_dotsOverlay = new CarouselDotsOverlay(this);
     m_dotsOverlay->hide();
@@ -93,6 +95,8 @@ AntCarousel::AntCarousel(QWidget* parent)
         update();
         updateDotsOverlay();
     });
+    updateAutoPlayTimer();
+    syncCarouselPerfCounters();
 }
 
 bool AntCarousel::autoPlay() const { return m_autoPlay; }
@@ -100,7 +104,7 @@ void AntCarousel::setAutoPlay(bool autoPlay)
 {
     if (m_autoPlay == autoPlay) return;
     m_autoPlay = autoPlay;
-    if (autoPlay) m_timer->start(); else m_timer->stop();
+    updateAutoPlayTimer();
     Q_EMIT autoPlayChanged(m_autoPlay);
 }
 
@@ -110,6 +114,7 @@ void AntCarousel::setInterval(int ms)
     if (m_interval == ms) return;
     m_interval = ms;
     m_timer->setInterval(ms);
+    updateAutoPlayTimer();
     Q_EMIT intervalChanged(m_interval);
 }
 
@@ -132,7 +137,6 @@ void AntCarousel::setCurrentIndex(int index)
     const int previous = m_currentIndex;
     m_currentIndex = index;
     startTransition(previous, m_currentIndex, requestedIndex);
-    update();
     Q_EMIT currentIndexChanged(m_currentIndex);
 }
 
@@ -140,7 +144,10 @@ qreal AntCarousel::transitionProgress() const { return m_transitionProgress; }
 
 void AntCarousel::setTransitionProgress(qreal progress)
 {
-    m_transitionProgress = std::clamp(progress, 0.0, 1.0);
+    const qreal nextProgress = std::clamp(progress, 0.0, 1.0);
+    if (qFuzzyCompare(m_transitionProgress + 1.0, nextProgress + 1.0))
+        return;
+    m_transitionProgress = nextProgress;
     layoutTransitionSlides();
 }
 
@@ -152,6 +159,7 @@ void AntCarousel::addSlide(QWidget* widget)
     widget->hide();
     m_slides.append(widget);
     updateSlideVisibility();
+    updateAutoPlayTimer();
 }
 
 void AntCarousel::removeSlide(int index)
@@ -163,6 +171,7 @@ void AntCarousel::removeSlide(int index)
     m_slides.removeAt(index);
     if (m_currentIndex >= m_slides.size()) m_currentIndex = 0;
     updateSlideVisibility();
+    updateAutoPlayTimer();
 }
 
 void AntCarousel::clearSlides()
@@ -174,7 +183,49 @@ void AntCarousel::clearSlides()
     m_previousIndex = -1;
     m_transitionProgress = 1.0;
     updateDotsOverlay();
+    updateAutoPlayTimer();
     update();
+}
+
+void AntCarousel::changeEvent(QEvent* event)
+{
+    QWidget::changeEvent(event);
+    if (event->type() == QEvent::EnabledChange)
+        updateAutoPlayTimer();
+}
+
+void AntCarousel::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+    updateSlideVisibility();
+    updateAutoPlayTimer();
+}
+
+void AntCarousel::hideEvent(QHideEvent* event)
+{
+    if (m_timer->isActive())
+        m_timer->stop();
+    syncCarouselPerfCounters();
+    QWidget::hideEvent(event);
+}
+
+void AntCarousel::updateAutoPlayTimer()
+{
+    const bool shouldRun = m_autoPlay && isVisible() && isEnabled() && m_slides.size() > 1;
+    if (shouldRun)
+    {
+        if (!m_timer->isActive())
+            m_timer->start(m_interval);
+        else if (m_timer->interval() != m_interval)
+            m_timer->setInterval(m_interval);
+    }
+    else if (m_timer->isActive())
+    {
+        m_timer->stop();
+    }
+
+    ++m_autoPlayTimerRefreshCount;
+    syncCarouselPerfCounters();
 }
 
 void AntCarousel::updateSlideVisibility()
@@ -189,16 +240,23 @@ void AntCarousel::updateSlideVisibility()
     {
         if (i == m_currentIndex)
         {
-            m_slides[i]->setGeometry(rect());
-            m_slides[i]->show();
+            if (m_slides[i]->geometry() != rect())
+            {
+                m_slides[i]->setGeometry(rect());
+                ++m_slideGeometryUpdateCount;
+            }
+            if (m_slides[i]->isHidden())
+                m_slides[i]->show();
             m_slides[i]->raise();
         }
         else
         {
-            m_slides[i]->hide();
+            if (!m_slides[i]->isHidden())
+                m_slides[i]->hide();
         }
     }
-    updateDotsOverlay();
+    updateDotsOverlay(false);
+    syncCarouselPerfCounters();
 }
 
 void AntCarousel::paintEvent(QPaintEvent*)
@@ -232,15 +290,51 @@ void AntCarousel::resizeEvent(QResizeEvent* event)
         updateSlideVisibility();
 }
 
-void AntCarousel::updateDotsOverlay()
+void AntCarousel::updateDotsOverlay(bool repaint)
 {
     if (!m_dotsOverlay)
         return;
 
-    m_dotsOverlay->setGeometry(rect());
-    m_dotsOverlay->setVisible(m_showDots && m_slides.size() > 1);
+    const bool shouldShow = m_showDots && m_slides.size() > 1;
+    bool needsPaint = repaint;
+    if (m_dotsOverlay->geometry() != rect())
+    {
+        m_dotsOverlay->setGeometry(rect());
+        ++m_dotsGeometryUpdateCount;
+        needsPaint = true;
+    }
+    if (m_lastDotsVisible != shouldShow)
+    {
+        m_dotsOverlay->setVisible(shouldShow);
+        m_lastDotsVisible = shouldShow;
+        needsPaint = true;
+    }
+    const int slideCount = m_slides.size();
+    if (m_lastDotsCount != slideCount || m_lastDotsActive != m_currentIndex)
+    {
+        m_lastDotsCount = slideCount;
+        m_lastDotsActive = m_currentIndex;
+        needsPaint = true;
+    }
+
+    if (shouldShow)
+    {
+        raiseDotsOverlay();
+        if (needsPaint)
+        {
+            ++m_dotsPaintUpdateCount;
+            m_dotsOverlay->update();
+        }
+    }
+    syncCarouselPerfCounters();
+}
+
+void AntCarousel::raiseDotsOverlay()
+{
+    if (!m_dotsOverlay || !m_dotsOverlay->isVisible())
+        return;
     m_dotsOverlay->raise();
-    m_dotsOverlay->update();
+    ++m_dotsRaiseCount;
 }
 
 void AntCarousel::startTransition(int from, int to, int requestedIndex)
@@ -257,6 +351,7 @@ void AntCarousel::startTransition(int from, int to, int requestedIndex)
     m_previousIndex = from;
     m_transitionDirection = transitionDirection(from, to, requestedIndex);
     m_transitionProgress = 0.0;
+    m_lastUpdateMode = QStringLiteral("transition");
 
     for (int i = 0; i < m_slides.size(); ++i)
     {
@@ -267,9 +362,11 @@ void AntCarousel::startTransition(int from, int to, int requestedIndex)
     }
 
     layoutTransitionSlides();
+    updateDotsOverlay(true);
     m_transitionAnimation->setStartValue(0.0);
     m_transitionAnimation->setEndValue(1.0);
     m_transitionAnimation->start();
+    syncCarouselPerfCounters();
 }
 
 void AntCarousel::layoutTransitionSlides()
@@ -281,13 +378,26 @@ void AntCarousel::layoutTransitionSlides()
     const int dx = qRound(base.width() * m_transitionProgress);
     auto* previousSlide = m_slides[m_previousIndex];
     auto* currentSlide = m_slides[m_currentIndex];
+    const QRect previousRect = base.translated(-m_transitionDirection * dx, 0);
+    const QRect currentRect = base.translated(m_transitionDirection * (base.width() - dx), 0);
 
-    previousSlide->setGeometry(base.translated(-m_transitionDirection * dx, 0));
-    currentSlide->setGeometry(base.translated(m_transitionDirection * (base.width() - dx), 0));
-    previousSlide->show();
-    currentSlide->show();
+    if (previousSlide->geometry() != previousRect)
+    {
+        previousSlide->setGeometry(previousRect);
+        ++m_slideGeometryUpdateCount;
+    }
+    if (currentSlide->geometry() != currentRect)
+    {
+        currentSlide->setGeometry(currentRect);
+        ++m_slideGeometryUpdateCount;
+    }
+    if (previousSlide->isHidden())
+        previousSlide->show();
+    if (currentSlide->isHidden())
+        currentSlide->show();
     currentSlide->raise();
-    updateDotsOverlay();
+    raiseDotsOverlay();
+    syncCarouselPerfCounters();
 }
 
 void AntCarousel::finishTransition()
@@ -305,4 +415,16 @@ int AntCarousel::transitionDirection(int from, int to, int requestedIndex) const
     if (requestedIndex >= slideCount)
         return 1;
     return to > from ? 1 : -1;
+}
+
+void AntCarousel::syncCarouselPerfCounters() const
+{
+    auto* self = const_cast<AntCarousel*>(this);
+    self->setProperty("antCarouselAutoPlayTimerActive", m_timer && m_timer->isActive());
+    self->setProperty("antCarouselAutoPlayTimerRefreshCount", m_autoPlayTimerRefreshCount);
+    self->setProperty("antCarouselSlideGeometryUpdateCount", m_slideGeometryUpdateCount);
+    self->setProperty("antCarouselDotsGeometryUpdateCount", m_dotsGeometryUpdateCount);
+    self->setProperty("antCarouselDotsPaintUpdateCount", m_dotsPaintUpdateCount);
+    self->setProperty("antCarouselDotsRaiseCount", m_dotsRaiseCount);
+    self->setProperty("antCarouselLastUpdateMode", m_lastUpdateMode);
 }

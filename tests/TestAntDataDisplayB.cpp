@@ -31,6 +31,7 @@ private slots:
     void treeCachesFlattenedVisibleNodes();
     void tableHoverUsesRowScopedUpdates();
     void tableSelectionCompatibilityApis();
+    void carouselPausesAutoplayAndScopesTransitionWork();
     void qrCodeReusesRenderedModuleCache();
     void watermarkCachesRenderedPixmap();
     void timelineCachesPaintLayoutAndColors();
@@ -452,6 +453,55 @@ void TestAntDataDisplayB::propertiesAndSignals()
     p->setExpanded(true);
     QCOMPARE(p->isExpanded(), true);
     QCOMPARE(expSpy.count(), 1);
+}
+
+void TestAntDataDisplayB::carouselPausesAutoplayAndScopesTransitionWork()
+{
+    AntCarousel carousel;
+    carousel.resize(260, 160);
+    carousel.setInterval(1000);
+    auto* first = new QWidget;
+    first->setObjectName(QStringLiteral("first-slide"));
+    first->setStyleSheet(QStringLiteral("background: #1677ff;"));
+    auto* second = new QWidget;
+    second->setObjectName(QStringLiteral("second-slide"));
+    second->setStyleSheet(QStringLiteral("background: #52c41a;"));
+    carousel.addSlide(first);
+    carousel.addSlide(second);
+
+    QVERIFY(!carousel.property("antCarouselAutoPlayTimerActive").toBool());
+    carousel.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&carousel));
+    QTRY_VERIFY(carousel.property("antCarouselAutoPlayTimerActive").toBool());
+
+    const int indexBeforeHide = carousel.currentIndex();
+    carousel.hide();
+    QCoreApplication::processEvents();
+    QVERIFY(!carousel.property("antCarouselAutoPlayTimerActive").toBool());
+    QTest::qWait(120);
+    QCOMPARE(carousel.currentIndex(), indexBeforeHide);
+
+    carousel.setAutoPlay(false);
+    carousel.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&carousel));
+    QVERIFY(!carousel.property("antCarouselAutoPlayTimerActive").toBool());
+
+    const int dotsPaintBefore = carousel.property("antCarouselDotsPaintUpdateCount").toInt();
+    carousel.setCurrentIndex(1);
+    QCOMPARE(carousel.currentIndex(), 1);
+    QCOMPARE(carousel.property("antCarouselLastUpdateMode").toString(), QStringLiteral("transition"));
+    const int dotsPaintAfterStart = carousel.property("antCarouselDotsPaintUpdateCount").toInt();
+    const int dotsGeometryAfterStart = carousel.property("antCarouselDotsGeometryUpdateCount").toInt();
+    const int slideGeometryAfterStart = carousel.property("antCarouselSlideGeometryUpdateCount").toInt();
+    QVERIFY(dotsPaintAfterStart > dotsPaintBefore);
+
+    QTest::qWait(120);
+    QVERIFY(carousel.property("antCarouselSlideGeometryUpdateCount").toInt() > slideGeometryAfterStart);
+    QCOMPARE(carousel.property("antCarouselDotsPaintUpdateCount").toInt(), dotsPaintAfterStart);
+    QCOMPARE(carousel.property("antCarouselDotsGeometryUpdateCount").toInt(), dotsGeometryAfterStart);
+
+    QTRY_VERIFY_WITH_TIMEOUT(first->isHidden(), 1000);
+    QCOMPARE(second->geometry(), carousel.rect());
 }
 
 void TestAntDataDisplayB::listWidgetCompatibilityApis()

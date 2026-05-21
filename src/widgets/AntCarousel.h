@@ -6,7 +6,10 @@
 
 class QPropertyAnimation;
 class QTimer;
+class QEvent;
+class QHideEvent;
 class QResizeEvent;
+class QShowEvent;
 
 class QT_ANT_DESIGN_EXPORT AntCarousel : public QWidget
 {
@@ -46,17 +49,23 @@ Q_SIGNALS:
     void showDotsChanged(bool show);
 
 protected:
+    void changeEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
     void paintEvent(QPaintEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
     void resizeEvent(QResizeEvent* event) override;
 
 private:
+    void updateAutoPlayTimer();
     void updateSlideVisibility();
-    void updateDotsOverlay();
+    void updateDotsOverlay(bool repaint = true);
+    void raiseDotsOverlay();
     void startTransition(int from, int to, int requestedIndex);
     void layoutTransitionSlides();
     void finishTransition();
     int transitionDirection(int from, int to, int requestedIndex) const;
+    void syncCarouselPerfCounters() const;
 
     QList<QWidget*> m_slides;
     QTimer* m_timer = nullptr;
@@ -69,4 +78,13 @@ private:
     int m_previousIndex = -1;
     int m_transitionDirection = 1;
     qreal m_transitionProgress = 1.0;
+    int m_autoPlayTimerRefreshCount = 0;
+    int m_slideGeometryUpdateCount = 0;
+    int m_dotsGeometryUpdateCount = 0;
+    int m_dotsPaintUpdateCount = 0;
+    int m_dotsRaiseCount = 0;
+    bool m_lastDotsVisible = false;
+    int m_lastDotsCount = -1;
+    int m_lastDotsActive = -1;
+    QString m_lastUpdateMode;
 };

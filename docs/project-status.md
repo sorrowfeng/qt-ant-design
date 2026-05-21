@@ -19,7 +19,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `79` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `80` controls optimized in the current pass |
 
 ## Recent Completed Work
 
@@ -72,6 +72,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Optimized `AntBadge` by caching indicator/status/ribbon geometry and colors on the widget, letting processing animation repaint only the overlay status-dot region, and stopping its timer when hidden or no longer processing.
 - Optimized `AntCalendar` by skipping full model resets for same-month selected-date changes, refreshing only old/new selected day cells, caching row-height metrics, and skipping unchanged header button synchronization.
 - Optimized `AntCard` by caching frame/header/action/spinner paint geometry on the widget, using scoped spinner-region updates during loading animation, pausing the spinner timer while hidden/disabled, and skipping unchanged chrome visibility/margin/height applications.
+- Optimized `AntCarousel` by pausing autoplay unless visible/enabled with multiple slides, skipping unchanged slide geometry work during transitions, and preventing dots overlay geometry/repaint churn on animation frames while keeping the slide motion intact.
 - Optimized `AntNavItem` by moving label style updates out of paint and caching hover/active background plus indicator geometry.
 - Optimized `AntPlainTextEdit` by caching visual state application and scoping resize-grip cursor/paint updates to real hover-state changes across the editor's internal mouse-event targets.
 - Optimized `AntRibbon` by caching tab layout rectangles and repainting only affected tab, collapse button, and indicator regions during hover and indicator animation.
