@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QEnterEvent>
+#include <QFontMetrics>
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QPainter>
@@ -101,6 +102,29 @@ void sendMouseClick(QWidget* target, const QPoint& globalPos, Qt::KeyboardModifi
                              modifiers);
     QApplication::sendEvent(target, &releaseEvent);
 }
+
+void drawMessageShadow(QPainter& painter, const QRectF& bubble, qreal radius)
+{
+    painter.save();
+    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    constexpr int ShadowLayers = 14;
+    const qreal maxAlpha = dark ? 0.040 : 0.024;
+    for (int i = ShadowLayers; i >= 1; --i)
+    {
+        const qreal progress = 1.0 - static_cast<qreal>(i) / ShadowLayers;
+        QColor shadow = antTheme->tokens().colorShadow;
+        shadow.setAlphaF(maxAlpha * progress * progress);
+
+        const QRectF layer = bubble.adjusted(-i * 0.26, -i * 0.08 + 1.2, i * 0.26, i * 0.32 + 2.4);
+        QPainterPath outer;
+        outer.addRoundedRect(layer, radius + i * 0.25, radius + i * 0.25);
+        QPainterPath inner;
+        inner.addRoundedRect(bubble, radius, radius);
+        painter.fillPath(outer.subtracted(inner), shadow);
+    }
+
+    painter.restore();
+}
 } // namespace
 
 AntMessage::AntMessage(QWidget* parent)
@@ -121,8 +145,18 @@ AntMessage::AntMessage(QWidget* parent)
     m_loadingTimer = new QTimer(this);
     connect(m_loadingTimer, &QTimer::timeout, this, [this]() {
         m_loadingAngle = (m_loadingAngle + 30) % 360;
-        update();
+        requestMessageUpdate(messageLayout().iconRect.toAlignedRect().adjusted(-3, -3, 3, 3),
+                             QStringLiteral("loading"),
+                             true);
     });
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateMessageLayout();
+        clearShadowCache();
+        applyMessageSizeHint();
+        requestMessageUpdate(rect(), QStringLiteral("theme"));
+    });
+    syncMessagePerfCounters();
 }
 
 AntMessage* AntMessage::open(const QString& text, Ant::MessageType type, QWidget* anchor, int durationMs, Ant::Placement placement)
@@ -133,7 +167,7 @@ AntMessage* AntMessage::open(const QString& text, Ant::MessageType type, QWidget
     message->setText(text);
     message->setMessageType(type);
     message->setDuration(durationMs);
-    message->adjustSize();
+    message->applyMessageSizeHint();
     activeMessages().append(message);
 
     QPointer<QWidget> anchorGuard(anchor);
@@ -181,8 +215,10 @@ void AntMessage::setText(const QString& text)
         return;
     }
     m_text = text;
-    adjustSize();
-    update();
+    invalidateMessageLayout();
+    clearShadowCache();
+    applyMessageSizeHint();
+    requestMessageUpdate(rect(), QStringLiteral("text"));
     Q_EMIT textChanged(m_text);
 }
 
@@ -195,8 +231,10 @@ void AntMessage::setMessageType(Ant::MessageType type)
         return;
     }
     m_messageType = type;
+    invalidateMessageLayout();
     updateLoadingState();
-    update();
+    requestMessageUpdate(messageLayout().iconRect.toAlignedRect().adjusted(-3, -3, 3, 3),
+                         QStringLiteral("type"));
     Q_EMIT messageTypeChanged(m_messageType);
 }
 
@@ -230,17 +268,12 @@ int AntMessage::loadingAngle() const { return m_loadingAngle; }
 
 QSize AntMessage::sizeHint() const
 {
-    const auto& token = antTheme->tokens();
-    QFont f = font();
-    f.setPixelSize(token.fontSize);
-    QFontMetrics fm(f);
-    const int textWidth = std::min(420, fm.horizontalAdvance(m_text));
-    return QSize(textWidth + 64, token.controlHeightLG + 12);
+    return messageLayout().sizeHint;
 }
 
 QSize AntMessage::minimumSizeHint() const
 {
-    return QSize(120, antTheme->tokens().controlHeightLG);
+    return messageLayout().minimumSizeHint;
 }
 
 void AntMessage::paintEvent(QPaintEvent* event)
@@ -334,7 +367,7 @@ void AntMessage::relayoutMessages(QWidget* anchor)
                 continue;
             }
 
-            message->adjustSize();
+            message->applyMessageSizeHint();
             int x = targetRect.center().x() - message->width() / 2;
             switch (placement)
             {
@@ -353,12 +386,32 @@ void AntMessage::relayoutMessages(QWidget* anchor)
             if (isBottomPlacement(placement))
             {
                 cursor -= message->height();
-                message->move(x, cursor);
+                const QPoint targetPos(x, cursor);
+                if (message->pos() == targetPos)
+                {
+                    ++message->m_relayoutSkipCount;
+                }
+                else
+                {
+                    message->move(targetPos);
+                    ++message->m_relayoutMoveCount;
+                }
+                message->syncMessagePerfCounters();
                 cursor -= 4;
             }
             else
             {
-                message->move(x, cursor);
+                const QPoint targetPos(x, cursor);
+                if (message->pos() == targetPos)
+                {
+                    ++message->m_relayoutSkipCount;
+                }
+                else
+                {
+                    message->move(targetPos);
+                    ++message->m_relayoutMoveCount;
+                }
+                message->syncMessagePerfCounters();
                 cursor += message->height() + 4;
             }
         }
@@ -374,6 +427,150 @@ void AntMessage::relayoutMessages(QWidget* anchor)
     {
         layoutPlacement(placement);
     }
+}
+
+const AntMessage::MessageLayout& AntMessage::messageLayout() const
+{
+    const QString fontKey = font().toString();
+    const bool cacheMatches = m_layoutCache.valid
+        && m_layoutCache.widgetSize == size()
+        && m_layoutCache.text == m_text
+        && m_layoutCache.messageType == m_messageType
+        && m_layoutCache.themeMode == antTheme->themeMode()
+        && m_layoutCache.fontKey == fontKey;
+    if (cacheMatches)
+    {
+        ++m_layoutCacheHitCount;
+        syncMessagePerfCounters();
+        return m_layoutCache;
+    }
+
+    ++m_layoutBuildCount;
+    const auto& token = antTheme->tokens();
+
+    MessageLayout layout;
+    layout.valid = true;
+    layout.widgetSize = size();
+    layout.text = m_text;
+    layout.messageType = m_messageType;
+    layout.themeMode = antTheme->themeMode();
+    layout.fontKey = fontKey;
+    layout.radius = token.borderRadiusLG;
+    layout.accentColor = accentColor();
+
+    QFont textFont = font();
+    textFont.setPixelSize(token.fontSize);
+    QFontMetrics fm(textFont);
+    const int textWidth = std::min(420, fm.horizontalAdvance(m_text));
+    layout.sizeHint = QSize(textWidth + 64, token.controlHeightLG + 12);
+    layout.minimumSizeHint = QSize(120, token.controlHeightLG);
+
+    layout.bubbleRect = rect().adjusted(8, 4, -8, -8);
+    layout.iconRect = QRectF(layout.bubbleRect.left() + token.paddingSM,
+                             layout.bubbleRect.center().y() - 8,
+                             16,
+                             16);
+    layout.textRect = layout.bubbleRect.adjusted(token.paddingSM + 24, 0, -token.paddingSM, 0);
+
+    m_layoutCache = layout;
+    syncMessagePerfCounters();
+    return m_layoutCache;
+}
+
+void AntMessage::invalidateMessageLayout() const
+{
+    m_layoutCache.valid = false;
+}
+
+QPixmap AntMessage::cachedShadowPixmap() const
+{
+    const auto& layout = messageLayout();
+    const qreal ratio = devicePixelRatioF();
+    const QString key = QStringLiteral("%1x%2:%3:%4:%5:%6")
+        .arg(width())
+        .arg(height())
+        .arg(qRound(ratio * 100.0))
+        .arg(static_cast<int>(antTheme->themeMode()))
+        .arg(antTheme->tokens().colorShadow.rgba())
+        .arg(layout.radius);
+
+    if (!m_shadowPixmapCache.isNull() && m_shadowPixmapCacheKey == key)
+    {
+        ++m_shadowCacheHitCount;
+        syncMessagePerfCounters();
+        return m_shadowPixmapCache;
+    }
+
+    ++m_shadowBuildCount;
+    m_shadowPixmapCacheKey = key;
+    const QSize pixmapSize(qMax(1, qRound(width() * ratio)), qMax(1, qRound(height() * ratio)));
+    QPixmap pixmap(pixmapSize);
+    pixmap.setDevicePixelRatio(ratio);
+    pixmap.fill(Qt::transparent);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    drawMessageShadow(painter, layout.bubbleRect, layout.radius);
+    painter.end();
+
+    m_shadowPixmapCache = pixmap;
+    syncMessagePerfCounters();
+    return m_shadowPixmapCache;
+}
+
+void AntMessage::clearShadowCache() const
+{
+    m_shadowPixmapCache = QPixmap();
+    m_shadowPixmapCacheKey.clear();
+}
+
+void AntMessage::applyMessageSizeHint()
+{
+    const QSize target = sizeHint();
+    if (size() == target)
+    {
+        ++m_sizeSkipCount;
+        syncMessagePerfCounters();
+        return;
+    }
+    resize(target);
+    invalidateMessageLayout();
+    clearShadowCache();
+    ++m_sizeApplyCount;
+    syncMessagePerfCounters();
+}
+
+void AntMessage::requestMessageUpdate(const QRect& region, const QString& mode, bool spinnerScoped)
+{
+    m_lastUpdateMode = mode;
+    ++m_regionUpdateCount;
+    if (spinnerScoped)
+    {
+        ++m_spinnerRegionUpdateCount;
+    }
+    syncMessagePerfCounters();
+    if (region.isValid() && !region.isEmpty())
+    {
+        update(region);
+        return;
+    }
+    update();
+}
+
+void AntMessage::syncMessagePerfCounters() const
+{
+    auto* that = const_cast<AntMessage*>(this);
+    that->setProperty("antMessageLayoutBuildCount", m_layoutBuildCount);
+    that->setProperty("antMessageLayoutCacheHitCount", m_layoutCacheHitCount);
+    that->setProperty("antMessageShadowBuildCount", m_shadowBuildCount);
+    that->setProperty("antMessageShadowCacheHitCount", m_shadowCacheHitCount);
+    that->setProperty("antMessageSizeApplyCount", m_sizeApplyCount);
+    that->setProperty("antMessageSizeSkipCount", m_sizeSkipCount);
+    that->setProperty("antMessageRegionUpdateCount", m_regionUpdateCount);
+    that->setProperty("antMessageSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
+    that->setProperty("antMessageRelayoutMoveCount", m_relayoutMoveCount);
+    that->setProperty("antMessageRelayoutSkipCount", m_relayoutSkipCount);
+    that->setProperty("antMessageLastUpdateMode", m_lastUpdateMode);
 }
 
 QColor AntMessage::accentColor() const

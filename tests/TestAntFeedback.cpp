@@ -27,6 +27,7 @@ private slots:
     void drawer();
     void drawerCachesGeometryAndScopesAnimationUpdates();
     void message();
+    void messageCachesLayoutShadowAndScopesUpdates();
     void notification();
     void notificationLoadingProgressAutoCloses();
     void popconfirm();
@@ -242,6 +243,61 @@ void TestAntFeedback::message()
     w->setPauseOnHover(false);
     QCOMPARE(w->pauseOnHover(), false);
     QCOMPARE(pauseSpy.count(), 1);
+}
+
+void TestAntFeedback::messageCachesLayoutShadowAndScopesUpdates()
+{
+    AntMessage message;
+    message.setText(QStringLiteral("Saved"));
+    message.setMessageType(Ant::MessageType::Success);
+
+    message.grab();
+    const int layoutBuilds = message.property("antMessageLayoutBuildCount").toInt();
+    const int layoutHits = message.property("antMessageLayoutCacheHitCount").toInt();
+    const int shadowBuilds = message.property("antMessageShadowBuildCount").toInt();
+    const int shadowHits = message.property("antMessageShadowCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+    QVERIFY(shadowBuilds > 0);
+
+    message.grab();
+    QCOMPARE(message.property("antMessageLayoutBuildCount").toInt(), layoutBuilds);
+    QCOMPARE(message.property("antMessageShadowBuildCount").toInt(), shadowBuilds);
+    QVERIFY(message.property("antMessageLayoutCacheHitCount").toInt() > layoutHits);
+    QVERIFY(message.property("antMessageShadowCacheHitCount").toInt() > shadowHits);
+
+    message.setMessageType(Ant::MessageType::Loading);
+    QCOMPARE(message.property("antMessageLastUpdateMode").toString(), QStringLiteral("type"));
+    message.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&message));
+    const int spinnerUpdates = message.property("antMessageSpinnerRegionUpdateCount").toInt();
+    QTRY_VERIFY_WITH_TIMEOUT(message.property("antMessageSpinnerRegionUpdateCount").toInt() > spinnerUpdates, 300);
+    QCOMPARE(message.property("antMessageLastUpdateMode").toString(), QStringLiteral("loading"));
+    message.hide();
+
+    QWidget anchor;
+    anchor.resize(480, 240);
+    anchor.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&anchor));
+
+    QPointer<AntMessage> first = AntMessage::success(QStringLiteral("First"), &anchor, 0, Ant::Placement::Top);
+    QVERIFY(first);
+    QTRY_VERIFY_WITH_TIMEOUT(first->isVisible(), 300);
+    QTest::qWait(260);
+    const int firstRelayoutSkips = first->property("antMessageRelayoutSkipCount").toInt();
+
+    QPointer<AntMessage> second = AntMessage::info(QStringLiteral("Second"), &anchor, 0, Ant::Placement::Top);
+    QVERIFY(second);
+    QTRY_VERIFY_WITH_TIMEOUT(second->isVisible(), 300);
+    QVERIFY(first->property("antMessageRelayoutSkipCount").toInt() > firstRelayoutSkips);
+
+    if (second)
+    {
+        second->close();
+    }
+    if (first)
+    {
+        first->close();
+    }
 }
 
 void TestAntFeedback::notification()
