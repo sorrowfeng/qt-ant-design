@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QLabel>
 #include <QMouseEvent>
 #include <QSignalSpy>
 #include <QPointer>
@@ -24,6 +25,7 @@ private slots:
     void alert();
     void alertCachesLayoutAndScopesCloseHover();
     void drawer();
+    void drawerCachesGeometryAndScopesAnimationUpdates();
     void message();
     void notification();
     void notificationLoadingProgressAutoCloses();
@@ -173,6 +175,43 @@ void TestAntFeedback::drawer()
     w->setOpen(true);
     QCOMPARE(w->isOpen(), true);
     QCOMPARE(openSpy.count(), 1);
+}
+
+void TestAntFeedback::drawerCachesGeometryAndScopesAnimationUpdates()
+{
+    QWidget host;
+    host.resize(480, 320);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    AntDrawer drawer(&host);
+    drawer.setTitle(QStringLiteral("Drawer"));
+    drawer.setDrawerWidth(220);
+    drawer.setBodyWidget(new QLabel(QStringLiteral("Drawer body")));
+
+    QSignalSpy openedSpy(&drawer, &AntDrawer::opened);
+    drawer.setOpen(true);
+    QTRY_COMPARE_WITH_TIMEOUT(openedSpy.count(), 1, 700);
+    QVERIFY(drawer.isOpen());
+    QVERIFY(drawer.property("antDrawerAnimationRegionUpdateCount").toInt() > 0);
+    QVERIFY(drawer.property("antDrawerMaskRegionUpdateCount").toInt() > 0);
+    QVERIFY(drawer.property("antDrawerPanelRegionUpdateCount").toInt() > 0);
+    QVERIFY(drawer.property("antDrawerGeometryBuildCount").toInt() > 0);
+
+    const int geometryHits = drawer.property("antDrawerGeometryCacheHitCount").toInt();
+    (void)drawer.maskProgress();
+    QVERIFY(drawer.property("antDrawerGeometryCacheHitCount").toInt() > geometryHits);
+
+    const int panelApplies = drawer.property("antDrawerPanelGeometryApplyCount").toInt();
+    const int themeSkips = drawer.property("antDrawerThemeSkipCount").toInt();
+    drawer.setDrawerWidth(260);
+    QVERIFY(drawer.property("antDrawerPanelGeometryApplyCount").toInt() > panelApplies);
+    QVERIFY(drawer.property("antDrawerThemeSkipCount").toInt() > themeSkips);
+
+    QSignalSpy closedSpy(&drawer, &AntDrawer::closed);
+    drawer.setOpen(false);
+    QTRY_COMPARE_WITH_TIMEOUT(closedSpy.count(), 1, 700);
+    QVERIFY(!drawer.isOpen());
 }
 
 void TestAntFeedback::message()

@@ -2,6 +2,7 @@
 
 #include <QEvent>
 #include <QPainter>
+#include <QPaintEvent>
 #include <QStyleOption>
 
 #include "styles/AntPalette.h"
@@ -72,7 +73,6 @@ void drawPanelShadow(QPainter* painter, const QStyleOption* option, const AntDra
 AntDrawerStyle::AntDrawerStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntDrawer>();
 }
 
 void AntDrawerStyle::polish(QWidget* widget)
@@ -113,9 +113,10 @@ bool AntDrawerStyle::eventFilter(QObject* watched, QEvent* event)
     auto* drawer = qobject_cast<AntDrawer*>(watched);
     if (drawer && event->type() == QEvent::Paint)
     {
+        auto* paintEvent = static_cast<QPaintEvent*>(event);
         QStyleOption option;
         option.initFrom(drawer);
-        option.rect = drawer->rect();
+        option.rect = paintEvent->rect();
         QPainter painter(drawer);
         drawPrimitive(QStyle::PE_Widget, &option, &painter, drawer);
         return true;

@@ -10,8 +10,10 @@
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
+#include <QVariant>
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
@@ -21,6 +23,7 @@
 namespace
 {
 constexpr int DrawerHeaderHeight = 56;
+constexpr int DrawerOverlayShadowSize = 32;
 
 class DrawerCloseButton : public QAbstractButton
 {
@@ -228,9 +231,21 @@ AntDrawer::AntDrawer(QWidget* parent)
     m_animation->setDuration(200);
     m_animation->setEasingCurve(QEasingCurve::OutCubic);
     connect(m_animation, &QPropertyAnimation::finished, this, &AntDrawer::onAnimationFinished);
-    connect(m_animation, &QPropertyAnimation::valueChanged, this, [this]() { update(); });
+    connect(m_animation, &QPropertyAnimation::valueChanged, this, [this](const QVariant& value) {
+        updateAnimationFrame(value.toRect());
+    });
 
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        m_themeKey.clear();
+        syncTheme();
+        if (m_panel)
+        {
+            m_panel->update();
+        }
+        requestDrawerUpdate(rect(), QStringLiteral("theme"));
+    });
     syncTheme();
+    syncDrawerPerfCounters();
 }
 
 QString AntDrawer::title() const { return m_title; }
@@ -242,6 +257,7 @@ void AntDrawer::setTitle(const QString& title)
         return;
     }
     m_title = title;
+    m_themeKey.clear();
     syncTheme();
     if (m_open)
     {
@@ -259,6 +275,10 @@ void AntDrawer::setPlacement(Ant::DrawerPlacement placement)
         return;
     }
     m_placement = placement;
+    invalidateDrawerGeometry();
+    m_lastPanelAnimationGeometry = QRect();
+    m_lastMaskProgress = -1.0;
+    m_themeKey.clear();
     syncTheme();
     if (m_open)
     {
@@ -277,6 +297,7 @@ void AntDrawer::setDrawerWidth(int width)
         return;
     }
     m_drawerWidth = width;
+    invalidateDrawerGeometry();
     if (m_open)
     {
         updatePanelGeometry();
@@ -294,6 +315,7 @@ void AntDrawer::setDrawerHeight(int height)
         return;
     }
     m_drawerHeight = height;
+    invalidateDrawerGeometry();
     if (m_open)
     {
         updatePanelGeometry();
@@ -310,6 +332,7 @@ void AntDrawer::setClosable(bool closable)
         return;
     }
     m_closable = closable;
+    m_themeKey.clear();
     syncTheme();
     Q_EMIT closableChanged(m_closable);
 }
@@ -381,19 +404,21 @@ void AntDrawer::open()
         return;
     }
 
-    m_open = true;
     ensureHostWidget();
     updateOverlayGeometry();
+    m_open = true;
     show();
     raise();
     activateWindow();
     setFocus(Qt::OtherFocusReason);
 
-    m_panel->setGeometry(panelStartGeometry());
+    const QRect startGeometry = panelStartGeometry();
+    const QRect endGeometry = panelEndGeometry();
+    m_panel->setGeometry(startGeometry);
     m_panel->show();
     m_panel->raise();
 
-    startAnimation(panelStartGeometry(), panelEndGeometry());
+    startAnimation(startGeometry, endGeometry);
     Q_EMIT openChanged(true);
 }
 
@@ -478,6 +503,12 @@ void AntDrawer::keyPressEvent(QKeyEvent* event)
     QWidget::keyPressEvent(event);
 }
 
+void AntDrawer::resizeEvent(QResizeEvent* event)
+{
+    invalidateDrawerGeometry();
+    QWidget::resizeEvent(event);
+}
+
 void AntDrawer::showEvent(QShowEvent* event)
 {
     updateOverlayGeometry();
@@ -518,6 +549,19 @@ void AntDrawer::releaseHostWidget()
 void AntDrawer::syncTheme()
 {
     const auto& token = antTheme->tokens();
+    const QString key = QStringLiteral("%1:%2:%3:%4")
+        .arg(static_cast<int>(antTheme->themeMode()))
+        .arg(m_closable ? 1 : 0)
+        .arg(m_title)
+        .arg(font().toString());
+    if (m_themeKey == key)
+    {
+        ++m_themeSkipCount;
+        syncDrawerPerfCounters();
+        return;
+    }
+    m_themeKey = key;
+    ++m_themeApplyCount;
 
     QFont titleFont = font();
     titleFont.setPixelSize(token.fontSizeLG);
@@ -531,17 +575,28 @@ void AntDrawer::syncTheme()
 
     m_closeButton->setVisible(m_closable);
     m_headerWidget->setVisible(!m_title.isEmpty() || m_closable);
+    syncDrawerPerfCounters();
 }
 
 void AntDrawer::updateOverlayGeometry()
 {
-    if (m_hostWidget)
+    const QRect target = m_hostWidget ? m_hostWidget->rect() : fallbackGeometry();
+    const bool geometryChanged = geometry() != target;
+    if (geometryChanged)
     {
-        setGeometry(m_hostWidget->rect());
+        setGeometry(target);
+        invalidateDrawerGeometry();
+        ++m_overlayGeometryApplyCount;
     }
     else
     {
-        setGeometry(fallbackGeometry());
+        ++m_overlayGeometrySkipCount;
+    }
+    syncDrawerPerfCounters();
+
+    if (m_hostWidget)
+    {
+        raise();
     }
     if (m_open)
     {
@@ -556,72 +611,50 @@ void AntDrawer::updatePanelGeometry()
         return;
     }
     syncTheme();
-    m_panel->setGeometry(panelEndGeometry());
+    const QRect target = panelEndGeometry();
+    if (m_panel->geometry() == target)
+    {
+        ++m_panelGeometrySkipCount;
+        syncDrawerPerfCounters();
+        return;
+    }
+    m_panel->setGeometry(target);
+    ++m_panelGeometryApplyCount;
+    syncDrawerPerfCounters();
 }
 
 QRect AntDrawer::panelEndGeometry() const
 {
-    const int w = width();
-    const int h = height();
-
-    switch (m_placement)
-    {
-    case Ant::DrawerPlacement::Right:
-    {
-        const int dw = qMin(m_drawerWidth, w);
-        return QRect(w - dw, 0, dw, h);
-    }
-    case Ant::DrawerPlacement::Left:
-    {
-        const int dw = qMin(m_drawerWidth, w);
-        return QRect(0, 0, dw, h);
-    }
-    case Ant::DrawerPlacement::Bottom:
-    {
-        const int dh = qMin(m_drawerHeight, h);
-        return QRect(0, h - dh, w, dh);
-    }
-    case Ant::DrawerPlacement::Top:
-    {
-        const int dh = qMin(m_drawerHeight, h);
-        return QRect(0, 0, w, dh);
-    }
-    }
-    return QRect(0, 0, 0, 0);
+    return drawerGeometryCache().endGeometry;
 }
 
 QRect AntDrawer::panelStartGeometry() const
 {
-    const QRect end = panelEndGeometry();
-    const int w = width();
-    const int h = height();
-
-    switch (m_placement)
-    {
-    case Ant::DrawerPlacement::Right:
-        return QRect(w, end.y(), end.width(), end.height());
-    case Ant::DrawerPlacement::Left:
-        return QRect(-end.width(), end.y(), end.width(), end.height());
-    case Ant::DrawerPlacement::Bottom:
-        return QRect(end.x(), h, end.width(), end.height());
-    case Ant::DrawerPlacement::Top:
-        return QRect(end.x(), -end.height(), end.width(), end.height());
-    }
-    return end;
+    return drawerGeometryCache().startGeometry;
 }
 
 void AntDrawer::startAnimation(const QRect& start, const QRect& end)
 {
     m_animating = true;
+    m_lastPanelAnimationGeometry = start;
+    m_lastMaskProgress = maskProgressForPanelGeometry(start);
     m_animation->stop();
     m_animation->setStartValue(start);
     m_animation->setEndValue(end);
     m_animation->start();
+    requestDrawerUpdate(rect(), QStringLiteral("animationStart"));
+}
+
+void AntDrawer::updateAnimationFrame(const QRect& panelGeometry)
+{
+    requestDrawerUpdate(animationDirtyRegion(panelGeometry), QStringLiteral("animation"));
 }
 
 void AntDrawer::onAnimationFinished()
 {
     m_animating = false;
+    m_lastPanelAnimationGeometry = QRect();
+    m_lastMaskProgress = -1.0;
 
     if (m_open)
     {
@@ -637,14 +670,88 @@ void AntDrawer::onAnimationFinished()
 
 qreal AntDrawer::maskProgress() const
 {
+    return maskProgressForPanelGeometry(m_panel ? m_panel->geometry() : QRect());
+}
+
+QRect AntDrawer::currentPanelGeometry() const
+{
+    return m_panel ? m_panel->geometry() : QRect();
+}
+
+const AntDrawer::GeometryCache& AntDrawer::drawerGeometryCache() const
+{
+    const bool cacheMatches = m_geometryCache.valid
+        && m_geometryCache.overlaySize == size()
+        && m_geometryCache.placement == m_placement
+        && m_geometryCache.drawerWidth == m_drawerWidth
+        && m_geometryCache.drawerHeight == m_drawerHeight;
+    if (cacheMatches)
+    {
+        ++m_geometryCacheHitCount;
+        syncDrawerPerfCounters();
+        return m_geometryCache;
+    }
+
+    ++m_geometryBuildCount;
+    GeometryCache cache;
+    cache.valid = true;
+    cache.overlaySize = size();
+    cache.placement = m_placement;
+    cache.drawerWidth = m_drawerWidth;
+    cache.drawerHeight = m_drawerHeight;
+
+    const int w = width();
+    const int h = height();
+    switch (m_placement)
+    {
+    case Ant::DrawerPlacement::Right:
+    {
+        const int dw = qMin(m_drawerWidth, w);
+        cache.endGeometry = QRect(w - dw, 0, dw, h);
+        cache.startGeometry = QRect(w, 0, dw, h);
+        break;
+    }
+    case Ant::DrawerPlacement::Left:
+    {
+        const int dw = qMin(m_drawerWidth, w);
+        cache.endGeometry = QRect(0, 0, dw, h);
+        cache.startGeometry = QRect(-dw, 0, dw, h);
+        break;
+    }
+    case Ant::DrawerPlacement::Bottom:
+    {
+        const int dh = qMin(m_drawerHeight, h);
+        cache.endGeometry = QRect(0, h - dh, w, dh);
+        cache.startGeometry = QRect(0, h, w, dh);
+        break;
+    }
+    case Ant::DrawerPlacement::Top:
+    {
+        const int dh = qMin(m_drawerHeight, h);
+        cache.endGeometry = QRect(0, 0, w, dh);
+        cache.startGeometry = QRect(0, -dh, w, dh);
+        break;
+    }
+    }
+
+    m_geometryCache = cache;
+    syncDrawerPerfCounters();
+    return m_geometryCache;
+}
+
+void AntDrawer::invalidateDrawerGeometry() const
+{
+    m_geometryCache.valid = false;
+}
+
+qreal AntDrawer::maskProgressForPanelGeometry(const QRect& panelGeometry) const
+{
     if (!m_panel)
     {
         return 0.0;
     }
     const QRect end = panelEndGeometry();
     const QRect start = panelStartGeometry();
-    const QRect cur = m_panel->geometry();
-    // Progress = distance traveled from start → end along the slide axis.
     qreal denom = 0.0;
     qreal travelled = 0.0;
     switch (m_placement)
@@ -652,12 +759,12 @@ qreal AntDrawer::maskProgress() const
     case Ant::DrawerPlacement::Right:
     case Ant::DrawerPlacement::Left:
         denom = qAbs(static_cast<qreal>(end.x() - start.x()));
-        travelled = qAbs(static_cast<qreal>(cur.x() - start.x()));
+        travelled = qAbs(static_cast<qreal>(panelGeometry.x() - start.x()));
         break;
     case Ant::DrawerPlacement::Top:
     case Ant::DrawerPlacement::Bottom:
         denom = qAbs(static_cast<qreal>(end.y() - start.y()));
-        travelled = qAbs(static_cast<qreal>(cur.y() - start.y()));
+        travelled = qAbs(static_cast<qreal>(panelGeometry.y() - start.y()));
         break;
     }
     if (denom <= 0.0)
@@ -667,7 +774,88 @@ qreal AntDrawer::maskProgress() const
     return qBound(0.0, travelled / denom, 1.0);
 }
 
-QRect AntDrawer::currentPanelGeometry() const
+QRect AntDrawer::panelShadowRegion(const QRect& panelGeometry) const
 {
-    return m_panel ? m_panel->geometry() : QRect();
+    if (panelGeometry.isEmpty())
+    {
+        return QRect();
+    }
+
+    switch (m_placement)
+    {
+    case Ant::DrawerPlacement::Right:
+        return QRect(panelGeometry.left() - DrawerOverlayShadowSize,
+                     panelGeometry.top(),
+                     DrawerOverlayShadowSize,
+                     panelGeometry.height()).intersected(rect());
+    case Ant::DrawerPlacement::Left:
+        return QRect(panelGeometry.right() + 1,
+                     panelGeometry.top(),
+                     DrawerOverlayShadowSize,
+                     panelGeometry.height()).intersected(rect());
+    case Ant::DrawerPlacement::Bottom:
+        return QRect(panelGeometry.left(),
+                     panelGeometry.top() - DrawerOverlayShadowSize,
+                     panelGeometry.width(),
+                     DrawerOverlayShadowSize).intersected(rect());
+    case Ant::DrawerPlacement::Top:
+        return QRect(panelGeometry.left(),
+                     panelGeometry.bottom() + 1,
+                     panelGeometry.width(),
+                     DrawerOverlayShadowSize).intersected(rect());
+    }
+    return QRect();
+}
+
+QRegion AntDrawer::animationDirtyRegion(const QRect& panelGeometry)
+{
+    QRegion dirty;
+    const qreal nextProgress = maskProgressForPanelGeometry(panelGeometry);
+    if (m_lastMaskProgress < 0.0 || !qFuzzyCompare(m_lastMaskProgress + 1.0, nextProgress + 1.0))
+    {
+        dirty += rect();
+        ++m_maskRegionUpdateCount;
+    }
+    else
+    {
+        const QRect lastPanelDirty = m_lastPanelAnimationGeometry.united(panelShadowRegion(m_lastPanelAnimationGeometry));
+        const QRect nextPanelDirty = panelGeometry.united(panelShadowRegion(panelGeometry));
+        dirty += lastPanelDirty;
+        dirty += nextPanelDirty;
+    }
+
+    ++m_panelRegionUpdateCount;
+    m_lastPanelAnimationGeometry = panelGeometry;
+    m_lastMaskProgress = nextProgress;
+    return dirty;
+}
+
+void AntDrawer::requestDrawerUpdate(const QRegion& region, const QString& mode)
+{
+    m_lastUpdateMode = mode;
+    ++m_animationRegionUpdateCount;
+    syncDrawerPerfCounters();
+    if (region.isEmpty())
+    {
+        update();
+        return;
+    }
+    update(region);
+}
+
+void AntDrawer::syncDrawerPerfCounters() const
+{
+    auto* that = const_cast<AntDrawer*>(this);
+    that->setProperty("antDrawerGeometryBuildCount", m_geometryBuildCount);
+    that->setProperty("antDrawerGeometryCacheHitCount", m_geometryCacheHitCount);
+    that->setProperty("antDrawerOverlayGeometryApplyCount", m_overlayGeometryApplyCount);
+    that->setProperty("antDrawerOverlayGeometrySkipCount", m_overlayGeometrySkipCount);
+    that->setProperty("antDrawerPanelGeometryApplyCount", m_panelGeometryApplyCount);
+    that->setProperty("antDrawerPanelGeometrySkipCount", m_panelGeometrySkipCount);
+    that->setProperty("antDrawerAnimationRegionUpdateCount", m_animationRegionUpdateCount);
+    that->setProperty("antDrawerMaskRegionUpdateCount", m_maskRegionUpdateCount);
+    that->setProperty("antDrawerPanelRegionUpdateCount", m_panelRegionUpdateCount);
+    that->setProperty("antDrawerThemeApplyCount", m_themeApplyCount);
+    that->setProperty("antDrawerThemeSkipCount", m_themeSkipCount);
+    that->setProperty("antDrawerLastUpdateMode", m_lastUpdateMode);
 }

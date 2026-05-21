@@ -5,6 +5,7 @@
 #include <QPointer>
 #include <QPropertyAnimation>
 #include <QRect>
+#include <QRegion>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -15,6 +16,7 @@ class QKeyEvent;
 class QLabel;
 class QMouseEvent;
 class QPaintEvent;
+class QResizeEvent;
 class QShowEvent;
 
 class QT_ANT_DESIGN_EXPORT AntDrawer : public QWidget
@@ -81,10 +83,22 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
     void showEvent(QShowEvent* event) override;
 
 private:
     class DrawerPanel;
+
+    struct GeometryCache
+    {
+        bool valid = false;
+        QSize overlaySize;
+        Ant::DrawerPlacement placement = Ant::DrawerPlacement::Right;
+        int drawerWidth = 0;
+        int drawerHeight = 0;
+        QRect endGeometry;
+        QRect startGeometry;
+    };
 
     void ensureHostWidget();
     void releaseHostWidget();
@@ -94,7 +108,15 @@ private:
     QRect panelEndGeometry() const;
     QRect panelStartGeometry() const;
     void startAnimation(const QRect& start, const QRect& end);
+    void updateAnimationFrame(const QRect& panelGeometry);
     void onAnimationFinished();
+    const GeometryCache& drawerGeometryCache() const;
+    void invalidateDrawerGeometry() const;
+    qreal maskProgressForPanelGeometry(const QRect& panelGeometry) const;
+    QRect panelShadowRegion(const QRect& panelGeometry) const;
+    QRegion animationDirtyRegion(const QRect& panelGeometry);
+    void requestDrawerUpdate(const QRegion& region, const QString& mode);
+    void syncDrawerPerfCounters() const;
 
     QString m_title;
     Ant::DrawerPlacement m_placement = Ant::DrawerPlacement::Right;
@@ -113,4 +135,20 @@ private:
     QLabel* m_titleLabel = nullptr;
     QAbstractButton* m_closeButton = nullptr;
     QPropertyAnimation* m_animation = nullptr;
+    mutable GeometryCache m_geometryCache;
+    mutable int m_geometryBuildCount = 0;
+    mutable int m_geometryCacheHitCount = 0;
+    int m_overlayGeometryApplyCount = 0;
+    int m_overlayGeometrySkipCount = 0;
+    int m_panelGeometryApplyCount = 0;
+    int m_panelGeometrySkipCount = 0;
+    int m_animationRegionUpdateCount = 0;
+    int m_maskRegionUpdateCount = 0;
+    int m_panelRegionUpdateCount = 0;
+    int m_themeApplyCount = 0;
+    int m_themeSkipCount = 0;
+    QRect m_lastPanelAnimationGeometry;
+    qreal m_lastMaskProgress = -1.0;
+    QString m_themeKey;
+    QString m_lastUpdateMode;
 };
