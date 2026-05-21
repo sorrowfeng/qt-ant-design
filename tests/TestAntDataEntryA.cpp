@@ -25,6 +25,7 @@ private slots:
     void inputNumberDefaultsToIntegerAndEnablesDecimals();
     void inputNumberLineEditPaletteTracksDarkTheme();
     void inputNumberUsesLayoutFriendlyPolicy();
+    void inputNumberCachesMetricsAndScopesControlUpdates();
     void sliderMarksReserveLabelHeight();
     void sliderBubbleFloatsAboveMarkedHandle();
     void sliderBubbleArrowJoinsSurface();
@@ -434,6 +435,40 @@ void TestAntDataEntryA::inputNumberUsesLayoutFriendlyPolicy()
     QCOMPARE(input->sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
     QCOMPARE(input->height(), input->sizeHint().height());
     QCOMPARE(input->width(), host.width());
+}
+
+void TestAntDataEntryA::inputNumberCachesMetricsAndScopesControlUpdates()
+{
+    AntInputNumber input;
+    input.resize(180, input.sizeHint().height());
+
+    const int sizeHintResolvesBefore = input.property("antInputNumberSizeHintResolveCount").toInt();
+    input.sizeHint();
+    input.minimumSizeHint();
+    input.sizeHint();
+    QCOMPARE(input.property("antInputNumberSizeHintResolveCount").toInt(), sizeHintResolvesBefore);
+
+    const int metricsResolvesBefore = input.property("antInputNumberMetricsResolveCount").toInt();
+    input.sizeHint();
+    input.minimumSizeHint();
+    QCOMPARE(input.property("antInputNumberMetricsResolveCount").toInt(), metricsResolvesBefore);
+
+    const int editStyleBeforeProgress = input.property("antInputNumberEditStyleApplyCount").toInt();
+    const int insetBeforeProgress = input.property("antInputNumberControlsInsetUpdateCount").toInt();
+    input.setControlsProgress(0.45);
+    QVERIFY(input.property("antInputNumberControlsInsetUpdateCount").toInt() > insetBeforeProgress);
+    QCOMPARE(input.property("antInputNumberEditStyleApplyCount").toInt(), editStyleBeforeProgress);
+
+    const int frameUpdatesBefore = input.property("antInputNumberFrameUpdateCount").toInt();
+    input.setStatus(Ant::Status::Warning);
+    QVERIFY(input.property("antInputNumberFrameUpdateCount").toInt() > frameUpdatesBefore);
+
+    const int regionUpdatesBeforeProgress = input.property("antInputNumberControlsRegionUpdateCount").toInt();
+    input.setControlsProgress(0.8);
+    QVERIFY(input.property("antInputNumberControlsRegionUpdateCount").toInt() > regionUpdatesBeforeProgress);
+    const int regionUpdatesAfterProgress = input.property("antInputNumberControlsRegionUpdateCount").toInt();
+    input.setControlsProgress(0.8);
+    QCOMPARE(input.property("antInputNumberControlsRegionUpdateCount").toInt(), regionUpdatesAfterProgress);
 }
 
 void TestAntDataEntryA::sliderMarksReserveLabelHeight()

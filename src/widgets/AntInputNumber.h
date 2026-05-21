@@ -3,6 +3,7 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QDoubleSpinBox>
+#include <QSize>
 #include <QStyle>
 
 #include "core/AntTypes.h"
@@ -93,7 +94,14 @@ private:
     };
 
     Metrics metrics() const;
+    void invalidateMetricsCache() const;
+    void invalidateSizeHintCache() const;
+    void invalidateGeometryCache() const;
     void updateEditStyle();
+    void updateLineEditControlsInset();
+    void updateFrameChrome();
+    void updateControlsRegion(const QRect& oldRect = QRect());
+    QRect controlsDirtyRect() const;
     QStyle::SubControl hitSubControl(const QPoint& pos) const;
     bool shouldShowControls() const;
     void animateControls(bool visible);
@@ -111,4 +119,22 @@ private:
     QString m_addonAfterText;
     QPropertyAnimation* m_controlsAnimation = nullptr;
     QWidget* m_controlsOverlay = nullptr;
+    bool m_lineEditTransparent = false;
+    QString m_lineEditStyleSheet;
+    int m_lastControlsInset = -1;
+    mutable bool m_metricsDirty = true;
+    mutable Metrics m_cachedMetrics;
+    mutable bool m_sizeHintDirty = true;
+    mutable QSize m_cachedSizeHint;
+    mutable QSize m_cachedMinimumSizeHint;
+    mutable bool m_controlsGeometryDirty = true;
+    mutable QRect m_cachedControlsDirtyRect;
+    mutable int m_metricsResolveCount = 0;
+    mutable int m_sizeHintResolveCount = 0;
+    int m_editStyleApplyCount = 0;
+    int m_controlsInsetUpdateCount = 0;
+    int m_controlsGeometryApplyCount = 0;
+    int m_controlsRegionUpdateCount = 0;
+    int m_frameUpdateCount = 0;
+    void syncInputNumberPerfCounters() const;
 };

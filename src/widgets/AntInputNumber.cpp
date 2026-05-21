@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QPropertyAnimation>
 #include <QResizeEvent>
+#include <QRegion>
 #include <QSizePolicy>
 #include <QStyleOptionSpinBox>
 
@@ -129,11 +130,17 @@ AntInputNumber::AntInputNumber(QWidget* parent)
     m_controlsOverlay->hide();
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        style()->unpolish(this);
-        style()->polish(this);
+        const Metrics oldMetrics = metrics();
+        invalidateMetricsCache();
+        const Metrics newMetrics = metrics();
         updateEditStyle();
+        if (oldMetrics.height != newMetrics.height || oldMetrics.fontSize != newMetrics.fontSize ||
+            oldMetrics.paddingX != newMetrics.paddingX || oldMetrics.radius != newMetrics.radius)
+        {
+            updateGeometry();
+        }
+        invalidateGeometryCache();
         updateControlsOverlayGeometry();
-        updateGeometry();
         update();
     });
 
@@ -143,6 +150,7 @@ AntInputNumber::AntInputNumber(QWidget* parent)
         lineEdit()->installEventFilter(this);
         lineEdit()->setMouseTracking(true);
     }
+    syncInputNumberPerfCounters();
 }
 
 Ant::Size AntInputNumber::inputSize() const
@@ -157,7 +165,10 @@ void AntInputNumber::setInputSize(Ant::Size size)
         return;
     }
     m_inputSize = size;
+    invalidateMetricsCache();
     updateEditStyle();
+    invalidateGeometryCache();
+    updateControlsOverlayGeometry();
     updateGeometry();
     update();
     Q_EMIT inputSizeChanged(m_inputSize);
@@ -175,7 +186,7 @@ void AntInputNumber::setStatus(Ant::Status status)
         return;
     }
     m_status = status;
-    update();
+    updateFrameChrome();
     Q_EMIT statusChanged(m_status);
 }
 
@@ -209,10 +220,12 @@ void AntInputNumber::setControlsVisible(bool visible)
     }
     m_controlsVisible = visible;
     setButtonSymbols(visible ? QAbstractSpinBox::UpDownArrows : QAbstractSpinBox::NoButtons);
+    invalidateGeometryCache();
     animateControls(shouldShowControls());
-    updateEditStyle();
+    updateLineEditControlsInset();
+    updateControlsOverlayGeometry();
     updateGeometry();
-    update();
+    updateControlsRegion();
     Q_EMIT controlsVisibleChanged(m_controlsVisible);
 }
 
@@ -228,18 +241,16 @@ void AntInputNumber::setControlsProgress(qreal progress)
     {
         return;
     }
+    const QRect oldDirty = controlsDirtyRect();
     m_controlsProgress = progress;
-    updateEditStyle();
-    if (lineEdit())
-    {
-        lineEdit()->update();
-    }
+    invalidateGeometryCache();
+    updateLineEditControlsInset();
     updateControlsOverlayGeometry();
     if (m_controlsOverlay)
     {
         m_controlsOverlay->update();
     }
-    update();
+    updateControlsRegion(oldDirty);
 }
 
 QString AntInputNumber::placeholderText() const
@@ -303,6 +314,7 @@ void AntInputNumber::setAddonAfterText(const QString& text)
         return;
     }
     m_addonAfterText = text;
+    invalidateGeometryCache();
     updateEditStyle();
     updateGeometry();
     update();
@@ -334,12 +346,30 @@ void AntInputNumber::setDecimals(int decimals)
 
 QSize AntInputNumber::sizeHint() const
 {
-    return QSize(140, metrics().height);
+    if (m_sizeHintDirty || !m_cachedSizeHint.isValid())
+    {
+        const Metrics m = metrics();
+        m_cachedSizeHint = QSize(140, m.height);
+        m_cachedMinimumSizeHint = QSize(96, m.height);
+        m_sizeHintDirty = false;
+        ++m_sizeHintResolveCount;
+        syncInputNumberPerfCounters();
+    }
+    return m_cachedSizeHint;
 }
 
 QSize AntInputNumber::minimumSizeHint() const
 {
-    return QSize(96, metrics().height);
+    if (m_sizeHintDirty || !m_cachedMinimumSizeHint.isValid())
+    {
+        const Metrics m = metrics();
+        m_cachedSizeHint = QSize(140, m.height);
+        m_cachedMinimumSizeHint = QSize(96, m.height);
+        m_sizeHintDirty = false;
+        ++m_sizeHintResolveCount;
+        syncInputNumberPerfCounters();
+    }
+    return m_cachedMinimumSizeHint;
 }
 
 bool AntInputNumber::isHoveredState() const
@@ -364,30 +394,49 @@ QAbstractSpinBox::StepEnabled AntInputNumber::stepEnabledFlags() const
 
 void AntInputNumber::enterEvent(QEnterEvent* event)
 {
+    if (m_hovered)
+    {
+        QDoubleSpinBox::enterEvent(event);
+        return;
+    }
     m_hovered = true;
     animateControls(true);
-    update();
+    updateFrameChrome();
     QDoubleSpinBox::enterEvent(event);
 }
 
 void AntInputNumber::leaveEvent(QEvent* event)
 {
+    const QRect oldControls = controlsDirtyRect();
     m_hovered = false;
-    m_activeSubControl = QStyle::SC_None;
-    m_stepPressed = false;
+    const bool controlsChanged = m_activeSubControl != QStyle::SC_None || m_stepPressed;
+    if (controlsChanged)
+    {
+        m_activeSubControl = QStyle::SC_None;
+        m_stepPressed = false;
+    }
     animateControls(shouldShowControls());
-    update();
+    updateFrameChrome();
+    if (controlsChanged)
+    {
+        updateControlsRegion(oldControls);
+    }
     QDoubleSpinBox::leaveEvent(event);
 }
 
 void AntInputNumber::mouseMoveEvent(QMouseEvent* event)
 {
-    m_activeSubControl = hitSubControl(event->pos());
-    if (m_controlsOverlay)
+    const QStyle::SubControl nextControl = hitSubControl(event->pos());
+    if (m_activeSubControl != nextControl)
     {
-        m_controlsOverlay->update();
+        const QRect oldControls = controlsDirtyRect();
+        m_activeSubControl = nextControl;
+        if (m_controlsOverlay)
+        {
+            m_controlsOverlay->update();
+        }
+        updateControlsRegion(oldControls);
     }
-    update();
     QDoubleSpinBox::mouseMoveEvent(event);
 }
 
@@ -395,40 +444,52 @@ void AntInputNumber::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
+        const QRect oldControls = controlsDirtyRect();
+        const bool oldPressed = m_stepPressed;
+        const QStyle::SubControl oldControl = m_activeSubControl;
         m_activeSubControl = hitSubControl(event->pos());
         m_stepPressed = m_activeSubControl == QStyle::SC_SpinBoxUp || m_activeSubControl == QStyle::SC_SpinBoxDown;
-        if (m_controlsOverlay)
+        if (oldControl != m_activeSubControl || oldPressed != m_stepPressed)
         {
-            m_controlsOverlay->update();
+            if (m_controlsOverlay)
+            {
+                m_controlsOverlay->update();
+            }
+            updateControlsRegion(oldControls);
         }
-        update();
     }
     QDoubleSpinBox::mousePressEvent(event);
 }
 
 void AntInputNumber::mouseReleaseEvent(QMouseEvent* event)
 {
+    const QRect oldControls = controlsDirtyRect();
+    const bool oldPressed = m_stepPressed;
+    const QStyle::SubControl oldControl = m_activeSubControl;
     m_activeSubControl = hitSubControl(event->pos());
     m_stepPressed = false;
-    if (m_controlsOverlay)
+    if (oldControl != m_activeSubControl || oldPressed != m_stepPressed)
     {
-        m_controlsOverlay->update();
+        if (m_controlsOverlay)
+        {
+            m_controlsOverlay->update();
+        }
+        updateControlsRegion(oldControls);
     }
-    update();
     QDoubleSpinBox::mouseReleaseEvent(event);
 }
 
 void AntInputNumber::focusInEvent(QFocusEvent* event)
 {
     animateControls(true);
-    update();
+    updateFrameChrome();
     QDoubleSpinBox::focusInEvent(event);
 }
 
 void AntInputNumber::focusOutEvent(QFocusEvent* event)
 {
     animateControls(m_hovered);
-    update();
+    updateFrameChrome();
     QDoubleSpinBox::focusOutEvent(event);
 }
 
@@ -438,7 +499,7 @@ void AntInputNumber::changeEvent(QEvent* event)
     {
         animateControls(shouldShowControls());
         updateEditStyle();
-        update();
+        updateFrameChrome();
     }
     QDoubleSpinBox::changeEvent(event);
 }
@@ -446,6 +507,7 @@ void AntInputNumber::changeEvent(QEvent* event)
 void AntInputNumber::resizeEvent(QResizeEvent* event)
 {
     QDoubleSpinBox::resizeEvent(event);
+    invalidateGeometryCache();
     updateControlsOverlayGeometry();
 }
 
@@ -458,15 +520,15 @@ bool AntInputNumber::eventFilter(QObject* watched, QEvent* event)
         case QEvent::Enter:
         case QEvent::FocusIn:
             animateControls(true);
-            update();
+            updateFrameChrome();
             break;
         case QEvent::Leave:
             animateControls(shouldShowControls());
-            update();
+            updateFrameChrome();
             break;
         case QEvent::FocusOut:
             animateControls(m_hovered);
-            update();
+            updateFrameChrome();
             break;
         default:
             break;
@@ -477,6 +539,11 @@ bool AntInputNumber::eventFilter(QObject* watched, QEvent* event)
 
 AntInputNumber::Metrics AntInputNumber::metrics() const
 {
+    if (!m_metricsDirty)
+    {
+        return m_cachedMetrics;
+    }
+
     const auto& token = antTheme->tokens();
     Metrics m;
     switch (m_inputSize)
@@ -500,7 +567,31 @@ AntInputNumber::Metrics AntInputNumber::metrics() const
         m.paddingX = token.paddingSM - token.lineWidth;
         break;
     }
-    return m;
+    m_cachedMetrics = m;
+    m_metricsDirty = false;
+    ++m_metricsResolveCount;
+    syncInputNumberPerfCounters();
+    return m_cachedMetrics;
+}
+
+void AntInputNumber::invalidateMetricsCache() const
+{
+    m_metricsDirty = true;
+    invalidateSizeHintCache();
+    invalidateGeometryCache();
+    syncInputNumberPerfCounters();
+}
+
+void AntInputNumber::invalidateSizeHintCache() const
+{
+    m_sizeHintDirty = true;
+    syncInputNumberPerfCounters();
+}
+
+void AntInputNumber::invalidateGeometryCache() const
+{
+    m_controlsGeometryDirty = true;
+    syncInputNumberPerfCounters();
 }
 
 void AntInputNumber::updateEditStyle()
@@ -512,12 +603,25 @@ void AntInputNumber::updateEditStyle()
 
     const auto& token = antTheme->tokens();
     const Metrics m = metrics();
+    bool changed = false;
 
     QFont font = lineEdit()->font();
-    font.setPixelSize(m.fontSize);
-    lineEdit()->setFont(font);
-    lineEdit()->setFrame(false);
-    lineEdit()->setAlignment(alignment());
+    if (font.pixelSize() != m.fontSize)
+    {
+        font.setPixelSize(m.fontSize);
+        lineEdit()->setFont(font);
+        changed = true;
+    }
+    if (lineEdit()->hasFrame())
+    {
+        lineEdit()->setFrame(false);
+        changed = true;
+    }
+    if (lineEdit()->alignment() != alignment())
+    {
+        lineEdit()->setAlignment(alignment());
+        changed = true;
+    }
 
     const auto setControlColor = [](QPalette& target, QPalette::ColorRole role, const QColor& active, const QColor& disabled) {
         target.setColor(QPalette::Active, role, active);
@@ -535,7 +639,11 @@ void AntInputNumber::updateEditStyle()
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     setControlColor(controlPalette, QPalette::PlaceholderText, token.colorTextPlaceholder, token.colorTextDisabled);
 #endif
-    setPalette(controlPalette);
+    if (palette() != controlPalette)
+    {
+        setPalette(controlPalette);
+        changed = true;
+    }
 
     QPalette lePalette = lineEdit()->palette();
     setControlColor(lePalette, QPalette::Base, Qt::transparent, Qt::transparent);
@@ -547,8 +655,13 @@ void AntInputNumber::updateEditStyle()
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     setControlColor(lePalette, QPalette::PlaceholderText, token.colorTextPlaceholder, token.colorTextDisabled);
 #endif
-    lineEdit()->setAttribute(Qt::WA_TranslucentBackground, true);
-    lineEdit()->setStyleSheet(QStringLiteral(
+    if (!m_lineEditTransparent || !lineEdit()->testAttribute(Qt::WA_TranslucentBackground))
+    {
+        lineEdit()->setAttribute(Qt::WA_TranslucentBackground, true);
+        m_lineEditTransparent = true;
+        changed = true;
+    }
+    const QString styleSheet = QStringLiteral(
         "QLineEdit {"
         " background: transparent;"
         " border: none;"
@@ -563,30 +676,141 @@ void AntInputNumber::updateEditStyle()
             .arg(token.colorText.name(QColor::HexRgb),
                  token.colorPrimary.name(QColor::HexRgb),
                  token.colorTextLightSolid.name(QColor::HexRgb),
-                 token.colorTextDisabled.name(QColor::HexRgb)));
+                 token.colorTextDisabled.name(QColor::HexRgb));
+    if (m_lineEditStyleSheet != styleSheet)
+    {
+        lineEdit()->setStyleSheet(styleSheet);
+        m_lineEditStyleSheet = styleSheet;
+        changed = true;
+    }
     lineEdit()->setPalette(lePalette);
-    lineEdit()->setTextMargins(0, 0, controlsInsetWidth(), 0);
+    changed = true;
+    updateLineEditControlsInset();
 
-    setMinimumHeight(m.height);
-    setMaximumHeight(m.height);
+    if (minimumHeight() != m.height)
+    {
+        setMinimumHeight(m.height);
+        changed = true;
+    }
+    if (maximumHeight() != m.height)
+    {
+        setMaximumHeight(m.height);
+        changed = true;
+    }
+
+    if (changed)
+    {
+        ++m_editStyleApplyCount;
+        syncInputNumberPerfCounters();
+    }
+}
+
+void AntInputNumber::updateLineEditControlsInset()
+{
+    if (!lineEdit())
+    {
+        return;
+    }
+    const int inset = controlsInsetWidth();
+    if (m_lastControlsInset == inset)
+    {
+        return;
+    }
+    m_lastControlsInset = inset;
+    lineEdit()->setTextMargins(0, 0, inset, 0);
+    ++m_controlsInsetUpdateCount;
+    syncInputNumberPerfCounters();
+}
+
+void AntInputNumber::updateFrameChrome()
+{
+    const int inset = antTheme->tokens().controlOutlineWidth + antTheme->tokens().lineWidth + 2;
+    const QRect r = rect();
+    if (r.isEmpty() || m_variant == Ant::Variant::Filled || m_variant == Ant::Variant::Borderless)
+    {
+        ++m_frameUpdateCount;
+        syncInputNumberPerfCounters();
+        update();
+        return;
+    }
+
+    QRegion region;
+    if (m_variant == Ant::Variant::Underlined)
+    {
+        region += QRect(r.left(), qMax(r.top(), r.bottom() - inset), r.width(), inset + 1);
+    }
+    else
+    {
+        region += QRect(r.left(), r.top(), r.width(), inset);
+        region += QRect(r.left(), qMax(r.top(), r.bottom() - inset + 1), r.width(), inset);
+        region += QRect(r.left(), r.top(), inset, r.height());
+        region += QRect(qMax(r.left(), r.right() - inset + 1), r.top(), inset, r.height());
+    }
+    ++m_frameUpdateCount;
+    syncInputNumberPerfCounters();
+    update(region);
+}
+
+void AntInputNumber::updateControlsRegion(const QRect& oldRect)
+{
+    QRect dirty = oldRect.united(controlsDirtyRect());
+    if (!dirty.isValid() || dirty.isEmpty())
+    {
+        dirty = controlsDirtyRect();
+    }
+    if (!dirty.isValid() || dirty.isEmpty())
+    {
+        dirty = rect();
+    }
+    dirty = dirty.adjusted(-2, -2, 2, 2).intersected(rect());
+    ++m_controlsRegionUpdateCount;
+    syncInputNumberPerfCounters();
+    update(dirty);
+}
+
+QRect AntInputNumber::controlsDirtyRect() const
+{
+    if (!m_controlsGeometryDirty)
+    {
+        return m_cachedControlsDirtyRect;
+    }
+    const int handlerWidth = handlerWidthForInput(this);
+    const QRect control = rect().adjusted(1, 1, -1, -1);
+    if (control.isEmpty() || handlerWidth <= 0)
+    {
+        m_cachedControlsDirtyRect = QRect();
+    }
+    else
+    {
+        m_cachedControlsDirtyRect = QRect(control.right() - handlerWidth + 1,
+                                          control.top(),
+                                          handlerWidth,
+                                          control.height());
+    }
+    m_controlsGeometryDirty = false;
+    syncInputNumberPerfCounters();
+    return m_cachedControlsDirtyRect;
 }
 
 QStyle::SubControl AntInputNumber::hitSubControl(const QPoint& pos) const
 {
-    if (!m_controlsVisible)
+    if (!m_controlsVisible || !isEnabled() || m_controlsProgress <= 0.01)
     {
         return QStyle::SC_None;
     }
 
-    QStyleOptionSpinBox option;
-    option.initFrom(this);
-    option.rect = rect();
-    const QRect upRect = style()->subControlRect(QStyle::CC_SpinBox, &option, QStyle::SC_SpinBoxUp, this);
+    const QRect panelRect = controlsDirtyRect();
+    if (!panelRect.contains(pos))
+    {
+        return QStyle::SC_None;
+    }
+
+    const QRect upRect(panelRect.left(), panelRect.top(), panelRect.width(), panelRect.height() / 2);
     if (upRect.contains(pos))
     {
         return QStyle::SC_SpinBoxUp;
     }
-    const QRect downRect = style()->subControlRect(QStyle::CC_SpinBox, &option, QStyle::SC_SpinBoxDown, this);
+    const QRect downRect(panelRect.left(), panelRect.center().y(), panelRect.width(), panelRect.height() / 2);
     if (downRect.contains(pos))
     {
         return QStyle::SC_SpinBoxDown;
@@ -633,10 +857,41 @@ void AntInputNumber::updateControlsOverlayGeometry()
 
     const int handlerWidth = handlerWidthForInput(this);
     const QRect control = rect().adjusted(1, 1, -1, -1);
-    m_controlsOverlay->setGeometry(control.right() - handlerWidth + 1,
-                                   control.top(),
-                                   handlerWidth,
-                                   control.height());
-    m_controlsOverlay->setVisible(m_controlsVisible && isEnabled() && m_controlsProgress > 0.01);
-    m_controlsOverlay->raise();
+    const QRect nextGeometry(control.right() - handlerWidth + 1,
+                             control.top(),
+                             handlerWidth,
+                             control.height());
+    const bool nextVisible = m_controlsVisible && isEnabled() && m_controlsProgress > 0.01;
+    bool changed = false;
+    if (m_controlsOverlay->geometry() != nextGeometry)
+    {
+        m_controlsOverlay->setGeometry(nextGeometry);
+        changed = true;
+    }
+    if ((!m_controlsOverlay->isHidden()) != nextVisible)
+    {
+        m_controlsOverlay->setVisible(nextVisible);
+        changed = true;
+    }
+    if (nextVisible)
+    {
+        m_controlsOverlay->raise();
+    }
+    if (changed)
+    {
+        ++m_controlsGeometryApplyCount;
+        syncInputNumberPerfCounters();
+    }
+}
+
+void AntInputNumber::syncInputNumberPerfCounters() const
+{
+    auto* self = const_cast<AntInputNumber*>(this);
+    self->setProperty("antInputNumberMetricsResolveCount", m_metricsResolveCount);
+    self->setProperty("antInputNumberSizeHintResolveCount", m_sizeHintResolveCount);
+    self->setProperty("antInputNumberEditStyleApplyCount", m_editStyleApplyCount);
+    self->setProperty("antInputNumberControlsInsetUpdateCount", m_controlsInsetUpdateCount);
+    self->setProperty("antInputNumberControlsGeometryApplyCount", m_controlsGeometryApplyCount);
+    self->setProperty("antInputNumberControlsRegionUpdateCount", m_controlsRegionUpdateCount);
+    self->setProperty("antInputNumberFrameUpdateCount", m_frameUpdateCount);
 }

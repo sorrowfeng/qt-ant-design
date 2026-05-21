@@ -154,7 +154,6 @@ int addonAfterWidthFor(const AntInputNumber* input, const InputNumberMetrics& me
 AntInputNumberStyle::AntInputNumberStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntInputNumber>();
 }
 
 void AntInputNumberStyle::polish(QWidget* widget)
