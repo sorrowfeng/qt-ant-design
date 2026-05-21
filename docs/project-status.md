@@ -19,7 +19,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `70` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `71` controls optimized in the current pass |
 
 ## Recent Completed Work
 
@@ -63,6 +63,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Optimized `AntPopover` by caching popup size hints, bubble/header/body/action rectangles, and arrow geometry on the widget, sharing that cache with the style, skipping repeated target placement work, and avoiding unnecessary hover close-timer churn when already closed.
 - Optimized `AntProgress` by caching line/circle geometry, status colors, status info text, and size hints on the widget, repainting line progress changes and active shine frames only in the affected regions, and pausing active animation while hidden.
 - Optimized `AntResult` by caching result text/extra layout and status icon pixmaps on the widget, with status changes scoped to the icon region and dark-mode transparent icon rendering preserved.
+- Optimized `AntSkeleton` by caching placeholder geometry/paths and theme colors on the widget, scoping shimmer frames to the old/new highlight bands, skipping unchanged content geometry, and pausing shimmer while hidden.
 - Optimized `AntNavItem` by moving label style updates out of paint and caching hover/active background plus indicator geometry.
 - Optimized `AntPlainTextEdit` by caching visual state application and scoping resize-grip cursor/paint updates to real hover-state changes across the editor's internal mouse-event targets.
 - Optimized `AntRibbon` by caching tab layout rectangles and repainting only affected tab, collapse button, and indicator regions during hover and indicator animation.

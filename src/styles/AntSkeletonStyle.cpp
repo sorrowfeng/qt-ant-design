@@ -6,133 +6,11 @@
 #include <QStyleOption>
 
 #include "core/AntStyleBase.h"
-#include "styles/AntPalette.h"
 #include "widgets/AntSkeleton.h"
-
-namespace
-{
-
-struct Metrics
-{
-    int avatarSize = 40;
-    int titleHeight = 16;
-    int paragraphHeight = 12;
-    int rowSpacing = 12;
-    int columnGap = 16;
-    int radius = 6;
-    int titleTop = 4;
-};
-
-Metrics skeletonMetrics()
-{
-    Metrics m;
-    const auto& token = antTheme->tokens();
-    m.avatarSize = token.controlHeightLG;
-    m.titleHeight = token.fontSizeLG;
-    m.paragraphHeight = token.fontSizeSM + 2;
-    m.rowSpacing = token.marginSM;
-    m.columnGap = token.margin;
-    m.radius = token.borderRadiusSM;
-    return m;
-}
-
-qreal skeletonRowWidthRatio(const AntSkeleton* skeleton, int rowIndex)
-{
-    const QList<qreal> ratios = skeleton->paragraphWidthRatios();
-    const int rows = skeleton->paragraphRows();
-    if (rowIndex >= 0 && rowIndex < ratios.size())
-    {
-        return qBound(0.15, ratios.at(rowIndex), 1.0);
-    }
-    if (rowIndex == rows - 1)
-    {
-        return 0.62;
-    }
-    return 1.0;
-}
-
-QList<QRectF> skeletonPlaceholderRects(const AntSkeleton* skeleton, int width)
-{
-    QList<QRectF> rects;
-    const Metrics m = skeletonMetrics();
-
-    // Element mode
-    if (skeleton->element() != Ant::SkeletonElement::Default)
-    {
-        const QSize hint = skeleton->sizeHint();
-        const qreal w = qMin(static_cast<qreal>(width), static_cast<qreal>(hint.width()));
-        const qreal h = hint.height();
-        switch (skeleton->element())
-        {
-        case Ant::SkeletonElement::Button:
-            rects.append(QRectF(0, 0, w, h));
-            break;
-        case Ant::SkeletonElement::Avatar:
-            rects.append(QRectF(0, 0, m.avatarSize, m.avatarSize));
-            break;
-        case Ant::SkeletonElement::Input:
-            rects.append(QRectF(0, 0, w, h));
-            break;
-        case Ant::SkeletonElement::Image:
-        {
-            const qreal sz = qMin(w, h);
-            rects.append(QRectF((w - sz) / 2, 0, sz, sz));
-            break;
-        }
-        case Ant::SkeletonElement::Node:
-            rects.append(QRectF(0, 0, w, h));
-            break;
-        default:
-            break;
-        }
-        return rects;
-    }
-
-    // Default paragraph mode
-    int textLeft = 0;
-    int textWidth = width;
-    const int totalHeight = skeleton->sizeHint().height();
-    int top = 0;
-
-    if (skeleton->avatarVisible())
-    {
-        const int avatarY = qMax(0, (totalHeight - m.avatarSize) / 2);
-        rects.append(QRectF(0, avatarY, m.avatarSize, m.avatarSize));
-        textLeft = m.avatarSize + m.columnGap;
-        textWidth = qMax(40, width - textLeft);
-    }
-
-    if (skeleton->titleVisible())
-    {
-        const qreal titleWidthRatio = skeleton->titleWidthRatio();
-        const int titleWidth = qMax(48, static_cast<int>(textWidth * titleWidthRatio));
-        rects.append(QRectF(textLeft, top + m.titleTop, titleWidth, m.titleHeight));
-        top += m.titleHeight;
-    }
-
-    if (skeleton->paragraphVisible() && skeleton->paragraphRows() > 0)
-    {
-        if (skeleton->titleVisible())
-        {
-            top += antTheme->tokens().marginSM;
-        }
-        for (int i = 0; i < skeleton->paragraphRows(); ++i)
-        {
-            const int rowWidth = qMax(56, static_cast<int>(textWidth * skeletonRowWidthRatio(skeleton, i)));
-            rects.append(QRectF(textLeft, top, rowWidth, m.paragraphHeight));
-            top += m.paragraphHeight + m.rowSpacing;
-        }
-    }
-
-    return rects;
-}
-
-} // namespace
 
 AntSkeletonStyle::AntSkeletonStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntSkeleton>();
 }
 
 void AntSkeletonStyle::polish(QWidget* widget)
@@ -197,24 +75,23 @@ void AntSkeletonStyle::drawSkeleton(const QStyleOption* option, QPainter* painte
         return;
     }
 
-    const auto& token = antTheme->tokens();
-    const QList<QRectF> rects = skeletonPlaceholderRects(skeleton, option->rect.width());
-    if (rects.isEmpty())
+    Q_UNUSED(option)
+
+    const auto& layout = skeleton->skeletonLayout();
+    if (!layout.loading || layout.placeholders.isEmpty())
     {
         return;
     }
-
-    const QColor baseColor = token.colorFillTertiary;
-    const QColor highlight = AntPalette::mix(token.colorBgContainer, token.colorFillQuaternary, 0.45);
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
     painter->setPen(Qt::NoPen);
 
-    for (const QRectF& rect : rects)
+    for (const auto& item : layout.placeholders)
     {
-        QBrush brush(baseColor);
-        if (skeleton->isActive())
+        const QRectF& rect = item.rect;
+        QBrush brush(layout.baseColor);
+        if (layout.active)
         {
             const qreal bandWidth = qMax<qreal>(80.0, rect.width() * 0.72);
             const qreal travel = rect.width() + bandWidth * 2.0;
@@ -223,34 +100,19 @@ void AntSkeletonStyle::drawSkeleton(const QStyleOption* option, QPainter* painte
             const qreal bandLeft = rect.left() - bandWidth + travel * phase;
             QLinearGradient gradient(QPointF(bandLeft, rect.center().y()),
                                      QPointF(bandLeft + bandWidth, rect.center().y()));
-            gradient.setColorAt(0.0, baseColor);
-            gradient.setColorAt(0.42, baseColor);
-            gradient.setColorAt(0.5, highlight);
-            gradient.setColorAt(0.58, baseColor);
-            gradient.setColorAt(1.0, baseColor);
+            gradient.setColorAt(0.0, layout.baseColor);
+            gradient.setColorAt(0.42, layout.baseColor);
+            gradient.setColorAt(0.5, layout.highlightColor);
+            gradient.setColorAt(0.58, layout.baseColor);
+            gradient.setColorAt(1.0, layout.baseColor);
             brush = QBrush(gradient);
         }
 
-        const Metrics met = skeletonMetrics();
-        qreal radius = skeleton->isRound() ? rect.height() / 2.0 : met.radius;
-        if (skeleton->element() == Ant::SkeletonElement::Avatar ||
-            (skeleton->element() == Ant::SkeletonElement::Default &&
-             skeleton->avatarVisible() &&
-             rect.height() == met.avatarSize && rect.width() == met.avatarSize &&
-             skeleton->avatarShape() == Ant::AvatarShape::Circle))
-        {
-            radius = rect.width() / 2.0;
-        }
-        if (skeleton->element() == Ant::SkeletonElement::Button || skeleton->element() == Ant::SkeletonElement::Input)
-        {
-            radius = rect.height() / 2.0;
-        }
-        AntStyleBase::drawCrispRoundedRect(painter, rect.toRect(), Qt::NoPen, brush, radius, radius);
+        painter->fillPath(item.path, brush);
 
-        // Image element: draw centered placeholder icon
-        if (skeleton->element() == Ant::SkeletonElement::Image)
+        if (item.imageElement)
         {
-            painter->setPen(highlight);
+            painter->setPen(layout.highlightColor);
             painter->setBrush(Qt::NoBrush);
             const qreal iconSize = qMin(rect.width(), rect.height()) * 0.3;
             const qreal cx = rect.center().x();

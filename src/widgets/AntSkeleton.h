@@ -2,11 +2,22 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
+#include <QPainterPath>
 #include <QPointer>
+#include <QRect>
+#include <QRectF>
+#include <QSize>
+#include <QString>
 #include <QWidget>
+#include <QVector>
 
 #include "core/AntTypes.h"
 
+class AntSkeletonStyle;
+class QEvent;
+class QHideEvent;
+class QShowEvent;
 class QTimer;
 
 class QT_ANT_DESIGN_EXPORT AntSkeleton : public QWidget
@@ -77,10 +88,15 @@ Q_SIGNALS:
     void elementChanged(Ant::SkeletonElement element);
 
 protected:
+    void changeEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
 private:
+    friend class AntSkeletonStyle;
+
     struct Metrics
     {
         int avatarSize = 40;
@@ -92,9 +108,58 @@ private:
         int titleTop = 4;
     };
 
-    Metrics metrics() const;
-    QList<QRectF> placeholderRects() const;
+    struct PlaceholderItem
+    {
+        QRectF rect;
+        QPainterPath path;
+        qreal radius = 0.0;
+        bool imageElement = false;
+    };
+
+    struct SkeletonLayoutCache
+    {
+        bool valid = false;
+        QSize widgetSize;
+        Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
+        int tokenControlHeightLG = 0;
+        int tokenFontSizeLG = 0;
+        int tokenFontSizeSM = 0;
+        int tokenMarginSM = 0;
+        int tokenMargin = 0;
+        int tokenBorderRadiusSM = 0;
+        bool loading = true;
+        bool active = true;
+        bool round = false;
+        bool avatarVisible = false;
+        Ant::AvatarShape avatarShape = Ant::AvatarShape::Circle;
+        bool titleVisible = true;
+        bool paragraphVisible = true;
+        int paragraphRows = 3;
+        Ant::SkeletonElement element = Ant::SkeletonElement::Default;
+        qreal titleWidthRatio = 0.42;
+        QList<qreal> paragraphWidthRatios;
+        bool hasContentWidget = false;
+        QSize contentSizeHint;
+        Metrics metrics;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QColor baseColor;
+        QColor highlightColor;
+        QVector<PlaceholderItem> placeholders;
+        QRect visualRect;
+    };
+
+    const SkeletonLayoutCache& skeletonLayout() const;
+    void invalidateSkeletonLayout() const;
+    Metrics resolveMetrics() const;
     qreal rowWidthRatio(int rowIndex) const;
+    QSize skeletonSizeHint(const Metrics& metrics) const;
+    void appendPlaceholder(SkeletonLayoutCache& cache, const QRectF& rect, bool imageElement = false) const;
+    QRect skeletonVisualRect() const;
+    QRect shimmerDirtyRect(int oldOffset, int newOffset) const;
+    QRect shimmerBandRectForOffset(const QRectF& rect, int offset) const;
+    void requestSkeletonUpdate(const QRect& region, const QString& mode);
+    void syncSkeletonPerfCounters() const;
     void syncContentGeometry();
     void updateTimerState();
 
@@ -112,4 +177,12 @@ private:
     QPointer<QWidget> m_contentWidget;
     QTimer* m_timer = nullptr;
     int m_shimmerOffset = 0;
+    mutable SkeletonLayoutCache m_layoutCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    int m_shimmerRegionUpdateCount = 0;
+    int m_visualRegionUpdateCount = 0;
+    int m_contentGeometryApplyCount = 0;
+    int m_contentGeometrySkipCount = 0;
+    QString m_lastUpdateMode;
 };

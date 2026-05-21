@@ -41,6 +41,7 @@ private slots:
     void result();
     void resultCachesLayoutIconAndExtraGeometry();
     void skeleton();
+    void skeletonCachesLayoutAndScopesShimmer();
     void spin();
     void tooltip();
     void tour();
@@ -898,13 +899,56 @@ void TestAntFeedback::skeleton()
 
     auto* moving = new AntSkeleton;
     moving->resize(320, 80);
+    moving->show();
+    QVERIFY(QTest::qWaitForWindowExposed(moving));
+    QTRY_VERIFY_WITH_TIMEOUT(moving->property("antSkeletonTimerRunning").toBool(), 120);
     const int firstOffset = moving->shimmerOffset();
-    QTest::qWait(90);
-    QVERIFY(moving->shimmerOffset() != firstOffset);
+    QTRY_VERIFY_WITH_TIMEOUT(moving->shimmerOffset() != firstOffset, 160);
     moving->setActive(false);
     const int pausedOffset = moving->shimmerOffset();
     QTest::qWait(90);
     QCOMPARE(moving->shimmerOffset(), pausedOffset);
+    moving->hide();
+    QTRY_VERIFY_WITH_TIMEOUT(!moving->property("antSkeletonTimerRunning").toBool(), 120);
+}
+
+void TestAntFeedback::skeletonCachesLayoutAndScopesShimmer()
+{
+    AntSkeleton skeleton;
+    skeleton.resize(320, 96);
+    skeleton.setAvatarVisible(true);
+    skeleton.setParagraphRows(4);
+    skeleton.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&skeleton));
+
+    skeleton.grab();
+    const int layoutBuilds = skeleton.property("antSkeletonLayoutBuildCount").toInt();
+    const int layoutHits = skeleton.property("antSkeletonLayoutCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+
+    skeleton.grab();
+    QCOMPARE(skeleton.property("antSkeletonLayoutBuildCount").toInt(), layoutBuilds);
+    QVERIFY(skeleton.property("antSkeletonLayoutCacheHitCount").toInt() > layoutHits);
+
+    const int shimmerUpdates = skeleton.property("antSkeletonShimmerRegionUpdateCount").toInt();
+    QTRY_VERIFY_WITH_TIMEOUT(skeleton.property("antSkeletonShimmerRegionUpdateCount").toInt() > shimmerUpdates, 180);
+    QCOMPARE(skeleton.property("antSkeletonLastUpdateMode").toString(), QStringLiteral("shimmer"));
+
+    skeleton.setActive(false);
+    QTRY_VERIFY_WITH_TIMEOUT(!skeleton.property("antSkeletonTimerRunning").toBool(), 120);
+
+    const int visualUpdates = skeleton.property("antSkeletonVisualRegionUpdateCount").toInt();
+    const int buildsBeforeRound = skeleton.property("antSkeletonLayoutBuildCount").toInt();
+    skeleton.setRound(true);
+    QCOMPARE(skeleton.property("antSkeletonLastUpdateMode").toString(), QStringLiteral("round"));
+    QVERIFY(skeleton.property("antSkeletonVisualRegionUpdateCount").toInt() > visualUpdates);
+    skeleton.grab();
+    QVERIFY(skeleton.property("antSkeletonLayoutBuildCount").toInt() > buildsBeforeRound);
+
+    skeleton.hide();
+    const int pausedOffset = skeleton.shimmerOffset();
+    QTest::qWait(90);
+    QCOMPARE(skeleton.shimmerOffset(), pausedOffset);
 }
 
 void TestAntFeedback::spin()
