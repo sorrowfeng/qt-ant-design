@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `75` components are optimized from this pass, and `9` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `76` components are optimized from this pass, and `8` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntAvatar` | Avatar image mode now uses the widget-owned loaded pixmap and caches the clipped/scaled DPR-aware avatar pixmap by source cache key, source size, target size, DPR, shape, and border radius. The style blits that cached pixmap instead of reloading the image path and reclipping on every paint, while image, shape, size, and theme changes invalidate the cache explicitly. | `cmake --build build --config Debug --target TestAntDataDisplayA`, `TestAntDataDisplayA.exe propertiesAndSignals avatarCachesScaledImagePixmap`, `cmake --build build --config Debug --target TestAntRenderSmoke`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntWatermark` | Watermark now renders the full tiled pattern into a transparent DPR-aware pixmap cache keyed by widget size, content, font, resolved color, rotation, gap, offset, DPR, and theme. The style blits the cached pixmap instead of remeasuring text and redrawing every rotated tile on each paint, while content/font/rotation/gap/offset/theme changes invalidate the cache explicitly and keep mouse transparency unchanged. | `cmake --build build --config Debug --target TestAntDataDisplayB`, `TestAntDataDisplayB.exe propertiesAndSignals watermarkCachesRenderedPixmap`, `TestAntAdvancedInteractions.exe watermarkDoesNotBlockCoveredControls`, `cmake --build build --config Debug --target TestAntRenderSmoke`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntTour` | Tour overlay now caches the current target rectangle, spotlight rectangle, tooltip geometry, and step content state. Re-showing the same step skips unchanged target, tooltip, and content applications, target move/resize/hide/show updates only the old/new spotlight dirty region, overlay paint consumes the cached spotlight instead of remapping the target every paint, and step changes no longer force a full overlay repaint. | `cmake --build build --config Debug --target TestAntFeedback`, `TestAntFeedback.exe tour tourCachesTargetAndTooltipGeometry`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntToolTip` | Tooltip now caches size hints, bubble/text rectangles, arrow polygons, theme colors, and text metrics on the widget. The style consumes that cached layout instead of recomputing geometry every paint, target-driven positioning skips unchanged target/screen/size/placement applications, repeated enter/focus events avoid restarting an already active open timer, and target destruction stops delayed opens without leaving a stale target pointer. | `cmake --build build --config Debug --target TestAntFeedback`, `TestAntFeedback.exe tooltip tooltipCachesLayoutAndSkipsPlacementWork`, `cmake --build build --config Debug --target TestAntAdvancedInteractions TestAntPopupLifecycle TestAntRenderSmoke`, `TestAntAdvancedInteractions.exe tooltipDoesNotBlockCoveredControls`, `TestAntPopupLifecycle.exe targetDrivenPopupsCloseAndDestroySafely`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -206,7 +207,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 
 | Component | Priority | Optimization plan | Progress |
 | --- | --- | --- | --- |
-| `AntAvatar` | P1 | Cache scaled/clipped avatar pixmap per size/DPR/source; reuse default icon paths; invalidate only on source or size changes. | Plan ready |
+| `AntAvatar` | P1 | Cache scaled/clipped avatar pixmap per size/DPR/source; reuse default icon paths; invalidate only on source or size changes. | Optimized |
 | `AntBadge` | P0 | Scope processing animation repaint to badge overlay, cache ribbon/count text geometry, and stop timers when hidden or not processing. | Plan ready |
 | `AntCalendar` | P0 | Cache month/year/day cell geometry and text; update only changed cells on hover/current/selected date changes. | Plan ready |
 | `AntCard` | P1 | Cache title/body/action layout and loading skeleton geometry; stop spinner timer unless loading and visible. | Plan ready |
@@ -329,7 +330,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 
 | Component | Automated target(s) | Interaction and performance validation |
 | --- | --- | --- |
-| `AntAvatar` | `TestAntDataDisplayA` | Verify text/icon/image/group modes, source/size changes, DPR scaling, and cached clipped pixmap invalidation. |
+| `AntAvatar` | `TestAntDataDisplayA`, `TestAntRenderSmoke` | Verify text/icon/image/group modes, source/size/theme changes, DPR scaling, cached clipped pixmap reuse, cache invalidation, render smoke, and native-like layout policy. |
 | `AntBadge` | `TestAntBadge`, `TestAntVisualRegression` | Verify count/dot/status/processing/ribbon, processing animation, hidden-state timer behavior, and overlay repaint scope. |
 | `AntCalendar` | `TestAntDataDisplayA` | Verify day/month/year modes, selection, today/current date, theme switching, and cell-local repaint. |
 | `AntCard` | `TestAntDataDisplayA`, `TestAntVisualRegression` | Verify title/extra/actions/loading/meta/grid, spinner visibility, and layout cache invalidation. |

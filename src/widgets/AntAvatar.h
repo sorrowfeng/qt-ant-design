@@ -12,6 +12,7 @@
 class QPaintEvent;
 class QResizeEvent;
 class AntAvatar;
+class AntAvatarStyle;
 
 class QT_ANT_DESIGN_EXPORT AntAvatarGroup : public QWidget
 {
@@ -109,11 +110,29 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 
 private:
+    friend class AntAvatarStyle;
+
+    struct AvatarImagePixmapCache
+    {
+        bool valid = false;
+        qreal devicePixelRatio = 1.0;
+        QSize logicalSize;
+        Ant::AvatarShape shape = Ant::AvatarShape::Circle;
+        int borderRadius = 0;
+        qint64 sourceCacheKey = 0;
+        QSize sourceSize;
+        QPixmap pixmap;
+    };
+
     int avatarExtent() const;
     int textFontSize() const;
     int iconFontSize() const;
     QPainterPath clipPath(const QRectF& rect) const;
     QRectF imageSourceRect(const QPixmap& pixmap, const QSizeF& targetSize) const;
+    QPixmap cachedImagePixmap(qreal devicePixelRatio, const QSizeF& targetSize) const;
+    void invalidateImagePixmapCache() const;
+    void requestAvatarUpdate(const QString& mode);
+    void syncAvatarPerfCounters() const;
 
     QString m_text;
     QString m_iconText;
@@ -124,4 +143,9 @@ private:
     int m_customSize = 0;
     Ant::AvatarShape m_shape = Ant::AvatarShape::Circle;
     Ant::Size m_avatarSize = Ant::Size::Middle;
+    mutable AvatarImagePixmapCache m_imagePixmapCache;
+    mutable int m_imagePixmapBuildCount = 0;
+    mutable int m_imagePixmapCacheHitCount = 0;
+    int m_regionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };

@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QResizeEvent>
+#include <QtMath>
 
 #include <algorithm>
 
@@ -14,6 +15,12 @@ AntAvatar::AntAvatar(QWidget* parent)
 {
     installAntStyle<AntAvatarStyle>(this);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateImagePixmapCache();
+        updateGeometry();
+        requestAvatarUpdate(QStringLiteral("theme"));
+    });
+    syncAvatarPerfCounters();
 }
 
 AntAvatar::AntAvatar(const QString& text, QWidget* parent)
@@ -31,7 +38,7 @@ void AntAvatar::setText(const QString& text)
         return;
     }
     m_text = text;
-    update();
+    requestAvatarUpdate(QStringLiteral("text"));
     Q_EMIT textChanged(m_text);
 }
 
@@ -44,7 +51,7 @@ void AntAvatar::setIconText(const QString& iconText)
         return;
     }
     m_iconText = iconText;
-    update();
+    requestAvatarUpdate(QStringLiteral("icon"));
     Q_EMIT iconTextChanged(m_iconText);
 }
 
@@ -58,7 +65,8 @@ void AntAvatar::setImagePath(const QString& imagePath)
     }
     m_imagePath = imagePath;
     m_pixmap = QPixmap(m_imagePath);
-    update();
+    invalidateImagePixmapCache();
+    requestAvatarUpdate(QStringLiteral("image"));
     Q_EMIT imagePathChanged(m_imagePath);
 }
 
@@ -71,7 +79,7 @@ void AntAvatar::setBackgroundColor(const QColor& color)
         return;
     }
     m_backgroundColor = color;
-    update();
+    requestAvatarUpdate(QStringLiteral("background"));
     Q_EMIT backgroundColorChanged(m_backgroundColor);
 }
 
@@ -85,7 +93,7 @@ void AntAvatar::setGap(int gap)
         return;
     }
     m_gap = gap;
-    update();
+    requestAvatarUpdate(QStringLiteral("gap"));
     Q_EMIT gapChanged(m_gap);
 }
 
@@ -99,8 +107,9 @@ void AntAvatar::setCustomSize(int size)
         return;
     }
     m_customSize = size;
+    invalidateImagePixmapCache();
     updateGeometry();
-    update();
+    requestAvatarUpdate(QStringLiteral("size"));
     Q_EMIT customSizeChanged(m_customSize);
 }
 
@@ -113,7 +122,8 @@ void AntAvatar::setShape(Ant::AvatarShape shape)
         return;
     }
     m_shape = shape;
-    update();
+    invalidateImagePixmapCache();
+    requestAvatarUpdate(QStringLiteral("shape"));
     Q_EMIT shapeChanged(m_shape);
 }
 
@@ -126,8 +136,9 @@ void AntAvatar::setAvatarSize(Ant::Size size)
         return;
     }
     m_avatarSize = size;
+    invalidateImagePixmapCache();
     updateGeometry();
-    update();
+    requestAvatarUpdate(QStringLiteral("avatarSize"));
     Q_EMIT avatarSizeChanged(m_avatarSize);
 }
 
@@ -216,6 +227,78 @@ QRectF AntAvatar::imageSourceRect(const QPixmap& pixmap, const QSizeF& targetSiz
     }
     const qreal height = source.width() / targetRatio;
     return QRectF(0, (source.height() - height) / 2.0, source.width(), height);
+}
+
+QPixmap AntAvatar::cachedImagePixmap(qreal devicePixelRatio, const QSizeF& targetSize) const
+{
+    if (m_pixmap.isNull() || targetSize.isEmpty())
+    {
+        return {};
+    }
+
+    const qreal dpr = qMax<qreal>(1.0, devicePixelRatio);
+    const QSize logicalSize(qMax(1, qCeil(targetSize.width())), qMax(1, qCeil(targetSize.height())));
+    const int borderRadius = antTheme->tokens().borderRadius;
+    const qint64 sourceCacheKey = m_pixmap.cacheKey();
+    const QSize sourceSize = m_pixmap.size();
+
+    if (m_imagePixmapCache.valid &&
+        qFuzzyCompare(m_imagePixmapCache.devicePixelRatio, dpr) &&
+        m_imagePixmapCache.logicalSize == logicalSize &&
+        m_imagePixmapCache.shape == m_shape &&
+        m_imagePixmapCache.borderRadius == borderRadius &&
+        m_imagePixmapCache.sourceCacheKey == sourceCacheKey &&
+        m_imagePixmapCache.sourceSize == sourceSize)
+    {
+        ++m_imagePixmapCacheHitCount;
+        syncAvatarPerfCounters();
+        return m_imagePixmapCache.pixmap;
+    }
+
+    ++m_imagePixmapBuildCount;
+    AvatarImagePixmapCache cache;
+    cache.valid = true;
+    cache.devicePixelRatio = dpr;
+    cache.logicalSize = logicalSize;
+    cache.shape = m_shape;
+    cache.borderRadius = borderRadius;
+    cache.sourceCacheKey = sourceCacheKey;
+    cache.sourceSize = sourceSize;
+    cache.pixmap = QPixmap(QSize(qCeil(logicalSize.width() * dpr), qCeil(logicalSize.height() * dpr)));
+    cache.pixmap.setDevicePixelRatio(dpr);
+    cache.pixmap.fill(Qt::transparent);
+
+    QPainter painter(&cache.pixmap);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    const QRectF targetRect(QPointF(0, 0), QSizeF(logicalSize));
+    painter.setClipPath(clipPath(targetRect));
+    painter.drawPixmap(targetRect, m_pixmap, imageSourceRect(m_pixmap, targetRect.size()));
+
+    m_imagePixmapCache = cache;
+    syncAvatarPerfCounters();
+    return m_imagePixmapCache.pixmap;
+}
+
+void AntAvatar::invalidateImagePixmapCache() const
+{
+    m_imagePixmapCache.valid = false;
+}
+
+void AntAvatar::requestAvatarUpdate(const QString& mode)
+{
+    m_lastUpdateMode = mode;
+    ++m_regionUpdateCount;
+    syncAvatarPerfCounters();
+    update();
+}
+
+void AntAvatar::syncAvatarPerfCounters() const
+{
+    auto* self = const_cast<AntAvatar*>(this);
+    self->setProperty("antAvatarImagePixmapBuildCount", m_imagePixmapBuildCount);
+    self->setProperty("antAvatarImagePixmapCacheHitCount", m_imagePixmapCacheHitCount);
+    self->setProperty("antAvatarRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antAvatarLastUpdateMode", m_lastUpdateMode);
 }
 
 // ── AntAvatarGroup ──

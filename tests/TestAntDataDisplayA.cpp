@@ -16,6 +16,7 @@ class TestAntDataDisplayA : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void avatarCachesScaledImagePixmap();
     void statisticFormattedValueCache();
     void cardTitlePaletteTracksTheme();
 };
@@ -62,6 +63,11 @@ void TestAntDataDisplayA::propertiesAndSignals()
     a->setGap(8);
     QCOMPARE(a->gap(), 8);
     QCOMPARE(gapSpy.count(), 1);
+
+    QSignalSpy imageSpy(a, &AntAvatar::imagePathChanged);
+    a->setImagePath(QStringLiteral(":/qt-ant-design/images/image-basic.png"));
+    QCOMPARE(a->imagePath(), QStringLiteral(":/qt-ant-design/images/image-basic.png"));
+    QCOMPARE(imageSpy.count(), 1);
 
     auto* a2 = new AntAvatar("CD");
     QCOMPARE(a2->text(), "CD");
@@ -270,6 +276,49 @@ void TestAntDataDisplayA::propertiesAndSignals()
     e->setImageSize(QSize(100, 100));
     QCOMPARE(e->imageSize(), QSize(100, 100));
     QCOMPARE(eSizeSpy.count(), 1);
+}
+
+void TestAntDataDisplayA::avatarCachesScaledImagePixmap()
+{
+    const Ant::ThemeMode previousMode = antTheme->themeMode();
+
+    AntAvatar avatar;
+    avatar.setCustomSize(64);
+    avatar.resize(64, 64);
+    avatar.setImagePath(QStringLiteral(":/qt-ant-design/images/image-basic.png"));
+    QCOMPARE(avatar.property("antAvatarLastUpdateMode").toString(), QStringLiteral("image"));
+    avatar.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&avatar));
+
+    avatar.grab();
+    const int imageBuilds = avatar.property("antAvatarImagePixmapBuildCount").toInt();
+    const int imageHits = avatar.property("antAvatarImagePixmapCacheHitCount").toInt();
+    QVERIFY(imageBuilds > 0);
+
+    avatar.grab();
+    QCOMPARE(avatar.property("antAvatarImagePixmapBuildCount").toInt(), imageBuilds);
+    QVERIFY(avatar.property("antAvatarImagePixmapCacheHitCount").toInt() > imageHits);
+
+    const int buildsBeforeShape = avatar.property("antAvatarImagePixmapBuildCount").toInt();
+    avatar.setShape(Ant::AvatarShape::Square);
+    QCOMPARE(avatar.property("antAvatarLastUpdateMode").toString(), QStringLiteral("shape"));
+    avatar.grab();
+    QVERIFY(avatar.property("antAvatarImagePixmapBuildCount").toInt() > buildsBeforeShape);
+
+    const int buildsBeforeSize = avatar.property("antAvatarImagePixmapBuildCount").toInt();
+    avatar.setCustomSize(72);
+    avatar.resize(72, 72);
+    QCOMPARE(avatar.property("antAvatarLastUpdateMode").toString(), QStringLiteral("size"));
+    avatar.grab();
+    QVERIFY(avatar.property("antAvatarImagePixmapBuildCount").toInt() > buildsBeforeSize);
+
+    const int buildsBeforeTheme = avatar.property("antAvatarImagePixmapBuildCount").toInt();
+    antTheme->setThemeMode(previousMode == Ant::ThemeMode::Dark ? Ant::ThemeMode::Default : Ant::ThemeMode::Dark);
+    QCOMPARE(avatar.property("antAvatarLastUpdateMode").toString(), QStringLiteral("theme"));
+    avatar.grab();
+    QVERIFY(avatar.property("antAvatarImagePixmapBuildCount").toInt() > buildsBeforeTheme);
+
+    antTheme->setThemeMode(previousMode);
 }
 
 void TestAntDataDisplayA::statisticFormattedValueCache()

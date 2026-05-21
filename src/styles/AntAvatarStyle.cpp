@@ -13,25 +13,6 @@
 namespace
 {
 
-int avatarExtent(const AntAvatar* avatar)
-{
-    if (avatar->customSize() > 0)
-    {
-        return avatar->customSize();
-    }
-    const auto& token = antTheme->tokens();
-    switch (avatar->avatarSize())
-    {
-    case Ant::Size::Large:
-        return token.controlHeightLG;
-    case Ant::Size::Small:
-        return token.controlHeightSM;
-    case Ant::Size::Middle:
-        return token.controlHeight;
-    }
-    return token.controlHeight;
-}
-
 int avatarTextFontSize(const AntAvatar* avatar)
 {
     const auto& token = antTheme->tokens();
@@ -68,20 +49,6 @@ QPainterPath avatarClipPath(const AntAvatar* avatar, const QRectF& rect)
         path.addRoundedRect(rect, antTheme->tokens().borderRadius, antTheme->tokens().borderRadius);
     }
     return path;
-}
-
-QRectF avatarImageSourceRect(const QPixmap& pixmap, const QSizeF& targetSize)
-{
-    const QSizeF source = pixmap.size();
-    const qreal sourceRatio = source.width() / source.height();
-    const qreal targetRatio = targetSize.width() / targetSize.height();
-    if (sourceRatio > targetRatio)
-    {
-        const qreal width = source.height() * targetRatio;
-        return QRectF((source.width() - width) / 2.0, 0, width, source.height());
-    }
-    const qreal height = source.width() / targetRatio;
-    return QRectF(0, (source.height() - height) / 2.0, source.width(), height);
 }
 
 void drawAvatarUserIcon(QPainter* painter, const QRectF& rect, const QColor& color)
@@ -129,7 +96,6 @@ void drawAvatarBellIcon(QPainter* painter, const QRectF& rect, const QColor& col
 AntAvatarStyle::AntAvatarStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntAvatar>();
 }
 
 void AntAvatarStyle::polish(QWidget* widget)
@@ -197,20 +163,10 @@ void AntAvatarStyle::drawAvatar(const QStyleOption* option, QPainter* painter, c
 
     const QPainterPath path = avatarClipPath(avatar, avatarRect);
 
-    // Load pixmap from imagePath (replicating m_pixmap access)
-    const QString imagePath = avatar->imagePath();
-    QPixmap pixmap;
-    if (!imagePath.isEmpty())
-    {
-        pixmap = QPixmap(imagePath);
-    }
-
+    const QPixmap pixmap = avatar->cachedImagePixmap(widget->devicePixelRatioF(), avatarRect.size());
     if (!pixmap.isNull())
     {
-        painter->save();
-        painter->setClipPath(path);
-        painter->drawPixmap(avatarRect, pixmap, avatarImageSourceRect(pixmap, avatarRect.size()));
-        painter->restore();
+        painter->drawPixmap(avatarRect.topLeft(), pixmap);
         painter->restore();
         return;
     }
