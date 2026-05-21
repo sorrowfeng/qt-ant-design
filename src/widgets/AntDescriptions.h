@@ -2,7 +2,9 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QList>
 #include <QPointer>
+#include <QSize>
 #include <QWidget>
 
 class QLabel;
@@ -87,6 +89,7 @@ Q_SIGNALS:
     void verticalChanged(bool vertical);
 
 protected:
+    bool event(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void changeEvent(QEvent* event) override;
@@ -95,8 +98,21 @@ private:
     void rebuildLayout();
     void rebuildGrid();
     void updateTheme();
+    void updateItemLabel(AntDescriptionsItem* item);
+    void updateItemContent(AntDescriptionsItem* item);
+    void invalidateSizeHintCache();
+    void syncDescriptionsPerfCounters() const;
     QWidget* buildLabelCell(const QString& text);
     QWidget* buildContentCell(AntDescriptionsItem* item);
+
+    struct CellRecord
+    {
+        AntDescriptionsItem* item = nullptr;
+        QWidget* labelCell = nullptr;
+        QLabel* labelLabel = nullptr;
+        QWidget* contentCell = nullptr;
+        QLabel* contentLabel = nullptr;
+    };
 
     QString m_title;
     QString m_extra;
@@ -110,4 +126,11 @@ private:
     QGridLayout* m_grid = nullptr;
     QVBoxLayout* m_root = nullptr;
     QList<AntDescriptionsItem*> m_items;
+    QList<CellRecord> m_cellRecords;
+    mutable bool m_sizeHintCacheValid = false;
+    mutable QSize m_cachedSizeHint;
+    mutable int m_sizeHintCacheHitCount = 0;
+    mutable int m_sizeHintCacheBuildCount = 0;
+    int m_gridRebuildCount = 0;
+    int m_itemTextUpdateCount = 0;
 };

@@ -4,13 +4,11 @@
 #include <QPainter>
 #include <QStyleOption>
 
-#include "styles/AntPalette.h"
 #include "widgets/AntDescriptions.h"
 
 AntDescriptionsStyle::AntDescriptionsStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntDescriptions>();
 }
 
 void AntDescriptionsStyle::polish(QWidget* widget)

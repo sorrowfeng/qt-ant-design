@@ -21,6 +21,17 @@ public:
     BorderedCell(QWidget* parent, const QColor& bg, const QColor& border)
         : QWidget(parent), m_bg(bg), m_border(border) {}
 
+    void setColors(const QColor& bg, const QColor& border)
+    {
+        if (m_bg == bg && m_border == border)
+        {
+            return;
+        }
+        m_bg = bg;
+        m_border = border;
+        update();
+    }
+
 protected:
     void paintEvent(QPaintEvent*) override
     {
@@ -35,6 +46,11 @@ private:
     QColor m_bg;
     QColor m_border;
 };
+
+BorderedCell* borderedCell(QWidget* widget)
+{
+    return dynamic_cast<BorderedCell*>(widget);
+}
 
 } // namespace
 
@@ -120,10 +136,11 @@ AntDescriptions::AntDescriptions(QWidget* parent)
     m_root->addWidget(m_body);
 
     rebuildLayout();
+    rebuildGrid();
     updateTheme();
+    syncDescriptionsPerfCounters();
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        rebuildGrid();
         updateTheme();
     });
 }
@@ -185,8 +202,8 @@ void AntDescriptions::addItem(AntDescriptionsItem* item)
     item->setParent(this);
     item->hide();
     m_items.append(item);
-    connect(item, &AntDescriptionsItem::labelChanged, this, [this]() { rebuildGrid(); });
-    connect(item, &AntDescriptionsItem::contentChanged, this, [this]() { rebuildGrid(); });
+    connect(item, &AntDescriptionsItem::labelChanged, this, [this, item]() { updateItemLabel(item); });
+    connect(item, &AntDescriptionsItem::contentChanged, this, [this, item]() { updateItemContent(item); });
     connect(item, &AntDescriptionsItem::spanChanged, this, [this]() { rebuildGrid(); });
     rebuildGrid();
 }
@@ -211,15 +228,35 @@ void AntDescriptions::clearItems()
 
 QSize AntDescriptions::sizeHint() const
 {
+    if (m_sizeHintCacheValid)
+    {
+        ++m_sizeHintCacheHitCount;
+        syncDescriptionsPerfCounters();
+        return m_cachedSizeHint;
+    }
+
     const QSize bodyHint = m_body ? m_body->sizeHint() : QSize();
     const QSize headerHint = (m_header && m_header->isVisible()) ? m_header->sizeHint() : QSize();
     const int spacing = headerHint.isValid() && bodyHint.isValid() ? m_root->spacing() : 0;
-    return QSize(qMax(bodyHint.width(), headerHint.width()), bodyHint.height() + headerHint.height() + spacing);
+    m_cachedSizeHint = QSize(qMax(bodyHint.width(), headerHint.width()), bodyHint.height() + headerHint.height() + spacing);
+    m_sizeHintCacheValid = true;
+    ++m_sizeHintCacheBuildCount;
+    syncDescriptionsPerfCounters();
+    return m_cachedSizeHint;
 }
 
 QSize AntDescriptions::minimumSizeHint() const
 {
     return sizeHint();
+}
+
+bool AntDescriptions::event(QEvent* event)
+{
+    if (event->type() == QEvent::LayoutRequest)
+    {
+        invalidateSizeHintCache();
+    }
+    return QWidget::event(event);
 }
 
 void AntDescriptions::paintEvent(QPaintEvent* event) { Q_UNUSED(event) }
@@ -230,7 +267,17 @@ void AntDescriptions::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange)
     {
-        updateTheme();
+        if (m_titleLabel && m_extraLabel)
+        {
+            updateTheme();
+        }
+    }
+    else if (event->type() == QEvent::FontChange || event->type() == QEvent::ApplicationFontChange || event->type() == QEvent::StyleChange)
+    {
+        if (m_titleLabel && m_extraLabel)
+        {
+            updateTheme();
+        }
     }
     QWidget::changeEvent(event);
 }
@@ -240,11 +287,22 @@ void AntDescriptions::rebuildLayout()
     m_header->setVisible(!m_title.isEmpty() || !m_extra.isEmpty());
     m_titleLabel->setText(m_title);
     m_extraLabel->setText(m_extra);
-    rebuildGrid();
+    invalidateSizeHintCache();
+    updateGeometry();
 }
 
 void AntDescriptions::rebuildGrid()
 {
+    for (const CellRecord& record : std::as_const(m_cellRecords))
+    {
+        if (record.item && record.item->contentWidget() && record.item->contentWidget()->parentWidget() == record.contentCell)
+        {
+            record.item->contentWidget()->setParent(record.item);
+            record.item->contentWidget()->hide();
+        }
+    }
+    m_cellRecords.clear();
+
     while (QLayoutItem* item = m_grid->takeAt(0))
     {
         if (QWidget* widget = item->widget())
@@ -274,6 +332,12 @@ void AntDescriptions::rebuildGrid()
             QWidget* contentCell = buildContentCell(item);
             m_grid->addWidget(labelCell, row * 2, col, 1, span);
             m_grid->addWidget(contentCell, row * 2 + 1, col, 1, span);
+            m_cellRecords.append({item,
+                                  labelCell,
+                                  labelCell->findChild<QLabel*>(QString(), Qt::FindDirectChildrenOnly),
+                                  contentCell,
+                                  item->contentWidget() ? nullptr
+                                                        : contentCell->findChild<QLabel*>(QString(), Qt::FindDirectChildrenOnly)});
         }
         else
         {
@@ -281,6 +345,12 @@ void AntDescriptions::rebuildGrid()
             QWidget* contentCell = buildContentCell(item);
             m_grid->addWidget(labelCell, row, col * 2, 1, 1);
             m_grid->addWidget(contentCell, row, col * 2 + 1, 1, span * 2 - 1);
+            m_cellRecords.append({item,
+                                  labelCell,
+                                  labelCell->findChild<QLabel*>(QString(), Qt::FindDirectChildrenOnly),
+                                  contentCell,
+                                  item->contentWidget() ? nullptr
+                                                        : contentCell->findChild<QLabel*>(QString(), Qt::FindDirectChildrenOnly)});
         }
 
         col += span;
@@ -291,11 +361,20 @@ void AntDescriptions::rebuildGrid()
         }
     }
 
+    ++m_gridRebuildCount;
+    invalidateSizeHintCache();
     updateTheme();
+    updateGeometry();
+    syncDescriptionsPerfCounters();
 }
 
 void AntDescriptions::updateTheme()
 {
+    if (!m_titleLabel || !m_extraLabel)
+    {
+        return;
+    }
+
     const auto& token = antTheme->tokens();
 
     QFont titleFont = font();
@@ -311,6 +390,113 @@ void AntDescriptions::updateTheme()
     QPalette p2 = m_extraLabel->palette();
     p2.setColor(QPalette::WindowText, token.colorTextSecondary);
     m_extraLabel->setPalette(p2);
+
+    for (CellRecord& record : m_cellRecords)
+    {
+        if (auto* cell = borderedCell(record.labelCell))
+        {
+            cell->setColors(token.colorFillQuaternary, token.colorSplit);
+        }
+        if (auto* cell = borderedCell(record.contentCell))
+        {
+            cell->setColors(token.colorBgContainer, token.colorSplit);
+        }
+
+        if (auto* layout = record.labelCell ? record.labelCell->layout() : nullptr)
+        {
+            layout->setContentsMargins(token.paddingLG, token.padding, token.paddingLG, token.padding);
+        }
+        if (auto* layout = record.contentCell ? record.contentCell->layout() : nullptr)
+        {
+            layout->setContentsMargins(token.paddingLG, token.padding, token.paddingLG, token.padding);
+        }
+
+        QFont cellFont = font();
+        cellFont.setPixelSize(token.fontSize);
+        if (record.labelLabel)
+        {
+            record.labelLabel->setFont(cellFont);
+            QPalette p = record.labelLabel->palette();
+            p.setColor(QPalette::WindowText, token.colorTextSecondary);
+            record.labelLabel->setPalette(p);
+        }
+        if (record.contentLabel)
+        {
+            record.contentLabel->setFont(cellFont);
+            QPalette p = record.contentLabel->palette();
+            p.setColor(QPalette::WindowText, token.colorText);
+            record.contentLabel->setPalette(p);
+        }
+    }
+
+    invalidateSizeHintCache();
+    updateGeometry();
+    update();
+    syncDescriptionsPerfCounters();
+}
+
+void AntDescriptions::updateItemLabel(AntDescriptionsItem* item)
+{
+    for (CellRecord& record : m_cellRecords)
+    {
+        if (record.item == item && record.labelLabel)
+        {
+            record.labelLabel->setText(item->label());
+            ++m_itemTextUpdateCount;
+            invalidateSizeHintCache();
+            updateGeometry();
+            if (record.labelCell)
+            {
+                record.labelCell->update();
+            }
+            syncDescriptionsPerfCounters();
+            return;
+        }
+    }
+    rebuildGrid();
+}
+
+void AntDescriptions::updateItemContent(AntDescriptionsItem* item)
+{
+    for (CellRecord& record : m_cellRecords)
+    {
+        if (record.item != item)
+        {
+            continue;
+        }
+
+        if (item->contentWidget() || !record.contentLabel)
+        {
+            rebuildGrid();
+            return;
+        }
+
+        record.contentLabel->setText(item->content());
+        ++m_itemTextUpdateCount;
+        invalidateSizeHintCache();
+        updateGeometry();
+        if (record.contentCell)
+        {
+            record.contentCell->update();
+        }
+        syncDescriptionsPerfCounters();
+        return;
+    }
+    rebuildGrid();
+}
+
+void AntDescriptions::invalidateSizeHintCache()
+{
+    m_sizeHintCacheValid = false;
+}
+
+void AntDescriptions::syncDescriptionsPerfCounters() const
+{
+    auto* self = const_cast<AntDescriptions*>(this);
+    self->setProperty("antDescriptionsGridRebuildCount", m_gridRebuildCount);
+    self->setProperty("antDescriptionsItemTextUpdateCount", m_itemTextUpdateCount);
+    self->setProperty("antDescriptionsSizeHintCacheHitCount", m_sizeHintCacheHitCount);
+    self->setProperty("antDescriptionsSizeHintBuildCount", m_sizeHintCacheBuildCount);
 }
 
 QWidget* AntDescriptions::buildLabelCell(const QString& text)

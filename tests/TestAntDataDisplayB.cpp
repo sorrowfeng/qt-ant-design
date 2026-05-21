@@ -33,6 +33,7 @@ private slots:
     void tableSelectionCompatibilityApis();
     void qrCodeReusesRenderedModuleCache();
     void timelineCachesPaintLayoutAndColors();
+    void descriptionsUpdatesTextWithoutGridRebuildAndCachesSizeHint();
     void listSelectionHighlightUsesBalancedInset();
 };
 
@@ -802,6 +803,45 @@ void TestAntDataDisplayB::qrCodeReusesRenderedModuleCache()
     qr.setValue(QStringLiteral("https://example.com/cache-bust"));
     const QPixmap changedPayload = qr.cachedQrPixmap(moduleSize, 1.0, foreground);
     QVERIFY(changedPayload.cacheKey() != firstKey);
+}
+
+void TestAntDataDisplayB::descriptionsUpdatesTextWithoutGridRebuildAndCachesSizeHint()
+{
+    AntDescriptions descriptions;
+    descriptions.setTitle(QStringLiteral("User Info"));
+    descriptions.setColumnCount(2);
+    descriptions.setBordered(true);
+    auto* nameItem = descriptions.addItem(QStringLiteral("Name"), QStringLiteral("Alice"));
+    descriptions.addItem(QStringLiteral("Role"), QStringLiteral("Designer"));
+    descriptions.resize(420, descriptions.sizeHint().height());
+    descriptions.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&descriptions));
+
+    const QSize firstHint = descriptions.sizeHint();
+    QVERIFY(firstHint.width() > 0);
+    QVERIFY(descriptions.property("antDescriptionsSizeHintBuildCount").toInt() > 0);
+    const int cacheHitsBefore = descriptions.property("antDescriptionsSizeHintCacheHitCount").toInt();
+    QCOMPARE(descriptions.sizeHint(), firstHint);
+    QVERIFY(descriptions.property("antDescriptionsSizeHintCacheHitCount").toInt() > cacheHitsBefore);
+
+    const int rebuildsBeforeText = descriptions.property("antDescriptionsGridRebuildCount").toInt();
+    const int textUpdatesBefore = descriptions.property("antDescriptionsItemTextUpdateCount").toInt();
+    nameItem->setContent(QStringLiteral("Alice Chen"));
+    QCOMPARE(descriptions.property("antDescriptionsGridRebuildCount").toInt(), rebuildsBeforeText);
+    QVERIFY(descriptions.property("antDescriptionsItemTextUpdateCount").toInt() > textUpdatesBefore);
+
+    const int labelUpdatesBefore = descriptions.property("antDescriptionsItemTextUpdateCount").toInt();
+    nameItem->setLabel(QStringLiteral("Full name"));
+    QCOMPARE(descriptions.property("antDescriptionsGridRebuildCount").toInt(), rebuildsBeforeText);
+    QVERIFY(descriptions.property("antDescriptionsItemTextUpdateCount").toInt() > labelUpdatesBefore);
+
+    const int rebuildsBeforeHeader = descriptions.property("antDescriptionsGridRebuildCount").toInt();
+    descriptions.setTitle(QStringLiteral("Profile"));
+    QCOMPARE(descriptions.property("antDescriptionsGridRebuildCount").toInt(), rebuildsBeforeHeader);
+
+    const int rebuildsBeforeSpan = descriptions.property("antDescriptionsGridRebuildCount").toInt();
+    nameItem->setSpan(2);
+    QVERIFY(descriptions.property("antDescriptionsGridRebuildCount").toInt() > rebuildsBeforeSpan);
 }
 
 void TestAntDataDisplayB::listSelectionHighlightUsesBalancedInset()
