@@ -2,11 +2,7 @@
 
 #include <QEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStyleOptionButton>
-
-#include <algorithm>
-#include <utility>
 
 #include "widgets/AntRadio.h"
 #include "styles/AntPalette.h"
@@ -16,68 +12,11 @@ namespace
 constexpr int RadioSize = 16;
 constexpr int TextSpacing = 8;
 constexpr qreal DotRatio = 0.5;
-
-QPainterPath segmentPath(const QRectF& rect, qreal radius, bool roundLeft, bool roundRight)
-{
-    const qreal r = std::min(radius, rect.height() / 2.0);
-    QPainterPath path;
-    path.moveTo(rect.left() + (roundLeft ? r : 0), rect.top());
-    path.lineTo(rect.right() - (roundRight ? r : 0), rect.top());
-    if (roundRight)
-    {
-        path.quadTo(rect.right(), rect.top(), rect.right(), rect.top() + r);
-    }
-    path.lineTo(rect.right(), rect.bottom() - (roundRight ? r : 0));
-    if (roundRight)
-    {
-        path.quadTo(rect.right(), rect.bottom(), rect.right() - r, rect.bottom());
-    }
-    path.lineTo(rect.left() + (roundLeft ? r : 0), rect.bottom());
-    if (roundLeft)
-    {
-        path.quadTo(rect.left(), rect.bottom(), rect.left(), rect.bottom() - r);
-    }
-    path.lineTo(rect.left(), rect.top() + (roundLeft ? r : 0));
-    if (roundLeft)
-    {
-        path.quadTo(rect.left(), rect.top(), rect.left() + r, rect.top());
-    }
-    path.closeSubpath();
-    return path;
-}
-
-std::pair<bool, bool> roundedEdgesFor(const AntRadio* radio)
-{
-    if (!radio || !radio->parentWidget())
-    {
-        return {true, true};
-    }
-
-    auto radios = radio->parentWidget()->findChildren<AntRadio*>(QString(), Qt::FindDirectChildrenOnly);
-    radios.erase(std::remove_if(radios.begin(), radios.end(), [](const AntRadio* item) {
-                    return !item->isButtonStyle();
-                }),
-                 radios.end());
-    std::sort(radios.begin(), radios.end(), [](const AntRadio* a, const AntRadio* b) {
-        if (a->geometry().top() == b->geometry().top())
-        {
-            return a->geometry().left() < b->geometry().left();
-        }
-        return a->geometry().top() < b->geometry().top();
-    });
-
-    if (radios.size() <= 1)
-    {
-        return {true, true};
-    }
-    return {radios.first() == radio, radios.last() == radio};
-}
 }
 
 AntRadioStyle::AntRadioStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntRadio>();
 }
 
 void AntRadioStyle::polish(QWidget* widget)
@@ -116,9 +55,8 @@ void AntRadioStyle::drawControl(ControlElement element, const QStyleOption* opti
         const bool pressed = bopt->state.testFlag(QStyle::State_Sunken);
         if (radio->isButtonStyle())
         {
-            const QRectF frame = QRectF(bopt->rect).adjusted(0.5, 0.5, -0.5, -0.5);
-            const auto [roundLeft, roundRight] = roundedEdgesFor(radio);
-            const QPainterPath path = segmentPath(frame, token.borderRadius, roundLeft, roundRight);
+            const QRectF frame = radio->buttonFrameRect();
+            const QPainterPath& path = radio->buttonSegmentPath();
             QColor border = token.colorBorder;
             QColor bg = token.colorBgContainer;
             QColor text = token.colorText;
@@ -146,16 +84,14 @@ void AntRadioStyle::drawControl(ControlElement element, const QStyleOption* opti
             painter->setBrush(bg);
             painter->drawPath(path);
 
-            QFont f = painter->font();
-            f.setPixelSize(token.fontSize);
-            painter->setFont(f);
+            painter->setFont(radio->radioFont());
             painter->setPen(text);
             painter->drawText(frame, Qt::AlignCenter, radio->text());
             painter->restore();
             return;
         }
 
-        const QRectF circle(0.5, (bopt->rect.height() - RadioSize) / 2.0 + 0.5, RadioSize - 1, RadioSize - 1);
+        const QRectF circle = radio->indicatorRect();
 
         QColor border;
         QColor background;
@@ -201,12 +137,9 @@ void AntRadioStyle::drawControl(ControlElement element, const QStyleOption* opti
 
         if (!radio->text().isEmpty())
         {
-            QFont f = painter->font();
-            f.setPixelSize(token.fontSize);
-            painter->setFont(f);
+            painter->setFont(radio->radioFont());
             painter->setPen(enabled ? token.colorText : token.colorTextDisabled);
-            const QRectF textRect(circle.right() + TextSpacing, 0, bopt->rect.width() - circle.right() - TextSpacing, bopt->rect.height());
-            painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, radio->text());
+            painter->drawText(radio->textRect(), Qt::AlignLeft | Qt::AlignVCenter, radio->text());
         }
         painter->restore();
         return;

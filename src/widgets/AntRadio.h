@@ -2,13 +2,22 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QFont>
+#include <QPair>
+#include <QPainterPath>
+#include <QRectF>
+#include <QSize>
 #include <QVariant>
 #include <QWidget>
 
 class QEvent;
 class QKeyEvent;
 class QMouseEvent;
+class QMoveEvent;
 class QPaintEvent;
+class QResizeEvent;
+
+class AntRadioStyle;
 
 class QT_ANT_DESIGN_EXPORT AntRadio : public QWidget
 {
@@ -60,9 +69,41 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void changeEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void moveEvent(QMoveEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
+    friend class AntRadioStyle;
+
+    struct LayoutCache
+    {
+        QSize widgetSize;
+        QString text;
+        bool buttonStyle = false;
+        int fontSize = 14;
+        int controlHeight = 32;
+        int borderRadius = 6;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QRectF indicatorRect;
+        QRectF textRect;
+        QRectF buttonFrame;
+        QPainterPath buttonPath;
+        QPair<bool, bool> buttonEdges = {true, true};
+        bool valid = false;
+    };
+
+    const LayoutCache& layoutCache() const;
+    QPair<bool, bool> buttonSegmentEdges() const;
     QRectF indicatorRect() const;
+    QRectF textRect() const;
+    QRectF buttonFrameRect() const;
+    const QPainterPath& buttonSegmentPath() const;
+    QFont radioFont() const;
+    QRect visualStateRect() const;
+    void invalidateLayoutCache() const;
+    void updateVisualStateRegion(const QRect& oldRect = QRect());
+    void syncRadioPerfCounters() const;
     void toggleFromUser();
     void uncheckSiblings();
     QColor indicatorBorderColor() const;
@@ -75,4 +116,9 @@ private:
     bool m_pressed = false;
     QString m_text;
     QVariant m_value;
+    mutable LayoutCache m_layoutCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_sizeHintResolveCount = 0;
+    mutable int m_buttonEdgeResolveCount = 0;
+    int m_regionUpdateCount = 0;
 };

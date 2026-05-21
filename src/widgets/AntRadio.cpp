@@ -1,9 +1,14 @@
 #include "AntRadio.h"
 
 #include <QEvent>
+#include <QFontMetrics>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QMoveEvent>
+#include <QResizeEvent>
 #include <QSizePolicy>
+
+#include <algorithm>
 
 #include "../styles/AntRadioStyle.h"
 #include "core/AntTheme.h"
@@ -12,6 +17,7 @@
 namespace
 {
 constexpr int RadioSize = 16;
+constexpr int TextSpacing = 8;
 }
 
 AntRadio::AntRadio(QWidget* parent)
@@ -31,9 +37,15 @@ AntRadio::AntRadio(QWidget* parent)
         update();
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
+        const QSize oldHint = sizeHint();
+        invalidateLayoutCache();
+        if (oldHint != sizeHint())
+        {
+            updateGeometry();
+        }
         update();
     });
+    syncRadioPerfCounters();
 }
 
 AntRadio::AntRadio(const QString& text, QWidget* parent)
@@ -56,7 +68,7 @@ void AntRadio::setChecked(bool checked)
     {
         uncheckSiblings();
     }
-    update();
+    updateVisualStateRegion();
     Q_EMIT checkedChanged(m_checked);
     Q_EMIT toggled(m_checked);
 }
@@ -70,6 +82,7 @@ void AntRadio::setText(const QString& text)
         return;
     }
     m_text = text;
+    invalidateLayoutCache();
     updateGeometry();
     update();
     Q_EMIT textChanged(m_text);
@@ -112,6 +125,7 @@ void AntRadio::setButtonStyle(bool buttonStyle)
         return;
     }
     m_buttonStyle = buttonStyle;
+    invalidateLayoutCache();
     updateGeometry();
     update();
     Q_EMIT buttonStyleChanged(m_buttonStyle);
@@ -134,36 +148,37 @@ void AntRadio::click()
 
 QSize AntRadio::sizeHint() const
 {
-    QFont f = font();
-    f.setPixelSize(antTheme->tokens().fontSize);
-    QFontMetrics fm(f);
-    if (m_buttonStyle)
-    {
-        return QSize(fm.horizontalAdvance(m_text) + 30, antTheme->tokens().controlHeight);
-    }
-    constexpr int radioSize = 16;
-    constexpr int textSpacing = 8;
-    const int textWidth = m_text.isEmpty() ? 0 : textSpacing + fm.horizontalAdvance(m_text);
-    return QSize(radioSize + textWidth, std::max(radioSize, fm.height()));
+    return layoutCache().sizeHint;
 }
 
 QSize AntRadio::minimumSizeHint() const
 {
-    return m_buttonStyle ? QSize(48, antTheme->tokens().controlHeight) : QSize(16, 16);
+    return layoutCache().minimumSizeHint;
 }
 
 void AntRadio::enterEvent(QEnterEvent* event)
 {
+    if (m_hovered)
+    {
+        QWidget::enterEvent(event);
+        return;
+    }
     m_hovered = true;
-    update();
+    updateVisualStateRegion();
     QWidget::enterEvent(event);
 }
 
 void AntRadio::leaveEvent(QEvent* event)
 {
+    if (!m_hovered && !m_pressed)
+    {
+        QWidget::leaveEvent(event);
+        return;
+    }
+    const QRect oldStateRect = visualStateRect();
     m_hovered = false;
     m_pressed = false;
-    update();
+    updateVisualStateRegion(oldStateRect);
     QWidget::leaveEvent(event);
 }
 
@@ -171,8 +186,13 @@ void AntRadio::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton && isEnabled())
     {
+        if (m_pressed)
+        {
+            event->accept();
+            return;
+        }
         m_pressed = true;
-        update();
+        updateVisualStateRegion();
         event->accept();
         return;
     }
@@ -183,6 +203,7 @@ void AntRadio::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton && m_pressed)
     {
+        const QRect oldStateRect = visualStateRect();
         m_pressed = false;
         const bool wasChecked = m_checked;
         if (rect().contains(event->pos()))
@@ -202,7 +223,7 @@ void AntRadio::mouseReleaseEvent(QMouseEvent* event)
                 AntWave::triggerRect(this, box, antTheme->tokens().colorPrimary, box.width() / 2, true);
             }
         }
-        update();
+        updateVisualStateRegion(oldStateRect);
         event->accept();
         return;
     }
@@ -231,13 +252,203 @@ void AntRadio::keyPressEvent(QKeyEvent* event)
     QWidget::keyPressEvent(event);
 }
 
+void AntRadio::moveEvent(QMoveEvent* event)
+{
+    if (m_buttonStyle)
+    {
+        invalidateLayoutCache();
+    }
+    QWidget::moveEvent(event);
+}
+
+void AntRadio::resizeEvent(QResizeEvent* event)
+{
+    invalidateLayoutCache();
+    QWidget::resizeEvent(event);
+}
+
+const AntRadio::LayoutCache& AntRadio::layoutCache() const
+{
+    const auto& token = antTheme->tokens();
+    if (m_layoutCache.valid
+        && m_layoutCache.widgetSize == size()
+        && m_layoutCache.text == m_text
+        && m_layoutCache.buttonStyle == m_buttonStyle
+        && m_layoutCache.fontSize == token.fontSize
+        && m_layoutCache.controlHeight == token.controlHeight
+        && m_layoutCache.borderRadius == token.borderRadius)
+    {
+        return m_layoutCache;
+    }
+
+    m_layoutCache.widgetSize = size();
+    m_layoutCache.text = m_text;
+    m_layoutCache.buttonStyle = m_buttonStyle;
+    m_layoutCache.fontSize = token.fontSize;
+    m_layoutCache.controlHeight = token.controlHeight;
+    m_layoutCache.borderRadius = token.borderRadius;
+
+    QFontMetrics fm(radioFont());
+    if (m_buttonStyle)
+    {
+        m_layoutCache.sizeHint = QSize(fm.horizontalAdvance(m_text) + 30, token.controlHeight);
+        m_layoutCache.minimumSizeHint = QSize(48, token.controlHeight);
+        m_layoutCache.buttonFrame = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
+        m_layoutCache.buttonEdges = buttonSegmentEdges();
+        const qreal radius = std::min<qreal>(token.borderRadius, m_layoutCache.buttonFrame.height() / 2.0);
+        const bool roundLeft = m_layoutCache.buttonEdges.first;
+        const bool roundRight = m_layoutCache.buttonEdges.second;
+        QPainterPath path;
+        path.moveTo(m_layoutCache.buttonFrame.left() + (roundLeft ? radius : 0), m_layoutCache.buttonFrame.top());
+        path.lineTo(m_layoutCache.buttonFrame.right() - (roundRight ? radius : 0), m_layoutCache.buttonFrame.top());
+        if (roundRight)
+        {
+            path.quadTo(m_layoutCache.buttonFrame.right(), m_layoutCache.buttonFrame.top(),
+                        m_layoutCache.buttonFrame.right(), m_layoutCache.buttonFrame.top() + radius);
+        }
+        path.lineTo(m_layoutCache.buttonFrame.right(), m_layoutCache.buttonFrame.bottom() - (roundRight ? radius : 0));
+        if (roundRight)
+        {
+            path.quadTo(m_layoutCache.buttonFrame.right(), m_layoutCache.buttonFrame.bottom(),
+                        m_layoutCache.buttonFrame.right() - radius, m_layoutCache.buttonFrame.bottom());
+        }
+        path.lineTo(m_layoutCache.buttonFrame.left() + (roundLeft ? radius : 0), m_layoutCache.buttonFrame.bottom());
+        if (roundLeft)
+        {
+            path.quadTo(m_layoutCache.buttonFrame.left(), m_layoutCache.buttonFrame.bottom(),
+                        m_layoutCache.buttonFrame.left(), m_layoutCache.buttonFrame.bottom() - radius);
+        }
+        path.lineTo(m_layoutCache.buttonFrame.left(), m_layoutCache.buttonFrame.top() + (roundLeft ? radius : 0));
+        if (roundLeft)
+        {
+            path.quadTo(m_layoutCache.buttonFrame.left(), m_layoutCache.buttonFrame.top(),
+                        m_layoutCache.buttonFrame.left() + radius, m_layoutCache.buttonFrame.top());
+        }
+        path.closeSubpath();
+        m_layoutCache.buttonPath = path;
+    }
+    else
+    {
+        const int textWidth = m_text.isEmpty() ? 0 : TextSpacing + fm.horizontalAdvance(m_text);
+        m_layoutCache.sizeHint = QSize(RadioSize + textWidth, std::max(RadioSize, fm.height()));
+        m_layoutCache.minimumSizeHint = QSize(RadioSize, RadioSize);
+        m_layoutCache.indicatorRect = QRectF(0.5, (height() - RadioSize) / 2.0 + 0.5, RadioSize - 1, RadioSize - 1);
+        m_layoutCache.textRect = QRectF(m_layoutCache.indicatorRect.right() + TextSpacing,
+                                        0,
+                                        width() - m_layoutCache.indicatorRect.right() - TextSpacing,
+                                        height());
+        m_layoutCache.buttonFrame = QRectF();
+        m_layoutCache.buttonPath = QPainterPath();
+        m_layoutCache.buttonEdges = {true, true};
+    }
+
+    m_layoutCache.valid = true;
+    ++m_layoutBuildCount;
+    ++m_sizeHintResolveCount;
+    syncRadioPerfCounters();
+    return m_layoutCache;
+}
+
+QPair<bool, bool> AntRadio::buttonSegmentEdges() const
+{
+    if (!m_buttonStyle || !parentWidget())
+    {
+        return {true, true};
+    }
+
+    auto radios = parentWidget()->findChildren<AntRadio*>(QString(), Qt::FindDirectChildrenOnly);
+    radios.erase(std::remove_if(radios.begin(), radios.end(), [](const AntRadio* item) {
+                    return !item->isButtonStyle();
+                }),
+                 radios.end());
+    std::sort(radios.begin(), radios.end(), [](const AntRadio* a, const AntRadio* b) {
+        if (a->geometry().top() == b->geometry().top())
+        {
+            return a->geometry().left() < b->geometry().left();
+        }
+        return a->geometry().top() < b->geometry().top();
+    });
+
+    ++m_buttonEdgeResolveCount;
+    syncRadioPerfCounters();
+
+    if (radios.size() <= 1)
+    {
+        return {true, true};
+    }
+    return {radios.first() == this, radios.last() == this};
+}
+
 QRectF AntRadio::indicatorRect() const
 {
     if (m_buttonStyle)
     {
         return QRectF();
     }
-    return QRectF(0.5, (height() - RadioSize) / 2.0 + 0.5, RadioSize - 1, RadioSize - 1);
+    return layoutCache().indicatorRect;
+}
+
+QRectF AntRadio::textRect() const
+{
+    return layoutCache().textRect;
+}
+
+QRectF AntRadio::buttonFrameRect() const
+{
+    return layoutCache().buttonFrame;
+}
+
+const QPainterPath& AntRadio::buttonSegmentPath() const
+{
+    return layoutCache().buttonPath;
+}
+
+QFont AntRadio::radioFont() const
+{
+    QFont f = font();
+    f.setPixelSize(antTheme->tokens().fontSize);
+    return f;
+}
+
+QRect AntRadio::visualStateRect() const
+{
+    if (m_buttonStyle)
+    {
+        return rect();
+    }
+    return indicatorRect().toAlignedRect().adjusted(-4, -4, 4, 4).intersected(rect());
+}
+
+void AntRadio::invalidateLayoutCache() const
+{
+    m_layoutCache.valid = false;
+    syncRadioPerfCounters();
+}
+
+void AntRadio::updateVisualStateRegion(const QRect& oldRect)
+{
+    QRect dirty = visualStateRect();
+    if (oldRect.isValid())
+    {
+        dirty = dirty.united(oldRect);
+    }
+    if (!dirty.isValid() || dirty.isEmpty())
+    {
+        dirty = rect();
+    }
+    ++m_regionUpdateCount;
+    setProperty("antRadioLastUpdateMode", m_buttonStyle ? QStringLiteral("button") : QStringLiteral("indicator"));
+    syncRadioPerfCounters();
+    update(dirty);
+}
+
+void AntRadio::syncRadioPerfCounters() const
+{
+    auto* self = const_cast<AntRadio*>(this);
+    self->setProperty("antRadioLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antRadioSizeHintResolveCount", m_sizeHintResolveCount);
+    self->setProperty("antRadioButtonEdgeResolveCount", m_buttonEdgeResolveCount);
+    self->setProperty("antRadioRegionUpdateCount", m_regionUpdateCount);
 }
 
 void AntRadio::toggleFromUser()

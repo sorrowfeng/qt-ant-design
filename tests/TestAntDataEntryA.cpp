@@ -26,6 +26,7 @@ private slots:
     void inputNumberLineEditPaletteTracksDarkTheme();
     void inputNumberUsesLayoutFriendlyPolicy();
     void inputNumberCachesMetricsAndScopesControlUpdates();
+    void radioCachesLayoutAndScopesStateUpdates();
     void sliderMarksReserveLabelHeight();
     void sliderBubbleFloatsAboveMarkedHandle();
     void sliderBubbleArrowJoinsSurface();
@@ -469,6 +470,58 @@ void TestAntDataEntryA::inputNumberCachesMetricsAndScopesControlUpdates()
     const int regionUpdatesAfterProgress = input.property("antInputNumberControlsRegionUpdateCount").toInt();
     input.setControlsProgress(0.8);
     QCOMPARE(input.property("antInputNumberControlsRegionUpdateCount").toInt(), regionUpdatesAfterProgress);
+}
+
+void TestAntDataEntryA::radioCachesLayoutAndScopesStateUpdates()
+{
+    AntRadio radio(QStringLiteral("Choice"));
+    radio.resize(140, radio.sizeHint().height());
+    radio.sizeHint();
+
+    const int sizeHintResolvesBefore = radio.property("antRadioSizeHintResolveCount").toInt();
+    const int layoutBuildsBefore = radio.property("antRadioLayoutBuildCount").toInt();
+    radio.sizeHint();
+    radio.minimumSizeHint();
+    radio.sizeHint();
+    QCOMPARE(radio.property("antRadioSizeHintResolveCount").toInt(), sizeHintResolvesBefore);
+    QCOMPARE(radio.property("antRadioLayoutBuildCount").toInt(), layoutBuildsBefore);
+
+    const int regionUpdatesBefore = radio.property("antRadioRegionUpdateCount").toInt();
+    radio.setChecked(true);
+    QVERIFY(radio.property("antRadioRegionUpdateCount").toInt() > regionUpdatesBefore);
+    QCOMPARE(radio.property("antRadioLastUpdateMode").toString(), QStringLiteral("indicator"));
+
+    const int regionUpdatesAfterChecked = radio.property("antRadioRegionUpdateCount").toInt();
+    radio.setChecked(true);
+    QCOMPARE(radio.property("antRadioRegionUpdateCount").toInt(), regionUpdatesAfterChecked);
+
+    radio.setText(QStringLiteral("Choice B"));
+    const int layoutBuildsBeforeTextHint = radio.property("antRadioLayoutBuildCount").toInt();
+    radio.sizeHint();
+    QVERIFY(radio.property("antRadioLayoutBuildCount").toInt() > layoutBuildsBeforeTextHint);
+
+    QWidget host;
+    host.resize(220, 44);
+    AntRadio left(QStringLiteral("Left"), &host);
+    AntRadio right(QStringLiteral("Right"), &host);
+    left.setButtonStyle(true);
+    right.setButtonStyle(true);
+    left.resize(90, left.sizeHint().height());
+    right.resize(90, right.sizeHint().height());
+    left.move(0, 0);
+    right.move(90, 0);
+
+    left.sizeHint();
+    const int edgeResolvesBefore = left.property("antRadioButtonEdgeResolveCount").toInt();
+    left.sizeHint();
+    left.minimumSizeHint();
+    QCOMPARE(left.property("antRadioButtonEdgeResolveCount").toInt(), edgeResolvesBefore);
+
+    const int buttonRegionUpdatesBefore = left.property("antRadioRegionUpdateCount").toInt();
+    QEnterEvent enterEvent(QPointF(4, 4), QPointF(4, 4), QPointF(4, 4));
+    QCoreApplication::sendEvent(&left, &enterEvent);
+    QVERIFY(left.property("antRadioRegionUpdateCount").toInt() > buttonRegionUpdatesBefore);
+    QCOMPARE(left.property("antRadioLastUpdateMode").toString(), QStringLiteral("button"));
 }
 
 void TestAntDataEntryA::sliderMarksReserveLabelHeight()
