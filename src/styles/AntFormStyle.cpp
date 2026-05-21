@@ -4,30 +4,20 @@
 #include <QPainter>
 #include <QStyleOption>
 
-#include "styles/AntPalette.h"
 #include "widgets/AntForm.h"
 
 AntFormStyle::AntFormStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntForm>();
 }
 
 void AntFormStyle::polish(QWidget* widget)
 {
     QProxyStyle::polish(widget);
-    if (qobject_cast<AntForm*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
 }
 
 void AntFormStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntForm*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
     QProxyStyle::unpolish(widget);
 }
 

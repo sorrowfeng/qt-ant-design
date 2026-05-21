@@ -79,12 +79,12 @@ AntFormItem::AntFormItem(QWidget* parent)
     m_helpLabel->setWordWrap(true);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        rebuildLayout();
         updateTheme();
     });
 
     rebuildLayout();
     updateTheme();
+    syncFormItemPerfCounters();
 }
 
 QString AntFormItem::label() const { return m_label; }
@@ -96,7 +96,7 @@ void AntFormItem::setLabel(const QString& label)
         return;
     }
     m_label = label;
-    rebuildLayout();
+    updateLabelPresentation(true);
     updateTheme();
     Q_EMIT labelChanged(m_label);
 }
@@ -110,7 +110,7 @@ void AntFormItem::setHelpText(const QString& text)
         return;
     }
     m_helpText = text;
-    rebuildLayout();
+    updateAssistText(true);
     updateTheme();
     Q_EMIT helpTextChanged(m_helpText);
 }
@@ -124,7 +124,7 @@ void AntFormItem::setExtra(const QString& text)
         return;
     }
     m_extra = text;
-    rebuildLayout();
+    updateAssistText(true);
     updateTheme();
     Q_EMIT extraChanged(m_extra);
 }
@@ -138,7 +138,7 @@ void AntFormItem::setRequired(bool required)
         return;
     }
     m_required = required;
-    rebuildLayout();
+    updateLabelPresentation(true);
     updateTheme();
     Q_EMIT requiredChanged(m_required);
 }
@@ -153,7 +153,7 @@ void AntFormItem::setColon(bool colon)
     }
     m_useFormColon = false;
     m_colon = colon;
-    rebuildLayout();
+    updateLabelPresentation(true);
     updateTheme();
     Q_EMIT colonChanged(m_colon);
 }
@@ -204,15 +204,32 @@ void AntFormItem::applyFormSettings(Ant::FormLayout layoutMode,
                                     bool showRequiredMark,
                                     int labelWidth)
 {
+    const int normalizedLabelWidth = qMax(40, labelWidth);
+    const bool nextColon = m_useFormColon ? showColon : m_colon;
+    const bool layoutChanged = m_layoutMode != layoutMode;
+    const bool changed = layoutChanged || m_labelAlign != labelAlign ||
+                         m_showRequiredMark != showRequiredMark ||
+                         m_labelWidth != normalizedLabelWidth || m_colon != nextColon;
+    if (!changed)
+    {
+        ++m_settingsSkipCount;
+        syncFormItemPerfCounters();
+        return;
+    }
+
     m_layoutMode = layoutMode;
     m_labelAlign = labelAlign;
     m_showRequiredMark = showRequiredMark;
-    m_labelWidth = qMax(40, labelWidth);
-    if (m_useFormColon)
+    m_labelWidth = normalizedLabelWidth;
+    m_colon = nextColon;
+    if (layoutChanged)
     {
-        m_colon = showColon;
+        rebuildLayout();
     }
-    rebuildLayout();
+    else
+    {
+        updateLabelPresentation();
+    }
     updateTheme();
 }
 
@@ -227,8 +244,11 @@ void AntFormItem::changeEvent(QEvent* event)
 
 void AntFormItem::rebuildLayout()
 {
+    ++m_layoutRebuildCount;
     delete m_rootLayout;
+    m_rootLayout = nullptr;
     delete m_fieldColumnLayout;
+    m_fieldColumnLayout = nullptr;
 
     const auto& token = antTheme->tokens();
     if (m_layoutMode == Ant::FormLayout::Horizontal)
@@ -248,13 +268,34 @@ void AntFormItem::rebuildLayout()
     m_fieldColumnLayout->setContentsMargins(0, 0, 0, 0);
     m_fieldColumnLayout->setSpacing(token.marginXS);
 
-    while (QLayoutItem* item = m_rootLayout->takeAt(0))
+    if (m_layoutMode == Ant::FormLayout::Horizontal)
     {
-        delete item;
+        m_rootLayout->addWidget(m_labelContainer, 0, Qt::AlignTop);
+        m_rootLayout->addWidget(m_fieldColumn, 1);
     }
-    while (QLayoutItem* item = m_fieldColumnLayout->takeAt(0))
+    else
     {
-        delete item;
+        m_rootLayout->addWidget(m_labelContainer);
+        m_rootLayout->addWidget(m_fieldColumn);
+    }
+
+    if (m_fieldWidget)
+    {
+        m_fieldColumnLayout->addWidget(m_fieldWidget);
+    }
+    m_fieldColumnLayout->addWidget(m_extraLabel);
+    m_fieldColumnLayout->addWidget(m_helpLabel);
+
+    updateLabelPresentation();
+    updateAssistText();
+    syncFormItemPerfCounters();
+}
+
+void AntFormItem::updateLabelPresentation(bool countUpdate)
+{
+    if (!m_labelContainer || !m_requiredLabel || !m_labelWidget)
+    {
+        return;
     }
 
     m_labelContainer->setVisible(!m_label.isEmpty());
@@ -264,32 +305,40 @@ void AntFormItem::rebuildLayout()
     if (m_layoutMode == Ant::FormLayout::Horizontal)
     {
         m_labelContainer->setFixedWidth(m_label.isEmpty() ? 0 : m_labelWidth);
-        m_rootLayout->addWidget(m_labelContainer, 0, Qt::AlignTop);
-        m_rootLayout->addWidget(m_fieldColumn, 1);
     }
     else
     {
         m_labelContainer->setFixedWidth(QWIDGETSIZE_MAX);
-        m_rootLayout->addWidget(m_labelContainer);
-        m_rootLayout->addWidget(m_fieldColumn);
     }
 
-    if (m_fieldWidget)
+    if (countUpdate)
     {
-        m_fieldColumnLayout->addWidget(m_fieldWidget);
+        ++m_inlineTextUpdateCount;
     }
+    updateGeometry();
+    update();
+    syncFormItemPerfCounters();
+}
+
+void AntFormItem::updateAssistText(bool countUpdate)
+{
+    if (!m_extraLabel || !m_helpLabel)
+    {
+        return;
+    }
+
     m_extraLabel->setText(m_extra);
     m_extraLabel->setVisible(!m_extra.isEmpty());
     m_helpLabel->setText(m_helpText);
     m_helpLabel->setVisible(!m_helpText.isEmpty());
-    if (!m_extra.isEmpty())
+
+    if (countUpdate)
     {
-        m_fieldColumnLayout->addWidget(m_extraLabel);
+        ++m_inlineTextUpdateCount;
     }
-    if (!m_helpText.isEmpty())
-    {
-        m_fieldColumnLayout->addWidget(m_helpLabel);
-    }
+    updateGeometry();
+    update();
+    syncFormItemPerfCounters();
 }
 
 void AntFormItem::updateTheme()
@@ -323,6 +372,15 @@ void AntFormItem::updateTheme()
     helpPalette.setColor(QPalette::WindowText, helpColor());
     m_helpLabel->setPalette(helpPalette);
 
+    if (m_rootLayout)
+    {
+        m_rootLayout->setSpacing(token.marginXS);
+    }
+    if (m_fieldColumnLayout)
+    {
+        m_fieldColumnLayout->setSpacing(token.marginXS);
+    }
+
     if (auto* labelLayout = qobject_cast<QHBoxLayout*>(m_labelContainer->layout()))
     {
         if (m_layoutMode == Ant::FormLayout::Horizontal && m_labelAlign == Ant::FormLabelAlign::Right)
@@ -336,6 +394,13 @@ void AntFormItem::updateTheme()
             labelLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
         }
     }
+}
+
+void AntFormItem::syncFormItemPerfCounters() const
+{
+    const_cast<AntFormItem*>(this)->setProperty("antFormItemLayoutRebuildCount", m_layoutRebuildCount);
+    const_cast<AntFormItem*>(this)->setProperty("antFormItemInlineTextUpdateCount", m_inlineTextUpdateCount);
+    const_cast<AntFormItem*>(this)->setProperty("antFormItemSettingsSkipCount", m_settingsSkipCount);
 }
 
 QString AntFormItem::effectiveLabelText() const
@@ -369,7 +434,7 @@ AntForm::AntForm(QWidget* parent)
     m_layout = new QVBoxLayout(this);
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(m_itemSpacing);
-
+    syncFormPerfCounters();
 }
 
 Ant::FormLayout AntForm::formLayout() const { return m_formLayout; }
@@ -449,7 +514,13 @@ void AntForm::setItemSpacing(int spacing)
         return;
     }
     m_itemSpacing = spacing;
-    rebuildLayout();
+    if (m_layout)
+    {
+        m_layout->setSpacing(m_itemSpacing);
+    }
+    ++m_spacingUpdateCount;
+    syncFormPerfCounters();
+    updateGeometry();
     Q_EMIT itemSpacingChanged(m_itemSpacing);
 }
 
@@ -466,8 +537,22 @@ void AntForm::addItem(AntFormItem* item)
     }
     item->setParent(this);
     m_items.append(item);
-    rebuildLayout();
-    applyItemSettings();
+    if (m_layout)
+    {
+        if (m_formLayout == Ant::FormLayout::Inline && m_layout->count() > 0)
+        {
+            m_layout->insertWidget(qMax(0, m_layout->count() - 1), item);
+        }
+        else
+        {
+            m_layout->addWidget(item);
+        }
+    }
+    item->applyFormSettings(m_formLayout, m_labelAlign, m_colon, m_requiredMark, m_labelWidth);
+    item->setEnabled(isEnabled());
+    ++m_itemSettingsApplyCount;
+    syncFormPerfCounters();
+    updateGeometry();
 }
 
 AntFormItem* AntForm::addItem(const QString& label, QWidget* fieldWidget, bool required)
@@ -486,25 +571,38 @@ void AntForm::clearItems()
     {
         if (item)
         {
+            if (m_layout)
+            {
+                m_layout->removeWidget(item);
+            }
             item->deleteLater();
         }
     }
     m_items.clear();
-    rebuildLayout();
+    syncFormPerfCounters();
+    updateGeometry();
 }
 
 void AntForm::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange)
     {
-        applyItemSettings();
+        for (AntFormItem* item : std::as_const(m_items))
+        {
+            if (item)
+            {
+                item->setEnabled(isEnabled());
+            }
+        }
     }
     QWidget::changeEvent(event);
 }
 
 void AntForm::rebuildLayout()
 {
+    ++m_layoutRebuildCount;
     delete m_layout;
+    m_layout = nullptr;
     if (m_formLayout == Ant::FormLayout::Inline)
     {
         m_layout = new QHBoxLayout(this);
@@ -529,10 +627,12 @@ void AntForm::rebuildLayout()
     {
         m_layout->addStretch();
     }
+    syncFormPerfCounters();
 }
 
 void AntForm::applyItemSettings()
 {
+    ++m_itemSettingsApplyCount;
     for (AntFormItem* item : std::as_const(m_items))
     {
         if (item)
@@ -541,6 +641,14 @@ void AntForm::applyItemSettings()
             item->setEnabled(isEnabled());
         }
     }
+    syncFormPerfCounters();
+}
+
+void AntForm::syncFormPerfCounters() const
+{
+    const_cast<AntForm*>(this)->setProperty("antFormLayoutRebuildCount", m_layoutRebuildCount);
+    const_cast<AntForm*>(this)->setProperty("antFormItemSettingsApplyCount", m_itemSettingsApplyCount);
+    const_cast<AntForm*>(this)->setProperty("antFormSpacingUpdateCount", m_spacingUpdateCount);
 }
 
 // ── Custom button classes for AntFormList ──

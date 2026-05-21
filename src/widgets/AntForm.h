@@ -65,7 +65,10 @@ protected:
 
 private:
     void rebuildLayout();
+    void updateLabelPresentation(bool countUpdate = false);
+    void updateAssistText(bool countUpdate = false);
     void updateTheme();
+    void syncFormItemPerfCounters() const;
     QString effectiveLabelText() const;
     QColor helpColor() const;
 
@@ -89,6 +92,9 @@ private:
     QPointer<QWidget> m_fieldWidget;
     QLabel* m_extraLabel = nullptr;
     QLabel* m_helpLabel = nullptr;
+    int m_layoutRebuildCount = 0;
+    int m_inlineTextUpdateCount = 0;
+    int m_settingsSkipCount = 0;
 };
 
 class AntForm; // forward declaration
@@ -167,6 +173,7 @@ protected:
 private:
     void rebuildLayout();
     void applyItemSettings();
+    void syncFormPerfCounters() const;
 
     Ant::FormLayout m_formLayout = Ant::FormLayout::Horizontal;
     Ant::FormLabelAlign m_labelAlign = Ant::FormLabelAlign::Right;
@@ -176,6 +183,9 @@ private:
     int m_itemSpacing = 16;
     QBoxLayout* m_layout = nullptr;
     QList<AntFormItem*> m_items;
+    int m_layoutRebuildCount = 0;
+    int m_itemSettingsApplyCount = 0;
+    int m_spacingUpdateCount = 0;
 };
 
 using AntFormListItemFactory = std::function<QWidget*(int index)>;

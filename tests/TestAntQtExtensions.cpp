@@ -671,6 +671,7 @@ private slots:
     void configProvider();
     void formItem();
     void form();
+    void formIncrementalUpdates();
     void formList();
     void log();
     void masonry();
@@ -883,6 +884,51 @@ void TestAntQtExtensions::form()
 
     w->clearItems();
     QCOMPARE(w->items().size(), 0);
+}
+
+void TestAntQtExtensions::formIncrementalUpdates()
+{
+    AntFormItem item;
+    item.setLabel("Name");
+    item.setHelpText("Initial");
+    item.setExtra("Optional");
+
+    const int itemRebuildsAfterSetup = item.property("antFormItemLayoutRebuildCount").toInt();
+    const int itemTextUpdatesBefore = item.property("antFormItemInlineTextUpdateCount").toInt();
+
+    item.setHelpText("Updated");
+    item.setExtra("Visible helper");
+    item.setLabel("Full name");
+    item.setRequired(true);
+
+    QCOMPARE(item.property("antFormItemLayoutRebuildCount").toInt(), itemRebuildsAfterSetup);
+    QVERIFY(item.property("antFormItemInlineTextUpdateCount").toInt() > itemTextUpdatesBefore);
+
+    const int itemRebuildsBeforeStatus = item.property("antFormItemLayoutRebuildCount").toInt();
+    item.setValidateStatus(Ant::Status::Error);
+    QCOMPARE(item.property("antFormItemLayoutRebuildCount").toInt(), itemRebuildsBeforeStatus);
+
+    item.applyFormSettings(Ant::FormLayout::Horizontal, Ant::FormLabelAlign::Right, true, true, 96);
+    const int itemSkipsBefore = item.property("antFormItemSettingsSkipCount").toInt();
+    item.applyFormSettings(Ant::FormLayout::Horizontal, Ant::FormLabelAlign::Right, true, true, 96);
+    QVERIFY(item.property("antFormItemSettingsSkipCount").toInt() > itemSkipsBefore);
+
+    AntForm form;
+    auto* first = form.addItem("Name", new QWidget, true);
+    QVERIFY(first != nullptr);
+
+    const int formRebuildsBeforeSpacing = form.property("antFormLayoutRebuildCount").toInt();
+    form.setItemSpacing(24);
+    QCOMPARE(form.property("antFormLayoutRebuildCount").toInt(), formRebuildsBeforeSpacing);
+    QVERIFY(form.property("antFormSpacingUpdateCount").toInt() > 0);
+
+    const int itemRebuildsBeforeAlign = first->property("antFormItemLayoutRebuildCount").toInt();
+    form.setLabelAlign(Ant::FormLabelAlign::Left);
+    QCOMPARE(first->property("antFormItemLayoutRebuildCount").toInt(), itemRebuildsBeforeAlign);
+
+    const int formRebuildsBeforeLayout = form.property("antFormLayoutRebuildCount").toInt();
+    form.setFormLayout(Ant::FormLayout::Inline);
+    QVERIFY(form.property("antFormLayoutRebuildCount").toInt() > formRebuildsBeforeLayout);
 }
 
 void TestAntQtExtensions::formList()
