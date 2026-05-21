@@ -25,6 +25,7 @@ private slots:
     void datePickerPopupCachesCellsAndScopesHover();
     void timePickerPopupCachesRowsAndScopesHover();
     void transferCachesVisibleRowsAndScopesUpdates();
+    void treeSelectReusesPopupTreeAndCachesRows();
 };
 
 namespace
@@ -73,6 +74,16 @@ QPoint timePickerPopupCellCenter(int column, int row)
     constexpr qreal rowHeight = 28.0;
     return QPoint(qRound(shadowMargin + (column + 0.5) * columnWidth),
                   qRound(topMargin + 8 + row * rowHeight + 12));
+}
+
+AntTreeNode treeSelectNode(const QString& key, const QString& title, QVector<AntTreeNode> children = {})
+{
+    AntTreeNode node;
+    node.key = key;
+    node.title = title;
+    node.children = children;
+    node.isLeaf = children.isEmpty();
+    return node;
 }
 
 void sendMouseMove(QWidget* target, const QPoint& point)
@@ -624,6 +635,66 @@ void TestAntDataEntryB::transferCachesVisibleRowsAndScopesUpdates()
     QCOMPARE(transfer.property("antTransferLastUpdateMode").toString(), QStringLiteral("transfer"));
     QVERIFY(!transfer.sourceItems().contains(QStringLiteral("A")));
     QVERIFY(transfer.targetItems().contains(QStringLiteral("A")));
+}
+
+void TestAntDataEntryB::treeSelectReusesPopupTreeAndCachesRows()
+{
+    AntTreeSelect treeSelect;
+    const QVector<AntTreeNode> children = {
+        treeSelectNode(QStringLiteral("child-a"), QStringLiteral("Child A")),
+        treeSelectNode(QStringLiteral("child-b"), QStringLiteral("Child B"))
+    };
+    treeSelect.setTreeData({treeSelectNode(QStringLiteral("root"), QStringLiteral("Root"), children)});
+    treeSelect.resize(treeSelect.sizeHint());
+    treeSelect.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&treeSelect));
+
+    treeSelect.grab();
+    const int triggerBuildsBefore = treeSelect.property("antTreeSelectTriggerLayoutBuildCount").toInt();
+    const int triggerHitsBefore = treeSelect.property("antTreeSelectTriggerLayoutCacheHitCount").toInt();
+    treeSelect.grab();
+    QCOMPARE(treeSelect.property("antTreeSelectTriggerLayoutBuildCount").toInt(), triggerBuildsBefore);
+    QVERIFY(treeSelect.property("antTreeSelectTriggerLayoutCacheHitCount").toInt() > triggerHitsBefore);
+
+    treeSelect.setValue({QStringLiteral("root")});
+    QCOMPARE(treeSelect.displayText(), QStringLiteral("Root"));
+    QCOMPARE(treeSelect.property("antTreeSelectTitleCacheBuildCount").toInt(), 1);
+    treeSelect.setValue({QStringLiteral("child-a")});
+    QCOMPARE(treeSelect.displayText(), QStringLiteral("Child A"));
+    QCOMPARE(treeSelect.property("antTreeSelectTitleCacheBuildCount").toInt(), 1);
+
+    treeSelect.setOpen(true);
+    QTRY_VERIFY(treeSelect.isOpen());
+    QFrame* popup = nullptr;
+    QTRY_VERIFY((popup = directVisibleFrameChild(&treeSelect)) != nullptr);
+    auto* popupTree = popup->findChild<AntTree*>();
+    QVERIFY(popupTree != nullptr);
+    QCOMPARE(treeSelect.property("antTreeSelectPopupTreeRebuildCount").toInt(), 1);
+    QCOMPARE(treeSelect.property("antTreeSelectVisibleRowCount").toInt(), 1);
+
+    const int visibleRowHitsBeforeReopen = treeSelect.property("antTreeSelectVisibleRowsCacheHitCount").toInt();
+    const int geometrySkipsBeforeReopen = treeSelect.property("antTreeSelectPopupGeometrySkipCount").toInt();
+    treeSelect.setOpen(false);
+    QTRY_VERIFY(!treeSelect.isOpen());
+    QTRY_VERIFY(!popup->isVisible());
+
+    treeSelect.setOpen(true);
+    QTRY_VERIFY(treeSelect.isOpen());
+    QCOMPARE(treeSelect.property("antTreeSelectPopupTreeRebuildCount").toInt(), 1);
+    QVERIFY(treeSelect.property("antTreeSelectVisibleRowsCacheHitCount").toInt() > visibleRowHitsBeforeReopen);
+    QVERIFY(treeSelect.property("antTreeSelectPopupGeometrySkipCount").toInt() > geometrySkipsBeforeReopen);
+
+    const int rebuildsBeforeCheckable = treeSelect.property("antTreeSelectPopupTreeRebuildCount").toInt();
+    treeSelect.setTreeCheckable(true);
+    QCOMPARE(treeSelect.property("antTreeSelectPopupTreeRebuildCount").toInt(), rebuildsBeforeCheckable);
+
+    popup = directVisibleFrameChild(&treeSelect);
+    QVERIFY(popup != nullptr);
+    popupTree = popup->findChild<AntTree*>();
+    QVERIFY(popupTree != nullptr);
+    QTest::mouseClick(popupTree, Qt::LeftButton, Qt::NoModifier, QPoint(12, 14));
+    QTRY_COMPARE(treeSelect.property("antTreeSelectLastPopupUpdateMode").toString(), QStringLiteral("expand"));
+    QCOMPARE(treeSelect.property("antTreeSelectVisibleRowCount").toInt(), 3);
 }
 
 QTEST_MAIN(TestAntDataEntryB)

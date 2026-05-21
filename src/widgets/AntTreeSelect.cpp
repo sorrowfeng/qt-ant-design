@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QResizeEvent>
 #include <QSizePolicy>
 #include <QVBoxLayout>
 #include <QLineEdit>
@@ -53,21 +54,10 @@ public:
                                    kPopupShadowMargin + kPopupInnerPadding);
         layout->setSpacing(0);
 
-        if (m_owner->m_showSearch)
-        {
-            m_searchEdit = new QLineEdit(this);
-            m_searchEdit->setPlaceholderText(QStringLiteral("Search..."));
-            m_searchEdit->setFixedHeight(32);
-            layout->addWidget(m_searchEdit);
-        }
-
         m_treeWidget = new AntTree(this);
-        m_treeWidget->setCheckable(m_owner->m_treeCheckable);
         m_treeWidget->setShowLine(false);
         m_treeWidget->setShowIcon(false);
-        m_treeWidget->setTreeData(m_owner->m_treeData);
         layout->addWidget(m_treeWidget);
-        refreshSize();
 
         connect(m_treeWidget, &AntTree::nodeSelected, this, [this](const QString& key) {
             if (!m_owner->m_multiple)
@@ -87,24 +77,154 @@ public:
                 Q_EMIT m_owner->valueChanged(m_owner->m_value);
             }
         });
+
+        connect(m_treeWidget, &AntTree::nodeExpanded, this, [this]() {
+            refreshSizeFromTree();
+        });
+
+        refreshFromOwner();
     }
 
-    void refreshSize()
+    void refreshFromOwner()
+    {
+        syncSearchEditor();
+        bool dataChanged = false;
+        if (m_treeWidget)
+        {
+            if (m_appliedCheckable != m_owner->m_treeCheckable)
+            {
+                m_treeWidget->setCheckable(m_owner->m_treeCheckable);
+                m_appliedCheckable = m_owner->m_treeCheckable;
+            }
+
+            if (m_appliedTreeDataRevision != m_owner->treeDataRevision())
+            {
+                m_treeWidget->setTreeData(m_owner->m_treeData);
+                m_appliedTreeDataRevision = m_owner->treeDataRevision();
+                ++m_treeRebuildCount;
+                dataChanged = true;
+            }
+        }
+
+        const int ownerRows = m_owner->visibleTreeRowCount();
+        const int rows = dataChanged || !m_treeWidget
+            ? ownerRows
+            : std::max(1, visibleTreeRows(m_treeWidget->treeData()));
+        applyPopupMetrics(rows);
+        syncOwnerPerfCounters();
+    }
+
+    void refreshSizeFromTree()
+    {
+        const int rows = std::max(1, visibleTreeRows(m_treeWidget ? m_treeWidget->treeData() : QVector<AntTreeNode>{}));
+        applyPopupMetrics(rows);
+        if (m_owner)
+        {
+            m_owner->setProperty("antTreeSelectLastPopupUpdateMode", QStringLiteral("expand"));
+            m_owner->setProperty("antTreeSelectVisibleRowCount", rows);
+        }
+        syncOwnerPerfCounters();
+    }
+
+    void invalidateOwnerData()
+    {
+        m_appliedTreeDataRevision = -1;
+    }
+
+private:
+    void syncSearchEditor()
+    {
+        auto* box = qobject_cast<QVBoxLayout*>(layout());
+        if (!box)
+        {
+            return;
+        }
+
+        if (m_owner->m_showSearch)
+        {
+            if (!m_searchEdit)
+            {
+                m_searchEdit = new QLineEdit(this);
+                m_searchEdit->setPlaceholderText(QStringLiteral("Search..."));
+                m_searchEdit->setFixedHeight(32);
+                box->insertWidget(0, m_searchEdit);
+            }
+            return;
+        }
+
+        if (m_searchEdit)
+        {
+            box->removeWidget(m_searchEdit);
+            m_searchEdit->deleteLater();
+            m_searchEdit = nullptr;
+        }
+    }
+
+    void applyPopupMetrics(int rows)
     {
         const int panelWidth = std::max(240, m_owner ? m_owner->width() : 240);
-        const int rows = std::max(1, visibleTreeRows(m_owner ? m_owner->m_treeData : QVector<AntTreeNode>{}));
         int panelHeight = rows * kTreeRowHeight + kPopupInnerPadding * 2;
         if (m_searchEdit)
         {
             panelHeight += 32 + kPopupInnerPadding;
         }
-        setFixedSize(panelWidth + kPopupShadowMargin * 2, panelHeight + kPopupShadowMargin * 2);
+        const QSize targetSize(panelWidth + kPopupShadowMargin * 2, panelHeight + kPopupShadowMargin * 2);
+        if (size() == targetSize)
+        {
+            ++m_sizeSkipCount;
+        }
+        else
+        {
+            setFixedSize(targetSize);
+        }
+
         if (m_treeWidget)
         {
-            m_treeWidget->setCheckable(m_owner->m_treeCheckable);
-            m_treeWidget->setTreeData(m_owner->m_treeData);
-            m_treeWidget->setFixedHeight(rows * kTreeRowHeight);
+            const int treeHeight = rows * kTreeRowHeight;
+            if (m_treeWidget->height() == treeHeight)
+            {
+                ++m_treeHeightSkipCount;
+            }
+            else
+            {
+                m_treeWidget->setFixedHeight(treeHeight);
+            }
         }
+
+        const QPoint targetPos = m_owner
+            ? m_owner->mapToGlobal(QPoint(-kPopupShadowMargin, m_owner->height() + 4 - kPopupShadowMargin))
+            : QPoint();
+        if (m_hasTargetPos && m_lastTargetPos == targetPos)
+        {
+            ++m_geometrySkipCount;
+        }
+        else
+        {
+            m_lastTargetPos = targetPos;
+            m_hasTargetPos = true;
+        }
+        if (pos() != targetPos)
+        {
+            move(targetPos);
+        }
+
+        if (m_owner)
+        {
+            m_owner->setProperty("antTreeSelectVisibleRowCount", rows);
+            m_owner->setProperty("antTreeSelectLastPopupUpdateMode", QStringLiteral("refresh"));
+        }
+    }
+
+    void syncOwnerPerfCounters() const
+    {
+        if (!m_owner)
+        {
+            return;
+        }
+        m_owner->setProperty("antTreeSelectPopupTreeRebuildCount", m_treeRebuildCount);
+        m_owner->setProperty("antTreeSelectPopupGeometrySkipCount", m_geometrySkipCount);
+        m_owner->setProperty("antTreeSelectPopupSizeSkipCount", m_sizeSkipCount);
+        m_owner->setProperty("antTreeSelectPopupTreeHeightSkipCount", m_treeHeightSkipCount);
     }
 
 protected:
@@ -147,6 +267,14 @@ private:
     AntTreeSelect* m_owner;
     AntTree* m_treeWidget = nullptr;
     QLineEdit* m_searchEdit = nullptr;
+    int m_appliedTreeDataRevision = -1;
+    bool m_appliedCheckable = true;
+    int m_treeRebuildCount = 0;
+    int m_geometrySkipCount = 0;
+    int m_sizeSkipCount = 0;
+    int m_treeHeightSkipCount = 0;
+    QPoint m_lastTargetPos;
+    bool m_hasTargetPos = false;
 };
 
 AntTreeSelect::AntTreeSelect(QWidget* parent)
@@ -157,6 +285,18 @@ AntTreeSelect::AntTreeSelect(QWidget* parent)
     s->setParent(this);
     setStyle(s);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    syncTreeSelectPerfCounters();
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateTriggerLayout();
+        updateGeometry();
+        updateTriggerRegion(rect(), QStringLiteral("theme"));
+        if (m_popup)
+        {
+            m_popup->refreshFromOwner();
+            m_popup->update();
+        }
+    });
 }
 
 AntTreeSelect::~AntTreeSelect()
@@ -177,7 +317,20 @@ QVector<AntTreeNode> AntTreeSelect::treeData() const
 void AntTreeSelect::setTreeData(const QVector<AntTreeNode>& data)
 {
     m_treeData = data;
-    update();
+    ++m_treeDataRevision;
+    if (m_treeDataRevision <= 0)
+    {
+        m_treeDataRevision = 1;
+    }
+    invalidateTreeCaches();
+    invalidateTitleCache();
+    updateDisplayText();
+    if (m_popup)
+    {
+        m_popup->invalidateOwnerData();
+        m_popup->refreshFromOwner();
+    }
+    updateTriggerRegion(rect(), QStringLiteral("treeData"));
 }
 
 QStringList AntTreeSelect::value() const
@@ -187,9 +340,15 @@ QStringList AntTreeSelect::value() const
 
 void AntTreeSelect::setValue(const QStringList& keys)
 {
+    if (m_value == keys)
+    {
+        return;
+    }
     m_value = keys;
-    updateDisplayText();
-    update();
+    if (!updateDisplayText())
+    {
+        updateTriggerRegion(rect(), QStringLiteral("value"));
+    }
     Q_EMIT valueChanged(m_value);
 }
 
@@ -203,7 +362,7 @@ void AntTreeSelect::setPlaceholder(const QString& text)
     if (m_placeholder != text)
     {
         m_placeholder = text;
-        update();
+        updateTriggerRegion(rect(), QStringLiteral("placeholder"));
         Q_EMIT placeholderChanged(text);
     }
 }
@@ -218,7 +377,7 @@ void AntTreeSelect::setAllowClear(bool enable)
     if (m_allowClear != enable)
     {
         m_allowClear = enable;
-        update();
+        updateTriggerRegion(arrowRect().united(clearButtonRect()), QStringLiteral("allowClear"), true);
         Q_EMIT allowClearChanged(enable);
     }
 }
@@ -233,7 +392,8 @@ void AntTreeSelect::setMultiple(bool enable)
     if (m_multiple != enable)
     {
         m_multiple = enable;
-        update();
+        updateDisplayText();
+        updateTriggerRegion(rect(), QStringLiteral("multiple"));
         Q_EMIT multipleChanged(enable);
     }
 }
@@ -248,7 +408,11 @@ void AntTreeSelect::setTreeCheckable(bool enable)
     if (m_treeCheckable != enable)
     {
         m_treeCheckable = enable;
-        update();
+        if (m_popup)
+        {
+            m_popup->refreshFromOwner();
+        }
+        updateTriggerRegion(rect(), QStringLiteral("treeCheckable"));
         Q_EMIT treeCheckableChanged(enable);
     }
 }
@@ -263,6 +427,10 @@ void AntTreeSelect::setShowSearch(bool enable)
     if (m_showSearch != enable)
     {
         m_showSearch = enable;
+        if (m_popup)
+        {
+            m_popup->refreshFromOwner();
+        }
         Q_EMIT showSearchChanged(enable);
     }
 }
@@ -277,8 +445,9 @@ void AntTreeSelect::setSelectSize(Ant::Size size)
     if (m_selectSize != size)
     {
         m_selectSize = size;
+        invalidateTriggerLayout();
         updateGeometry();
-        update();
+        updateTriggerRegion(rect(), QStringLiteral("size"));
         Q_EMIT selectSizeChanged(size);
     }
 }
@@ -293,7 +462,7 @@ void AntTreeSelect::setStatus(Ant::Status status)
     if (m_status != status)
     {
         m_status = status;
-        update();
+        updateTriggerRegion(rect(), QStringLiteral("status"));
         Q_EMIT statusChanged(status);
     }
 }
@@ -308,7 +477,7 @@ void AntTreeSelect::setVariant(Ant::Variant variant)
     if (m_variant != variant)
     {
         m_variant = variant;
-        update();
+        updateTriggerRegion(rect(), QStringLiteral("variant"));
         Q_EMIT variantChanged(variant);
     }
 }
@@ -342,22 +511,12 @@ bool AntTreeSelect::isHovered() const
 
 QSize AntTreeSelect::sizeHint() const
 {
-    const auto& token = antTheme->tokens();
-    int height = token.controlHeight;
-    if (m_selectSize == Ant::Size::Large)
-    {
-        height = token.controlHeightLG;
-    }
-    else if (m_selectSize == Ant::Size::Small)
-    {
-        height = token.controlHeightSM;
-    }
-    return QSize(220, height);
+    return triggerLayout().sizeHint;
 }
 
 QSize AntTreeSelect::minimumSizeHint() const
 {
-    return QSize(80, sizeHint().height());
+    return triggerLayout().minimumSizeHint;
 }
 
 void AntTreeSelect::paintEvent(QPaintEvent* event)
@@ -374,7 +533,6 @@ void AntTreeSelect::mousePressEvent(QMouseEvent* event)
     {
         m_value.clear();
         updateDisplayText();
-        update();
         Q_EMIT valueChanged(m_value);
         return;
     }
@@ -396,7 +554,7 @@ void AntTreeSelect::mouseMoveEvent(QMouseEvent* event)
     if (overClear != m_hovered)
     {
         m_hovered = overClear;
-        update();
+        updateTriggerRegion(clearButtonRect().united(arrowRect()), QStringLiteral("clearHover"), true);
     }
 }
 
@@ -406,8 +564,14 @@ void AntTreeSelect::leaveEvent(QEvent* event)
     if (m_hovered)
     {
         m_hovered = false;
-        update();
+        updateTriggerRegion(clearButtonRect().united(arrowRect()), QStringLiteral("clearLeave"), true);
     }
+}
+
+void AntTreeSelect::resizeEvent(QResizeEvent* event)
+{
+    invalidateTriggerLayout();
+    QWidget::resizeEvent(event);
 }
 
 void AntTreeSelect::wheelEvent(QWheelEvent* event)
@@ -440,9 +604,7 @@ void AntTreeSelect::showPopup()
         m_popup = new TreeSelectPopup(this);
     }
 
-    m_popup->refreshSize();
-    const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4 - kPopupShadowMargin));
-    m_popup->move(pos);
+    m_popup->refreshFromOwner();
     AntPopupMotion::show(m_popup);
     const bool wasOpen = m_open;
     m_open = true;
@@ -450,7 +612,7 @@ void AntTreeSelect::showPopup()
     {
         Q_EMIT openChanged(true);
     }
-    update();
+    updateTriggerRegion(arrowRect(), QStringLiteral("open"));
 }
 
 void AntTreeSelect::hidePopup()
@@ -470,11 +632,12 @@ void AntTreeSelect::hidePopup()
     {
         Q_EMIT openChanged(false);
     }
-    update();
+    updateTriggerRegion(arrowRect(), QStringLiteral("open"));
 }
 
-void AntTreeSelect::updateDisplayText()
+bool AntTreeSelect::updateDisplayText()
 {
+    const QString oldDisplayText = m_displayText;
     if (m_value.isEmpty())
     {
         m_displayText.clear();
@@ -484,52 +647,194 @@ void AntTreeSelect::updateDisplayText()
         QStringList titles = findNodeTitles(m_treeData, m_value);
         m_displayText = titles.join(QStringLiteral(", "));
     }
-    update();
+    if (m_displayText == oldDisplayText)
+    {
+        return false;
+    }
+    updateTriggerRegion(rect(), QStringLiteral("display"));
+    return true;
 }
 
 QString AntTreeSelect::findNodeTitle(const QVector<AntTreeNode>& nodes, const QString& key) const
 {
-    for (const auto& node : nodes)
-    {
-        if (node.key == key)
-            return node.title;
-        if (!node.children.isEmpty())
-        {
-            QString title = findNodeTitle(node.children, key);
-            if (!title.isEmpty())
-                return title;
-        }
-    }
-    return {};
+    Q_UNUSED(nodes)
+    ensureTitleCache();
+    return m_titleCache.value(key);
 }
 
 QStringList AntTreeSelect::findNodeTitles(const QVector<AntTreeNode>& nodes, const QStringList& keys) const
 {
+    Q_UNUSED(nodes)
+    ensureTitleCache();
     QStringList titles;
+    titles.reserve(keys.size());
     for (const auto& key : keys)
     {
-        titles.append(findNodeTitle(nodes, key));
+        titles.append(m_titleCache.value(key));
     }
     return titles;
 }
 
+const AntTreeSelect::TriggerLayout& AntTreeSelect::triggerLayout() const
+{
+    if (m_triggerLayout.valid
+        && m_triggerLayout.widgetSize == size()
+        && m_triggerLayout.selectSize == m_selectSize)
+    {
+        ++m_triggerLayoutCacheHitCount;
+        syncTreeSelectPerfCounters();
+        return m_triggerLayout;
+    }
+
+    const auto& token = antTheme->tokens();
+    m_triggerLayout = TriggerLayout{};
+    m_triggerLayout.widgetSize = size();
+    m_triggerLayout.selectSize = m_selectSize;
+    switch (m_selectSize)
+    {
+    case Ant::Size::Large:
+        m_triggerLayout.height = token.controlHeightLG;
+        m_triggerLayout.fontSize = token.fontSizeLG;
+        break;
+    case Ant::Size::Small:
+        m_triggerLayout.height = token.controlHeightSM;
+        m_triggerLayout.fontSize = token.fontSizeSM;
+        break;
+    default:
+        m_triggerLayout.height = token.controlHeight;
+        m_triggerLayout.fontSize = token.fontSize;
+        break;
+    }
+    m_triggerLayout.paddingX = 12;
+    m_triggerLayout.arrowWidth = 24;
+    m_triggerLayout.radius = token.borderRadius;
+    m_triggerLayout.triggerRect = rect();
+    m_triggerLayout.arrowRect = QRect(width() - m_triggerLayout.arrowWidth,
+                                      0,
+                                      m_triggerLayout.arrowWidth,
+                                      height());
+    const int clearSize = 16;
+    m_triggerLayout.clearButtonRect = QRect(m_triggerLayout.arrowRect.center().x() - clearSize / 2,
+                                            (height() - clearSize) / 2,
+                                            clearSize,
+                                            clearSize);
+    m_triggerLayout.sizeHint = QSize(220, m_triggerLayout.height);
+    m_triggerLayout.minimumSizeHint = QSize(80, m_triggerLayout.height);
+    m_triggerLayout.valid = true;
+    ++m_triggerLayoutBuildCount;
+    syncTreeSelectPerfCounters();
+    return m_triggerLayout;
+}
+
+int AntTreeSelect::treeDataRevision() const
+{
+    return m_treeDataRevision;
+}
+
+int AntTreeSelect::visibleTreeRowCount() const
+{
+    if (m_cachedVisibleRowRevision == m_treeDataRevision)
+    {
+        ++m_visibleRowsCacheHitCount;
+        syncTreeSelectPerfCounters();
+        return m_cachedVisibleRows;
+    }
+
+    m_cachedVisibleRows = std::max(1, visibleTreeRows(m_treeData));
+    m_cachedVisibleRowRevision = m_treeDataRevision;
+    ++m_visibleRowsBuildCount;
+    syncTreeSelectPerfCounters();
+    return m_cachedVisibleRows;
+}
+
+void AntTreeSelect::invalidateTriggerLayout() const
+{
+    m_triggerLayout.valid = false;
+    syncTreeSelectPerfCounters();
+}
+
+void AntTreeSelect::invalidateTreeCaches() const
+{
+    m_cachedVisibleRowRevision = -1;
+    syncTreeSelectPerfCounters();
+}
+
+void AntTreeSelect::invalidateTitleCache() const
+{
+    m_titleCacheRevision = -1;
+    m_titleCache.clear();
+    syncTreeSelectPerfCounters();
+}
+
+void AntTreeSelect::ensureTitleCache() const
+{
+    if (m_titleCacheRevision == m_treeDataRevision)
+    {
+        return;
+    }
+
+    m_titleCache.clear();
+    collectNodeTitles(m_treeData);
+    m_titleCacheRevision = m_treeDataRevision;
+    ++m_titleCacheBuildCount;
+    syncTreeSelectPerfCounters();
+}
+
+void AntTreeSelect::collectNodeTitles(const QVector<AntTreeNode>& nodes) const
+{
+    for (const auto& node : nodes)
+    {
+        m_titleCache.insert(node.key, node.title);
+        if (!node.children.isEmpty())
+        {
+            collectNodeTitles(node.children);
+        }
+    }
+}
+
+void AntTreeSelect::updateTriggerRegion(const QRect& dirty, const QString& mode, bool clearScoped)
+{
+    QRect updateRect = dirty;
+    if (!updateRect.isValid() || updateRect.isEmpty())
+    {
+        updateRect = rect();
+    }
+    ++m_triggerUpdateCount;
+    if (clearScoped)
+    {
+        ++m_clearRegionUpdateCount;
+    }
+    setProperty("antTreeSelectLastUpdateMode", mode);
+    syncTreeSelectPerfCounters();
+    update(updateRect);
+}
+
+void AntTreeSelect::syncTreeSelectPerfCounters() const
+{
+    auto* self = const_cast<AntTreeSelect*>(this);
+    self->setProperty("antTreeSelectTriggerLayoutBuildCount", m_triggerLayoutBuildCount);
+    self->setProperty("antTreeSelectTriggerLayoutCacheHitCount", m_triggerLayoutCacheHitCount);
+    self->setProperty("antTreeSelectVisibleRowsBuildCount", m_visibleRowsBuildCount);
+    self->setProperty("antTreeSelectVisibleRowsCacheHitCount", m_visibleRowsCacheHitCount);
+    self->setProperty("antTreeSelectVisibleRowCount", m_cachedVisibleRows);
+    self->setProperty("antTreeSelectTitleCacheBuildCount", m_titleCacheBuildCount);
+    self->setProperty("antTreeSelectTriggerUpdateCount", m_triggerUpdateCount);
+    self->setProperty("antTreeSelectClearRegionUpdateCount", m_clearRegionUpdateCount);
+}
+
 QRect AntTreeSelect::triggerRect() const
 {
-    return rect();
+    return triggerLayout().triggerRect;
 }
 
 QRect AntTreeSelect::clearButtonRect() const
 {
-    int h = height();
-    int s = 16;
-    return QRect(width() - 40, (h - s) / 2, s, s);
+    return triggerLayout().clearButtonRect;
 }
 
 QRect AntTreeSelect::arrowRect() const
 {
-    int h = height();
-    int s = 16;
-    return QRect(width() - 24, (h - s) / 2, s, s);
+    return triggerLayout().arrowRect;
 }
 
 bool AntTreeSelect::isOverClear(const QPoint& pos) const

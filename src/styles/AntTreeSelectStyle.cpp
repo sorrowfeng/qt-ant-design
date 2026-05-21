@@ -64,38 +64,6 @@ bool AntTreeSelectStyle::eventFilter(QObject* watched, QEvent* event)
 
 namespace
 {
-struct TreeSelectMetrics
-{
-    int height = 32;
-    int fontSize = 14;
-    int paddingX = 12;
-    int arrowWidth = 24;
-    int radius = 6;
-};
-
-TreeSelectMetrics metricsFor(const AntTreeSelect* select)
-{
-    TreeSelectMetrics m;
-    const auto& token = antTheme->tokens();
-    switch (select->selectSize())
-    {
-    case Ant::Size::Large:
-        m.height = token.controlHeightLG;
-        m.fontSize = token.fontSizeLG;
-        break;
-    case Ant::Size::Small:
-        m.height = token.controlHeightSM;
-        m.fontSize = token.fontSizeSM;
-        break;
-    default:
-        m.height = token.controlHeight;
-        m.fontSize = token.fontSize;
-        break;
-    }
-    m.radius = token.borderRadius;
-    return m;
-}
-
 QColor borderColorFor(const AntTreeSelect* select)
 {
     const auto& token = antTheme->tokens();
@@ -128,8 +96,8 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
     }
 
     const auto& token = antTheme->tokens();
-    const TreeSelectMetrics m = metricsFor(select);
-    const QRectF control = QRectF(option->rect).adjusted(0.5, 0.5, -0.5, -0.5);
+    const auto& m = select->triggerLayout();
+    const QRectF control = QRectF(m.triggerRect).adjusted(0.5, 0.5, -0.5, -0.5);
     const bool disabled = !option->state.testFlag(QStyle::State_Enabled);
     const bool focused = select->isOpen();
     const QColor borderColor = borderColorFor(select);
@@ -224,13 +192,13 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
         painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft | Qt::TextSingleLine, displayText);
     }
 
-    QRectF arrowR(option->rect.width() - m.arrowWidth, 0, m.arrowWidth, option->rect.height());
+    const QRectF arrowR(m.arrowRect);
 
     if (m.arrowWidth > 0)
     {
         if (hasValue && select->allowClear() && select->isHovered())
         {
-            QRectF clearR = arrowR.adjusted(4, 0, -4, 0);
+            const QRectF clearR(select->clearButtonRect());
             painter->setPen(Qt::NoPen);
             painter->setBrush(token.colorBgBase);
             painter->drawEllipse(clearR.adjusted(1, 1, -1, -1));
