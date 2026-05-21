@@ -8,6 +8,7 @@
 class QLineEdit;
 class QFrame;
 class QVBoxLayout;
+class QResizeEvent;
 
 class QT_ANT_DESIGN_EXPORT AntAutoComplete : public QWidget
 {
@@ -53,6 +54,9 @@ private:
     void showPopup();
     void hidePopup();
     void updatePopupGeometry();
+    void updateHighlightedRows(int previousIndex, int currentIndex);
+    void invalidateFilterCache();
+    void syncAutoCompletePerfCounters() const;
     void selectHighlighted();
 
     struct Suggestion {
@@ -63,6 +67,7 @@ private:
     QLineEdit* m_lineEdit = nullptr;
     QFrame* m_popup = nullptr;
     QVBoxLayout* m_popupLayout = nullptr;
+    QList<QWidget*> m_popupItems;
     QList<Suggestion> m_suggestions;
     QList<Suggestion> m_filtered;
     int m_highlightedIndex = -1;
@@ -70,4 +75,17 @@ private:
     Qt::CaseSensitivity m_caseSensitivity = Qt::CaseInsensitive;
     bool m_open = false;
     bool m_focused = false;
+    quint64 m_suggestionsRevision = 1;
+    quint64 m_filterCacheRevision = 0;
+    QString m_filterCacheInput;
+    Qt::CaseSensitivity m_filterCacheCaseSensitivity = Qt::CaseInsensitive;
+    bool m_filterCacheValid = false;
+    QRect m_lastPopupGeometry;
+    mutable int m_filterBuildCount = 0;
+    mutable int m_filterCacheHitCount = 0;
+    int m_popupItemCreateCount = 0;
+    int m_popupItemReuseCount = 0;
+    int m_highlightedRowUpdateCount = 0;
+    int m_popupGeometryApplyCount = 0;
+    int m_popupGeometrySkipCount = 0;
 };

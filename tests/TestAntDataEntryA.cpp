@@ -31,6 +31,7 @@ private slots:
     void sliderRangeDragDoesNotPaintPhantomMinimumHandle();
     void segmentedClicksUseFullVisualTrack();
     void rateSelectionStartsScaleAnimation();
+    void autoCompleteReusesPopupItemsAndScopesHighlight();
 };
 
 namespace
@@ -600,6 +601,50 @@ void TestAntDataEntryA::rateSelectionStartsScaleAnimation()
     QTRY_VERIFY_WITH_TIMEOUT(animation->currentValue().toReal() > 1.0, 160);
     QTRY_COMPARE_WITH_TIMEOUT(animation->state(), QAbstractAnimation::Stopped, 500);
     QCOMPARE(animation->currentValue().toReal(), 1.0);
+}
+
+void TestAntDataEntryA::autoCompleteReusesPopupItemsAndScopesHighlight()
+{
+    AntAutoComplete autoComplete;
+    autoComplete.setMaxVisibleItems(4);
+    for (int i = 0; i < 12; ++i)
+    {
+        autoComplete.addSuggestion(QStringLiteral("application %1").arg(i), i);
+    }
+    autoComplete.addSuggestion(QStringLiteral("banana"), QStringLiteral("banana"));
+    autoComplete.resize(260, autoComplete.sizeHint().height());
+    autoComplete.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&autoComplete));
+
+    auto* editor = autoComplete.findChild<QLineEdit*>();
+    QVERIFY(editor);
+    QTest::mouseClick(editor, Qt::LeftButton);
+    QTest::keyClicks(editor, QStringLiteral("app"));
+
+    QTRY_VERIFY(autoComplete.property("antAutoCompleteFilterBuildCount").toInt() > 0);
+    QTRY_COMPARE(autoComplete.property("antAutoCompletePopupItemCreateCount").toInt(), 4);
+
+    const int filterBuilds = autoComplete.property("antAutoCompleteFilterBuildCount").toInt();
+    const int filterHitsBefore = autoComplete.property("antAutoCompleteFilterCacheHitCount").toInt();
+    QVERIFY(QMetaObject::invokeMethod(editor,
+                                      "textEdited",
+                                      Qt::DirectConnection,
+                                      Q_ARG(QString, editor->text())));
+    QCOMPARE(autoComplete.property("antAutoCompleteFilterBuildCount").toInt(), filterBuilds);
+    QVERIFY(autoComplete.property("antAutoCompleteFilterCacheHitCount").toInt() > filterHitsBefore);
+
+    const int itemCreates = autoComplete.property("antAutoCompletePopupItemCreateCount").toInt();
+    const int highlightedUpdatesBefore = autoComplete.property("antAutoCompleteHighlightedRowUpdateCount").toInt();
+    QTest::keyClick(editor, Qt::Key_Down);
+    QCOMPARE(autoComplete.property("antAutoCompletePopupItemCreateCount").toInt(), itemCreates);
+    QVERIFY(autoComplete.property("antAutoCompleteHighlightedRowUpdateCount").toInt() > highlightedUpdatesBefore);
+
+    const int geometrySkipsBefore = autoComplete.property("antAutoCompletePopupGeometrySkipCount").toInt();
+    QVERIFY(QMetaObject::invokeMethod(editor,
+                                      "textEdited",
+                                      Qt::DirectConnection,
+                                      Q_ARG(QString, editor->text())));
+    QVERIFY(autoComplete.property("antAutoCompletePopupGeometrySkipCount").toInt() > geometrySkipsBefore);
 }
 
 QTEST_MAIN(TestAntDataEntryA)

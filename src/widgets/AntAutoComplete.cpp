@@ -59,6 +59,17 @@ public:
 
     int itemIndex() const { return m_index; }
 
+    void setSuggestion(const QString& text, int index)
+    {
+        if (m_text == text && m_index == index)
+        {
+            return;
+        }
+        m_text = text;
+        m_index = index;
+        update();
+    }
+
     void setHighlighted(bool h)
     {
         if (m_highlighted != h) { m_highlighted = h; update(); }
@@ -158,6 +169,7 @@ AntAutoComplete::AntAutoComplete(QWidget* parent)
     mainLayout->addWidget(m_lineEdit);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+    syncAutoCompletePerfCounters();
 }
 
 AntAutoComplete::~AntAutoComplete()
@@ -182,6 +194,11 @@ void AntAutoComplete::setCaseSensitivity(Qt::CaseSensitivity cs)
 {
     if (m_caseSensitivity == cs) return;
     m_caseSensitivity = cs;
+    invalidateFilterCache();
+    if (!m_lineEdit->text().isEmpty())
+    {
+        filterSuggestions();
+    }
     Q_EMIT caseSensitivityChanged(m_caseSensitivity);
 }
 
@@ -191,6 +208,10 @@ void AntAutoComplete::setMaxVisibleItems(int n)
     n = std::max(3, n);
     if (m_maxVisibleItems == n) return;
     m_maxVisibleItems = n;
+    if (m_open)
+    {
+        showPopup();
+    }
     Q_EMIT maxVisibleItemsChanged(m_maxVisibleItems);
 }
 
@@ -200,19 +221,29 @@ void AntAutoComplete::setText(const QString& text) { m_lineEdit->setText(text); 
 QString AntAutoComplete::addSuggestion(const QString& text, const QVariant& data)
 {
     m_suggestions.append({text, data});
+    invalidateFilterCache();
     return text;
 }
 
 void AntAutoComplete::removeSuggestion(int index)
 {
     if (index >= 0 && index < m_suggestions.size())
+    {
         m_suggestions.removeAt(index);
+        invalidateFilterCache();
+        if (m_open)
+        {
+            filterSuggestions();
+        }
+    }
 }
 
 void AntAutoComplete::clearSuggestions()
 {
     m_suggestions.clear();
     m_filtered.clear();
+    invalidateFilterCache();
+    hidePopup();
 }
 
 int AntAutoComplete::suggestionCount() const { return m_suggestions.size(); }
@@ -223,15 +254,34 @@ void AntAutoComplete::filterSuggestions()
     if (input.isEmpty())
     {
         m_filtered.clear();
+        m_filterCacheInput.clear();
+        m_filterCacheValid = false;
         hidePopup();
         return;
     }
 
-    m_filtered.clear();
-    for (const auto& s : m_suggestions)
+    if (m_filterCacheValid &&
+        m_filterCacheInput == input &&
+        m_filterCacheCaseSensitivity == m_caseSensitivity &&
+        m_filterCacheRevision == m_suggestionsRevision)
     {
-        if (s.text.contains(input, m_caseSensitivity))
-            m_filtered.append(s);
+        ++m_filterCacheHitCount;
+        syncAutoCompletePerfCounters();
+    }
+    else
+    {
+        m_filtered.clear();
+        for (const auto& s : m_suggestions)
+        {
+            if (s.text.contains(input, m_caseSensitivity))
+                m_filtered.append(s);
+        }
+        m_filterCacheInput = input;
+        m_filterCacheCaseSensitivity = m_caseSensitivity;
+        m_filterCacheRevision = m_suggestionsRevision;
+        m_filterCacheValid = true;
+        ++m_filterBuildCount;
+        syncAutoCompletePerfCounters();
     }
     m_highlightedIndex = m_filtered.isEmpty() ? -1 : 0;
 
@@ -246,26 +296,41 @@ void AntAutoComplete::showPopup()
     const bool wasOpen = m_open;
     m_open = true;
 
-    // Rebuild items
-    while (m_popupLayout->count() > 0)
+    const int count = std::min(static_cast<int>(m_filtered.size()), m_maxVisibleItems);
+    while (m_popupItems.size() < count)
     {
-        auto* item = m_popupLayout->takeAt(0);
-        if (item->widget()) delete item->widget();
-        delete item;
-    }
-
-    int count = std::min(static_cast<int>(m_filtered.size()), m_maxVisibleItems);
-    for (int i = 0; i < count; ++i)
-    {
-        auto* item = new SuggestionItem(m_filtered[i].text, i, m_popup);
-        item->setHighlighted(i == m_highlightedIndex);
+        const int itemIndex = m_popupItems.size();
+        auto* item = new SuggestionItem(QString(), itemIndex, m_popup);
+        item->setHighlighted(itemIndex == m_highlightedIndex);
         item->onClicked = [this](int idx) {
             m_highlightedIndex = idx;
             selectHighlighted();
         };
         m_popupLayout->addWidget(item);
+        m_popupItems.append(item);
+        ++m_popupItemCreateCount;
     }
-    m_popupLayout->addStretch();
+
+    for (int i = 0; i < m_popupItems.size(); ++i)
+    {
+        auto* item = dynamic_cast<SuggestionItem*>(m_popupItems.at(i));
+        if (!item)
+        {
+            continue;
+        }
+        if (i < count)
+        {
+            item->setSuggestion(m_filtered.at(i).text, i);
+            item->setHighlighted(i == m_highlightedIndex);
+            item->show();
+            ++m_popupItemReuseCount;
+        }
+        else
+        {
+            item->hide();
+        }
+    }
+    syncAutoCompletePerfCounters();
 
     updatePopupGeometry();
     if (!wasOpen)
@@ -289,10 +354,72 @@ void AntAutoComplete::hidePopup()
 
 void AntAutoComplete::updatePopupGeometry()
 {
-    int count = std::min(static_cast<int>(m_filtered.size()), m_maxVisibleItems);
+    const int count = std::min(static_cast<int>(m_filtered.size()), m_maxVisibleItems);
     const int h = count * kOptionHeight + kPopupInnerPadding * 2 + kPopupShadowMargin * 2;
     const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4 - kPopupShadowMargin));
-    m_popup->setGeometry(pos.x(), pos.y(), width() + kPopupShadowMargin * 2, h);
+    const QRect target(pos.x(), pos.y(), width() + kPopupShadowMargin * 2, h);
+    if (m_lastPopupGeometry == target && m_popup->geometry() == target)
+    {
+        ++m_popupGeometrySkipCount;
+        syncAutoCompletePerfCounters();
+        return;
+    }
+    m_lastPopupGeometry = target;
+    ++m_popupGeometryApplyCount;
+    syncAutoCompletePerfCounters();
+    m_popup->setGeometry(target);
+}
+
+void AntAutoComplete::updateHighlightedRows(int previousIndex, int currentIndex)
+{
+    if (previousIndex == currentIndex)
+    {
+        return;
+    }
+    const int visibleCount = std::min(static_cast<int>(m_filtered.size()), m_maxVisibleItems);
+    bool changed = false;
+    auto updateOne = [&](int index) {
+        if (index < 0 || index >= visibleCount || index >= m_popupItems.size())
+        {
+            return;
+        }
+        auto* item = dynamic_cast<SuggestionItem*>(m_popupItems.at(index));
+        if (!item)
+        {
+            return;
+        }
+        item->setHighlighted(index == m_highlightedIndex);
+        changed = true;
+    };
+    updateOne(previousIndex);
+    updateOne(currentIndex);
+    if (changed)
+    {
+        ++m_highlightedRowUpdateCount;
+        syncAutoCompletePerfCounters();
+    }
+}
+
+void AntAutoComplete::invalidateFilterCache()
+{
+    ++m_suggestionsRevision;
+    if (m_suggestionsRevision == 0)
+    {
+        m_suggestionsRevision = 1;
+    }
+    m_filterCacheValid = false;
+}
+
+void AntAutoComplete::syncAutoCompletePerfCounters() const
+{
+    auto* self = const_cast<AntAutoComplete*>(this);
+    self->setProperty("antAutoCompleteFilterBuildCount", m_filterBuildCount);
+    self->setProperty("antAutoCompleteFilterCacheHitCount", m_filterCacheHitCount);
+    self->setProperty("antAutoCompletePopupItemCreateCount", m_popupItemCreateCount);
+    self->setProperty("antAutoCompletePopupItemReuseCount", m_popupItemReuseCount);
+    self->setProperty("antAutoCompleteHighlightedRowUpdateCount", m_highlightedRowUpdateCount);
+    self->setProperty("antAutoCompletePopupGeometryApplyCount", m_popupGeometryApplyCount);
+    self->setProperty("antAutoCompletePopupGeometrySkipCount", m_popupGeometrySkipCount);
 }
 
 void AntAutoComplete::selectHighlighted()
@@ -318,15 +445,31 @@ bool AntAutoComplete::eventFilter(QObject* watched, QEvent* event)
             if (ke->key() == Qt::Key_Down)
             {
                 if (m_filtered.isEmpty()) return false;
+                const int previous = m_highlightedIndex;
                 m_highlightedIndex = (m_highlightedIndex + 1) % m_filtered.size();
-                showPopup();
+                if (m_open)
+                {
+                    updateHighlightedRows(previous, m_highlightedIndex);
+                }
+                else
+                {
+                    showPopup();
+                }
                 return true;
             }
             if (ke->key() == Qt::Key_Up)
             {
                 if (m_filtered.isEmpty()) return false;
+                const int previous = m_highlightedIndex;
                 m_highlightedIndex = (m_highlightedIndex - 1 + m_filtered.size()) % m_filtered.size();
-                showPopup();
+                if (m_open)
+                {
+                    updateHighlightedRows(previous, m_highlightedIndex);
+                }
+                else
+                {
+                    showPopup();
+                }
                 return true;
             }
             if (ke->key() == Qt::Key_Escape)

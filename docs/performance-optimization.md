@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `42` components are optimized from this pass, and `42` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `43` components are optimized from this pass, and `41` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntAutoComplete` | Popup suggestion widgets are now reused across filtering and keyboard navigation instead of being destroyed and rebuilt for every input or highlight change. Filtering is cached by input, case-sensitivity, and suggestion-list revision, repeated popup geometry applications are skipped, and keyboard highlight movement updates only the old/new visible rows. | `cmake --build build --config Debug --target TestAntDataEntryA`, `TestAntDataEntryA.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntTabs` | Tab rectangles, close/add geometry, text/icon rectangles, and card paths are now cached on the widget and reused by paint, hit testing, add-button placement, and indicator targeting. Hover, add-button hover, active tab changes, and indicator animation frames repaint only the affected tab/add/indicator regions, while theme/font/style/tab text changes invalidate the cache. | `cmake --build build --config Debug --target TestAntNavigation`, `TestAntNavigation.exe`, `cmake --build build --config Debug --target TestAntAdvancedInteractions`, `TestAntAdvancedInteractions.exe tabsKeyboardAddAndCloseFlow`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntSteps` | Step item/icon/text rectangles are now cached on the widget and shared by hit testing and style painting. Current, hover, and explicit status changes repaint only the affected step range/rows, theme/font/style changes invalidate the cache, and the style no longer keeps a duplicate step-layout builder. | `cmake --build build --config Debug --target TestAntNavigation`, `TestAntNavigation.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntPagination` | Page-button rectangles and text metrics are now cached on the widget and shared by size hints, hit testing, quick jumper placement, and style painting. Hover enter/leave repaints only old/new button dirty regions, theme/font/style changes invalidate the cache, and the style no longer keeps a duplicate page-item builder. | `cmake --build build --config Debug --target TestAntNavigation`, `TestAntNavigation.exe`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -129,7 +130,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 
 | Component | Priority | Optimization plan | Progress |
 | --- | --- | --- | --- |
-| `AntAutoComplete` | P0 | Debounce filtering for large option lists, cache visible suggestion row geometry, reuse popup, and repaint only highlighted rows. | Plan ready |
+| `AntAutoComplete` | P0 | Cache filtered suggestions by input/case/list revision, reuse visible popup suggestion widgets, skip unchanged popup geometry, and repaint only old/new highlighted rows during keyboard navigation. | Optimized |
 | `AntCascader` | P0 | Lazy-create child columns, cache option row metrics per level, update only changed column on hover/selection, and reuse popup shell. | Plan ready |
 | `AntCheckBox` | P1 | Cache indicator geometry and icon path; limit hover/press repaint to indicator/text bounds; skip redundant update when checked state is unchanged. | Plan ready |
 | `AntColorPicker` | P0 | Keep HS field background cache and dirty cursor repaint; add baseline for popup open/close animation and drag latency; ensure live-refresh coalescing remains under one frame. | Watching |
@@ -252,7 +253,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 
 | Component | Automated target(s) | Interaction and performance validation |
 | --- | --- | --- |
-| `AntAutoComplete` | `TestAntDataEntryA` | Verify filtering, keyboard navigation, popup reuse, highlighted-row repaint, and large suggestion lists. |
+| `AntAutoComplete` | `TestAntDataEntryA` | Verify filtering, keyboard navigation, popup item reuse, filtered-result cache hits, highlighted-row repaint, geometry skip behavior, and large suggestion lists. |
 | `AntCascader` | `TestAntDataEntryB`, `TestAntInteractions`, `TestAntPopupLifecycle`, `TestAntStressLifecycle` | Verify hover/click expansion, multi-column popup, outside close, lazy column creation, and large option trees. |
 | `AntCheckBox` | `TestAntCheckBox`, `TestAntVisualRegression` | Verify checked/unchecked/indeterminate/disabled, hover/press wave if applicable, and indicator/text dirty repaint. |
 | `AntColorPicker` | `TestAntAdvancedInteractions`, `TestAntQtExtensions`, `TestAntPopupLifecycle`, `TestAntVisualRegression` | Verify popup enter/leave animation, HS drag smoothness, cursor movement, live color coalescing, shadow edges, and no white drag artifacts. |
