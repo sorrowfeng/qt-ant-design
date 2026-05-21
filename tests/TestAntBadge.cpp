@@ -15,6 +15,7 @@ private slots:
     void propertiesAndSignals();
     void presetColorsPreferAntDesignPalette();
     void hoverKeepsIndicatorColor();
+    void cachesLayoutAndScopesProcessingUpdates();
 };
 
 namespace
@@ -144,6 +145,53 @@ void TestAntBadge::hoverKeepsIndicatorColor()
     const QImage hovered = renderBadge(badge, true);
     const QPoint center(normal.width() / 2, normal.height() / 2);
     QCOMPARE(hovered.pixelColor(center), normal.pixelColor(center));
+}
+
+void TestAntBadge::cachesLayoutAndScopesProcessingUpdates()
+{
+    AntBadge badge;
+    badge.setStatus(Ant::BadgeStatus::Processing);
+    badge.setText(QStringLiteral("Syncing"));
+    badge.resize(150, 32);
+    badge.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&badge));
+    QTRY_VERIFY(badge.property("antBadgeAnimationTimerActive").toBool());
+
+    badge.grab();
+    const int layoutBuilds = badge.property("antBadgeLayoutBuildCount").toInt();
+    const int layoutHits = badge.property("antBadgeLayoutCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+
+    badge.grab();
+    QCOMPARE(badge.property("antBadgeLayoutBuildCount").toInt(), layoutBuilds);
+    QVERIFY(badge.property("antBadgeLayoutCacheHitCount").toInt() > layoutHits);
+
+    const int animationUpdates = badge.property("antBadgeAnimationRegionUpdateCount").toInt();
+    QTRY_VERIFY(badge.property("antBadgeAnimationRegionUpdateCount").toInt() > animationUpdates);
+    QCOMPARE(badge.property("antBadgeLastUpdateMode").toString(), QStringLiteral("processing"));
+
+    badge.hide();
+    QCoreApplication::processEvents();
+    QVERIFY(!badge.property("antBadgeAnimationTimerActive").toBool());
+    const int stoppedAnimationUpdates = badge.property("antBadgeAnimationRegionUpdateCount").toInt();
+    QTest::qWait(90);
+    QCOMPARE(badge.property("antBadgeAnimationRegionUpdateCount").toInt(), stoppedAnimationUpdates);
+
+    badge.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&badge));
+    QTRY_VERIFY(badge.property("antBadgeAnimationTimerActive").toBool());
+    const int indicatorUpdates = badge.property("antBadgeIndicatorRegionUpdateCount").toInt();
+    badge.setStatus(Ant::BadgeStatus::Success);
+    QVERIFY(!badge.property("antBadgeAnimationTimerActive").toBool());
+    QVERIFY(badge.property("antBadgeIndicatorRegionUpdateCount").toInt() > indicatorUpdates);
+    QCOMPARE(badge.property("antBadgeLastUpdateMode").toString(), QStringLiteral("status"));
+
+    const int buildsBeforeRibbon = badge.property("antBadgeLayoutBuildCount").toInt();
+    badge.setBadgeMode(Ant::BadgeMode::Ribbon);
+    badge.setRibbonText(QStringLiteral("SALE"));
+    badge.resize(150, 40);
+    badge.grab();
+    QVERIFY(badge.property("antBadgeLayoutBuildCount").toInt() > buildsBeforeRibbon);
 }
 
 QTEST_MAIN(TestAntBadge)

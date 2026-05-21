@@ -2,7 +2,13 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
+#include <QFont>
+#include <QPainterPath>
 #include <QPoint>
+#include <QRect>
+#include <QRectF>
+#include <QSize>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -14,6 +20,7 @@ class QPaintEvent;
 class QResizeEvent;
 class QShowEvent;
 class QTimer;
+class AntBadgeStyle;
 
 class QT_ANT_DESIGN_EXPORT AntBadge : public QWidget
 {
@@ -94,6 +101,7 @@ Q_SIGNALS:
     void clicked();
 
 protected:
+    void changeEvent(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -103,6 +111,47 @@ protected:
     void hideEvent(QHideEvent* event) override;
 
 private:
+    friend class AntBadgeStyle;
+
+    struct BadgePaintCache
+    {
+        bool valid = false;
+        QRect widgetRect;
+        QSize contentSize;
+        QFont font;
+        Ant::Size badgeSize = Ant::Size::Middle;
+        Ant::BadgeStatus status = Ant::BadgeStatus::None;
+        Ant::BadgeMode badgeMode = Ant::BadgeMode::Default;
+        bool dot = false;
+        bool showZero = false;
+        bool enabled = true;
+        int count = 0;
+        int overflowCount = 99;
+        QPoint offset;
+        QString text;
+        QString color;
+        QString ribbonText;
+        QString ribbonColor;
+        QString displayText;
+        int indicatorHeight = 0;
+        int dotSize = 0;
+        int statusDotSize = 0;
+        int indicatorWidth = 0;
+        int contentTopReserve = 0;
+        int contentRightReserve = 0;
+        QRect contentRect;
+        QRectF indicatorRect;
+        QRectF statusDotRect;
+        QRectF statusTextRect;
+        QPainterPath ribbonPath;
+        QPainterPath ribbonFoldPath;
+        QRect ribbonTextRect;
+        QColor badgeColor;
+        QColor statusColor;
+        QColor ribbonFillColor;
+        QColor ribbonFoldColor;
+    };
+
     int indicatorHeight() const;
     int dotSize() const;
     int statusDotSize() const;
@@ -115,8 +164,18 @@ private:
     QRectF standaloneStatusDotRect() const;
     QColor badgeColor() const;
     QColor statusColor() const;
+    QColor ribbonColorValue() const;
     bool shouldShowIndicator() const;
     bool isStatusMode() const;
+    const BadgePaintCache& badgePaintCache(const QRect& widgetRect) const;
+    void invalidateBadgePaintCache() const;
+    QRect badgeVisualDirtyRect() const;
+    QRect processingDirtyRectForPulse(qreal pulse) const;
+    void requestBadgeUpdate(const QRect& region,
+                            const QString& mode,
+                            bool indicatorScoped = false,
+                            bool animationScoped = false);
+    void syncBadgePerfCounters() const;
     void updateContentGeometry();
     void updateAnimationState();
     void drawIndicator(QPainter& painter);
@@ -139,4 +198,11 @@ private:
     QTimer* m_animationTimer = nullptr;
     int m_pulse = 0;
     bool m_hovered = false;
+    mutable BadgePaintCache m_paintCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    int m_regionUpdateCount = 0;
+    int m_indicatorRegionUpdateCount = 0;
+    int m_animationRegionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };

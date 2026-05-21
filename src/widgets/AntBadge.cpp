@@ -1,8 +1,10 @@
 #include "AntBadge.h"
 
 #include <QEvent>
+#include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QResizeEvent>
 #include <QShowEvent>
 #include <QHideEvent>
@@ -66,18 +68,26 @@ AntBadge::AntBadge(QWidget* parent)
 
     m_animationTimer = new QTimer(this);
     connect(m_animationTimer, &QTimer::timeout, this, [this]() {
+        const QRect oldDirty = processingDirtyRectForPulse(processingPulseProgress());
         m_pulse = (m_pulse + 6) % 100;
-        update();
-        if (m_indicatorOverlay)
-        {
-            m_indicatorOverlay->update();
-        }
+        requestBadgeUpdate(oldDirty.united(processingDirtyRectForPulse(processingPulseProgress())),
+                           QStringLiteral("processing"),
+                           true,
+                           true);
     });
 
     m_indicatorOverlay = new BadgeIndicatorOverlay(this);
     m_indicatorOverlay->raise();
 
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateBadgePaintCache();
+        updateGeometry();
+        updateContentGeometry();
+        requestBadgeUpdate(rect(), QStringLiteral("theme"), true);
+    });
+
     updateAnimationState();
+    syncBadgePerfCounters();
 }
 
 AntBadge::AntBadge(int count, QWidget* parent)
@@ -94,9 +104,11 @@ void AntBadge::setCount(int count)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_count = count;
+    invalidateBadgePaintCache();
     updateGeometry();
-    update();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("count"), true);
     Q_EMIT countChanged(m_count);
 }
 
@@ -108,9 +120,11 @@ void AntBadge::setText(const QString& text)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_text = text;
+    invalidateBadgePaintCache();
     updateGeometry();
-    update();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("text"), true);
     Q_EMIT textChanged(m_text);
 }
 
@@ -122,8 +136,10 @@ void AntBadge::setColor(const QString& color)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_color = color;
-    update();
+    invalidateBadgePaintCache();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("color"), true);
     Q_EMIT colorChanged(m_color);
 }
 
@@ -135,9 +151,12 @@ void AntBadge::setDot(bool dot)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_dot = dot;
+    invalidateBadgePaintCache();
     updateGeometry();
-    update();
+    updateContentGeometry();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("dot"), true);
     Q_EMIT dotChanged(m_dot);
 }
 
@@ -149,8 +168,12 @@ void AntBadge::setShowZero(bool showZero)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_showZero = showZero;
-    update();
+    invalidateBadgePaintCache();
+    updateGeometry();
+    updateContentGeometry();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("showZero"), true);
     Q_EMIT showZeroChanged(m_showZero);
 }
 
@@ -163,9 +186,12 @@ void AntBadge::setOverflowCount(int overflowCount)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_overflowCount = overflowCount;
+    invalidateBadgePaintCache();
     updateGeometry();
-    update();
+    updateContentGeometry();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("overflow"), true);
     Q_EMIT overflowCountChanged(m_overflowCount);
 }
 
@@ -177,10 +203,12 @@ void AntBadge::setOffset(const QPoint& offset)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_offset = offset;
+    invalidateBadgePaintCache();
     updateGeometry();
     updateContentGeometry();
-    update();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("offset"), true);
     Q_EMIT offsetChanged(m_offset);
 }
 
@@ -192,10 +220,12 @@ void AntBadge::setBadgeSize(Ant::Size size)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_badgeSize = size;
+    invalidateBadgePaintCache();
     updateGeometry();
     updateContentGeometry();
-    update();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("size"), true);
     Q_EMIT badgeSizeChanged(m_badgeSize);
 }
 
@@ -207,10 +237,13 @@ void AntBadge::setStatus(Ant::BadgeStatus status)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_status = status;
+    invalidateBadgePaintCache();
     updateAnimationState();
     updateGeometry();
-    update();
+    updateContentGeometry();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("status"), true);
     Q_EMIT statusChanged(m_status);
 }
 
@@ -220,9 +253,11 @@ void AntBadge::setBadgeMode(Ant::BadgeMode mode)
 {
     if (m_badgeMode == mode)
         return;
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_badgeMode = mode;
+    invalidateBadgePaintCache();
     updateGeometry();
-    update();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("mode"), true);
     Q_EMIT badgeModeChanged(m_badgeMode);
 }
 
@@ -232,8 +267,11 @@ void AntBadge::setRibbonText(const QString& text)
 {
     if (m_ribbonText == text)
         return;
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_ribbonText = text;
-    update();
+    invalidateBadgePaintCache();
+    updateGeometry();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("ribbonText"), true);
     Q_EMIT ribbonTextChanged(m_ribbonText);
 }
 
@@ -243,8 +281,10 @@ void AntBadge::setRibbonColor(const QString& color)
 {
     if (m_ribbonColor == color)
         return;
+    const QRect oldDirty = badgeVisualDirtyRect();
     m_ribbonColor = color;
-    update();
+    invalidateBadgePaintCache();
+    requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("ribbonColor"), true);
     Q_EMIT ribbonColorChanged(m_ribbonColor);
 }
 
@@ -261,6 +301,7 @@ void AntBadge::setContentWidget(QWidget* widget)
     {
         return;
     }
+    const QRect oldDirty = badgeVisualDirtyRect();
     if (m_contentWidget)
     {
         m_contentWidget->removeEventFilter(this);
@@ -272,6 +313,8 @@ void AntBadge::setContentWidget(QWidget* widget)
         m_contentWidget->setParent(this);
         m_contentWidget->show();
     }
+    invalidateBadgePaintCache();
+    updateAnimationState();
     updateGeometry();
     adjustSize();
     updateContentGeometry();
@@ -281,7 +324,7 @@ void AntBadge::setContentWidget(QWidget* widget)
         m_indicatorOverlay->setGeometry(rect());
         m_indicatorOverlay->raise();
     }
-    update();
+    requestBadgeUpdate(oldDirty.united(rect()), QStringLiteral("content"), true);
 }
 
 QSize AntBadge::sizeHint() const
@@ -331,8 +374,27 @@ void AntBadge::paintEvent(QPaintEvent* event)
     }
 }
 
+void AntBadge::changeEvent(QEvent* event)
+{
+    QWidget::changeEvent(event);
+    if (event->type() == QEvent::EnabledChange)
+    {
+        updateAnimationState();
+        invalidateBadgePaintCache();
+        requestBadgeUpdate(rect(), QStringLiteral("enabled"), true);
+    }
+    else if (event->type() == QEvent::FontChange || event->type() == QEvent::StyleChange)
+    {
+        invalidateBadgePaintCache();
+        updateGeometry();
+        updateContentGeometry();
+        requestBadgeUpdate(rect(), QStringLiteral("style"), true);
+    }
+}
+
 void AntBadge::resizeEvent(QResizeEvent* event)
 {
+    invalidateBadgePaintCache();
     updateContentGeometry();
     if (m_indicatorOverlay)
     {
@@ -347,8 +409,9 @@ void AntBadge::mouseMoveEvent(QMouseEvent* event)
     const bool hovered = indicatorRect().contains(event->pos());
     if (m_hovered != hovered)
     {
+        const QRect dirty = badgeVisualDirtyRect();
         m_hovered = hovered;
-        update();
+        requestBadgeUpdate(dirty, QStringLiteral("hover"), true);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -366,8 +429,12 @@ void AntBadge::mousePressEvent(QMouseEvent* event)
 
 void AntBadge::leaveEvent(QEvent* event)
 {
-    m_hovered = false;
-    update();
+    if (m_hovered)
+    {
+        const QRect dirty = badgeVisualDirtyRect();
+        m_hovered = false;
+        requestBadgeUpdate(dirty, QStringLiteral("hover"), true);
+    }
     QWidget::leaveEvent(event);
 }
 
@@ -380,6 +447,7 @@ void AntBadge::showEvent(QShowEvent* event)
 void AntBadge::hideEvent(QHideEvent* event)
 {
     m_animationTimer->stop();
+    syncBadgePerfCounters();
     QWidget::hideEvent(event);
 }
 
@@ -530,6 +598,34 @@ QColor AntBadge::statusColor() const
     return token.colorError;
 }
 
+QColor AntBadge::ribbonColorValue() const
+{
+    const auto& token = antTheme->tokens();
+    const QColor preset = AntPalette::presetColor(m_ribbonColor);
+    if (preset.isValid())
+    {
+        return preset;
+    }
+    if (m_ribbonColor.compare(QStringLiteral("success"), Qt::CaseInsensitive) == 0)
+    {
+        return token.colorSuccess;
+    }
+    if (m_ribbonColor.compare(QStringLiteral("warning"), Qt::CaseInsensitive) == 0)
+    {
+        return token.colorWarning;
+    }
+    if (m_ribbonColor.compare(QStringLiteral("processing"), Qt::CaseInsensitive) == 0)
+    {
+        return token.colorPrimary;
+    }
+    const QColor custom(m_ribbonColor);
+    if (custom.isValid())
+    {
+        return custom;
+    }
+    return token.colorError;
+}
+
 bool AntBadge::shouldShowIndicator() const
 {
     if (isStatusMode())
@@ -548,18 +644,236 @@ bool AntBadge::isStatusMode() const
     return m_status != Ant::BadgeStatus::None;
 }
 
+const AntBadge::BadgePaintCache& AntBadge::badgePaintCache(const QRect& widgetRect) const
+{
+    const QSize contentSize = m_contentWidget
+                                  ? m_contentWidget->sizeHint().expandedTo(m_contentWidget->minimumSizeHint())
+                                  : QSize();
+    if (m_paintCache.valid &&
+        m_paintCache.widgetRect == widgetRect &&
+        m_paintCache.contentSize == contentSize &&
+        m_paintCache.font == font() &&
+        m_paintCache.badgeSize == m_badgeSize &&
+        m_paintCache.status == m_status &&
+        m_paintCache.badgeMode == m_badgeMode &&
+        m_paintCache.dot == m_dot &&
+        m_paintCache.showZero == m_showZero &&
+        m_paintCache.enabled == isEnabled() &&
+        m_paintCache.count == m_count &&
+        m_paintCache.overflowCount == m_overflowCount &&
+        m_paintCache.offset == m_offset &&
+        m_paintCache.text == m_text &&
+        m_paintCache.color == m_color &&
+        m_paintCache.ribbonText == m_ribbonText &&
+        m_paintCache.ribbonColor == m_ribbonColor)
+    {
+        ++m_layoutCacheHitCount;
+        syncBadgePerfCounters();
+        return m_paintCache;
+    }
+
+    ++m_layoutBuildCount;
+    BadgePaintCache cache;
+    cache.valid = true;
+    cache.widgetRect = widgetRect;
+    cache.contentSize = contentSize;
+    cache.font = font();
+    cache.badgeSize = m_badgeSize;
+    cache.status = m_status;
+    cache.badgeMode = m_badgeMode;
+    cache.dot = m_dot;
+    cache.showZero = m_showZero;
+    cache.enabled = isEnabled();
+    cache.count = m_count;
+    cache.overflowCount = m_overflowCount;
+    cache.offset = m_offset;
+    cache.text = m_text;
+    cache.color = m_color;
+    cache.ribbonText = m_ribbonText;
+    cache.ribbonColor = m_ribbonColor;
+    cache.displayText = displayText();
+    cache.indicatorHeight = indicatorHeight();
+    cache.dotSize = dotSize();
+    cache.statusDotSize = statusDotSize();
+    cache.indicatorWidth = indicatorWidth();
+    cache.contentTopReserve = contentTopReserve();
+    cache.contentRightReserve = contentRightReserve();
+    cache.contentRect = m_contentWidget
+                            ? QRect(kShadowMargin, cache.contentTopReserve, contentSize.width(), contentSize.height())
+                            : widgetRect;
+    cache.indicatorRect = QRectF((widgetRect.width() - cache.indicatorWidth) / 2.0,
+                                 (widgetRect.height() - (m_dot ? cache.dotSize : cache.indicatorHeight)) / 2.0,
+                                 cache.indicatorWidth,
+                                 m_dot ? cache.dotSize : cache.indicatorHeight);
+    if (m_contentWidget)
+    {
+        cache.indicatorRect = QRectF(cache.contentRect.right() + 1 - cache.indicatorWidth / 2.0 + m_offset.x(),
+                                     cache.contentRect.top() - (m_dot ? cache.dotSize : cache.indicatorHeight) / 2.0 + m_offset.y(),
+                                     cache.indicatorWidth,
+                                     m_dot ? cache.dotSize : cache.indicatorHeight);
+    }
+    cache.statusDotRect = QRectF(1,
+                                 (widgetRect.height() - cache.statusDotSize) / 2.0,
+                                 cache.statusDotSize,
+                                 cache.statusDotSize);
+    cache.statusTextRect = QRectF(cache.statusDotRect.right() + antTheme->tokens().marginXS,
+                                  0,
+                                  widgetRect.width() - cache.statusDotRect.right() - antTheme->tokens().marginXS,
+                                  widgetRect.height());
+    cache.badgeColor = badgeColor();
+    cache.statusColor = statusColor();
+
+    if (m_badgeMode == Ant::BadgeMode::Ribbon && !m_ribbonText.isEmpty())
+    {
+        const auto& token = antTheme->tokens();
+        QFont ribbonFont = font();
+        ribbonFont.setPixelSize(token.fontSizeSM);
+        ribbonFont.setWeight(QFont::DemiBold);
+        const QFontMetrics fm(ribbonFont);
+        const int textW = fm.horizontalAdvance(m_ribbonText);
+        const int ribbonW = textW + token.paddingXS * 2;
+        const int ribbonH = fm.height() + token.paddingXXS * 2;
+        const int foldSize = ribbonH / 2;
+        const int rx = widgetRect.width() - ribbonW;
+        constexpr int ry = 0;
+
+        cache.ribbonPath.moveTo(rx, ry);
+        cache.ribbonPath.lineTo(rx + ribbonW, ry);
+        cache.ribbonPath.lineTo(rx + ribbonW, ry + ribbonH);
+        cache.ribbonPath.lineTo(rx + ribbonW - foldSize, ry + ribbonH - foldSize);
+        cache.ribbonPath.lineTo(rx, ry + ribbonH - foldSize);
+        cache.ribbonPath.closeSubpath();
+
+        cache.ribbonFoldPath.moveTo(rx + ribbonW - foldSize, ry + ribbonH - foldSize);
+        cache.ribbonFoldPath.lineTo(rx + ribbonW, ry + ribbonH);
+        cache.ribbonFoldPath.lineTo(rx + ribbonW - foldSize, ry + ribbonH);
+        cache.ribbonFoldPath.closeSubpath();
+        cache.ribbonTextRect = QRect(rx, ry, ribbonW - foldSize, ribbonH - foldSize);
+        cache.ribbonFillColor = ribbonColorValue();
+        cache.ribbonFoldColor = cache.ribbonFillColor.darker(130);
+    }
+
+    m_paintCache = cache;
+    syncBadgePerfCounters();
+    return m_paintCache;
+}
+
+void AntBadge::invalidateBadgePaintCache() const
+{
+    m_paintCache.valid = false;
+}
+
+QRect AntBadge::badgeVisualDirtyRect() const
+{
+    if (rect().isEmpty())
+    {
+        return {};
+    }
+
+    const auto& cache = badgePaintCache(rect());
+    QRect dirty;
+    if (isStatusMode() && !m_contentWidget)
+    {
+        dirty = cache.statusDotRect.united(cache.statusTextRect).toAlignedRect();
+        if (m_status == Ant::BadgeStatus::Processing)
+        {
+            dirty = dirty.united(processingDirtyRectForPulse(processingPulseProgress()));
+        }
+    }
+    else if (m_badgeMode == Ant::BadgeMode::Ribbon)
+    {
+        dirty = cache.ribbonPath.boundingRect().united(cache.ribbonFoldPath.boundingRect()).toAlignedRect();
+        dirty = dirty.united(cache.ribbonTextRect);
+    }
+    else if (shouldShowIndicator())
+    {
+        dirty = cache.indicatorRect.toAlignedRect();
+    }
+    else
+    {
+        dirty = rect();
+    }
+    return dirty.adjusted(-3, -3, 3, 3).intersected(rect());
+}
+
+QRect AntBadge::processingDirtyRectForPulse(qreal pulse) const
+{
+    if (rect().isEmpty())
+    {
+        return {};
+    }
+    const auto& cache = badgePaintCache(rect());
+    const QRectF dot = cache.statusDotRect;
+    const qreal scale = 1.0 + 1.4 * std::clamp(pulse, 0.0, 1.0);
+    const QRectF ringRect(dot.center().x() - dot.width() * scale / 2.0,
+                          dot.center().y() - dot.height() * scale / 2.0,
+                          dot.width() * scale,
+                          dot.height() * scale);
+    return ringRect.toAlignedRect().adjusted(-3, -3, 3, 3).intersected(rect());
+}
+
+void AntBadge::requestBadgeUpdate(const QRect& region,
+                                  const QString& mode,
+                                  bool indicatorScoped,
+                                  bool animationScoped)
+{
+    QRect dirty = region.isValid() && !region.isEmpty() ? region : rect();
+    dirty = dirty.intersected(rect());
+    if (dirty.isEmpty())
+    {
+        dirty = rect();
+    }
+
+    ++m_regionUpdateCount;
+    if (indicatorScoped)
+    {
+        ++m_indicatorRegionUpdateCount;
+    }
+    if (animationScoped)
+    {
+        ++m_animationRegionUpdateCount;
+    }
+    m_lastUpdateMode = mode;
+    syncBadgePerfCounters();
+
+    if (m_indicatorOverlay)
+    {
+        m_indicatorOverlay->update(dirty);
+    }
+    else
+    {
+        update(dirty);
+    }
+}
+
+void AntBadge::syncBadgePerfCounters() const
+{
+    auto* self = const_cast<AntBadge*>(this);
+    self->setProperty("antBadgeLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antBadgeLayoutCacheHitCount", m_layoutCacheHitCount);
+    self->setProperty("antBadgeRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antBadgeIndicatorRegionUpdateCount", m_indicatorRegionUpdateCount);
+    self->setProperty("antBadgeAnimationRegionUpdateCount", m_animationRegionUpdateCount);
+    self->setProperty("antBadgeLastUpdateMode", m_lastUpdateMode);
+    self->setProperty("antBadgeAnimationTimerActive", m_animationTimer && m_animationTimer->isActive());
+}
+
 void AntBadge::updateContentGeometry()
 {
     if (!m_contentWidget)
     {
         return;
     }
-    m_contentWidget->setGeometry(contentRect());
+    const QRect target = badgePaintCache(rect()).contentRect;
+    if (m_contentWidget->geometry() != target)
+    {
+        m_contentWidget->setGeometry(target);
+    }
 }
 
 void AntBadge::updateAnimationState()
 {
-    const bool animate = isVisible() && isEnabled() && m_status == Ant::BadgeStatus::Processing;
+    const bool animate = isVisible() && isEnabled() && m_status == Ant::BadgeStatus::Processing && !m_contentWidget;
     if (animate && !m_animationTimer->isActive())
     {
         m_animationTimer->start(40);
@@ -568,6 +882,7 @@ void AntBadge::updateAnimationState()
     {
         m_animationTimer->stop();
     }
+    syncBadgePerfCounters();
 }
 
 void AntBadge::drawIndicator(QPainter& painter)
