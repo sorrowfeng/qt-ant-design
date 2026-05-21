@@ -2,15 +2,22 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
+#include <QHash>
+#include <QPixmap>
 #include <QPointer>
+#include <QRect>
+#include <QSize>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
+class AntAlertStyle;
 class AntIcon;
 class QHBoxLayout;
 class QMouseEvent;
 class QPaintEvent;
+class QResizeEvent;
 class QVBoxLayout;
 
 class QT_ANT_DESIGN_EXPORT AntAlert : public QWidget
@@ -62,12 +69,15 @@ Q_SIGNALS:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+    void changeEvent(QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
 
 private:
+    friend class AntAlertStyle;
+
     struct Metrics
     {
         int minHeight = 40;
@@ -81,6 +91,33 @@ private:
         int actionSpacing = 12;
     };
 
+    struct AlertLayout
+    {
+        bool valid = false;
+        QSize widgetSize;
+        QString title;
+        QString description;
+        Ant::AlertType alertType = Ant::AlertType::Info;
+        bool showIcon = false;
+        bool closable = false;
+        bool banner = false;
+        QSize actionSize;
+        Metrics metrics;
+        QRect bodyRect;
+        QRect contentRect;
+        QRect closeRect;
+        QRect actionRect;
+        QRect iconRect;
+        QRect titleRect;
+        QRect descriptionRect;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        bool hasDescription = false;
+        bool showIconEffective = false;
+        int textLeft = 0;
+        int textRight = 0;
+    };
+
     Metrics metrics() const;
     QColor backgroundColor() const;
     QColor borderColor() const;
@@ -90,6 +127,12 @@ private:
     QRect closeRect() const;
     QRect actionRect() const;
     QRect contentRect() const;
+    const AlertLayout& alertLayout() const;
+    void invalidateAlertLayout() const;
+    QPixmap cachedIconPixmap(Ant::IconType iconType, const QColor& color, int iconSize) const;
+    void clearIconPixmapCache() const;
+    void requestAlertUpdate(const QRect& region, const QString& mode, bool closeScoped = false);
+    void syncAlertPerfCounters() const;
     void syncLayout();
     Ant::IconType iconTypeForAlert() const;
 
@@ -101,4 +144,13 @@ private:
     bool m_banner = false;
     bool m_hoverClose = false;
     QPointer<QWidget> m_actionWidget;
+    mutable AlertLayout m_layoutCache;
+    mutable QHash<QString, QPixmap> m_iconPixmapCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    mutable int m_iconPixmapBuildCount = 0;
+    mutable int m_iconPixmapCacheHitCount = 0;
+    mutable int m_regionUpdateCount = 0;
+    mutable int m_closeRegionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };

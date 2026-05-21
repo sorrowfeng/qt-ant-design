@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `61` components are optimized from this pass, and `23` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `62` components are optimized from this pass, and `22` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntAlert` | Alert metrics, content/close/action/icon/text rectangles, and size hints are now cached on the widget and reused by paint, hit testing, and action layout. The style consumes the widget-owned layout, status icons render through a DPR-aware pixmap cache, duplicate style hover tracking was removed, and close-hover updates repaint only the close button region while content/status/theme changes still invalidate the full alert body intentionally. | `cmake --build build --config Debug --target TestAntFeedback TestAntVisualRegression TestAntRenderSmoke`, `TestAntFeedback.exe alert alertCachesLayoutAndScopesCloseHover`, `TestAntVisualRegression.exe alertSemanticBackgroundsStayVisible`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntUpload` | Upload trigger, list-item, picture-item, card, card-action, size-hint, and minimum-size geometry are now cached on the widget and reused by paint, hit testing, hover, removal, and size paths. The style paints from the widget-owned file list instead of copying it, thumbnail pixmaps are cached by path, hover updates repaint only changed trigger/item/card regions, and status/progress changes repaint only the affected file region. | `cmake --build build --config Debug --target TestAntDataEntryB TestAntInteractions TestAntRenderSmoke`, `TestAntDataEntryB.exe propertiesAndSignals uploadCachesLayoutThumbsAndScopesUpdates`, `TestAntInteractions.exe uploadClickTriggerUsesExternalHandler uploadDraggerDropFlow uploadFileStatusAndRemovalFlow`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntTreeSelect` | TreeSelect trigger metrics, size hints, arrow/clear hit rectangles, and title lookup are now cached on the widget. The popup tree is reused across opens, unchanged tree data no longer rebuilds the internal tree, popup target geometry and size applications are skipped when unchanged, search editor creation is incremental, and tree expansion resizes the popup from the active tree state instead of resetting the tree. | `cmake --build build --config Debug --target TestAntDataEntryB`, `TestAntDataEntryB.exe propertiesAndSignals treeSelectReusesPopupTreeAndCachesRows`, `cmake --build build --config Debug --target TestAntRenderSmoke`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntTransfer` | Transfer now keeps source/target item data in widget-owned lists and caches panel rectangles, header rectangles, visible row geometry, checkbox rectangles, and scrollbar geometry per pane. Paint and hit testing reuse the same layout cache, selection repaints only the affected header/row/button regions, scroll repaints only the active pane, and transfer operations repaint the two panes plus the button column. | `cmake --build build --config Debug --target TestAntDataEntryB`, `TestAntDataEntryB.exe propertiesAndSignals transferCachesVisibleRowsAndScopesUpdates`, `cmake --build build --config Debug --target TestAntRenderSmoke`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -173,7 +174,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 
 | Component | Priority | Optimization plan | Progress |
 | --- | --- | --- | --- |
-| `AntAlert` | P2 | Cache icon pixmap/path and close rect; repaint only close button on hover and full alert only on content/status changes. | Plan ready |
+| `AntAlert` | P2 | Cache icon pixmap/path and close rect; repaint only close button on hover and full alert only on content/status changes. | Optimized |
 | `AntDrawer` | P0 | Keep slide animation but render only drawer/mask dirty regions; lazy-build body content and avoid repeated mask geometry recalculation. | Plan ready |
 | `AntMessage` | P0 | Coalesce stack relayout during burst messages, reuse shadow metrics, and keep click-through overlay hit testing while reducing top-level repaint. | Plan ready |
 | `AntModal` | P0 | Cache dialog shadow/mask geometry, update only button hover/press regions, and avoid remeasuring content unless text/custom body changes. | Plan ready |
@@ -296,7 +297,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 
 | Component | Automated target(s) | Interaction and performance validation |
 | --- | --- | --- |
-| `AntAlert` | `TestAntFeedback`, `TestAntVisualRegression` | Verify status/icon/description/action/closable states, close hover, and close-region repaint. |
+| `AntAlert` | `TestAntFeedback`, `TestAntVisualRegression`, `TestAntRenderSmoke` | Verify status/icon/description/action/closable states, cached repeated paints, close hover, close-region repaint, semantic backgrounds, and render smoke. |
 | `AntDrawer` | `TestAntFeedback`, `TestAntVisualRegression` | Verify all placements, mask, enter/leave slide animation, body interaction, and drawer/mask dirty regions. |
 | `AntMessage` | `TestAntAdvancedInteractions`, `TestAntFeedback`, `TestAntStressLifecycle`, `TestAntVisualRegression` | Verify stack motion, close, click-through behavior, burst messages, and coalesced stack relayout. |
 | `AntModal` | `TestAntModal`, `TestAntVisualRegression` | Verify mask, centered/top-offset, confirm/cancel, custom footer/content, close confirmation consumers, and button-region repaint. |

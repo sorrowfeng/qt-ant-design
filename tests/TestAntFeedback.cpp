@@ -1,3 +1,5 @@
+#include <QCoreApplication>
+#include <QMouseEvent>
 #include <QSignalSpy>
 #include <QPointer>
 #include <QTest>
@@ -20,6 +22,7 @@ class TestAntFeedback : public QObject
     Q_OBJECT
 private slots:
     void alert();
+    void alertCachesLayoutAndScopesCloseHover();
     void drawer();
     void message();
     void notification();
@@ -76,6 +79,53 @@ void TestAntFeedback::alert()
 
     auto* w2 = new AntAlert("Title");
     QCOMPARE(w2->title(), "Title");
+}
+
+void TestAntFeedback::alertCachesLayoutAndScopesCloseHover()
+{
+    AntAlert alert;
+    alert.setTitle(QStringLiteral("Cached alert"));
+    alert.setDescription(QStringLiteral("Repeated paints should reuse layout and icon pixmaps."));
+    alert.setShowIcon(true);
+    alert.setClosable(true);
+    alert.resize(420, 96);
+    alert.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&alert));
+
+    alert.grab();
+    const int layoutBuilds = alert.property("antAlertLayoutBuildCount").toInt();
+    const int layoutHits = alert.property("antAlertLayoutCacheHitCount").toInt();
+    const int iconBuilds = alert.property("antAlertIconPixmapBuildCount").toInt();
+    const int iconHits = alert.property("antAlertIconPixmapCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+    QVERIFY(iconBuilds > 0);
+
+    alert.grab();
+    QCOMPARE(alert.property("antAlertLayoutBuildCount").toInt(), layoutBuilds);
+    QCOMPARE(alert.property("antAlertIconPixmapBuildCount").toInt(), iconBuilds);
+    QVERIFY(alert.property("antAlertLayoutCacheHitCount").toInt() > layoutHits);
+    QVERIFY(alert.property("antAlertIconPixmapCacheHitCount").toInt() > iconHits);
+
+    auto sendMove = [&alert](const QPoint& point) {
+        QMouseEvent event(QEvent::MouseMove, QPointF(point), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(&alert, &event);
+    };
+
+    const int closeUpdates = alert.property("antAlertCloseRegionUpdateCount").toInt();
+    sendMove(QPoint(alert.width() - 26, 22));
+    QCOMPARE(alert.property("antAlertLastUpdateMode").toString(), QStringLiteral("closeHover"));
+    QVERIFY(alert.property("antAlertCloseRegionUpdateCount").toInt() > closeUpdates);
+
+    const int closeUpdatesAfterEnter = alert.property("antAlertCloseRegionUpdateCount").toInt();
+    sendMove(QPoint(16, alert.height() - 12));
+    QCOMPARE(alert.property("antAlertLastUpdateMode").toString(), QStringLiteral("closeHover"));
+    QVERIFY(alert.property("antAlertCloseRegionUpdateCount").toInt() > closeUpdatesAfterEnter);
+
+    const int layoutBuildsBeforeChange = alert.property("antAlertLayoutBuildCount").toInt();
+    alert.setDescription(QStringLiteral("Changing content invalidates layout once and repaints the alert body."));
+    QCOMPARE(alert.property("antAlertLastUpdateMode").toString(), QStringLiteral("description"));
+    alert.grab();
+    QVERIFY(alert.property("antAlertLayoutBuildCount").toInt() > layoutBuildsBeforeChange);
 }
 
 void TestAntFeedback::drawer()

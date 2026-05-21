@@ -19,6 +19,14 @@ AntAlert::AntAlert(QWidget* parent)
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateAlertLayout();
+        clearIconPixmapCache();
+        syncLayout();
+        updateGeometry();
+        requestAlertUpdate(rect(), QStringLiteral("theme"));
+    });
+    syncAlertPerfCounters();
 }
 
 AntAlert::AntAlert(const QString& title, QWidget* parent)
@@ -36,8 +44,10 @@ void AntAlert::setTitle(const QString& title)
         return;
     }
     m_title = title;
+    invalidateAlertLayout();
     updateGeometry();
-    update();
+    syncLayout();
+    requestAlertUpdate(rect(), QStringLiteral("title"));
     Q_EMIT titleChanged(m_title);
 }
 
@@ -50,8 +60,10 @@ void AntAlert::setDescription(const QString& description)
         return;
     }
     m_description = description;
+    invalidateAlertLayout();
     updateGeometry();
-    update();
+    syncLayout();
+    requestAlertUpdate(rect(), QStringLiteral("description"));
     Q_EMIT descriptionChanged(m_description);
 }
 
@@ -64,7 +76,8 @@ void AntAlert::setAlertType(Ant::AlertType type)
         return;
     }
     m_alertType = type;
-    update();
+    invalidateAlertLayout();
+    requestAlertUpdate(rect(), QStringLiteral("alertType"));
     Q_EMIT alertTypeChanged(m_alertType);
 }
 
@@ -77,8 +90,10 @@ void AntAlert::setShowIcon(bool showIcon)
         return;
     }
     m_showIcon = showIcon;
+    invalidateAlertLayout();
     updateGeometry();
-    update();
+    syncLayout();
+    requestAlertUpdate(rect(), QStringLiteral("showIcon"));
     Q_EMIT showIconChanged(m_showIcon);
 }
 
@@ -91,8 +106,14 @@ void AntAlert::setClosable(bool closable)
         return;
     }
     m_closable = closable;
+    if (!m_closable)
+    {
+        m_hoverClose = false;
+    }
+    invalidateAlertLayout();
     updateGeometry();
-    update();
+    syncLayout();
+    requestAlertUpdate(rect(), QStringLiteral("closable"));
     Q_EMIT closableChanged(m_closable);
 }
 
@@ -115,8 +136,10 @@ void AntAlert::setBanner(bool banner)
         m_alertType = Ant::AlertType::Warning;
         Q_EMIT alertTypeChanged(m_alertType);
     }
+    invalidateAlertLayout();
     updateGeometry();
-    update();
+    syncLayout();
+    requestAlertUpdate(rect(), QStringLiteral("banner"));
     Q_EMIT bannerChanged(m_banner);
 }
 
@@ -143,57 +166,20 @@ void AntAlert::setActionWidget(QWidget* widget)
         m_actionWidget->setParent(this);
         m_actionWidget->show();
     }
+    invalidateAlertLayout();
     syncLayout();
     updateGeometry();
-    update();
+    requestAlertUpdate(rect(), QStringLiteral("actionWidget"));
 }
 
 QSize AntAlert::sizeHint() const
 {
-    const Metrics m = metrics();
-    const auto& token = antTheme->tokens();
-    const int width = qMax(220, QWidget::width() > 0 ? QWidget::width() : 420);
-
-    QFont titleFont = font();
-    titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(m_description.isEmpty() ? QFont::Normal : QFont::DemiBold);
-    QFontMetrics titleFm(titleFont);
-
-    QFont descFont = font();
-    descFont.setPixelSize(m.descFontSize);
-    QFontMetrics descFm(descFont);
-
-    int left = m.paddingX;
-    if (m_showIcon || m_banner)
-    {
-        left += m.iconSize + 12;
-    }
-    int right = m.paddingX;
-    if (m_closable)
-    {
-        right += m.closeSize + 8;
-    }
-    if (m_actionWidget)
-    {
-        right += m_actionWidget->sizeHint().width() + m.actionSpacing;
-    }
-    const int textWidth = qMax(120, width - left - right);
-
-    int contentHeight = qMax(m.minHeight - m.paddingY * 2, titleFm.height());
-    if (!m_description.isEmpty())
-    {
-        const QRect descBounds = descFm.boundingRect(QRect(0, 0, textWidth, 1000),
-                                                     Qt::TextWordWrap,
-                                                     m_description);
-        contentHeight = titleFm.height() + 6 + descBounds.height();
-    }
-
-    return QSize(width, qMax(m.minHeight, contentHeight + m.paddingY * 2));
+    return alertLayout().sizeHint;
 }
 
 QSize AntAlert::minimumSizeHint() const
 {
-    return QSize(180, metrics().minHeight);
+    return alertLayout().minimumSizeHint;
 }
 
 void AntAlert::paintEvent(QPaintEvent* event)
@@ -201,19 +187,35 @@ void AntAlert::paintEvent(QPaintEvent* event)
     Q_UNUSED(event)
 }
 
+void AntAlert::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::FontChange || event->type() == QEvent::StyleChange)
+    {
+        invalidateAlertLayout();
+        clearIconPixmapCache();
+        syncLayout();
+        updateGeometry();
+        requestAlertUpdate(rect(), QStringLiteral("styleChange"));
+    }
+    QWidget::changeEvent(event);
+}
+
 void AntAlert::resizeEvent(QResizeEvent* event)
 {
+    invalidateAlertLayout();
     syncLayout();
     QWidget::resizeEvent(event);
 }
 
 void AntAlert::mouseMoveEvent(QMouseEvent* event)
 {
-    const bool hover = m_closable && closeRect().contains(event->pos());
+    const QRect close = closeRect();
+    const bool hover = m_closable && close.contains(event->pos());
     if (m_hoverClose != hover)
     {
+        const QRect oldClose = close;
         m_hoverClose = hover;
-        update(closeRect());
+        requestAlertUpdate(oldClose.united(closeRect()), QStringLiteral("closeHover"), true);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -234,8 +236,9 @@ void AntAlert::leaveEvent(QEvent* event)
 {
     if (m_hoverClose)
     {
+        const QRect close = closeRect();
         m_hoverClose = false;
-        update(closeRect());
+        requestAlertUpdate(close, QStringLiteral("closeHover"), true);
     }
     QWidget::leaveEvent(event);
 }
@@ -316,31 +319,217 @@ QColor AntAlert::descriptionColor() const
 
 QRect AntAlert::closeRect() const
 {
-    const Metrics m = metrics();
-    const QRect content = contentRect();
-    return QRect(width() - m.paddingX - m.closeSize,
-                 content.top(),
-                 m.closeSize,
-                 m.closeSize);
+    return alertLayout().closeRect;
 }
 
 QRect AntAlert::actionRect() const
 {
-    if (!m_actionWidget)
-    {
-        return QRect();
-    }
-    const Metrics m = metrics();
-    const QSize size = m_actionWidget->sizeHint();
-    int x = width() - m.paddingX - size.width() - (m_closable ? (m.closeSize + 8) : 0);
-    int y = contentRect().top() + (contentRect().height() - size.height()) / 2;
-    return QRect(x, y, size.width(), size.height());
+    return alertLayout().actionRect;
 }
 
 QRect AntAlert::contentRect() const
 {
-    const Metrics m = metrics();
-    return rect().adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY);
+    return alertLayout().contentRect;
+}
+
+const AntAlert::AlertLayout& AntAlert::alertLayout() const
+{
+    const QSize actionSize = m_actionWidget ? m_actionWidget->sizeHint() : QSize();
+    const bool cacheMatches = m_layoutCache.valid
+        && m_layoutCache.widgetSize == size()
+        && m_layoutCache.title == m_title
+        && m_layoutCache.description == m_description
+        && m_layoutCache.alertType == m_alertType
+        && m_layoutCache.showIcon == m_showIcon
+        && m_layoutCache.closable == m_closable
+        && m_layoutCache.banner == m_banner
+        && m_layoutCache.actionSize == actionSize;
+
+    if (cacheMatches)
+    {
+        ++m_layoutCacheHitCount;
+        syncAlertPerfCounters();
+        return m_layoutCache;
+    }
+
+    ++m_layoutBuildCount;
+
+    AlertLayout layout;
+    layout.valid = true;
+    layout.widgetSize = size();
+    layout.title = m_title;
+    layout.description = m_description;
+    layout.alertType = m_alertType;
+    layout.showIcon = m_showIcon;
+    layout.closable = m_closable;
+    layout.banner = m_banner;
+    layout.actionSize = actionSize;
+    layout.metrics = metrics();
+    layout.bodyRect = rect();
+    layout.contentRect = rect().adjusted(layout.metrics.paddingX,
+                                         layout.metrics.paddingY,
+                                         -layout.metrics.paddingX,
+                                         -layout.metrics.paddingY);
+    layout.hasDescription = !m_description.isEmpty();
+    layout.showIconEffective = m_showIcon || m_banner;
+    layout.minimumSizeHint = QSize(180, layout.metrics.minHeight);
+
+    const int widthForHint = qMax(220, width() > 0 ? width() : 420);
+    int hintLeft = layout.metrics.paddingX;
+    if (layout.showIconEffective)
+    {
+        hintLeft += layout.metrics.iconSize + 12;
+    }
+    int hintRight = layout.metrics.paddingX;
+    if (m_closable)
+    {
+        hintRight += layout.metrics.closeSize + 8;
+    }
+    if (m_actionWidget)
+    {
+        hintRight += actionSize.width() + layout.metrics.actionSpacing;
+    }
+
+    QFont titleFont = font();
+    titleFont.setPixelSize(layout.metrics.titleFontSize);
+    titleFont.setWeight(layout.hasDescription ? QFont::DemiBold : QFont::Normal);
+    QFontMetrics titleFm(titleFont);
+
+    QFont descFont = font();
+    descFont.setPixelSize(layout.metrics.descFontSize);
+    QFontMetrics descFm(descFont);
+
+    const int textWidthForHint = qMax(120, widthForHint - hintLeft - hintRight);
+    int contentHeight = qMax(layout.metrics.minHeight - layout.metrics.paddingY * 2, titleFm.height());
+    if (layout.hasDescription)
+    {
+        const QRect descBounds = descFm.boundingRect(QRect(0, 0, textWidthForHint, 1000),
+                                                     Qt::TextWordWrap,
+                                                     m_description);
+        contentHeight = titleFm.height() + 6 + descBounds.height();
+    }
+    layout.sizeHint = QSize(widthForHint, qMax(layout.metrics.minHeight, contentHeight + layout.metrics.paddingY * 2));
+
+    layout.textLeft = layout.contentRect.left();
+    layout.textRight = layout.contentRect.right();
+    if (layout.showIconEffective)
+    {
+        layout.iconRect = QRect(layout.textLeft,
+                                layout.contentRect.top() + (layout.hasDescription
+                                    ? 2
+                                    : (layout.contentRect.height() - layout.metrics.iconSize) / 2),
+                                layout.metrics.iconSize,
+                                layout.metrics.iconSize);
+        layout.textLeft = layout.iconRect.right() + 12;
+    }
+
+    if (m_closable)
+    {
+        layout.closeRect = QRect(width() - layout.metrics.paddingX - layout.metrics.closeSize,
+                                 layout.contentRect.top(),
+                                 layout.metrics.closeSize,
+                                 layout.metrics.closeSize);
+        layout.textRight = qMin(layout.textRight, layout.closeRect.left() - 8);
+    }
+
+    if (m_actionWidget)
+    {
+        const int x = width() - layout.metrics.paddingX - actionSize.width()
+            - (m_closable ? (layout.metrics.closeSize + 8) : 0);
+        const int y = layout.contentRect.top() + (layout.contentRect.height() - actionSize.height()) / 2;
+        layout.actionRect = QRect(x, y, actionSize.width(), actionSize.height());
+        layout.textRight = qMin(layout.textRight, layout.actionRect.left() - layout.metrics.actionSpacing);
+    }
+
+    const int textWidth = qMax(40, layout.textRight - layout.textLeft);
+    layout.titleRect = QRect(layout.textLeft,
+                             layout.contentRect.top(),
+                             textWidth,
+                             layout.hasDescription ? titleFont.pixelSize() + 6 : layout.contentRect.height());
+    if (layout.hasDescription)
+    {
+        layout.descriptionRect = QRect(layout.textLeft,
+                                       layout.titleRect.bottom() + 6,
+                                       textWidth,
+                                       layout.contentRect.bottom() - layout.titleRect.bottom() - 6);
+    }
+
+    m_layoutCache = layout;
+    syncAlertPerfCounters();
+    return m_layoutCache;
+}
+
+void AntAlert::invalidateAlertLayout() const
+{
+    m_layoutCache.valid = false;
+}
+
+QPixmap AntAlert::cachedIconPixmap(Ant::IconType iconType, const QColor& color, int iconSize) const
+{
+    const qreal ratio = devicePixelRatioF();
+    const QString key = QStringLiteral("%1:%2:%3:%4")
+        .arg(static_cast<int>(iconType))
+        .arg(color.rgba())
+        .arg(iconSize)
+        .arg(qRound(ratio * 100.0));
+
+    auto it = m_iconPixmapCache.constFind(key);
+    if (it != m_iconPixmapCache.constEnd())
+    {
+        ++m_iconPixmapCacheHitCount;
+        syncAlertPerfCounters();
+        return it.value();
+    }
+
+    ++m_iconPixmapBuildCount;
+    AntIcon icon(iconType);
+    icon.setIconTheme(Ant::IconTheme::Filled);
+    icon.setColor(color);
+    icon.setIconSize(iconSize);
+    icon.resize(iconSize, iconSize);
+
+    const QSize pixmapSize(qMax(1, qRound(iconSize * ratio)), qMax(1, qRound(iconSize * ratio)));
+    QPixmap pixmap(pixmapSize);
+    pixmap.setDevicePixelRatio(ratio);
+    pixmap.fill(Qt::transparent);
+    icon.render(&pixmap);
+    m_iconPixmapCache.insert(key, pixmap);
+    syncAlertPerfCounters();
+    return pixmap;
+}
+
+void AntAlert::clearIconPixmapCache() const
+{
+    m_iconPixmapCache.clear();
+}
+
+void AntAlert::requestAlertUpdate(const QRect& region, const QString& mode, bool closeScoped)
+{
+    m_lastUpdateMode = mode;
+    ++m_regionUpdateCount;
+    if (closeScoped)
+    {
+        ++m_closeRegionUpdateCount;
+    }
+    syncAlertPerfCounters();
+    if (region.isValid() && !region.isEmpty())
+    {
+        update(region);
+        return;
+    }
+    update();
+}
+
+void AntAlert::syncAlertPerfCounters() const
+{
+    auto* that = const_cast<AntAlert*>(this);
+    that->setProperty("antAlertLayoutBuildCount", m_layoutBuildCount);
+    that->setProperty("antAlertLayoutCacheHitCount", m_layoutCacheHitCount);
+    that->setProperty("antAlertIconPixmapBuildCount", m_iconPixmapBuildCount);
+    that->setProperty("antAlertIconPixmapCacheHitCount", m_iconPixmapCacheHitCount);
+    that->setProperty("antAlertRegionUpdateCount", m_regionUpdateCount);
+    that->setProperty("antAlertCloseRegionUpdateCount", m_closeRegionUpdateCount);
+    that->setProperty("antAlertLastUpdateMode", m_lastUpdateMode);
 }
 
 void AntAlert::syncLayout()
