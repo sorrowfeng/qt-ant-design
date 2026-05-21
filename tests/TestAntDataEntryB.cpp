@@ -1,6 +1,8 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
 #include <QFrame>
 #include <QLineEdit>
 #include <QMouseEvent>
@@ -26,6 +28,7 @@ private slots:
     void timePickerPopupCachesRowsAndScopesHover();
     void transferCachesVisibleRowsAndScopesUpdates();
     void treeSelectReusesPopupTreeAndCachesRows();
+    void uploadCachesLayoutThumbsAndScopesUpdates();
 };
 
 namespace
@@ -695,6 +698,64 @@ void TestAntDataEntryB::treeSelectReusesPopupTreeAndCachesRows()
     QTest::mouseClick(popupTree, Qt::LeftButton, Qt::NoModifier, QPoint(12, 14));
     QTRY_COMPARE(treeSelect.property("antTreeSelectLastPopupUpdateMode").toString(), QStringLiteral("expand"));
     QCOMPARE(treeSelect.property("antTreeSelectVisibleRowCount").toInt(), 3);
+}
+
+void TestAntDataEntryB::uploadCachesLayoutThumbsAndScopesUpdates()
+{
+    AntUpload upload;
+    AntUploadFile file;
+    file.uid = QStringLiteral("uploading");
+    file.name = QStringLiteral("report.txt");
+    file.status = Ant::UploadFileStatus::Uploading;
+    file.percent = 10;
+    upload.addFile(file);
+    upload.resize(260, upload.sizeHint().height());
+    upload.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&upload));
+
+    upload.grab();
+    const int layoutBuildsBefore = upload.property("antUploadLayoutBuildCount").toInt();
+    const int layoutHitsBefore = upload.property("antUploadLayoutCacheHitCount").toInt();
+    upload.grab();
+    QCOMPARE(upload.property("antUploadLayoutBuildCount").toInt(), layoutBuildsBefore);
+    QVERIFY(upload.property("antUploadLayoutCacheHitCount").toInt() > layoutHitsBefore);
+
+    const int itemUpdatesBeforeHover = upload.property("antUploadItemRegionUpdateCount").toInt();
+    sendMouseMove(&upload, QPoint(24, 54));
+    QVERIFY(upload.property("antUploadItemRegionUpdateCount").toInt() > itemUpdatesBeforeHover);
+    QCOMPARE(upload.property("antUploadLastUpdateMode").toString(), QStringLiteral("hover"));
+
+    const int progressUpdatesBefore = upload.property("antUploadProgressRegionUpdateCount").toInt();
+    upload.updateFileStatus(QStringLiteral("uploading"), Ant::UploadFileStatus::Uploading, 65);
+    QVERIFY(upload.property("antUploadProgressRegionUpdateCount").toInt() > progressUpdatesBefore);
+    QCOMPARE(upload.property("antUploadLastUpdateMode").toString(), QStringLiteral("status"));
+
+    QFileInfo thumbInfo(QDir::current().absoluteFilePath(QStringLiteral("resources/images/image-basic.png")));
+    if (!thumbInfo.exists())
+    {
+        thumbInfo.setFile(QDir(QCoreApplication::applicationDirPath())
+                              .absoluteFilePath(QStringLiteral("../../../resources/images/image-basic.png")));
+    }
+    QVERIFY(thumbInfo.exists());
+
+    AntUpload pictureUpload;
+    pictureUpload.setListType(Ant::UploadListType::Picture);
+    AntUploadFile imageFile;
+    imageFile.uid = QStringLiteral("image");
+    imageFile.name = QStringLiteral("image-basic.png");
+    imageFile.status = Ant::UploadFileStatus::Done;
+    imageFile.percent = 100;
+    imageFile.thumbUrl = thumbInfo.absoluteFilePath();
+    pictureUpload.addFile(imageFile);
+    pictureUpload.resize(280, pictureUpload.sizeHint().height());
+    pictureUpload.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pictureUpload));
+
+    pictureUpload.grab();
+    QVERIFY(pictureUpload.property("antUploadThumbPixmapBuildCount").toInt() > 0);
+    const int thumbHitsBefore = pictureUpload.property("antUploadThumbPixmapCacheHitCount").toInt();
+    pictureUpload.grab();
+    QVERIFY(pictureUpload.property("antUploadThumbPixmapCacheHitCount").toInt() > thumbHitsBefore);
 }
 
 QTEST_MAIN(TestAntDataEntryB)

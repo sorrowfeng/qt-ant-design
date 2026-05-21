@@ -2,7 +2,11 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QHash>
 #include <QMetaType>
+#include <QPixmap>
+#include <QRect>
+#include <QSize>
 #include <QVector>
 #include <QWidget>
 
@@ -11,6 +15,7 @@
 class QEvent;
 class QMouseEvent;
 class QPaintEvent;
+class QResizeEvent;
 
 struct AntUploadFile
 {
@@ -82,6 +87,7 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dragLeaveEvent(QDragLeaveEvent* event) override;
     void dropEvent(QDropEvent* event) override;
@@ -89,11 +95,33 @@ protected:
 private:
     friend class AntUploadStyle;
 
+    struct UploadLayout
+    {
+        QSize widgetSize;
+        Ant::UploadListType listType = Ant::UploadListType::Text;
+        bool draggerMode = false;
+        int maxCount = 0;
+        int fileCount = 0;
+        QRect triggerRect;
+        QVector<QRect> fileItemRects;
+        QVector<QRect> fileCardRects;
+        QVector<QRect> fileCardPreviewRects;
+        QVector<QRect> fileCardRemoveRects;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        bool valid = false;
+    };
+
+    const UploadLayout& uploadLayout() const;
+    void invalidateUploadLayout() const;
     QRect triggerRect() const;
     QRect fileItemRect(int index) const;
+    QRect fileItemRemoveButtonRect(int index) const;
     QRect fileCardRect(int index) const;
     QRect fileCardPreviewButtonRect(int index) const;
     QRect fileCardRemoveButtonRect(int index) const;
+    QRect dirtyRectForIndex(int index) const;
+    QRect dirtyRectFromIndex(int index) const;
     bool isOverRemoveButton(const QPoint& pos) const;
     bool canAcceptMoreFiles() const;
     bool fileMatchesAccept(const QString& path) const;
@@ -101,6 +129,13 @@ private:
     void requestUploadFiles();
     void addLocalFiles(const QStringList& paths);
     void openFilePreview(const AntUploadFile& file) const;
+    QPixmap cachedThumbPixmap(const QString& path) const;
+    void updateUploadRegion(const QRect& dirty,
+                            const QString& mode,
+                            bool itemScoped = false,
+                            bool triggerScoped = false,
+                            bool progressScoped = false);
+    void syncUploadPerfCounters() const;
 
     QString m_accept;
     bool m_multiple = false;
@@ -114,4 +149,14 @@ private:
     QPoint m_mousePos;
     int m_hoveredItemIndex = -1;
     bool m_triggerHovered = false;
+    mutable UploadLayout m_layoutCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    mutable QHash<QString, QPixmap> m_thumbPixmapCache;
+    mutable int m_thumbPixmapBuildCount = 0;
+    mutable int m_thumbPixmapCacheHitCount = 0;
+    int m_regionUpdateCount = 0;
+    int m_itemRegionUpdateCount = 0;
+    int m_triggerRegionUpdateCount = 0;
+    int m_progressRegionUpdateCount = 0;
 };

@@ -92,9 +92,8 @@ void AntUploadStyle::drawUpload(const QStyleOption* option, QPainter* painter, c
         return;
     }
 
-    const auto& token = antTheme->tokens();
     const auto listType = upload->listType();
-    const auto files = upload->fileList();
+    const auto& files = upload->m_files;
     const bool disabled = upload->isDisabled();
 
     painter->save();
@@ -102,24 +101,17 @@ void AntUploadStyle::drawUpload(const QStyleOption* option, QPainter* painter, c
 
     if (listType == Ant::UploadListType::PictureCard)
     {
-        const int cols = GridColumns;
         const bool canAdd = !disabled && (upload->maxCount() <= 0 || files.size() < upload->maxCount());
 
         for (int i = 0; i < files.size(); ++i)
         {
-            const int col = i % cols;
-            const int row = i / cols;
-            const QRect cardRect(col * (CardSize + CardGap), row * (CardSize + CardGap), CardSize, CardSize);
-            drawPictureCardItem(painter, cardRect, files[i], upload->m_hoveredItemIndex == i);
+            const QRect cardRect = upload->fileCardRect(i);
+            drawPictureCardItem(painter, cardRect, files[i], upload, upload->m_hoveredItemIndex == i);
         }
 
         if (canAdd)
         {
-            const int triggerIndex = files.size();
-            const int col = triggerIndex % cols;
-            const int row = triggerIndex / cols;
-            const QRect triggerCardRect(col * (CardSize + CardGap), row * (CardSize + CardGap), CardSize, CardSize);
-            drawTriggerArea(painter, triggerCardRect, upload->m_triggerHovered, false);
+            drawTriggerArea(painter, upload->triggerRect(), upload->m_triggerHovered, false);
         }
     }
     else
@@ -127,15 +119,13 @@ void AntUploadStyle::drawUpload(const QStyleOption* option, QPainter* painter, c
         const QRect triggerR = upload->triggerRect();
         drawTriggerArea(painter, triggerR, upload->m_triggerHovered || upload->m_dragOver, disabled, upload->isDraggerMode());
 
-        int y = triggerR.bottom() + 9;
         for (int i = 0; i < files.size(); ++i)
         {
-            const int itemH = listType == Ant::UploadListType::Picture ? PictureItemHeight : FileItemHeight;
-            const QRect itemRect(0, y, option->rect.width(), itemH);
+            const QRect itemRect = upload->fileItemRect(i);
 
             if (listType == Ant::UploadListType::Picture)
             {
-                drawPictureFileItem(painter, itemRect, files[i], upload->m_hoveredItemIndex == i);
+                drawPictureFileItem(painter, itemRect, files[i], upload, upload->m_hoveredItemIndex == i);
             }
             else
             {
@@ -143,17 +133,10 @@ void AntUploadStyle::drawUpload(const QStyleOption* option, QPainter* painter, c
                 bool removeHovered = false;
                 if (hovered)
                 {
-                    const int btnSize = 14;
-                    const QRect removeBtnRect(
-                        itemRect.right() - 8 - btnSize,
-                        itemRect.top() + (itemRect.height() - btnSize) / 2,
-                        btnSize, btnSize);
-                    removeHovered = removeBtnRect.contains(upload->m_mousePos);
+                    removeHovered = upload->fileItemRemoveButtonRect(i).contains(upload->m_mousePos);
                 }
                 drawTextFileItem(painter, itemRect, files[i], hovered, removeHovered);
             }
-
-            y += itemH;
         }
     }
 
@@ -297,7 +280,7 @@ void AntUploadStyle::drawTextFileItem(QPainter* painter, const QRect& itemRect, 
     }
 }
 
-void AntUploadStyle::drawPictureFileItem(QPainter* painter, const QRect& itemRect, const AntUploadFile& file,
+void AntUploadStyle::drawPictureFileItem(QPainter* painter, const QRect& itemRect, const AntUploadFile& file, const QWidget* widget,
                                           bool hovered) const
 {
     const auto& token = antTheme->tokens();
@@ -320,7 +303,8 @@ void AntUploadStyle::drawPictureFileItem(QPainter* painter, const QRect& itemRec
 
     if (!file.thumbUrl.isEmpty())
     {
-        const QPixmap pixmap(file.thumbUrl);
+        const auto* upload = qobject_cast<const AntUpload*>(widget);
+        const QPixmap pixmap = upload ? upload->cachedThumbPixmap(file.thumbUrl) : QPixmap(file.thumbUrl);
         if (!pixmap.isNull())
         {
             painter->drawPixmap(thumbRect, pixmap);
@@ -355,7 +339,7 @@ void AntUploadStyle::drawPictureFileItem(QPainter* painter, const QRect& itemRec
     }
 }
 
-void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRect, const AntUploadFile& file,
+void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRect, const AntUploadFile& file, const QWidget* widget,
                                           bool hovered) const
 {
     const auto& token = antTheme->tokens();
@@ -367,7 +351,8 @@ void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRec
 
     if (!file.thumbUrl.isEmpty())
     {
-        const QPixmap pixmap(file.thumbUrl);
+        const auto* upload = qobject_cast<const AntUpload*>(widget);
+        const QPixmap pixmap = upload ? upload->cachedThumbPixmap(file.thumbUrl) : QPixmap(file.thumbUrl);
         if (!pixmap.isNull())
         {
             painter->save();

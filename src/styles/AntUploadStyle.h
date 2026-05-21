@@ -26,9 +26,9 @@ private:
     void drawTriggerArea(QPainter* painter, const QRect& rect, bool hovered, bool disabled, bool dragger = false) const;
     void drawTextFileItem(QPainter* painter, const QRect& itemRect, const AntUploadFile& file,
                           bool hovered, bool removeHovered) const;
-    void drawPictureFileItem(QPainter* painter, const QRect& itemRect, const AntUploadFile& file,
+    void drawPictureFileItem(QPainter* painter, const QRect& itemRect, const AntUploadFile& file, const QWidget* widget,
                              bool hovered) const;
-    void drawPictureCardItem(QPainter* painter, const QRect& cardRect, const AntUploadFile& file,
+    void drawPictureCardItem(QPainter* painter, const QRect& cardRect, const AntUploadFile& file, const QWidget* widget,
                              bool hovered) const;
 
     void drawProgressBar(QPainter* painter, const QRect& rect, int percent) const;

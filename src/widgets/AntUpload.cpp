@@ -11,7 +11,7 @@
 #include <QMimeDatabase>
 #include <QMimeType>
 #include <QMouseEvent>
-#include <QPainter>
+#include <QResizeEvent>
 #include <QUrl>
 
 #include "core/AntTheme.h"
@@ -26,7 +26,6 @@ constexpr int PictureItemHeight = 48;
 constexpr int CardSize = 100;
 constexpr int CardGap = 8;
 constexpr int GridColumns = 4;
-constexpr int SectionGap = 12;
 } // namespace
 
 AntUpload::AntUpload(QWidget* parent)
@@ -37,6 +36,7 @@ AntUpload::AntUpload(QWidget* parent)
     setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
+    syncUploadPerfCounters();
 }
 
 QString AntUpload::accept() const { return m_accept; }
@@ -71,9 +71,11 @@ void AntUpload::setMaxCount(int maxCount)
     {
         return;
     }
+    const QRect oldTrigger = triggerRect();
     m_maxCount = maxCount;
+    invalidateUploadLayout();
     updateGeometry();
-    update();
+    updateUploadRegion(oldTrigger.united(triggerRect()), QStringLiteral("maxCount"), false, true);
     Q_EMIT maxCountChanged(m_maxCount);
 }
 
@@ -87,7 +89,7 @@ void AntUpload::setDisabled(bool disabled)
     }
     m_disabled = disabled;
     setAcceptDrops(m_draggerMode && !m_disabled);
-    update();
+    updateUploadRegion(rect(), QStringLiteral("disabled"));
     Q_EMIT disabledChanged(m_disabled);
 }
 
@@ -100,8 +102,9 @@ void AntUpload::setListType(Ant::UploadListType type)
         return;
     }
     m_listType = type;
+    invalidateUploadLayout();
     updateGeometry();
-    update();
+    updateUploadRegion(rect(), QStringLiteral("listType"));
     Q_EMIT listTypeChanged(m_listType);
 }
 
@@ -113,8 +116,9 @@ void AntUpload::setDraggerMode(bool dragger)
         return;
     m_draggerMode = dragger;
     setAcceptDrops(dragger && !m_disabled);
+    invalidateUploadLayout();
     updateGeometry();
-    update();
+    updateUploadRegion(rect(), QStringLiteral("dragger"));
     Q_EMIT draggerModeChanged(m_draggerMode);
 }
 
@@ -128,7 +132,7 @@ void AntUpload::dragEnterEvent(QDragEnterEvent* event)
             if (url.isLocalFile() && fileMatchesAccept(url.toLocalFile()))
             {
                 m_dragOver = true;
-                update();
+                updateUploadRegion(triggerRect(), QStringLiteral("dragEnter"), false, true);
                 event->acceptProposedAction();
                 return;
             }
@@ -139,13 +143,17 @@ void AntUpload::dragEnterEvent(QDragEnterEvent* event)
 
 void AntUpload::dragLeaveEvent(QDragLeaveEvent* event)
 {
-    m_dragOver = false;
-    update();
+    if (m_dragOver)
+    {
+        m_dragOver = false;
+        updateUploadRegion(triggerRect(), QStringLiteral("dragLeave"), false, true);
+    }
     QWidget::dragLeaveEvent(event);
 }
 
 void AntUpload::dropEvent(QDropEvent* event)
 {
+    const bool hadDragOver = m_dragOver;
     m_dragOver = false;
     if (m_draggerMode && !m_disabled && canAcceptMoreFiles() && event->mimeData()->hasUrls())
     {
@@ -160,7 +168,10 @@ void AntUpload::dropEvent(QDropEvent* event)
         }
         addLocalFiles(paths);
         event->acceptProposedAction();
-        update();
+        if (hadDragOver)
+        {
+            updateUploadRegion(triggerRect(), QStringLiteral("drop"), false, true);
+        }
     }
     else
     {
@@ -170,9 +181,15 @@ void AntUpload::dropEvent(QDropEvent* event)
 
 void AntUpload::addFile(const AntUploadFile& file)
 {
+    const QRect oldTrigger = triggerRect();
+    const int newIndex = m_files.size();
     m_files.append(file);
+    invalidateUploadLayout();
     updateGeometry();
-    update();
+    updateUploadRegion(oldTrigger.united(dirtyRectForIndex(newIndex)).united(triggerRect()),
+                       QStringLiteral("addFile"),
+                       true,
+                       true);
     Q_EMIT fileAdded(file);
 }
 
@@ -182,13 +199,15 @@ void AntUpload::removeFile(const QString& uid)
     {
         if (m_files[i].uid == uid)
         {
+            const QRect dirty = dirtyRectFromIndex(i).united(triggerRect());
             m_files.remove(i);
             if (m_hoveredItemIndex >= m_files.size())
             {
                 m_hoveredItemIndex = -1;
             }
+            invalidateUploadLayout();
             updateGeometry();
-            update();
+            updateUploadRegion(dirty.united(triggerRect()), QStringLiteral("removeFile"), true, true);
             Q_EMIT fileRemoved(uid);
             return;
         }
@@ -197,16 +216,19 @@ void AntUpload::removeFile(const QString& uid)
 
 void AntUpload::updateFileStatus(const QString& uid, Ant::UploadFileStatus status, int percent)
 {
-    for (auto& file : m_files)
+    for (int i = 0; i < m_files.size(); ++i)
     {
+        auto& file = m_files[i];
         if (file.uid == uid)
         {
-            file.status = status;
-            if (percent >= 0)
+            const int nextPercent = percent >= 0 ? qBound(0, percent, 100) : file.percent;
+            if (file.status == status && file.percent == nextPercent)
             {
-                file.percent = qBound(0, percent, 100);
+                return;
             }
-            update();
+            file.status = status;
+            file.percent = nextPercent;
+            updateUploadRegion(dirtyRectForIndex(i), QStringLiteral("status"), true, false, true);
             Q_EMIT fileStatusChanged(uid, status);
             return;
         }
@@ -217,8 +239,9 @@ void AntUpload::setFileList(const QVector<AntUploadFile>& files)
 {
     m_files = files;
     m_hoveredItemIndex = -1;
+    invalidateUploadLayout();
     updateGeometry();
-    update();
+    updateUploadRegion(rect(), QStringLiteral("setFileList"));
 }
 
 QVector<AntUploadFile> AntUpload::fileList() const
@@ -228,44 +251,12 @@ QVector<AntUploadFile> AntUpload::fileList() const
 
 QSize AntUpload::sizeHint() const
 {
-    const int contentWidth = qMax(320, width());
-
-    if (m_draggerMode)
-    {
-        return QSize(contentWidth, 150);
-    }
-
-    if (m_listType == Ant::UploadListType::PictureCard)
-    {
-        const int cols = GridColumns;
-        const int cardAreaWidth = cols * CardSize + (cols - 1) * CardGap;
-        int totalSlots = m_files.size();
-        if (m_maxCount <= 0 || totalSlots < m_maxCount)
-        {
-            totalSlots += 1;
-        }
-        const int rows = (totalSlots + cols - 1) / cols;
-        const int h = rows * CardSize + (rows - 1) * CardGap;
-        return QSize(qMax(contentWidth, cardAreaWidth), h);
-    }
-
-    const int triggerH = TriggerHeight + 16;
-    int fileAreaH = 0;
-    for (int i = 0; i < m_files.size(); ++i)
-    {
-        const int itemH = m_listType == Ant::UploadListType::Picture ? PictureItemHeight : FileItemHeight;
-        fileAreaH += itemH;
-    }
-    return QSize(contentWidth, triggerH + fileAreaH);
+    return uploadLayout().sizeHint;
 }
 
 QSize AntUpload::minimumSizeHint() const
 {
-    if (m_listType == Ant::UploadListType::PictureCard)
-    {
-        return QSize(CardSize, CardSize);
-    }
-    return QSize(TriggerMinWidth, TriggerHeight);
+    return uploadLayout().minimumSizeHint;
 }
 
 void AntUpload::paintEvent(QPaintEvent* event)
@@ -276,36 +267,60 @@ void AntUpload::paintEvent(QPaintEvent* event)
 void AntUpload::mouseMoveEvent(QMouseEvent* event)
 {
     const QPoint pos = event->pos();
-    m_mousePos = pos;
+    const QPoint oldMousePos = m_mousePos;
+    const int oldHoveredItem = m_hoveredItemIndex;
+    const bool oldTriggerHovered = m_triggerHovered;
+    const bool oldRemoveHovered = oldHoveredItem >= 0 && fileItemRemoveButtonRect(oldHoveredItem).contains(oldMousePos);
 
+    int nextHoveredItem = -1;
+    bool nextTriggerHovered = false;
     if (m_listType == Ant::UploadListType::PictureCard)
     {
-        m_triggerHovered = triggerRect().contains(pos);
-        m_hoveredItemIndex = -1;
+        nextTriggerHovered = triggerRect().contains(pos);
         for (int i = 0; i < m_files.size(); ++i)
         {
             if (fileCardRect(i).contains(pos))
             {
-                m_hoveredItemIndex = i;
+                nextHoveredItem = i;
                 break;
             }
         }
     }
     else
     {
-        m_triggerHovered = triggerRect().contains(pos);
-        m_hoveredItemIndex = -1;
+        nextTriggerHovered = triggerRect().contains(pos);
         for (int i = 0; i < m_files.size(); ++i)
         {
             if (fileItemRect(i).contains(pos))
             {
-                m_hoveredItemIndex = i;
+                nextHoveredItem = i;
                 break;
             }
         }
     }
 
-    update();
+    const bool nextRemoveHovered = nextHoveredItem >= 0 && fileItemRemoveButtonRect(nextHoveredItem).contains(pos);
+    m_mousePos = pos;
+    m_triggerHovered = nextTriggerHovered;
+    m_hoveredItemIndex = nextHoveredItem;
+
+    QRect dirty;
+    bool itemScoped = false;
+    bool triggerScoped = false;
+    if (oldTriggerHovered != nextTriggerHovered)
+    {
+        dirty = dirty.united(triggerRect());
+        triggerScoped = true;
+    }
+    if (oldHoveredItem != nextHoveredItem || oldRemoveHovered != nextRemoveHovered)
+    {
+        dirty = dirty.united(dirtyRectForIndex(oldHoveredItem)).united(dirtyRectForIndex(nextHoveredItem));
+        itemScoped = oldHoveredItem >= 0 || nextHoveredItem >= 0;
+    }
+    if (dirty.isValid() && !dirty.isEmpty())
+    {
+        updateUploadRegion(dirty, QStringLiteral("hover"), itemScoped, triggerScoped);
+    }
     QWidget::mouseMoveEvent(event);
 }
 
@@ -367,14 +382,7 @@ void AntUpload::mousePressEvent(QMouseEvent* event)
             continue;
         }
 
-        const int removeBtnSize = 14;
-        const QRect removeBtnRect(
-            itemRect.right() - 8 - removeBtnSize,
-            itemRect.top() + (itemRect.height() - removeBtnSize) / 2,
-            removeBtnSize,
-            removeBtnSize);
-
-        if (removeBtnRect.contains(pos))
+        if (fileItemRemoveButtonRect(i).contains(pos))
         {
             const QString uid = m_files[i].uid;
             removeFile(uid);
@@ -394,114 +402,219 @@ void AntUpload::mousePressEvent(QMouseEvent* event)
 
 void AntUpload::leaveEvent(QEvent* event)
 {
+    QRect dirty;
+    bool itemScoped = false;
+    bool triggerScoped = false;
+    if (m_triggerHovered)
+    {
+        dirty = dirty.united(triggerRect());
+        triggerScoped = true;
+    }
+    if (m_hoveredItemIndex >= 0)
+    {
+        dirty = dirty.united(dirtyRectForIndex(m_hoveredItemIndex));
+        itemScoped = true;
+    }
     m_triggerHovered = false;
     m_hoveredItemIndex = -1;
-    update();
+    if (dirty.isValid() && !dirty.isEmpty())
+    {
+        updateUploadRegion(dirty, QStringLiteral("leave"), itemScoped, triggerScoped);
+    }
     QWidget::leaveEvent(event);
+}
+
+void AntUpload::resizeEvent(QResizeEvent* event)
+{
+    invalidateUploadLayout();
+    QWidget::resizeEvent(event);
+}
+
+const AntUpload::UploadLayout& AntUpload::uploadLayout() const
+{
+    if (m_layoutCache.valid
+        && m_layoutCache.widgetSize == size()
+        && m_layoutCache.listType == m_listType
+        && m_layoutCache.draggerMode == m_draggerMode
+        && m_layoutCache.maxCount == m_maxCount
+        && m_layoutCache.fileCount == m_files.size())
+    {
+        ++m_layoutCacheHitCount;
+        syncUploadPerfCounters();
+        return m_layoutCache;
+    }
+
+    UploadLayout layout;
+    layout.widgetSize = size();
+    layout.listType = m_listType;
+    layout.draggerMode = m_draggerMode;
+    layout.maxCount = m_maxCount;
+    layout.fileCount = m_files.size();
+
+    const int contentWidth = qMax(320, width());
+    if (m_draggerMode)
+    {
+        layout.triggerRect = rect();
+        layout.sizeHint = QSize(contentWidth, 150);
+        layout.minimumSizeHint = QSize(TriggerMinWidth, TriggerHeight);
+    }
+    else if (m_listType == Ant::UploadListType::PictureCard)
+    {
+        const int cardAreaWidth = GridColumns * CardSize + (GridColumns - 1) * CardGap;
+        const bool canAdd = m_maxCount <= 0 || m_files.size() < m_maxCount;
+        const int totalSlots = m_files.size() + (canAdd ? 1 : 0);
+        const int rows = totalSlots > 0 ? (totalSlots + GridColumns - 1) / GridColumns : 1;
+        const int h = rows * CardSize + (rows - 1) * CardGap;
+        layout.sizeHint = QSize(qMax(contentWidth, cardAreaWidth), h);
+        layout.minimumSizeHint = QSize(CardSize, CardSize);
+        layout.fileCardRects.reserve(m_files.size());
+        layout.fileCardPreviewRects.reserve(m_files.size());
+        layout.fileCardRemoveRects.reserve(m_files.size());
+        for (int i = 0; i < m_files.size(); ++i)
+        {
+            const int col = i % GridColumns;
+            const int row = i / GridColumns;
+            const QRect cardRect(col * (CardSize + CardGap), row * (CardSize + CardGap), CardSize, CardSize);
+            layout.fileCardRects.append(cardRect);
+            const int size = 24;
+            const int gap = 8;
+            const int y = cardRect.center().y() - size / 2;
+            layout.fileCardPreviewRects.append(QRect(cardRect.center().x() - size - gap / 2, y, size, size));
+            layout.fileCardRemoveRects.append(QRect(cardRect.center().x() + gap / 2, y, size, size));
+        }
+        if (canAdd)
+        {
+            const int triggerIndex = m_files.size();
+            const int col = triggerIndex % GridColumns;
+            const int row = triggerIndex / GridColumns;
+            layout.triggerRect = QRect(col * (CardSize + CardGap), row * (CardSize + CardGap), CardSize, CardSize);
+        }
+    }
+    else
+    {
+        layout.triggerRect = QRect(0, 0, qMin(width(), TriggerMinWidth), TriggerHeight);
+        const int itemH = m_listType == Ant::UploadListType::Picture ? PictureItemHeight : FileItemHeight;
+        int y = layout.triggerRect.bottom() + 9;
+        layout.fileItemRects.reserve(m_files.size());
+        for (int i = 0; i < m_files.size(); ++i)
+        {
+            layout.fileItemRects.append(QRect(0, y, width(), itemH));
+            y += itemH;
+        }
+        layout.sizeHint = QSize(contentWidth, TriggerHeight + 16 + itemH * m_files.size());
+        layout.minimumSizeHint = QSize(TriggerMinWidth, TriggerHeight);
+    }
+
+    layout.valid = true;
+    m_layoutCache = layout;
+    ++m_layoutBuildCount;
+    syncUploadPerfCounters();
+    return m_layoutCache;
+}
+
+void AntUpload::invalidateUploadLayout() const
+{
+    m_layoutCache.valid = false;
+    syncUploadPerfCounters();
 }
 
 QRect AntUpload::triggerRect() const
 {
-    if (m_draggerMode)
-    {
-        return rect();
-    }
-
-    if (m_listType == Ant::UploadListType::PictureCard)
-    {
-        const int cols = GridColumns;
-        int triggerIndex = m_files.size();
-        if (m_maxCount > 0 && m_files.size() >= m_maxCount)
-        {
-            return QRect();
-        }
-        const int col = triggerIndex % cols;
-        const int row = triggerIndex / cols;
-        return QRect(col * (CardSize + CardGap), row * (CardSize + CardGap), CardSize, CardSize);
-    }
-
-    return QRect(0, 0, qMin(width(), TriggerMinWidth), TriggerHeight);
+    return uploadLayout().triggerRect;
 }
 
 QRect AntUpload::fileItemRect(int index) const
 {
-    if (index < 0 || index >= m_files.size())
+    const auto& layout = uploadLayout();
+    if (index < 0 || index >= layout.fileItemRects.size())
     {
         return QRect();
     }
+    return layout.fileItemRects.at(index);
+}
 
-    int y = TriggerHeight + 8;
-    for (int i = 0; i < index; ++i)
+QRect AntUpload::fileItemRemoveButtonRect(int index) const
+{
+    const QRect itemRect = fileItemRect(index);
+    if (itemRect.isEmpty())
     {
-        y += (m_listType == Ant::UploadListType::Picture ? PictureItemHeight : FileItemHeight);
+        return QRect();
     }
-    const int h = m_listType == Ant::UploadListType::Picture ? PictureItemHeight : FileItemHeight;
-    return QRect(0, y, width(), h);
+    const int removeBtnSize = 14;
+    return QRect(itemRect.right() - 8 - removeBtnSize,
+                 itemRect.top() + (itemRect.height() - removeBtnSize) / 2,
+                 removeBtnSize,
+                 removeBtnSize);
 }
 
 QRect AntUpload::fileCardRect(int index) const
 {
-    if (index < 0)
+    const auto& layout = uploadLayout();
+    if (index == m_files.size())
+    {
+        return layout.triggerRect;
+    }
+    if (index < 0 || index >= layout.fileCardRects.size())
     {
         return QRect();
     }
-
-    const int totalSlots = m_files.size() + (m_maxCount <= 0 || m_files.size() < m_maxCount ? 1 : 0);
-    if (index >= totalSlots)
-    {
-        return QRect();
-    }
-
-    const int cols = GridColumns;
-    const int col = index % cols;
-    const int row = index / cols;
-    return QRect(col * (CardSize + CardGap), row * (CardSize + CardGap), CardSize, CardSize);
+    return layout.fileCardRects.at(index);
 }
 
 bool AntUpload::isOverRemoveButton(const QPoint& pos) const
 {
     for (int i = 0; i < m_files.size(); ++i)
     {
-        const QRect itemRect = fileItemRect(i);
-        if (!itemRect.contains(pos))
+        if (!fileItemRect(i).contains(pos))
         {
             continue;
         }
-        const int removeBtnSize = 14;
-        const QRect removeBtnRect(
-            itemRect.right() - 8 - removeBtnSize,
-            itemRect.top() + (itemRect.height() - removeBtnSize) / 2,
-            removeBtnSize,
-            removeBtnSize);
-        return removeBtnRect.contains(pos);
+        return fileItemRemoveButtonRect(i).contains(pos);
     }
     return false;
 }
 
 QRect AntUpload::fileCardPreviewButtonRect(int index) const
 {
-    const QRect card = fileCardRect(index);
-    if (card.isEmpty() || index >= m_files.size())
+    const auto& layout = uploadLayout();
+    if (index < 0 || index >= layout.fileCardPreviewRects.size())
     {
         return {};
     }
-    const int size = 24;
-    const int gap = 8;
-    const int y = card.center().y() - size / 2;
-    return QRect(card.center().x() - size - gap / 2, y, size, size);
+    return layout.fileCardPreviewRects.at(index);
 }
 
 QRect AntUpload::fileCardRemoveButtonRect(int index) const
 {
-    const QRect card = fileCardRect(index);
-    if (card.isEmpty() || index >= m_files.size())
+    const auto& layout = uploadLayout();
+    if (index < 0 || index >= layout.fileCardRemoveRects.size())
     {
         return {};
     }
-    const int size = 24;
-    const int gap = 8;
-    const int y = card.center().y() - size / 2;
-    return QRect(card.center().x() + gap / 2, y, size, size);
+    return layout.fileCardRemoveRects.at(index);
+}
+
+QRect AntUpload::dirtyRectForIndex(int index) const
+{
+    if (m_listType == Ant::UploadListType::PictureCard)
+    {
+        return fileCardRect(index);
+    }
+    return fileItemRect(index);
+}
+
+QRect AntUpload::dirtyRectFromIndex(int index) const
+{
+    const QRect first = dirtyRectForIndex(index);
+    if (!first.isValid() || first.isEmpty())
+    {
+        return QRect();
+    }
+    if (m_listType == Ant::UploadListType::PictureCard)
+    {
+        return QRect(0, first.top(), width(), qMax(0, height() - first.top()));
+    }
+    return QRect(0, first.top(), width(), qMax(0, height() - first.top()));
 }
 
 bool AntUpload::canAcceptMoreFiles() const
@@ -649,4 +762,66 @@ void AntUpload::openFilePreview(const AntUploadFile& file) const
     }
     const QUrl url = QUrl::fromUserInput(target);
     QDesktopServices::openUrl(url.isLocalFile() ? QUrl::fromLocalFile(url.toLocalFile()) : url);
+}
+
+QPixmap AntUpload::cachedThumbPixmap(const QString& path) const
+{
+    if (path.isEmpty())
+    {
+        return {};
+    }
+    auto it = m_thumbPixmapCache.constFind(path);
+    if (it != m_thumbPixmapCache.constEnd())
+    {
+        ++m_thumbPixmapCacheHitCount;
+        syncUploadPerfCounters();
+        return it.value();
+    }
+    const QPixmap pixmap(path);
+    m_thumbPixmapCache.insert(path, pixmap);
+    ++m_thumbPixmapBuildCount;
+    syncUploadPerfCounters();
+    return pixmap;
+}
+
+void AntUpload::updateUploadRegion(const QRect& dirty,
+                                   const QString& mode,
+                                   bool itemScoped,
+                                   bool triggerScoped,
+                                   bool progressScoped)
+{
+    QRect updateRect = dirty;
+    if (!updateRect.isValid() || updateRect.isEmpty())
+    {
+        updateRect = rect();
+    }
+    ++m_regionUpdateCount;
+    if (itemScoped)
+    {
+        ++m_itemRegionUpdateCount;
+    }
+    if (triggerScoped)
+    {
+        ++m_triggerRegionUpdateCount;
+    }
+    if (progressScoped)
+    {
+        ++m_progressRegionUpdateCount;
+    }
+    setProperty("antUploadLastUpdateMode", mode);
+    syncUploadPerfCounters();
+    update(updateRect);
+}
+
+void AntUpload::syncUploadPerfCounters() const
+{
+    auto* self = const_cast<AntUpload*>(this);
+    self->setProperty("antUploadLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antUploadLayoutCacheHitCount", m_layoutCacheHitCount);
+    self->setProperty("antUploadThumbPixmapBuildCount", m_thumbPixmapBuildCount);
+    self->setProperty("antUploadThumbPixmapCacheHitCount", m_thumbPixmapCacheHitCount);
+    self->setProperty("antUploadRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antUploadItemRegionUpdateCount", m_itemRegionUpdateCount);
+    self->setProperty("antUploadTriggerRegionUpdateCount", m_triggerRegionUpdateCount);
+    self->setProperty("antUploadProgressRegionUpdateCount", m_progressRegionUpdateCount);
 }
