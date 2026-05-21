@@ -2,11 +2,19 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
+#include <QFont>
+#include <QMetaObject>
+#include <QPolygonF>
 #include <QPointer>
+#include <QRect>
+#include <QSize>
+#include <QString>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
+class AntToolTipStyle;
 class QEnterEvent;
 class QEvent;
 class QFocusEvent;
@@ -66,6 +74,8 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
 
 private:
+    friend class AntToolTipStyle;
+
     struct Metrics
     {
         int paddingX = 12;
@@ -76,14 +86,42 @@ private:
         int maxWidth = 280;
     };
 
+    struct ToolTipLayoutCache
+    {
+        bool valid = false;
+        QSize widgetSize;
+        QFont font;
+        Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
+        int tokenFontSizeSM = 0;
+        int tokenBorderRadiusSM = 0;
+        QString title;
+        QColor customColor;
+        bool arrowVisible = true;
+        Ant::TooltipPlacement renderPlacement = Ant::TooltipPlacement::Top;
+        Metrics metrics;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QRect bubbleRect;
+        QRect textRect;
+        QPolygonF arrowPolygon;
+        QColor bubbleColor;
+        QColor textColor;
+    };
+
     Metrics metrics() const;
+    const ToolTipLayoutCache& tooltipLayout() const;
+    void invalidateToolTipLayout() const;
+    void invalidateToolTipPosition();
     QRect bubbleRect() const;
     QPolygonF arrowPolygon() const;
     QColor bubbleColor() const;
     QColor textColor() const;
-    Ant::TooltipPlacement resolvedPlacement(const QRect& targetRect, const QRect& screenRect) const;
+    Ant::TooltipPlacement resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& tooltipSize) const;
     QPoint tooltipTopLeft(const QRect& targetRect, const QSize& tooltipSize, Ant::TooltipPlacement placement) const;
     void updatePosition();
+    void requestToolTipUpdate(const QRect& region, const QString& mode);
+    void maybeStartOpenTimer();
+    void syncToolTipPerfCounters() const;
     void installTarget(QWidget* target);
     void uninstallTarget();
 
@@ -95,4 +133,20 @@ private:
     int m_openDelay = 120;
     QPointer<QWidget> m_target;
     QTimer* m_openTimer = nullptr;
+    QMetaObject::Connection m_targetDestroyedConnection;
+    mutable ToolTipLayoutCache m_layoutCache;
+    QRect m_lastTargetRect;
+    QRect m_lastScreenRect;
+    QSize m_lastTooltipSize;
+    QPoint m_lastTooltipTopLeft;
+    Ant::TooltipPlacement m_lastPositionPlacement = Ant::TooltipPlacement::Top;
+    bool m_positionCacheValid = false;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    int m_positionApplyCount = 0;
+    int m_positionSkipCount = 0;
+    int m_openTimerStartCount = 0;
+    int m_openTimerSkipCount = 0;
+    int m_regionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };

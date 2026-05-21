@@ -45,6 +45,7 @@ private slots:
     void spin();
     void spinCachesLayoutAndScopesAnimation();
     void tooltip();
+    void tooltipCachesLayoutAndSkipsPlacementWork();
     void tour();
 };
 
@@ -1064,6 +1065,54 @@ void TestAntFeedback::tooltip()
     w->setOpenDelay(200);
     QCOMPARE(w->openDelay(), 200);
     QCOMPARE(delaySpy.count(), 1);
+}
+
+void TestAntFeedback::tooltipCachesLayoutAndSkipsPlacementWork()
+{
+    QWidget target;
+    target.resize(120, 36);
+    target.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&target));
+
+    AntToolTip tooltip;
+    tooltip.setTarget(&target);
+    tooltip.setTitle(QStringLiteral("Cached tooltip body"));
+    tooltip.setOpenDelay(100);
+
+    QEvent enterEvent(QEvent::Enter);
+    QCoreApplication::sendEvent(&target, &enterEvent);
+    QCOMPARE(tooltip.property("antToolTipOpenTimerStartCount").toInt(), 1);
+    QVERIFY(tooltip.property("antToolTipOpenTimerActive").toBool());
+
+    QCoreApplication::sendEvent(&target, &enterEvent);
+    QVERIFY(tooltip.property("antToolTipOpenTimerSkipCount").toInt() > 0);
+
+    tooltip.showTooltip();
+    QTRY_VERIFY_WITH_TIMEOUT(tooltip.isVisible(), 300);
+    QVERIFY(tooltip.property("antToolTipPositionApplyCount").toInt() > 0);
+
+    tooltip.grab();
+    const int layoutBuilds = tooltip.property("antToolTipLayoutBuildCount").toInt();
+    const int layoutHits = tooltip.property("antToolTipLayoutCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+
+    tooltip.grab();
+    QCOMPARE(tooltip.property("antToolTipLayoutBuildCount").toInt(), layoutBuilds);
+    QVERIFY(tooltip.property("antToolTipLayoutCacheHitCount").toInt() > layoutHits);
+
+    const int positionSkips = tooltip.property("antToolTipPositionSkipCount").toInt();
+    QMoveEvent unchangedMove(target.pos(), target.pos());
+    QCoreApplication::sendEvent(&target, &unchangedMove);
+    QVERIFY(tooltip.property("antToolTipPositionSkipCount").toInt() > positionSkips);
+
+    const int buildsBeforeColor = tooltip.property("antToolTipLayoutBuildCount").toInt();
+    tooltip.setColor(QColor("#1677ff"));
+    QCOMPARE(tooltip.property("antToolTipLastUpdateMode").toString(), QStringLiteral("color"));
+    tooltip.grab();
+    QVERIFY(tooltip.property("antToolTipLayoutBuildCount").toInt() > buildsBeforeColor);
+
+    tooltip.hideTooltip();
+    QTRY_VERIFY_WITH_TIMEOUT(!tooltip.isVisible(), 500);
 }
 
 void TestAntFeedback::tour()

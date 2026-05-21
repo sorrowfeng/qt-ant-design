@@ -4,107 +4,11 @@
 #include <QPainter>
 #include <QStyleOption>
 
-#include "styles/AntPalette.h"
 #include "widgets/AntToolTip.h"
-
-namespace
-{
-bool isTopPlacement(Ant::TooltipPlacement placement)
-{
-    return placement == Ant::TooltipPlacement::Top
-        || placement == Ant::TooltipPlacement::TopLeft
-        || placement == Ant::TooltipPlacement::TopRight;
-}
-
-bool isBottomPlacement(Ant::TooltipPlacement placement)
-{
-    return placement == Ant::TooltipPlacement::Bottom
-        || placement == Ant::TooltipPlacement::BottomLeft
-        || placement == Ant::TooltipPlacement::BottomRight;
-}
-
-struct Metrics
-{
-    int paddingX = 12;
-    int paddingY = 8;
-    int radius = 6;
-    int arrowSize = 8;
-    int gap = 10;
-    int maxWidth = 280;
-};
-
-QRect computeBubbleRect(const QRect& rect, const Metrics& m, Ant::TooltipPlacement placement, bool arrowVisible)
-{
-    if (!arrowVisible)
-    {
-        return rect;
-    }
-    if (isTopPlacement(placement))
-    {
-        return rect.adjusted(0, 0, 0, -m.arrowSize);
-    }
-    if (isBottomPlacement(placement))
-    {
-        return rect.adjusted(0, m.arrowSize, 0, 0);
-    }
-    if (placement == Ant::TooltipPlacement::Left)
-    {
-        return rect.adjusted(0, 0, -m.arrowSize, 0);
-    }
-    return rect.adjusted(m.arrowSize, 0, 0, 0);
-}
-
-QPolygonF computeArrowPolygon(const QRect& rect, const QRect& bubble, const Metrics& m,
-                               Ant::TooltipPlacement placement, bool arrowVisible)
-{
-    if (!arrowVisible)
-    {
-        return {};
-    }
-
-    switch (placement)
-    {
-    case Ant::TooltipPlacement::Top:
-        return QPolygonF({QPointF(rect.width() / 2.0 - m.arrowSize, bubble.bottom()),
-                          QPointF(rect.width() / 2.0 + m.arrowSize, bubble.bottom()),
-                          QPointF(rect.width() / 2.0, rect.bottom())});
-    case Ant::TooltipPlacement::TopLeft:
-        return QPolygonF({QPointF(bubble.left() + 18 - m.arrowSize, bubble.bottom()),
-                          QPointF(bubble.left() + 18 + m.arrowSize, bubble.bottom()),
-                          QPointF(bubble.left() + 18, rect.bottom())});
-    case Ant::TooltipPlacement::TopRight:
-        return QPolygonF({QPointF(bubble.right() - 18 - m.arrowSize, bubble.bottom()),
-                          QPointF(bubble.right() - 18 + m.arrowSize, bubble.bottom()),
-                          QPointF(bubble.right() - 18, rect.bottom())});
-    case Ant::TooltipPlacement::Bottom:
-        return QPolygonF({QPointF(rect.width() / 2.0 - m.arrowSize, bubble.top()),
-                          QPointF(rect.width() / 2.0 + m.arrowSize, bubble.top()),
-                          QPointF(rect.width() / 2.0, rect.top())});
-    case Ant::TooltipPlacement::BottomLeft:
-        return QPolygonF({QPointF(bubble.left() + 18 - m.arrowSize, bubble.top()),
-                          QPointF(bubble.left() + 18 + m.arrowSize, bubble.top()),
-                          QPointF(bubble.left() + 18, rect.top())});
-    case Ant::TooltipPlacement::BottomRight:
-        return QPolygonF({QPointF(bubble.right() - 18 - m.arrowSize, bubble.top()),
-                          QPointF(bubble.right() - 18 + m.arrowSize, bubble.top()),
-                          QPointF(bubble.right() - 18, rect.top())});
-    case Ant::TooltipPlacement::Left:
-        return QPolygonF({QPointF(bubble.right(), rect.height() / 2.0 - m.arrowSize),
-                          QPointF(bubble.right(), rect.height() / 2.0 + m.arrowSize),
-                          QPointF(rect.right(), rect.height() / 2.0)});
-    case Ant::TooltipPlacement::Right:
-    default:
-        return QPolygonF({QPointF(bubble.left(), rect.height() / 2.0 - m.arrowSize),
-                          QPointF(bubble.left(), rect.height() / 2.0 + m.arrowSize),
-                          QPointF(rect.left(), rect.height() / 2.0)});
-    }
-}
-} // namespace
 
 AntToolTipStyle::AntToolTipStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntToolTip>();
 }
 
 void AntToolTipStyle::polish(QWidget* widget)
@@ -163,41 +67,26 @@ void AntToolTipStyle::drawTooltip(const QStyleOption* option, QPainter* painter,
         return;
     }
 
-    const auto& token = antTheme->tokens();
-    const Metrics m;
-    const Ant::TooltipPlacement placement = tooltip->renderPlacement();
-    const bool arrowVisible = tooltip->arrowVisible();
-
-    const QRect bubble = computeBubbleRect(option->rect, m, placement, arrowVisible);
+    Q_UNUSED(option)
+    const auto& layout = tooltip->tooltipLayout();
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    // Bubble color
-    const QColor customColor = tooltip->color();
-    const QColor bgColor = customColor.isValid()
-        ? customColor
-        : (antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626"));
-    const QColor txtColor = customColor.isValid()
-        ? (customColor.lightnessF() > 0.6 ? QColor(Qt::black) : QColor(Qt::white))
-        : QColor(Qt::white);
-
     painter->setPen(Qt::NoPen);
-    painter->setBrush(bgColor);
-    painter->drawRoundedRect(bubble, token.borderRadiusSM, token.borderRadiusSM);
+    painter->setBrush(layout.bubbleColor);
+    painter->drawRoundedRect(layout.bubbleRect, layout.tokenBorderRadiusSM, layout.tokenBorderRadiusSM);
 
-    if (arrowVisible)
+    if (layout.arrowVisible)
     {
-        painter->drawPolygon(computeArrowPolygon(option->rect, bubble, m, placement, arrowVisible));
+        painter->drawPolygon(layout.arrowPolygon);
     }
 
-    painter->setPen(txtColor);
+    painter->setPen(layout.textColor);
     QFont textFont = painter->font();
-    textFont.setPixelSize(token.fontSizeSM);
+    textFont.setPixelSize(layout.tokenFontSizeSM);
     painter->setFont(textFont);
-    painter->drawText(bubble.adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY),
-                      Qt::AlignLeft | Qt::AlignVCenter | Qt::TextWordWrap,
-                      tooltip->title());
+    painter->drawText(layout.textRect, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextWordWrap, layout.title);
 
     painter->restore();
 }
