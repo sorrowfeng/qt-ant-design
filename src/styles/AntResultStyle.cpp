@@ -1,116 +1,14 @@
 #include "AntResultStyle.h"
 
 #include <QEvent>
-#include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOption>
 
-#include "styles/AntIconPainter.h"
 #include "widgets/AntResult.h"
-
-namespace
-{
-
-struct Metrics
-{
-    int iconSize = 72;
-    int padding = 32;
-    int titleFontSize = 24;
-    int subTitleFontSize = 14;
-    int spacing = 12;
-    int extraSpacing = 24;
-};
-
-Metrics resultMetrics()
-{
-    return {};
-}
-
-QRect resultIconRect(const QRect& widgetRect)
-{
-    const Metrics m = resultMetrics();
-    const int top = m.padding;
-    return QRect((widgetRect.width() - m.iconSize) / 2, top, m.iconSize, m.iconSize);
-}
-
-QRect resultTitleRect(const AntResult* result, const QRect& widgetRect, const QFont& widgetFont)
-{
-    const Metrics m = resultMetrics();
-    const QString title = result->title();
-
-    QFont titleFont = widgetFont;
-    titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(QFont::DemiBold);
-    QFontMetrics titleFm(titleFont);
-
-    int top = m.padding;
-    if (result->isIconVisible())
-    {
-        top += m.iconSize + m.spacing;
-    }
-
-    const int textWidth = qMax(120, widgetRect.width() - m.padding * 2);
-    const int textHeight = titleFm.boundingRect(QRect(0, 0, textWidth, 200), Qt::AlignCenter | Qt::TextWordWrap, title).height();
-
-    return QRect(m.padding, top, textWidth, textHeight);
-}
-
-QRect resultSubTitleRect(const AntResult* result, const QRect& widgetRect, const QFont& widgetFont)
-{
-    const Metrics m = resultMetrics();
-    const QString subTitle = result->subTitle();
-
-    QFont subFont = widgetFont;
-    subFont.setPixelSize(m.subTitleFontSize);
-    QFontMetrics subFm(subFont);
-
-    const QRect tr = resultTitleRect(result, widgetRect, widgetFont);
-    const int top = tr.bottom() + m.spacing;
-    const int textWidth = qMax(120, widgetRect.width() - m.padding * 2);
-    const int textHeight = subFm.boundingRect(QRect(0, 0, textWidth, 200), Qt::AlignCenter | Qt::TextWordWrap, subTitle).height();
-
-    return QRect(m.padding, top, textWidth, textHeight);
-}
-
-QColor resultIconColor(const AntResult* result)
-{
-    const auto& token = antTheme->tokens();
-    switch (result->status())
-    {
-    case Ant::AlertType::Success:
-        return token.colorSuccess;
-    case Ant::AlertType::Warning:
-        return token.colorWarning;
-    case Ant::AlertType::Error:
-        return token.colorError;
-    case Ant::AlertType::Info:
-    default:
-        return token.colorPrimary;
-    }
-}
-
-Ant::IconType resultIconTypeForStatus(const AntResult* result)
-{
-    switch (result->status())
-    {
-    case Ant::AlertType::Success:
-        return Ant::IconType::CheckCircle;
-    case Ant::AlertType::Error:
-        return Ant::IconType::CloseCircle;
-    case Ant::AlertType::Warning:
-        return Ant::IconType::ExclamationCircle;
-    case Ant::AlertType::Info:
-    default:
-        return Ant::IconType::InfoCircle;
-    }
-}
-
-} // namespace
 
 AntResultStyle::AntResultStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntResult>();
 }
 
 void AntResultStyle::polish(QWidget* widget)
@@ -170,42 +68,32 @@ void AntResultStyle::drawResult(const QStyleOption* option, QPainter* painter, c
         return;
     }
 
-    const Metrics m = resultMetrics();
-    const auto& token = antTheme->tokens();
+    const auto& layout = result->resultLayout();
     const QFont widgetFont = result->font();
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    if (result->isIconVisible())
+    if (layout.iconVisible)
     {
-        const QRect ir = resultIconRect(option->rect);
-        AntIconPainter::drawIcon(*painter,
-                                 resultIconTypeForStatus(result),
-                                 QRectF(ir),
-                                 resultIconColor(result),
-                                 Ant::IconTheme::Filled,
-                                 token.colorTextLightSolid);
+        painter->drawPixmap(layout.iconRect, result->statusIconPixmap(result->devicePixelRatioF()));
     }
 
     QFont titleFont = widgetFont;
-    titleFont.setPixelSize(m.titleFontSize);
+    titleFont.setPixelSize(layout.metrics.titleFontSize);
     titleFont.setWeight(QFont::DemiBold);
     painter->setFont(titleFont);
-    painter->setPen(token.colorText);
-    painter->drawText(resultTitleRect(result, option->rect, widgetFont),
-                      Qt::AlignCenter | Qt::TextWordWrap, result->title());
+    painter->setPen(layout.titleColor);
+    painter->drawText(layout.titleRect, Qt::AlignCenter | Qt::TextWordWrap, layout.title);
 
-    const QString subTitle = result->subTitle();
-    if (!subTitle.isEmpty())
+    if (!layout.subTitle.isEmpty())
     {
         QFont subFont = widgetFont;
-        subFont.setPixelSize(m.subTitleFontSize);
+        subFont.setPixelSize(layout.metrics.subTitleFontSize);
         subFont.setWeight(QFont::Normal);
         painter->setFont(subFont);
-        painter->setPen(token.colorTextSecondary);
-        painter->drawText(resultSubTitleRect(result, option->rect, widgetFont),
-                          Qt::AlignCenter | Qt::TextWordWrap, subTitle);
+        painter->setPen(layout.subTitleColor);
+        painter->drawText(layout.subTitleRect, Qt::AlignCenter | Qt::TextWordWrap, layout.subTitle);
     }
 
     painter->restore();

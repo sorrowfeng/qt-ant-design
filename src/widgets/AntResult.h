@@ -2,13 +2,17 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
+#include <QFont>
+#include <QPixmap>
 #include <QPointer>
+#include <QRect>
+#include <QSize>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
-class AntIcon;
-class QVBoxLayout;
+class AntResultStyle;
 class QResizeEvent;
 class QPaintEvent;
 
@@ -53,6 +57,8 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
+    friend class AntResultStyle;
+
     struct Metrics
     {
         int iconSize = 72;
@@ -63,7 +69,53 @@ private:
         int extraSpacing = 24;
     };
 
+    struct ResultLayoutCache
+    {
+        bool valid = false;
+        QSize widgetSize;
+        QFont font;
+        Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
+        int tokenFontSize = 0;
+        QString title;
+        QString subTitle;
+        Ant::AlertType status = Ant::AlertType::Info;
+        bool iconVisible = true;
+        bool hasExtraWidget = false;
+        QSize extraSize;
+        Metrics metrics;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QRect iconRect;
+        QRect titleRect;
+        QRect subTitleRect;
+        QRect extraRect;
+        QColor iconColor;
+        QColor titleColor;
+        QColor subTitleColor;
+        QColor iconSecondaryColor;
+        Ant::IconType iconType = Ant::IconType::InfoCircle;
+    };
+
+    struct ResultIconPixmapCache
+    {
+        bool valid = false;
+        qreal devicePixelRatio = 1.0;
+        QSize logicalSize;
+        Ant::AlertType status = Ant::AlertType::Info;
+        Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
+        QColor iconColor;
+        QColor secondaryColor;
+        Ant::IconType iconType = Ant::IconType::InfoCircle;
+        QPixmap pixmap;
+    };
+
     Metrics metrics() const;
+    const ResultLayoutCache& resultLayout() const;
+    QPixmap statusIconPixmap(qreal devicePixelRatio) const;
+    void invalidateResultLayout() const;
+    void invalidateResultIconPixmap() const;
+    void requestResultUpdate(const QRect& region, const QString& mode);
+    void syncResultPerfCounters() const;
     QRect iconRect() const;
     QRect titleRect() const;
     QRect subTitleRect() const;
@@ -77,4 +129,14 @@ private:
     QString m_subTitle;
     bool m_iconVisible = true;
     QPointer<QWidget> m_extraWidget;
+    mutable ResultLayoutCache m_layoutCache;
+    mutable ResultIconPixmapCache m_iconPixmapCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    mutable int m_iconPixmapBuildCount = 0;
+    mutable int m_iconPixmapCacheHitCount = 0;
+    int m_extraGeometryApplyCount = 0;
+    int m_extraGeometrySkipCount = 0;
+    int m_regionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };

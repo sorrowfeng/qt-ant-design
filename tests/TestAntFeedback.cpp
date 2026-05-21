@@ -39,6 +39,7 @@ private slots:
     void progress();
     void progressCachesGeometryAndScopesUpdates();
     void result();
+    void resultCachesLayoutIconAndExtraGeometry();
     void skeleton();
     void spin();
     void tooltip();
@@ -802,6 +803,51 @@ void TestAntFeedback::result()
 
     auto* w2 = new AntResult("Title");
     QCOMPARE(w2->title(), "Title");
+}
+
+void TestAntFeedback::resultCachesLayoutIconAndExtraGeometry()
+{
+    AntResult result;
+    result.setStatus(Ant::AlertType::Success);
+    result.setTitle(QStringLiteral("Cached result"));
+    result.setSubTitle(QStringLiteral("Repeated paints should reuse result text layout and the status icon pixmap."));
+    result.resize(360, 220);
+    result.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&result));
+
+    result.grab();
+    const int layoutBuilds = result.property("antResultLayoutBuildCount").toInt();
+    const int layoutHits = result.property("antResultLayoutCacheHitCount").toInt();
+    const int iconBuilds = result.property("antResultIconPixmapBuildCount").toInt();
+    const int iconHits = result.property("antResultIconPixmapCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+    QVERIFY(iconBuilds > 0);
+
+    result.grab();
+    QCOMPARE(result.property("antResultLayoutBuildCount").toInt(), layoutBuilds);
+    QCOMPARE(result.property("antResultIconPixmapBuildCount").toInt(), iconBuilds);
+    QVERIFY(result.property("antResultLayoutCacheHitCount").toInt() > layoutHits);
+    QVERIFY(result.property("antResultIconPixmapCacheHitCount").toInt() > iconHits);
+
+    const int iconBuildsBeforeStatus = result.property("antResultIconPixmapBuildCount").toInt();
+    result.setStatus(Ant::AlertType::Error);
+    QCOMPARE(result.property("antResultLastUpdateMode").toString(), QStringLiteral("status"));
+    result.grab();
+    QVERIFY(result.property("antResultIconPixmapBuildCount").toInt() > iconBuildsBeforeStatus);
+
+    const int layoutBuildsBeforeTitle = result.property("antResultLayoutBuildCount").toInt();
+    result.setTitle(QStringLiteral("Updated cached result title"));
+    QCOMPARE(result.property("antResultLastUpdateMode").toString(), QStringLiteral("title"));
+    result.grab();
+    QVERIFY(result.property("antResultLayoutBuildCount").toInt() > layoutBuildsBeforeTitle);
+
+    auto* extra = new QWidget;
+    extra->setFixedSize(96, 32);
+    const int geometryApplies = result.property("antResultExtraGeometryApplyCount").toInt();
+    result.setExtraWidget(extra);
+    QVERIFY(result.property("antResultExtraGeometryApplyCount").toInt() > geometryApplies);
+
+    QVERIFY(!extra->geometry().isEmpty());
 }
 
 void TestAntFeedback::skeleton()
