@@ -181,7 +181,8 @@ AntSelect::AntSelect(QWidget* parent)
         update();
     });
 
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateMetricsCache();
         rebuildPopup();
         updateGeometry();
         update();
@@ -192,6 +193,7 @@ AntSelect::AntSelect(QWidget* parent)
     setStyle(selectStyle);
 
     updateCursor();
+    syncSelectPerfCounters();
 }
 
 AntSelect::~AntSelect()
@@ -212,6 +214,7 @@ void AntSelect::setSelectSize(Ant::Size size)
         return;
     }
     m_selectSize = size;
+    invalidateMetricsCache();
     rebuildPopup();
     updateGeometry();
     update();
@@ -366,9 +369,11 @@ void AntSelect::setCurrentIndex(int index)
         return;
     }
 
+    const int oldCurrentIndex = m_currentIndex;
+    const int oldHighlightedIndex = m_highlightedIndex;
     m_currentIndex = index;
     m_highlightedIndex = index;
-    rebuildPopup();
+    updatePopupOptionRows(QList<int>{oldCurrentIndex, oldHighlightedIndex, m_currentIndex});
     update();
     Q_EMIT currentIndexChanged(m_currentIndex);
     Q_EMIT currentTextChanged(currentText());
@@ -716,14 +721,14 @@ int AntSelect::loadingAngle() const { return m_loadingAngle; }
 
 QSize AntSelect::sizeHint() const
 {
-    const Metrics m = metrics();
-    return QSize(220, m.height);
+    metrics();
+    return m_metricsCache.sizeHint;
 }
 
 QSize AntSelect::minimumSizeHint() const
 {
-    const Metrics m = metrics();
-    return QSize(96, m.height);
+    metrics();
+    return m_metricsCache.minimumSizeHint;
 }
 
 void AntSelect::enterEvent(QEnterEvent* event)
@@ -862,11 +867,22 @@ void AntSelect::changeEvent(QEvent* event)
         }
         update();
     }
+    else if (event->type() == QEvent::FontChange)
+    {
+        invalidateMetricsCache();
+        updateGeometry();
+        update();
+    }
     QWidget::changeEvent(event);
 }
 
 AntSelect::Metrics AntSelect::metrics() const
 {
+    if (m_metricsCache.valid)
+    {
+        return m_metricsCache.metrics;
+    }
+
     const auto& token = antTheme->tokens();
     Metrics m;
     m.height = token.controlHeight;
@@ -890,7 +906,14 @@ AntSelect::Metrics AntSelect::metrics() const
         m.paddingX = token.paddingXS;
         m.optionHeight = token.controlHeightSM;
     }
-    return m;
+    m_metricsCache.metrics = m;
+    m_metricsCache.sizeHint = QSize(220, m.height);
+    m_metricsCache.minimumSizeHint = QSize(96, m.height);
+    m_metricsCache.valid = true;
+    ++m_metricsResolveCount;
+    ++m_sizeHintResolveCount;
+    syncSelectPerfCounters();
+    return m_metricsCache.metrics;
 }
 
 QRectF AntSelect::controlRect() const
@@ -952,32 +975,55 @@ void AntSelect::rebuildPopup()
     {
         return;
     }
+    ++m_popupRebuildCount;
 
     // Filter for editable mode
     QString filterText;
     if (m_editable && m_editField)
         filterText = m_editField->text().toLower();
 
+    QList<int> visibleIndices;
+    visibleIndices.reserve(m_options.size());
+    for (int i = 0; i < m_options.size(); ++i)
+    {
+        if (!filterText.isEmpty() && !m_options.at(i).label.toLower().contains(filterText))
+        {
+            continue;
+        }
+        visibleIndices.append(i);
+    }
+
     while (QLayoutItem* item = m_popupLayout->takeAt(0))
     {
-        if (QWidget* widget = item->widget())
-        {
-            widget->deleteLater();
-        }
         delete item;
     }
 
     const Metrics m = metrics();
-    for (int i = 0; i < m_options.size(); ++i)
+    while (m_popupOptionWidgets.size() < visibleIndices.size())
     {
-        if (!filterText.isEmpty() && !m_options.at(i).label.toLower().contains(filterText))
-            continue;
-        auto* option = new AntSelectOptionWidget(this, i, m_popup);
+        auto* option = new AntSelectOptionWidget(this, -1, m_popup);
+        m_popupOptionWidgets.append(option);
+        ++m_popupRowCreateCount;
+    }
+
+    for (int row = 0; row < visibleIndices.size(); ++row)
+    {
+        const int optionIndex = visibleIndices.at(row);
+        auto* option = m_popupOptionWidgets.at(row);
+        option->setIndex(optionIndex);
         option->setFixedHeight(m.optionHeight);
-        option->setEnabled(!m_options.at(i).disabled);
+        option->setEnabled(!m_options.at(optionIndex).disabled);
+        option->show();
         m_popupLayout->addWidget(option);
     }
 
+    for (int row = visibleIndices.size(); row < m_popupOptionWidgets.size(); ++row)
+    {
+        m_popupOptionWidgets.at(row)->hide();
+    }
+
+    m_visiblePopupIndices = visibleIndices;
+    syncSelectPerfCounters();
     updatePopupGeometry();
 }
 
@@ -989,13 +1035,24 @@ void AntSelect::updatePopupGeometry()
     }
 
     const Metrics m = metrics();
-    const int optionCount = static_cast<int>(m_options.size());
+    const int optionCount = visiblePopupOptionCount();
     const int visibleCount = std::min(std::max(1, optionCount), m_maxVisibleItems);
     const int popupWidth = width() + AntSelectPopup::ShadowMargin * 2;
     const int popupHeight = visibleCount * m.optionHeight + AntSelectPopup::ShadowMargin * 2;
     const QPoint globalPos = mapToGlobal(QPoint(-AntSelectPopup::ShadowMargin,
                                                 height() + 4 - AntSelectPopup::ShadowMargin));
-    m_popup->setGeometry(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
+    const QRect nextGeometry(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
+    if (m_lastPopupGeometry == nextGeometry)
+    {
+        ++m_popupGeometrySkipCount;
+        syncSelectPerfCounters();
+        return;
+    }
+
+    m_popup->setGeometry(nextGeometry);
+    m_lastPopupGeometry = nextGeometry;
+    ++m_popupGeometryApplyCount;
+    syncSelectPerfCounters();
 }
 
 void AntSelect::selectOptionFromPopup(int index)
@@ -1023,16 +1080,65 @@ void AntSelect::setHighlightedIndex(int index)
         return;
     }
 
+    const int oldHighlightedIndex = m_highlightedIndex;
     m_highlightedIndex = index;
-    if (m_popup)
-    {
-        m_popup->update();
-    }
+    updatePopupOptionRows(QList<int>{oldHighlightedIndex, m_highlightedIndex});
     if (m_highlightedIndex >= 0)
     {
         Q_EMIT highlighted(m_highlightedIndex);
         Q_EMIT textHighlighted(m_options.at(m_highlightedIndex).label);
     }
+}
+
+int AntSelect::visiblePopupOptionCount() const
+{
+    return m_visiblePopupIndices.size();
+}
+
+void AntSelect::updatePopupOptionRows(const QList<int>& indices)
+{
+    if (!m_popup)
+    {
+        return;
+    }
+
+    int updatedRows = 0;
+    for (AntSelectOptionWidget* option : m_popupOptionWidgets)
+    {
+        if (!option || !option->isVisible())
+        {
+            continue;
+        }
+        if (indices.contains(option->index()))
+        {
+            option->update();
+            ++updatedRows;
+        }
+    }
+
+    if (updatedRows > 0)
+    {
+        m_popupRowUpdateCount += updatedRows;
+        syncSelectPerfCounters();
+    }
+}
+
+void AntSelect::invalidateMetricsCache() const
+{
+    m_metricsCache.valid = false;
+    syncSelectPerfCounters();
+}
+
+void AntSelect::syncSelectPerfCounters() const
+{
+    auto* self = const_cast<AntSelect*>(this);
+    self->setProperty("antSelectMetricsResolveCount", m_metricsResolveCount);
+    self->setProperty("antSelectSizeHintResolveCount", m_sizeHintResolveCount);
+    self->setProperty("antSelectPopupRebuildCount", m_popupRebuildCount);
+    self->setProperty("antSelectPopupRowCreateCount", m_popupRowCreateCount);
+    self->setProperty("antSelectPopupGeometryApplyCount", m_popupGeometryApplyCount);
+    self->setProperty("antSelectPopupGeometrySkipCount", m_popupGeometrySkipCount);
+    self->setProperty("antSelectPopupRowUpdateCount", m_popupRowUpdateCount);
 }
 
 int AntSelect::nextEnabledIndex(int start, int direction) const
@@ -1159,6 +1265,7 @@ QStringList AntSelect::selectedTexts() const
 
 void AntSelect::setSelectedIndices(const QList<int>& indices)
 {
+    const QList<int> oldSelectedIndices = m_selectedIndices;
     m_selectedIndices.clear();
     for (int idx : indices)
     {
@@ -1175,7 +1282,15 @@ void AntSelect::setSelectedIndices(const QList<int>& indices)
     {
         m_currentIndex = -1;
     }
-    rebuildPopup();
+    QList<int> dirtyIndices = oldSelectedIndices;
+    for (int idx : m_selectedIndices)
+    {
+        if (!dirtyIndices.contains(idx))
+        {
+            dirtyIndices.append(idx);
+        }
+    }
+    updatePopupOptionRows(dirtyIndices);
     update();
     Q_EMIT selectionChanged(selectedValues());
 }
@@ -1188,7 +1303,7 @@ void AntSelect::addSelectedIndex(int index)
     }
     m_selectedIndices.append(index);
     m_currentIndex = index;
-    rebuildPopup();
+    updatePopupOptionRows(QList<int>{index});
     update();
     Q_EMIT selectionChanged(selectedValues());
 }
@@ -1199,6 +1314,7 @@ void AntSelect::removeSelectedIndex(int index)
     {
         return;
     }
+    const int oldCurrentIndex = m_currentIndex;
     m_selectedIndices.removeOne(index);
     QVariant value;
     if (index >= 0 && index < m_options.size())
@@ -1206,7 +1322,7 @@ void AntSelect::removeSelectedIndex(int index)
         value = m_options.at(index).value;
     }
     m_currentIndex = m_selectedIndices.isEmpty() ? -1 : m_selectedIndices.last();
-    rebuildPopup();
+    updatePopupOptionRows(QList<int>{index, oldCurrentIndex, m_currentIndex});
     update();
     Q_EMIT tagRemoved(value);
     Q_EMIT selectionChanged(selectedValues());
@@ -1216,9 +1332,10 @@ void AntSelect::clearSelection()
 {
     if (m_selectMode != Ant::SelectMode::Single)
     {
+        const QList<int> oldSelectedIndices = m_selectedIndices;
         m_selectedIndices.clear();
         m_currentIndex = -1;
-        rebuildPopup();
+        updatePopupOptionRows(oldSelectedIndices);
         update();
         Q_EMIT selectionChanged(QList<QVariant>());
     }

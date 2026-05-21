@@ -3,12 +3,16 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QList>
+#include <QRect>
+#include <QSize>
 #include <QStringList>
 #include <QVariant>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
+class AntSelectOptionWidget;
+class AntSelectStyle;
 class QEnterEvent;
 class QEvent;
 class QLineEdit;
@@ -168,6 +172,7 @@ protected:
 private:
     friend class AntSelectPopup;
     friend class AntSelectOptionWidget;
+    friend class AntSelectStyle;
 
     struct Metrics
     {
@@ -177,6 +182,14 @@ private:
         int paddingX = 11;
         int arrowWidth = 28;
         int optionHeight = 32;
+    };
+
+    struct MetricsCache
+    {
+        Metrics metrics;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        bool valid = false;
     };
 
     Metrics metrics() const;
@@ -189,6 +202,10 @@ private:
     void selectOptionFromPopup(int index);
     void toggleOptionFromPopup(int index);
     void setHighlightedIndex(int index);
+    int visiblePopupOptionCount() const;
+    void updatePopupOptionRows(const QList<int>& indices);
+    void invalidateMetricsCache() const;
+    void syncSelectPerfCounters() const;
     int nextEnabledIndex(int start, int direction) const;
     void animateArrow(bool open);
     void updateCursor();
@@ -215,7 +232,18 @@ private:
     qreal m_arrowRotation = 0.0;
     QFrame* m_popup = nullptr;
     QVBoxLayout* m_popupLayout = nullptr;
+    QList<AntSelectOptionWidget*> m_popupOptionWidgets;
+    QList<int> m_visiblePopupIndices;
+    QRect m_lastPopupGeometry;
     QPropertyAnimation* m_arrowAnimation = nullptr;
     QTimer* m_loadingTimer = nullptr;
     QLineEdit* m_editField = nullptr;
+    mutable MetricsCache m_metricsCache;
+    mutable int m_metricsResolveCount = 0;
+    mutable int m_sizeHintResolveCount = 0;
+    int m_popupRebuildCount = 0;
+    int m_popupRowCreateCount = 0;
+    int m_popupGeometryApplyCount = 0;
+    int m_popupGeometrySkipCount = 0;
+    int m_popupRowUpdateCount = 0;
 };

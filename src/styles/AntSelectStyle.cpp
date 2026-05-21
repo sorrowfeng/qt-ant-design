@@ -13,122 +13,6 @@
 
 namespace
 {
-struct SelectMetrics
-{
-    int height = 32;
-    int fontSize = 14;
-    int radius = 6;
-    int paddingX = 11;
-    int arrowWidth = 28;
-};
-
-SelectMetrics metricsFor(const AntSelect* select)
-{
-    const auto& token = antTheme->tokens();
-    SelectMetrics metrics;
-    metrics.height = token.controlHeight;
-    metrics.fontSize = token.fontSize;
-    metrics.radius = token.borderRadius;
-    metrics.paddingX = token.paddingSM - token.lineWidth;
-    metrics.arrowWidth = token.fontSize + token.paddingXS * 2;
-
-    if (!select)
-    {
-        return metrics;
-    }
-
-    if (select->selectSize() == Ant::Size::Large)
-    {
-        metrics.height = token.controlHeightLG;
-        metrics.fontSize = token.fontSizeLG;
-    }
-    else if (select->selectSize() == Ant::Size::Small)
-    {
-        metrics.height = token.controlHeightSM;
-        metrics.fontSize = token.fontSizeSM;
-        metrics.radius = token.borderRadiusSM;
-        metrics.paddingX = token.paddingXS;
-    }
-
-    return metrics;
-}
-
-QRectF controlRectFor(const AntSelect* select, const QRect& rect)
-{
-    const SelectMetrics metrics = metricsFor(select);
-    return QRectF(1, (rect.height() - metrics.height) / 2.0, rect.width() - 2, metrics.height);
-}
-
-QRectF clearButtonRectFor(const AntSelect* select, const QRect& rect)
-{
-    const SelectMetrics metrics = metricsFor(select);
-    const QRectF control = controlRectFor(select, rect);
-    const qreal size = std::min<qreal>(18, control.height() - 8);
-    return QRectF(control.right() - metrics.paddingX - size,
-                  control.center().y() - size / 2.0,
-                  size,
-                  size);
-}
-
-QColor borderColorFor(const AntSelect* select)
-{
-    const auto& token = antTheme->tokens();
-    if (!select || !select->isEnabled())
-    {
-        return token.colorBorderDisabled;
-    }
-    if (select->status() == Ant::Status::Error)
-    {
-        return (select->isHoveredState() || select->hasFocus() || select->isOpen())
-            ? token.colorErrorHover
-            : token.colorError;
-    }
-    if (select->status() == Ant::Status::Warning)
-    {
-        return (select->isHoveredState() || select->hasFocus() || select->isOpen())
-            ? token.colorWarningHover
-            : token.colorWarning;
-    }
-    if (select->isHoveredState() || select->hasFocus() || select->isOpen())
-    {
-        return token.colorPrimaryHover;
-    }
-    return token.colorBorder;
-}
-
-QColor backgroundColorFor(const AntSelect* select)
-{
-    const auto& token = antTheme->tokens();
-    if (!select || !select->isEnabled())
-    {
-        return token.colorBgContainerDisabled;
-    }
-    if (select->variant() == Ant::Variant::Filled)
-    {
-        return (select->hasFocus() || select->isOpen()) ? token.colorBgContainer
-                                                        : (select->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary);
-    }
-    if (select->variant() == Ant::Variant::Borderless
-        || select->variant() == Ant::Variant::Underlined)
-    {
-        return QColor(0, 0, 0, 0);
-    }
-    return token.colorBgContainer;
-}
-
-bool canClear(const AntSelect* select)
-{
-    if (!select || !select->isEnabled() || !select->allowClear() || select->isHoveredState() == false || select->isLoading())
-    {
-        return false;
-    }
-    if (select->selectMode() != Ant::SelectMode::Single)
-    {
-        return !select->selectedIndices().isEmpty();
-    }
-    return select->currentIndex() >= 0;
-}
-
 struct TagLayout
 {
     QRectF rect;
@@ -226,7 +110,6 @@ void drawTag(QPainter* painter, const QRectF& rect, const QString& text, int fon
 AntSelectStyle::AntSelectStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntSelect>();
 }
 
 void AntSelectStyle::polish(QWidget* widget)
@@ -297,13 +180,13 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
     }
 
     const auto& token = antTheme->tokens();
-    const SelectMetrics metrics = metricsFor(select);
-    const QRectF control = controlRectFor(select, option->rect);
-    const QRectF clearRect = clearButtonRectFor(select, option->rect);
+    const AntSelect::Metrics metrics = select->metrics();
+    const QRectF control = select->controlRect();
+    const QRectF clearRect = select->clearButtonRect(metrics);
     const bool disabled = !option->state.testFlag(QStyle::State_Enabled);
     const bool focused = option->state.testFlag(QStyle::State_HasFocus) || select->isOpen();
-    const QColor borderColor = borderColorFor(select);
-    const QColor backgroundColor = backgroundColorFor(select);
+    const QColor borderColor = select->borderColor();
+    const QColor backgroundColor = select->backgroundColor();
     const bool multiMode = select->selectMode() != Ant::SelectMode::Single;
 
     painter->save();
@@ -391,7 +274,7 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
         painter->setBrush(Qt::NoBrush);
         painter->drawArc(clearRect.adjusted(2, 2, -2, -2), select->loadingAngle() * 16, 270 * 16);
     }
-    else if (canClear(select))
+    else if (select->canClear())
     {
         const QPointF center = clearRect.center();
         painter->setPen(Qt::NoPen);

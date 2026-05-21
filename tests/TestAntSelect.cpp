@@ -1,6 +1,8 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QComboBox>
+#include <QCoreApplication>
+#include <QLineEdit>
 #include <QVBoxLayout>
 
 #include "widgets/AntSelect.h"
@@ -12,6 +14,7 @@ private slots:
     void propertiesAndSignals();
     void defaultsToFirstOptionWhenPopulated();
     void layoutKeepsSelectControlHeight();
+    void popupReusesRowsAndScopesUpdates();
 };
 
 void TestAntSelect::propertiesAndSignals()
@@ -193,6 +196,49 @@ void TestAntSelect::layoutKeepsSelectControlHeight()
     QCOMPARE(select->sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
     QCOMPARE(select->height(), select->sizeHint().height());
     QCOMPARE(select->width(), host.width());
+}
+
+void TestAntSelect::popupReusesRowsAndScopesUpdates()
+{
+    AntSelect select;
+    select.addItems({QStringLiteral("Alpha"),
+                     QStringLiteral("Beta"),
+                     QStringLiteral("Gamma"),
+                     QStringLiteral("Delta")});
+    select.resize(select.sizeHint());
+    select.setOpen(true);
+    QCoreApplication::processEvents();
+
+    const int rowCreatesAfterOpen = select.property("antSelectPopupRowCreateCount").toInt();
+    QVERIFY(rowCreatesAfterOpen >= 4);
+    QVERIFY(select.property("antSelectPopupGeometryApplyCount").toInt() >= 1);
+    QVERIFY(select.property("antSelectPopupGeometrySkipCount").toInt() >= 1);
+
+    const int metricsBefore = select.property("antSelectMetricsResolveCount").toInt();
+    const int sizeHintsBefore = select.property("antSelectSizeHintResolveCount").toInt();
+    select.sizeHint();
+    select.minimumSizeHint();
+    select.sizeHint();
+    QCOMPARE(select.property("antSelectMetricsResolveCount").toInt(), metricsBefore);
+    QCOMPARE(select.property("antSelectSizeHintResolveCount").toInt(), sizeHintsBefore);
+
+    const int rowUpdatesBeforeSelection = select.property("antSelectPopupRowUpdateCount").toInt();
+    select.setCurrentIndex(2);
+    QVERIFY(select.property("antSelectPopupRowUpdateCount").toInt() > rowUpdatesBeforeSelection);
+    QCOMPARE(select.property("antSelectPopupRowCreateCount").toInt(), rowCreatesAfterOpen);
+
+    const int rowUpdatesBeforeHighlight = select.property("antSelectPopupRowUpdateCount").toInt();
+    QTest::keyClick(&select, Qt::Key_Down);
+    QVERIFY(select.property("antSelectPopupRowUpdateCount").toInt() > rowUpdatesBeforeHighlight);
+
+    const int rebuildsBeforeFilter = select.property("antSelectPopupRebuildCount").toInt();
+    select.setEditable(true);
+    auto* edit = select.findChild<QLineEdit*>();
+    QVERIFY(edit);
+    edit->setText(QStringLiteral("alp"));
+    QCoreApplication::processEvents();
+    QVERIFY(select.property("antSelectPopupRebuildCount").toInt() > rebuildsBeforeFilter);
+    QCOMPARE(select.property("antSelectPopupRowCreateCount").toInt(), rowCreatesAfterOpen);
 }
 
 QTEST_MAIN(TestAntSelect)

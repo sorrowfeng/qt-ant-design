@@ -81,6 +81,11 @@ public:
         update();
     }
 
+    int index() const
+    {
+        return m_index;
+    }
+
 protected:
     void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
