@@ -5,6 +5,7 @@
 #include <QListWidget>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QResizeEvent>
 #include <QVBoxLayout>
 #include <QWheelEvent>
 
@@ -84,31 +85,32 @@ AntTransfer::AntTransfer(QWidget* parent)
     m_toTargetBtn->hide();
     m_toSourceBtn->hide();
     setMinimumSize(minimumSizeHint());
+    syncTransferPerfCounters();
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidatePanelLayouts();
+        updateTransferRegion(rect(), QStringLiteral("theme"), false, true);
+    });
 }
 
 QStringList AntTransfer::sourceItems() const
 {
-    QStringList items;
-    for (int i = 0; i < m_sourceList->count(); ++i)
-        items << m_sourceList->item(i)->text();
-    return items;
+    return m_sourceItemsData;
 }
 
 QStringList AntTransfer::targetItems() const
 {
-    QStringList items;
-    for (int i = 0; i < m_targetList->count(); ++i)
-        items << m_targetList->item(i)->text();
-    return items;
+    return m_targetItemsData;
 }
 
 void AntTransfer::setSourceItems(const QStringList& items)
 {
-    m_sourceList->clear();
-    m_sourceList->addItems(items);
-    setScrollOffset(true, m_sourceScrollOffset);
+    if (m_sourceItemsData == items)
+    {
+        return;
+    }
+    m_sourceItemsData = items;
+    syncListWidget(true);
     const QStringList selectedSource = m_selectedSourceItems;
     for (const QString& selected : selectedSource)
     {
@@ -117,15 +119,20 @@ void AntTransfer::setSourceItems(const QStringList& items)
             m_selectedSourceItems.removeAll(selected);
         }
     }
-    update();
+    setScrollOffset(true, m_sourceScrollOffset);
+    updateButtons();
+    updateTransferRegion(panelRect(true).united(buttonColumnRect()), QStringLiteral("sourceItems"), false, true);
     Q_EMIT itemsChanged();
 }
 
 void AntTransfer::setTargetItems(const QStringList& items)
 {
-    m_targetList->clear();
-    m_targetList->addItems(items);
-    setScrollOffset(false, m_targetScrollOffset);
+    if (m_targetItemsData == items)
+    {
+        return;
+    }
+    m_targetItemsData = items;
+    syncListWidget(false);
     const QStringList selectedTarget = m_selectedTargetItems;
     for (const QString& selected : selectedTarget)
     {
@@ -134,7 +141,9 @@ void AntTransfer::setTargetItems(const QStringList& items)
             m_selectedTargetItems.removeAll(selected);
         }
     }
-    update();
+    setScrollOffset(false, m_targetScrollOffset);
+    updateButtons();
+    updateTransferRegion(panelRect(false).united(buttonColumnRect()), QStringLiteral("targetItems"), false, true);
     Q_EMIT itemsChanged();
 }
 
@@ -156,9 +165,6 @@ void AntTransfer::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    const QRect sourceRect = panelRect(true);
-    const QRect targetRect = panelRect(false);
-
     auto drawCheckBox = [&](const QRect& box, bool checked, bool partial = false) {
         AntStyleBase::drawCrispRoundedRect(&painter, box, QPen(token.colorBorder, token.lineWidth),
             token.colorBgContainer, token.borderRadiusSM, token.borderRadiusSM);
@@ -179,7 +185,8 @@ void AntTransfer::paintEvent(QPaintEvent* event)
         }
     };
 
-    auto drawPanel = [&](const QRect& rect, const QStringList& items, const QStringList& selectedItems) {
+    auto drawPanel = [&](const PanelLayout& layout, const QStringList& items, const QStringList& selectedItems) {
+        const QRect rect = layout.panelRect;
         AntStyleBase::drawCrispRoundedRect(&painter, rect.adjusted(0, 0, -1, -1),
             QPen(token.colorBorder, token.lineWidth), token.colorBgContainer,
             token.borderRadius, token.borderRadius);
@@ -214,13 +221,10 @@ void AntTransfer::paintEvent(QPaintEvent* event)
         }
 
         const int itemCount = static_cast<int>(items.size());
-        const bool sourcePanel = rect.left() == sourceRect.left();
-        const int offset = scrollOffset(sourcePanel);
-        const int visible = std::min(visibleRowCount(), itemCount - offset);
-        for (int i = 0; i < visible; ++i)
+        for (const RowLayout& rowLayout : layout.visibleRows)
         {
-            const int itemIndex = offset + i;
-            const QRect row(rect.left(), rect.top() + kHeaderHeight + i * kRowHeight, rect.width(), kRowHeight);
+            const int itemIndex = rowLayout.itemIndex;
+            const QRect row = rowLayout.rowRect;
             const bool selected = selectedItems.contains(items.at(itemIndex));
             if (selected)
             {
@@ -228,29 +232,24 @@ void AntTransfer::paintEvent(QPaintEvent* event)
                 painter.setBrush(token.colorPrimaryBg);
                 painter.drawRect(row.adjusted(1, 0, -1, 0));
             }
-            drawCheckBox(QRect(row.left() + 12, row.top() + 8, 16, 16), selected);
+            drawCheckBox(rowLayout.checkRect, selected);
             painter.setPen(token.colorText);
             painter.drawText(QRect(row.left() + 38, row.top(), row.width() - 46, row.height()),
                              Qt::AlignVCenter | Qt::AlignLeft, items.at(itemIndex));
         }
 
-        if (itemCount > visibleRowCount())
+        if (layout.hasScrollBar)
         {
-            const QRect scrollTrack(rect.right() - 9, rect.top() + kHeaderHeight + 8, 4, rect.height() - kHeaderHeight - 16);
             painter.setPen(Qt::NoPen);
             painter.setBrush(token.colorFillSecondary);
-            painter.drawRoundedRect(scrollTrack, 2, 2);
-            const int thumbH = std::max(30, scrollTrack.height() * visibleRowCount() / itemCount);
-            const int maxOffset = maxScrollOffset(sourcePanel);
-            const int thumbTravel = std::max(0, scrollTrack.height() - thumbH);
-            const int thumbY = scrollTrack.top() + (maxOffset <= 0 ? 0 : thumbTravel * offset / maxOffset);
+            painter.drawRoundedRect(layout.scrollTrackRect, 2, 2);
             painter.setBrush(token.colorTextDisabled);
-            painter.drawRoundedRect(QRect(scrollTrack.left(), thumbY, scrollTrack.width(), thumbH), 2, 2);
+            painter.drawRoundedRect(layout.scrollThumbRect, 2, 2);
         }
     };
 
-    drawPanel(sourceRect, sourceItems(), m_selectedSourceItems);
-    drawPanel(targetRect, targetItems(), m_selectedTargetItems);
+    drawPanel(panelLayout(true), m_sourceItemsData, m_selectedSourceItems);
+    drawPanel(panelLayout(false), m_targetItemsData, m_selectedTargetItems);
 
     auto drawArrowButton = [&](const QRect& rect, Ant::IconType iconType, bool enabled) {
         AntStyleBase::drawCrispRoundedRect(&painter, rect,
@@ -260,8 +259,8 @@ void AntTransfer::paintEvent(QPaintEvent* event)
         const QColor iconColor = enabled ? token.colorTextLightSolid : token.colorTextDisabled;
         AntIconPainter::drawIcon(painter, iconType, QRectF(rect).adjusted(7, 7, -7, -7), iconColor);
     };
-    drawArrowButton(QRect(kPanelWidth + 8, 74, 24, 24), Ant::IconType::Right, !m_selectedSourceItems.isEmpty());
-    drawArrowButton(QRect(kPanelWidth + 8, 106, 24, 24), Ant::IconType::Left, !m_selectedTargetItems.isEmpty());
+    drawArrowButton(buttonRect(true), Ant::IconType::Right, !m_selectedSourceItems.isEmpty());
+    drawArrowButton(buttonRect(false), Ant::IconType::Left, !m_selectedTargetItems.isEmpty());
 }
 
 void AntTransfer::mousePressEvent(QMouseEvent* event)
@@ -289,7 +288,7 @@ void AntTransfer::mousePressEvent(QMouseEvent* event)
     const int sourceRow = rowAt(pos, true);
     if (sourceRow >= 0)
     {
-        const QString item = sourceItems().at(sourceRow);
+        const QString item = m_sourceItemsData.at(sourceRow);
         if (m_selectedSourceItems.contains(item))
         {
             m_selectedSourceItems.removeAll(item);
@@ -299,7 +298,9 @@ void AntTransfer::mousePressEvent(QMouseEvent* event)
             m_selectedSourceItems.append(item);
         }
         updateButtons();
-        update();
+        updateTransferRegion(headerRect(true).united(rowRectForIndex(true, sourceRow)).united(buttonRect(true)),
+                             QStringLiteral("selection"),
+                             true);
         event->accept();
         return;
     }
@@ -307,7 +308,7 @@ void AntTransfer::mousePressEvent(QMouseEvent* event)
     const int targetRow = rowAt(pos, false);
     if (targetRow >= 0)
     {
-        const QString item = targetItems().at(targetRow);
+        const QString item = m_targetItemsData.at(targetRow);
         if (m_selectedTargetItems.contains(item))
         {
             m_selectedTargetItems.removeAll(item);
@@ -317,19 +318,21 @@ void AntTransfer::mousePressEvent(QMouseEvent* event)
             m_selectedTargetItems.append(item);
         }
         updateButtons();
-        update();
+        updateTransferRegion(headerRect(false).united(rowRectForIndex(false, targetRow)).united(buttonRect(false)),
+                             QStringLiteral("selection"),
+                             true);
         event->accept();
         return;
     }
 
-    if (QRect(188, 74, 24, 24).contains(pos) && !m_selectedSourceItems.isEmpty())
+    if (buttonRect(true).contains(pos) && !m_selectedSourceItems.isEmpty())
     {
         doTransfer(true);
         event->accept();
         return;
     }
 
-    if (QRect(188, 106, 24, 24).contains(pos) && !m_selectedTargetItems.isEmpty())
+    if (buttonRect(false).contains(pos) && !m_selectedTargetItems.isEmpty())
     {
         doTransfer(false);
         event->accept();
@@ -337,6 +340,12 @@ void AntTransfer::mousePressEvent(QMouseEvent* event)
     }
 
     QWidget::mousePressEvent(event);
+}
+
+void AntTransfer::resizeEvent(QResizeEvent* event)
+{
+    invalidatePanelLayouts();
+    QWidget::resizeEvent(event);
 }
 
 void AntTransfer::wheelEvent(QWheelEvent* event)
@@ -366,7 +375,7 @@ void AntTransfer::wheelEvent(QWheelEvent* event)
     setScrollOffset(sourcePanel, before + steps);
     if (before != scrollOffset(sourcePanel))
     {
-        update();
+        updateTransferRegion(panelRect(sourcePanel), QStringLiteral("scroll"), false, true);
         event->accept();
         return;
     }
@@ -375,8 +384,8 @@ void AntTransfer::wheelEvent(QWheelEvent* event)
 
 void AntTransfer::doTransfer(bool toTarget)
 {
-    QStringList fromItems = toTarget ? sourceItems() : targetItems();
-    QStringList toItems = toTarget ? targetItems() : sourceItems();
+    QStringList fromItems = toTarget ? m_sourceItemsData : m_targetItemsData;
+    QStringList toItems = toTarget ? m_targetItemsData : m_sourceItemsData;
     QStringList& selectedItems = toTarget ? m_selectedSourceItems : m_selectedTargetItems;
 
     for (const QString& item : std::as_const(selectedItems))
@@ -389,22 +398,25 @@ void AntTransfer::doTransfer(bool toTarget)
     selectedItems.clear();
     if (toTarget)
     {
-        m_sourceList->clear();
-        m_sourceList->addItems(fromItems);
-        m_targetList->clear();
-        m_targetList->addItems(toItems);
+        m_sourceItemsData = fromItems;
+        m_targetItemsData = toItems;
+        syncListWidget(true);
+        syncListWidget(false);
     }
     else
     {
-        m_targetList->clear();
-        m_targetList->addItems(fromItems);
-        m_sourceList->clear();
-        m_sourceList->addItems(toItems);
+        m_targetItemsData = fromItems;
+        m_sourceItemsData = toItems;
+        syncListWidget(false);
+        syncListWidget(true);
     }
     setScrollOffset(true, m_sourceScrollOffset);
     setScrollOffset(false, m_targetScrollOffset);
     updateButtons();
-    update();
+    updateTransferRegion(panelRect(true).united(panelRect(false)).united(buttonColumnRect()),
+                         QStringLiteral("transfer"),
+                         false,
+                         true);
     Q_EMIT itemsChanged();
 }
 
@@ -416,26 +428,57 @@ void AntTransfer::updateButtons()
 
 int AntTransfer::rowAt(const QPoint& pos, bool sourcePanel) const
 {
-    const QRect rect = panelRect(sourcePanel);
-    if (!rect.contains(pos) || pos.y() < rect.top() + kHeaderHeight)
+    const PanelLayout& layout = panelLayout(sourcePanel);
+    if (!layout.bodyRect.contains(pos))
     {
         return -1;
     }
-    const int row = (pos.y() - rect.top() - kHeaderHeight) / kRowHeight;
-    const int count = sourcePanel ? sourceItems().size() : targetItems().size();
-    const int itemIndex = scrollOffset(sourcePanel) + row;
-    return row >= 0 && row < visibleRowCount() && itemIndex < count ? itemIndex : -1;
+    for (const RowLayout& row : layout.visibleRows)
+    {
+        if (row.rowRect.contains(pos))
+        {
+            return row.itemIndex;
+        }
+    }
+    return -1;
 }
 
 QRect AntTransfer::panelRect(bool sourcePanel) const
 {
-    return sourcePanel ? QRect(0, 0, kPanelWidth, kPanelHeight) : QRect(kPanelWidth + kButtonColumnWidth, 0, kPanelWidth, kPanelHeight);
+    return panelLayout(sourcePanel).panelRect;
+}
+
+QRect AntTransfer::headerRect(bool sourcePanel) const
+{
+    return panelLayout(sourcePanel).headerRect;
 }
 
 QRect AntTransfer::headerCheckRect(bool sourcePanel) const
 {
-    const QRect rect = panelRect(sourcePanel);
-    return QRect(rect.left() + 8, rect.top() + 8, 24, 24);
+    return panelLayout(sourcePanel).headerCheckRect;
+}
+
+QRect AntTransfer::rowRectForIndex(bool sourcePanel, int itemIndex) const
+{
+    const PanelLayout& layout = panelLayout(sourcePanel);
+    for (const RowLayout& row : layout.visibleRows)
+    {
+        if (row.itemIndex == itemIndex)
+        {
+            return row.rowRect.adjusted(0, -1, 0, 1).intersected(layout.panelRect);
+        }
+    }
+    return QRect();
+}
+
+QRect AntTransfer::buttonRect(bool toTarget) const
+{
+    return QRect(kPanelWidth + 8, toTarget ? 74 : 106, 24, 24);
+}
+
+QRect AntTransfer::buttonColumnRect() const
+{
+    return QRect(kPanelWidth, 0, kButtonColumnWidth, kPanelHeight);
 }
 
 int AntTransfer::visibleRowCount() const
@@ -445,7 +488,7 @@ int AntTransfer::visibleRowCount() const
 
 int AntTransfer::maxScrollOffset(bool sourcePanel) const
 {
-    const int count = sourcePanel ? sourceItems().size() : targetItems().size();
+    const int count = panelItems(sourcePanel).size();
     return std::max(0, count - visibleRowCount());
 }
 
@@ -459,19 +502,157 @@ void AntTransfer::setScrollOffset(bool sourcePanel, int offset)
     offset = std::clamp(offset, 0, maxScrollOffset(sourcePanel));
     if (sourcePanel)
     {
+        if (m_sourceScrollOffset == offset)
+        {
+            return;
+        }
         m_sourceScrollOffset = offset;
     }
     else
     {
+        if (m_targetScrollOffset == offset)
+        {
+            return;
+        }
         m_targetScrollOffset = offset;
     }
+    invalidatePanelLayout(sourcePanel);
 }
 
 void AntTransfer::togglePanelSelection(bool sourcePanel)
 {
-    const QStringList items = sourcePanel ? sourceItems() : targetItems();
+    const QStringList items = panelItems(sourcePanel);
     QStringList& selectedItems = sourcePanel ? m_selectedSourceItems : m_selectedTargetItems;
     selectedItems = selectedItems.size() >= items.size() ? QStringList() : items;
     updateButtons();
-    update();
+    updateTransferRegion(panelRect(sourcePanel).united(buttonRect(sourcePanel)),
+                         QStringLiteral("panelSelection"),
+                         false,
+                         true);
+}
+
+const QStringList& AntTransfer::panelItems(bool sourcePanel) const
+{
+    return sourcePanel ? m_sourceItemsData : m_targetItemsData;
+}
+
+void AntTransfer::syncListWidget(bool sourcePanel)
+{
+    QListWidget* list = sourcePanel ? m_sourceList : m_targetList;
+    if (!list)
+    {
+        return;
+    }
+    list->clear();
+    list->addItems(panelItems(sourcePanel));
+    invalidatePanelLayout(sourcePanel);
+}
+
+const AntTransfer::PanelLayout& AntTransfer::panelLayout(bool sourcePanel) const
+{
+    PanelLayout& layout = sourcePanel ? m_sourceLayout : m_targetLayout;
+    const QStringList& items = panelItems(sourcePanel);
+    const int offset = scrollOffset(sourcePanel);
+    if (layout.valid
+        && layout.sourcePanel == sourcePanel
+        && layout.widgetSize == size()
+        && layout.itemCount == items.size()
+        && layout.scrollOffset == offset)
+    {
+        ++m_layoutCacheHitCount;
+        syncTransferPerfCounters();
+        return layout;
+    }
+
+    layout.sourcePanel = sourcePanel;
+    layout.widgetSize = size();
+    layout.itemCount = items.size();
+    layout.scrollOffset = offset;
+    layout.panelRect = sourcePanel
+        ? QRect(0, 0, kPanelWidth, kPanelHeight)
+        : QRect(kPanelWidth + kButtonColumnWidth, 0, kPanelWidth, kPanelHeight);
+    layout.headerRect = QRect(layout.panelRect.left(), layout.panelRect.top(), layout.panelRect.width(), kHeaderHeight);
+    layout.headerCheckRect = QRect(layout.panelRect.left() + 8, layout.panelRect.top() + 8, 24, 24);
+    layout.bodyRect = layout.panelRect.adjusted(0, kHeaderHeight, 0, 0);
+    layout.visibleRows.clear();
+
+    const int visible = std::max(0, std::min(visibleRowCount(), layout.itemCount - offset));
+    layout.visibleRows.reserve(visible);
+    for (int i = 0; i < visible; ++i)
+    {
+        RowLayout row;
+        row.itemIndex = offset + i;
+        row.rowRect = QRect(layout.panelRect.left(),
+                            layout.panelRect.top() + kHeaderHeight + i * kRowHeight,
+                            layout.panelRect.width(),
+                            kRowHeight);
+        row.checkRect = QRect(row.rowRect.left() + 12, row.rowRect.top() + 8, 16, 16);
+        layout.visibleRows.append(row);
+    }
+
+    layout.hasScrollBar = layout.itemCount > visibleRowCount();
+    layout.scrollTrackRect = QRect();
+    layout.scrollThumbRect = QRect();
+    if (layout.hasScrollBar)
+    {
+        layout.scrollTrackRect = QRect(layout.panelRect.right() - 9,
+                                       layout.panelRect.top() + kHeaderHeight + 8,
+                                       4,
+                                       layout.panelRect.height() - kHeaderHeight - 16);
+        const int thumbH = std::max(30, layout.scrollTrackRect.height() * visibleRowCount() / std::max(1, layout.itemCount));
+        const int maxOffset = maxScrollOffset(sourcePanel);
+        const int thumbTravel = std::max(0, layout.scrollTrackRect.height() - thumbH);
+        const int thumbY = layout.scrollTrackRect.top() + (maxOffset <= 0 ? 0 : thumbTravel * offset / maxOffset);
+        layout.scrollThumbRect = QRect(layout.scrollTrackRect.left(), thumbY, layout.scrollTrackRect.width(), thumbH);
+    }
+
+    layout.valid = true;
+    ++m_layoutBuildCount;
+    syncTransferPerfCounters();
+    return layout;
+}
+
+void AntTransfer::invalidatePanelLayout(bool sourcePanel) const
+{
+    PanelLayout& layout = sourcePanel ? m_sourceLayout : m_targetLayout;
+    layout.valid = false;
+    syncTransferPerfCounters();
+}
+
+void AntTransfer::invalidatePanelLayouts() const
+{
+    m_sourceLayout.valid = false;
+    m_targetLayout.valid = false;
+    syncTransferPerfCounters();
+}
+
+void AntTransfer::updateTransferRegion(const QRect& dirty, const QString& mode, bool rowScoped, bool panelScoped)
+{
+    QRect updateRect = dirty;
+    if (!updateRect.isValid() || updateRect.isEmpty())
+    {
+        updateRect = rect();
+    }
+    ++m_regionUpdateCount;
+    if (rowScoped)
+    {
+        ++m_rowRegionUpdateCount;
+    }
+    if (panelScoped)
+    {
+        ++m_panelRegionUpdateCount;
+    }
+    setProperty("antTransferLastUpdateMode", mode);
+    syncTransferPerfCounters();
+    update(updateRect);
+}
+
+void AntTransfer::syncTransferPerfCounters() const
+{
+    auto* self = const_cast<AntTransfer*>(this);
+    self->setProperty("antTransferLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antTransferLayoutCacheHitCount", m_layoutCacheHitCount);
+    self->setProperty("antTransferRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antTransferRowRegionUpdateCount", m_rowRegionUpdateCount);
+    self->setProperty("antTransferPanelRegionUpdateCount", m_panelRegionUpdateCount);
 }

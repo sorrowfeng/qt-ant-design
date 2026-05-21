@@ -24,6 +24,7 @@ private slots:
     void cascaderPopupCachesColumnsAndScopesHover();
     void datePickerPopupCachesCellsAndScopesHover();
     void timePickerPopupCachesRowsAndScopesHover();
+    void transferCachesVisibleRowsAndScopesUpdates();
 };
 
 namespace
@@ -580,6 +581,49 @@ void TestAntDataEntryB::timePickerPopupCachesRowsAndScopesHover()
     picker.setOpen(true);
     QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
     QVERIFY(picker.property("antTimePickerPopupGeometrySkipCount").toInt() > geometrySkipsBeforeReopen);
+}
+
+void TestAntDataEntryB::transferCachesVisibleRowsAndScopesUpdates()
+{
+    AntTransfer transfer;
+    transfer.setSourceItems({QStringLiteral("A"),
+                             QStringLiteral("B"),
+                             QStringLiteral("C"),
+                             QStringLiteral("D"),
+                             QStringLiteral("E"),
+                             QStringLiteral("F"),
+                             QStringLiteral("G")});
+    transfer.setTargetItems({QStringLiteral("One")});
+    transfer.resize(transfer.sizeHint());
+    transfer.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&transfer));
+
+    transfer.grab();
+    const int layoutBuildsBefore = transfer.property("antTransferLayoutBuildCount").toInt();
+    const int layoutHitsBefore = transfer.property("antTransferLayoutCacheHitCount").toInt();
+    transfer.grab();
+    QCOMPARE(transfer.property("antTransferLayoutBuildCount").toInt(), layoutBuildsBefore);
+    QVERIFY(transfer.property("antTransferLayoutCacheHitCount").toInt() > layoutHitsBefore);
+
+    const int rowUpdatesBeforeSelection = transfer.property("antTransferRowRegionUpdateCount").toInt();
+    QTest::mouseClick(&transfer, Qt::LeftButton, Qt::NoModifier, QPoint(20, 56));
+    QVERIFY(transfer.property("antTransferRowRegionUpdateCount").toInt() > rowUpdatesBeforeSelection);
+    QCOMPARE(transfer.property("antTransferLastUpdateMode").toString(), QStringLiteral("selection"));
+
+    const int panelUpdatesBeforeScroll = transfer.property("antTransferPanelRegionUpdateCount").toInt();
+    const QPointF wheelPos(90, 72);
+    QWheelEvent wheelEvent(wheelPos, wheelPos, QPoint(), QPoint(0, -120),
+                           Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+    QCoreApplication::sendEvent(&transfer, &wheelEvent);
+    QVERIFY(transfer.property("antTransferPanelRegionUpdateCount").toInt() > panelUpdatesBeforeScroll);
+    QCOMPARE(transfer.property("antTransferLastUpdateMode").toString(), QStringLiteral("scroll"));
+
+    const int panelUpdatesBeforeTransfer = transfer.property("antTransferPanelRegionUpdateCount").toInt();
+    QTest::mouseClick(&transfer, Qt::LeftButton, Qt::NoModifier, QPoint(200, 86));
+    QVERIFY(transfer.property("antTransferPanelRegionUpdateCount").toInt() > panelUpdatesBeforeTransfer);
+    QCOMPARE(transfer.property("antTransferLastUpdateMode").toString(), QStringLiteral("transfer"));
+    QVERIFY(!transfer.sourceItems().contains(QStringLiteral("A")));
+    QVERIFY(transfer.targetItems().contains(QStringLiteral("A")));
 }
 
 QTEST_MAIN(TestAntDataEntryB)
