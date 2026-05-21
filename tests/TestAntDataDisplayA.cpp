@@ -17,6 +17,7 @@ class TestAntDataDisplayA : public QObject
 private slots:
     void propertiesAndSignals();
     void avatarCachesScaledImagePixmap();
+    void calendarCachesSelectionAndViewMetrics();
     void statisticFormattedValueCache();
     void cardTitlePaletteTracksTheme();
 };
@@ -318,6 +319,58 @@ void TestAntDataDisplayA::avatarCachesScaledImagePixmap()
     avatar.grab();
     QVERIFY(avatar.property("antAvatarImagePixmapBuildCount").toInt() > buildsBeforeTheme);
 
+    antTheme->setThemeMode(previousMode);
+}
+
+void TestAntDataDisplayA::calendarCachesSelectionAndViewMetrics()
+{
+    const Ant::ThemeMode previousMode = antTheme->themeMode();
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntCalendar calendar;
+    calendar.resize(360, 360);
+    calendar.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&calendar));
+
+    const int initialModelBuilds = calendar.property("antCalendarModelBuildCount").toInt();
+    const int initialMetricBuilds = calendar.property("antCalendarViewMetricsBuildCount").toInt();
+    QVERIFY(initialModelBuilds > 0);
+    QVERIFY(initialMetricBuilds > 0);
+
+    const QDate current = QDate::currentDate();
+    const int firstDay = current.day() == 10 ? 11 : 10;
+    const int secondDay = firstDay == 10 ? 11 : 10;
+    const QDate firstSelection(current.year(), current.month(), firstDay);
+    const QDate secondSelection(current.year(), current.month(), secondDay);
+
+    const int selectionUpdatesBefore = calendar.property("antCalendarSelectionRegionUpdateCount").toInt();
+    calendar.setSelectedDate(firstSelection);
+    QCOMPARE(calendar.property("antCalendarModelBuildCount").toInt(), initialModelBuilds);
+    QVERIFY(calendar.property("antCalendarSelectionRegionUpdateCount").toInt() > selectionUpdatesBefore);
+    QCOMPARE(calendar.property("antCalendarLastUpdateMode").toString(), QStringLiteral("selection"));
+
+    const int buildsBeforeSameMonth = calendar.property("antCalendarModelBuildCount").toInt();
+    calendar.setSelectedDate(secondSelection);
+    QCOMPARE(calendar.property("antCalendarModelBuildCount").toInt(), buildsBeforeSameMonth);
+
+    const int metricHitsBeforeResize = calendar.property("antCalendarViewMetricsCacheHitCount").toInt();
+    calendar.resize(calendar.width() + 12, calendar.height());
+    QCoreApplication::processEvents();
+    QVERIFY(calendar.property("antCalendarViewMetricsCacheHitCount").toInt() > metricHitsBeforeResize);
+
+    const int buildsBeforeNextMonth = calendar.property("antCalendarModelBuildCount").toInt();
+    const QDate nextMonth = secondSelection.addMonths(1);
+    calendar.setSelectedDate(QDate(nextMonth.year(), nextMonth.month(), 1));
+    QVERIFY(calendar.property("antCalendarModelBuildCount").toInt() > buildsBeforeNextMonth);
+    QCOMPARE(calendar.property("antCalendarLastUpdateMode").toString(), QStringLiteral("model"));
+
+    const int buildsBeforeMode = calendar.property("antCalendarModelBuildCount").toInt();
+    calendar.setCalendarMode(Ant::CalendarMode::Month);
+    QVERIFY(calendar.property("antCalendarModelBuildCount").toInt() > buildsBeforeMode);
+    QCOMPARE(calendar.calendarMode(), Ant::CalendarMode::Month);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCOMPARE(calendar.property("antCalendarLastUpdateMode").toString(), QStringLiteral("theme"));
     antTheme->setThemeMode(previousMode);
 }
 

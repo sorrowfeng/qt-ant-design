@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QPalette>
 #include <QResizeEvent>
+#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QStyledItemDelegate>
 #include <QStyleOptionViewItem>
@@ -309,7 +310,7 @@ AntCalendar::AntCalendar(QWidget* parent)
             }
         }
         applyThemePalette();
-        update();
+        requestCalendarUpdate(rect(), QStringLiteral("theme"));
     });
 
     connect(qobject_cast<QPushButton*>(m_yearBtn), &QPushButton::clicked, this, [this]() {
@@ -342,6 +343,7 @@ AntCalendar::AntCalendar(QWidget* parent)
     });
 
     rebuildModel();
+    syncCalendarPerfCounters();
 }
 
 QDate AntCalendar::selectedDate() const { return m_selectedDate; }
@@ -352,13 +354,26 @@ void AntCalendar::setSelectedDate(QDate date)
     if (m_minimumDate.isValid() && date < m_minimumDate) date = m_minimumDate;
     if (m_maximumDate.isValid() && date > m_maximumDate) date = m_maximumDate;
     if (m_selectedDate == date) return;
+    const QDate previousDate = m_selectedDate;
     m_selectedDate = date;
     if (m_mode == Ant::CalendarMode::Day)
     {
-        m_navYear = date.year();
-        m_navMonth = date.month();
+        const bool sameVisibleMonth = date.year() == m_navYear && date.month() == m_navMonth;
+        if (sameVisibleMonth)
+        {
+            updateSelectedDateInView(previousDate);
+        }
+        else
+        {
+            m_navYear = date.year();
+            m_navMonth = date.month();
+            rebuildModel();
+        }
     }
-    rebuildModel();
+    else
+    {
+        requestCalendarUpdate(m_view ? m_view->viewport()->rect() : rect(), QStringLiteral("selection"), true);
+    }
     Q_EMIT selectedDateChanged(m_selectedDate);
 }
 
@@ -433,25 +448,15 @@ void AntCalendar::rebuildModel()
 {
     auto* calModel = static_cast<CalendarModel*>(m_model);
     QDate today = QDate::currentDate();
+    ++m_modelBuildCount;
+    invalidateViewMetricsCache();
 
     switch (m_mode)
     {
     case Ant::CalendarMode::Day:
     {
-        int cols = 7;
         calModel->buildDayMode(m_navYear, m_navMonth, m_selectedDate, today, m_minimumDate, m_maximumDate);
-        int selRow = -1, selCol = -1;
-        if (m_selectedDate.year() == m_navYear && m_selectedDate.month() == m_navMonth)
-        {
-            int idx = m_selectedDate.day() - 1 + calModel->firstDayIndex();
-            selRow = idx / cols;
-            selCol = idx % cols;
-        }
-        if (selRow >= 0)
-        {
-            auto idx = m_model->index(selRow, selCol);
-            m_view->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect);
-        }
+        updateSelectedDateInView();
         break;
     }
     case Ant::CalendarMode::Month:
@@ -466,6 +471,7 @@ void AntCalendar::rebuildModel()
 
     updateViewMetrics();
     updateHeaderText();
+    requestCalendarUpdate(rect(), QStringLiteral("model"));
 }
 
 void AntCalendar::updateHeaderText()
@@ -473,20 +479,27 @@ void AntCalendar::updateHeaderText()
     const QString yearText = QStringLiteral("%1  v").arg(m_navYear);
     const QString monthText = QStringLiteral("%1  v").arg(QLocale(QLocale::English).monthName(m_navMonth, QLocale::ShortFormat));
 
-    if (m_yearBtn)
+    if (m_yearBtn && m_lastYearHeaderText != yearText)
     {
         m_yearBtn->setText(yearText);
+        m_lastYearHeaderText = yearText;
     }
-    if (m_monthBtn)
+    if (m_monthBtn && m_lastMonthHeaderText != monthText)
     {
         m_monthBtn->setText(monthText);
+        m_lastMonthHeaderText = monthText;
     }
 
     const bool monthModeActive = m_mode != Ant::CalendarMode::Year;
-    m_monthModeBtn->setButtonType(monthModeActive ? Ant::ButtonType::Primary : Ant::ButtonType::Default);
-    m_monthModeBtn->setGhost(monthModeActive);
-    m_yearModeBtn->setButtonType(monthModeActive ? Ant::ButtonType::Default : Ant::ButtonType::Primary);
-    m_yearModeBtn->setGhost(!monthModeActive);
+    if (!m_headerModeValid || m_lastMonthModeActive != monthModeActive)
+    {
+        m_monthModeBtn->setButtonType(monthModeActive ? Ant::ButtonType::Primary : Ant::ButtonType::Default);
+        m_monthModeBtn->setGhost(monthModeActive);
+        m_yearModeBtn->setButtonType(monthModeActive ? Ant::ButtonType::Default : Ant::ButtonType::Primary);
+        m_yearModeBtn->setGhost(!monthModeActive);
+        m_headerModeValid = true;
+        m_lastMonthModeActive = monthModeActive;
+    }
 }
 
 void AntCalendar::updateViewMetrics()
@@ -504,10 +517,113 @@ void AntCalendar::updateViewMetrics()
     }
 
     const int rowHeight = (m_mode == Ant::CalendarMode::Day) ? 40 : 64;
+    if (m_viewMetricsCacheValid &&
+        m_viewMetricsRows == rows &&
+        m_viewMetricsRowHeight == rowHeight)
+    {
+        ++m_viewMetricsCacheHitCount;
+        syncCalendarPerfCounters();
+        return;
+    }
+
     for (int r = 0; r < rows; ++r)
     {
-        m_view->setRowHeight(r, rowHeight);
+        if (m_view->rowHeight(r) != rowHeight)
+        {
+            m_view->setRowHeight(r, rowHeight);
+        }
     }
+    m_viewMetricsCacheValid = true;
+    m_viewMetricsRows = rows;
+    m_viewMetricsRowHeight = rowHeight;
+    ++m_viewMetricsBuildCount;
+    syncCalendarPerfCounters();
+}
+
+QModelIndex AntCalendar::modelIndexForDate(const QDate& date) const
+{
+    if (!m_model || m_mode != Ant::CalendarMode::Day || !date.isValid() ||
+        date.year() != m_navYear || date.month() != m_navMonth)
+    {
+        return {};
+    }
+
+    auto* calModel = static_cast<CalendarModel*>(m_model);
+    const int cols = calModel->columnCount();
+    const int index = date.day() - 1 + calModel->firstDayIndex();
+    const int row = index / cols;
+    const int col = index % cols;
+    return m_model->index(row, col);
+}
+
+void AntCalendar::updateSelectedDateInView(const QDate& previousDate)
+{
+    if (!m_view || !m_view->selectionModel())
+    {
+        return;
+    }
+
+    const QModelIndex previousIndex = modelIndexForDate(previousDate);
+    const QModelIndex currentIndex = modelIndexForDate(m_selectedDate);
+    QRect dirty;
+    if (previousIndex.isValid())
+    {
+        dirty = dirty.united(m_view->visualRect(previousIndex));
+    }
+    if (currentIndex.isValid())
+    {
+        dirty = dirty.united(m_view->visualRect(currentIndex));
+        const QSignalBlocker blocker(m_view->selectionModel());
+        m_view->selectionModel()->select(currentIndex, QItemSelectionModel::ClearAndSelect);
+    }
+    else
+    {
+        m_view->clearSelection();
+    }
+
+    if (!dirty.isEmpty())
+    {
+        ++m_selectionRegionUpdateCount;
+        m_view->viewport()->update(dirty.adjusted(-2, -2, 2, 2));
+        syncCalendarPerfCounters();
+    }
+    requestCalendarUpdate(dirty, QStringLiteral("selection"), true);
+}
+
+void AntCalendar::invalidateViewMetricsCache()
+{
+    m_viewMetricsCacheValid = false;
+}
+
+void AntCalendar::requestCalendarUpdate(const QRect& region, const QString& mode, bool selectionScoped)
+{
+    QRect dirty = region.isValid() && !region.isEmpty() ? region : rect();
+    if (selectionScoped && m_view)
+    {
+        dirty = dirty.intersected(m_view->viewport()->rect());
+    }
+    ++m_regionUpdateCount;
+    m_lastUpdateMode = mode;
+    syncCalendarPerfCounters();
+    if (selectionScoped && m_view)
+    {
+        m_view->viewport()->update(dirty);
+    }
+    else
+    {
+        update(dirty);
+    }
+}
+
+void AntCalendar::syncCalendarPerfCounters() const
+{
+    auto* self = const_cast<AntCalendar*>(this);
+    self->setProperty("antCalendarModelBuildCount", m_modelBuildCount);
+    self->setProperty("antCalendarSelectionRegionUpdateCount", m_selectionRegionUpdateCount);
+    self->setProperty("antCalendarViewMetricsBuildCount", m_viewMetricsBuildCount);
+    self->setProperty("antCalendarViewMetricsCacheHitCount", m_viewMetricsCacheHitCount);
+    self->setProperty("antCalendarRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antCalendarLastUpdateMode", m_lastUpdateMode);
 }
 
 void AntCalendar::handleDayClick(int dayIndex)

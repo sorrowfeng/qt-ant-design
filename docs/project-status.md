@@ -19,7 +19,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `77` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `78` controls optimized in the current pass |
 
 ## Recent Completed Work
 
@@ -70,6 +70,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Optimized `AntWatermark` by caching the tiled rotated watermark pattern as a transparent DPR-aware pixmap and blitting it on paint while preserving mouse transparency.
 - Optimized `AntAvatar` by caching clipped and scaled image avatar pixmaps by source, size, DPR, shape, and border radius, so image-mode avatars no longer reload or reclip the same source during repeated paints.
 - Optimized `AntBadge` by caching indicator/status/ribbon geometry and colors on the widget, letting processing animation repaint only the overlay status-dot region, and stopping its timer when hidden or no longer processing.
+- Optimized `AntCalendar` by skipping full model resets for same-month selected-date changes, refreshing only old/new selected day cells, caching row-height metrics, and skipping unchanged header button synchronization.
 - Optimized `AntNavItem` by moving label style updates out of paint and caching hover/active background plus indicator geometry.
 - Optimized `AntPlainTextEdit` by caching visual state application and scoping resize-grip cursor/paint updates to real hover-state changes across the editor's internal mouse-event targets.
 - Optimized `AntRibbon` by caching tab layout rectangles and repainting only affected tab, collapse button, and indicator regions during hover and indicator animation.

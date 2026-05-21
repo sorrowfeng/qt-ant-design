@@ -9,7 +9,6 @@
 AntCalendarStyle::AntCalendarStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntCalendar>();
 }
 
 void AntCalendarStyle::onThemeUpdate(QWidget* w)

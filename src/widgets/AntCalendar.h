@@ -11,6 +11,7 @@ class QTableView;
 class QAbstractTableModel;
 class QStyledItemDelegate;
 class QResizeEvent;
+class QModelIndex;
 
 class QT_ANT_DESIGN_EXPORT AntCalendar : public QWidget
 {
@@ -52,6 +53,11 @@ private:
     void updateHeaderText();
     void updateViewMetrics();
     void applyThemePalette();
+    QModelIndex modelIndexForDate(const QDate& date) const;
+    void updateSelectedDateInView(const QDate& previousDate = QDate());
+    void invalidateViewMetricsCache();
+    void requestCalendarUpdate(const QRect& region, const QString& mode, bool selectionScoped = false);
+    void syncCalendarPerfCounters() const;
     void navigateToMonth(int year, int month);
     void handleDayClick(int dayIndex);
     void handleMonthClick(int monthIndex);
@@ -74,4 +80,17 @@ private:
     int m_navYear = 0;
     int m_navMonth = 0;
     int m_decadeStart = 0;
+    bool m_viewMetricsCacheValid = false;
+    int m_viewMetricsRows = 0;
+    int m_viewMetricsRowHeight = 0;
+    QString m_lastYearHeaderText;
+    QString m_lastMonthHeaderText;
+    bool m_headerModeValid = false;
+    bool m_lastMonthModeActive = false;
+    int m_modelBuildCount = 0;
+    int m_selectionRegionUpdateCount = 0;
+    int m_viewMetricsBuildCount = 0;
+    int m_viewMetricsCacheHitCount = 0;
+    int m_regionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };
