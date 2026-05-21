@@ -1,13 +1,15 @@
 #include "AntSegmented.h"
 
+#include <QEvent>
+#include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QFontMetrics>
 #include <QResizeEvent>
 #include <QSizePolicy>
 #include <QVariantAnimation>
 
 #include <algorithm>
+#include <cmath>
 
 #include "core/AntTheme.h"
 #include "styles/AntSegmentedStyle.h"
@@ -46,9 +48,40 @@ int segmentedPaddingHorizontal(Ant::Size size)
     return (size == Ant::Size::Small ? token.paddingXS : token.paddingSM) - token.lineWidth;
 }
 
-int segmentWidth(const AntSegmentedOption& option, const QFontMetrics& fm, Ant::Size size)
+int segmentedRadius(Ant::Size size, Ant::SegmentedShape shape)
 {
-    const int textWidth = fm.horizontalAdvance(option.label);
+    const auto& token = antTheme->tokens();
+    const int h = segmentedHeight(size);
+    if (shape == Ant::SegmentedShape::Round)
+    {
+        return h / 2;
+    }
+    switch (size)
+    {
+    case Ant::Size::Small: return token.borderRadiusSM;
+    case Ant::Size::Large: return token.borderRadiusLG;
+    default: return token.borderRadius;
+    }
+}
+
+int segmentedItemRadius(Ant::Size size, Ant::SegmentedShape shape)
+{
+    const auto& token = antTheme->tokens();
+    const int h = segmentedHeight(size);
+    if (shape == Ant::SegmentedShape::Round)
+    {
+        return h / 2;
+    }
+    switch (size)
+    {
+    case Ant::Size::Small: return token.borderRadiusXS;
+    case Ant::Size::Large: return token.borderRadius;
+    default: return token.borderRadiusSM;
+    }
+}
+
+int segmentWidth(const AntSegmentedOption& option, int textWidth, Ant::Size size)
+{
     const int iconWidth = option.icon.isEmpty() ? 0 : kIconSize + (option.label.isEmpty() ? 0 : kIconGap);
     return textWidth + iconWidth + segmentedPaddingHorizontal(size) * 2;
 }
@@ -61,11 +94,23 @@ AntSegmented::AntSegmented(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        const QSize oldHint = sizeHint();
+        invalidateLayoutCache();
+        if (oldHint != sizeHint())
+        {
+            updateGeometry();
+        }
+        update();
+    });
+    syncSegmentedPerfCounters();
 }
 
 void AntSegmented::setOptions(const QVector<AntSegmentedOption>& options)
 {
     m_options = options;
+    ++m_optionsRevision;
     if (!m_value.isEmpty())
     {
         int idx = -1;
@@ -89,6 +134,9 @@ void AntSegmented::setOptions(const QVector<AntSegmentedOption>& options)
         m_value = m_options[0].value;
         m_thumbPos = 0;
     }
+    m_hoveredIndex = -1;
+    m_pressedIndex = -1;
+    invalidateLayoutCache();
     updateGeometry();
     update();
 }
@@ -104,9 +152,11 @@ void AntSegmented::setValue(const QString& value)
         if (m_options[i].value == value && !m_options[i].disabled)
         {
             if (m_value == value) return;
+            const int oldIndex = selectedIndex();
+            const qreal oldThumbPosition = m_thumbPos;
             m_value = value;
+            updateSelectionRegion(oldIndex, i, oldThumbPosition);
             startThumbAnimation(i);
-            update();
             Q_EMIT currentIndexChanged(i);
             Q_EMIT valueChanged(m_value);
             return;
@@ -135,6 +185,7 @@ void AntSegmented::setBlock(bool block)
     if (m_block == block) return;
     m_block = block;
     setSizePolicy(m_block ? QSizePolicy::Expanding : QSizePolicy::Fixed, QSizePolicy::Fixed);
+    invalidateLayoutCache();
     updateGeometry();
     update();
     Q_EMIT blockChanged(m_block);
@@ -146,6 +197,7 @@ void AntSegmented::setSegmentedSize(Ant::Size size)
 {
     if (m_size == size) return;
     m_size = size;
+    invalidateLayoutCache();
     updateGeometry();
     update();
     Q_EMIT segmentedSizeChanged(m_size);
@@ -157,6 +209,7 @@ void AntSegmented::setVertical(bool vertical)
 {
     if (m_vertical == vertical) return;
     m_vertical = vertical;
+    invalidateLayoutCache();
     updateGeometry();
     update();
     Q_EMIT verticalChanged(m_vertical);
@@ -168,56 +221,14 @@ void AntSegmented::setShape(Ant::SegmentedShape shape)
 {
     if (m_shape == shape) return;
     m_shape = shape;
+    invalidateLayoutCache();
     update();
     Q_EMIT shapeChanged(m_shape);
 }
 
 QSize AntSegmented::sizeHint() const
 {
-    const auto& token = antTheme->tokens();
-    int h;
-    int fontSize;
-    switch (m_size)
-    {
-    case Ant::Size::Small:
-        h = token.controlHeightSM;
-        fontSize = token.fontSizeSM;
-        break;
-    case Ant::Size::Large:
-        h = token.controlHeightLG;
-        fontSize = token.fontSizeLG;
-        break;
-    default:
-        h = token.controlHeight;
-        fontSize = token.fontSize;
-        break;
-    }
-
-    if (m_vertical)
-    {
-        const int n = m_options.size();
-        QFont f = font();
-        f.setPixelSize(fontSize);
-        QFontMetrics fm(f);
-        int maxWidth = h;
-        for (const auto& opt : m_options)
-        {
-            maxWidth = std::max(maxWidth, segmentWidth(opt, fm, m_size));
-        }
-        return QSize(maxWidth + kTrackPadding * 2, n * h);
-    }
-    else
-    {
-        QFont f = font();
-        f.setPixelSize(fontSize);
-        QFontMetrics fm(f);
-        int totalWidth = kTrackPadding * 2;
-        for (const auto& opt : m_options)
-        {
-            totalWidth += segmentWidth(opt, fm, m_size);
-        }
-        return QSize(totalWidth, h);
-    }
+    return layoutCache().sizeHint;
 }
 
 QSize AntSegmented::minimumSizeHint() const
@@ -232,13 +243,15 @@ void AntSegmented::paintEvent(QPaintEvent* event)
 
 void AntSegmented::mouseMoveEvent(QMouseEvent* event)
 {
+    const int oldHovered = m_hoveredIndex;
+    const int oldPressed = m_pressedIndex;
     const int idx = segmentIndexAt(event->pos());
     const int pressedIdx = (event->buttons() & Qt::LeftButton) ? idx : -1;
     if (m_hoveredIndex != idx || m_pressedIndex != pressedIdx)
     {
         m_hoveredIndex = idx;
         m_pressedIndex = pressedIdx;
-        update();
+        updateSegmentRegions({oldHovered, m_hoveredIndex, oldPressed, m_pressedIndex}, QStringLiteral("segments"));
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -250,8 +263,9 @@ void AntSegmented::mousePressEvent(QMouseEvent* event)
         const int idx = segmentIndexAt(event->pos());
         if (idx >= 0 && idx < m_options.size() && !m_options[idx].disabled)
         {
+            const int oldPressed = m_pressedIndex;
             m_pressedIndex = idx;
-            update();
+            updateSegmentRegions({oldPressed, m_pressedIndex}, QStringLiteral("segments"));
         }
         event->accept();
         return;
@@ -270,7 +284,7 @@ void AntSegmented::mouseReleaseEvent(QMouseEvent* event)
         {
             setValue(m_options[idx].value);
         }
-        update();
+        updateSegmentRegions({pressedIdx}, QStringLiteral("segments"));
         event->accept();
         return;
     }
@@ -279,6 +293,7 @@ void AntSegmented::mouseReleaseEvent(QMouseEvent* event)
 
 void AntSegmented::leaveEvent(QEvent* event)
 {
+    const int oldHovered = m_hoveredIndex;
     m_hoveredIndex = -1;
     // Do NOT clear m_pressedIndex here: Qt's implicit mouse grab keeps the
     // matching release routed to us even if the cursor briefly leaves the
@@ -287,61 +302,286 @@ void AntSegmented::leaveEvent(QEvent* event)
     // leave caused mouseReleaseEvent to see "no pressed index" and skip the
     // value commit — the press indicator flashed but the segment never
     // actually switched. m_pressedIndex is cleared in mouseReleaseEvent.
-    update();
+    updateSegmentRegions({oldHovered}, QStringLiteral("segments"));
     QWidget::leaveEvent(event);
 }
 
 void AntSegmented::resizeEvent(QResizeEvent* event)
 {
+    invalidateLayoutCache();
     QWidget::resizeEvent(event);
+}
+
+void AntSegmented::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::FontChange)
+    {
+        invalidateLayoutCache();
+        updateGeometry();
+        update();
+    }
+    else if (event->type() == QEvent::EnabledChange)
+    {
+        update();
+    }
+    QWidget::changeEvent(event);
 }
 
 QVector<QRectF> AntSegmented::segmentRects() const
 {
-    QVector<QRectF> rects;
-    const int n = m_options.size();
-    if (n == 0) return rects;
+    return layoutCache().segmentRects;
+}
 
-    const QRectF track = QRectF(rect()).adjusted(kTrackPadding, kTrackPadding, -kTrackPadding, -kTrackPadding);
+const QVector<AntSegmentedOption>& AntSegmented::optionList() const
+{
+    return m_options;
+}
+
+const AntSegmented::LayoutCache& AntSegmented::layoutCache() const
+{
+    QFont layoutFont = font();
+    const int fontSize = segmentedFontSize(m_size);
+    layoutFont.setPixelSize(fontSize);
+    const int height = segmentedHeight(m_size);
+    const int paddingHorizontal = segmentedPaddingHorizontal(m_size);
+    const int trackRadius = segmentedRadius(m_size, m_shape);
+    const int itemRadius = segmentedItemRadius(m_size, m_shape);
+
+    if (m_layoutCache.valid
+        && m_layoutCache.widgetSize == size()
+        && m_layoutCache.font == layoutFont
+        && m_layoutCache.optionsRevision == m_optionsRevision
+        && m_layoutCache.segmentedSize == m_size
+        && m_layoutCache.block == m_block
+        && m_layoutCache.vertical == m_vertical
+        && m_layoutCache.shape == m_shape
+        && m_layoutCache.fontSize == fontSize
+        && m_layoutCache.height == height
+        && m_layoutCache.paddingHorizontal == paddingHorizontal
+        && m_layoutCache.trackRadius == trackRadius
+        && m_layoutCache.itemRadius == itemRadius)
+    {
+        return m_layoutCache;
+    }
+
+    m_layoutCache.widgetSize = size();
+    m_layoutCache.font = layoutFont;
+    m_layoutCache.optionsRevision = m_optionsRevision;
+    m_layoutCache.segmentedSize = m_size;
+    m_layoutCache.block = m_block;
+    m_layoutCache.vertical = m_vertical;
+    m_layoutCache.shape = m_shape;
+    m_layoutCache.fontSize = fontSize;
+    m_layoutCache.height = height;
+    m_layoutCache.paddingHorizontal = paddingHorizontal;
+    m_layoutCache.trackRadius = trackRadius;
+    m_layoutCache.itemRadius = itemRadius;
+    m_layoutCache.segmentRects.clear();
+    m_layoutCache.segments.clear();
+
+    const int n = m_options.size();
+    QVector<int> textWidths;
+    QVector<int> segmentWidths;
+    textWidths.reserve(n);
+    segmentWidths.reserve(n);
+
+    QFontMetrics fm(layoutFont);
+    int maxWidth = height;
+    int totalWidth = kTrackPadding * 2;
+    for (const auto& option : m_options)
+    {
+        const int textWidth = fm.horizontalAdvance(option.label);
+        const int width = segmentWidth(option, textWidth, m_size);
+        textWidths.append(textWidth);
+        segmentWidths.append(width);
+        maxWidth = std::max(maxWidth, width);
+        totalWidth += width;
+    }
 
     if (m_vertical)
     {
-        const qreal segH = track.height() / n;
-        for (int i = 0; i < n; ++i)
-        {
-            rects.append(QRectF(track.x(), track.y() + i * segH, track.width(), segH));
-        }
+        m_layoutCache.sizeHint = QSize(maxWidth + kTrackPadding * 2, n * height);
     }
     else
     {
-        if (m_block)
+        m_layoutCache.sizeHint = QSize(totalWidth, height);
+    }
+
+    if (n > 0)
+    {
+        const QRectF track = QRectF(rect()).adjusted(kTrackPadding, kTrackPadding, -kTrackPadding, -kTrackPadding);
+        m_layoutCache.segmentRects.reserve(n);
+        m_layoutCache.segments.reserve(n);
+
+        if (m_vertical)
         {
-            const qreal segW = track.width() / n;
+            const qreal segmentHeight = track.height() / n;
             for (int i = 0; i < n; ++i)
             {
-                rects.append(QRectF(track.x() + i * segW, track.y(), segW, track.height()));
+                m_layoutCache.segmentRects.append(QRectF(track.x(), track.y() + i * segmentHeight, track.width(), segmentHeight));
+            }
+        }
+        else if (m_block)
+        {
+            const qreal segmentWidth = track.width() / n;
+            for (int i = 0; i < n; ++i)
+            {
+                m_layoutCache.segmentRects.append(QRectF(track.x() + i * segmentWidth, track.y(), segmentWidth, track.height()));
             }
         }
         else
         {
-            QFont f = font();
-            f.setPixelSize(segmentedFontSize(m_size));
-            QFontMetrics fm(f);
             qreal x = track.x();
-            for (const auto& opt : m_options)
+            for (int i = 0; i < n; ++i)
             {
-                const qreal segW = segmentWidth(opt, fm, m_size);
-                rects.append(QRectF(x, track.y(), segW, track.height()));
-                x += segW;
+                const qreal width = segmentWidths.at(i);
+                m_layoutCache.segmentRects.append(QRectF(x, track.y(), width, track.height()));
+                x += width;
             }
         }
+
+        for (int i = 0; i < n; ++i)
+        {
+            SegmentLayout layout;
+            layout.rect = m_layoutCache.segmentRects.at(i);
+            layout.textWidth = textWidths.at(i);
+            layout.segmentWidth = segmentWidths.at(i);
+            layout.hasIcon = !m_options.at(i).icon.isEmpty();
+            if (layout.hasIcon)
+            {
+                const int iconGap = m_options.at(i).label.isEmpty() ? 0 : kIconGap;
+                const int totalContentWidth = kIconSize + iconGap + layout.textWidth;
+                const qreal left = layout.rect.center().x() - totalContentWidth / 2.0;
+                layout.iconRect = QRectF(left, layout.rect.center().y() - kIconSize / 2.0, kIconSize, kIconSize);
+                layout.textRect = QRectF(left + kIconSize + iconGap, layout.rect.top(), layout.textWidth + 2, layout.rect.height());
+            }
+            else
+            {
+                layout.textRect = layout.rect;
+            }
+            m_layoutCache.segments.append(layout);
+        }
     }
-    return rects;
+
+    m_layoutCache.valid = true;
+    ++m_layoutBuildCount;
+    ++m_sizeHintResolveCount;
+    m_textMetricResolveCount += n;
+    syncSegmentedPerfCounters();
+    return m_layoutCache;
+}
+
+QRectF AntSegmented::thumbRect(qreal position) const
+{
+    const auto& rects = layoutCache().segmentRects;
+    if (rects.isEmpty())
+    {
+        return QRectF();
+    }
+
+    const qreal pos = std::clamp(position, 0.0, static_cast<qreal>(rects.size() - 1));
+    const int leftIdx = static_cast<int>(std::floor(pos));
+    const int rightIdx = std::min(leftIdx + 1, static_cast<int>(rects.size()) - 1);
+    const qreal t = pos - leftIdx;
+
+    const QRectF a = rects.at(leftIdx);
+    const QRectF b = rects.at(rightIdx);
+    return QRectF(a.left() + (b.left() - a.left()) * t,
+                  a.top() + (b.top() - a.top()) * t,
+                  a.width() + (b.width() - a.width()) * t,
+                  a.height() + (b.height() - a.height()) * t);
+}
+
+QRectF AntSegmented::thumbRect() const
+{
+    return thumbRect(m_thumbPos);
+}
+
+QRect AntSegmented::segmentDirtyRect(int index) const
+{
+    const auto& rects = layoutCache().segmentRects;
+    if (index < 0 || index >= rects.size())
+    {
+        return QRect();
+    }
+    return rects.at(index).toAlignedRect().adjusted(-2, -2, 2, 2).intersected(rect());
+}
+
+QRect AntSegmented::thumbDirtyRect(qreal position) const
+{
+    const QRectF thumb = thumbRect(position);
+    if (thumb.isEmpty())
+    {
+        return QRect();
+    }
+    return thumb.toAlignedRect().adjusted(-4, -3, 4, 5).intersected(rect());
+}
+
+void AntSegmented::updateSegmentRegions(const QVector<int>& indices, const QString& mode)
+{
+    QRect dirty;
+    for (const int index : indices)
+    {
+        dirty = dirty.united(segmentDirtyRect(index));
+    }
+    if (!dirty.isValid() || dirty.isEmpty())
+    {
+        return;
+    }
+
+    ++m_regionUpdateCount;
+    setProperty("antSegmentedLastUpdateMode", mode);
+    syncSegmentedPerfCounters();
+    update(dirty);
+}
+
+void AntSegmented::updateSelectionRegion(int oldIndex, int newIndex, qreal oldThumbPosition)
+{
+    QRect dirty = segmentDirtyRect(oldIndex).united(segmentDirtyRect(newIndex)).united(thumbDirtyRect(oldThumbPosition));
+    if (!dirty.isValid() || dirty.isEmpty())
+    {
+        dirty = rect();
+    }
+
+    ++m_regionUpdateCount;
+    setProperty("antSegmentedLastUpdateMode", QStringLiteral("selection"));
+    syncSegmentedPerfCounters();
+    update(dirty.intersected(rect()));
+}
+
+void AntSegmented::updateThumbRegion(qreal oldPosition, qreal newPosition)
+{
+    QRect dirty = thumbDirtyRect(oldPosition).united(thumbDirtyRect(newPosition));
+    if (!dirty.isValid() || dirty.isEmpty())
+    {
+        return;
+    }
+
+    ++m_thumbRegionUpdateCount;
+    setProperty("antSegmentedLastUpdateMode", QStringLiteral("thumb"));
+    syncSegmentedPerfCounters();
+    update(dirty);
+}
+
+void AntSegmented::invalidateLayoutCache() const
+{
+    m_layoutCache.valid = false;
+    syncSegmentedPerfCounters();
+}
+
+void AntSegmented::syncSegmentedPerfCounters() const
+{
+    auto* self = const_cast<AntSegmented*>(this);
+    self->setProperty("antSegmentedLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antSegmentedSizeHintResolveCount", m_sizeHintResolveCount);
+    self->setProperty("antSegmentedTextMetricResolveCount", m_textMetricResolveCount);
+    self->setProperty("antSegmentedRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antSegmentedThumbRegionUpdateCount", m_thumbRegionUpdateCount);
 }
 
 int AntSegmented::segmentIndexAt(const QPoint& pos) const
 {
-    const auto rects = segmentRects();
+    const auto& rects = layoutCache().segmentRects;
     for (int i = 0; i < rects.size(); ++i)
     {
         if (rects[i].contains(pos)) return i;
@@ -394,12 +634,15 @@ void AntSegmented::startThumbAnimation(int newIndex)
         m_thumbAnimation->setDuration(300);
         m_thumbAnimation->setEasingCurve(QEasingCurve::InOutCubic);
         connect(m_thumbAnimation, &QVariantAnimation::valueChanged, this, [this](const QVariant& v) {
+            const qreal oldPosition = m_thumbPos;
             m_thumbPos = v.toReal();
-            update();
+            updateThumbRegion(oldPosition, m_thumbPos);
         });
     }
     m_thumbAnimation->stop();
+    const qreal oldPosition = m_thumbPos;
     m_thumbAnimation->setStartValue(m_thumbPos);
     m_thumbAnimation->setEndValue(static_cast<qreal>(newIndex));
     m_thumbAnimation->start();
+    updateThumbRegion(oldPosition, static_cast<qreal>(newIndex));
 }

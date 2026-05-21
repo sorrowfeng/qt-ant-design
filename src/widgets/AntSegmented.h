@@ -2,11 +2,19 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QFont>
+#include <QRect>
+#include <QRectF>
+#include <QSize>
+#include <QString>
 #include <QVector>
 #include <QWidget>
 #include <QVariantAnimation>
 
 #include "core/AntTypes.h"
+
+class AntSegmentedStyle;
+class QEvent;
 
 struct AntSegmentedOption
 {
@@ -71,8 +79,52 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private:
+    friend class AntSegmentedStyle;
+
+    struct SegmentLayout
+    {
+        QRectF rect;
+        QRectF iconRect;
+        QRectF textRect;
+        int textWidth = 0;
+        int segmentWidth = 0;
+        bool hasIcon = false;
+    };
+
+    struct LayoutCache
+    {
+        QSize widgetSize;
+        QFont font;
+        int optionsRevision = 0;
+        Ant::Size segmentedSize = Ant::Size::Middle;
+        bool block = false;
+        bool vertical = false;
+        Ant::SegmentedShape shape = Ant::SegmentedShape::Default;
+        int fontSize = 14;
+        int height = 32;
+        int paddingHorizontal = 11;
+        int trackRadius = 6;
+        int itemRadius = 4;
+        QSize sizeHint;
+        QVector<QRectF> segmentRects;
+        QVector<SegmentLayout> segments;
+        bool valid = false;
+    };
+
+    const QVector<AntSegmentedOption>& optionList() const;
+    const LayoutCache& layoutCache() const;
+    QRectF thumbRect(qreal position) const;
+    QRectF thumbRect() const;
+    QRect segmentDirtyRect(int index) const;
+    QRect thumbDirtyRect(qreal position) const;
+    void updateSegmentRegions(const QVector<int>& indices, const QString& mode);
+    void updateSelectionRegion(int oldIndex, int newIndex, qreal oldThumbPosition);
+    void updateThumbRegion(qreal oldPosition, qreal newPosition);
+    void invalidateLayoutCache() const;
+    void syncSegmentedPerfCounters() const;
     int segmentIndexAt(const QPoint& pos) const;
     void startThumbAnimation(int newIndex);
 
@@ -86,4 +138,11 @@ private:
     int m_pressedIndex = -1;
     qreal m_thumbPos = 0;
     QVariantAnimation* m_thumbAnimation = nullptr;
+    mutable LayoutCache m_layoutCache;
+    int m_optionsRevision = 0;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_sizeHintResolveCount = 0;
+    mutable int m_textMetricResolveCount = 0;
+    int m_regionUpdateCount = 0;
+    int m_thumbRegionUpdateCount = 0;
 };

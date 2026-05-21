@@ -28,6 +28,7 @@ private slots:
     void inputNumberCachesMetricsAndScopesControlUpdates();
     void radioCachesLayoutAndScopesStateUpdates();
     void rateCachesStarLayoutAndScopesUpdates();
+    void segmentedCachesLayoutAndScopesUpdates();
     void sliderMarksReserveLabelHeight();
     void sliderBubbleFloatsAboveMarkedHandle();
     void sliderBubbleArrowJoinsSurface();
@@ -567,6 +568,56 @@ void TestAntDataEntryA::rateCachesStarLayoutAndScopesUpdates()
     QFocusEvent focusEvent(QEvent::FocusIn);
     QCoreApplication::sendEvent(&rate, &focusEvent);
     QVERIFY(rate.property("antRateFocusRegionUpdateCount").toInt() > focusUpdatesBefore);
+}
+
+void TestAntDataEntryA::segmentedCachesLayoutAndScopesUpdates()
+{
+    AntSegmented segmented;
+    segmented.setOptions({{QStringLiteral("daily"), QStringLiteral("Daily"), QStringLiteral("appstore")},
+                          {QStringLiteral("weekly"), QStringLiteral("Weekly")},
+                          {QStringLiteral("monthly"), QStringLiteral("Monthly"), QStringLiteral("setting")}});
+    segmented.resize(segmented.sizeHint());
+    segmented.sizeHint();
+
+    const int sizeHintResolvesBefore = segmented.property("antSegmentedSizeHintResolveCount").toInt();
+    const int layoutBuildsBefore = segmented.property("antSegmentedLayoutBuildCount").toInt();
+    const int textMetricsBefore = segmented.property("antSegmentedTextMetricResolveCount").toInt();
+    segmented.sizeHint();
+    segmented.minimumSizeHint();
+    segmented.segmentRects();
+    QCOMPARE(segmented.property("antSegmentedSizeHintResolveCount").toInt(), sizeHintResolvesBefore);
+    QCOMPARE(segmented.property("antSegmentedLayoutBuildCount").toInt(), layoutBuildsBefore);
+    QCOMPARE(segmented.property("antSegmentedTextMetricResolveCount").toInt(), textMetricsBefore);
+
+    const auto rects = segmented.segmentRects();
+    QCOMPARE(rects.size(), 3);
+
+    const int regionUpdatesBeforeHover = segmented.property("antSegmentedRegionUpdateCount").toInt();
+    const QPoint secondSegmentCenter(qRound(rects.at(1).center().x()), qRound(rects.at(1).center().y()));
+    QMouseEvent moveEvent(QEvent::MouseMove,
+                          QPointF(secondSegmentCenter),
+                          QPointF(segmented.mapToGlobal(secondSegmentCenter)),
+                          Qt::NoButton,
+                          Qt::NoButton,
+                          Qt::NoModifier);
+    QCoreApplication::sendEvent(&segmented, &moveEvent);
+    QVERIFY(segmented.property("antSegmentedRegionUpdateCount").toInt() > regionUpdatesBeforeHover);
+    QCOMPARE(segmented.property("antSegmentedLastUpdateMode").toString(), QStringLiteral("segments"));
+
+    const int thumbUpdatesBeforeSelection = segmented.property("antSegmentedThumbRegionUpdateCount").toInt();
+    const int regionUpdatesBeforeSelection = segmented.property("antSegmentedRegionUpdateCount").toInt();
+    segmented.setCurrentIndex(2);
+    QVERIFY(segmented.property("antSegmentedRegionUpdateCount").toInt() > regionUpdatesBeforeSelection);
+    QVERIFY(segmented.property("antSegmentedThumbRegionUpdateCount").toInt() > thumbUpdatesBeforeSelection);
+
+    const int regionUpdatesAfterSameSelection = segmented.property("antSegmentedRegionUpdateCount").toInt();
+    segmented.setCurrentIndex(2);
+    QCOMPARE(segmented.property("antSegmentedRegionUpdateCount").toInt(), regionUpdatesAfterSameSelection);
+
+    const int layoutBuildsBeforeBlockHint = segmented.property("antSegmentedLayoutBuildCount").toInt();
+    segmented.setBlock(true);
+    segmented.sizeHint();
+    QVERIFY(segmented.property("antSegmentedLayoutBuildCount").toInt() > layoutBuildsBeforeBlockHint);
 }
 
 void TestAntDataEntryA::sliderMarksReserveLabelHeight()

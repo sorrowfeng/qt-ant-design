@@ -1,91 +1,15 @@
 #include "AntSegmentedStyle.h"
 
 #include <QEvent>
-#include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOption>
 
-#include <algorithm>
 #include <cmath>
 
 #include "widgets/AntSegmented.h"
 
 namespace
 {
-
-int segmentedHeight(Ant::Size size)
-{
-    const auto& token = antTheme->tokens();
-    switch (size)
-    {
-    case Ant::Size::Small:  return token.controlHeightSM;
-    case Ant::Size::Large:  return token.controlHeightLG;
-    default:                         return token.controlHeight;
-    }
-}
-
-int segmentedFontSize(Ant::Size size)
-{
-    const auto& token = antTheme->tokens();
-    switch (size)
-    {
-    case Ant::Size::Small:  return token.fontSizeSM;
-    case Ant::Size::Large:  return token.fontSizeLG;
-    default:                         return token.fontSize;
-    }
-}
-
-int segmentedRadius(const AntSegmented* seg)
-{
-    const auto& token = antTheme->tokens();
-    const int h = segmentedHeight(seg->segmentedSize());
-    if (seg->shape() == Ant::SegmentedShape::Round)
-    {
-        return h / 2;
-    }
-    switch (seg->segmentedSize())
-    {
-    case Ant::Size::Small:  return token.borderRadiusSM;
-    case Ant::Size::Large:  return token.borderRadiusLG;
-    default:                         return token.borderRadius;
-    }
-}
-
-int segmentedItemRadius(const AntSegmented* seg)
-{
-    const auto& token = antTheme->tokens();
-    const int h = segmentedHeight(seg->segmentedSize());
-    if (seg->shape() == Ant::SegmentedShape::Round)
-    {
-        return h / 2;
-    }
-    switch (seg->segmentedSize())
-    {
-    case Ant::Size::Small: return token.borderRadiusXS;
-    case Ant::Size::Large: return token.borderRadius;
-    default: return token.borderRadiusSM;
-    }
-}
-
-QRectF segmentedThumbRect(const AntSegmented* seg)
-{
-    const auto rects = seg->segmentRects();
-    if (rects.isEmpty()) return QRectF();
-
-    const qreal pos = std::clamp(seg->thumbPosition(), 0.0, static_cast<qreal>(rects.size() - 1));
-    const int leftIdx = static_cast<int>(std::floor(pos));
-    const int rightIdx = std::min(leftIdx + 1, static_cast<int>(rects.size()) - 1);
-    const qreal t = pos - leftIdx;
-
-    const QRectF a = rects[leftIdx];
-    const QRectF b = rects[rightIdx];
-    return QRectF(
-        a.left() + (b.left() - a.left()) * t,
-        a.top() + (b.top() - a.top()) * t,
-        a.width() + (b.width() - a.width()) * t,
-        a.height() + (b.height() - a.height()) * t);
-}
-
 void drawSegmentedThumbShadow(QPainter* painter, const QRectF& rect, qreal radius)
 {
     painter->save();
@@ -151,7 +75,6 @@ void drawSegmentedIcon(QPainter* painter, const QString& icon, const QRectF& rec
 AntSegmentedStyle::AntSegmentedStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntSegmented>();
 }
 
 void AntSegmentedStyle::polish(QWidget* widget)
@@ -209,18 +132,20 @@ void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* pain
     if (!seg || !painter || !option) return;
 
     const auto& token = antTheme->tokens();
-    const auto options = seg->options();
+    const auto& options = seg->optionList();
     if (options.isEmpty()) return;
+    const auto& cache = seg->layoutCache();
+    const auto& itemLayouts = cache.segments;
+    if (itemLayouts.size() != options.size()) return;
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    const int r = segmentedRadius(seg);
-    const int itemR = segmentedItemRadius(seg);
+    const int r = cache.trackRadius;
+    const int itemR = cache.itemRadius;
     const bool enabled = option->state & QStyle::State_Enabled;
     const int selIdx = seg->selectedIndex();
     const int pressedIdx = seg->pressedIndex();
-    const auto itemRects = seg->segmentRects();
 
     // Track background
     AntStyleBase::drawCrispRoundedRect(painter, option->rect,
@@ -240,12 +165,12 @@ void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* pain
             continue;
         }
 
-        AntStyleBase::drawCrispRoundedRect(painter, itemRects[i].toRect(),
+        AntStyleBase::drawCrispRoundedRect(painter, itemLayouts.at(i).rect.toRect(),
             Qt::NoPen, itemOverlayColor(token, isPressed), itemR, itemR);
     }
 
     // Thumb
-    const QRectF thumb = segmentedThumbRect(seg);
+    const QRectF thumb = seg->thumbRect();
     if (!thumb.isEmpty())
     {
         drawSegmentedThumbShadow(painter, thumb, itemR);
@@ -254,14 +179,11 @@ void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* pain
     }
 
     // Labels
-    const int fontSize = segmentedFontSize(seg->segmentedSize());
-    QFont f = painter->font();
-    f.setPixelSize(fontSize);
-    painter->setFont(f);
+    painter->setFont(cache.font);
 
     for (int i = 0; i < options.size(); ++i)
     {
-        const QRectF& r0 = itemRects[i];
+        const auto& item = itemLayouts.at(i);
         const bool isSel = (i == selIdx);
         const bool isHovered = (i == seg->hoveredIndex());
         const bool isDisabled = options[i].disabled;
@@ -286,22 +208,14 @@ void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* pain
         }
 
         painter->setPen(textCol);
-        if (!options[i].icon.isEmpty())
+        if (item.hasIcon)
         {
-            const QFontMetrics fm(f);
-            const int iconSize = 14;
-            const int iconGap = 6;
-            const int textWidth = fm.horizontalAdvance(options[i].label);
-            const int totalWidth = iconSize + iconGap + textWidth;
-            const qreal left = r0.center().x() - totalWidth / 2.0;
-            const QRectF iconRect(left, r0.center().y() - iconSize / 2.0, iconSize, iconSize);
-            drawSegmentedIcon(painter, options[i].icon, iconRect, textCol);
-            const QRectF textRect(left + iconSize + iconGap, r0.top(), textWidth + 2, r0.height());
-            painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, options[i].label);
+            drawSegmentedIcon(painter, options[i].icon, item.iconRect, textCol);
+            painter->drawText(item.textRect, Qt::AlignVCenter | Qt::AlignLeft, options[i].label);
         }
         else
         {
-            painter->drawText(r0, Qt::AlignCenter, options[i].label);
+            painter->drawText(item.textRect, Qt::AlignCenter, options[i].label);
         }
     }
 
