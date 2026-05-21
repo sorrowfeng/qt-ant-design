@@ -2,9 +2,11 @@
 
 #include <QEvent>
 #include <QGridLayout>
+#include <QHideEvent>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPainter>
+#include <QShowEvent>
 #include <QVBoxLayout>
 
 #include "../styles/AntCardStyle.h"
@@ -70,16 +72,19 @@ AntCard::AntCard(QWidget* parent)
 
     connect(&m_spinnerTimer, &QTimer::timeout, this, [this]() {
         m_spinnerAngle = (m_spinnerAngle + 30) % 360;
-        update();
+        requestCardUpdate(spinnerDirtyRect(), QStringLiteral("spinner"), true);
     });
+    m_spinnerTimer.setTimerType(Qt::PreciseTimer);
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateCardPaintCache();
         updateTheme();
         updateGeometry();
-        update();
+        requestCardUpdate(rect(), QStringLiteral("theme"));
     });
 
     rebuildChrome();
     updateTheme();
+    syncCardPerfCounters();
 }
 
 AntCard::AntCard(const QString& title, QWidget* parent)
@@ -97,6 +102,7 @@ void AntCard::setTitle(const QString& title)
     m_title = title;
     m_titleLabel->setText(title);
     rebuildChrome();
+    requestCardUpdate(rect(), QStringLiteral("title"));
     Q_EMIT titleChanged(m_title);
 }
 
@@ -109,6 +115,7 @@ void AntCard::setExtra(const QString& extra)
     m_extra = extra;
     m_extraLabel->setText(extra);
     rebuildChrome();
+    requestCardUpdate(rect(), QStringLiteral("extra"));
     Q_EMIT extraChanged(m_extra);
 }
 
@@ -119,7 +126,8 @@ void AntCard::setBordered(bool bordered)
     if (m_bordered == bordered)
         return;
     m_bordered = bordered;
-    update();
+    invalidateCardPaintCache();
+    requestCardUpdate(rect(), QStringLiteral("bordered"));
     Q_EMIT borderedChanged(m_bordered);
 }
 
@@ -131,7 +139,8 @@ void AntCard::setHoverable(bool hoverable)
         return;
     m_hoverable = hoverable;
     setCursor(hoverable ? Qt::PointingHandCursor : Qt::ArrowCursor);
-    update();
+    invalidateCardPaintCache();
+    requestCardUpdate(rect(), QStringLiteral("hoverable"));
     Q_EMIT hoverableChanged(m_hoverable);
 }
 
@@ -142,8 +151,9 @@ void AntCard::setLoading(bool loading)
     if (m_loading == loading)
         return;
     m_loading = loading;
-    m_loading ? m_spinnerTimer.start(80) : m_spinnerTimer.stop();
-    update();
+    updateLoadingTimer();
+    invalidateCardPaintCache();
+    requestCardUpdate(rect(), QStringLiteral("loading"));
     Q_EMIT loadingChanged(m_loading);
 }
 
@@ -156,6 +166,7 @@ void AntCard::setCardSize(Ant::CardSize size)
     m_cardSize = size;
     rebuildChrome();
     updateTheme();
+    requestCardUpdate(rect(), QStringLiteral("size"));
     Q_EMIT cardSizeChanged(m_cardSize);
 }
 
@@ -175,6 +186,8 @@ void AntCard::setBodyWidget(QWidget* widget)
         widget->setParent(m_body);
         m_bodyLayout->addWidget(widget);
     }
+    invalidateCardPaintCache();
+    requestCardUpdate(rect(), QStringLiteral("body"));
 }
 
 void AntCard::setCoverWidget(QWidget* widget)
@@ -191,6 +204,8 @@ void AntCard::setCoverWidget(QWidget* widget)
         m_cover->setParent(this);
         m_rootLayout->insertWidget(m_header->isVisible() ? 1 : 0, m_cover);
     }
+    invalidateCardPaintCache();
+    requestCardUpdate(rect(), QStringLiteral("cover"));
 }
 
 void AntCard::addActionWidget(QWidget* widget)
@@ -200,6 +215,7 @@ void AntCard::addActionWidget(QWidget* widget)
     widget->setParent(m_actions);
     m_actionsLayout->addWidget(widget, 1, Qt::AlignCenter);
     rebuildChrome();
+    requestCardUpdate(rect(), QStringLiteral("action"));
 }
 
 void AntCard::clearActions()
@@ -211,6 +227,7 @@ void AntCard::clearActions()
         delete item;
     }
     rebuildChrome();
+    requestCardUpdate(rect(), QStringLiteral("action"));
 }
 
 void AntCard::setMetaAvatar(QWidget* avatar)
@@ -247,6 +264,7 @@ void AntCard::setMetaAvatar(QWidget* avatar)
     }
     m_meta->setVisible(!m_metaTitleLabel->text().isEmpty() || !m_metaDescLabel->text().isEmpty() || avatar != nullptr);
     rebuildChrome();
+    requestCardUpdate(rect(), QStringLiteral("meta"));
 }
 
 void AntCard::setMetaTitle(const QString& title)
@@ -256,6 +274,7 @@ void AntCard::setMetaTitle(const QString& title)
     updateTheme();
     m_meta->setVisible(!title.isEmpty() || !m_metaDescLabel->text().isEmpty());
     rebuildChrome();
+    requestCardUpdate(rect(), QStringLiteral("meta"));
 }
 
 void AntCard::setMetaDescription(const QString& description)
@@ -264,6 +283,7 @@ void AntCard::setMetaDescription(const QString& description)
     m_metaDescLabel->setVisible(!description.isEmpty());
     m_meta->setVisible(!m_metaTitleLabel->text().isEmpty() || !description.isEmpty());
     rebuildChrome();
+    requestCardUpdate(rect(), QStringLiteral("meta"));
 }
 
 void AntCard::addGridItem(QWidget* item)
@@ -280,6 +300,8 @@ void AntCard::addGridItem(QWidget* item)
     const int row = count / 3;
     const int col = count % 3;
     m_gridLayout->addWidget(item, row, col);
+    invalidateCardPaintCache();
+    requestCardUpdate(rect(), QStringLiteral("grid"));
 }
 
 void AntCard::clearGridItems()
@@ -293,6 +315,8 @@ void AntCard::clearGridItems()
             delete item;
         }
     }
+    invalidateCardPaintCache();
+    requestCardUpdate(rect(), QStringLiteral("grid"));
 }
 
 void AntCard::paintEvent(QPaintEvent* event)
@@ -300,18 +324,60 @@ void AntCard::paintEvent(QPaintEvent* event)
     Q_UNUSED(event)
 }
 
+void AntCard::changeEvent(QEvent* event)
+{
+    QFrame::changeEvent(event);
+    if (!m_rootLayout || !m_header || !m_body)
+    {
+        return;
+    }
+    if (event->type() == QEvent::EnabledChange)
+    {
+        updateLoadingTimer();
+        requestCardUpdate(rect(), QStringLiteral("enabled"));
+    }
+    else if (event->type() == QEvent::FontChange || event->type() == QEvent::StyleChange)
+    {
+        invalidateCardPaintCache();
+        rebuildChrome();
+        updateTheme();
+        requestCardUpdate(rect(), QStringLiteral("style"));
+    }
+}
+
 void AntCard::enterEvent(QEnterEvent* event)
 {
-    m_hovered = true;
-    update();
+    if (!m_hovered)
+    {
+        m_hovered = true;
+        invalidateCardPaintCache();
+        requestCardUpdate(rect(), QStringLiteral("hover"));
+    }
     QFrame::enterEvent(event);
 }
 
 void AntCard::leaveEvent(QEvent* event)
 {
-    m_hovered = false;
-    update();
+    if (m_hovered)
+    {
+        m_hovered = false;
+        invalidateCardPaintCache();
+        requestCardUpdate(rect(), QStringLiteral("hover"));
+    }
     QFrame::leaveEvent(event);
+}
+
+void AntCard::showEvent(QShowEvent* event)
+{
+    updateLoadingTimer();
+    QFrame::showEvent(event);
+}
+
+void AntCard::hideEvent(QHideEvent* event)
+{
+    m_spinnerTimer.stop();
+    syncCardPerfCounters();
+    QFrame::hideEvent(event);
 }
 
 void AntCard::rebuildChrome()
@@ -322,21 +388,45 @@ void AntCard::rebuildChrome()
     const int headerPadding = small ? token.paddingSM : token.paddingLG;
     const int bodyPadding = small ? token.paddingSM : token.paddingLG;
 
-    m_header->setVisible(!m_title.isEmpty() || !m_extra.isEmpty());
-    m_extraLabel->setVisible(!m_extra.isEmpty());
-    m_actions->setVisible(m_actionsLayout->count() > 0);
-    m_header->setMinimumHeight(headerHeight);
-    m_header->setMaximumHeight(headerHeight);
+    const bool headerVisible = !m_title.isEmpty() || !m_extra.isEmpty();
+    const bool extraVisible = !m_extra.isEmpty();
+    const bool actionsVisible = m_actionsLayout->count() > 0;
+    if (m_header->isVisible() != headerVisible)
+        m_header->setVisible(headerVisible);
+    if (m_extraLabel->isVisible() != extraVisible)
+        m_extraLabel->setVisible(extraVisible);
+    if (m_actions->isVisible() != actionsVisible)
+        m_actions->setVisible(actionsVisible);
+    if (m_header->minimumHeight() != headerHeight)
+        m_header->setMinimumHeight(headerHeight);
+    if (m_header->maximumHeight() != headerHeight)
+        m_header->setMaximumHeight(headerHeight);
 
     if (auto* layout = qobject_cast<QHBoxLayout*>(m_header->layout()))
-        layout->setContentsMargins(headerPadding, 0, headerPadding, 0);
-    m_metaLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, bodyPadding);
+    {
+        const QMargins target(headerPadding, 0, headerPadding, 0);
+        if (layout->contentsMargins() != target)
+            layout->setContentsMargins(target);
+    }
+    const QMargins bodyMargins(bodyPadding, bodyPadding, bodyPadding, bodyPadding);
+    if (m_metaLayout->contentsMargins() != bodyMargins)
+        m_metaLayout->setContentsMargins(bodyMargins);
     if (m_bodyLayout)
-        m_bodyLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, bodyPadding);
+    {
+        if (m_bodyLayout->contentsMargins() != bodyMargins)
+            m_bodyLayout->setContentsMargins(bodyMargins);
+    }
     else if (m_gridLayout)
-        m_gridLayout->setContentsMargins(bodyPadding, bodyPadding, bodyPadding, bodyPadding);
-    m_actions->setMinimumHeight(48);
-    m_actions->setMaximumHeight(48);
+    {
+        if (m_gridLayout->contentsMargins() != bodyMargins)
+            m_gridLayout->setContentsMargins(bodyMargins);
+    }
+    if (m_actions->minimumHeight() != 48)
+        m_actions->setMinimumHeight(48);
+    if (m_actions->maximumHeight() != 48)
+        m_actions->setMaximumHeight(48);
+    invalidateCardPaintCache();
+    updateGeometry();
 }
 
 void AntCard::updateTheme()
@@ -380,6 +470,112 @@ void AntCard::updateTheme()
         if (w)
             w->setAutoFillBackground(false);
     }
+}
+
+void AntCard::updateLoadingTimer()
+{
+    const bool shouldRun = m_loading && isVisible() && isEnabled();
+    if (shouldRun && !m_spinnerTimer.isActive())
+    {
+        m_spinnerTimer.start(80);
+    }
+    else if (!shouldRun && m_spinnerTimer.isActive())
+    {
+        m_spinnerTimer.stop();
+    }
+    syncCardPerfCounters();
+}
+
+const AntCard::CardPaintCache& AntCard::cardPaintCache(const QRect& widgetRect) const
+{
+    const int actionCount = m_actionsLayout ? m_actionsLayout->count() : 0;
+    const bool headerVisible = m_header && m_header->isVisible();
+    const bool actionsVisible = m_actions && m_actions->isVisible();
+
+    if (m_paintCache.valid &&
+        m_paintCache.widgetRect == widgetRect &&
+        m_paintCache.headerVisible == headerVisible &&
+        m_paintCache.actionsVisible == actionsVisible &&
+        m_paintCache.actionCount == actionCount &&
+        m_paintCache.headerSeparatorY == (headerVisible ? m_header->geometry().bottom() : -1) &&
+        m_paintCache.actionsSeparatorY == (actionsVisible ? m_actions->geometry().top() : -1))
+    {
+        ++m_paintCacheHitCount;
+        syncCardPerfCounters();
+        return m_paintCache;
+    }
+
+    ++m_paintCacheBuildCount;
+    CardPaintCache cache;
+    cache.valid = true;
+    cache.widgetRect = widgetRect;
+    cache.cardRect = widgetRect;
+    if (m_hoverable && m_hovered)
+    {
+        cache.cardRect.adjust(2, 2, -2, -2);
+    }
+    cache.headerVisible = headerVisible;
+    cache.actionsVisible = actionsVisible;
+    cache.actionCount = actionCount;
+    cache.headerSeparatorY = headerVisible ? m_header->geometry().bottom() : -1;
+    cache.actionsSeparatorY = actionsVisible ? m_actions->geometry().top() : -1;
+    if (actionsVisible && actionCount > 1)
+    {
+        const QRect actionsRect = m_actions->geometry();
+        cache.actionSeparatorXs.reserve(actionCount - 1);
+        for (int i = 1; i < actionCount; ++i)
+        {
+            cache.actionSeparatorXs.append(actionsRect.left() + actionsRect.width() * i / actionCount);
+        }
+    }
+    cache.spinnerRect = QRectF(widgetRect.width() / 2.0 - 14,
+                               widgetRect.height() / 2.0 - 14,
+                               28,
+                               28);
+
+    m_paintCache = cache;
+    syncCardPerfCounters();
+    return m_paintCache;
+}
+
+void AntCard::invalidateCardPaintCache() const
+{
+    m_paintCache.valid = false;
+}
+
+QRect AntCard::spinnerDirtyRect() const
+{
+    return cardPaintCache(rect()).spinnerRect.toAlignedRect().adjusted(-5, -5, 5, 5).intersected(rect());
+}
+
+void AntCard::requestCardUpdate(const QRect& region, const QString& mode, bool spinnerScoped)
+{
+    QRect dirty = region.isValid() && !region.isEmpty() ? region : rect();
+    dirty = dirty.intersected(rect());
+    if (dirty.isEmpty())
+    {
+        dirty = rect();
+    }
+
+    ++m_regionUpdateCount;
+    if (spinnerScoped)
+    {
+        ++m_spinnerRegionUpdateCount;
+    }
+    m_lastUpdateMode = mode;
+    syncCardPerfCounters();
+    update(dirty);
+}
+
+void AntCard::syncCardPerfCounters() const
+{
+    auto* self = const_cast<AntCard*>(this);
+    self->setProperty("antCardPaintCacheBuildCount", m_paintCacheBuildCount);
+    self->setProperty("antCardPaintCacheHitCount", m_paintCacheHitCount);
+    self->setProperty("antCardRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antCardSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
+    self->setProperty("antCardLastUpdateMode", m_lastUpdateMode);
+    self->setProperty("antCardSpinnerTimerActive", m_spinnerTimer.isActive());
 }
 
 void AntCard::drawSpinner(QPainter& painter, const QRectF& rect) const

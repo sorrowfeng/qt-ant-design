@@ -18,6 +18,7 @@ private slots:
     void propertiesAndSignals();
     void avatarCachesScaledImagePixmap();
     void calendarCachesSelectionAndViewMetrics();
+    void cardCachesPaintAndSpinnerUpdates();
     void statisticFormattedValueCache();
     void cardTitlePaletteTracksTheme();
 };
@@ -372,6 +373,51 @@ void TestAntDataDisplayA::calendarCachesSelectionAndViewMetrics()
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     QCOMPARE(calendar.property("antCalendarLastUpdateMode").toString(), QStringLiteral("theme"));
     antTheme->setThemeMode(previousMode);
+}
+
+void TestAntDataDisplayA::cardCachesPaintAndSpinnerUpdates()
+{
+    AntCard card(QStringLiteral("Cache Card"));
+    card.setExtra(QStringLiteral("More"));
+    card.addActionWidget(new QLabel(QStringLiteral("Edit")));
+    card.addActionWidget(new QLabel(QStringLiteral("Share")));
+    card.resize(320, 180);
+    card.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&card));
+
+    card.grab();
+    const int paintBuilds = card.property("antCardPaintCacheBuildCount").toInt();
+    const int paintHits = card.property("antCardPaintCacheHitCount").toInt();
+    QVERIFY(paintBuilds > 0);
+
+    card.grab();
+    QCOMPARE(card.property("antCardPaintCacheBuildCount").toInt(), paintBuilds);
+    QVERIFY(card.property("antCardPaintCacheHitCount").toInt() > paintHits);
+
+    card.setLoading(true);
+    QVERIFY(card.property("antCardSpinnerTimerActive").toBool());
+    const int spinnerUpdates = card.property("antCardSpinnerRegionUpdateCount").toInt();
+    QTRY_VERIFY(card.property("antCardSpinnerRegionUpdateCount").toInt() > spinnerUpdates);
+    QCOMPARE(card.property("antCardLastUpdateMode").toString(), QStringLiteral("spinner"));
+
+    card.hide();
+    QCoreApplication::processEvents();
+    QVERIFY(!card.property("antCardSpinnerTimerActive").toBool());
+    const int stoppedUpdates = card.property("antCardSpinnerRegionUpdateCount").toInt();
+    QTest::qWait(120);
+    QCOMPARE(card.property("antCardSpinnerRegionUpdateCount").toInt(), stoppedUpdates);
+
+    card.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&card));
+    QTRY_VERIFY(card.property("antCardSpinnerTimerActive").toBool());
+    card.setLoading(false);
+    QVERIFY(!card.property("antCardSpinnerTimerActive").toBool());
+    QCOMPARE(card.property("antCardLastUpdateMode").toString(), QStringLiteral("loading"));
+
+    const int buildsBeforeSize = card.property("antCardPaintCacheBuildCount").toInt();
+    card.setCardSize(Ant::CardSize::Small);
+    card.grab();
+    QVERIFY(card.property("antCardPaintCacheBuildCount").toInt() > buildsBeforeSize);
 }
 
 void TestAntDataDisplayA::statisticFormattedValueCache()

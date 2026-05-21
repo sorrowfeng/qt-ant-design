@@ -10,7 +10,6 @@
 AntCardStyle::AntCardStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntCard>();
 }
 
 void AntCardStyle::polish(QWidget* widget)
@@ -72,16 +71,15 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
 
     const auto& token = antTheme->tokens();
     const int radius = token.borderRadiusLG;
-    QRect cardRect = option->rect;
+    const auto& cache = card->cardPaintCache(option->rect);
+    const QRect cardRect = cache.cardRect;
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
     // Hover shadow
-    const bool hovered = option->state & QStyle::State_MouseOver;
-    if (card->isHoverable() && hovered)
+    if (card->isHoverable() && (option->state & QStyle::State_MouseOver))
     {
-        cardRect.adjust(2, 2, -2, -2);
         antTheme->drawEffectShadow(painter, cardRect, 12, radius, 1.35);
     }
 
@@ -91,26 +89,22 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
         token.colorBgContainer, radius, radius);
 
     // Header separator line
-    QWidget* headerWidget = card->findChild<QWidget*>(QStringLiteral("ant-card-header"), Qt::FindDirectChildrenOnly);
-    if (headerWidget && headerWidget->isVisible())
+    if (cache.headerVisible)
     {
         painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-        painter->drawLine(cardRect.left() + 1, headerWidget->geometry().bottom(),
-                         cardRect.right() - 1, headerWidget->geometry().bottom());
+        painter->drawLine(cardRect.left() + 1, cache.headerSeparatorY,
+                         cardRect.right() - 1, cache.headerSeparatorY);
     }
 
-    QWidget* actionsWidget = card->findChild<QWidget*>(QStringLiteral("ant-card-actions"), Qt::FindDirectChildrenOnly);
-    if (actionsWidget && actionsWidget->isVisible())
+    if (cache.actionsVisible)
     {
         painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-        const QRect actionsRect = actionsWidget->geometry();
-        painter->drawLine(cardRect.left() + 1, actionsRect.top(),
-                          cardRect.right() - 1, actionsRect.top());
+        painter->drawLine(cardRect.left() + 1, cache.actionsSeparatorY,
+                          cardRect.right() - 1, cache.actionsSeparatorY);
 
-        const QList<QWidget*> actionItems = actionsWidget->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
-        for (int i = 1; i < actionItems.size(); ++i)
+        const QRect actionsRect = card->m_actions->geometry();
+        for (const int x : cache.actionSeparatorXs)
         {
-            const int x = actionsRect.left() + actionsRect.width() * i / actionItems.size();
             painter->drawLine(x, actionsRect.top() + 12, x, actionsRect.bottom() - 12);
         }
     }
@@ -122,11 +116,9 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
         mask.setAlphaF(0.72);
         AntStyleBase::drawCrispRoundedRect(painter, cardRect, Qt::NoPen, mask, radius, radius);
 
-        // Spinner
         painter->setPen(QPen(token.colorPrimary, 3, Qt::SolidLine, Qt::RoundCap));
         painter->setBrush(Qt::NoBrush);
-        const QRectF spinnerRect(option->rect.width() / 2.0 - 14, option->rect.height() / 2.0 - 14, 28, 28);
-        painter->drawArc(spinnerRect, 0, 280 * 16);
+        painter->drawArc(cache.spinnerRect, card->m_spinnerAngle * 16, 280 * 16);
     }
 
     painter->restore();

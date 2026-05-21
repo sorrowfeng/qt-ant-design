@@ -3,14 +3,21 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QFrame>
+#include <QRect>
+#include <QRectF>
 #include <QTimer>
+#include <QVector>
 
 #include "core/AntTypes.h"
 
 class QHBoxLayout;
 class QLabel;
 class QGridLayout;
+class QHideEvent;
+class QPaintEvent;
+class QShowEvent;
 class QVBoxLayout;
+class AntCardStyle;
 
 class QT_ANT_DESIGN_EXPORT AntCard : public QFrame
 {
@@ -64,14 +71,39 @@ Q_SIGNALS:
     void cardSizeChanged(Ant::CardSize size);
 
 protected:
+    void changeEvent(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
 
 private:
+    friend class AntCardStyle;
+
+    struct CardPaintCache
+    {
+        bool valid = false;
+        QRect widgetRect;
+        QRect cardRect;
+        bool headerVisible = false;
+        bool actionsVisible = false;
+        int actionCount = 0;
+        int headerSeparatorY = -1;
+        int actionsSeparatorY = -1;
+        QVector<int> actionSeparatorXs;
+        QRectF spinnerRect;
+    };
+
     void rebuildChrome();
     void updateTheme();
+    void updateLoadingTimer();
     void drawSpinner(QPainter& painter, const QRectF& rect) const;
+    const CardPaintCache& cardPaintCache(const QRect& widgetRect) const;
+    void invalidateCardPaintCache() const;
+    QRect spinnerDirtyRect() const;
+    void requestCardUpdate(const QRect& region, const QString& mode, bool spinnerScoped = false);
+    void syncCardPerfCounters() const;
 
     QVBoxLayout* m_rootLayout = nullptr;
     QWidget* m_header = nullptr;
@@ -99,4 +131,10 @@ private:
     int m_spinnerAngle = 0;
     Ant::CardSize m_cardSize = Ant::CardSize::Default;
     QTimer m_spinnerTimer;
+    mutable CardPaintCache m_paintCache;
+    mutable int m_paintCacheBuildCount = 0;
+    mutable int m_paintCacheHitCount = 0;
+    int m_regionUpdateCount = 0;
+    int m_spinnerRegionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };
