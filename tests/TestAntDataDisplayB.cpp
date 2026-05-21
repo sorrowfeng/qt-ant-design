@@ -32,6 +32,7 @@ private slots:
     void tableHoverUsesRowScopedUpdates();
     void tableSelectionCompatibilityApis();
     void qrCodeReusesRenderedModuleCache();
+    void watermarkCachesRenderedPixmap();
     void timelineCachesPaintLayoutAndColors();
     void descriptionsUpdatesTextWithoutGridRebuildAndCachesSizeHint();
     void listSelectionHighlightUsesBalancedInset();
@@ -803,6 +804,39 @@ void TestAntDataDisplayB::qrCodeReusesRenderedModuleCache()
     qr.setValue(QStringLiteral("https://example.com/cache-bust"));
     const QPixmap changedPayload = qr.cachedQrPixmap(moduleSize, 1.0, foreground);
     QVERIFY(changedPayload.cacheKey() != firstKey);
+}
+
+void TestAntDataDisplayB::watermarkCachesRenderedPixmap()
+{
+    AntWatermark watermark;
+    watermark.resize(260, 180);
+    watermark.setContent({QStringLiteral("Secret"), QStringLiteral("Draft")});
+    watermark.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&watermark));
+
+    watermark.grab();
+    const int pixmapBuilds = watermark.property("antWatermarkPixmapBuildCount").toInt();
+    const int pixmapHits = watermark.property("antWatermarkPixmapCacheHitCount").toInt();
+    QVERIFY(pixmapBuilds > 0);
+
+    watermark.grab();
+    QCOMPARE(watermark.property("antWatermarkPixmapBuildCount").toInt(), pixmapBuilds);
+    QVERIFY(watermark.property("antWatermarkPixmapCacheHitCount").toInt() > pixmapHits);
+
+    const int buildsBeforeOffset = watermark.property("antWatermarkPixmapBuildCount").toInt();
+    watermark.setOffset(QPoint(16, 12));
+    QCOMPARE(watermark.property("antWatermarkLastUpdateMode").toString(), QStringLiteral("offset"));
+    watermark.grab();
+    QVERIFY(watermark.property("antWatermarkPixmapBuildCount").toInt() > buildsBeforeOffset);
+
+    AntWatermarkFont font = watermark.watermarkFont();
+    font.fontSize = 18;
+    font.color = QColor("#1677ff");
+    const int buildsBeforeFont = watermark.property("antWatermarkPixmapBuildCount").toInt();
+    watermark.setWatermarkFont(font);
+    QCOMPARE(watermark.property("antWatermarkLastUpdateMode").toString(), QStringLiteral("font"));
+    watermark.grab();
+    QVERIFY(watermark.property("antWatermarkPixmapBuildCount").toInt() > buildsBeforeFont);
 }
 
 void TestAntDataDisplayB::descriptionsUpdatesTextWithoutGridRebuildAndCachesSizeHint()

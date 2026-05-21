@@ -23,12 +23,13 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `74` components are optimized from this pass, and `10` remain in planned or watching states.
+Current summary: `84 / 84` components have an initial plan. `75` components are optimized from this pass, and `9` remain in planned or watching states.
 
 Latest completed optimization:
 
 | Date | Component | Change | Validation |
 | --- | --- | --- | --- |
+| `2026-05-21` | `AntWatermark` | Watermark now renders the full tiled pattern into a transparent DPR-aware pixmap cache keyed by widget size, content, font, resolved color, rotation, gap, offset, DPR, and theme. The style blits the cached pixmap instead of remeasuring text and redrawing every rotated tile on each paint, while content/font/rotation/gap/offset/theme changes invalidate the cache explicitly and keep mouse transparency unchanged. | `cmake --build build --config Debug --target TestAntDataDisplayB`, `TestAntDataDisplayB.exe propertiesAndSignals watermarkCachesRenderedPixmap`, `TestAntAdvancedInteractions.exe watermarkDoesNotBlockCoveredControls`, `cmake --build build --config Debug --target TestAntRenderSmoke`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntTour` | Tour overlay now caches the current target rectangle, spotlight rectangle, tooltip geometry, and step content state. Re-showing the same step skips unchanged target, tooltip, and content applications, target move/resize/hide/show updates only the old/new spotlight dirty region, overlay paint consumes the cached spotlight instead of remapping the target every paint, and step changes no longer force a full overlay repaint. | `cmake --build build --config Debug --target TestAntFeedback`, `TestAntFeedback.exe tour tourCachesTargetAndTooltipGeometry`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntToolTip` | Tooltip now caches size hints, bubble/text rectangles, arrow polygons, theme colors, and text metrics on the widget. The style consumes that cached layout instead of recomputing geometry every paint, target-driven positioning skips unchanged target/screen/size/placement applications, repeated enter/focus events avoid restarting an already active open timer, and target destruction stops delayed opens without leaving a stale target pointer. | `cmake --build build --config Debug --target TestAntFeedback`, `TestAntFeedback.exe tooltip tooltipCachesLayoutAndSkipsPlacementWork`, `cmake --build build --config Debug --target TestAntAdvancedInteractions TestAntPopupLifecycle TestAntRenderSmoke`, `TestAntAdvancedInteractions.exe tooltipDoesNotBlockCoveredControls`, `TestAntPopupLifecycle.exe targetDrivenPopupsCloseAndDestroySafely`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
 | `2026-05-21` | `AntSpin` | Spin now caches size hints, indicator/text rectangles, arc geometry, dot travel radius, percent text, and theme colors on the widget. The style consumes the cached layout instead of resolving metrics every paint, indeterminate animation frames repaint only the spinner indicator bounds, percent changes stop the animation timer and repaint only the indicator, hidden/disabled states stop the precise timer, and theme refresh is widget-owned. | `cmake --build build --config Debug --target TestAntFeedback`, `TestAntFeedback.exe spin spinCachesLayoutAndScopesAnimation`, `cmake --build build --config Debug --target TestAntRenderSmoke`, `TestAntRenderSmoke.exe everyVisualWidgetRendersNonBlank qtAnalogWidgetsFollowNativeLayoutPolicies`, `cmake --build build --config Debug --target qt-ant-design-example` |
@@ -199,7 +200,7 @@ Use the existing `build` directory. Do not create temporary build directories.
 | `AntSpin` | P0 | Keep precise animation timer only when visible/spinning; update spinner bounds only; share cached dot/arc geometry by size. | Optimized |
 | `AntToolTip` | P0 | Reuse tooltip popup, cache content/arrow geometry, stop delayed-open timer on target hide/destroy, and keep passive hit-test cheap. | Optimized |
 | `AntTour` | P0 | Cache mask target geometry, update only previous/new highlight areas during step change, and avoid rebuilding bubble controls on unchanged content. | Optimized |
-| `AntWatermark` | P1 | Cache tiled watermark pixmap by text/font/color/angle/gap/DPR and blit instead of redrawing every tile. | Plan ready |
+| `AntWatermark` | P1 | Cache tiled watermark pixmap by text/font/color/angle/gap/DPR and blit instead of redrawing every tile. | Optimized |
 
 ### Data Display
 
@@ -322,7 +323,7 @@ For every optimization, run the listed QTest target(s), build `qt-ant-design-exa
 | `AntSpin` | `TestAntFeedback`, `TestAntRenderSmoke` | Verify all sizes, delay, percent mode, visible spinner motion, cached layout reuse, hidden-state timer behavior, spinner-bound repaint, and render smoke. |
 | `AntToolTip` | `TestAntAdvancedInteractions`, `TestAntFeedback`, `TestAntPopupLifecycle`, `TestAntRenderSmoke` | Verify delayed show, placement/arrow/color, cached layout reuse, unchanged-position skips, passive mouse transparency, target destruction, popup reuse, and render smoke. |
 | `AntTour` | `TestAntFeedback` | Verify target highlight, step navigation, mask, bubble placement, cached repeat-step skips, and previous/new highlight dirty updates. |
-| `AntWatermark` | `TestAntAdvancedInteractions`, `TestAntDataDisplayB` | Verify tiled text, multi-line, angle/gap/offset, mouse transparency, and pixmap cache invalidation on theme/font/text changes. |
+| `AntWatermark` | `TestAntAdvancedInteractions`, `TestAntDataDisplayB`, `TestAntRenderSmoke` | Verify tiled text, multi-line, angle/gap/offset, mouse transparency, pixmap cache reuse, pixmap cache invalidation on theme/font/text changes, and render smoke. |
 
 ### Data Display Tests
 
