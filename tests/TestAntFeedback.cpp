@@ -32,6 +32,7 @@ private slots:
     void notificationCachesLayoutShadowAndScopesUpdates();
     void notificationLoadingProgressAutoCloses();
     void popconfirm();
+    void popconfirmReusesActionWidgetAndSkipsRebuilds();
     void popover();
     void progress();
     void result();
@@ -511,6 +512,55 @@ void TestAntFeedback::popconfirm()
     QCOMPARE(w->isOpen(), false);
     QTest::mouseClick(target, Qt::LeftButton);
     QCOMPARE(w->isOpen(), false);
+}
+
+void TestAntFeedback::popconfirmReusesActionWidgetAndSkipsRebuilds()
+{
+    AntPopconfirm popconfirm;
+    auto* popover = popconfirm.findChild<AntPopover*>();
+    QVERIFY(popover != nullptr);
+    QWidget* actionWidget = popover->actionWidget();
+    QVERIFY(actionWidget != nullptr);
+    auto* cancelButton = actionWidget->findChild<AntButton*>(QStringLiteral("AntPopconfirmCancelButton"));
+    auto* okButton = actionWidget->findChild<AntButton*>(QStringLiteral("AntPopconfirmOkButton"));
+    QVERIFY(cancelButton != nullptr);
+    QVERIFY(okButton != nullptr);
+
+    const int initialBuilds = popconfirm.property("antPopconfirmActionBuildCount").toInt();
+    const int initialAttaches = popconfirm.property("antPopconfirmActionAttachCount").toInt();
+    QVERIFY(initialBuilds > 0);
+    QCOMPARE(initialAttaches, 1);
+
+    popconfirm.setOkText(QStringLiteral("Proceed"));
+    QCOMPARE(popover->actionWidget(), actionWidget);
+    QCOMPARE(actionWidget->findChild<AntButton*>(QStringLiteral("AntPopconfirmOkButton")), okButton);
+    QCOMPARE(okButton->text(), QStringLiteral("Proceed"));
+    QCOMPARE(popconfirm.property("antPopconfirmActionBuildCount").toInt(), initialBuilds);
+    QCOMPARE(popconfirm.property("antPopconfirmActionAttachCount").toInt(), initialAttaches);
+    QVERIFY(popconfirm.property("antPopconfirmActionSyncApplyCount").toInt() > 1);
+
+    popconfirm.setCancelText(QStringLiteral("Back"));
+    QCOMPARE(popover->actionWidget(), actionWidget);
+    QCOMPARE(actionWidget->findChild<AntButton*>(QStringLiteral("AntPopconfirmCancelButton")), cancelButton);
+    QCOMPARE(cancelButton->text(), QStringLiteral("Back"));
+    QCOMPARE(popconfirm.property("antPopconfirmActionBuildCount").toInt(), initialBuilds);
+
+    popconfirm.setShowCancel(false);
+    QCOMPARE(popover->actionWidget(), actionWidget);
+    QCOMPARE(actionWidget->findChild<AntButton*>(QStringLiteral("AntPopconfirmCancelButton")), cancelButton);
+    QVERIFY(!cancelButton->isVisibleTo(actionWidget));
+    QCOMPARE(popconfirm.property("antPopconfirmActionBuildCount").toInt(), initialBuilds);
+
+    popconfirm.setShowCancel(true);
+    QCOMPARE(popover->actionWidget(), actionWidget);
+    QCOMPARE(actionWidget->findChild<AntButton*>(QStringLiteral("AntPopconfirmCancelButton")), cancelButton);
+    QVERIFY(cancelButton->isVisibleTo(actionWidget));
+    QCOMPARE(popconfirm.property("antPopconfirmActionBuildCount").toInt(), initialBuilds);
+
+    popconfirm.setTitle(QStringLiteral("Delete?"));
+    popconfirm.setDescription(QStringLiteral("This operation cannot be undone."));
+    QVERIFY(popconfirm.property("antPopconfirmContentSyncApplyCount").toInt() >= 2);
+    QCOMPARE(popconfirm.property("antPopconfirmLastSyncMode").toString(), QStringLiteral("content"));
 }
 
 void TestAntFeedback::popover()

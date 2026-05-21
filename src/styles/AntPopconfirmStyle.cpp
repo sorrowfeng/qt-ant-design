@@ -9,24 +9,15 @@
 AntPopconfirmStyle::AntPopconfirmStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntPopconfirm>();
 }
 
 void AntPopconfirmStyle::polish(QWidget* widget)
 {
     QProxyStyle::polish(widget);
-    if (qobject_cast<AntPopconfirm*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
 }
 
 void AntPopconfirmStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntPopconfirm*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
     QProxyStyle::unpolish(widget);
 }
 
@@ -47,16 +38,6 @@ QSize AntPopconfirmStyle::sizeFromContents(ContentsType type, const QStyleOption
 
 bool AntPopconfirmStyle::eventFilter(QObject* watched, QEvent* event)
 {
-    auto* popconfirm = qobject_cast<AntPopconfirm*>(watched);
-    if (popconfirm && event->type() == QEvent::Paint)
-    {
-        QStyleOption option;
-        option.initFrom(popconfirm);
-        option.rect = popconfirm->rect();
-        QPainter painter(popconfirm);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, popconfirm);
-        return true;
-    }
     return QProxyStyle::eventFilter(watched, event);
 }
 

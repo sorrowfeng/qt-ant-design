@@ -20,6 +20,7 @@ AntPopconfirm::AntPopconfirm(QWidget* parent)
 
     rebuildActionWidget();
     syncPopoverContent();
+    syncPopconfirmPerfCounters();
 }
 
 QString AntPopconfirm::title() const { return m_title; }
@@ -155,22 +156,26 @@ void AntPopconfirm::setOpen(bool open)
 
 void AntPopconfirm::rebuildActionWidget()
 {
-    if (m_actionContainer)
+    const QString key = m_cancelText + QLatin1Char('|') + m_okText + QLatin1Char('|') +
+                        QString::number(m_showCancel ? 1 : 0);
+    if (m_actionContainer && m_actionSyncKey == key)
     {
-        m_popover->setActionWidget(nullptr);
-        m_actionContainer = nullptr;
-        m_cancelButton = nullptr;
-        m_okButton = nullptr;
+        ++m_actionSyncSkipCount;
+        m_lastSyncMode = QStringLiteral("actionSkip");
+        syncPopconfirmPerfCounters();
+        return;
     }
 
-    m_actionContainer = new QWidget(m_popover);
-    auto* layout = new QHBoxLayout(m_actionContainer);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(8);
-
-    if (m_showCancel)
+    if (!m_actionContainer)
     {
+        m_actionContainer = new QWidget(m_popover);
+        m_actionContainer->setObjectName(QStringLiteral("AntPopconfirmActionContainer"));
+        auto* layout = new QHBoxLayout(m_actionContainer);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(8);
+
         m_cancelButton = new AntButton(m_cancelText, m_actionContainer);
+        m_cancelButton->setObjectName(QStringLiteral("AntPopconfirmCancelButton"));
         m_cancelButton->setButtonType(Ant::ButtonType::Default);
         m_cancelButton->setButtonSize(Ant::Size::Small);
         connect(m_cancelButton, &AntButton::clicked, this, [this]() {
@@ -178,23 +183,76 @@ void AntPopconfirm::rebuildActionWidget()
             Q_EMIT cancelRequested();
         });
         layout->addWidget(m_cancelButton);
+
+        m_okButton = new AntButton(m_okText, m_actionContainer);
+        m_okButton->setObjectName(QStringLiteral("AntPopconfirmOkButton"));
+        m_okButton->setButtonType(Ant::ButtonType::Primary);
+        m_okButton->setButtonSize(Ant::Size::Small);
+        connect(m_okButton, &AntButton::clicked, this, [this]() {
+            m_popover->setOpen(false);
+            Q_EMIT confirmRequested();
+        });
+        layout->addWidget(m_okButton);
+
+        ++m_actionBuildCount;
     }
 
-    m_okButton = new AntButton(m_okText, m_actionContainer);
-    m_okButton->setButtonType(Ant::ButtonType::Primary);
-    m_okButton->setButtonSize(Ant::Size::Small);
-    connect(m_okButton, &AntButton::clicked, this, [this]() {
-        m_popover->setOpen(false);
-        Q_EMIT confirmRequested();
-    });
-    layout->addWidget(m_okButton);
+    if (m_cancelButton)
+    {
+        m_cancelButton->setText(m_cancelText);
+        m_cancelButton->setVisible(m_showCancel);
+    }
+    if (m_okButton)
+    {
+        m_okButton->setText(m_okText);
+    }
 
-    m_popover->setActionWidget(m_actionContainer);
+    if (m_popover->actionWidget() != m_actionContainer)
+    {
+        m_popover->setActionWidget(m_actionContainer);
+        ++m_actionAttachCount;
+    }
+    else
+    {
+        m_actionContainer->updateGeometry();
+        m_popover->adjustSize();
+        m_popover->update();
+    }
+
+    m_actionSyncKey = key;
+    ++m_actionSyncApplyCount;
+    m_lastSyncMode = QStringLiteral("action");
+    syncPopconfirmPerfCounters();
 }
 
 void AntPopconfirm::syncPopoverContent()
 {
     const QString titleText = m_title.isEmpty() ? QStringLiteral("Are you sure?") : m_title;
+    if (m_syncedTitle == titleText && m_syncedDescription == m_description)
+    {
+        ++m_contentSyncSkipCount;
+        m_lastSyncMode = QStringLiteral("contentSkip");
+        syncPopconfirmPerfCounters();
+        return;
+    }
+
     m_popover->setTitle(titleText);
     m_popover->setContent(m_description);
+    m_syncedTitle = titleText;
+    m_syncedDescription = m_description;
+    ++m_contentSyncApplyCount;
+    m_lastSyncMode = QStringLiteral("content");
+    syncPopconfirmPerfCounters();
+}
+
+void AntPopconfirm::syncPopconfirmPerfCounters() const
+{
+    auto* that = const_cast<AntPopconfirm*>(this);
+    that->setProperty("antPopconfirmActionBuildCount", m_actionBuildCount);
+    that->setProperty("antPopconfirmActionSyncApplyCount", m_actionSyncApplyCount);
+    that->setProperty("antPopconfirmActionSyncSkipCount", m_actionSyncSkipCount);
+    that->setProperty("antPopconfirmActionAttachCount", m_actionAttachCount);
+    that->setProperty("antPopconfirmContentSyncApplyCount", m_contentSyncApplyCount);
+    that->setProperty("antPopconfirmContentSyncSkipCount", m_contentSyncSkipCount);
+    that->setProperty("antPopconfirmLastSyncMode", m_lastSyncMode);
 }

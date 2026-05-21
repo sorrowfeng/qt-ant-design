@@ -66,6 +66,7 @@ Q_SIGNALS:
 private:
     void rebuildActionWidget();
     void syncPopoverContent();
+    void syncPopconfirmPerfCounters() const;
 
     AntPopover* m_popover = nullptr;
     QPointer<QWidget> m_target;
@@ -78,4 +79,14 @@ private:
     QString m_cancelText = QStringLiteral("Cancel");
     bool m_showCancel = true;
     bool m_disabled = false;
+    QString m_actionSyncKey;
+    QString m_syncedTitle;
+    QString m_syncedDescription;
+    mutable int m_actionBuildCount = 0;
+    mutable int m_actionSyncApplyCount = 0;
+    mutable int m_actionSyncSkipCount = 0;
+    mutable int m_actionAttachCount = 0;
+    mutable int m_contentSyncApplyCount = 0;
+    mutable int m_contentSyncSkipCount = 0;
+    QString m_lastSyncMode;
 };
