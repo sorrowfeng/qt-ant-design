@@ -1,6 +1,7 @@
 #include <QCoreApplication>
 #include <QLabel>
 #include <QMouseEvent>
+#include <QMoveEvent>
 #include <QSignalSpy>
 #include <QPointer>
 #include <QTest>
@@ -34,6 +35,7 @@ private slots:
     void popconfirm();
     void popconfirmReusesActionWidgetAndSkipsRebuilds();
     void popover();
+    void popoverCachesLayoutAndSkipsPlacementWork();
     void progress();
     void result();
     void skeleton();
@@ -608,6 +610,61 @@ void TestAntFeedback::popover()
     w->setOpen(true);
     QCOMPARE(w->isOpen(), true);
     QCOMPARE(openSpy.count(), 1);
+}
+
+void TestAntFeedback::popoverCachesLayoutAndSkipsPlacementWork()
+{
+    QWidget host;
+    host.resize(520, 320);
+
+    QWidget target(&host);
+    target.resize(120, 32);
+    target.move(180, 92);
+
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    AntPopover popover;
+    popover.setTarget(&target);
+    popover.setTrigger(Ant::PopoverTrigger::Click);
+    popover.setPlacement(Ant::TooltipPlacement::Bottom);
+    popover.setTitle(QStringLiteral("Cached popover"));
+    popover.setTitleIconType(Ant::IconType::InfoCircle);
+    popover.setContent(QStringLiteral("Repeated paints and target events should reuse popup geometry."));
+
+    auto* action = new QWidget;
+    action->setFixedSize(92, 28);
+    popover.setActionWidget(action);
+    popover.setOpen(true);
+    QTRY_VERIFY_WITH_TIMEOUT(popover.isVisible(), 300);
+
+    popover.grab();
+    const int layoutBuilds = popover.property("antPopoverLayoutBuildCount").toInt();
+    const int layoutHits = popover.property("antPopoverLayoutCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+
+    popover.grab();
+    QCOMPARE(popover.property("antPopoverLayoutBuildCount").toInt(), layoutBuilds);
+    QVERIFY(popover.property("antPopoverLayoutCacheHitCount").toInt() > layoutHits);
+
+    const int resolveSkips = popover.property("antPopoverPositionResolveSkipCount").toInt();
+    const int sizeSkips = popover.property("antPopoverSizeSkipCount").toInt();
+    QMoveEvent moveEvent(target.pos(), target.pos());
+    QCoreApplication::sendEvent(&target, &moveEvent);
+    QVERIFY(popover.property("antPopoverPositionResolveSkipCount").toInt() > resolveSkips);
+    QVERIFY(popover.property("antPopoverSizeSkipCount").toInt() > sizeSkips);
+    const int positionSkips = popover.property("antPopoverPositionSkipCount").toInt();
+    QMoveEvent repeatedMoveEvent(target.pos(), target.pos());
+    QCoreApplication::sendEvent(&target, &repeatedMoveEvent);
+    QVERIFY(popover.property("antPopoverPositionSkipCount").toInt() > positionSkips);
+
+    const int buildsBeforeContentChange = popover.property("antPopoverLayoutBuildCount").toInt();
+    popover.setContent(QStringLiteral("Changing content invalidates the cached layout exactly through the content path."));
+    QCOMPARE(popover.property("antPopoverLastUpdateMode").toString(), QStringLiteral("content"));
+    popover.grab();
+    QVERIFY(popover.property("antPopoverLayoutBuildCount").toInt() > buildsBeforeContentChange);
+
+    popover.setOpen(false);
 }
 
 void TestAntFeedback::progress()

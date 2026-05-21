@@ -1,7 +1,6 @@
 #include "AntPopoverStyle.h"
 
 #include <QEvent>
-#include <QFontMetrics>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOption>
@@ -12,123 +11,6 @@
 
 namespace
 {
-bool isTopPlacement(Ant::TooltipPlacement placement)
-{
-    return placement == Ant::TooltipPlacement::Top
-        || placement == Ant::TooltipPlacement::TopLeft
-        || placement == Ant::TooltipPlacement::TopRight;
-}
-
-bool isBottomPlacement(Ant::TooltipPlacement placement)
-{
-    return placement == Ant::TooltipPlacement::Bottom
-        || placement == Ant::TooltipPlacement::BottomLeft
-        || placement == Ant::TooltipPlacement::BottomRight;
-}
-
-struct Metrics
-{
-    int shadowMargin = 8;
-    int paddingX = 12;
-    int paddingY = 12;
-    int radius = 8;
-    int arrowSize = 8;
-    int gap = 0;
-    int titleBodyGap = 8;
-    int titleMinWidth = 177;
-    int maxWidth = 320;
-};
-
-QRect computeBubbleRect(const QRect& rect, const Metrics& m, Ant::TooltipPlacement placement, bool arrowVisible)
-{
-    if (!arrowVisible)
-    {
-        return rect.adjusted(m.shadowMargin, m.shadowMargin, -m.shadowMargin, -m.shadowMargin);
-    }
-    if (isTopPlacement(placement))
-    {
-        return rect.adjusted(m.shadowMargin, m.shadowMargin, -m.shadowMargin, -(m.shadowMargin + m.arrowSize));
-    }
-    if (isBottomPlacement(placement))
-    {
-        return rect.adjusted(m.shadowMargin, m.shadowMargin + m.arrowSize, -m.shadowMargin, -m.shadowMargin);
-    }
-    if (placement == Ant::TooltipPlacement::Left)
-    {
-        return rect.adjusted(m.shadowMargin, m.shadowMargin, -(m.shadowMargin + m.arrowSize), -m.shadowMargin);
-    }
-    return rect.adjusted(m.shadowMargin + m.arrowSize, m.shadowMargin, -m.shadowMargin, -m.shadowMargin);
-}
-
-QPolygonF computeArrowPolygon(const QRect& bubble, const Metrics& m, Ant::TooltipPlacement placement, bool arrowVisible)
-{
-    if (!arrowVisible)
-    {
-        return {};
-    }
-    constexpr qreal joinOverlap = 1.0;
-    switch (placement)
-    {
-    case Ant::TooltipPlacement::Top:
-        return QPolygonF()
-            << QPointF(bubble.center().x() - m.arrowSize, bubble.bottom() - joinOverlap)
-            << QPointF(bubble.center().x() + m.arrowSize, bubble.bottom() - joinOverlap)
-            << QPointF(bubble.center().x(), bubble.bottom() + m.arrowSize);
-    case Ant::TooltipPlacement::TopLeft:
-        return QPolygonF()
-            << QPointF(bubble.left() + 24 - m.arrowSize, bubble.bottom() - joinOverlap)
-            << QPointF(bubble.left() + 24 + m.arrowSize, bubble.bottom() - joinOverlap)
-            << QPointF(bubble.left() + 24, bubble.bottom() + m.arrowSize);
-    case Ant::TooltipPlacement::TopRight:
-        return QPolygonF()
-            << QPointF(bubble.right() - 24 - m.arrowSize, bubble.bottom() - joinOverlap)
-            << QPointF(bubble.right() - 24 + m.arrowSize, bubble.bottom() - joinOverlap)
-            << QPointF(bubble.right() - 24, bubble.bottom() + m.arrowSize);
-    case Ant::TooltipPlacement::Bottom:
-        return QPolygonF()
-            << QPointF(bubble.center().x() - m.arrowSize, bubble.top() + joinOverlap)
-            << QPointF(bubble.center().x() + m.arrowSize, bubble.top() + joinOverlap)
-            << QPointF(bubble.center().x(), bubble.top() - m.arrowSize);
-    case Ant::TooltipPlacement::BottomLeft:
-        return QPolygonF()
-            << QPointF(bubble.left() + 24 - m.arrowSize, bubble.top() + joinOverlap)
-            << QPointF(bubble.left() + 24 + m.arrowSize, bubble.top() + joinOverlap)
-            << QPointF(bubble.left() + 24, bubble.top() - m.arrowSize);
-    case Ant::TooltipPlacement::BottomRight:
-        return QPolygonF()
-            << QPointF(bubble.right() - 24 - m.arrowSize, bubble.top() + joinOverlap)
-            << QPointF(bubble.right() - 24 + m.arrowSize, bubble.top() + joinOverlap)
-            << QPointF(bubble.right() - 24, bubble.top() - m.arrowSize);
-    case Ant::TooltipPlacement::Left:
-        return QPolygonF()
-            << QPointF(bubble.right() - joinOverlap, bubble.center().y() - m.arrowSize)
-            << QPointF(bubble.right() - joinOverlap, bubble.center().y() + m.arrowSize)
-            << QPointF(bubble.right() + m.arrowSize, bubble.center().y());
-    case Ant::TooltipPlacement::Right:
-    default:
-        return QPolygonF()
-            << QPointF(bubble.left() + joinOverlap, bubble.center().y() - m.arrowSize)
-            << QPointF(bubble.left() + joinOverlap, bubble.center().y() + m.arrowSize)
-            << QPointF(bubble.left() - m.arrowSize, bubble.center().y());
-    }
-}
-
-QRect computeHeaderRect(const QRect& bubble, const Metrics& m, const QString& title, Ant::IconType iconType, const QFont& baseFont)
-{
-    QRect inner = bubble.adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY);
-    int headerHeight = 0;
-    if (!title.isEmpty())
-    {
-        QFont titleFont = baseFont;
-        titleFont.setPixelSize(antTheme->tokens().fontSize);
-        titleFont.setWeight(QFont::DemiBold);
-        const int iconExtra = iconType != Ant::IconType::None ? 26 : 0;
-        headerHeight = QFontMetrics(titleFont).boundingRect(QRect(0, 0, inner.width() - iconExtra, 120), Qt::TextWordWrap, title).height();
-        headerHeight = qMax(headerHeight, iconExtra > 0 ? 18 : 0);
-    }
-    return QRect(inner.left(), inner.top(), inner.width(), headerHeight);
-}
-
 QColor titleIconColor(Ant::IconType iconType)
 {
     const auto& token = antTheme->tokens();
@@ -200,20 +82,11 @@ void drawTitleIcon(QPainter& painter, const QRectF& rect, Ant::IconType iconType
     }
     painter.restore();
 }
-
-QRect computeBodyRect(const QRect& bubble, const Metrics& m, const QRect& header, bool hasActionWidget)
-{
-    QRect inner = bubble.adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY);
-    int top = header.height() <= 0 ? inner.top() : header.top() + header.height() + m.titleBodyGap;
-    int bottom = hasActionWidget ? inner.bottom() - 38 : inner.bottom();
-    return QRect(inner.left(), top, inner.width(), qMax(24, bottom - top));
-}
 } // namespace
 
 AntPopoverStyle::AntPopoverStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntPopover>();
 }
 
 void AntPopoverStyle::polish(QWidget* widget)
@@ -273,13 +146,9 @@ void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter,
     }
 
     const auto& token = antTheme->tokens();
-    const Metrics m;
-    const Ant::TooltipPlacement placement = popover->renderPlacement();
-    const bool arrowVisible = popover->arrowVisible();
-    const bool hasActionWidget = popover->actionWidget() != nullptr;
-
-    const QRect bubble = computeBubbleRect(option->rect, m, placement, arrowVisible);
-    const QPolygonF arrow = computeArrowPolygon(bubble, m, placement, arrowVisible);
+    const auto& layout = popover->popoverLayout();
+    const QRect bubble = layout.bubbleRect;
+    const QPolygonF& arrow = layout.arrowPolygon;
     const QPainterPath surface = popoverSurfacePath(bubble, arrow, token.borderRadiusLG);
 
     painter->save();
@@ -299,7 +168,7 @@ void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter,
 
     // Header
     const bool hasTitleIcon = !popover->title().isEmpty() && popover->titleIconType() != Ant::IconType::None;
-    const QRect header = computeHeaderRect(bubble, m, popover->title(), popover->titleIconType(), widget->font());
+    const QRect header = layout.headerRect;
     if (!popover->title().isEmpty())
     {
         QRect titleRect = header;
@@ -323,8 +192,7 @@ void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter,
     bodyFont.setWeight(QFont::Normal);
     painter->setFont(bodyFont);
     painter->setPen(token.colorText);
-    const QRect body = computeBodyRect(bubble, m, header, hasActionWidget);
-    painter->drawText(body, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, popover->content());
+    painter->drawText(layout.bodyRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, popover->content());
 
     painter->restore();
 }

@@ -2,11 +2,16 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QFont>
 #include <QPointer>
+#include <QPolygonF>
+#include <QRect>
+#include <QSize>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
+class AntPopoverStyle;
 class QTimer;
 
 class QT_ANT_DESIGN_EXPORT AntPopover : public QWidget
@@ -70,6 +75,8 @@ protected:
     void leaveEvent(QEvent* event) override;
 
 private:
+    friend class AntPopoverStyle;
+
     struct Metrics
     {
         int shadowMargin = 8;
@@ -83,7 +90,38 @@ private:
         int maxWidth = 320;
     };
 
+    struct PopoverLayoutCache
+    {
+        bool valid = false;
+        QSize widgetSize;
+        QString title;
+        QString content;
+        Ant::IconType titleIconType = Ant::IconType::None;
+        Ant::TooltipPlacement renderPlacement = Ant::TooltipPlacement::Top;
+        bool arrowVisible = true;
+        bool hasActionWidget = false;
+        QSize actionSize;
+        QFont font;
+        Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
+        int tokenFontSize = 0;
+        qreal tokenLineHeight = 0.0;
+        Metrics metrics;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QRect bubbleRect;
+        QRect headerRect;
+        QRect bodyRect;
+        QRect actionRect;
+        QPolygonF arrowPolygon;
+    };
+
     Metrics metrics() const;
+    const PopoverLayoutCache& popoverLayout() const;
+    void invalidatePopoverLayout() const;
+    void invalidatePopoverPlacementCache() const;
+    void applyPopoverSizeHint();
+    void requestPopoverUpdate(const QRect& region, const QString& mode);
+    void syncPopoverPerfCounters() const;
     QRect bubbleRect() const;
     QPolygonF arrowPolygon() const;
     QRect headerRect() const;
@@ -94,7 +132,7 @@ private:
     void installTarget(QWidget* target);
     void uninstallTarget();
     bool isHoveringInteractiveArea() const;
-    Ant::TooltipPlacement resolvedPlacement(const QRect& targetRect, const QRect& screenRect) const;
+    Ant::TooltipPlacement resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& popupSize) const;
     QPoint popupTopLeft(const QRect& targetRect, const QSize& popupSize, Ant::TooltipPlacement placement) const;
 
     QString m_title;
@@ -109,4 +147,23 @@ private:
     QPointer<QWidget> m_actionWidget;
     QTimer* m_openTimer = nullptr;
     QTimer* m_closeTimer = nullptr;
+    mutable PopoverLayoutCache m_layoutCache;
+    mutable bool m_positionCacheValid = false;
+    mutable QRect m_cachedTargetRect;
+    mutable QRect m_cachedScreenRect;
+    mutable QSize m_cachedPopupSize;
+    mutable Ant::TooltipPlacement m_cachedPlacementRequest = Ant::TooltipPlacement::Top;
+    mutable Ant::TooltipPlacement m_cachedResolvedPlacement = Ant::TooltipPlacement::Top;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    mutable int m_positionResolveCount = 0;
+    mutable int m_positionResolveSkipCount = 0;
+    int m_sizeApplyCount = 0;
+    int m_sizeSkipCount = 0;
+    int m_actionGeometryApplyCount = 0;
+    int m_actionGeometrySkipCount = 0;
+    int m_positionApplyCount = 0;
+    int m_positionSkipCount = 0;
+    int m_regionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };

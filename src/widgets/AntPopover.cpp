@@ -1,6 +1,7 @@
 #include "AntPopover.h"
 
 #include <QGuiApplication>
+#include <QFontMetrics>
 #include <QHideEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -41,6 +42,60 @@ bool isBottomPlacement(Ant::TooltipPlacement placement)
         || placement == Ant::TooltipPlacement::BottomLeft
         || placement == Ant::TooltipPlacement::BottomRight;
 }
+
+QPolygonF arrowPolygonFor(const QRect& bubble, int arrowSize, Ant::TooltipPlacement placement, bool arrowVisible)
+{
+    if (!arrowVisible)
+    {
+        return {};
+    }
+
+    constexpr qreal joinOverlap = 1.0;
+    switch (placement)
+    {
+    case Ant::TooltipPlacement::Top:
+        return QPolygonF()
+            << QPointF(bubble.center().x() - arrowSize, bubble.bottom() - joinOverlap)
+            << QPointF(bubble.center().x() + arrowSize, bubble.bottom() - joinOverlap)
+            << QPointF(bubble.center().x(), bubble.bottom() + arrowSize);
+    case Ant::TooltipPlacement::TopLeft:
+        return QPolygonF()
+            << QPointF(bubble.left() + 24 - arrowSize, bubble.bottom() - joinOverlap)
+            << QPointF(bubble.left() + 24 + arrowSize, bubble.bottom() - joinOverlap)
+            << QPointF(bubble.left() + 24, bubble.bottom() + arrowSize);
+    case Ant::TooltipPlacement::TopRight:
+        return QPolygonF()
+            << QPointF(bubble.right() - 24 - arrowSize, bubble.bottom() - joinOverlap)
+            << QPointF(bubble.right() - 24 + arrowSize, bubble.bottom() - joinOverlap)
+            << QPointF(bubble.right() - 24, bubble.bottom() + arrowSize);
+    case Ant::TooltipPlacement::Bottom:
+        return QPolygonF()
+            << QPointF(bubble.center().x() - arrowSize, bubble.top() + joinOverlap)
+            << QPointF(bubble.center().x() + arrowSize, bubble.top() + joinOverlap)
+            << QPointF(bubble.center().x(), bubble.top() - arrowSize);
+    case Ant::TooltipPlacement::BottomLeft:
+        return QPolygonF()
+            << QPointF(bubble.left() + 24 - arrowSize, bubble.top() + joinOverlap)
+            << QPointF(bubble.left() + 24 + arrowSize, bubble.top() + joinOverlap)
+            << QPointF(bubble.left() + 24, bubble.top() - arrowSize);
+    case Ant::TooltipPlacement::BottomRight:
+        return QPolygonF()
+            << QPointF(bubble.right() - 24 - arrowSize, bubble.top() + joinOverlap)
+            << QPointF(bubble.right() - 24 + arrowSize, bubble.top() + joinOverlap)
+            << QPointF(bubble.right() - 24, bubble.top() - arrowSize);
+    case Ant::TooltipPlacement::Left:
+        return QPolygonF()
+            << QPointF(bubble.right() - joinOverlap, bubble.center().y() - arrowSize)
+            << QPointF(bubble.right() - joinOverlap, bubble.center().y() + arrowSize)
+            << QPointF(bubble.right() + arrowSize, bubble.center().y());
+    case Ant::TooltipPlacement::Right:
+    default:
+        return QPolygonF()
+            << QPointF(bubble.left() + joinOverlap, bubble.center().y() - arrowSize)
+            << QPointF(bubble.left() + joinOverlap, bubble.center().y() + arrowSize)
+            << QPointF(bubble.left() - arrowSize, bubble.center().y());
+    }
+}
 }
 
 AntPopover::AntPopover(QWidget* parent)
@@ -65,6 +120,13 @@ AntPopover::AntPopover(QWidget* parent)
             }
         }
     });
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidatePopoverLayout();
+        applyPopoverSizeHint();
+        requestPopoverUpdate(rect(), QStringLiteral("theme"));
+    });
+    syncPopoverPerfCounters();
 }
 
 AntPopover::~AntPopover()
@@ -81,8 +143,9 @@ void AntPopover::setTitle(const QString& title)
         return;
     }
     m_title = title;
-    adjustSize();
-    update();
+    invalidatePopoverLayout();
+    applyPopoverSizeHint();
+    requestPopoverUpdate(rect(), QStringLiteral("title"));
     Q_EMIT titleChanged(m_title);
 }
 
@@ -95,8 +158,9 @@ void AntPopover::setTitleIconType(Ant::IconType iconType)
         return;
     }
     m_titleIconType = iconType;
-    adjustSize();
-    update();
+    invalidatePopoverLayout();
+    applyPopoverSizeHint();
+    requestPopoverUpdate(rect(), QStringLiteral("titleIcon"));
 }
 
 QString AntPopover::content() const { return m_content; }
@@ -108,8 +172,9 @@ void AntPopover::setContent(const QString& content)
         return;
     }
     m_content = content;
-    adjustSize();
-    update();
+    invalidatePopoverLayout();
+    applyPopoverSizeHint();
+    requestPopoverUpdate(rect(), QStringLiteral("content"));
     Q_EMIT contentChanged(m_content);
 }
 
@@ -125,11 +190,13 @@ void AntPopover::setPlacement(Ant::TooltipPlacement placement)
     }
     m_placement = placement;
     m_renderPlacement = placement;
+    invalidatePopoverLayout();
+    invalidatePopoverPlacementCache();
     if (isVisible())
     {
         updatePosition();
     }
-    update();
+    requestPopoverUpdate(rect(), QStringLiteral("placement"));
     Q_EMIT placementChanged(m_placement);
 }
 
@@ -154,8 +221,9 @@ void AntPopover::setArrowVisible(bool visible)
         return;
     }
     m_arrowVisible = visible;
-    adjustSize();
-    update();
+    invalidatePopoverLayout();
+    applyPopoverSizeHint();
+    requestPopoverUpdate(rect(), QStringLiteral("arrow"));
     Q_EMIT arrowVisibleChanged(m_arrowVisible);
 }
 
@@ -214,45 +282,20 @@ void AntPopover::setActionWidget(QWidget* widget)
         m_actionWidget->setParent(this);
         m_actionWidget->show();
     }
+    invalidatePopoverLayout();
+    applyPopoverSizeHint();
     syncActionGeometry();
-    adjustSize();
-    update();
+    requestPopoverUpdate(rect(), QStringLiteral("action"));
 }
 
 QSize AntPopover::sizeHint() const
 {
-    const auto& token = antTheme->tokens();
-    const Metrics m = metrics();
-    QFont titleFont = font();
-    titleFont.setPixelSize(token.fontSize);
-    titleFont.setWeight(QFont::DemiBold);
-    QFontMetrics titleFm(titleFont);
-
-    QFont bodyFont = font();
-    bodyFont.setPixelSize(token.fontSize);
-    QFontMetrics bodyFm(bodyFont);
-
-    const int textWidth = m.maxWidth;
-    const int titleIconExtra = (!m_title.isEmpty() && m_titleIconType != Ant::IconType::None) ? 26 : 0;
-    const QRect titleBounds = m_title.isEmpty() ? QRect() : titleFm.boundingRect(QRect(0, 0, textWidth - titleIconExtra, 120), Qt::TextWordWrap, m_title);
-    const QRect bodyBounds = m_content.isEmpty() ? QRect() : bodyFm.boundingRect(QRect(0, 0, textWidth, 240), Qt::TextWordWrap, m_content);
-    const int actionHeight = m_actionWidget ? qMax(28, m_actionWidget->sizeHint().height()) + 10 : 0;
-    const int arrow = m_arrowVisible ? m.arrowSize : 0;
-    const int lineHeight = qRound(token.fontSize * token.lineHeight);
-    const int titleHeight = titleBounds.isNull() ? 0 : qMax(qMax(titleBounds.height(), lineHeight), titleIconExtra > 0 ? 18 : 0);
-    const int bodyHeight = bodyBounds.isNull() ? 0 : qMax(bodyBounds.height(), lineHeight);
-    const int bubbleWidth = qMax(m.titleMinWidth, qMax(titleBounds.width() + titleIconExtra, bodyBounds.width())) + m.paddingX * 2;
-    const int bubbleHeight = m.paddingY * 2 + titleHeight + (titleBounds.isNull() || bodyBounds.isNull() ? 0 : m.titleBodyGap) + bodyHeight + actionHeight;
-    const bool sideArrow = m_arrowVisible && (m_renderPlacement == Ant::TooltipPlacement::Left || m_renderPlacement == Ant::TooltipPlacement::Right);
-    const bool verticalArrow = m_arrowVisible && !sideArrow;
-    const int width = bubbleWidth + m.shadowMargin * 2 + (sideArrow ? arrow : 0);
-    const int height = bubbleHeight + m.shadowMargin * 2 + (verticalArrow ? arrow : 0);
-    return QSize(width, qMax(56, height));
+    return popoverLayout().sizeHint;
 }
 
 QSize AntPopover::minimumSizeHint() const
 {
-    return QSize(180, 64);
+    return popoverLayout().minimumSizeHint;
 }
 
 bool AntPopover::eventFilter(QObject* watched, QEvent* event)
@@ -265,7 +308,7 @@ bool AntPopover::eventFilter(QObject* watched, QEvent* event)
             if (m_trigger == Ant::PopoverTrigger::Hover)
             {
                 m_closeTimer->stop();
-                if (!m_open)
+                if (!m_open && !m_openTimer->isActive())
                 {
                     m_openTimer->start(120);
                 }
@@ -275,7 +318,10 @@ bool AntPopover::eventFilter(QObject* watched, QEvent* event)
             if (m_trigger == Ant::PopoverTrigger::Hover)
             {
                 m_openTimer->stop();
-                m_closeTimer->start(140);
+                if (m_open && !m_closeTimer->isActive())
+                {
+                    m_closeTimer->start(140);
+                }
             }
             break;
         case QEvent::MouseButtonPress:
@@ -334,7 +380,10 @@ void AntPopover::leaveEvent(QEvent* event)
 {
     if (m_trigger == Ant::PopoverTrigger::Hover)
     {
-        m_closeTimer->start(140);
+        if (m_open && !m_closeTimer->isActive())
+        {
+            m_closeTimer->start(140);
+        }
     }
     QWidget::leaveEvent(event);
 }
@@ -345,122 +394,215 @@ AntPopover::Metrics AntPopover::metrics() const
     return m;
 }
 
-QRect AntPopover::bubbleRect() const
+const AntPopover::PopoverLayoutCache& AntPopover::popoverLayout() const
 {
-    const Metrics m = metrics();
+    const auto& token = antTheme->tokens();
+    const QSize actionSize = m_actionWidget ? m_actionWidget->sizeHint() : QSize();
+    const bool hasActionWidget = m_actionWidget != nullptr;
+
+    if (m_layoutCache.valid &&
+        m_layoutCache.widgetSize == size() &&
+        m_layoutCache.title == m_title &&
+        m_layoutCache.content == m_content &&
+        m_layoutCache.titleIconType == m_titleIconType &&
+        m_layoutCache.renderPlacement == m_renderPlacement &&
+        m_layoutCache.arrowVisible == m_arrowVisible &&
+        m_layoutCache.hasActionWidget == hasActionWidget &&
+        m_layoutCache.actionSize == actionSize &&
+        m_layoutCache.font == font() &&
+        m_layoutCache.themeMode == antTheme->themeMode() &&
+        m_layoutCache.tokenFontSize == token.fontSize &&
+        qFuzzyCompare(m_layoutCache.tokenLineHeight, token.lineHeight))
+    {
+        ++m_layoutCacheHitCount;
+        syncPopoverPerfCounters();
+        return m_layoutCache;
+    }
+
+    ++m_layoutBuildCount;
+    PopoverLayoutCache cache;
+    cache.valid = true;
+    cache.widgetSize = size();
+    cache.title = m_title;
+    cache.content = m_content;
+    cache.titleIconType = m_titleIconType;
+    cache.renderPlacement = m_renderPlacement;
+    cache.arrowVisible = m_arrowVisible;
+    cache.hasActionWidget = hasActionWidget;
+    cache.actionSize = actionSize;
+    cache.font = font();
+    cache.themeMode = antTheme->themeMode();
+    cache.tokenFontSize = token.fontSize;
+    cache.tokenLineHeight = token.lineHeight;
+    cache.metrics = metrics();
+
+    QFont titleFont = font();
+    titleFont.setPixelSize(token.fontSize);
+    titleFont.setWeight(QFont::DemiBold);
+    const QFontMetrics titleFm(titleFont);
+
+    QFont bodyFont = font();
+    bodyFont.setPixelSize(token.fontSize);
+    const QFontMetrics bodyFm(bodyFont);
+
+    const Metrics& m = cache.metrics;
+    const int textWidth = m.maxWidth;
+    const int titleIconExtra = (!m_title.isEmpty() && m_titleIconType != Ant::IconType::None) ? 26 : 0;
+    const QRect titleBounds = m_title.isEmpty()
+        ? QRect()
+        : titleFm.boundingRect(QRect(0, 0, textWidth - titleIconExtra, 120), Qt::TextWordWrap, m_title);
+    const QRect bodyBounds = m_content.isEmpty()
+        ? QRect()
+        : bodyFm.boundingRect(QRect(0, 0, textWidth, 240), Qt::TextWordWrap, m_content);
+    const int actionHeight = hasActionWidget ? qMax(28, actionSize.height()) + 10 : 0;
+    const int arrow = m_arrowVisible ? m.arrowSize : 0;
+    const int lineHeight = qRound(token.fontSize * token.lineHeight);
+    const int titleHeight = titleBounds.isNull() ? 0 : qMax(qMax(titleBounds.height(), lineHeight), titleIconExtra > 0 ? 18 : 0);
+    const int bodyHeight = bodyBounds.isNull() ? 0 : qMax(bodyBounds.height(), lineHeight);
+    const int bubbleWidth = qMax(m.titleMinWidth, qMax(titleBounds.width() + titleIconExtra, bodyBounds.width())) + m.paddingX * 2;
+    const int bubbleHeight = m.paddingY * 2 +
+        titleHeight +
+        (titleBounds.isNull() || bodyBounds.isNull() ? 0 : m.titleBodyGap) +
+        bodyHeight +
+        actionHeight;
+    const bool sideArrow = m_arrowVisible &&
+        (m_renderPlacement == Ant::TooltipPlacement::Left || m_renderPlacement == Ant::TooltipPlacement::Right);
+    const bool verticalArrow = m_arrowVisible && !sideArrow;
+    const int width = bubbleWidth + m.shadowMargin * 2 + (sideArrow ? arrow : 0);
+    const int height = bubbleHeight + m.shadowMargin * 2 + (verticalArrow ? arrow : 0);
+    cache.sizeHint = QSize(width, qMax(56, height));
+    cache.minimumSizeHint = QSize(180, 64);
+
     if (!m_arrowVisible)
     {
-        return rect().adjusted(m.shadowMargin, m.shadowMargin, -m.shadowMargin, -m.shadowMargin);
+        cache.bubbleRect = rect().adjusted(m.shadowMargin, m.shadowMargin, -m.shadowMargin, -m.shadowMargin);
     }
-    if (isTopPlacement(m_renderPlacement))
+    else if (isTopPlacement(m_renderPlacement))
     {
-        return rect().adjusted(m.shadowMargin, m.shadowMargin, -m.shadowMargin, -(m.shadowMargin + m.arrowSize));
+        cache.bubbleRect = rect().adjusted(m.shadowMargin, m.shadowMargin, -m.shadowMargin, -(m.shadowMargin + m.arrowSize));
     }
-    if (isBottomPlacement(m_renderPlacement))
+    else if (isBottomPlacement(m_renderPlacement))
     {
-        return rect().adjusted(m.shadowMargin, m.shadowMargin + m.arrowSize, -m.shadowMargin, -m.shadowMargin);
+        cache.bubbleRect = rect().adjusted(m.shadowMargin, m.shadowMargin + m.arrowSize, -m.shadowMargin, -m.shadowMargin);
     }
-    if (m_renderPlacement == Ant::TooltipPlacement::Left)
+    else if (m_renderPlacement == Ant::TooltipPlacement::Left)
     {
-        return rect().adjusted(m.shadowMargin, m.shadowMargin, -(m.shadowMargin + m.arrowSize), -m.shadowMargin);
+        cache.bubbleRect = rect().adjusted(m.shadowMargin, m.shadowMargin, -(m.shadowMargin + m.arrowSize), -m.shadowMargin);
     }
-    return rect().adjusted(m.shadowMargin + m.arrowSize, m.shadowMargin, -m.shadowMargin, -m.shadowMargin);
+    else
+    {
+        cache.bubbleRect = rect().adjusted(m.shadowMargin + m.arrowSize, m.shadowMargin, -m.shadowMargin, -m.shadowMargin);
+    }
+    cache.arrowPolygon = arrowPolygonFor(cache.bubbleRect, m.arrowSize, m_renderPlacement, m_arrowVisible);
+
+    const QRect inner = cache.bubbleRect.adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY);
+    int headerHeight = 0;
+    if (!m_title.isEmpty())
+    {
+        const int iconExtra = m_titleIconType != Ant::IconType::None ? 26 : 0;
+        headerHeight = titleFm.boundingRect(QRect(0, 0, inner.width() - iconExtra, 120), Qt::TextWordWrap, m_title).height();
+        headerHeight = qMax(headerHeight, iconExtra > 0 ? 18 : 0);
+    }
+    cache.headerRect = QRect(inner.left(), inner.top(), inner.width(), headerHeight);
+
+    if (hasActionWidget)
+    {
+        cache.actionRect = QRect(inner.right() - actionSize.width(),
+                                 inner.bottom() - actionSize.height(),
+                                 actionSize.width(),
+                                 actionSize.height());
+    }
+
+    const int bodyTop = cache.headerRect.height() <= 0
+        ? inner.top()
+        : cache.headerRect.top() + cache.headerRect.height() + m.titleBodyGap;
+    const int bodyBottom = hasActionWidget ? cache.actionRect.top() - 10 : inner.bottom();
+    cache.bodyRect = QRect(inner.left(), bodyTop, inner.width(), qMax(24, bodyBottom - bodyTop));
+
+    m_layoutCache = cache;
+    syncPopoverPerfCounters();
+    return m_layoutCache;
+}
+
+void AntPopover::invalidatePopoverLayout() const
+{
+    m_layoutCache.valid = false;
+    invalidatePopoverPlacementCache();
+}
+
+void AntPopover::invalidatePopoverPlacementCache() const
+{
+    m_positionCacheValid = false;
+}
+
+void AntPopover::applyPopoverSizeHint()
+{
+    const QSize targetSize = sizeHint();
+    if (size() == targetSize)
+    {
+        ++m_sizeSkipCount;
+        syncPopoverPerfCounters();
+        return;
+    }
+
+    ++m_sizeApplyCount;
+    resize(targetSize);
+    syncPopoverPerfCounters();
+}
+
+void AntPopover::requestPopoverUpdate(const QRect& region, const QString& mode)
+{
+    m_lastUpdateMode = mode;
+    ++m_regionUpdateCount;
+    syncPopoverPerfCounters();
+    if (region.isValid() && !region.isEmpty())
+    {
+        update(region);
+        return;
+    }
+    update();
+}
+
+void AntPopover::syncPopoverPerfCounters() const
+{
+    auto* self = const_cast<AntPopover*>(this);
+    self->setProperty("antPopoverLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antPopoverLayoutCacheHitCount", m_layoutCacheHitCount);
+    self->setProperty("antPopoverPositionResolveCount", m_positionResolveCount);
+    self->setProperty("antPopoverPositionResolveSkipCount", m_positionResolveSkipCount);
+    self->setProperty("antPopoverSizeApplyCount", m_sizeApplyCount);
+    self->setProperty("antPopoverSizeSkipCount", m_sizeSkipCount);
+    self->setProperty("antPopoverActionGeometryApplyCount", m_actionGeometryApplyCount);
+    self->setProperty("antPopoverActionGeometrySkipCount", m_actionGeometrySkipCount);
+    self->setProperty("antPopoverPositionApplyCount", m_positionApplyCount);
+    self->setProperty("antPopoverPositionSkipCount", m_positionSkipCount);
+    self->setProperty("antPopoverRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antPopoverLastUpdateMode", m_lastUpdateMode);
+}
+
+QRect AntPopover::bubbleRect() const
+{
+    return popoverLayout().bubbleRect;
 }
 
 QPolygonF AntPopover::arrowPolygon() const
 {
-    const Metrics m = metrics();
-    const QRect bubble = bubbleRect();
-    if (!m_arrowVisible)
-    {
-        return {};
-    }
-    switch (m_renderPlacement)
-    {
-    case Ant::TooltipPlacement::Top:
-        return QPolygonF()
-            << QPointF(bubble.center().x() - m.arrowSize, bubble.bottom())
-            << QPointF(bubble.center().x() + m.arrowSize, bubble.bottom())
-            << QPointF(bubble.center().x(), bubble.bottom() + m.arrowSize);
-    case Ant::TooltipPlacement::TopLeft:
-        return QPolygonF()
-            << QPointF(bubble.left() + 24 - m.arrowSize, bubble.bottom())
-            << QPointF(bubble.left() + 24 + m.arrowSize, bubble.bottom())
-            << QPointF(bubble.left() + 24, bubble.bottom() + m.arrowSize);
-    case Ant::TooltipPlacement::TopRight:
-        return QPolygonF()
-            << QPointF(bubble.right() - 24 - m.arrowSize, bubble.bottom())
-            << QPointF(bubble.right() - 24 + m.arrowSize, bubble.bottom())
-            << QPointF(bubble.right() - 24, bubble.bottom() + m.arrowSize);
-    case Ant::TooltipPlacement::Bottom:
-        return QPolygonF()
-            << QPointF(bubble.center().x() - m.arrowSize, bubble.top())
-            << QPointF(bubble.center().x() + m.arrowSize, bubble.top())
-            << QPointF(bubble.center().x(), bubble.top() - m.arrowSize);
-    case Ant::TooltipPlacement::BottomLeft:
-        return QPolygonF()
-            << QPointF(bubble.left() + 24 - m.arrowSize, bubble.top())
-            << QPointF(bubble.left() + 24 + m.arrowSize, bubble.top())
-            << QPointF(bubble.left() + 24, bubble.top() - m.arrowSize);
-    case Ant::TooltipPlacement::BottomRight:
-        return QPolygonF()
-            << QPointF(bubble.right() - 24 - m.arrowSize, bubble.top())
-            << QPointF(bubble.right() - 24 + m.arrowSize, bubble.top())
-            << QPointF(bubble.right() - 24, bubble.top() - m.arrowSize);
-    case Ant::TooltipPlacement::Left:
-        return QPolygonF()
-            << QPointF(bubble.right(), bubble.center().y() - m.arrowSize)
-            << QPointF(bubble.right(), bubble.center().y() + m.arrowSize)
-            << QPointF(bubble.right() + m.arrowSize, bubble.center().y());
-    case Ant::TooltipPlacement::Right:
-    default:
-        return QPolygonF()
-            << QPointF(bubble.left(), bubble.center().y() - m.arrowSize)
-            << QPointF(bubble.left(), bubble.center().y() + m.arrowSize)
-            << QPointF(bubble.left() - m.arrowSize, bubble.center().y());
-    }
+    return popoverLayout().arrowPolygon;
 }
 
 QRect AntPopover::headerRect() const
 {
-    const Metrics m = metrics();
-    QRect bubble = bubbleRect().adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY);
-    int headerHeight = 0;
-    if (!m_title.isEmpty())
-    {
-        QFont fontMetricsFont = font();
-        fontMetricsFont.setPixelSize(antTheme->tokens().fontSize);
-        fontMetricsFont.setWeight(QFont::DemiBold);
-        const int iconExtra = m_titleIconType != Ant::IconType::None ? 26 : 0;
-        headerHeight = QFontMetrics(fontMetricsFont).boundingRect(QRect(0, 0, bubble.width() - iconExtra, 120), Qt::TextWordWrap, m_title).height();
-        headerHeight = qMax(headerHeight, iconExtra > 0 ? 18 : 0);
-    }
-    return QRect(bubble.left(), bubble.top(), bubble.width(), headerHeight);
+    return popoverLayout().headerRect;
 }
 
 QRect AntPopover::bodyRect() const
 {
-    const Metrics m = metrics();
-    QRect bubble = bubbleRect().adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY);
-    QRect header = headerRect();
-    int top = header.height() <= 0 ? bubble.top() : header.top() + header.height() + m.titleBodyGap;
-    int bottom = m_actionWidget ? actionRect().top() - 10 : bubble.bottom();
-    return QRect(bubble.left(), top, bubble.width(), qMax(24, bottom - top));
+    return popoverLayout().bodyRect;
 }
 
 QRect AntPopover::actionRect() const
 {
-    if (!m_actionWidget)
-    {
-        return {};
-    }
-    const Metrics m = metrics();
-    QRect bubble = bubbleRect().adjusted(m.paddingX, m.paddingY, -m.paddingX, -m.paddingY);
-    QSize size = m_actionWidget->sizeHint();
-    return QRect(bubble.right() - size.width(),
-                 bubble.bottom() - size.height(),
-                 size.width(),
-                 size.height());
+    return popoverLayout().actionRect;
 }
 
 void AntPopover::updatePosition()
@@ -469,29 +611,77 @@ void AntPopover::updatePosition()
     {
         return;
     }
-    adjustSize();
+    applyPopoverSizeHint();
     const QRect targetRect(m_target->mapToGlobal(QPoint(0, 0)), m_target->size());
     const QRect screenRect = availableScreenGeometryFor(m_target);
-    const Ant::TooltipPlacement placement = resolvedPlacement(targetRect, screenRect);
-    m_renderPlacement = placement;
-    QPoint topLeft = popupTopLeft(targetRect, sizeHint(), placement);
-    topLeft.setX(qBound(screenRect.left() + 4, topLeft.x(), screenRect.right() - width() - 4));
-    topLeft.setY(qBound(screenRect.top() + 4, topLeft.y(), screenRect.bottom() - height() - 4));
+    QSize popupSize = sizeHint();
+    Ant::TooltipPlacement placement = m_cachedResolvedPlacement;
+    if (m_positionCacheValid &&
+        m_cachedTargetRect == targetRect &&
+        m_cachedScreenRect == screenRect &&
+        m_cachedPopupSize == popupSize &&
+        m_cachedPlacementRequest == m_placement)
+    {
+        ++m_positionResolveSkipCount;
+    }
+    else
+    {
+        placement = resolvedPlacement(targetRect, screenRect, popupSize);
+        m_positionCacheValid = true;
+        m_cachedTargetRect = targetRect;
+        m_cachedScreenRect = screenRect;
+        m_cachedPopupSize = popupSize;
+        m_cachedPlacementRequest = m_placement;
+        m_cachedResolvedPlacement = placement;
+        ++m_positionResolveCount;
+    }
+
+    if (m_renderPlacement != placement)
+    {
+        m_renderPlacement = placement;
+        m_layoutCache.valid = false;
+        applyPopoverSizeHint();
+        popupSize = sizeHint();
+    }
+
+    QPoint topLeft = popupTopLeft(targetRect, popupSize, placement);
+    topLeft.setX(qBound(screenRect.left() + 4, topLeft.x(), screenRect.right() - popupSize.width() - 4));
+    topLeft.setY(qBound(screenRect.top() + 4, topLeft.y(), screenRect.bottom() - popupSize.height() - 4));
+    if (pos() == topLeft)
+    {
+        ++m_positionSkipCount;
+        syncPopoverPerfCounters();
+        return;
+    }
+
+    ++m_positionApplyCount;
     move(topLeft);
+    syncPopoverPerfCounters();
 }
 
 void AntPopover::syncActionGeometry()
 {
     if (m_actionWidget)
     {
-        m_actionWidget->setGeometry(actionRect());
+        const QRect targetGeometry = actionRect();
+        if (m_actionWidget->geometry() == targetGeometry && m_actionWidget->isVisible())
+        {
+            ++m_actionGeometrySkipCount;
+            syncPopoverPerfCounters();
+            return;
+        }
+
+        ++m_actionGeometryApplyCount;
+        m_actionWidget->setGeometry(targetGeometry);
         m_actionWidget->show();
+        syncPopoverPerfCounters();
     }
 }
 
 void AntPopover::installTarget(QWidget* target)
 {
     m_target = target;
+    invalidatePopoverPlacementCache();
     if (m_target)
     {
         m_target->installEventFilter(this);
@@ -506,6 +696,7 @@ void AntPopover::uninstallTarget()
         m_target->removeEventFilter(this);
     }
     m_target = nullptr;
+    invalidatePopoverPlacementCache();
 }
 
 bool AntPopover::isHoveringInteractiveArea() const
@@ -522,9 +713,8 @@ bool AntPopover::isHoveringInteractiveArea() const
     return isVisible() && geometry().contains(globalPos);
 }
 
-Ant::TooltipPlacement AntPopover::resolvedPlacement(const QRect& targetRect, const QRect& screenRect) const
+Ant::TooltipPlacement AntPopover::resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& popupSize) const
 {
-    const QSize popupSize = sizeHint();
     if (isTopPlacement(m_placement) && targetRect.top() - popupSize.height() - metrics().gap < screenRect.top())
     {
         return m_placement == Ant::TooltipPlacement::TopLeft ? Ant::TooltipPlacement::BottomLeft :
