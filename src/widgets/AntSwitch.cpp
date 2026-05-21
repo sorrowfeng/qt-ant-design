@@ -1,7 +1,11 @@
 #include "AntSwitch.h"
 
+#include <QFontMetrics>
+#include <QHideEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QResizeEvent>
+#include <QShowEvent>
 #include <QSizePolicy>
 #include <QTimer>
 
@@ -32,12 +36,13 @@ AntSwitch::AntSwitch(QWidget* parent)
     m_loadingTimer = new QTimer(this);
     connect(m_loadingTimer, &QTimer::timeout, this, [this]() {
         m_loadingAngle = (m_loadingAngle + 30) % 360;
-        update();
+        ++m_loadingRegionUpdateCount;
+        updateSwitchRegion(switchLoadingDirtyRect(), QStringLiteral("loading"));
     });
 
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         updateGeometryFromState();
-        update();
+        updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("theme"));
     });
 
     auto* switchStyle = new AntSwitchStyle(style());
@@ -45,6 +50,7 @@ AntSwitch::AntSwitch(QWidget* parent)
     setStyle(switchStyle);
 
     updateGeometryFromState();
+    syncSwitchPerfCounters();
 }
 
 bool AntSwitch::isChecked() const { return m_checked; }
@@ -57,6 +63,7 @@ void AntSwitch::setChecked(bool checked)
     }
 
     m_checked = checked;
+    updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("checked"));
     animateToChecked(m_checked);
     Q_EMIT checkedChanged(m_checked);
     Q_EMIT toggled(m_checked);
@@ -73,7 +80,7 @@ void AntSwitch::setSwitchSize(Ant::Size size)
 
     m_switchSize = size;
     updateGeometryFromState();
-    update();
+    updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("size"));
     Q_EMIT switchSizeChanged(m_switchSize);
 }
 
@@ -87,8 +94,9 @@ void AntSwitch::setLoading(bool loading)
     }
 
     m_loading = loading;
-    m_loading ? m_loadingTimer->start(80) : m_loadingTimer->stop();
-    update();
+    updateLoadingTimerState();
+    setCursor(isEnabled() && !m_loading ? Qt::PointingHandCursor : Qt::ArrowCursor);
+    updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("loading"));
     Q_EMIT loadingChanged(m_loading);
 }
 
@@ -103,7 +111,7 @@ void AntSwitch::setCheckedText(const QString& text)
 
     m_checkedText = text;
     updateGeometryFromState();
-    update();
+    updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("text"));
     Q_EMIT checkedTextChanged(m_checkedText);
 }
 
@@ -118,7 +126,7 @@ void AntSwitch::setUncheckedText(const QString& text)
 
     m_uncheckedText = text;
     updateGeometryFromState();
-    update();
+    updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("text"));
     Q_EMIT uncheckedTextChanged(m_uncheckedText);
 }
 
@@ -126,16 +134,32 @@ qreal AntSwitch::handleProgress() const { return m_handleProgress; }
 
 void AntSwitch::setHandleProgress(qreal progress)
 {
-    m_handleProgress = std::clamp(progress, 0.0, 1.0);
-    update();
+    const qreal oldProgress = m_handleProgress;
+    const qreal nextProgress = std::clamp(progress, 0.0, 1.0);
+    if (std::abs(oldProgress - nextProgress) < 0.0001)
+    {
+        return;
+    }
+
+    m_handleProgress = nextProgress;
+    ++m_handleRegionUpdateCount;
+    updateSwitchRegion(switchHandleDirtyRect(oldProgress, m_handleStretch), QStringLiteral("handle"));
 }
 
 qreal AntSwitch::handleStretch() const { return m_handleStretch; }
 
 void AntSwitch::setHandleStretch(qreal stretch)
 {
-    m_handleStretch = std::clamp(stretch, 0.0, 1.0);
-    update();
+    const qreal oldStretch = m_handleStretch;
+    const qreal nextStretch = std::clamp(stretch, 0.0, 1.0);
+    if (std::abs(oldStretch - nextStretch) < 0.0001)
+    {
+        return;
+    }
+
+    m_handleStretch = nextStretch;
+    ++m_handleRegionUpdateCount;
+    updateSwitchRegion(switchHandleDirtyRect(m_handleProgress, oldStretch), QStringLiteral("handle"));
 }
 
 bool AntSwitch::isHoveredState() const { return m_hovered; }
@@ -146,19 +170,18 @@ int AntSwitch::loadingAngle() const { return m_loadingAngle; }
 
 QSize AntSwitch::sizeHint() const
 {
-    const Metrics m = metrics();
-    return QSize(m.trackMinWidth, m.trackHeight);
+    return layoutCache().sizeHint;
 }
 
 QSize AntSwitch::minimumSizeHint() const
 {
-    return sizeHint();
+    return layoutCache().minimumSizeHint;
 }
 
 void AntSwitch::enterEvent(QEnterEvent* event)
 {
     m_hovered = true;
-    update();
+    updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("hover"));
     QWidget::enterEvent(event);
 }
 
@@ -177,7 +200,7 @@ void AntSwitch::leaveEvent(QEvent* event)
     {
         animateStretch(0.0);
     }
-    update();
+    updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("hover"));
     QWidget::leaveEvent(event);
 }
 
@@ -202,12 +225,11 @@ void AntSwitch::mouseReleaseEvent(QMouseEvent* event)
         if (rect().contains(event->pos()))
         {
             setChecked(!m_checked);
-            const Metrics m = metrics();
-            const QRect track((width() - m.trackMinWidth) / 2,
-                              (height() - m.trackHeight) / 2,
-                              m.trackMinWidth,
-                              m.trackHeight);
-            AntWave::triggerRect(this, track, antTheme->tokens().colorTextDisabled, m.trackHeight / 2);
+            const auto& cache = layoutCache();
+            AntWave::triggerRect(this,
+                                 cache.trackRect.toAlignedRect(),
+                                 antTheme->tokens().colorTextDisabled,
+                                 cache.metrics.trackHeight / 2);
             Q_EMIT clicked(m_checked);
         }
         event->accept();
@@ -221,7 +243,12 @@ void AntSwitch::changeEvent(QEvent* event)
     if (event->type() == QEvent::EnabledChange)
     {
         setCursor(isEnabled() && !m_loading ? Qt::PointingHandCursor : Qt::ArrowCursor);
-        update();
+        updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("enabled"));
+    }
+    else if (event->type() == QEvent::FontChange)
+    {
+        updateGeometryFromState();
+        updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("font"));
     }
     QWidget::changeEvent(event);
 }
@@ -238,8 +265,31 @@ void AntSwitch::keyPressEvent(QKeyEvent* event)
     QWidget::keyPressEvent(event);
 }
 
+void AntSwitch::showEvent(QShowEvent* event)
+{
+    updateLoadingTimerState();
+    QWidget::showEvent(event);
+}
+
+void AntSwitch::hideEvent(QHideEvent* event)
+{
+    updateLoadingTimerState();
+    QWidget::hideEvent(event);
+}
+
+void AntSwitch::resizeEvent(QResizeEvent* event)
+{
+    invalidateLayoutCache();
+    QWidget::resizeEvent(event);
+}
+
 AntSwitch::Metrics AntSwitch::metrics() const
 {
+    if (m_layoutCache.valid)
+    {
+        return m_layoutCache.metrics;
+    }
+
     const auto& token = antTheme->tokens();
     Metrics m;
     const int fontSize = token.fontSize > 0 ? token.fontSize : Ant::FontSize;
@@ -277,7 +327,149 @@ AntSwitch::Metrics AntSwitch::metrics() const
         m.trackMinWidth = std::max(m.trackMinWidth, labelWidth + m.handleSize + m.trackPadding * 8);
     }
 
+    ++m_metricsResolveCount;
+    syncSwitchPerfCounters();
     return m;
+}
+
+const AntSwitch::LayoutCache& AntSwitch::layoutCache() const
+{
+    const Metrics currentMetrics = metrics();
+    const auto sameMetrics = [](const Metrics& lhs, const Metrics& rhs) {
+        return lhs.trackHeight == rhs.trackHeight
+            && lhs.trackMinWidth == rhs.trackMinWidth
+            && lhs.trackPadding == rhs.trackPadding
+            && lhs.handleSize == rhs.handleSize
+            && lhs.fontSize == rhs.fontSize
+            && lhs.innerMinMargin == rhs.innerMinMargin
+            && lhs.innerMaxMargin == rhs.innerMaxMargin;
+    };
+
+    if (m_layoutCache.valid
+        && m_layoutCache.widgetSize == size()
+        && sameMetrics(m_layoutCache.metrics, currentMetrics)
+        && m_layoutCache.switchSize == m_switchSize
+        && m_layoutCache.checkedText == m_checkedText
+        && m_layoutCache.uncheckedText == m_uncheckedText
+        && std::abs(m_layoutCache.handleProgress - m_handleProgress) < 0.0001
+        && std::abs(m_layoutCache.handleStretch - m_handleStretch) < 0.0001)
+    {
+        return m_layoutCache;
+    }
+
+    m_layoutCache.widgetSize = size();
+    m_layoutCache.metrics = currentMetrics;
+    m_layoutCache.switchSize = m_switchSize;
+    m_layoutCache.checkedText = m_checkedText;
+    m_layoutCache.uncheckedText = m_uncheckedText;
+    m_layoutCache.handleProgress = m_handleProgress;
+    m_layoutCache.handleStretch = m_handleStretch;
+    m_layoutCache.sizeHint = QSize(currentMetrics.trackMinWidth, currentMetrics.trackHeight);
+    m_layoutCache.minimumSizeHint = m_layoutCache.sizeHint;
+    m_layoutCache.trackRect = QRectF((width() - currentMetrics.trackMinWidth) / 2.0,
+                                     (height() - currentMetrics.trackHeight) / 2.0,
+                                     currentMetrics.trackMinWidth,
+                                     currentMetrics.trackHeight);
+    m_layoutCache.handleRect = handleRectForState(m_layoutCache, m_handleProgress, m_handleStretch);
+    m_layoutCache.valid = true;
+    ++m_layoutBuildCount;
+    ++m_sizeHintResolveCount;
+    syncSwitchPerfCounters();
+    return m_layoutCache;
+}
+
+QRectF AntSwitch::handleRectForState(const LayoutCache& cache, qreal progress, qreal stretch) const
+{
+    const Metrics& m = cache.metrics;
+    const QRectF& track = cache.trackRect;
+    const qreal left = track.left() + m.trackPadding;
+    const qreal right = track.right() - m.trackPadding - m.handleSize;
+    qreal x = left + (right - left) * std::clamp(progress, 0.0, 1.0);
+    const qreal width = m.handleSize + m.trackPadding * 2 * std::clamp(stretch, 0.0, 1.0);
+
+    if (m_checked)
+    {
+        x -= m.trackPadding * 2 * std::clamp(stretch, 0.0, 1.0);
+    }
+
+    return QRectF(x, track.top() + m.trackPadding, width, m.handleSize);
+}
+
+QRect AntSwitch::switchTrackDirtyRect() const
+{
+    const auto& cache = layoutCache();
+    return cache.trackRect
+        .adjusted(-4, -4, 4, 4)
+        .toAlignedRect()
+        .intersected(rect());
+}
+
+QRect AntSwitch::switchHandleDirtyRect(qreal oldProgress, qreal oldStretch) const
+{
+    const auto& cache = layoutCache();
+    QRectF dirty = handleRectForState(cache, oldProgress, oldStretch).united(cache.handleRect);
+    if (!m_checkedText.isEmpty() || !m_uncheckedText.isEmpty())
+    {
+        dirty = dirty.united(cache.trackRect);
+    }
+    return dirty
+        .adjusted(-6, -6, 6, 6)
+        .toAlignedRect()
+        .intersected(rect());
+}
+
+QRect AntSwitch::switchLoadingDirtyRect() const
+{
+    const auto& cache = layoutCache();
+    return cache.handleRect
+        .adjusted(-4, -4, 4, 4)
+        .toAlignedRect()
+        .intersected(rect());
+}
+
+void AntSwitch::updateSwitchRegion(const QRect& dirty, const QString& mode)
+{
+    QRect updateRect = dirty;
+    if (!updateRect.isValid() || updateRect.isEmpty())
+    {
+        updateRect = rect();
+    }
+    ++m_regionUpdateCount;
+    setProperty("antSwitchLastUpdateMode", mode);
+    syncSwitchPerfCounters();
+    update(updateRect);
+}
+
+void AntSwitch::invalidateLayoutCache() const
+{
+    m_layoutCache.valid = false;
+    syncSwitchPerfCounters();
+}
+
+void AntSwitch::updateLoadingTimerState()
+{
+    const bool shouldRun = m_loading && isVisible();
+    if (shouldRun && !m_loadingTimer->isActive())
+    {
+        m_loadingTimer->start(80);
+    }
+    else if (!shouldRun && m_loadingTimer->isActive())
+    {
+        m_loadingTimer->stop();
+    }
+    setProperty("antSwitchLoadingTimerActive", m_loadingTimer->isActive());
+}
+
+void AntSwitch::syncSwitchPerfCounters() const
+{
+    auto* self = const_cast<AntSwitch*>(this);
+    self->setProperty("antSwitchLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antSwitchMetricsResolveCount", m_metricsResolveCount);
+    self->setProperty("antSwitchSizeHintResolveCount", m_sizeHintResolveCount);
+    self->setProperty("antSwitchRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antSwitchHandleRegionUpdateCount", m_handleRegionUpdateCount);
+    self->setProperty("antSwitchLoadingRegionUpdateCount", m_loadingRegionUpdateCount);
+    self->setProperty("antSwitchLoadingTimerActive", m_loadingTimer ? m_loadingTimer->isActive() : false);
 }
 
 void AntSwitch::animateToChecked(bool checked)
@@ -298,7 +490,12 @@ void AntSwitch::animateStretch(qreal endValue)
 
 void AntSwitch::updateGeometryFromState()
 {
-    const Metrics m = metrics();
-    setMinimumSize(m.trackMinWidth, m.trackHeight);
-    updateGeometry();
+    const QSize oldMinimum = minimumSize();
+    invalidateLayoutCache();
+    const QSize newHint = sizeHint();
+    if (oldMinimum != newHint)
+    {
+        setMinimumSize(newHint);
+        updateGeometry();
+    }
 }

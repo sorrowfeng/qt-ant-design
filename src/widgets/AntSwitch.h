@@ -3,16 +3,23 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QPropertyAnimation>
+#include <QRect>
+#include <QRectF>
+#include <QSize>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
 class QEvent;
 class QEnterEvent;
+class QHideEvent;
 class QKeyEvent;
 class QMouseEvent;
 class QPainter;
+class QResizeEvent;
+class QShowEvent;
 class QTimer;
+class AntSwitchStyle;
 
 class QT_ANT_DESIGN_EXPORT AntSwitch : public QWidget
 {
@@ -24,6 +31,7 @@ class QT_ANT_DESIGN_EXPORT AntSwitch : public QWidget
     Q_PROPERTY(QString uncheckedText READ uncheckedText WRITE setUncheckedText NOTIFY uncheckedTextChanged)
     Q_PROPERTY(qreal handleProgress READ handleProgress WRITE setHandleProgress)
     Q_PROPERTY(qreal handleStretch READ handleStretch WRITE setHandleStretch)
+    friend class AntSwitchStyle;
 
 public:
     explicit AntSwitch(QWidget* parent = nullptr);
@@ -71,6 +79,9 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void changeEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     struct Metrics
@@ -84,7 +95,32 @@ private:
         int innerMaxMargin = 24;
     };
 
+    struct LayoutCache
+    {
+        QSize widgetSize;
+        Metrics metrics;
+        Ant::Size switchSize = Ant::Size::Middle;
+        QString checkedText;
+        QString uncheckedText;
+        qreal handleProgress = 0.0;
+        qreal handleStretch = 0.0;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QRectF trackRect;
+        QRectF handleRect;
+        bool valid = false;
+    };
+
     Metrics metrics() const;
+    const LayoutCache& layoutCache() const;
+    QRectF handleRectForState(const LayoutCache& cache, qreal progress, qreal stretch) const;
+    QRect switchTrackDirtyRect() const;
+    QRect switchHandleDirtyRect(qreal oldProgress, qreal oldStretch) const;
+    QRect switchLoadingDirtyRect() const;
+    void updateSwitchRegion(const QRect& dirty, const QString& mode);
+    void invalidateLayoutCache() const;
+    void updateLoadingTimerState();
+    void syncSwitchPerfCounters() const;
     void animateToChecked(bool checked);
     void animateStretch(qreal endValue);
     void updateGeometryFromState();
@@ -102,4 +138,11 @@ private:
     QPropertyAnimation* m_progressAnimation = nullptr;
     QPropertyAnimation* m_stretchAnimation = nullptr;
     QTimer* m_loadingTimer = nullptr;
+    mutable LayoutCache m_layoutCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_metricsResolveCount = 0;
+    mutable int m_sizeHintResolveCount = 0;
+    int m_regionUpdateCount = 0;
+    int m_handleRegionUpdateCount = 0;
+    int m_loadingRegionUpdateCount = 0;
 };

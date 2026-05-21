@@ -1,97 +1,14 @@
 #include "AntSwitchStyle.h"
 
 #include <QEvent>
-#include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOption>
-
-#include <algorithm>
-#include <cmath>
 
 #include "styles/AntPalette.h"
 #include "widgets/AntSwitch.h"
 
 namespace
 {
-struct SwitchMetrics
-{
-    int trackHeight = 22;
-    int trackMinWidth = 44;
-    int trackPadding = 2;
-    int handleSize = 18;
-    int fontSize = 12;
-    int innerMinMargin = 9;
-};
-
-SwitchMetrics metricsFor(const AntSwitch* sw)
-{
-    const auto& token = antTheme->tokens();
-    SwitchMetrics metrics;
-    const int fontSize = token.fontSize > 0 ? token.fontSize : Ant::FontSize;
-    const int fontSizeSM = token.fontSizeSM > 0 ? token.fontSizeSM : Ant::FontSizeSmall;
-    const int controlHeight = token.controlHeight > 0 ? token.controlHeight : Ant::ControlHeight;
-    const qreal lineHeight = token.lineHeight > 0.0 ? token.lineHeight : 1.5715;
-    const qreal defaultHeight = fontSize * lineHeight;
-    if (!sw || sw->switchSize() == Ant::Size::Middle)
-    {
-        metrics.trackHeight = static_cast<int>(std::round(defaultHeight));
-        metrics.trackPadding = 2;
-        metrics.handleSize = metrics.trackHeight - metrics.trackPadding * 2;
-        metrics.trackMinWidth = metrics.handleSize * 2 + metrics.trackPadding * 4;
-        metrics.fontSize = fontSizeSM;
-        metrics.innerMinMargin = metrics.handleSize / 2;
-    }
-    else
-    {
-        metrics.trackHeight = controlHeight / 2;
-        metrics.trackPadding = 2;
-        metrics.handleSize = metrics.trackHeight - metrics.trackPadding * 2;
-        metrics.trackMinWidth = metrics.handleSize * 2 + metrics.trackPadding * 2;
-        metrics.fontSize = fontSizeSM;
-        metrics.innerMinMargin = metrics.handleSize / 2;
-    }
-
-    QFont font = sw ? sw->font() : QFont();
-    font.setPixelSize(metrics.fontSize);
-    const QFontMetrics fontMetrics(font);
-    const int labelWidth = sw ? std::max(fontMetrics.horizontalAdvance(sw->checkedText()),
-                                         fontMetrics.horizontalAdvance(sw->uncheckedText()))
-                              : 0;
-    if (labelWidth > 0)
-    {
-        metrics.trackMinWidth = std::max(metrics.trackMinWidth,
-                                         labelWidth + metrics.handleSize + metrics.trackPadding * 8);
-    }
-
-    return metrics;
-}
-
-QRectF trackRectFor(const AntSwitch* sw, const QRect& rect)
-{
-    const SwitchMetrics metrics = metricsFor(sw);
-    return QRectF((rect.width() - metrics.trackMinWidth) / 2.0,
-                  (rect.height() - metrics.trackHeight) / 2.0,
-                  metrics.trackMinWidth,
-                  metrics.trackHeight);
-}
-
-QRectF handleRectFor(const AntSwitch* sw, const QRect& rect)
-{
-    const SwitchMetrics metrics = metricsFor(sw);
-    const QRectF track = trackRectFor(sw, rect);
-    const qreal left = track.left() + metrics.trackPadding;
-    const qreal right = track.right() - metrics.trackPadding - metrics.handleSize;
-    qreal x = left + (right - left) * (sw ? sw->handleProgress() : 0.0);
-    qreal width = metrics.handleSize + metrics.trackPadding * 2 * (sw ? sw->handleStretch() : 0.0);
-
-    if (sw && sw->isChecked())
-    {
-        x -= metrics.trackPadding * 2 * sw->handleStretch();
-    }
-
-    return QRectF(x, track.top() + metrics.trackPadding, width, metrics.handleSize);
-}
-
 QColor trackColorFor(const AntSwitch* sw)
 {
     const auto& token = antTheme->tokens();
@@ -131,7 +48,6 @@ void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int
 AntSwitchStyle::AntSwitchStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntSwitch>();
 }
 
 void AntSwitchStyle::polish(QWidget* widget)
@@ -206,9 +122,10 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
     }
 
     const auto& token = antTheme->tokens();
-    const SwitchMetrics metrics = metricsFor(sw);
-    const QRectF track = trackRectFor(sw, option->rect);
-    const QRectF handle = handleRectFor(sw, option->rect);
+    const auto& cache = sw->layoutCache();
+    const auto& metrics = cache.metrics;
+    const QRectF track = cache.trackRect;
+    const QRectF handle = cache.handleRect;
     const bool enabled = option->state.testFlag(QStyle::State_Enabled);
     const bool focused = option->state.testFlag(QStyle::State_HasFocus);
 
