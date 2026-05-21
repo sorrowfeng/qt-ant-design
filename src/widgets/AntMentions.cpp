@@ -8,9 +8,11 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QSizePolicy>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <utility>
 
 #include "../styles/AntAutoCompleteStyle.h"
 #include "core/AntPopupMotion.h"
@@ -48,17 +50,50 @@ protected:
     }
 };
 
-class MentionItem : public QWidget
+} // namespace
+
+class AntMentionItem : public QWidget
 {
 public:
-    MentionItem(const QString& text, QWidget* parent)
-        : QWidget(parent), m_text(text)
+    explicit AntMentionItem(QWidget* parent)
+        : QWidget(parent)
     {
         setFixedHeight(kOptionHeight);
         setCursor(Qt::PointingHandCursor);
     }
 
-    std::function<void()> onClicked;
+    bool setMentionText(const QString& text)
+    {
+        if (m_text == text)
+        {
+            return false;
+        }
+        m_text = text;
+        setProperty("antMentionItemText", m_text);
+        update();
+        return true;
+    }
+
+    void setItemIndex(int index)
+    {
+        m_index = index;
+        setObjectName(QStringLiteral("AntMentionItem_%1").arg(index));
+    }
+
+    bool setHighlighted(bool highlighted)
+    {
+        if (m_highlighted == highlighted)
+        {
+            return false;
+        }
+        m_highlighted = highlighted;
+        setProperty("antMentionItemHighlighted", m_highlighted);
+        update();
+        return true;
+    }
+
+    std::function<void(int)> onClicked;
+    std::function<void(int)> onHovered;
 
 protected:
     void paintEvent(QPaintEvent*) override
@@ -67,8 +102,8 @@ protected:
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
 
-        bool hovered = underMouse();
-        if (hovered)
+        const bool active = m_highlighted || underMouse();
+        if (active)
         {
             p.setPen(Qt::NoPen);
             p.setBrush(token.colorFillTertiary);
@@ -84,17 +119,28 @@ protected:
 
     void mousePressEvent(QMouseEvent* e) override
     {
-        if (e->button() == Qt::LeftButton && onClicked) onClicked();
+        if (e->button() == Qt::LeftButton && onClicked)
+        {
+            onClicked(m_index);
+        }
     }
 
-    void enterEvent(QEnterEvent*) override { update(); }
+    void enterEvent(QEnterEvent*) override
+    {
+        if (onHovered)
+        {
+            onHovered(m_index);
+        }
+        update();
+    }
+
     void leaveEvent(QEvent*) override { update(); }
 
 private:
     QString m_text;
+    int m_index = -1;
+    bool m_highlighted = false;
 };
-
-} // namespace
 
 AntMentions::AntMentions(QWidget* parent)
     : QWidget(parent)
@@ -108,19 +154,11 @@ AntMentions::AntMentions(QWidget* parent)
 
     m_lineEdit = new QLineEdit(this);
     m_lineEdit->setFrame(false);
-    {
-        QFont f = m_lineEdit->font();
-        f.setPixelSize(antTheme->tokens().fontSize);
-        m_lineEdit->setFont(f);
-        QPalette p = m_lineEdit->palette();
-        p.setColor(QPalette::Base, Qt::transparent);
-        p.setColor(QPalette::Text, antTheme->tokens().colorText);
-        p.setColor(QPalette::PlaceholderText, antTheme->tokens().colorTextPlaceholder);
-        m_lineEdit->setPalette(p);
-    }
+    applyLineEditTheme();
+    m_lineEdit->installEventFilter(this);
 
     connect(m_lineEdit, &QLineEdit::textEdited, this, [this]() {
-        checkForPrefix();
+        scheduleSuggestionRefresh();
         Q_EMIT textChanged(m_lineEdit->text());
     });
 
@@ -130,19 +168,48 @@ AntMentions::AntMentions(QWidget* parent)
     layout->setAlignment(m_lineEdit, Qt::AlignTop);
 
     m_popup = new SuggestionPopupFrame(this, Qt::ToolTip | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    m_popup->setObjectName(QStringLiteral("AntMentionsPopup"));
     m_popup->setAttribute(Qt::WA_TranslucentBackground);
     m_popup->setAttribute(Qt::WA_ShowWithoutActivating);
+    m_popupLayout = new QVBoxLayout(m_popup);
+    m_popupLayout->setContentsMargins(kPopupShadowMargin + kPopupInnerPadding,
+                                      kPopupShadowMargin + kPopupInnerPadding,
+                                      kPopupShadowMargin + kPopupInnerPadding,
+                                      kPopupShadowMargin + kPopupInnerPadding);
+    m_popupLayout->setSpacing(0);
+
+    m_filterTimer = new QTimer(this);
+    m_filterTimer->setSingleShot(true);
+    m_filterTimer->setInterval(0);
+    connect(m_filterTimer, &QTimer::timeout, this, &AntMentions::refreshSuggestions);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        applyLineEditTheme();
         setFixedHeight(sizeHint().height());
+        for (AntMentionItem* item : std::as_const(m_itemWidgets))
+        {
+            if (item)
+            {
+                item->update();
+            }
+        }
         updateGeometry();
         update();
+        if (m_popup && m_popup->isVisible())
+        {
+            m_popup->update();
+        }
     });
+    syncMentionsPerfCounters();
 }
 
 QString AntMentions::placeholderText() const { return m_placeholderText; }
 void AntMentions::setPlaceholderText(const QString& text)
 {
+    if (m_placeholderText == text)
+    {
+        return;
+    }
     m_placeholderText = text;
     m_lineEdit->setPlaceholderText(text);
     Q_EMIT placeholderTextChanged(text);
@@ -151,7 +218,16 @@ void AntMentions::setPlaceholderText(const QString& text)
 QString AntMentions::prefix() const { return m_prefix; }
 void AntMentions::setPrefix(const QString& prefix)
 {
+    if (m_prefix == prefix)
+    {
+        return;
+    }
     m_prefix = prefix;
+    m_prefixPos = -1;
+    if (m_open || (m_lineEdit && m_lineEdit->text().contains(m_prefix)))
+    {
+        scheduleSuggestionRefresh();
+    }
     Q_EMIT prefixChanged(prefix);
 }
 
@@ -174,12 +250,22 @@ QString AntMentions::text() const { return m_lineEdit->text(); }
 
 void AntMentions::setSuggestions(const QStringList& items)
 {
+    if (m_suggestions == items)
+    {
+        return;
+    }
     m_suggestions = items;
+    ++m_suggestionsRevision;
+    invalidateSuggestionCache();
+    scheduleSuggestionRefresh();
 }
 
 void AntMentions::addSuggestion(const QString& text)
 {
     m_suggestions.append(text);
+    ++m_suggestionsRevision;
+    invalidateSuggestionCache();
+    scheduleSuggestionRefresh();
 }
 
 QSize AntMentions::sizeHint() const
@@ -204,80 +290,340 @@ void AntMentions::paintEvent(QPaintEvent* event)
         token.colorBgContainer, token.borderRadius, token.borderRadius);
 }
 
-void AntMentions::checkForPrefix()
+bool AntMentions::eventFilter(QObject* watched, QEvent* event)
 {
-    const QString t = m_lineEdit->text();
-    int lastPrefix = t.lastIndexOf(m_prefix);
-    if (lastPrefix >= 0 && (lastPrefix == 0 || t[lastPrefix - 1] == QLatin1Char(' ')))
+    if (watched == m_lineEdit && event->type() == QEvent::KeyPress)
     {
-        m_prefixPos = lastPrefix;
-        QString filter = t.mid(lastPrefix + 1).toLower();
-
-        // Show all suggestions if no filter, otherwise filter
-        QList<QString> matched;
-        for (const auto& s : m_suggestions)
+        auto* keyEvent = static_cast<QKeyEvent*>(event);
+        if (m_open && m_visibleSuggestionCount > 0)
         {
-            if (filter.isEmpty() || s.toLower().contains(filter))
-                matched.append(s);
+            if (keyEvent->key() == Qt::Key_Down)
+            {
+                setHighlightedIndex((m_highlightedIndex + 1) % m_visibleSuggestionCount);
+                return true;
+            }
+            if (keyEvent->key() == Qt::Key_Up)
+            {
+                const int previous = m_highlightedIndex < 0 ? 0 : m_highlightedIndex;
+                setHighlightedIndex((previous + m_visibleSuggestionCount - 1) % m_visibleSuggestionCount);
+                return true;
+            }
+            if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
+            {
+                selectSuggestion(m_highlightedIndex < 0 ? 0 : m_highlightedIndex);
+                return true;
+            }
         }
-        if (!matched.isEmpty())
+        if (m_open && keyEvent->key() == Qt::Key_Escape)
         {
-            // Rebuild popup
-            while (QLayoutItem* item = m_popup->layout() ? m_popup->layout()->takeAt(0) : nullptr)
-            {
-                if (item->widget()) delete item->widget();
-                delete item;
-            }
-            delete m_popup->layout();
-            auto* lay = new QVBoxLayout(m_popup);
-            lay->setContentsMargins(kPopupShadowMargin + kPopupInnerPadding,
-                                    kPopupShadowMargin + kPopupInnerPadding,
-                                    kPopupShadowMargin + kPopupInnerPadding,
-                                    kPopupShadowMargin + kPopupInnerPadding);
-            lay->setSpacing(0);
-
-            int count = std::min(static_cast<int>(matched.size()), 6);
-            for (int i = 0; i < count; ++i)
-            {
-                auto* item = new MentionItem(matched[i], m_popup);
-                item->onClicked = [this, text = matched[i]]() {
-                    QString t = m_lineEdit->text();
-                    t = t.left(m_prefixPos) + m_prefix + text + QStringLiteral(" ");
-                    m_lineEdit->setText(t);
-                    hidePopup();
-                    m_lineEdit->setFocus();
-                    Q_EMIT mentionSelected(text);
-                };
-                lay->addWidget(item);
-            }
-
-            const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4 - kPopupShadowMargin));
-            m_popup->setGeometry(pos.x(), pos.y(), width() + kPopupShadowMargin * 2,
-                                 count * kOptionHeight + kPopupInnerPadding * 2 + kPopupShadowMargin * 2);
-            if (m_open)
-            {
-                m_popup->update();
-            }
-            else
-            {
-                AntPopupMotion::show(m_popup);
-            }
-            m_open = true;
-            return;
+            hidePopup();
+            return true;
         }
     }
-    hidePopup();
+    return QWidget::eventFilter(watched, event);
+}
+
+void AntMentions::applyLineEditTheme()
+{
+    if (!m_lineEdit)
+    {
+        return;
+    }
+    const auto& token = antTheme->tokens();
+    QFont font = m_lineEdit->font();
+    if (font.pixelSize() != token.fontSize)
+    {
+        font.setPixelSize(token.fontSize);
+        m_lineEdit->setFont(font);
+    }
+
+    QPalette palette = m_lineEdit->palette();
+    palette.setColor(QPalette::Base, Qt::transparent);
+    palette.setColor(QPalette::Text, token.colorText);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    palette.setColor(QPalette::PlaceholderText, token.colorTextPlaceholder);
+#endif
+    if (m_lineEdit->palette() != palette)
+    {
+        m_lineEdit->setPalette(palette);
+    }
+}
+
+void AntMentions::scheduleSuggestionRefresh()
+{
+    if (!m_filterTimer)
+    {
+        refreshSuggestions();
+        return;
+    }
+    if (!m_filterTimer->isActive())
+    {
+        m_filterTimer->start();
+    }
+}
+
+void AntMentions::refreshSuggestions()
+{
+    ++m_refreshCount;
+    syncMentionsPerfCounters();
+
+    bool ok = false;
+    const QString filter = currentFilterText(&ok);
+    if (!ok)
+    {
+        hidePopup();
+        return;
+    }
+
+    const QStringList matched = filteredSuggestions(filter);
+    if (matched.isEmpty())
+    {
+        hidePopup();
+        return;
+    }
+
+    syncPopupRows(matched);
+    updatePopupGeometry(m_visibleSuggestionCount);
+    showPopup();
+}
+
+QString AntMentions::currentFilterText(bool* ok) const
+{
+    if (ok)
+    {
+        *ok = false;
+    }
+    if (!m_lineEdit || m_prefix.isEmpty())
+    {
+        return QString();
+    }
+
+    const QString text = m_lineEdit->text();
+    const int lastPrefix = text.lastIndexOf(m_prefix);
+    if (lastPrefix < 0 || (lastPrefix > 0 && text.at(lastPrefix - 1) != QLatin1Char(' ')))
+    {
+        return QString();
+    }
+
+    const_cast<AntMentions*>(this)->m_prefixPos = lastPrefix;
+    if (ok)
+    {
+        *ok = true;
+    }
+    return text.mid(lastPrefix + m_prefix.size());
+}
+
+QStringList AntMentions::filteredSuggestions(const QString& filter)
+{
+    if (m_cachedFilterRevision == m_suggestionsRevision && m_cachedFilter == filter)
+    {
+        return m_filteredSuggestions;
+    }
+
+    m_cachedFilter = filter;
+    m_cachedFilterRevision = m_suggestionsRevision;
+    m_filteredSuggestions.clear();
+    for (const QString& suggestion : std::as_const(m_suggestions))
+    {
+        if (filter.isEmpty() || suggestion.contains(filter, Qt::CaseInsensitive))
+        {
+            m_filteredSuggestions.append(suggestion);
+        }
+    }
+    ++m_filterResolveCount;
+    syncMentionsPerfCounters();
+    return m_filteredSuggestions;
+}
+
+void AntMentions::syncPopupRows(const QStringList& matched)
+{
+    const int visibleCount = std::min(static_cast<int>(matched.size()), 6);
+    ensurePopupRows(visibleCount);
+
+    int rowTextChanges = 0;
+    for (int i = 0; i < m_itemWidgets.size(); ++i)
+    {
+        AntMentionItem* item = m_itemWidgets.at(i);
+        if (!item)
+        {
+            continue;
+        }
+        const bool visible = i < visibleCount;
+        item->setVisible(visible);
+        item->setItemIndex(i);
+        if (visible && item->setMentionText(matched.at(i)))
+        {
+            ++rowTextChanges;
+        }
+    }
+
+    if (rowTextChanges > 0)
+    {
+        m_rowTextApplyCount += rowTextChanges;
+    }
+
+    const int oldVisibleCount = m_visibleSuggestionCount;
+    m_visibleSuggestionCount = visibleCount;
+    if (visibleCount <= 0)
+    {
+        setHighlightedIndex(-1);
+    }
+    else if (oldVisibleCount != visibleCount || m_highlightedIndex < 0 || m_highlightedIndex >= visibleCount)
+    {
+        setHighlightedIndex(0);
+    }
+    else
+    {
+        updateHighlightedRows(m_highlightedIndex, m_highlightedIndex);
+    }
+    syncMentionsPerfCounters();
+}
+
+void AntMentions::ensurePopupRows(int count)
+{
+    while (m_itemWidgets.size() < count)
+    {
+        auto* item = new AntMentionItem(m_popup);
+        item->onClicked = [this](int index) {
+            selectSuggestion(index);
+        };
+        item->onHovered = [this](int index) {
+            setHighlightedIndex(index);
+        };
+        m_popupLayout->addWidget(item);
+        m_itemWidgets.append(item);
+        ++m_popupRowBuildCount;
+    }
+    syncMentionsPerfCounters();
+}
+
+void AntMentions::updatePopupGeometry(int visibleCount)
+{
+    if (!m_popup || visibleCount <= 0)
+    {
+        return;
+    }
+
+    const QPoint pos = mapToGlobal(QPoint(-kPopupShadowMargin, height() + 4 - kPopupShadowMargin));
+    const QRect nextGeometry(pos.x(),
+                             pos.y(),
+                             width() + kPopupShadowMargin * 2,
+                             visibleCount * kOptionHeight + kPopupInnerPadding * 2 + kPopupShadowMargin * 2);
+    if (m_lastPopupGeometry == nextGeometry && m_popup->geometry() == nextGeometry)
+    {
+        return;
+    }
+    m_lastPopupGeometry = nextGeometry;
+    m_popup->setGeometry(nextGeometry);
+    ++m_popupGeometryApplyCount;
+    syncMentionsPerfCounters();
+}
+
+void AntMentions::setHighlightedIndex(int index)
+{
+    if (m_visibleSuggestionCount <= 0)
+    {
+        index = -1;
+    }
+    else
+    {
+        index = qBound(0, index, m_visibleSuggestionCount - 1);
+    }
+
+    if (m_highlightedIndex == index)
+    {
+        return;
+    }
+
+    const int previous = m_highlightedIndex;
+    m_highlightedIndex = index;
+    updateHighlightedRows(previous, m_highlightedIndex);
+}
+
+void AntMentions::updateHighlightedRows(int previous, int current)
+{
+    int changedRows = 0;
+    if (previous >= 0 && previous < m_itemWidgets.size())
+    {
+        if (m_itemWidgets.at(previous)->setHighlighted(previous == current))
+        {
+            ++changedRows;
+        }
+    }
+    if (current >= 0 && current < m_itemWidgets.size() && current != previous)
+    {
+        if (m_itemWidgets.at(current)->setHighlighted(true))
+        {
+            ++changedRows;
+        }
+    }
+    if (changedRows > 0)
+    {
+        m_highlightedRowUpdateCount += changedRows;
+        syncMentionsPerfCounters();
+    }
 }
 
 void AntMentions::showPopup()
 {
-    if (!m_open) return;
+    if (!m_popup || m_visibleSuggestionCount <= 0)
+    {
+        return;
+    }
+    if (m_open)
+    {
+        m_popup->update();
+        return;
+    }
+    m_open = true;
     AntPopupMotion::show(m_popup);
 }
 
 void AntMentions::hidePopup()
 {
-    if (!m_open) return;
+    if (!m_open)
+    {
+        return;
+    }
     m_open = false;
+    m_visibleSuggestionCount = 0;
+    setHighlightedIndex(-1);
     AntPopupMotion::hide(m_popup);
+}
+
+void AntMentions::selectSuggestion(int index)
+{
+    if (index < 0 || index >= m_visibleSuggestionCount || index >= m_filteredSuggestions.size())
+    {
+        return;
+    }
+
+    const QString selectedText = m_filteredSuggestions.at(index);
+    QString currentText = m_lineEdit->text();
+    currentText = currentText.left(m_prefixPos) + m_prefix + selectedText + QStringLiteral(" ");
+    m_lineEdit->setText(currentText);
+    hidePopup();
+    m_lineEdit->setFocus();
+    Q_EMIT mentionSelected(selectedText);
+}
+
+void AntMentions::invalidateSuggestionCache()
+{
+    m_cachedFilterRevision = -1;
+    m_cachedFilter.clear();
+    m_filteredSuggestions.clear();
+    syncMentionsPerfCounters();
+}
+
+void AntMentions::syncMentionsPerfCounters() const
+{
+    auto* self = const_cast<AntMentions*>(this);
+    self->setProperty("antMentionsFilterResolveCount", m_filterResolveCount);
+    self->setProperty("antMentionsPopupRowBuildCount", m_popupRowBuildCount);
+    self->setProperty("antMentionsRowTextApplyCount", m_rowTextApplyCount);
+    self->setProperty("antMentionsPopupGeometryApplyCount", m_popupGeometryApplyCount);
+    self->setProperty("antMentionsHighlightedRowUpdateCount", m_highlightedRowUpdateCount);
+    self->setProperty("antMentionsRefreshCount", m_refreshCount);
+    self->setProperty("antMentionsVisibleSuggestionCount", m_visibleSuggestionCount);
+    self->setProperty("antMentionsDebounceIntervalMs", m_filterTimer ? m_filterTimer->interval() : 0);
 }

@@ -2,6 +2,7 @@
 #include <QTest>
 #include <QCoreApplication>
 #include <QFrame>
+#include <QLineEdit>
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QWidget>
@@ -18,6 +19,7 @@ class TestAntDataEntryB : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void mentionsReusesPopupRowsAndScopesHighlight();
     void cascaderPopupClosesOnOutsideClick();
     void cascaderPopupCachesColumnsAndScopesHover();
     void datePickerPopupCachesCellsAndScopesHover();
@@ -328,6 +330,51 @@ void TestAntDataEntryB::propertiesAndSignals()
 
     w7->setAccept(".jpg,.png");
     QCOMPARE(w7->accept(), ".jpg,.png");
+}
+
+void TestAntDataEntryB::mentionsReusesPopupRowsAndScopesHighlight()
+{
+    AntMentions mentions;
+    mentions.setSuggestions({QStringLiteral("alice"),
+                             QStringLiteral("alex"),
+                             QStringLiteral("mallory"),
+                             QStringLiteral("bob"),
+                             QStringLiteral("zara"),
+                             QStringLiteral("aaron"),
+                             QStringLiteral("albert")});
+    mentions.resize(260, mentions.sizeHint().height());
+    mentions.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&mentions));
+
+    auto* editor = mentions.findChild<QLineEdit*>();
+    QVERIFY(editor);
+    editor->setFocus();
+    QTest::keyClicks(editor, QStringLiteral("@a"));
+
+    auto* popup = mentions.findChild<QFrame*>(QStringLiteral("AntMentionsPopup"));
+    QVERIFY(popup);
+    QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
+    QTRY_COMPARE(mentions.property("antMentionsVisibleSuggestionCount").toInt(), 6);
+    QCOMPARE(mentions.property("antMentionsPopupRowBuildCount").toInt(), 6);
+    QVERIFY(mentions.property("antMentionsFilterResolveCount").toInt() > 0);
+
+    const int rowsBuiltBeforeNarrow = mentions.property("antMentionsPopupRowBuildCount").toInt();
+    QTest::keyClicks(editor, QStringLiteral("l"));
+    QTRY_COMPARE(mentions.property("antMentionsVisibleSuggestionCount").toInt(), 4);
+    QCOMPARE(mentions.property("antMentionsPopupRowBuildCount").toInt(), rowsBuiltBeforeNarrow);
+
+    const int highlightedUpdatesBefore = mentions.property("antMentionsHighlightedRowUpdateCount").toInt();
+    QTest::keyClick(editor, Qt::Key_Down);
+    QTRY_VERIFY(mentions.property("antMentionsHighlightedRowUpdateCount").toInt() > highlightedUpdatesBefore);
+    const int highlightedUpdatesAfterFirstMove = mentions.property("antMentionsHighlightedRowUpdateCount").toInt();
+    QTest::keyClick(editor, Qt::Key_Down);
+    QTRY_VERIFY(mentions.property("antMentionsHighlightedRowUpdateCount").toInt() > highlightedUpdatesAfterFirstMove);
+
+    QSignalSpy selectedSpy(&mentions, &AntMentions::mentionSelected);
+    QTest::keyClick(editor, Qt::Key_Return);
+    QCOMPARE(selectedSpy.count(), 1);
+    QCOMPARE(mentions.text(), QStringLiteral("@mallory "));
+    QTRY_VERIFY_WITH_TIMEOUT(!popup->isVisible(), 500);
 }
 
 void TestAntDataEntryB::cascaderPopupClosesOnOutsideClick()
