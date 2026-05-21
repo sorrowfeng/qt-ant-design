@@ -29,6 +29,7 @@ private slots:
     void paginationQuickJumperEditsCurrentPage();
     void paginationCachesButtonGeometry();
     void stepsCachesLayoutAndScopesUpdates();
+    void tabsCachesLayoutAndScopesUpdates();
     void anchorCachesLayoutAndCoalescesScroll();
     void breadcrumbCachesLayoutAndScopesHover();
     void tabsNormalizePageLayoutMargins();
@@ -528,6 +529,68 @@ void TestAntNavigation::stepsCachesLayoutAndScopesUpdates()
                               Qt::NoModifier);
     QCoreApplication::sendEvent(&steps, &verticalHover);
     QVERIFY(steps.property("antStepsLayoutBuildCount").toInt() > buildsBeforeDirection);
+}
+
+void TestAntNavigation::tabsCachesLayoutAndScopesUpdates()
+{
+    AntTabs tabs;
+    tabs.addTab(new QWidget, QStringLiteral("one"), QStringLiteral("One"));
+    tabs.addTab(new QWidget, QStringLiteral("two"), QStringLiteral("Two"));
+    tabs.addTab(new QWidget, QStringLiteral("three"), QStringLiteral("Three"));
+    tabs.resize(360, 160);
+    tabs.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&tabs));
+    QCoreApplication::processEvents();
+
+    QVERIFY(tabs.property("antTabsTabLayoutBuildCount").toInt() > 0);
+    const int cacheHitsBeforeHover = tabs.property("antTabsTabLayoutCacheHitCount").toInt();
+    const int scopedBeforeHover = tabs.property("antTabsScopedUpdateCount").toInt();
+    QMouseEvent firstHover(QEvent::MouseMove,
+                           QPointF(10, 20),
+                           QPointF(tabs.mapToGlobal(QPoint(10, 20))),
+                           Qt::NoButton,
+                           Qt::NoButton,
+                           Qt::NoModifier);
+    QCoreApplication::sendEvent(&tabs, &firstHover);
+    QVERIFY(tabs.property("antTabsTabLayoutCacheHitCount").toInt() > cacheHitsBeforeHover);
+    QVERIFY(tabs.property("antTabsScopedUpdateCount").toInt() > scopedBeforeHover);
+
+    const int scopedBeforeSameHover = tabs.property("antTabsScopedUpdateCount").toInt();
+    QCoreApplication::sendEvent(&tabs, &firstHover);
+    QCOMPARE(tabs.property("antTabsScopedUpdateCount").toInt(), scopedBeforeSameHover);
+
+    const int buildsBeforeActive = tabs.property("antTabsTabLayoutBuildCount").toInt();
+    const int scopedBeforeActive = tabs.property("antTabsScopedUpdateCount").toInt();
+    tabs.setAnimated(false);
+    tabs.setActiveKey(QStringLiteral("three"));
+    QCOMPARE(tabs.property("antTabsTabLayoutBuildCount").toInt(), buildsBeforeActive);
+    QVERIFY(tabs.property("antTabsScopedUpdateCount").toInt() > scopedBeforeActive);
+
+    const int buildsBeforeLabel = tabs.property("antTabsTabLayoutBuildCount").toInt();
+    tabs.setTabText(QStringLiteral("three"), QStringLiteral("Longer third tab"));
+    QVERIFY(tabs.property("antTabsTabLayoutBuildCount").toInt() > buildsBeforeLabel);
+
+    AntTabs editable;
+    editable.setTabsType(Ant::TabsType::EditableCard);
+    editable.addTab(new QWidget, QStringLiteral("one"), QStringLiteral("One"));
+    editable.addTab(new QWidget, QStringLiteral("two"), QStringLiteral("Two"));
+    editable.addTab(new QWidget, QStringLiteral("three"), QStringLiteral("Three"));
+    editable.resize(360, 160);
+    editable.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&editable));
+    QCoreApplication::processEvents();
+
+    const int editableBuilds = editable.property("antTabsTabLayoutBuildCount").toInt();
+    const int editableScopedBeforeHover = editable.property("antTabsScopedUpdateCount").toInt();
+    QMouseEvent addHover(QEvent::MouseMove,
+                         QPointF(245, 20),
+                         QPointF(editable.mapToGlobal(QPoint(245, 20))),
+                         Qt::NoButton,
+                         Qt::NoButton,
+                         Qt::NoModifier);
+    QCoreApplication::sendEvent(&editable, &addHover);
+    QCOMPARE(editable.property("antTabsTabLayoutBuildCount").toInt(), editableBuilds);
+    QVERIFY(editable.property("antTabsScopedUpdateCount").toInt() > editableScopedBeforeHover);
 }
 
 void TestAntNavigation::anchorCachesLayoutAndCoalescesScroll()

@@ -4,15 +4,11 @@
 #include <QPainter>
 #include <QStyleOption>
 
-#include <algorithm>
-
-#include "styles/AntPalette.h"
 #include "widgets/AntTabs.h"
 
 AntTabsStyle::AntTabsStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntTabs>();
 }
 
 void AntTabsStyle::polish(QWidget* widget)

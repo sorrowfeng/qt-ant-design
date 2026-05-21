@@ -3,6 +3,7 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QRectF>
+#include <QPainterPath>
 #include <QVector>
 #include <QWidget>
 
@@ -102,6 +103,7 @@ Q_SIGNALS:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void changeEvent(QEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
@@ -111,9 +113,17 @@ private:
     int indexOfKey(const QString& key) const;
     int activeIndex() const;
     int fallbackEnabledIndex(int fromIndex) const;
+    struct TabLayoutItem
+    {
+        QRect tabRect;
+        QRect iconRect;
+        QRect textRect;
+        QRect closeRect;
+        QPainterPath cardPath;
+    };
     QRect tabBarRect() const;
     QRect pageRect() const;
-    QVector<QRect> tabRects() const;
+    QVector<TabLayoutItem> tabLayouts() const;
     QRect addButtonRect() const;
     QRect closeRect(const QRect& tabRect) const;
     int tabAt(const QPoint& pos) const;
@@ -126,11 +136,17 @@ private:
     QColor tabTextColor(const AntTabItem& item, bool active, bool hovered) const;
     QColor tabBackgroundColor(bool active, bool hovered) const;
     QRectF targetIndicatorRect(int index) const;
+    void invalidateTabLayoutCache();
+    QRect tabDirtyRect(int index) const;
+    QRect indicatorDirtyRect(const QRectF& indicator) const;
+    void updateHoverRegion(int oldTab, int newTab, int oldClose, int newClose, bool addChanged);
+    void updateTabStateRegion(int oldIndex, int newIndex);
     void syncIndicatorRect();
     void animateIndicator(const QRectF& from, const QRectF& to);
     void setActiveIndex(int index);
     void updateStackGeometry();
-    void drawTab(QPainter& painter, const AntTabItem& item, const QRect& rect, bool active, bool hovered) const;
+    void syncTabsPerfCounters() const;
+    void drawTab(QPainter& painter, const AntTabItem& item, const TabLayoutItem& layout, bool active, bool hovered) const;
     void drawAddButton(QPainter& painter, const QRect& rect) const;
 
     QVector<AntTabItem> m_tabs;
@@ -149,4 +165,13 @@ private:
     bool m_addHovered = false;
     QRectF m_indicatorRect;
     bool m_indicatorReady = false;
+    quint64 m_tabLayoutRevision = 1;
+    mutable bool m_tabLayoutCacheValid = false;
+    mutable quint64 m_tabLayoutCacheRevision = 0;
+    mutable QSize m_tabLayoutCacheSize;
+    mutable QVector<TabLayoutItem> m_cachedTabLayouts;
+    mutable QRect m_cachedAddButtonRect;
+    mutable int m_tabLayoutCacheHitCount = 0;
+    mutable int m_tabLayoutBuildCount = 0;
+    int m_scopedUpdateCount = 0;
 };
