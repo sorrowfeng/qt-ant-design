@@ -1,86 +1,18 @@
 #include "AntNotificationStyle.h"
 
 #include <QEvent>
-#include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
+#include <QPaintEvent>
 #include <QStyleOption>
 #include <QTextOption>
 
 #include "styles/AntIconPainter.h"
-#include "styles/AntPalette.h"
 #include "widgets/AntNotification.h"
 
 namespace
 {
-constexpr int NoticeWidth = 384;
-constexpr int ShadowInset = 18;
-
-QRectF computeNoticeRect(const QRect& rect)
+void drawTypeIcon(QPainter& painter, const QRectF& rect, Ant::MessageType type, const QColor& accentColor)
 {
-    return rect.adjusted(ShadowInset, ShadowInset, -ShadowInset, -ShadowInset);
-}
-
-QColor computeAccentColor(Ant::MessageType type)
-{
-    const auto& token = antTheme->tokens();
-    switch (type)
-    {
-    case Ant::MessageType::Success:
-        return token.colorSuccess;
-    case Ant::MessageType::Warning:
-        return token.colorWarning;
-    case Ant::MessageType::Error:
-        return token.colorError;
-    case Ant::MessageType::Loading:
-    case Ant::MessageType::Info:
-    default:
-        return token.colorPrimary;
-    }
-}
-
-QRectF computeCloseButtonRect(const QRectF& card)
-{
-    const auto& token = antTheme->tokens();
-    const qreal size = token.controlHeightLG * 0.55;
-    return QRectF(card.right() - token.paddingLG - size, card.top() + token.paddingMD - 4, size, size);
-}
-
-void drawShadowLayer(QPainter& painter, const QRectF& card, int blur, qreal yOffset, qreal alpha, qreal radius)
-{
-    QColor shadow = antTheme->tokens().colorShadow;
-    for (int i = blur; i >= 1; --i)
-    {
-        const qreal progress = 1.0 - static_cast<qreal>(i) / static_cast<qreal>(blur);
-        shadow.setAlphaF(alpha * progress * progress);
-        const QRectF layer = card.adjusted(-i, -i + yOffset, i, i + yOffset);
-        QPainterPath outer;
-        outer.addRoundedRect(layer, radius + i, radius + i);
-        QPainterPath inner;
-        inner.addRoundedRect(card, radius, radius);
-        painter.fillPath(outer.subtracted(inner), shadow);
-    }
-}
-
-void drawNotificationShadow(QPainter& painter, const QRectF& card, qreal radius)
-{
-    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
-    drawShadowLayer(painter, card, 12, 4, dark ? 0.048 : 0.026, radius);
-    drawShadowLayer(painter, card, 5, 1, dark ? 0.022 : 0.012, radius);
-}
-
-void drawTypeIcon(QPainter& painter, const QRectF& rect, Ant::MessageType type, const QColor& accentColor, int spinnerAngle)
-{
-    if (type == Ant::MessageType::Loading)
-    {
-        painter.save();
-        painter.setPen(QPen(accentColor, 2.0, Qt::SolidLine, Qt::RoundCap));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawArc(rect.adjusted(2, 2, -2, -2), spinnerAngle * 16, 270 * 16);
-        painter.restore();
-        return;
-    }
-
     Ant::IconType iconType = Ant::IconType::InfoCircle;
     switch (type)
     {
@@ -109,7 +41,6 @@ void drawTypeIcon(QPainter& painter, const QRectF& rect, Ant::MessageType type, 
 AntNotificationStyle::AntNotificationStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntNotification>();
 }
 
 void AntNotificationStyle::polish(QWidget* widget)
@@ -155,38 +86,14 @@ bool AntNotificationStyle::eventFilter(QObject* watched, QEvent* event)
 
     if (event->type() == QEvent::Paint)
     {
+        auto* paintEvent = static_cast<QPaintEvent*>(event);
         QStyleOption option;
         option.initFrom(notification);
-        option.rect = notification->rect();
+        option.rect = paintEvent->rect();
         QPainter painter(notification);
         drawPrimitive(QStyle::PE_Widget, &option, &painter, notification);
         return true;
     }
-
-    // Track close button hover state
-    if (event->type() == QEvent::MouseMove && notification->isClosable())
-    {
-        auto* me = static_cast<QMouseEvent*>(event);
-        const QRectF card = computeNoticeRect(notification->rect());
-        const QRectF closeRect = computeCloseButtonRect(card);
-        const bool hover = closeRect.contains(me->position());
-        const bool wasHover = notification->property("antStyle_closeHover").toBool();
-        if (hover != wasHover)
-        {
-            notification->setProperty("antStyle_closeHover", hover);
-            notification->update();
-        }
-    }
-
-    if (event->type() == QEvent::Leave)
-    {
-        if (notification->property("antStyle_closeHover").toBool())
-        {
-            notification->setProperty("antStyle_closeHover", false);
-            notification->update();
-        }
-    }
-
     return QProxyStyle::eventFilter(watched, event);
 }
 
@@ -199,38 +106,45 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     }
 
     const auto& token = antTheme->tokens();
+    Q_UNUSED(option)
+    const auto& layout = notification->notificationLayout();
     const Ant::MessageType notificationType = notification->notificationType();
     const bool closable = notification->isClosable();
     const bool iconVisible = notification->iconVisible();
     const bool showProgress = notification->showProgress();
-    const bool closeHovered = notification->property("antStyle_closeHover").toBool();
-    const QColor accent = computeAccentColor(notificationType);
-
-    const QRectF card = computeNoticeRect(option->rect);
+    const bool closeHovered = notification->m_closeHovered;
+    const QColor accent = layout.accentColor;
+    const QRectF card = layout.cardRect;
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
     // Shadow
-    drawNotificationShadow(*painter, card, token.borderRadiusLG);
+    painter->drawPixmap(QPoint(0, 0), notification->cachedShadowPixmap());
 
     // Card background
     AntStyleBase::drawCrispRoundedRect(painter, card.toRect(),
         QPen(token.colorBorderSecondary, token.lineWidth),
         token.colorBgElevated,
-        token.borderRadiusLG,
-        token.borderRadiusLG);
+        layout.radius,
+        layout.radius);
 
-    const QRectF iconRect(card.left() + token.paddingLG, card.top() + token.padding + 2, 22, 22);
     if (iconVisible)
     {
-        drawTypeIcon(*painter, iconRect, notificationType, accent, notification->spinnerAngle());
+        if (notificationType == Ant::MessageType::Loading)
+        {
+            notification->drawLoadingIcon(*painter, layout.iconRect);
+        }
+        else
+        {
+            drawTypeIcon(*painter, layout.iconRect, notificationType, accent);
+        }
     }
 
     // Close button
     if (closable)
     {
-        const QRectF closeRect = computeCloseButtonRect(card);
+        const QRectF closeRect = layout.closeRect;
         AntStyleBase::drawCrispRoundedRect(painter, closeRect.toRect(),
             Qt::NoPen, closeHovered ? token.colorFillTertiary : Qt::transparent,
             token.borderRadiusSM, token.borderRadiusSM);
@@ -242,10 +156,6 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     }
 
     // Title
-    const qreal textLeft = iconVisible ? iconRect.right() + token.marginSM : card.left() + token.paddingLG;
-    const qreal textRight = card.right() - token.paddingLG - (closable ? 28 : 0);
-    QRectF titleRect(textLeft, card.top() + token.padding - 1, textRight - textLeft, token.controlHeightSM);
-
     if (!notification->title().isEmpty())
     {
         QFont titleFont = painter->font();
@@ -253,8 +163,7 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
         titleFont.setWeight(QFont::DemiBold);
         painter->setFont(titleFont);
         painter->setPen(token.colorText);
-        painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, notification->title());
-        titleRect.moveTop(titleRect.bottom() + token.marginXS - 2);
+        painter->drawText(layout.titleRect, Qt::AlignLeft | Qt::AlignVCenter, notification->title());
     }
 
     // Description
@@ -266,13 +175,12 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     QTextOption textOption;
     textOption.setWrapMode(QTextOption::WordWrap);
     textOption.setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    const QRectF descRect(textLeft, titleRect.top(), textRight - textLeft, card.bottom() - titleRect.top() - token.padding);
-    painter->drawText(descRect, notification->description(), textOption);
+    painter->drawText(layout.descriptionRect, notification->description(), textOption);
 
     // Progress bar
     if (showProgress && notification->duration() > 0)
     {
-        const QRectF track(card.left(), card.bottom() - 2, card.width(), 2);
+        const QRectF track = layout.progressTrackRect;
         painter->setPen(Qt::NoPen);
         painter->setBrush(token.colorFillQuaternary);
         painter->drawRect(track);

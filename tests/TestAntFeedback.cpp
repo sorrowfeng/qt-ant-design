@@ -29,6 +29,7 @@ private slots:
     void message();
     void messageCachesLayoutShadowAndScopesUpdates();
     void notification();
+    void notificationCachesLayoutShadowAndScopesUpdates();
     void notificationLoadingProgressAutoCloses();
     void popconfirm();
     void popover();
@@ -354,6 +355,86 @@ void TestAntFeedback::notification()
     w->setClosable(false);
     QCOMPARE(w->isClosable(), false);
     QCOMPARE(closeSpy.count(), 1);
+}
+
+void TestAntFeedback::notificationCachesLayoutShadowAndScopesUpdates()
+{
+    AntNotification notification;
+    notification.setTitle(QStringLiteral("Cached notice"));
+    notification.setDescription(QStringLiteral("Repeated paints should reuse notification layout and soft shadow."));
+    notification.setNotificationType(Ant::MessageType::Success);
+    notification.setDuration(1200);
+    notification.setShowProgress(true);
+    notification.resize(notification.sizeHint());
+
+    notification.grab();
+    const int layoutBuilds = notification.property("antNotificationLayoutBuildCount").toInt();
+    const int layoutHits = notification.property("antNotificationLayoutCacheHitCount").toInt();
+    const int shadowBuilds = notification.property("antNotificationShadowBuildCount").toInt();
+    const int shadowHits = notification.property("antNotificationShadowCacheHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+    QVERIFY(shadowBuilds > 0);
+
+    notification.grab();
+    QCOMPARE(notification.property("antNotificationShadowBuildCount").toInt(), shadowBuilds);
+    QVERIFY(notification.property("antNotificationLayoutCacheHitCount").toInt() > layoutHits);
+    QVERIFY(notification.property("antNotificationShadowCacheHitCount").toInt() > shadowHits);
+
+    notification.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&notification));
+
+    const int progressUpdates = notification.property("antNotificationProgressRegionUpdateCount").toInt();
+    QTRY_VERIFY_WITH_TIMEOUT(notification.property("antNotificationProgressRegionUpdateCount").toInt() > progressUpdates,
+                             250);
+    QCOMPARE(notification.property("antNotificationLastUpdateMode").toString(), QStringLiteral("progress"));
+
+    notification.setNotificationType(Ant::MessageType::Loading);
+    const int spinnerUpdates = notification.property("antNotificationSpinnerRegionUpdateCount").toInt();
+    QTRY_VERIFY_WITH_TIMEOUT(notification.property("antNotificationSpinnerRegionUpdateCount").toInt() > spinnerUpdates,
+                             300);
+
+    auto sendMove = [&notification](const QPoint& point) {
+        QMouseEvent event(QEvent::MouseMove, QPointF(point), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(&notification, &event);
+    };
+
+    const int closeUpdates = notification.property("antNotificationCloseRegionUpdateCount").toInt();
+    sendMove(QPoint(notification.width() - 52, 42));
+    QCOMPARE(notification.property("antNotificationLastUpdateMode").toString(), QStringLiteral("closeHover"));
+    QVERIFY(notification.property("antNotificationCloseRegionUpdateCount").toInt() > closeUpdates);
+
+    const int closeUpdatesAfterEnter = notification.property("antNotificationCloseRegionUpdateCount").toInt();
+    sendMove(QPoint(24, notification.height() - 20));
+    QCOMPARE(notification.property("antNotificationLastUpdateMode").toString(), QStringLiteral("closeHover"));
+    QVERIFY(notification.property("antNotificationCloseRegionUpdateCount").toInt() > closeUpdatesAfterEnter);
+    notification.hide();
+
+    QWidget anchor;
+    anchor.resize(520, 360);
+    anchor.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&anchor));
+
+    QPointer<AntNotification> first =
+        AntNotification::info(QStringLiteral("First"), QStringLiteral("Cached stack"), &anchor, 0);
+    QVERIFY(first);
+    QTRY_VERIFY_WITH_TIMEOUT(first->isVisible(), 300);
+    QTest::qWait(260);
+    const int relayoutSkips = first->property("antNotificationRelayoutSkipCount").toInt();
+
+    QPointer<AntNotification> second =
+        AntNotification::info(QStringLiteral("Second"), QStringLiteral("Cached stack"), &anchor, 0);
+    QVERIFY(second);
+    QTRY_VERIFY_WITH_TIMEOUT(second->isVisible(), 300);
+    QVERIFY(first->property("antNotificationRelayoutSkipCount").toInt() > relayoutSkips);
+
+    if (second)
+    {
+        second->close();
+    }
+    if (first)
+    {
+        first->close();
+    }
 }
 
 void TestAntFeedback::notificationLoadingProgressAutoCloses()

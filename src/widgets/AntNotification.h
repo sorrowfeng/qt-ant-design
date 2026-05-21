@@ -2,8 +2,11 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
 #include <QElapsedTimer>
 #include <QList>
+#include <QPixmap>
+#include <QRectF>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -122,6 +125,33 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
 
 private:
+    friend class AntNotificationStyle;
+
+    struct NotificationLayout
+    {
+        bool valid = false;
+        QSize widgetSize;
+        QString title;
+        QString description;
+        Ant::MessageType notificationType = Ant::MessageType::Info;
+        Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
+        QString fontKey;
+        bool closable = true;
+        bool iconVisible = true;
+        bool showProgress = false;
+        int duration = 0;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QRectF cardRect;
+        QRectF iconRect;
+        QRectF closeRect;
+        QRectF titleRect;
+        QRectF descriptionRect;
+        QRectF progressTrackRect;
+        QColor accentColor;
+        int radius = 8;
+    };
+
     static QList<AntNotification*>& activeNotifications();
     static void relayoutNotifications(QWidget* anchor = nullptr);
     static AntNotification* create(const QString& title,
@@ -135,6 +165,18 @@ private:
     QRectF noticeRect() const;
     QRectF closeButtonRect() const;
     QColor accentColor() const;
+    const NotificationLayout& notificationLayout() const;
+    void invalidateNotificationLayout() const;
+    QPixmap cachedShadowPixmap() const;
+    void clearShadowCache() const;
+    void applyNotificationSizeHint();
+    void requestNotificationUpdate(const QRect& region,
+                                   const QString& mode,
+                                   bool progressScoped = false,
+                                   bool spinnerScoped = false,
+                                   bool closeScoped = false);
+    void syncNotificationPerfCounters() const;
+    void drawLoadingIcon(QPainter& painter, const QRectF& rect) const;
     void startCloseTimer();
     void pauseCloseTimer();
     void resumeCloseTimer();
@@ -158,4 +200,20 @@ private:
     QTimer* m_progressTimer = nullptr;
     QTimer* m_spinnerTimer = nullptr;
     QElapsedTimer m_countdown;
+    mutable NotificationLayout m_layoutCache;
+    mutable QPixmap m_shadowPixmapCache;
+    mutable QString m_shadowPixmapCacheKey;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_layoutCacheHitCount = 0;
+    mutable int m_shadowBuildCount = 0;
+    mutable int m_shadowCacheHitCount = 0;
+    mutable int m_sizeApplyCount = 0;
+    mutable int m_sizeSkipCount = 0;
+    int m_regionUpdateCount = 0;
+    int m_progressRegionUpdateCount = 0;
+    int m_spinnerRegionUpdateCount = 0;
+    int m_closeRegionUpdateCount = 0;
+    int m_relayoutMoveCount = 0;
+    int m_relayoutSkipCount = 0;
+    QString m_lastUpdateMode;
 };

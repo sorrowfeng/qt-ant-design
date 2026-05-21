@@ -2,10 +2,12 @@
 
 #include <QApplication>
 #include <QEnterEvent>
+#include <QFontMetrics>
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPixmap>
 #include <QPointer>
 #include <QScreen>
 #include <QShowEvent>
@@ -53,6 +55,29 @@ AntPopupMotion::Placement notificationMotionPlacement(Ant::Placement placement)
     }
     return AntPopupMotion::fromPlacement(placement);
 }
+
+void drawShadowLayer(QPainter& painter, const QRectF& card, int blur, qreal yOffset, qreal alpha, qreal radius)
+{
+    QColor shadow = antTheme->tokens().colorShadow;
+    for (int i = blur; i >= 1; --i)
+    {
+        const qreal progress = 1.0 - static_cast<qreal>(i) / static_cast<qreal>(blur);
+        shadow.setAlphaF(alpha * progress * progress);
+        const QRectF layer = card.adjusted(-i, -i + yOffset, i, i + yOffset);
+        QPainterPath outer;
+        outer.addRoundedRect(layer, radius + i, radius + i);
+        QPainterPath inner;
+        inner.addRoundedRect(card, radius, radius);
+        painter.fillPath(outer.subtracted(inner), shadow);
+    }
+}
+
+void drawNotificationShadow(QPainter& painter, const QRectF& card, qreal radius)
+{
+    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    drawShadowLayer(painter, card, 12, 4, dark ? 0.048 : 0.026, radius);
+    drawShadowLayer(painter, card, 5, 1, dark ? 0.022 : 0.012, radius);
+}
 } // namespace
 
 AntNotification::AntNotification(QWidget* parent)
@@ -71,13 +96,28 @@ AntNotification::AntNotification(QWidget* parent)
     });
 
     m_progressTimer = new QTimer(this);
-    connect(m_progressTimer, &QTimer::timeout, this, [this]() { update(); });
+    connect(m_progressTimer, &QTimer::timeout, this, [this]() {
+        requestNotificationUpdate(notificationLayout().progressTrackRect.toAlignedRect().adjusted(-1, -1, 1, 1),
+                                  QStringLiteral("progress"),
+                                  true);
+    });
 
     m_spinnerTimer = new QTimer(this);
     connect(m_spinnerTimer, &QTimer::timeout, this, [this]() {
         m_spinnerAngle = (m_spinnerAngle + 30) % 360;
-        update();
+        requestNotificationUpdate(notificationLayout().iconRect.toAlignedRect().adjusted(-3, -3, 3, 3),
+                                  QStringLiteral("loading"),
+                                  false,
+                                  true);
     });
+
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateNotificationLayout();
+        clearShadowCache();
+        applyNotificationSizeHint();
+        requestNotificationUpdate(rect(), QStringLiteral("theme"));
+    });
+    syncNotificationPerfCounters();
 }
 
 AntNotification* AntNotification::open(const QString& title,
@@ -115,7 +155,7 @@ AntNotification* AntNotification::create(const QString& title,
     notification->setIconVisible(iconVisible);
     notification->setPlacement(placement);
     notification->setDuration(durationMs);
-    notification->adjustSize();
+    notification->applyNotificationSizeHint();
     activeNotifications().append(notification);
 
     QPointer<QWidget> anchorGuard(anchor);
@@ -188,8 +228,9 @@ void AntNotification::setTitle(const QString& title)
         return;
     }
     m_title = title;
-    adjustSize();
-    update();
+    invalidateNotificationLayout();
+    applyNotificationSizeHint();
+    requestNotificationUpdate(rect(), QStringLiteral("title"));
     Q_EMIT titleChanged(m_title);
 }
 
@@ -202,8 +243,9 @@ void AntNotification::setDescription(const QString& description)
         return;
     }
     m_description = description;
-    adjustSize();
-    update();
+    invalidateNotificationLayout();
+    applyNotificationSizeHint();
+    requestNotificationUpdate(rect(), QStringLiteral("description"));
     Q_EMIT descriptionChanged(m_description);
 }
 
@@ -216,8 +258,14 @@ void AntNotification::setNotificationType(Ant::MessageType type)
         return;
     }
     m_notificationType = type;
+    invalidateNotificationLayout();
     updateSpinnerState();
-    update();
+    QRect dirty = notificationLayout().iconRect.toAlignedRect().adjusted(-3, -3, 3, 3);
+    if (m_showProgress)
+    {
+        dirty = dirty.united(notificationLayout().progressTrackRect.toAlignedRect().adjusted(-1, -1, 1, 1));
+    }
+    requestNotificationUpdate(dirty, QStringLiteral("type"));
     Q_EMIT notificationTypeChanged(m_notificationType);
 }
 
@@ -245,6 +293,14 @@ void AntNotification::setDuration(int durationMs)
     }
     m_duration = durationMs;
     m_remainingMs = durationMs;
+    if (m_showProgress)
+    {
+        invalidateNotificationLayout();
+        applyNotificationSizeHint();
+        requestNotificationUpdate(notificationLayout().progressTrackRect.toAlignedRect().adjusted(-1, -1, 1, 1),
+                                  QStringLiteral("duration"),
+                                  true);
+    }
     startCloseTimer();
     Q_EMIT durationChanged(m_duration);
 }
@@ -270,6 +326,8 @@ void AntNotification::setShowProgress(bool show)
         return;
     }
     m_showProgress = show;
+    invalidateNotificationLayout();
+    applyNotificationSizeHint();
     if (m_showProgress && m_duration > 0 && isVisible())
     {
         m_progressTimer->start(50);
@@ -278,7 +336,7 @@ void AntNotification::setShowProgress(bool show)
     {
         m_progressTimer->stop();
     }
-    update();
+    requestNotificationUpdate(rect(), QStringLiteral("progressVisible"));
     Q_EMIT showProgressChanged(m_showProgress);
 }
 
@@ -291,7 +349,9 @@ void AntNotification::setClosable(bool closable)
         return;
     }
     m_closable = closable;
-    update();
+    invalidateNotificationLayout();
+    applyNotificationSizeHint();
+    requestNotificationUpdate(rect(), QStringLiteral("closable"));
     Q_EMIT closableChanged(m_closable);
 }
 
@@ -304,9 +364,10 @@ void AntNotification::setIconVisible(bool visible)
         return;
     }
     m_iconVisible = visible;
+    invalidateNotificationLayout();
     updateSpinnerState();
-    updateGeometry();
-    update();
+    applyNotificationSizeHint();
+    requestNotificationUpdate(rect(), QStringLiteral("iconVisible"));
     Q_EMIT iconVisibleChanged(m_iconVisible);
 }
 
@@ -314,29 +375,12 @@ int AntNotification::spinnerAngle() const { return m_spinnerAngle; }
 
 QSize AntNotification::sizeHint() const
 {
-    const auto& token = antTheme->tokens();
-    const int iconWidth = m_iconVisible ? 22 + token.marginSM : 0;
-    const int contentWidth = NoticeWidth - token.paddingLG * 2 - iconWidth - (m_closable ? 28 : 0);
-
-    QFont titleFont = font();
-    titleFont.setPixelSize(token.fontSizeLG);
-    titleFont.setWeight(QFont::DemiBold);
-    QFont descFont = font();
-    descFont.setPixelSize(token.fontSize);
-
-    const int titleHeight = m_title.isEmpty() ? 0 : QFontMetrics(titleFont).height();
-    const QRect descBounds = QFontMetrics(descFont).boundingRect(QRect(0, 0, contentWidth, 400),
-                                                                 Qt::TextWordWrap,
-                                                                 m_description);
-    const int descHeight = m_description.isEmpty() ? 0 : descBounds.height();
-    const int gap = (!m_title.isEmpty() && !m_description.isEmpty()) ? token.marginXS : 0;
-    const int cardHeight = std::max(86, token.padding * 2 + titleHeight + gap + descHeight + (m_showProgress ? 2 : 0));
-    return QSize(NoticeWidth + ShadowInset * 2, cardHeight + ShadowInset * 2);
+    return notificationLayout().sizeHint;
 }
 
 QSize AntNotification::minimumSizeHint() const
 {
-    return QSize(NoticeWidth + ShadowInset * 2, 96);
+    return notificationLayout().minimumSizeHint;
 }
 
 void AntNotification::paintEvent(QPaintEvent* event)
@@ -347,6 +391,7 @@ void AntNotification::paintEvent(QPaintEvent* event)
 void AntNotification::showEvent(QShowEvent* event)
 {
     m_remainingMs = m_duration;
+    applyNotificationSizeHint();
     startCloseTimer();
     updateSpinnerState();
     QWidget::showEvent(event);
@@ -374,12 +419,17 @@ void AntNotification::enterEvent(QEnterEvent* event)
 void AntNotification::leaveEvent(QEvent* event)
 {
     m_hovered = false;
+    const QRect closeDirty = notificationLayout().closeRect.toAlignedRect().adjusted(-2, -2, 2, 2);
+    const bool closeChanged = m_closeHovered;
     m_closeHovered = false;
     if (m_pauseOnHover)
     {
         resumeCloseTimer();
     }
-    update();
+    if (closeChanged)
+    {
+        requestNotificationUpdate(closeDirty, QStringLiteral("closeHover"), false, false, true);
+    }
     QWidget::leaveEvent(event);
 }
 
@@ -388,8 +438,9 @@ void AntNotification::mouseMoveEvent(QMouseEvent* event)
     const bool hoveringClose = m_closable && closeButtonRect().contains(event->position());
     if (m_closeHovered != hoveringClose)
     {
+        const QRect closeDirty = notificationLayout().closeRect.toAlignedRect().adjusted(-2, -2, 2, 2);
         m_closeHovered = hoveringClose;
-        update();
+        requestNotificationUpdate(closeDirty, QStringLiteral("closeHover"), false, false, true);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -448,7 +499,7 @@ void AntNotification::relayoutNotifications(QWidget* anchor)
             {
                 continue;
             }
-            notification->adjustSize();
+            notification->applyNotificationSizeHint();
             int x = targetRect.center().x() - notification->width() / 2;
             if (isLeftPlacement(placement))
             {
@@ -469,22 +520,29 @@ void AntNotification::relayoutNotifications(QWidget* anchor)
                 y -= notification->height();
                 cursor = y - token.margin;
             }
-            notification->move(x, y);
+            const QPoint targetPos(x, y);
+            if (notification->pos() == targetPos)
+            {
+                ++notification->m_relayoutSkipCount;
+            }
+            else
+            {
+                notification->move(targetPos);
+                ++notification->m_relayoutMoveCount;
+            }
+            notification->syncNotificationPerfCounters();
         }
     }
 }
 
 QRectF AntNotification::noticeRect() const
 {
-    return rect().adjusted(ShadowInset, ShadowInset, -ShadowInset, -ShadowInset);
+    return notificationLayout().cardRect;
 }
 
 QRectF AntNotification::closeButtonRect() const
 {
-    const auto& token = antTheme->tokens();
-    const QRectF card = noticeRect();
-    const qreal size = token.controlHeightLG * 0.55;
-    return QRectF(card.right() - token.paddingLG - size, card.top() + token.paddingMD - 4, size, size);
+    return notificationLayout().closeRect;
 }
 
 QColor AntNotification::accentColor() const
@@ -503,6 +561,229 @@ QColor AntNotification::accentColor() const
     default:
         return token.colorPrimary;
     }
+}
+
+const AntNotification::NotificationLayout& AntNotification::notificationLayout() const
+{
+    const auto& token = antTheme->tokens();
+    const QString fontKey = font().toString();
+    const QColor accent = accentColor();
+    const bool cacheMatches = m_layoutCache.valid
+        && m_layoutCache.widgetSize == size()
+        && m_layoutCache.title == m_title
+        && m_layoutCache.description == m_description
+        && m_layoutCache.notificationType == m_notificationType
+        && m_layoutCache.themeMode == antTheme->themeMode()
+        && m_layoutCache.fontKey == fontKey
+        && m_layoutCache.closable == m_closable
+        && m_layoutCache.iconVisible == m_iconVisible
+        && m_layoutCache.showProgress == m_showProgress
+        && m_layoutCache.duration == m_duration
+        && m_layoutCache.accentColor == accent
+        && m_layoutCache.radius == token.borderRadiusLG;
+    if (cacheMatches)
+    {
+        ++m_layoutCacheHitCount;
+        syncNotificationPerfCounters();
+        return m_layoutCache;
+    }
+
+    ++m_layoutBuildCount;
+
+    NotificationLayout layout;
+    layout.valid = true;
+    layout.widgetSize = size();
+    layout.title = m_title;
+    layout.description = m_description;
+    layout.notificationType = m_notificationType;
+    layout.themeMode = antTheme->themeMode();
+    layout.fontKey = fontKey;
+    layout.closable = m_closable;
+    layout.iconVisible = m_iconVisible;
+    layout.showProgress = m_showProgress;
+    layout.duration = m_duration;
+    layout.radius = token.borderRadiusLG;
+    layout.accentColor = accent;
+
+    const int iconWidth = m_iconVisible ? 22 + token.marginSM : 0;
+    const int contentWidth = NoticeWidth - token.paddingLG * 2 - iconWidth - (m_closable ? 28 : 0);
+
+    QFont titleFont = font();
+    titleFont.setPixelSize(token.fontSizeLG);
+    titleFont.setWeight(QFont::DemiBold);
+    QFont descFont = font();
+    descFont.setPixelSize(token.fontSize);
+
+    const int titleHeight = m_title.isEmpty() ? 0 : QFontMetrics(titleFont).height();
+    const QRect descBounds = QFontMetrics(descFont).boundingRect(QRect(0, 0, contentWidth, 400),
+                                                                 Qt::TextWordWrap,
+                                                                 m_description);
+    const int descHeight = m_description.isEmpty() ? 0 : descBounds.height();
+    const int gap = (!m_title.isEmpty() && !m_description.isEmpty()) ? token.marginXS : 0;
+    const int cardHeight =
+        std::max(86, token.padding * 2 + titleHeight + gap + descHeight + (m_showProgress ? 2 : 0));
+    layout.sizeHint = QSize(NoticeWidth + ShadowInset * 2, cardHeight + ShadowInset * 2);
+    layout.minimumSizeHint = QSize(NoticeWidth + ShadowInset * 2, 96);
+
+    QRect baseRect = rect();
+    if (baseRect.width() <= 0 || baseRect.height() <= 0)
+    {
+        baseRect = QRect(QPoint(0, 0), layout.sizeHint);
+    }
+    layout.cardRect = baseRect.adjusted(ShadowInset, ShadowInset, -ShadowInset, -ShadowInset);
+
+    layout.iconRect = QRectF(layout.cardRect.left() + token.paddingLG,
+                             layout.cardRect.top() + token.padding + 2,
+                             22,
+                             22);
+    const qreal closeSize = token.controlHeightLG * 0.55;
+    layout.closeRect = QRectF(layout.cardRect.right() - token.paddingLG - closeSize,
+                              layout.cardRect.top() + token.paddingMD - 4,
+                              closeSize,
+                              closeSize);
+
+    const qreal textLeft = m_iconVisible ? layout.iconRect.right() + token.marginSM
+                                         : layout.cardRect.left() + token.paddingLG;
+    const qreal textRight = layout.cardRect.right() - token.paddingLG - (m_closable ? 28 : 0);
+    qreal descTop = layout.cardRect.top() + token.padding - 1;
+    if (!m_title.isEmpty())
+    {
+        layout.titleRect = QRectF(textLeft, descTop, textRight - textLeft, token.controlHeightSM);
+        descTop = layout.titleRect.bottom() + token.marginXS - 2;
+    }
+    layout.descriptionRect =
+        QRectF(textLeft, descTop, textRight - textLeft, layout.cardRect.bottom() - descTop - token.padding);
+
+    if (m_showProgress && m_duration > 0)
+    {
+        layout.progressTrackRect =
+            QRectF(layout.cardRect.left(), layout.cardRect.bottom() - 2, layout.cardRect.width(), 2);
+    }
+
+    m_layoutCache = layout;
+    syncNotificationPerfCounters();
+    return m_layoutCache;
+}
+
+void AntNotification::invalidateNotificationLayout() const
+{
+    m_layoutCache.valid = false;
+}
+
+QPixmap AntNotification::cachedShadowPixmap() const
+{
+    const auto& layout = notificationLayout();
+    const qreal ratio = devicePixelRatioF();
+    const QString key = QStringLiteral("%1x%2:%3:%4:%5:%6")
+        .arg(width())
+        .arg(height())
+        .arg(qRound(ratio * 100.0))
+        .arg(static_cast<int>(antTheme->themeMode()))
+        .arg(antTheme->tokens().colorShadow.rgba())
+        .arg(layout.radius);
+
+    if (!m_shadowPixmapCache.isNull() && m_shadowPixmapCacheKey == key)
+    {
+        ++m_shadowCacheHitCount;
+        syncNotificationPerfCounters();
+        return m_shadowPixmapCache;
+    }
+
+    ++m_shadowBuildCount;
+    m_shadowPixmapCacheKey = key;
+    const QSize pixmapSize(qMax(1, qRound(width() * ratio)), qMax(1, qRound(height() * ratio)));
+    QPixmap pixmap(pixmapSize);
+    pixmap.setDevicePixelRatio(ratio);
+    pixmap.fill(Qt::transparent);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    drawNotificationShadow(painter, layout.cardRect, layout.radius);
+    painter.end();
+
+    m_shadowPixmapCache = pixmap;
+    syncNotificationPerfCounters();
+    return m_shadowPixmapCache;
+}
+
+void AntNotification::clearShadowCache() const
+{
+    m_shadowPixmapCache = QPixmap();
+    m_shadowPixmapCacheKey.clear();
+}
+
+void AntNotification::applyNotificationSizeHint()
+{
+    const QSize target = sizeHint();
+    if (size() == target)
+    {
+        ++m_sizeSkipCount;
+        syncNotificationPerfCounters();
+        return;
+    }
+
+    resize(target);
+    invalidateNotificationLayout();
+    clearShadowCache();
+    ++m_sizeApplyCount;
+    syncNotificationPerfCounters();
+}
+
+void AntNotification::requestNotificationUpdate(const QRect& region,
+                                                const QString& mode,
+                                                bool progressScoped,
+                                                bool spinnerScoped,
+                                                bool closeScoped)
+{
+    m_lastUpdateMode = mode;
+    ++m_regionUpdateCount;
+    if (progressScoped)
+    {
+        ++m_progressRegionUpdateCount;
+    }
+    if (spinnerScoped)
+    {
+        ++m_spinnerRegionUpdateCount;
+    }
+    if (closeScoped)
+    {
+        ++m_closeRegionUpdateCount;
+    }
+    syncNotificationPerfCounters();
+
+    if (region.isValid() && !region.isEmpty())
+    {
+        update(region);
+        return;
+    }
+    update();
+}
+
+void AntNotification::syncNotificationPerfCounters() const
+{
+    auto* that = const_cast<AntNotification*>(this);
+    that->setProperty("antNotificationLayoutBuildCount", m_layoutBuildCount);
+    that->setProperty("antNotificationLayoutCacheHitCount", m_layoutCacheHitCount);
+    that->setProperty("antNotificationShadowBuildCount", m_shadowBuildCount);
+    that->setProperty("antNotificationShadowCacheHitCount", m_shadowCacheHitCount);
+    that->setProperty("antNotificationSizeApplyCount", m_sizeApplyCount);
+    that->setProperty("antNotificationSizeSkipCount", m_sizeSkipCount);
+    that->setProperty("antNotificationRegionUpdateCount", m_regionUpdateCount);
+    that->setProperty("antNotificationProgressRegionUpdateCount", m_progressRegionUpdateCount);
+    that->setProperty("antNotificationSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
+    that->setProperty("antNotificationCloseRegionUpdateCount", m_closeRegionUpdateCount);
+    that->setProperty("antNotificationRelayoutMoveCount", m_relayoutMoveCount);
+    that->setProperty("antNotificationRelayoutSkipCount", m_relayoutSkipCount);
+    that->setProperty("antNotificationLastUpdateMode", m_lastUpdateMode);
+}
+
+void AntNotification::drawLoadingIcon(QPainter& painter, const QRectF& rect) const
+{
+    painter.save();
+    painter.setPen(QPen(accentColor(), 2.0, Qt::SolidLine, Qt::RoundCap));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawArc(rect.adjusted(2, 2, -2, -2), m_spinnerAngle * 16, 270 * 16);
+    painter.restore();
 }
 
 qreal AntNotification::progressRatio() const
@@ -545,7 +826,12 @@ void AntNotification::pauseCloseTimer()
         m_remainingMs = std::max(0, m_remainingMs - static_cast<int>(m_countdown.elapsed()));
         m_closeTimer->stop();
         m_progressTimer->stop();
-        update();
+        if (m_showProgress)
+        {
+            requestNotificationUpdate(notificationLayout().progressTrackRect.toAlignedRect().adjusted(-1, -1, 1, 1),
+                                      QStringLiteral("progress"),
+                                      true);
+        }
     }
 }
 
