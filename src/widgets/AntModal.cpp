@@ -11,6 +11,8 @@
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPixmap>
+#include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
 #include <QVariantAnimation>
@@ -49,11 +51,61 @@ protected:
 
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-        antTheme->drawEffectShadow(&painter, card, kModalShadowWidth, token.borderRadiusLG, 0.75);
+        painter.drawPixmap(QPoint(0, 0), cachedShadowPixmap(card));
         painter.setPen(Qt::NoPen);
         painter.setBrush(token.colorBgElevated);
         painter.drawRoundedRect(card, token.borderRadiusLG, token.borderRadiusLG);
     }
+
+private:
+    QPixmap cachedShadowPixmap(const QRect& card) const
+    {
+        const auto& token = antTheme->tokens();
+        const qreal ratio = devicePixelRatioF();
+        const QString key = QStringLiteral("%1x%2:%3:%4:%5:%6:%7")
+            .arg(width())
+            .arg(height())
+            .arg(qRound(ratio * 100.0))
+            .arg(static_cast<int>(antTheme->themeMode()))
+            .arg(token.colorShadow.rgba())
+            .arg(token.borderRadiusLG)
+            .arg(kModalShadowWidth);
+
+        if (!m_shadowPixmap.isNull() && m_shadowKey == key)
+        {
+            ++m_shadowCacheHitCount;
+            syncPerfCounters();
+            return m_shadowPixmap;
+        }
+
+        ++m_shadowBuildCount;
+        m_shadowKey = key;
+        const QSize pixmapSize(qMax(1, qRound(width() * ratio)), qMax(1, qRound(height() * ratio)));
+        QPixmap pixmap(pixmapSize);
+        pixmap.setDevicePixelRatio(ratio);
+        pixmap.fill(Qt::transparent);
+
+        QPainter painter(&pixmap);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+        antTheme->drawEffectShadow(&painter, card, kModalShadowWidth, token.borderRadiusLG, 0.75);
+        painter.end();
+
+        m_shadowPixmap = pixmap;
+        syncPerfCounters();
+        return m_shadowPixmap;
+    }
+
+    void syncPerfCounters() const
+    {
+        auto* that = const_cast<ModalPanel*>(this);
+        that->setProperty("antModalShadowBuildCount", m_shadowBuildCount);
+        that->setProperty("antModalShadowCacheHitCount", m_shadowCacheHitCount);
+    }
+
+    mutable QPixmap m_shadowPixmap;
+    mutable QString m_shadowKey;
+    mutable int m_shadowBuildCount = 0;
+    mutable int m_shadowCacheHitCount = 0;
 };
 
 class ModalCloseButton : public QAbstractButton
@@ -212,10 +264,22 @@ AntModal::AntModal(QWidget* parent)
             hide();
         }
     });
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        m_themeKey.clear();
+        invalidateDialogGeometry();
+        syncTheme();
+        updateDialogGeometry();
+        if (m_dialog)
+        {
+            m_dialog->update();
+        }
+        requestModalUpdate(rect(), QStringLiteral("theme"));
+    });
 
     syncBody();
     syncFooter();
     syncTheme();
+    syncModalPerfCounters();
 }
 
 qreal AntModal::animationProgress() const { return m_animProgress; }
@@ -275,6 +339,10 @@ void AntModal::setTitle(const QString& title)
     m_title = title;
     syncTheme();
     updateDialogGeometry();
+    if (m_dialog)
+    {
+        requestModalUpdate(m_dialog->geometry(), QStringLiteral("title"));
+    }
     Q_EMIT titleChanged(m_title);
 }
 
@@ -289,6 +357,10 @@ void AntModal::setContent(const QString& content)
     m_content = content;
     syncBody();
     updateDialogGeometry();
+    if (m_dialog)
+    {
+        requestModalUpdate(m_dialog->geometry(), QStringLiteral("content"));
+    }
     Q_EMIT contentChanged(m_content);
 }
 
@@ -365,15 +437,15 @@ void AntModal::applyAnimationProgress()
     const int baseH = m_dialog->height();
     if (baseW <= 0 || baseH <= 0)
     {
-        update();
+        requestModalUpdate(rect(), QStringLiteral("animation"), true);
         return;
     }
     const int w = qRound(baseW * scale);
     const int h = qRound(baseH * scale);
     const int dx = (baseW - w) / 2;
     const int dy = (baseH - h) / 2;
-    // Repaint mask (style uses animationProgress for mask alpha)
-    update();
+    // Repaint mask (style uses animationProgress for mask alpha).
+    requestModalUpdate(rect(), QStringLiteral("animation"), true);
     // Adjust dialog position by translating its center. We use the opacity
     // effect for fade; the geometric "zoom" is emulated by simply redrawing
     // the dialog with opacity — full transform would require QGraphicsProxy.
@@ -395,6 +467,11 @@ void AntModal::setClosable(bool closable)
     m_closable = closable;
     syncTheme();
     updateDialogGeometry();
+    if (m_headerWidget)
+    {
+        requestModalUpdate(m_headerWidget->geometry().translated(m_dialog ? m_dialog->pos() : QPoint()),
+                           QStringLiteral("closable"));
+    }
     Q_EMIT closableChanged(m_closable);
 }
 
@@ -419,6 +496,7 @@ void AntModal::setCentered(bool centered)
         return;
     }
     m_centered = centered;
+    invalidateDialogGeometry();
     updateDialogGeometry();
     Q_EMIT centeredChanged(m_centered);
 }
@@ -433,6 +511,7 @@ void AntModal::setDialogWidth(int width)
         return;
     }
     m_dialogWidth = width;
+    invalidateDialogGeometry();
     updateDialogGeometry();
     Q_EMIT dialogWidthChanged(m_dialogWidth);
 }
@@ -447,6 +526,7 @@ void AntModal::setOkText(const QString& text)
     }
     m_okText = text;
     syncFooter();
+    updateDialogGeometry();
     Q_EMIT okTextChanged(m_okText);
 }
 
@@ -460,6 +540,7 @@ void AntModal::setCancelText(const QString& text)
     }
     m_cancelText = text;
     syncFooter();
+    updateDialogGeometry();
     Q_EMIT cancelTextChanged(m_cancelText);
 }
 
@@ -488,6 +569,11 @@ void AntModal::setCommandIconType(Ant::IconType iconType)
     m_commandIconType = iconType;
     syncTheme();
     updateDialogGeometry();
+    if (m_headerWidget)
+    {
+        requestModalUpdate(m_headerWidget->geometry().translated(m_dialog ? m_dialog->pos() : QPoint()),
+                           QStringLiteral("icon"));
+    }
 }
 
 QWidget* AntModal::contentWidget() const
@@ -619,6 +705,12 @@ void AntModal::keyPressEvent(QKeyEvent* event)
     QWidget::keyPressEvent(event);
 }
 
+void AntModal::resizeEvent(QResizeEvent* event)
+{
+    invalidateDialogGeometry();
+    QWidget::resizeEvent(event);
+}
+
 void AntModal::showEvent(QShowEvent* event)
 {
     updateOverlayGeometry();
@@ -663,31 +755,84 @@ void AntModal::releaseHostWidget()
 
 void AntModal::syncBody()
 {
+    const QString key = m_content + QLatin1Char('|') + QString::number(reinterpret_cast<quintptr>(m_customContentWidget));
+    if (m_bodyKey == key)
+    {
+        ++m_bodySyncSkipCount;
+        syncModalPerfCounters();
+        return;
+    }
+
+    m_bodyKey = key;
+    ++m_bodySyncApplyCount;
     m_contentLabel->setText(m_content);
     m_contentLabel->setVisible(!m_content.isEmpty());
     if (m_customContentWidget)
     {
         m_customContentWidget->show();
     }
-    m_bodyWidget->setVisible(!m_content.isEmpty() || m_customContentWidget);
+    m_bodyWidget->setVisible(!m_content.isEmpty() || m_customContentWidget != nullptr);
+    invalidateDialogGeometry();
+    syncModalPerfCounters();
 }
 
 void AntModal::syncFooter()
 {
+    const QString key = m_cancelText + QLatin1Char('|') + m_okText + QLatin1Char('|') +
+                        QString::number(m_showCancel ? 1 : 0) + QLatin1Char('|') +
+                        QString::number(reinterpret_cast<quintptr>(m_customFooterWidget));
+    if (m_footerKey == key)
+    {
+        ++m_footerSyncSkipCount;
+        syncModalPerfCounters();
+        return;
+    }
+
+    m_footerKey = key;
+    ++m_footerSyncApplyCount;
     m_cancelButton->setText(m_cancelText);
     m_okButton->setText(m_okText);
     m_cancelButton->setVisible(m_showCancel);
-    m_defaultFooterWidget->setVisible(!m_customFooterWidget);
+    const bool hasDefaultFooter = m_customFooterWidget == nullptr;
+    m_defaultFooterWidget->setVisible(hasDefaultFooter);
     if (m_customFooterWidget)
     {
         m_customFooterWidget->show();
     }
-    m_footerWidgetHost->setVisible(!m_defaultFooterWidget->isHidden() || m_customFooterWidget);
+    m_footerWidgetHost->setVisible(hasDefaultFooter || m_customFooterWidget != nullptr);
+    invalidateDialogGeometry();
+    syncModalPerfCounters();
 }
 
 void AntModal::syncTheme()
 {
     const auto& token = antTheme->tokens();
+    const QString key = QStringLiteral("%1|%2|%3|%4|%5|%6|%7|%8|%9|%10|%11|%12|%13|%14|%15|%16")
+                            .arg(static_cast<int>(antTheme->themeMode()))
+                            .arg(m_title)
+                            .arg(m_closable ? 1 : 0)
+                            .arg(static_cast<int>(m_commandIconType))
+                            .arg(token.fontSize)
+                            .arg(token.fontSizeLG)
+                            .arg(token.paddingLG)
+                            .arg(token.paddingMD)
+                            .arg(token.marginSM)
+                            .arg(token.borderRadiusLG)
+                            .arg(token.colorText.rgba())
+                            .arg(token.colorPrimary.rgba())
+                            .arg(token.colorSuccess.rgba())
+                            .arg(token.colorWarning.rgba())
+                            .arg(token.colorError.rgba())
+                            .arg(font().toString());
+    if (m_themeKey == key)
+    {
+        ++m_themeSkipCount;
+        syncModalPerfCounters();
+        return;
+    }
+
+    m_themeKey = key;
+    ++m_themeApplyCount;
 
     if (auto* dialogLayout = qobject_cast<QVBoxLayout*>(m_dialog->layout()))
     {
@@ -735,18 +880,24 @@ void AntModal::syncTheme()
     {
         m_okButton->setButtonType(Ant::ButtonType::Primary);
     }
+    invalidateDialogGeometry();
+    syncModalPerfCounters();
 }
 
 void AntModal::updateOverlayGeometry()
 {
-    if (m_hostWidget)
+    const QRect targetGeometry = m_hostWidget ? QRect(QPoint(0, 0), m_hostWidget->size()) : fallbackGeometry();
+    if (geometry() == targetGeometry)
     {
-        setGeometry(QRect(QPoint(0, 0), m_hostWidget->size()));
+        ++m_overlayGeometrySkipCount;
     }
     else
     {
-        setGeometry(fallbackGeometry());
+        setGeometry(targetGeometry);
+        invalidateDialogGeometry();
+        ++m_overlayGeometryApplyCount;
     }
+    syncModalPerfCounters();
     updateDialogGeometry();
 }
 
@@ -758,31 +909,113 @@ void AntModal::updateDialogGeometry()
     }
 
     syncTheme();
+    const DialogGeometryCache& cache = dialogGeometryCache();
+    if (m_dialog->geometry() == cache.geometry)
+    {
+        ++m_dialogGeometrySkipCount;
+        syncModalPerfCounters();
+        return;
+    }
+
+    m_dialog->setGeometry(cache.geometry);
+    ++m_dialogGeometryApplyCount;
+    syncModalPerfCounters();
+}
+
+const AntModal::DialogGeometryCache& AntModal::dialogGeometryCache()
+{
+    const QSize overlaySize = size();
+    if (m_dialogGeometryCache.valid && m_dialogGeometryCache.overlaySize == overlaySize &&
+        m_dialogGeometryCache.dialogWidth == m_dialogWidth && m_dialogGeometryCache.centered == m_centered)
+    {
+        ++m_dialogGeometryCacheHitCount;
+        syncModalPerfCounters();
+        return m_dialogGeometryCache;
+    }
+
+    ++m_dialogGeometryBuildCount;
+    m_dialogGeometryCache.valid = true;
+    m_dialogGeometryCache.overlaySize = overlaySize;
+    m_dialogGeometryCache.dialogWidth = m_dialogWidth;
+    m_dialogGeometryCache.centered = m_centered;
 
     const int horizontalMargin = 32;
     const int maxWidth = qMax(360, width() - horizontalMargin * 2);
     const int targetWidth = qMin(m_dialogWidth, maxWidth);
+    const int fullWidth = targetWidth + kModalShadowMargin * 2;
 
-    m_dialog->setFixedWidth(targetWidth + kModalShadowMargin * 2);
+    if (m_dialog->minimumWidth() != fullWidth || m_dialog->maximumWidth() != fullWidth)
+    {
+        m_dialog->setFixedWidth(fullWidth);
+    }
     m_dialog->adjustSize();
 
     QSize dialogSize = m_dialog->sizeHint();
-    dialogSize.setWidth(targetWidth + kModalShadowMargin * 2);
+    dialogSize.setWidth(fullWidth);
     dialogSize.setHeight(qMin(dialogSize.height(), qMax(220, height() - 48)));
-    m_dialog->resize(dialogSize);
 
-    const int x = (width() - m_dialog->width()) / 2;
+    const int x = (width() - dialogSize.width()) / 2;
     int y = 64;
     if (m_centered)
     {
-        y = (height() - m_dialog->height()) / 2;
+        y = (height() - dialogSize.height()) / 2;
     }
     else
     {
         // Keep the visible panel top aligned to AntD's 100px offset while the widget owns a transparent shadow margin.
-        y = qMin(kModalVisibleTopOffset - kModalShadowMargin, qMax(16, height() - m_dialog->height() - 16));
+        y = qMin(kModalVisibleTopOffset - kModalShadowMargin, qMax(16, height() - dialogSize.height() - 16));
     }
-    m_dialog->move(qMax(16, x), qMax(16, y));
+    m_dialogGeometryCache.targetWidth = targetWidth;
+    m_dialogGeometryCache.size = dialogSize;
+    m_dialogGeometryCache.geometry = QRect(QPoint(qMax(16, x), qMax(16, y)), dialogSize);
+    syncModalPerfCounters();
+    return m_dialogGeometryCache;
+}
+
+void AntModal::invalidateDialogGeometry() const
+{
+    m_dialogGeometryCache.valid = false;
+}
+
+void AntModal::requestModalUpdate(const QRect& region, const QString& mode, bool maskScoped)
+{
+    m_lastUpdateMode = mode;
+    if (maskScoped)
+    {
+        ++m_maskRegionUpdateCount;
+    }
+    syncModalPerfCounters();
+
+    if (!isVisible())
+    {
+        return;
+    }
+
+    const QRect dirty = region.isValid() ? region.intersected(rect()) : rect();
+    if (dirty.isEmpty())
+    {
+        return;
+    }
+    update(dirty);
+}
+
+void AntModal::syncModalPerfCounters() const
+{
+    auto* that = const_cast<AntModal*>(this);
+    that->setProperty("antModalDialogGeometryBuildCount", m_dialogGeometryBuildCount);
+    that->setProperty("antModalDialogGeometryCacheHitCount", m_dialogGeometryCacheHitCount);
+    that->setProperty("antModalOverlayGeometryApplyCount", m_overlayGeometryApplyCount);
+    that->setProperty("antModalOverlayGeometrySkipCount", m_overlayGeometrySkipCount);
+    that->setProperty("antModalDialogGeometryApplyCount", m_dialogGeometryApplyCount);
+    that->setProperty("antModalDialogGeometrySkipCount", m_dialogGeometrySkipCount);
+    that->setProperty("antModalThemeApplyCount", m_themeApplyCount);
+    that->setProperty("antModalThemeSkipCount", m_themeSkipCount);
+    that->setProperty("antModalBodySyncApplyCount", m_bodySyncApplyCount);
+    that->setProperty("antModalBodySyncSkipCount", m_bodySyncSkipCount);
+    that->setProperty("antModalFooterSyncApplyCount", m_footerSyncApplyCount);
+    that->setProperty("antModalFooterSyncSkipCount", m_footerSyncSkipCount);
+    that->setProperty("antModalMaskRegionUpdateCount", m_maskRegionUpdateCount);
+    that->setProperty("antModalLastUpdateMode", m_lastUpdateMode);
 }
 
 void AntModal::closeByCancel()

@@ -3,6 +3,8 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QPointer>
+#include <QRect>
+#include <QSize>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -16,6 +18,7 @@ class QKeyEvent;
 class QLabel;
 class QMouseEvent;
 class QPaintEvent;
+class QResizeEvent;
 class QShowEvent;
 class QVariantAnimation;
 class QGraphicsOpacityEffect;
@@ -108,9 +111,21 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
     void showEvent(QShowEvent* event) override;
 
 private:
+    struct DialogGeometryCache
+    {
+        bool valid = false;
+        QSize overlaySize;
+        int dialogWidth = 0;
+        bool centered = true;
+        QRect geometry;
+        QSize size;
+        int targetWidth = 0;
+    };
+
     void ensureHostWidget();
     void releaseHostWidget();
     void syncBody();
@@ -118,6 +133,10 @@ private:
     void syncTheme();
     void updateOverlayGeometry();
     void updateDialogGeometry();
+    const DialogGeometryCache& dialogGeometryCache();
+    void invalidateDialogGeometry() const;
+    void requestModalUpdate(const QRect& region, const QString& mode, bool maskScoped = false);
+    void syncModalPerfCounters() const;
     void applyAnimationProgress();
     void startOpenAnimation();
     void startCloseAnimation();
@@ -153,4 +172,22 @@ private:
     QVariantAnimation* m_animation = nullptr;
     QGraphicsOpacityEffect* m_dialogOpacity = nullptr;
     qreal m_animProgress = 0.0;
+    mutable DialogGeometryCache m_dialogGeometryCache;
+    mutable int m_dialogGeometryBuildCount = 0;
+    mutable int m_dialogGeometryCacheHitCount = 0;
+    int m_overlayGeometryApplyCount = 0;
+    int m_overlayGeometrySkipCount = 0;
+    int m_dialogGeometryApplyCount = 0;
+    int m_dialogGeometrySkipCount = 0;
+    int m_themeApplyCount = 0;
+    int m_themeSkipCount = 0;
+    int m_bodySyncApplyCount = 0;
+    int m_bodySyncSkipCount = 0;
+    int m_footerSyncApplyCount = 0;
+    int m_footerSyncSkipCount = 0;
+    int m_maskRegionUpdateCount = 0;
+    QString m_themeKey;
+    QString m_bodyKey;
+    QString m_footerKey;
+    QString m_lastUpdateMode;
 };

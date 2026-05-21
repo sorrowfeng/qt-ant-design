@@ -1,5 +1,8 @@
+#include <QCoreApplication>
+#include <QMoveEvent>
 #include <QSignalSpy>
 #include <QTest>
+#include <QWidget>
 
 #include "widgets/AntModal.h"
 
@@ -8,6 +11,7 @@ class TestAntModal : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void modalCachesGeometryThemeAndShadow();
 };
 
 void TestAntModal::propertiesAndSignals()
@@ -95,6 +99,66 @@ void TestAntModal::propertiesAndSignals()
     auto* confirmModal = AntModal::confirm("Confirm", "Are you sure?", parent);
     QVERIFY(confirmModal != nullptr);
     QCOMPARE(confirmModal->commandIconType(), Ant::IconType::ExclamationCircle);
+}
+
+void TestAntModal::modalCachesGeometryThemeAndShadow()
+{
+    QWidget host;
+    host.resize(640, 420);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    AntModal modal(&host);
+    modal.setTitle(QStringLiteral("Cache modal"));
+    modal.setContent(QStringLiteral("Dialog layout should stay stable while the mask animates."));
+    modal.setOpen(true);
+    QTRY_VERIFY_WITH_TIMEOUT(modal.isVisible(), 300);
+    QTest::qWait(280);
+
+    QVERIFY(modal.property("antModalMaskRegionUpdateCount").toInt() > 0);
+    QVERIFY(modal.property("antModalDialogGeometryBuildCount").toInt() > 0);
+    QVERIFY(modal.property("antModalOverlayGeometryApplyCount").toInt() > 0);
+    QVERIFY(modal.property("antModalThemeApplyCount").toInt() > 0);
+    QVERIFY(modal.property("antModalBodySyncApplyCount").toInt() > 0);
+    QVERIFY(modal.property("antModalFooterSyncApplyCount").toInt() > 0);
+
+    QWidget* panel = nullptr;
+    const auto children = modal.findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (QWidget* child : children)
+    {
+        if (child->isVisible())
+        {
+            panel = child;
+            break;
+        }
+    }
+    QVERIFY(panel != nullptr);
+    panel->grab();
+    const int shadowBuildCount = panel->property("antModalShadowBuildCount").toInt();
+    const int shadowHitCount = panel->property("antModalShadowCacheHitCount").toInt();
+    QVERIFY(shadowBuildCount > 0);
+    panel->repaint();
+    QCoreApplication::processEvents();
+    QCOMPARE(panel->property("antModalShadowBuildCount").toInt(), shadowBuildCount);
+    QVERIFY(panel->property("antModalShadowCacheHitCount").toInt() > shadowHitCount);
+
+    const int geometryHitCount = modal.property("antModalDialogGeometryCacheHitCount").toInt();
+    const int themeSkipCount = modal.property("antModalThemeSkipCount").toInt();
+    QMoveEvent hostMoveEvent(host.pos(), host.pos());
+    QCoreApplication::sendEvent(&host, &hostMoveEvent);
+    QVERIFY(modal.property("antModalDialogGeometryCacheHitCount").toInt() > geometryHitCount);
+    QVERIFY(modal.property("antModalThemeSkipCount").toInt() > themeSkipCount);
+
+    const int bodyApplyCount = modal.property("antModalBodySyncApplyCount").toInt();
+    modal.setContent(QStringLiteral("Updated modal content."));
+    QVERIFY(modal.property("antModalBodySyncApplyCount").toInt() > bodyApplyCount);
+
+    const int footerApplyCount = modal.property("antModalFooterSyncApplyCount").toInt();
+    modal.setOkText(QStringLiteral("Proceed"));
+    QVERIFY(modal.property("antModalFooterSyncApplyCount").toInt() > footerApplyCount);
+
+    modal.setOpen(false);
+    QTRY_VERIFY_WITH_TIMEOUT(!modal.isVisible(), 500);
 }
 
 QTEST_MAIN(TestAntModal)

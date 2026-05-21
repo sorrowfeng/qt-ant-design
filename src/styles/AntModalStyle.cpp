@@ -2,6 +2,7 @@
 
 #include <QEvent>
 #include <QPainter>
+#include <QPaintEvent>
 #include <QStyleOption>
 
 #include "styles/AntPalette.h"
@@ -10,7 +11,6 @@
 AntModalStyle::AntModalStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntModal>();
 }
 
 void AntModalStyle::polish(QWidget* widget)
@@ -51,9 +51,10 @@ bool AntModalStyle::eventFilter(QObject* watched, QEvent* event)
     auto* modal = qobject_cast<AntModal*>(watched);
     if (modal && event->type() == QEvent::Paint)
     {
+        auto* paintEvent = static_cast<QPaintEvent*>(event);
         QStyleOption option;
         option.initFrom(modal);
-        option.rect = modal->rect();
+        option.rect = paintEvent->rect();
         QPainter painter(modal);
         drawPrimitive(QStyle::PE_Widget, &option, &painter, modal);
         return true;
