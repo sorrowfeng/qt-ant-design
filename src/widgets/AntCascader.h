@@ -128,6 +128,7 @@ private:
     void animateArrow(bool open);
     void updatePopupPosition();
     void resolveLeafFlags(QVector<AntCascaderOption>& options);
+    void syncCascaderPerfCounters() const;
 
     static const AntCascaderOption* findOptionByValue(const QVector<AntCascaderOption>& options, const QVariant& value);
     static bool buildLabelPath(const QVector<AntCascaderOption>& options, const QStringList& valuePath, QStringList& labelPath, int depth);
@@ -148,4 +149,13 @@ private:
 
     QFrame* m_popup = nullptr;
     QPropertyAnimation* m_arrowAnimation = nullptr;
+    quint64 m_optionsRevision = 1;
+    mutable int m_popupColumnBuildCount = 0;
+    mutable int m_popupColumnCacheHitCount = 0;
+    mutable int m_popupMetricsBuildCount = 0;
+    mutable int m_popupMetricsCacheHitCount = 0;
+    mutable int m_popupGeometryApplyCount = 0;
+    mutable int m_popupGeometrySkipCount = 0;
+    mutable int m_popupScopedRowUpdateCount = 0;
+    mutable int m_popupScopedColumnUpdateCount = 0;
 };

@@ -45,6 +45,7 @@ AntCascader::AntCascader(QWidget* parent)
     setStyle(cascaderStyle);
 
     updateCursor();
+    syncCascaderPerfCounters();
 }
 
 AntCascader::~AntCascader()
@@ -66,6 +67,15 @@ void AntCascader::setOptions(const QVector<AntCascaderOption>& options)
 {
     m_options = options;
     resolveLeafFlags(m_options);
+    ++m_optionsRevision;
+    if (m_optionsRevision == 0)
+    {
+        m_optionsRevision = 1;
+    }
+    if (m_popup)
+    {
+        static_cast<CascaderPopup*>(m_popup)->invalidateCaches();
+    }
     update();
     emit optionsChanged();
 }
@@ -232,6 +242,10 @@ qreal AntCascader::arrowRotation() const
 
 void AntCascader::setArrowRotation(qreal rotation)
 {
+    if (qFuzzyCompare(m_arrowRotation, rotation))
+    {
+        return;
+    }
     m_arrowRotation = rotation;
     update();
 }
@@ -475,6 +489,19 @@ void AntCascader::updatePopupPosition()
         popup->rebuildColumns();
         popup->updateSizeAndPosition();
     }
+}
+
+void AntCascader::syncCascaderPerfCounters() const
+{
+    auto* self = const_cast<AntCascader*>(this);
+    self->setProperty("antCascaderPopupColumnBuildCount", m_popupColumnBuildCount);
+    self->setProperty("antCascaderPopupColumnCacheHitCount", m_popupColumnCacheHitCount);
+    self->setProperty("antCascaderPopupMetricsBuildCount", m_popupMetricsBuildCount);
+    self->setProperty("antCascaderPopupMetricsCacheHitCount", m_popupMetricsCacheHitCount);
+    self->setProperty("antCascaderPopupGeometryApplyCount", m_popupGeometryApplyCount);
+    self->setProperty("antCascaderPopupGeometrySkipCount", m_popupGeometrySkipCount);
+    self->setProperty("antCascaderPopupScopedRowUpdateCount", m_popupScopedRowUpdateCount);
+    self->setProperty("antCascaderPopupScopedColumnUpdateCount", m_popupScopedColumnUpdateCount);
 }
 
 void AntCascader::resolveLeafFlags(QVector<AntCascaderOption>& options)

@@ -18,7 +18,20 @@ class TestAntDataEntryB : public QObject
 private slots:
     void propertiesAndSignals();
     void cascaderPopupClosesOnOutsideClick();
+    void cascaderPopupCachesColumnsAndScopesHover();
 };
+
+namespace
+{
+QPoint cascaderPopupCellCenter(int column, int row, int rowHeight = 32)
+{
+    constexpr int shadow = 32;
+    constexpr int padding = 4;
+    constexpr int columnWidth = 112;
+    return QPoint(shadow + padding + column * columnWidth + columnWidth / 2,
+                  shadow + padding + row * rowHeight + rowHeight / 2);
+}
+} // namespace
 
 void TestAntDataEntryB::propertiesAndSignals()
 {
@@ -316,6 +329,72 @@ void TestAntDataEntryB::cascaderPopupClosesOnOutsideClick()
     QTRY_VERIFY_WITH_TIMEOUT(!cascader.isOpen(), 300);
     QTRY_VERIFY_WITH_TIMEOUT(!popup->isVisible(), 500);
     QVERIFY(openSpy.count() >= 2);
+}
+
+void TestAntDataEntryB::cascaderPopupCachesColumnsAndScopesHover()
+{
+    AntCascaderOption hangzhou{QStringLiteral("hangzhou"), QStringLiteral("Hangzhou"), {}, false, true};
+    AntCascaderOption ningbo{QStringLiteral("ningbo"), QStringLiteral("Ningbo"), {}, false, true};
+    AntCascaderOption zhejiang{QStringLiteral("zhejiang"), QStringLiteral("Zhejiang"), {hangzhou, ningbo}, false, false};
+    AntCascaderOption nanjing{QStringLiteral("nanjing"), QStringLiteral("Nanjing"), {}, false, true};
+    AntCascaderOption jiangsu{QStringLiteral("jiangsu"), QStringLiteral("Jiangsu"), {nanjing}, false, false};
+
+    AntCascader cascader;
+    cascader.setOptions({zhejiang, jiangsu});
+    cascader.resize(180, cascader.sizeHint().height());
+    cascader.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&cascader));
+
+    cascader.setOpen(true);
+    QTRY_VERIFY_WITH_TIMEOUT(cascader.isOpen(), 300);
+    auto* popup = cascader.findChild<QFrame*>(QStringLiteral("CascaderPopup"));
+    QVERIFY(popup);
+    QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
+    QVERIFY(cascader.property("antCascaderPopupColumnBuildCount").toInt() > 0);
+    QVERIFY(cascader.property("antCascaderPopupGeometryApplyCount").toInt() > 0);
+
+    cascader.setOpen(false);
+    QTRY_VERIFY_WITH_TIMEOUT(!popup->isVisible(), 500);
+    const int columnHitsBeforeReopen = cascader.property("antCascaderPopupColumnCacheHitCount").toInt();
+    cascader.setOpen(true);
+    QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
+    QVERIFY(cascader.property("antCascaderPopupColumnCacheHitCount").toInt() > columnHitsBeforeReopen);
+
+    QCoreApplication::processEvents();
+    const int scopedRowsBeforeHover = cascader.property("antCascaderPopupScopedRowUpdateCount").toInt();
+    const QPoint firstHoverPoint = cascaderPopupCellCenter(0, 0);
+    QMouseEvent firstHoverEvent(QEvent::MouseMove,
+                                QPointF(firstHoverPoint),
+                                QPointF(popup->mapToGlobal(firstHoverPoint)),
+                                Qt::NoButton,
+                                Qt::NoButton,
+                                Qt::NoModifier);
+    QCoreApplication::sendEvent(popup, &firstHoverEvent);
+    QVERIFY(cascader.property("antCascaderPopupScopedRowUpdateCount").toInt() > scopedRowsBeforeHover);
+
+    const int scopedRowsBeforeSameHover = cascader.property("antCascaderPopupScopedRowUpdateCount").toInt();
+    QMouseEvent sameHoverEvent(QEvent::MouseMove,
+                               QPointF(firstHoverPoint),
+                               QPointF(popup->mapToGlobal(firstHoverPoint)),
+                               Qt::NoButton,
+                               Qt::NoButton,
+                               Qt::NoModifier);
+    QCoreApplication::sendEvent(popup, &sameHoverEvent);
+    QCOMPARE(cascader.property("antCascaderPopupScopedRowUpdateCount").toInt(), scopedRowsBeforeSameHover);
+
+    const int columnBuildsBeforeExpand = cascader.property("antCascaderPopupColumnBuildCount").toInt();
+    const int scopedColumnsBeforeExpand = cascader.property("antCascaderPopupScopedColumnUpdateCount").toInt();
+    QTest::mouseClick(popup, Qt::LeftButton, Qt::NoModifier, cascaderPopupCellCenter(0, 0));
+    QCOMPARE(cascader.property("antCascaderPopupColumnBuildCount").toInt(), columnBuildsBeforeExpand);
+    QVERIFY(cascader.property("antCascaderPopupScopedColumnUpdateCount").toInt() > scopedColumnsBeforeExpand);
+    QCOMPARE(cascader.value(), QStringList({QStringLiteral("zhejiang")}));
+
+    cascader.setOpen(false);
+    QTRY_VERIFY_WITH_TIMEOUT(!popup->isVisible(), 500);
+    const int geometrySkipsBefore = cascader.property("antCascaderPopupGeometrySkipCount").toInt();
+    cascader.setOpen(true);
+    QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
+    QVERIFY(cascader.property("antCascaderPopupGeometrySkipCount").toInt() > geometrySkipsBefore);
 }
 
 QTEST_MAIN(TestAntDataEntryB)

@@ -5,6 +5,7 @@
 #include <QHideEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QResizeEvent>
 #include <QScreen>
 
 #include <algorithm>
@@ -31,6 +32,14 @@ struct ColumnState
     int highlightedIndex = -1;
     int selectedIndex = -1;
 };
+
+struct CascaderPopupMetrics
+{
+    QRect panelRect;
+    QRect contentRect;
+    int optionHeight = 32;
+    int fontSize = 14;
+};
 } // namespace
 
 class CascaderPopup : public QFrame
@@ -47,6 +56,15 @@ public:
 
     void rebuildColumns()
     {
+        if (m_columnCacheValid &&
+            m_builtOptionsRevision == m_owner->m_optionsRevision &&
+            m_builtValue == m_owner->m_value)
+        {
+            ++m_owner->m_popupColumnCacheHitCount;
+            m_owner->syncCascaderPerfCounters();
+            return;
+        }
+
         m_columns.clear();
         m_hoveredColumn = -1;
         m_hoveredRow = -1;
@@ -89,11 +107,17 @@ public:
                 current = nullptr;
             }
         }
+
+        m_builtOptionsRevision = m_owner->m_optionsRevision;
+        m_builtValue = m_owner->m_value;
+        m_columnCacheValid = true;
+        ++m_owner->m_popupColumnBuildCount;
+        m_owner->syncCascaderPerfCounters();
     }
 
     void updateSizeAndPosition()
     {
-        int columnCount = std::max(1, static_cast<int>(m_columns.size()));
+        const int columnCount = std::max(1, static_cast<int>(m_columns.size()));
         int maxItemsInAnyCol = 0;
         for (const auto& col : m_columns)
         {
@@ -115,8 +139,8 @@ public:
             optionHeight = token.controlHeightSM;
         }
 
-        int popupWidth = columnCount * kColumnWidth + kPopupHPadding * 2 + kPopupShadowMargin * 2;
-        int popupHeight = std::max(kMinPopupPanelHeight, maxItemsInAnyCol * optionHeight + kPopupVPadding * 2)
+        const int popupWidth = columnCount * kColumnWidth + kPopupHPadding * 2 + kPopupShadowMargin * 2;
+        const int popupHeight = std::max(kMinPopupPanelHeight, maxItemsInAnyCol * optionHeight + kPopupVPadding * 2)
             + kPopupShadowMargin * 2;
 
         QPoint globalPos = m_owner->mapToGlobal(QPoint(-kPopupShadowMargin,
@@ -146,7 +170,17 @@ public:
             globalPos.setY(screenGeom.top() + 4);
         }
 
-        setGeometry(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
+        const QRect target(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
+        if (geometry() == target)
+        {
+            ++m_owner->m_popupGeometrySkipCount;
+            m_owner->syncCascaderPerfCounters();
+            return;
+        }
+
+        ++m_owner->m_popupGeometryApplyCount;
+        m_owner->syncCascaderPerfCounters();
+        setGeometry(target);
     }
 
     void setHoveredCell(int col, int row)
@@ -156,15 +190,37 @@ public:
             return;
         }
 
-        m_hoveredColumn = col;
-        m_hoveredRow = row;
+        const int previousColumn = m_hoveredColumn;
+        const int previousRow = m_hoveredRow;
+        if (previousColumn >= 0 && previousColumn < m_columns.size())
+        {
+            m_columns[previousColumn].highlightedIndex = -1;
+        }
 
         if (col >= 0 && col < m_columns.size() && row >= 0 && m_columns[col].options && row < m_columns[col].options->size())
         {
             m_columns[col].highlightedIndex = row;
         }
 
-        update();
+        m_hoveredColumn = col;
+        m_hoveredRow = row;
+
+        QRect dirty = rowRect(previousColumn, previousRow).united(rowRect(col, row)).adjusted(-2, -2, 2, 2).intersected(rect());
+        if (dirty.isNull())
+        {
+            update();
+            return;
+        }
+        ++m_owner->m_popupScopedRowUpdateCount;
+        m_owner->syncCascaderPerfCounters();
+        update(dirty);
+    }
+
+    void invalidateCaches()
+    {
+        m_columnCacheValid = false;
+        m_metricsCacheValid = false;
+        m_builtValue.clear();
     }
 
 protected:
@@ -176,27 +232,15 @@ protected:
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
 
-        QRect panelRect = rect().adjusted(kPopupShadowMargin, kPopupShadowMargin, -kPopupShadowMargin, -kPopupShadowMargin);
+        const CascaderPopupMetrics metrics = popupMetrics();
+        QRect panelRect = metrics.panelRect;
         antTheme->drawEffectShadow(&painter, panelRect, 10, token.borderRadiusLG, 0.55);
 
         painter.setPen(QPen(token.colorBorderSecondary, token.lineWidth));
         painter.setBrush(token.colorBgElevated);
         painter.drawRoundedRect(panelRect, token.borderRadiusLG, token.borderRadiusLG);
 
-        QRect contentRect = panelRect.adjusted(kPopupHPadding, kPopupVPadding, -kPopupHPadding, -kPopupVPadding);
-
-        int optionHeight = token.controlHeight;
-        int fontSize = token.fontSize;
-        if (m_owner->cascaderSize() == Ant::Size::Large)
-        {
-            optionHeight = token.controlHeightLG;
-            fontSize = token.fontSizeLG;
-        }
-        else if (m_owner->cascaderSize() == Ant::Size::Small)
-        {
-            optionHeight = token.controlHeightSM;
-            fontSize = token.fontSizeSM;
-        }
+        QRect contentRect = metrics.contentRect;
 
         int colX = contentRect.left();
         for (int colIdx = 0; colIdx < m_columns.size(); ++colIdx)
@@ -219,7 +263,7 @@ protected:
             for (int rowIdx = 0; rowIdx < col.options->size(); ++rowIdx)
             {
                 const AntCascaderOption& opt = col.options->at(rowIdx);
-                QRect itemRect(colX, contentRect.top() + rowIdx * optionHeight, kColumnWidth, optionHeight);
+                QRect itemRect(colX, contentRect.top() + rowIdx * metrics.optionHeight, kColumnWidth, metrics.optionHeight);
 
                 bool isSelected = col.selectedIndex == rowIdx;
                 bool isHighlighted = col.highlightedIndex == rowIdx;
@@ -242,7 +286,7 @@ protected:
                 }
 
                 QFont f = painter.font();
-                f.setPixelSize(fontSize);
+                f.setPixelSize(metrics.fontSize);
                 f.setWeight(isSelected ? QFont::DemiBold : QFont::Normal);
                 painter.setFont(f);
 
@@ -278,20 +322,8 @@ protected:
 
     void mouseMoveEvent(QMouseEvent* event) override
     {
-        const auto& token = antTheme->tokens();
-        int optionHeight = token.controlHeight;
-        if (m_owner->cascaderSize() == Ant::Size::Large)
-        {
-            optionHeight = token.controlHeightLG;
-        }
-        else if (m_owner->cascaderSize() == Ant::Size::Small)
-        {
-            optionHeight = token.controlHeightSM;
-        }
-
-        QRect panelRect = rect().adjusted(kPopupShadowMargin, kPopupShadowMargin, -kPopupShadowMargin, -kPopupShadowMargin);
-        QRect contentRect = panelRect.adjusted(kPopupHPadding, kPopupVPadding, -kPopupHPadding, -kPopupVPadding);
-
+        const CascaderPopupMetrics metrics = popupMetrics();
+        QRect contentRect = metrics.contentRect;
         QPoint pos = event->pos();
 
         if (!contentRect.contains(pos))
@@ -303,7 +335,7 @@ protected:
         int relX = pos.x() - contentRect.left();
         int relY = pos.y() - contentRect.top();
         int colIdx = relX / kColumnWidth;
-        int rowIdx = relY / optionHeight;
+        int rowIdx = relY / metrics.optionHeight;
 
         if (colIdx < 0 || colIdx >= m_columns.size())
         {
@@ -336,20 +368,8 @@ protected:
             return;
         }
 
-        const auto& token = antTheme->tokens();
-        int optionHeight = token.controlHeight;
-        if (m_owner->cascaderSize() == Ant::Size::Large)
-        {
-            optionHeight = token.controlHeightLG;
-        }
-        else if (m_owner->cascaderSize() == Ant::Size::Small)
-        {
-            optionHeight = token.controlHeightSM;
-        }
-
-        QRect panelRect = rect().adjusted(kPopupShadowMargin, kPopupShadowMargin, -kPopupShadowMargin, -kPopupShadowMargin);
-        QRect contentRect = panelRect.adjusted(kPopupHPadding, kPopupVPadding, -kPopupHPadding, -kPopupVPadding);
-
+        const CascaderPopupMetrics metrics = popupMetrics();
+        QRect contentRect = metrics.contentRect;
         QPoint pos = event->pos();
         if (!contentRect.contains(pos))
         {
@@ -359,7 +379,7 @@ protected:
         int relX = pos.x() - contentRect.left();
         int relY = pos.y() - contentRect.top();
         int colIdx = relX / kColumnWidth;
-        int rowIdx = relY / optionHeight;
+        int rowIdx = relY / metrics.optionHeight;
 
         if (colIdx < 0 || colIdx >= m_columns.size())
         {
@@ -391,7 +411,88 @@ protected:
         QFrame::hideEvent(event);
     }
 
+    void resizeEvent(QResizeEvent* event) override
+    {
+        m_metricsCacheValid = false;
+        QFrame::resizeEvent(event);
+    }
+
 private:
+    CascaderPopupMetrics popupMetrics()
+    {
+        if (m_metricsCacheValid &&
+            m_metricsCacheSize == size() &&
+            m_metricsCacheCascaderSize == m_owner->cascaderSize())
+        {
+            ++m_owner->m_popupMetricsCacheHitCount;
+            m_owner->syncCascaderPerfCounters();
+            return m_metricsCache;
+        }
+
+        const auto& token = antTheme->tokens();
+        CascaderPopupMetrics metrics;
+        metrics.panelRect = rect().adjusted(kPopupShadowMargin,
+                                            kPopupShadowMargin,
+                                            -kPopupShadowMargin,
+                                            -kPopupShadowMargin);
+        metrics.contentRect = metrics.panelRect.adjusted(kPopupHPadding,
+                                                         kPopupVPadding,
+                                                         -kPopupHPadding,
+                                                         -kPopupVPadding);
+        metrics.optionHeight = token.controlHeight;
+        metrics.fontSize = token.fontSize;
+        if (m_owner->cascaderSize() == Ant::Size::Large)
+        {
+            metrics.optionHeight = token.controlHeightLG;
+            metrics.fontSize = token.fontSizeLG;
+        }
+        else if (m_owner->cascaderSize() == Ant::Size::Small)
+        {
+            metrics.optionHeight = token.controlHeightSM;
+            metrics.fontSize = token.fontSizeSM;
+        }
+
+        m_metricsCache = metrics;
+        m_metricsCacheSize = size();
+        m_metricsCacheCascaderSize = m_owner->cascaderSize();
+        m_metricsCacheValid = true;
+        ++m_owner->m_popupMetricsBuildCount;
+        m_owner->syncCascaderPerfCounters();
+        return m_metricsCache;
+    }
+
+    QRect rowRect(int colIdx, int rowIdx)
+    {
+        if (colIdx < 0 || rowIdx < 0 || colIdx >= m_columns.size())
+        {
+            return {};
+        }
+        const ColumnState& col = m_columns.at(colIdx);
+        if (!col.options || rowIdx >= col.options->size())
+        {
+            return {};
+        }
+        const CascaderPopupMetrics metrics = popupMetrics();
+        return QRect(metrics.contentRect.left() + colIdx * kColumnWidth,
+                     metrics.contentRect.top() + rowIdx * metrics.optionHeight,
+                     kColumnWidth,
+                     metrics.optionHeight);
+    }
+
+    QRect columnsDirtyRect(int firstColumn)
+    {
+        if (firstColumn < 0 || firstColumn >= m_columns.size())
+        {
+            return {};
+        }
+        const CascaderPopupMetrics metrics = popupMetrics();
+        const int left = metrics.contentRect.left() + firstColumn * kColumnWidth;
+        return QRect(left,
+                     metrics.contentRect.top(),
+                     metrics.contentRect.right() - left + 1,
+                     metrics.contentRect.height()).adjusted(-2, -2, 2, 2).intersected(rect());
+    }
+
     void handleColumnClick(int colIdx, int rowIdx)
     {
         if (colIdx < 0 || colIdx >= m_columns.size())
@@ -425,6 +526,8 @@ private:
         }
         else
         {
+            const int oldColumnCount = m_columns.size();
+            const QRect oldTailDirty = columnsDirtyRect(colIdx);
             m_columns.resize(colIdx + 1);
             m_columns[colIdx].selectedIndex = rowIdx;
             m_columns[colIdx].highlightedIndex = -1;
@@ -436,10 +539,25 @@ private:
             m_columns.push_back(newCol);
 
             m_owner->m_value = newPath;
+            m_columnCacheValid = false;
+            m_builtValue = m_owner->m_value;
             emit m_owner->valueChanged(m_owner->m_value);
 
             updateSizeAndPosition();
-            update();
+            const QRect newTailDirty = columnsDirtyRect(colIdx);
+            const QRect dirty = oldTailDirty.united(newTailDirty).intersected(rect());
+            if (!dirty.isNull() && oldColumnCount == m_columns.size())
+            {
+                ++m_owner->m_popupScopedColumnUpdateCount;
+                m_owner->syncCascaderPerfCounters();
+                update(dirty);
+            }
+            else
+            {
+                ++m_owner->m_popupScopedColumnUpdateCount;
+                m_owner->syncCascaderPerfCounters();
+                update();
+            }
         }
     }
 
@@ -474,4 +592,11 @@ private:
     QVector<ColumnState> m_columns;
     int m_hoveredColumn = -1;
     int m_hoveredRow = -1;
+    bool m_columnCacheValid = false;
+    quint64 m_builtOptionsRevision = 0;
+    QStringList m_builtValue;
+    bool m_metricsCacheValid = false;
+    QSize m_metricsCacheSize;
+    Ant::Size m_metricsCacheCascaderSize = Ant::Size::Middle;
+    CascaderPopupMetrics m_metricsCache;
 };
