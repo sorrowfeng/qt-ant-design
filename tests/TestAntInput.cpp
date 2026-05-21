@@ -1,3 +1,6 @@
+#include <QCoreApplication>
+#include <QLayout>
+#include <QPixmap>
 #include <QSignalSpy>
 #include <QTest>
 
@@ -8,6 +11,7 @@ class TestAntInput : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void performanceCachesAndScopedUpdates();
 };
 
 void TestAntInput::propertiesAndSignals()
@@ -97,6 +101,56 @@ void TestAntInput::propertiesAndSignals()
     QSize hint = input->sizeHint();
     QVERIFY(hint.width() > 0);
     QVERIFY(hint.height() > 0);
+}
+
+void TestAntInput::performanceCachesAndScopedUpdates()
+{
+    AntInput input;
+    input.resize(260, input.sizeHint().height());
+
+    const int sizeHintResolvesBefore = input.property("antInputSizeHintResolveCount").toInt();
+    input.sizeHint();
+    input.minimumSizeHint();
+    input.sizeHint();
+    QCOMPARE(input.property("antInputSizeHintResolveCount").toInt(), sizeHintResolvesBefore);
+
+    const int metricsResolvesBefore = input.property("antInputMetricsResolveCount").toInt();
+    input.sizeHint();
+    input.minimumSizeHint();
+    QCOMPARE(input.property("antInputMetricsResolveCount").toInt(), metricsResolvesBefore);
+
+    const int rebuildsBeforeAddon = input.property("antInputLayoutRebuildCount").toInt();
+    input.setAddonBefore(QStringLiteral("https://"));
+    const int rebuildsAfterAddon = input.property("antInputLayoutRebuildCount").toInt();
+    QVERIFY(rebuildsAfterAddon > rebuildsBeforeAddon);
+    input.setAddonBefore(QStringLiteral("https://"));
+    QCOMPARE(input.property("antInputLayoutRebuildCount").toInt(), rebuildsAfterAddon);
+
+    QPixmap pixmap(16, 16);
+    pixmap.fill(Qt::blue);
+    const QIcon icon(pixmap);
+    input.setPrefixIcon(icon);
+    const int rebuildsAfterIcon = input.property("antInputLayoutRebuildCount").toInt();
+    input.setPrefixIcon(icon);
+    QCOMPARE(input.property("antInputLayoutRebuildCount").toInt(), rebuildsAfterIcon);
+
+    input.setAllowClear(true);
+    const int visibilityChangesBefore = input.property("antInputButtonVisibilityChangeCount").toInt();
+    input.setText(QStringLiteral("abc"));
+    QVERIFY(input.property("antInputButtonVisibilityChangeCount").toInt() > visibilityChangesBefore);
+    const int visibilityChangesAfterText = input.property("antInputButtonVisibilityChangeCount").toInt();
+    input.setText(QStringLiteral("abcd"));
+    QCOMPARE(input.property("antInputButtonVisibilityChangeCount").toInt(), visibilityChangesAfterText);
+
+    input.setSearchMode(true);
+    input.layout()->activate();
+    QCoreApplication::processEvents();
+    QVERIFY(input.clearButtonRect().isValid());
+    QVERIFY(input.searchButtonRect().isValid());
+
+    const int scopedUpdatesBefore = input.property("antInputScopedUpdateCount").toInt();
+    input.setStatus(Ant::Status::Error);
+    QVERIFY(input.property("antInputScopedUpdateCount").toInt() > scopedUpdatesBefore);
 }
 
 QTEST_MAIN(TestAntInput)

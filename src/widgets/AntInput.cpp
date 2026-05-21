@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QPainter>
 #include <QPainterPath>
+#include <QRegion>
 #include <QSizePolicy>
 
 #include "../styles/AntInputStyle.h"
@@ -167,12 +168,23 @@ AntInput::AntInput(QWidget* parent)
         Q_EMIT textChanged(value);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        const Metrics oldMetrics = metrics();
+        invalidateMetricsCache();
+        const Metrics newMetrics = metrics();
+        if (oldMetrics.height != newMetrics.height || oldMetrics.fontSize != newMetrics.fontSize ||
+            oldMetrics.paddingX != newMetrics.paddingX || oldMetrics.radius != newMetrics.radius ||
+            oldMetrics.iconSize != newMetrics.iconSize)
+        {
+            rebuildLayout();
+            updateGeometry();
+        }
         updateVisualState();
         update();
     });
 
     rebuildLayout();
     updateVisualState();
+    syncInputPerfCounters();
 }
 
 QLineEdit* AntInput::lineEdit() const { return m_lineEdit; }
@@ -212,6 +224,7 @@ void AntInput::setInputSize(Ant::Size size)
     if (m_inputSize == size)
         return;
     m_inputSize = size;
+    invalidateMetricsCache();
     rebuildLayout();
     updateGeometry();
     update();
@@ -223,7 +236,7 @@ void AntInput::setStatus(Ant::Status status)
     if (m_status == status)
         return;
     m_status = status;
-    update();
+    updateFrameChrome();
     Q_EMIT statusChanged(m_status);
 }
 
@@ -237,6 +250,8 @@ void AntInput::setVariant(Ant::Variant variant)
     if (m_variant == variant)
         return;
     m_variant = variant;
+    ++m_scopedUpdateCount;
+    syncInputPerfCounters();
     update();
     Q_EMIT variantChanged(m_variant);
 }
@@ -274,56 +289,114 @@ void AntInput::setSearchMode(bool searchMode)
 
 void AntInput::setAddonBefore(const QString& text)
 {
+    if (!m_addonBefore && text.isEmpty())
+    {
+        return;
+    }
     if (!m_addonBefore)
     {
         m_addonBefore = new QLabel(this);
         m_addonBefore->setAlignment(Qt::AlignCenter);
     }
+    const bool visible = !text.isEmpty();
+    if (m_addonBefore->text() == text && (!m_addonBefore->isHidden()) == visible)
+    {
+        return;
+    }
     m_addonBefore->setText(text);
-    m_addonBefore->setVisible(!text.isEmpty());
+    m_addonBefore->setVisible(visible);
     rebuildLayout();
 }
 
 void AntInput::setAddonAfter(const QString& text)
 {
+    if (!m_addonAfter && text.isEmpty())
+    {
+        return;
+    }
     if (!m_addonAfter)
     {
         m_addonAfter = new QLabel(this);
         m_addonAfter->setAlignment(Qt::AlignCenter);
     }
+    const bool visible = !text.isEmpty();
+    if (m_addonAfter->text() == text && (!m_addonAfter->isHidden()) == visible)
+    {
+        return;
+    }
     m_addonAfter->setText(text);
-    m_addonAfter->setVisible(!text.isEmpty());
+    m_addonAfter->setVisible(visible);
     rebuildLayout();
 }
 
 void AntInput::setPrefixIcon(const QIcon& icon)
 {
+    if (!m_prefixIconLabel && icon.isNull())
+    {
+        return;
+    }
+    const qint64 cacheKey = icon.cacheKey();
+    if (m_prefixIconCacheKey == cacheKey && m_prefixIconLabel)
+    {
+        return;
+    }
+    const bool wasVisible = m_prefixIconLabel && !m_prefixIconLabel->isHidden();
+    m_prefixIcon = icon;
+    m_prefixIconCacheKey = cacheKey;
     if (!m_prefixIconLabel)
     {
         m_prefixIconLabel = new QLabel(this);
         m_prefixIconLabel->setAlignment(Qt::AlignCenter);
     }
-    const Metrics m = metrics();
-    m_prefixIconLabel->setPixmap(icon.pixmap(m.iconSize, m.iconSize));
+    updateIconLabel(m_prefixIconLabel, m_prefixIcon);
     m_prefixIconLabel->setVisible(!icon.isNull());
-    rebuildLayout();
+    if (wasVisible != !m_prefixIconLabel->isHidden())
+    {
+        rebuildLayout();
+    }
+    else
+    {
+        updateActionRegion(m_prefixIconLabel->geometry(), m_prefixIconLabel->geometry());
+    }
 }
 
 void AntInput::setSuffixIcon(const QIcon& icon)
 {
+    if (!m_suffixIconLabel && icon.isNull())
+    {
+        return;
+    }
+    const qint64 cacheKey = icon.cacheKey();
+    if (m_suffixIconCacheKey == cacheKey && m_suffixIconLabel)
+    {
+        return;
+    }
+    const bool wasVisible = m_suffixIconLabel && !m_suffixIconLabel->isHidden();
+    m_suffixIcon = icon;
+    m_suffixIconCacheKey = cacheKey;
     if (!m_suffixIconLabel)
     {
         m_suffixIconLabel = new QLabel(this);
         m_suffixIconLabel->setAlignment(Qt::AlignCenter);
     }
-    const Metrics m = metrics();
-    m_suffixIconLabel->setPixmap(icon.pixmap(m.iconSize, m.iconSize));
+    updateIconLabel(m_suffixIconLabel, m_suffixIcon);
     m_suffixIconLabel->setVisible(!icon.isNull());
-    rebuildLayout();
+    if (wasVisible != !m_suffixIconLabel->isHidden())
+    {
+        rebuildLayout();
+    }
+    else
+    {
+        updateActionRegion(m_suffixIconLabel->geometry(), m_suffixIconLabel->geometry());
+    }
 }
 
 void AntInput::setPrefixWidget(QWidget* widget)
 {
+    if (m_prefixWidget == widget)
+    {
+        return;
+    }
     if (m_prefixWidget && m_prefixWidget->parent() == this)
         m_prefixWidget->deleteLater();
     m_prefixWidget = widget;
@@ -334,6 +407,10 @@ void AntInput::setPrefixWidget(QWidget* widget)
 
 void AntInput::setSuffixWidget(QWidget* widget)
 {
+    if (m_suffixWidget == widget)
+    {
+        return;
+    }
     if (m_suffixWidget && m_suffixWidget->parent() == this)
         m_suffixWidget->deleteLater();
     m_suffixWidget = widget;
@@ -344,25 +421,53 @@ void AntInput::setSuffixWidget(QWidget* widget)
 
 QSize AntInput::sizeHint() const
 {
-    return QSize(220, metrics().height);
+    if (m_sizeHintDirty || !m_cachedSizeHint.isValid())
+    {
+        const Metrics m = metrics();
+        m_cachedSizeHint = QSize(220, m.height);
+        m_cachedMinimumSizeHint = QSize(80, m.height);
+        m_sizeHintDirty = false;
+        ++m_sizeHintResolveCount;
+        syncInputPerfCounters();
+    }
+    return m_cachedSizeHint;
 }
 
 QSize AntInput::minimumSizeHint() const
 {
-    return QSize(80, metrics().height);
+    if (m_sizeHintDirty || !m_cachedMinimumSizeHint.isValid())
+    {
+        const Metrics m = metrics();
+        m_cachedSizeHint = QSize(220, m.height);
+        m_cachedMinimumSizeHint = QSize(80, m.height);
+        m_sizeHintDirty = false;
+        ++m_sizeHintResolveCount;
+        syncInputPerfCounters();
+    }
+    return m_cachedMinimumSizeHint;
 }
 
 void AntInput::enterEvent(QEnterEvent* event)
 {
+    if (m_hovered)
+    {
+        QWidget::enterEvent(event);
+        return;
+    }
     m_hovered = true;
-    update();
+    updateFrameChrome();
     QWidget::enterEvent(event);
 }
 
 void AntInput::leaveEvent(QEvent* event)
 {
+    if (!m_hovered)
+    {
+        QWidget::leaveEvent(event);
+        return;
+    }
     m_hovered = false;
-    update();
+    updateFrameChrome();
     QWidget::leaveEvent(event);
 }
 
@@ -372,14 +477,22 @@ bool AntInput::eventFilter(QObject* watched, QEvent* event)
     {
         if (event->type() == QEvent::FocusIn)
         {
+            if (m_focused)
+            {
+                return QWidget::eventFilter(watched, event);
+            }
             m_focused = true;
-            update();
+            updateFrameChrome();
             Q_EMIT focusIn();
         }
         else if (event->type() == QEvent::FocusOut)
         {
+            if (!m_focused)
+            {
+                return QWidget::eventFilter(watched, event);
+            }
             m_focused = false;
-            update();
+            updateFrameChrome();
             Q_EMIT focusOut();
         }
     }
@@ -393,13 +506,18 @@ void AntInput::changeEvent(QEvent* event)
         m_lineEdit->setEnabled(isEnabled());
         updateButtonVisibility();
         updateVisualState();
-        update();
+        updateFrameChrome();
     }
     QWidget::changeEvent(event);
 }
 
 AntInput::Metrics AntInput::metrics() const
 {
+    if (!m_metricsDirty)
+    {
+        return m_cachedMetrics;
+    }
+
     const auto& token = antTheme->tokens();
     Metrics m;
     switch (m_inputSize)
@@ -426,11 +544,29 @@ AntInput::Metrics AntInput::metrics() const
         m.iconSize = 16;
         break;
     }
-    return m;
+    m_cachedMetrics = m;
+    m_metricsDirty = false;
+    ++m_metricsResolveCount;
+    syncInputPerfCounters();
+    return m_cachedMetrics;
+}
+
+void AntInput::invalidateMetricsCache() const
+{
+    m_metricsDirty = true;
+    invalidateSizeHintCache();
+    syncInputPerfCounters();
+}
+
+void AntInput::invalidateSizeHintCache() const
+{
+    m_sizeHintDirty = true;
+    syncInputPerfCounters();
 }
 
 void AntInput::rebuildLayout()
 {
+    ++m_layoutRebuildCount;
     while (QLayoutItem* item = m_layout->takeAt(0))
         delete item;
 
@@ -444,11 +580,13 @@ void AntInput::rebuildLayout()
     setupLabel(m_addonBefore);
     setupLabel(m_addonAfter);
     m_searchButton->setFixedSize(m.height, m.height);
+    updateIconLabel(m_prefixIconLabel, m_prefixIcon);
+    updateIconLabel(m_suffixIconLabel, m_suffixIcon);
 
-    if (m_addonBefore)
+    if (m_addonBefore && !m_addonBefore->isHidden())
         m_layout->addWidget(m_addonBefore);
     m_layout->addSpacing(m.paddingX);
-    if (m_prefixIconLabel)
+    if (m_prefixIconLabel && !m_prefixIconLabel->isHidden())
     {
         m_layout->addWidget(m_prefixIconLabel);
         m_layout->addSpacing(6);
@@ -464,7 +602,7 @@ void AntInput::rebuildLayout()
         m_layout->addSpacing(6);
         m_layout->addWidget(m_suffixWidget);
     }
-    if (m_suffixIconLabel)
+    if (m_suffixIconLabel && !m_suffixIconLabel->isHidden())
     {
         m_layout->addSpacing(6);
         m_layout->addWidget(m_suffixIconLabel);
@@ -476,18 +614,35 @@ void AntInput::rebuildLayout()
     {
         m_layout->addSpacing(m.paddingX);
     }
-    if (m_addonAfter)
+    if (m_addonAfter && !m_addonAfter->isHidden())
         m_layout->addWidget(m_addonAfter);
 
     updateButtonVisibility();
     updateVisualState();
+    invalidateSizeHintCache();
+    syncInputPerfCounters();
 }
 
 void AntInput::updateButtonVisibility()
 {
-    m_clearButton->setVisible(m_allowClear && !m_lineEdit->text().isEmpty() && isEnabled());
-    m_passwordButton->setVisible(m_passwordMode);
-    m_searchButton->setVisible(m_searchMode);
+    const QRect oldRegion = clearButtonRect().united(passwordButtonRect()).united(searchButtonRect());
+    const bool clearVisible = m_allowClear && !m_lineEdit->text().isEmpty() && isEnabled();
+    const bool passwordVisible = m_passwordMode;
+    const bool searchVisible = m_searchMode;
+    const bool changed = (!m_clearButton->isHidden()) != clearVisible ||
+                         (!m_passwordButton->isHidden()) != passwordVisible ||
+                         (!m_searchButton->isHidden()) != searchVisible;
+    if (!changed)
+    {
+        return;
+    }
+
+    m_clearButton->setVisible(clearVisible);
+    m_passwordButton->setVisible(passwordVisible);
+    m_searchButton->setVisible(searchVisible);
+    ++m_buttonVisibilityChangeCount;
+    syncInputPerfCounters();
+    updateActionRegion(oldRegion, clearButtonRect().united(passwordButtonRect()).united(searchButtonRect()));
 }
 
 void AntInput::updateVisualState()
@@ -495,11 +650,28 @@ void AntInput::updateVisualState()
     const auto& token = antTheme->tokens();
     const Metrics m = metrics();
     QFont f = m_lineEdit->font();
-    f.setPixelSize(m.fontSize);
-    m_lineEdit->setFont(f);
-    m_lineEdit->setMinimumHeight(m.height);
-    setMinimumHeight(m.height);
-    setMaximumHeight(m.height);
+    bool changed = false;
+    if (f.pixelSize() != m.fontSize)
+    {
+        f.setPixelSize(m.fontSize);
+        m_lineEdit->setFont(f);
+        changed = true;
+    }
+    if (m_lineEdit->minimumHeight() != m.height)
+    {
+        m_lineEdit->setMinimumHeight(m.height);
+        changed = true;
+    }
+    if (minimumHeight() != m.height)
+    {
+        setMinimumHeight(m.height);
+        changed = true;
+    }
+    if (maximumHeight() != m.height)
+    {
+        setMaximumHeight(m.height);
+        changed = true;
+    }
 
     // LineEdit colors via QPalette
     QPalette lePalette = m_lineEdit->palette();
@@ -508,16 +680,33 @@ void AntInput::updateVisualState()
     lePalette.setColor(QPalette::PlaceholderText, isEnabled() ? token.colorTextPlaceholder : token.colorTextDisabled);
     lePalette.setColor(QPalette::Highlight, token.colorPrimary);
     lePalette.setColor(QPalette::HighlightedText, Qt::white);
-    m_lineEdit->setPalette(lePalette);
-    m_lineEdit->setAttribute(Qt::WA_TranslucentBackground, true);
-    m_lineEdit->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
+    if (m_lineEdit->palette() != lePalette)
+    {
+        m_lineEdit->setPalette(lePalette);
+        changed = true;
+    }
+    if (!m_lineEdit->testAttribute(Qt::WA_TranslucentBackground))
+    {
+        m_lineEdit->setAttribute(Qt::WA_TranslucentBackground, true);
+        changed = true;
+    }
+    if (!m_lineEditStyleSheetApplied)
+    {
+        m_lineEdit->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
+        m_lineEditStyleSheetApplied = true;
+        changed = true;
+    }
 
     // ToolButton colors via QPalette
     for (auto* btn : {m_clearButton, m_passwordButton, m_searchButton})
     {
         QPalette tbPalette = btn->palette();
         tbPalette.setColor(QPalette::ButtonText, token.colorTextTertiary);
-        btn->setPalette(tbPalette);
+        if (btn->palette() != tbPalette)
+        {
+            btn->setPalette(tbPalette);
+            changed = true;
+        }
     }
 
     // Addon label colors via QPalette
@@ -525,14 +714,102 @@ void AntInput::updateVisualState()
     {
         QPalette abPalette = m_addonBefore->palette();
         abPalette.setColor(QPalette::WindowText, token.colorText);
-        m_addonBefore->setPalette(abPalette);
+        if (m_addonBefore->palette() != abPalette)
+        {
+            m_addonBefore->setPalette(abPalette);
+            changed = true;
+        }
     }
     if (m_addonAfter)
     {
         QPalette aaPalette = m_addonAfter->palette();
         aaPalette.setColor(QPalette::WindowText, token.colorText);
-        m_addonAfter->setPalette(aaPalette);
+        if (m_addonAfter->palette() != aaPalette)
+        {
+            m_addonAfter->setPalette(aaPalette);
+            changed = true;
+        }
     }
+
+    if (changed)
+    {
+        ++m_visualStateApplyCount;
+        syncInputPerfCounters();
+    }
+}
+
+void AntInput::updateFrameChrome()
+{
+    if (m_variant == Ant::Variant::Filled || m_variant == Ant::Variant::Borderless)
+    {
+        ++m_scopedUpdateCount;
+        syncInputPerfCounters();
+        update();
+        return;
+    }
+
+    const int inset = antTheme->tokens().controlOutlineWidth + antTheme->tokens().lineWidth + 2;
+    const QRect r = rect();
+    if (r.isEmpty())
+    {
+        update();
+        return;
+    }
+
+    QRegion region;
+    if (m_variant == Ant::Variant::Underlined)
+    {
+        region += QRect(r.left(), qMax(r.top(), r.bottom() - inset), r.width(), inset + 1);
+    }
+    else
+    {
+        region += QRect(r.left(), r.top(), r.width(), inset);
+        region += QRect(r.left(), qMax(r.top(), r.bottom() - inset + 1), r.width(), inset);
+        region += QRect(r.left(), r.top(), inset, r.height());
+        region += QRect(qMax(r.left(), r.right() - inset + 1), r.top(), inset, r.height());
+    }
+    ++m_scopedUpdateCount;
+    syncInputPerfCounters();
+    update(region);
+}
+
+void AntInput::updateActionRegion(const QRect& oldRect, const QRect& newRect)
+{
+    QRect dirty = oldRect.united(newRect);
+    if (!dirty.isValid() || dirty.isEmpty())
+    {
+        dirty = rect();
+    }
+    dirty = dirty.adjusted(-2, -2, 2, 2).intersected(rect());
+    ++m_scopedUpdateCount;
+    syncInputPerfCounters();
+    update(dirty);
+}
+
+void AntInput::updateIconLabel(QLabel* label, const QIcon& icon)
+{
+    if (!label)
+    {
+        return;
+    }
+    const Metrics m = metrics();
+    if (icon.isNull())
+    {
+        label->clear();
+        return;
+    }
+    label->setPixmap(icon.pixmap(m.iconSize, m.iconSize));
+}
+
+void AntInput::syncInputPerfCounters() const
+{
+    auto* self = const_cast<AntInput*>(this);
+    self->setProperty("antInputMetricsResolveCount", m_metricsResolveCount);
+    self->setProperty("antInputSizeHintResolveCount", m_sizeHintResolveCount);
+    self->setProperty("antInputLayoutRebuildCount", m_layoutRebuildCount);
+    self->setProperty("antInputButtonVisibilityChangeCount", m_buttonVisibilityChangeCount);
+    self->setProperty("antInputScopedUpdateCount", m_scopedUpdateCount);
+    self->setProperty("antInputVisualStateApplyCount", m_visualStateApplyCount);
 }
 
 QColor AntInput::borderColor() const
@@ -563,15 +840,25 @@ bool AntInput::isInputHovered() const
 
 QRect AntInput::addonBeforeRect() const
 {
-    return m_addonBefore && m_addonBefore->isVisible() ? m_addonBefore->geometry() : QRect();
+    return m_addonBefore && !m_addonBefore->isHidden() ? m_addonBefore->geometry() : QRect();
 }
 
 QRect AntInput::addonAfterRect() const
 {
-    return m_addonAfter && m_addonAfter->isVisible() ? m_addonAfter->geometry() : QRect();
+    return m_addonAfter && !m_addonAfter->isHidden() ? m_addonAfter->geometry() : QRect();
 }
 
 QRect AntInput::searchButtonRect() const
 {
-    return m_searchMode && m_searchButton && m_searchButton->isVisible() ? m_searchButton->geometry() : QRect();
+    return m_searchMode && m_searchButton && !m_searchButton->isHidden() ? m_searchButton->geometry() : QRect();
+}
+
+QRect AntInput::clearButtonRect() const
+{
+    return m_clearButton && !m_clearButton->isHidden() ? m_clearButton->geometry() : QRect();
+}
+
+QRect AntInput::passwordButtonRect() const
+{
+    return m_passwordButton && !m_passwordButton->isHidden() ? m_passwordButton->geometry() : QRect();
 }

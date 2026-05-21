@@ -5,6 +5,7 @@
 #include <QIcon>
 #include <QRect>
 #include <QLineEdit>
+#include <QSize>
 #include <QToolButton>
 #include <QWidget>
 
@@ -87,6 +88,8 @@ public:
     QRect addonBeforeRect() const;
     QRect addonAfterRect() const;
     QRect searchButtonRect() const;
+    QRect clearButtonRect() const;
+    QRect passwordButtonRect() const;
 
 Q_SIGNALS:
     void textChanged(const QString& text);
@@ -121,9 +124,15 @@ private:
     };
 
     Metrics metrics() const;
+    void invalidateMetricsCache() const;
+    void invalidateSizeHintCache() const;
     void rebuildLayout();
     void updateButtonVisibility();
     void updateVisualState();
+    void updateFrameChrome();
+    void updateActionRegion(const QRect& oldRect = QRect(), const QRect& newRect = QRect());
+    void updateIconLabel(QLabel* label, const QIcon& icon);
+    void syncInputPerfCounters() const;
     QColor borderColor() const;
 
     QHBoxLayout* m_layout = nullptr;
@@ -147,4 +156,20 @@ private:
     QToolButton* m_searchButton = nullptr;
     bool m_hovered = false;
     bool m_focused = false;
+    QIcon m_prefixIcon;
+    QIcon m_suffixIcon;
+    qint64 m_prefixIconCacheKey = 0;
+    qint64 m_suffixIconCacheKey = 0;
+    bool m_lineEditStyleSheetApplied = false;
+    mutable bool m_metricsDirty = true;
+    mutable Metrics m_cachedMetrics;
+    mutable bool m_sizeHintDirty = true;
+    mutable QSize m_cachedSizeHint;
+    mutable QSize m_cachedMinimumSizeHint;
+    mutable int m_metricsResolveCount = 0;
+    mutable int m_sizeHintResolveCount = 0;
+    int m_layoutRebuildCount = 0;
+    int m_buttonVisibilityChangeCount = 0;
+    int m_scopedUpdateCount = 0;
+    int m_visualStateApplyCount = 0;
 };

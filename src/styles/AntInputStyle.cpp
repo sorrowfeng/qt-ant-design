@@ -79,7 +79,6 @@ QColor borderColorFor(const AntInput* input)
 AntInputStyle::AntInputStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntInput>();
 }
 
 void AntInputStyle::polish(QWidget* widget)
