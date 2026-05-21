@@ -9,6 +9,7 @@
 
 class QEvent;
 class QMouseEvent;
+class QPaintEvent;
 
 struct AntStepItem
 {
@@ -63,8 +64,11 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private:
+    friend class AntStepsStyle;
+
     struct Metrics
     {
         int iconSize = 32;
@@ -75,18 +79,39 @@ private:
         int descFontSize = 12;
     };
 
+    struct LayoutItem
+    {
+        QRect itemRect;
+        QRect iconRect;
+        QRect textRect;
+    };
+
     Metrics metrics() const;
-    QVector<QRect> itemRects() const;
+    QVector<LayoutItem> layoutItems() const;
     QRect iconRect(const QRect& itemRect) const;
     QRect textRect(const QRect& itemRect) const;
     int stepAtPos(const QPoint& pos) const;
     Ant::StepStatus effectiveStatus(int index) const;
     QColor statusColor(Ant::StepStatus status) const;
     QString iconText(Ant::StepStatus status, int index) const;
+    void invalidateLayoutCache();
+    QRect stepDirtyRect(int index) const;
+    void updateStepStateRegion(int oldIndex, int newIndex);
+    void updateStepRangeRegion(int oldIndex, int newIndex);
+    void updateStepsGeometry();
+    void syncStepsPerfCounters() const;
 
     QVector<AntStepItem> m_steps;
     int m_currentIndex = 0;
     Ant::Orientation m_direction = Ant::Orientation::Horizontal;
     bool m_clickable = true;
     int m_hoveredIndex = -1;
+    quint64 m_layoutRevision = 1;
+    mutable bool m_layoutCacheValid = false;
+    mutable quint64 m_layoutCacheRevision = 0;
+    mutable QSize m_layoutCacheSize;
+    mutable QVector<LayoutItem> m_cachedLayoutItems;
+    mutable int m_layoutCacheHitCount = 0;
+    mutable int m_layoutBuildCount = 0;
+    int m_scopedStepUpdateCount = 0;
 };

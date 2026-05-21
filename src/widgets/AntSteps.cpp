@@ -12,6 +12,11 @@ AntSteps::AntSteps(QWidget* parent)
 {
     installAntStyle<AntStepsStyle>(this);
     setMouseTracking(true);
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updateStepsGeometry();
+        update();
+    });
+    syncStepsPerfCounters();
 }
 
 int AntSteps::currentIndex() const { return m_currentIndex; }
@@ -23,8 +28,9 @@ void AntSteps::setCurrentIndex(int index)
     {
         return;
     }
+    const int previous = m_currentIndex;
     m_currentIndex = index;
-    update();
+    updateStepRangeRegion(previous, m_currentIndex);
     Q_EMIT currentIndexChanged(m_currentIndex);
 }
 
@@ -37,7 +43,7 @@ void AntSteps::setDirection(Ant::Orientation direction)
         return;
     }
     m_direction = direction;
-    updateGeometry();
+    updateStepsGeometry();
     update();
     Q_EMIT directionChanged(m_direction);
 }
@@ -69,7 +75,7 @@ AntStepItem AntSteps::stepAt(int index) const
 void AntSteps::addStep(const AntStepItem& step)
 {
     m_steps.push_back(step);
-    updateGeometry();
+    updateStepsGeometry();
     update();
 }
 
@@ -93,7 +99,7 @@ void AntSteps::setStepStatus(int index, Ant::StepStatus status)
         return;
     }
     m_steps[index].status = status;
-    update();
+    updateStepStateRegion(index, index);
 }
 
 void AntSteps::clearSteps()
@@ -101,7 +107,7 @@ void AntSteps::clearSteps()
     m_steps.clear();
     m_currentIndex = 0;
     m_hoveredIndex = -1;
-    updateGeometry();
+    updateStepsGeometry();
     update();
 }
 
@@ -130,8 +136,9 @@ void AntSteps::mouseMoveEvent(QMouseEvent* event)
     const int index = stepAtPos(event->pos());
     if (m_hoveredIndex != index)
     {
+        const int previous = m_hoveredIndex;
         m_hoveredIndex = index;
-        update();
+        updateStepStateRegion(previous, m_hoveredIndex);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -156,10 +163,23 @@ void AntSteps::leaveEvent(QEvent* event)
 {
     if (m_hoveredIndex != -1)
     {
+        const int previous = m_hoveredIndex;
         m_hoveredIndex = -1;
-        update();
+        updateStepStateRegion(previous, m_hoveredIndex);
     }
     QWidget::leaveEvent(event);
+}
+
+void AntSteps::changeEvent(QEvent* event)
+{
+    if (event && (event->type() == QEvent::FontChange ||
+                  event->type() == QEvent::ApplicationFontChange ||
+                  event->type() == QEvent::StyleChange ||
+                  event->type() == QEvent::LayoutDirectionChange))
+    {
+        updateStepsGeometry();
+    }
+    QWidget::changeEvent(event);
 }
 
 AntSteps::Metrics AntSteps::metrics() const
@@ -175,19 +195,40 @@ AntSteps::Metrics AntSteps::metrics() const
     return m;
 }
 
-QVector<QRect> AntSteps::itemRects() const
+QVector<AntSteps::LayoutItem> AntSteps::layoutItems() const
 {
-    QVector<QRect> rects;
+    const QSize cacheSize = size();
+    if (m_layoutCacheValid &&
+        m_layoutCacheRevision == m_layoutRevision &&
+        m_layoutCacheSize == cacheSize)
+    {
+        ++m_layoutCacheHitCount;
+        syncStepsPerfCounters();
+        return m_cachedLayoutItems;
+    }
+
+    QVector<LayoutItem> items;
     if (m_steps.isEmpty())
     {
-        return rects;
+        m_cachedLayoutItems = items;
+        m_layoutCacheSize = cacheSize;
+        m_layoutCacheRevision = m_layoutRevision;
+        m_layoutCacheValid = true;
+        ++m_layoutBuildCount;
+        syncStepsPerfCounters();
+        return m_cachedLayoutItems;
     }
+
     if (m_direction == Ant::Orientation::Horizontal)
     {
         const int itemWidth = qMax(160, width() / m_steps.size());
         for (int i = 0; i < m_steps.size(); ++i)
         {
-            rects.push_back(QRect(i * itemWidth, 0, itemWidth, height()));
+            LayoutItem item;
+            item.itemRect = QRect(i * itemWidth, 0, itemWidth, height());
+            item.iconRect = iconRect(item.itemRect);
+            item.textRect = textRect(item.itemRect);
+            items.push_back(item);
         }
     }
     else
@@ -195,10 +236,21 @@ QVector<QRect> AntSteps::itemRects() const
         const int itemHeight = qMax(72, height() / m_steps.size());
         for (int i = 0; i < m_steps.size(); ++i)
         {
-            rects.push_back(QRect(0, i * itemHeight, width(), itemHeight));
+            LayoutItem item;
+            item.itemRect = QRect(0, i * itemHeight, width(), itemHeight);
+            item.iconRect = iconRect(item.itemRect);
+            item.textRect = textRect(item.itemRect);
+            items.push_back(item);
         }
     }
-    return rects;
+
+    m_cachedLayoutItems = items;
+    m_layoutCacheSize = cacheSize;
+    m_layoutCacheRevision = m_layoutRevision;
+    m_layoutCacheValid = true;
+    ++m_layoutBuildCount;
+    syncStepsPerfCounters();
+    return m_cachedLayoutItems;
 }
 
 QRect AntSteps::iconRect(const QRect& itemRect) const
@@ -228,10 +280,10 @@ QRect AntSteps::textRect(const QRect& itemRect) const
 
 int AntSteps::stepAtPos(const QPoint& pos) const
 {
-    const QVector<QRect> rects = itemRects();
-    for (int i = 0; i < rects.size(); ++i)
+    const QVector<LayoutItem> items = layoutItems();
+    for (int i = 0; i < items.size(); ++i)
     {
-        if (rects.at(i).contains(pos))
+        if (items.at(i).itemRect.contains(pos))
         {
             return i;
         }
@@ -285,4 +337,88 @@ QString AntSteps::iconText(Ant::StepStatus status, int index) const
 {
     Q_UNUSED(status)
     return QString::number(index + 1);
+}
+
+void AntSteps::invalidateLayoutCache()
+{
+    ++m_layoutRevision;
+    if (m_layoutRevision == 0)
+    {
+        m_layoutRevision = 1;
+    }
+    m_layoutCacheValid = false;
+}
+
+QRect AntSteps::stepDirtyRect(int index) const
+{
+    const QVector<LayoutItem> items = layoutItems();
+    if (index < 0 || index >= items.size())
+    {
+        return {};
+    }
+    return items.at(index).itemRect.adjusted(-4, -4, 4, 4).intersected(rect());
+}
+
+void AntSteps::updateStepStateRegion(int oldIndex, int newIndex)
+{
+    QRect dirty;
+    const QRect oldRect = stepDirtyRect(oldIndex);
+    const QRect newRect = stepDirtyRect(newIndex);
+    if (!oldRect.isNull())
+    {
+        dirty = oldRect;
+    }
+    if (!newRect.isNull())
+    {
+        dirty = dirty.isNull() ? newRect : dirty.united(newRect);
+    }
+    if (dirty.isNull())
+    {
+        return;
+    }
+    ++m_scopedStepUpdateCount;
+    syncStepsPerfCounters();
+    update(dirty);
+}
+
+void AntSteps::updateStepRangeRegion(int oldIndex, int newIndex)
+{
+    if (m_steps.isEmpty())
+    {
+        update();
+        return;
+    }
+    int first = qBound(0, qMin(oldIndex, newIndex), m_steps.size() - 1);
+    int last = qBound(0, qMax(oldIndex, newIndex), m_steps.size() - 1);
+    QRect dirty;
+    for (int i = first; i <= last; ++i)
+    {
+        const QRect r = stepDirtyRect(i);
+        if (!r.isNull())
+        {
+            dirty = dirty.isNull() ? r : dirty.united(r);
+        }
+    }
+    if (dirty.isNull())
+    {
+        update();
+        return;
+    }
+    ++m_scopedStepUpdateCount;
+    syncStepsPerfCounters();
+    update(dirty);
+}
+
+void AntSteps::updateStepsGeometry()
+{
+    invalidateLayoutCache();
+    updateGeometry();
+}
+
+void AntSteps::syncStepsPerfCounters() const
+{
+    auto* self = const_cast<AntSteps*>(this);
+    self->setProperty("antStepsLayoutCacheHitCount", m_layoutCacheHitCount);
+    self->setProperty("antStepsLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antStepsScopedStepUpdateCount", m_scopedStepUpdateCount);
 }

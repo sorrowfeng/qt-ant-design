@@ -6,13 +6,11 @@
 #include <QStyleOption>
 
 #include "styles/AntIconPainter.h"
-#include "styles/AntPalette.h"
 #include "widgets/AntSteps.h"
 
 AntStepsStyle::AntStepsStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntSteps>();
 }
 
 void AntStepsStyle::polish(QWidget* widget)
@@ -63,160 +61,6 @@ bool AntStepsStyle::eventFilter(QObject* watched, QEvent* event)
     return QProxyStyle::eventFilter(watched, event);
 }
 
-namespace
-{
-struct StepsMetrics
-{
-    int iconSize = 32;
-    int titleGap = 12;
-    int tailThickness = 2;
-    int itemGap = 20;
-    int titleFontSize = 14;
-    int descFontSize = 12;
-};
-
-StepsMetrics stepsMetrics()
-{
-    StepsMetrics m;
-    const auto& token = antTheme->tokens();
-    m.iconSize = token.controlHeight;
-    m.titleGap = token.marginXS;
-    m.tailThickness = 2;
-    m.itemGap = token.marginLG;
-    m.titleFontSize = token.fontSizeLG;
-    m.descFontSize = token.fontSize;
-    return m;
-}
-
-QVector<QRect> stepsItemRects(const AntSteps* steps, const QRect& bounds)
-{
-    QVector<QRect> rects;
-    const int count = steps->count();
-    if (count == 0)
-    {
-        return rects;
-    }
-    if (steps->direction() == Ant::Orientation::Horizontal)
-    {
-        const int itemWidth = qMax(160, bounds.width() / count);
-        for (int i = 0; i < count; ++i)
-        {
-            rects.push_back(QRect(i * itemWidth, 0, itemWidth, bounds.height()));
-        }
-    }
-    else
-    {
-        const int itemHeight = qMax(72, bounds.height() / count);
-        for (int i = 0; i < count; ++i)
-        {
-            rects.push_back(QRect(0, i * itemHeight, bounds.width(), itemHeight));
-        }
-    }
-    return rects;
-}
-
-QRect stepsIconRect(const QRect& itemRect, Ant::Orientation direction)
-{
-    const StepsMetrics m = stepsMetrics();
-    const int leftInset = m.tailThickness + 1;
-    if (direction == Ant::Orientation::Horizontal)
-    {
-        return QRect(itemRect.left() + leftInset, 8, m.iconSize, m.iconSize);
-    }
-    return QRect(itemRect.left() + leftInset, itemRect.top() + 8, m.iconSize, m.iconSize);
-}
-
-QRect stepsTextRect(const QRect& itemRect, Ant::Orientation direction)
-{
-    const StepsMetrics m = stepsMetrics();
-    if (direction == Ant::Orientation::Horizontal)
-    {
-        const QRect icon = stepsIconRect(itemRect, direction);
-        return QRect(icon.right() + 1 + m.titleGap,
-                     icon.top(),
-                     itemRect.width() - m.iconSize - m.titleGap,
-                     itemRect.height() - icon.top());
-    }
-    return QRect(itemRect.left() + m.iconSize + 16, itemRect.top() + 4, itemRect.width() - m.iconSize - 20, itemRect.height() - 8);
-}
-
-Ant::StepStatus stepsEffectiveStatus(const AntSteps* steps, int index)
-{
-    const int count = steps->count();
-    if (index < 0 || index >= count)
-    {
-        return Ant::StepStatus::Wait;
-    }
-    const AntStepItem step = steps->stepAt(index);
-    if (step.status == Ant::StepStatus::Error)
-    {
-        return Ant::StepStatus::Error;
-    }
-    if (step.status == Ant::StepStatus::Finish)
-    {
-        return Ant::StepStatus::Finish;
-    }
-    if (index < steps->currentIndex())
-    {
-        return Ant::StepStatus::Finish;
-    }
-    if (index == steps->currentIndex())
-    {
-        return Ant::StepStatus::Process;
-    }
-    return Ant::StepStatus::Wait;
-}
-
-QColor stepsStatusColor(Ant::StepStatus status)
-{
-    const auto& token = antTheme->tokens();
-    switch (status)
-    {
-    case Ant::StepStatus::Finish:
-    case Ant::StepStatus::Process:
-        return token.colorPrimary;
-    case Ant::StepStatus::Error:
-        return token.colorError;
-    case Ant::StepStatus::Wait:
-    default:
-        return token.colorBorder;
-    }
-}
-
-QString stepsIconText(int index)
-{
-    return QString::number(index + 1);
-}
-
-QFont stepsTitleFont(const QFont& baseFont, const StepsMetrics& metrics, Ant::StepStatus status)
-{
-    QFont titleFont = baseFont;
-    titleFont.setPixelSize(metrics.titleFontSize);
-    titleFont.setWeight(status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
-    return titleFont;
-}
-
-QFont stepsDescFont(const QFont& baseFont, const StepsMetrics& metrics)
-{
-    QFont descFont = baseFont;
-    descFont.setPixelSize(metrics.descFontSize);
-    descFont.setWeight(QFont::Normal);
-    return descFont;
-}
-
-int stepsHorizontalHeaderWidth(const AntStepItem& step, const StepsMetrics& metrics,
-                               const QFont& titleFont, const QFont& subTitleFont)
-{
-    const auto& token = antTheme->tokens();
-    int width = QFontMetrics(titleFont).horizontalAdvance(step.title);
-    if (!step.subTitle.isEmpty())
-    {
-        width += token.marginXS + QFontMetrics(subTitleFont).horizontalAdvance(step.subTitle);
-    }
-    return width;
-}
-} // namespace
-
 void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
     const auto* steps = qobject_cast<const AntSteps*>(widget);
@@ -226,32 +70,40 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
     }
 
     const auto& token = antTheme->tokens();
-    const StepsMetrics m = stepsMetrics();
-    const int count = steps->count();
-    const auto rects = stepsItemRects(steps, option->rect);
+    const auto m = steps->metrics();
+    const auto layouts = steps->layoutItems();
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    for (int i = 0; i < rects.size(); ++i)
+    for (int i = 0; i < layouts.size(); ++i)
     {
-        const QRect itemRect = rects.at(i);
-        const QRect circle = stepsIconRect(itemRect, steps->direction());
-        const QRect textArea = stepsTextRect(itemRect, steps->direction());
-        const Ant::StepStatus status = stepsEffectiveStatus(steps, i);
-        const QColor color = stepsStatusColor(status);
+        const auto& layout = layouts.at(i);
+        const QRect itemRect = layout.itemRect;
+        const QRect circle = layout.iconRect;
+        const QRect textArea = layout.textRect;
+        const Ant::StepStatus status = steps->effectiveStatus(i);
+        const QColor color = steps->statusColor(status);
         const AntStepItem step = steps->stepAt(i);
         const bool disabled = step.disabled;
-        const QFont titleFontForItem = stepsTitleFont(painter->font(), m, status);
-        const QFont descFontForItem = stepsDescFont(painter->font(), m);
+        QFont titleFontForItem = painter->font();
+        titleFontForItem.setPixelSize(m.titleFontSize);
+        titleFontForItem.setWeight(status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
+        QFont descFontForItem = painter->font();
+        descFontForItem.setPixelSize(m.descFontSize);
+        descFontForItem.setWeight(QFont::Normal);
 
         // Tail line
-        if (i < rects.size() - 1)
+        if (i < layouts.size() - 1)
         {
             if (steps->direction() == Ant::Orientation::Horizontal)
             {
                 const int y = circle.center().y();
-                const int headerWidth = stepsHorizontalHeaderWidth(step, m, titleFontForItem, descFontForItem);
+                int headerWidth = QFontMetrics(titleFontForItem).horizontalAdvance(step.title);
+                if (!step.subTitle.isEmpty())
+                {
+                    headerWidth += token.marginXS + QFontMetrics(descFontForItem).horizontalAdvance(step.subTitle);
+                }
                 const int x1 = textArea.left() + headerWidth + token.margin;
                 const int x2 = itemRect.right() - token.marginXS;
                 painter->setPen(QPen(i < steps->currentIndex() ? token.colorPrimary : token.colorSplit,
@@ -265,7 +117,7 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
             {
                 const int x = circle.center().x();
                 const int y1 = circle.bottom() + 8;
-                const int y2 = rects.at(i + 1).top() + 8;
+                const int y2 = layouts.at(i + 1).itemRect.top() + 8;
                 painter->setPen(QPen(i < steps->currentIndex() ? token.colorPrimary : token.colorSplit,
                                     m.tailThickness, Qt::SolidLine, Qt::RoundCap));
                 painter->drawLine(QPoint(x, y1), QPoint(x, y2));
@@ -317,7 +169,7 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
             iconFont.setWeight(QFont::DemiBold);
             painter->setFont(iconFont);
             painter->setPen(numberColor);
-            painter->drawText(circle, Qt::AlignCenter, stepsIconText(i));
+            painter->drawText(circle, Qt::AlignCenter, steps->iconText(status, i));
         }
 
         // Title

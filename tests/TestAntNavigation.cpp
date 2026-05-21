@@ -28,6 +28,7 @@ private slots:
     void menuCachesLayoutAndScopesRows();
     void paginationQuickJumperEditsCurrentPage();
     void paginationCachesButtonGeometry();
+    void stepsCachesLayoutAndScopesUpdates();
     void anchorCachesLayoutAndCoalescesScroll();
     void breadcrumbCachesLayoutAndScopesHover();
     void tabsNormalizePageLayoutMargins();
@@ -469,6 +470,64 @@ void TestAntNavigation::paginationCachesButtonGeometry()
     auto* jumper = pagination.findChild<QLineEdit*>(QStringLiteral("AntPaginationQuickJumper"));
     QVERIFY(jumper);
     QTRY_VERIFY(jumper->isVisible());
+}
+
+void TestAntNavigation::stepsCachesLayoutAndScopesUpdates()
+{
+    AntSteps steps;
+    steps.addStep(QStringLiteral("First"), QStringLiteral("Prepare"));
+    steps.addStep(QStringLiteral("Second"), QStringLiteral("Run"));
+    steps.addStep(QStringLiteral("Third"), QStringLiteral("Review"));
+    steps.resize(480, steps.sizeHint().height());
+    steps.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&steps));
+    QCoreApplication::processEvents();
+
+    QVERIFY(steps.property("antStepsLayoutBuildCount").toInt() > 0);
+    const int cacheHitsBefore = steps.property("antStepsLayoutCacheHitCount").toInt();
+    QMouseEvent firstHover(QEvent::MouseMove,
+                           QPointF(20, 20),
+                           QPointF(steps.mapToGlobal(QPoint(20, 20))),
+                           Qt::NoButton,
+                           Qt::NoButton,
+                           Qt::NoModifier);
+    QCoreApplication::sendEvent(&steps, &firstHover);
+    QVERIFY(steps.property("antStepsLayoutCacheHitCount").toInt() > cacheHitsBefore);
+
+    const int scopedBeforeSameHover = steps.property("antStepsScopedStepUpdateCount").toInt();
+    QCoreApplication::sendEvent(&steps, &firstHover);
+    QCOMPARE(steps.property("antStepsScopedStepUpdateCount").toInt(), scopedBeforeSameHover);
+
+    const int scopedBeforeSecondHover = steps.property("antStepsScopedStepUpdateCount").toInt();
+    QMouseEvent secondHover(QEvent::MouseMove,
+                            QPointF(180, 20),
+                            QPointF(steps.mapToGlobal(QPoint(180, 20))),
+                            Qt::NoButton,
+                            Qt::NoButton,
+                            Qt::NoModifier);
+    QCoreApplication::sendEvent(&steps, &secondHover);
+    QVERIFY(steps.property("antStepsScopedStepUpdateCount").toInt() > scopedBeforeSecondHover);
+
+    const int buildsBeforeCurrent = steps.property("antStepsLayoutBuildCount").toInt();
+    const int scopedBeforeCurrent = steps.property("antStepsScopedStepUpdateCount").toInt();
+    steps.setCurrentIndex(2);
+    QCOMPARE(steps.property("antStepsLayoutBuildCount").toInt(), buildsBeforeCurrent);
+    QVERIFY(steps.property("antStepsScopedStepUpdateCount").toInt() > scopedBeforeCurrent);
+
+    const int scopedBeforeStatus = steps.property("antStepsScopedStepUpdateCount").toInt();
+    steps.setStepStatus(1, Ant::StepStatus::Error);
+    QVERIFY(steps.property("antStepsScopedStepUpdateCount").toInt() > scopedBeforeStatus);
+
+    const int buildsBeforeDirection = steps.property("antStepsLayoutBuildCount").toInt();
+    steps.setDirection(Ant::Orientation::Vertical);
+    QMouseEvent verticalHover(QEvent::MouseMove,
+                              QPointF(20, 90),
+                              QPointF(steps.mapToGlobal(QPoint(20, 90))),
+                              Qt::NoButton,
+                              Qt::NoButton,
+                              Qt::NoModifier);
+    QCoreApplication::sendEvent(&steps, &verticalHover);
+    QVERIFY(steps.property("antStepsLayoutBuildCount").toInt() > buildsBeforeDirection);
 }
 
 void TestAntNavigation::anchorCachesLayoutAndCoalescesScroll()
