@@ -2,10 +2,16 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QPainterPath>
+#include <QRect>
+#include <QRectF>
+#include <QSize>
+#include <QVector>
 #include <QWidget>
 
 #include "core/AntTypes.h"
 
+class QResizeEvent;
 class QVariantAnimation;
 
 class QT_ANT_DESIGN_EXPORT AntRate : public QWidget
@@ -64,10 +70,35 @@ protected:
     void focusInEvent(QFocusEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     friend class AntRateStyle;
 
+    struct LayoutCache
+    {
+        QSize widgetSize;
+        Ant::Size rateSize = Ant::Size::Middle;
+        int count = 5;
+        int starSize = 20;
+        int margin = 8;
+        int totalWidth = 0;
+        QSize sizeHint;
+        QVector<QRectF> starRects;
+        QVector<QPainterPath> starPaths;
+        bool valid = false;
+    };
+
+    const LayoutCache& layoutCache() const;
+    QSize cachedSizeHint() const;
+    QRect starDirtyRect(int index) const;
+    QRect valueDirtyRect(double oldValue, double newValue) const;
+    QRect focusDirtyRect() const;
+    void updateValueRegion(double oldValue, double newValue);
+    void updateStarRegion(int index);
+    void updateFocusRegion();
+    void invalidateLayoutCache() const;
+    void syncRatePerfCounters() const;
     double starValueAt(const QPoint& pos) const;
     void updateHoverValue(const QPoint& pos);
     void startSelectionAnimation(double selectedValue);
@@ -85,4 +116,11 @@ private:
     int m_selectionAnimationIndex = -1;
     qreal m_selectionScale = 1.0;
     QVariantAnimation* m_selectionAnimation = nullptr;
+    mutable LayoutCache m_layoutCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_sizeHintResolveCount = 0;
+    mutable int m_starPathBuildCount = 0;
+    int m_valueRegionUpdateCount = 0;
+    int m_starRegionUpdateCount = 0;
+    int m_focusRegionUpdateCount = 0;
 };

@@ -27,6 +27,7 @@ private slots:
     void inputNumberUsesLayoutFriendlyPolicy();
     void inputNumberCachesMetricsAndScopesControlUpdates();
     void radioCachesLayoutAndScopesStateUpdates();
+    void rateCachesStarLayoutAndScopesUpdates();
     void sliderMarksReserveLabelHeight();
     void sliderBubbleFloatsAboveMarkedHandle();
     void sliderBubbleArrowJoinsSurface();
@@ -522,6 +523,50 @@ void TestAntDataEntryA::radioCachesLayoutAndScopesStateUpdates()
     QCoreApplication::sendEvent(&left, &enterEvent);
     QVERIFY(left.property("antRadioRegionUpdateCount").toInt() > buttonRegionUpdatesBefore);
     QCOMPARE(left.property("antRadioLastUpdateMode").toString(), QStringLiteral("button"));
+}
+
+void TestAntDataEntryA::rateCachesStarLayoutAndScopesUpdates()
+{
+    AntRate rate;
+    rate.resize(rate.sizeHint());
+    rate.sizeHint();
+
+    const int sizeHintResolvesBefore = rate.property("antRateSizeHintResolveCount").toInt();
+    const int layoutBuildsBefore = rate.property("antRateLayoutBuildCount").toInt();
+    const int starPathsBefore = rate.property("antRateStarPathBuildCount").toInt();
+    rate.sizeHint();
+    rate.minimumSizeHint();
+    rate.sizeHint();
+    QCOMPARE(rate.property("antRateSizeHintResolveCount").toInt(), sizeHintResolvesBefore);
+    QCOMPARE(rate.property("antRateLayoutBuildCount").toInt(), layoutBuildsBefore);
+    QCOMPARE(rate.property("antRateStarPathBuildCount").toInt(), starPathsBefore);
+
+    const int valueRegionBefore = rate.property("antRateValueRegionUpdateCount").toInt();
+    rate.setValue(3.0);
+    QVERIFY(rate.property("antRateValueRegionUpdateCount").toInt() > valueRegionBefore);
+    QCOMPARE(rate.property("antRateStarPathBuildCount").toInt(), starPathsBefore);
+
+    const int valueRegionAfterSameValue = rate.property("antRateValueRegionUpdateCount").toInt();
+    rate.setValue(3.0);
+    QCOMPARE(rate.property("antRateValueRegionUpdateCount").toInt(), valueRegionAfterSameValue);
+
+    const auto& token = antTheme->tokens();
+    const int starSize = static_cast<int>(std::round(token.controlHeight * 0.625));
+    const int gap = token.marginXS;
+    const QPoint fourthStarCenter((starSize + gap) * 3 + starSize / 2, rate.height() / 2);
+    QMouseEvent moveEvent(QEvent::MouseMove,
+                          QPointF(fourthStarCenter),
+                          QPointF(rate.mapToGlobal(fourthStarCenter)),
+                          Qt::NoButton,
+                          Qt::NoButton,
+                          Qt::NoModifier);
+    QCoreApplication::sendEvent(&rate, &moveEvent);
+    QVERIFY(rate.property("antRateValueRegionUpdateCount").toInt() > valueRegionAfterSameValue);
+
+    const int focusUpdatesBefore = rate.property("antRateFocusRegionUpdateCount").toInt();
+    QFocusEvent focusEvent(QEvent::FocusIn);
+    QCoreApplication::sendEvent(&rate, &focusEvent);
+    QVERIFY(rate.property("antRateFocusRegionUpdateCount").toInt() > focusUpdatesBefore);
 }
 
 void TestAntDataEntryA::sliderMarksReserveLabelHeight()

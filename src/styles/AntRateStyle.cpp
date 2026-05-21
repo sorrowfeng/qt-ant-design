@@ -13,78 +13,13 @@
 
 namespace
 {
-struct RateMetrics
-{
-    int starSize = 20;
-    int margin = 8;
-    int totalWidth = 0;
-};
-
-RateMetrics metricsFor(const AntRate* rate)
-{
-    const auto& token = antTheme->tokens();
-    RateMetrics m;
-    switch (rate ? rate->rateSize() : Ant::Size::Middle)
-    {
-        case Ant::Size::Small:
-            m.starSize = static_cast<int>(std::round(token.controlHeightSM * 0.625));
-            break;
-        case Ant::Size::Large:
-            m.starSize = static_cast<int>(std::round(token.controlHeightLG * 0.625));
-            break;
-        default:
-            m.starSize = static_cast<int>(std::round(token.controlHeight * 0.625));
-            break;
-    }
-    m.margin = token.marginXS;
-    const int count = rate ? rate->count() : 5;
-    m.totalWidth = count * m.starSize + (count - 1) * m.margin;
-    return m;
-}
-
-QRectF starRectFor(const AntRate* rate, int index, const QRect& rect)
-{
-    const RateMetrics m = metricsFor(rate);
-    const qreal startX = rect.left() + (rect.width() - m.totalWidth) / 2.0;
-    const qreal x = startX + index * (m.starSize + m.margin);
-    const qreal y = rect.top() + (rect.height() - m.starSize) / 2.0;
-    return QRectF(x, y, m.starSize, m.starSize);
-}
-
-QPainterPath starPath(const QRectF& rect)
-{
-    QPainterPath path;
-    const qreal cx = rect.center().x();
-    const qreal cy = rect.center().y();
-    const qreal outerR = std::min(rect.width(), rect.height()) / 2.0;
-    const qreal innerR = outerR * 0.4;
-
-    for (int i = 0; i < 10; ++i)
-    {
-        const qreal r = (i % 2 == 0) ? outerR : innerR;
-        const qreal angle = M_PI / 2.0 - i * 2.0 * M_PI / 10.0;
-        const qreal x = cx + r * std::cos(angle);
-        const qreal y = cy - r * std::sin(angle);
-        if (i == 0)
-        {
-            path.moveTo(x, y);
-        }
-        else
-        {
-            path.lineTo(x, y);
-        }
-    }
-    path.closeSubpath();
-    return path;
-}
-
-void drawStar(QPainter* painter, const QRectF& rect, const QColor& color)
+void drawStar(QPainter* painter, const QPainterPath& path, const QColor& color)
 {
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setPen(Qt::NoPen);
     painter->setBrush(color);
-    painter->drawPath(starPath(rect));
+    painter->drawPath(path);
     painter->restore();
 }
 
@@ -102,7 +37,6 @@ int hoveredStarIndex(const AntRate* rate)
 AntRateStyle::AntRateStyle(QStyle* style)
     : AntStyleBase(style)
 {
-    connectThemeUpdate<AntRate>();
 }
 
 void AntRateStyle::polish(QWidget* widget)
@@ -167,8 +101,8 @@ void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const
     }
 
     const auto& token = antTheme->tokens();
-    const RateMetrics m = metricsFor(rate);
-    const int count = rate->count();
+    const auto& cache = rate->layoutCache();
+    const int count = cache.starRects.size();
     const double effectiveValue = rate->hoverValue() >= 0.0 ? rate->hoverValue() : rate->value();
     const bool enabled = rate->isEnabled() && !rate->isDisabled();
     const bool focused = option->state.testFlag(QStyle::State_HasFocus);
@@ -179,7 +113,8 @@ void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const
 
     for (int i = 0; i < count; ++i)
     {
-        QRectF rect = starRectFor(rate, i, option->rect);
+        const QRectF rect = cache.starRects.at(i);
+        const QPainterPath& path = cache.starPaths.at(i);
         const double starFill = std::clamp(effectiveValue - i, 0.0, 1.0);
 
         const bool isHoveredStar = (i == hoverIndex) && enabled;
@@ -201,7 +136,7 @@ void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const
         {
             bgColor = AntPalette::disabledColor(bgColor, token.colorBgContainer);
         }
-        drawStar(painter, rect, bgColor);
+        drawStar(painter, path, bgColor);
 
         // Draw foreground star (selected portion)
         if (starFill > 0.0)
@@ -218,7 +153,7 @@ void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const
                 QRectF clipRect(rect.left(), rect.top(), rect.width() * starFill, rect.height());
                 painter->setClipRect(clipRect);
             }
-            drawStar(painter, rect, fgColor);
+            drawStar(painter, path, fgColor);
             painter->restore();
         }
 
@@ -232,9 +167,9 @@ void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const
     if (focused && enabled)
     {
         const QColor focusColor = AntPalette::alpha(token.colorPrimary, 0.22);
-        const qreal startX = option->rect.left() + (option->rect.width() - m.totalWidth) / 2.0;
-        QRectF focusRect(startX, option->rect.top() + (option->rect.height() - m.starSize) / 2.0 - 2,
-                         m.totalWidth, m.starSize + 4);
+        const qreal startX = option->rect.left() + (option->rect.width() - cache.totalWidth) / 2.0;
+        QRectF focusRect(startX, option->rect.top() + (option->rect.height() - cache.starSize) / 2.0 - 2,
+                         cache.totalWidth, cache.starSize + 4);
         AntStyleBase::drawCrispRoundedRect(painter, focusRect.toRect(),
             QPen(focusColor, token.controlOutlineWidth, Qt::DashLine), Qt::NoBrush,
             token.borderRadiusXS, token.borderRadiusXS);
