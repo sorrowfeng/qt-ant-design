@@ -2,8 +2,12 @@
 
 #include "core/QtAntDesignExport.h"
 
-#include <QPropertyAnimation>
 #include <QMap>
+#include <QPropertyAnimation>
+#include <QRect>
+#include <QRectF>
+#include <QSize>
+#include <QVector>
 #include <QWidget>
 
 class QEnterEvent;
@@ -13,6 +17,7 @@ class QKeyEvent;
 class QMouseEvent;
 class QPainter;
 class QPaintEvent;
+class QResizeEvent;
 
 class QT_ANT_DESIGN_EXPORT AntSlider : public QWidget
 {
@@ -125,6 +130,7 @@ protected:
     void focusInEvent(QFocusEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     struct Metrics
@@ -137,11 +143,48 @@ private:
         int margin = 8;
     };
 
+    struct MarkLayout
+    {
+        int value = 0;
+        QString text;
+        QPointF center;
+        QRectF textRect;
+    };
+
+    struct LayoutCache
+    {
+        QSize widgetSize;
+        Metrics metrics;
+        int minimum = 0;
+        int maximum = 100;
+        int value = 0;
+        int rangeStart = 0;
+        int rangeEnd = 100;
+        int singleStep = 1;
+        Qt::Orientation orientation = Qt::Horizontal;
+        bool reverse = false;
+        bool rangeMode = false;
+        qreal handleScale = 1.0;
+        QMap<int, QString> marks;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+        QRectF grooveRect;
+        QRectF trackRect;
+        QRectF valueHandleRect;
+        QRectF rangeStartHandleRect;
+        QRectF rangeEndHandleRect;
+        QVector<QPointF> dotCenters;
+        QVector<MarkLayout> markLayouts;
+        bool valid = false;
+    };
+
     Metrics metrics() const;
+    const LayoutCache& layoutCache() const;
     QRectF grooveRect(const Metrics& metrics) const;
     QRectF trackRect(const Metrics& metrics) const;
     QRectF handleRect(const Metrics& metrics) const;
     QRectF handleRectForValue(const Metrics& metrics, int value) const;
+    QRectF cachedHandleRectForValue(const LayoutCache& cache, int value) const;
     qreal valueRatio() const;
     qreal ratioForValue(int value) const;
     int valueFromPosition(const QPointF& pos) const;
@@ -155,6 +198,12 @@ private:
     void updateValueBubble();
     void hideValueBubble();
     void updateCursor();
+    QRect sliderValueDirtyRect(int oldValue, int newValue, qreal oldScale = -1.0) const;
+    QRect sliderRangeDirtyRect(int oldStart, int oldEnd, int newStart, int newEnd) const;
+    QRect sliderFocusDirtyRect() const;
+    void updateSliderRegion(const QRect& dirty, const QString& mode);
+    void invalidateLayoutCache() const;
+    void syncSliderPerfCounters() const;
 
     int m_minimum = 0;
     int m_maximum = 100;
@@ -179,4 +228,11 @@ private:
     QPropertyAnimation* m_handleAnimation = nullptr;
     QPropertyAnimation* m_focusAnimation = nullptr;
     QWidget* m_valueBubble = nullptr;
+    mutable LayoutCache m_layoutCache;
+    mutable int m_layoutBuildCount = 0;
+    mutable int m_metricsResolveCount = 0;
+    mutable int m_sizeHintResolveCount = 0;
+    int m_regionUpdateCount = 0;
+    int m_handleRegionUpdateCount = 0;
+    int m_focusRegionUpdateCount = 0;
 };

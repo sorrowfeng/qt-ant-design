@@ -1,11 +1,13 @@
 #include "AntSlider.h"
 
 #include <QFocusEvent>
+#include <QFontMetrics>
 #include <QKeyEvent>
 #include <QLineF>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QResizeEvent>
 #include <QScreen>
 #include <QSizePolicy>
 
@@ -111,8 +113,13 @@ AntSlider::AntSlider(QWidget* parent)
     m_focusAnimation->setDuration(140);
     m_focusAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        updateGeometry();
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        const QSize oldHint = sizeHint();
+        invalidateLayoutCache();
+        if (oldHint != sizeHint())
+        {
+            updateGeometry();
+        }
         update();
     });
 
@@ -121,6 +128,7 @@ AntSlider::AntSlider(QWidget* parent)
     setStyle(sliderStyle);
 
     updateCursor();
+    syncSliderPerfCounters();
 }
 
 AntSlider::AntSlider(Qt::Orientation orientation, QWidget* parent)
@@ -159,6 +167,7 @@ void AntSlider::setRange(int minimum, int maximum)
 
     m_minimum = minimum;
     m_maximum = maximum;
+    invalidateLayoutCache();
     setValue(normalizeValue(m_value));
     setRangeValues(m_rangeStart, m_rangeEnd);
     update();
@@ -175,8 +184,9 @@ void AntSlider::setValue(int value)
         return;
     }
 
+    const int oldValue = m_value;
     m_value = normalized;
-    update();
+    updateSliderRegion(sliderValueDirtyRect(oldValue, m_value), QStringLiteral("value"));
     Q_EMIT valueChanged(m_value);
 }
 
@@ -198,6 +208,7 @@ void AntSlider::setSingleStep(int step)
     }
 
     m_singleStep = step;
+    invalidateLayoutCache();
     setValue(m_value);
     update();
     Q_EMIT singleStepChanged(m_singleStep);
@@ -229,6 +240,7 @@ void AntSlider::setOrientation(Qt::Orientation orientation)
     m_orientation = orientation;
     setSizePolicy(m_orientation == Qt::Horizontal ? QSizePolicy::Expanding : QSizePolicy::Fixed,
                   m_orientation == Qt::Horizontal ? QSizePolicy::Fixed : QSizePolicy::Expanding);
+    invalidateLayoutCache();
     updateGeometry();
     update();
     Q_EMIT orientationChanged(m_orientation);
@@ -244,6 +256,7 @@ void AntSlider::setReverse(bool reverse)
     }
 
     m_reverse = reverse;
+    invalidateLayoutCache();
     update();
     Q_EMIT reverseChanged(m_reverse);
 }
@@ -277,6 +290,7 @@ void AntSlider::setDots(bool dots)
     }
 
     m_dots = dots;
+    invalidateLayoutCache();
     update();
     Q_EMIT dotsChanged(m_dots);
 }
@@ -317,6 +331,7 @@ void AntSlider::setRangeMode(bool rangeMode)
         return;
     }
     m_rangeMode = rangeMode;
+    invalidateLayoutCache();
     setRangeValues(m_rangeStart, m_rangeEnd);
     update();
     Q_EMIT rangeModeChanged(m_rangeMode);
@@ -338,9 +353,11 @@ void AntSlider::setRangeValues(int start, int end)
     {
         return;
     }
+    const int oldStart = m_rangeStart;
+    const int oldEnd = m_rangeEnd;
     m_rangeStart = start;
     m_rangeEnd = end;
-    update();
+    updateSliderRegion(sliderRangeDirtyRect(oldStart, oldEnd, m_rangeStart, m_rangeEnd), QStringLiteral("range"));
     Q_EMIT rangeValuesChanged(m_rangeStart, m_rangeEnd);
 }
 
@@ -353,6 +370,7 @@ void AntSlider::setMarks(const QMap<int, QString>& marks)
         return;
     }
     m_marks = marks;
+    invalidateLayoutCache();
     updateGeometry();
     update();
     Q_EMIT marksChanged();
@@ -362,16 +380,29 @@ qreal AntSlider::handleScale() const { return m_handleScale; }
 
 void AntSlider::setHandleScale(qreal scale)
 {
+    const qreal oldScale = m_handleScale;
     m_handleScale = std::clamp(scale, 1.0, 1.2);
-    update();
+    if (qFuzzyCompare(oldScale, m_handleScale))
+    {
+        return;
+    }
+    ++m_handleRegionUpdateCount;
+    updateSliderRegion(sliderValueDirtyRect(activeDisplayValue(), activeDisplayValue(), oldScale),
+                       QStringLiteral("handle"));
 }
 
 qreal AntSlider::focusProgress() const { return m_focusProgress; }
 
 void AntSlider::setFocusProgress(qreal progress)
 {
+    const qreal oldProgress = m_focusProgress;
     m_focusProgress = std::clamp(progress, 0.0, 1.0);
-    update();
+    if (qFuzzyCompare(oldProgress, m_focusProgress))
+    {
+        return;
+    }
+    ++m_focusRegionUpdateCount;
+    updateSliderRegion(sliderFocusDirtyRect(), QStringLiteral("focus"));
 }
 
 bool AntSlider::isHoveredState() const { return m_hovered; }
@@ -380,26 +411,12 @@ bool AntSlider::isPressedState() const { return m_pressed; }
 
 QSize AntSlider::sizeHint() const
 {
-    const Metrics m = metrics();
-    if (m_orientation == Qt::Vertical)
-    {
-        return QSize(m.controlSize * 3, 180);
-    }
-    return QSize(180, m_marks.isEmpty() ? m.controlSize * 3 : 46);
+    return layoutCache().sizeHint;
 }
 
 QSize AntSlider::minimumSizeHint() const
 {
-    const Metrics m = metrics();
-    if (m_orientation == Qt::Vertical)
-    {
-        return QSize(m.controlSize * 3, 96);
-    }
-    if (!m_marks.isEmpty())
-    {
-        return QSize(96, sizeHint().height());
-    }
-    return QSize(96, m.controlSize * 3);
+    return layoutCache().minimumSizeHint;
 }
 
 void AntSlider::enterEvent(QEnterEvent* event)
@@ -560,11 +577,28 @@ void AntSlider::changeEvent(QEvent* event)
         }
         update();
     }
+    else if (event->type() == QEvent::FontChange)
+    {
+        invalidateLayoutCache();
+        updateGeometry();
+        update();
+    }
     QWidget::changeEvent(event);
+}
+
+void AntSlider::resizeEvent(QResizeEvent* event)
+{
+    invalidateLayoutCache();
+    QWidget::resizeEvent(event);
 }
 
 AntSlider::Metrics AntSlider::metrics() const
 {
+    if (m_layoutCache.valid)
+    {
+        return m_layoutCache.metrics;
+    }
+
     const auto& token = antTheme->tokens();
     Metrics m;
     m.controlSize = token.controlHeightLG / 4;
@@ -573,7 +607,123 @@ AntSlider::Metrics AntSlider::metrics() const
     m.handleSizeHover = token.controlHeightSM / 2;
     m.dotSize = 8;
     m.margin = token.marginXS;
+    ++m_metricsResolveCount;
+    syncSliderPerfCounters();
     return m;
+}
+
+const AntSlider::LayoutCache& AntSlider::layoutCache() const
+{
+    const Metrics currentMetrics = metrics();
+    const auto sameMetrics = [](const Metrics& lhs, const Metrics& rhs) {
+        return lhs.controlSize == rhs.controlSize
+            && lhs.railSize == rhs.railSize
+            && lhs.handleSize == rhs.handleSize
+            && lhs.handleSizeHover == rhs.handleSizeHover
+            && lhs.dotSize == rhs.dotSize
+            && lhs.margin == rhs.margin;
+    };
+
+    if (m_layoutCache.valid
+        && m_layoutCache.widgetSize == size()
+        && sameMetrics(m_layoutCache.metrics, currentMetrics)
+        && m_layoutCache.minimum == m_minimum
+        && m_layoutCache.maximum == m_maximum
+        && m_layoutCache.value == m_value
+        && m_layoutCache.rangeStart == m_rangeStart
+        && m_layoutCache.rangeEnd == m_rangeEnd
+        && m_layoutCache.singleStep == m_singleStep
+        && m_layoutCache.orientation == m_orientation
+        && m_layoutCache.reverse == m_reverse
+        && m_layoutCache.rangeMode == m_rangeMode
+        && qFuzzyCompare(m_layoutCache.handleScale, m_handleScale)
+        && m_layoutCache.marks == m_marks)
+    {
+        return m_layoutCache;
+    }
+
+    m_layoutCache.widgetSize = size();
+    m_layoutCache.metrics = currentMetrics;
+    m_layoutCache.minimum = m_minimum;
+    m_layoutCache.maximum = m_maximum;
+    m_layoutCache.value = m_value;
+    m_layoutCache.rangeStart = m_rangeStart;
+    m_layoutCache.rangeEnd = m_rangeEnd;
+    m_layoutCache.singleStep = m_singleStep;
+    m_layoutCache.orientation = m_orientation;
+    m_layoutCache.reverse = m_reverse;
+    m_layoutCache.rangeMode = m_rangeMode;
+    m_layoutCache.handleScale = m_handleScale;
+    m_layoutCache.marks = m_marks;
+    if (m_orientation == Qt::Vertical)
+    {
+        m_layoutCache.sizeHint = QSize(currentMetrics.controlSize * 3, 180);
+        m_layoutCache.minimumSizeHint = QSize(currentMetrics.controlSize * 3, 96);
+    }
+    else
+    {
+        const int heightHint = m_marks.isEmpty() ? currentMetrics.controlSize * 3 : 46;
+        m_layoutCache.sizeHint = QSize(180, heightHint);
+        m_layoutCache.minimumSizeHint = QSize(96, heightHint);
+    }
+
+    m_layoutCache.grooveRect = grooveRect(currentMetrics);
+    m_layoutCache.trackRect = trackRect(currentMetrics);
+    m_layoutCache.valueHandleRect = handleRectForValue(currentMetrics, m_value);
+    m_layoutCache.rangeStartHandleRect = handleRectForValue(currentMetrics, m_rangeStart);
+    m_layoutCache.rangeEndHandleRect = handleRectForValue(currentMetrics, m_rangeEnd);
+    m_layoutCache.dotCenters.clear();
+    m_layoutCache.markLayouts.clear();
+
+    const int dotCount = std::max(1, (m_maximum - m_minimum) / std::max(1, m_singleStep));
+    if (dotCount <= 80)
+    {
+        m_layoutCache.dotCenters.reserve(dotCount + 1);
+        for (int index = 0; index <= dotCount; ++index)
+        {
+            const qreal stepRatio = index / static_cast<qreal>(dotCount);
+            if (m_orientation == Qt::Vertical)
+            {
+                m_layoutCache.dotCenters.append(QPointF(m_layoutCache.grooveRect.center().x(),
+                                                        m_layoutCache.grooveRect.bottom() - m_layoutCache.grooveRect.height() * stepRatio));
+            }
+            else
+            {
+                m_layoutCache.dotCenters.append(QPointF(m_layoutCache.grooveRect.left() + m_layoutCache.grooveRect.width() * stepRatio,
+                                                        m_layoutCache.grooveRect.center().y()));
+            }
+        }
+    }
+
+    if (!m_marks.isEmpty() && m_orientation == Qt::Horizontal)
+    {
+        QFont markFont = font();
+        markFont.setPixelSize(antTheme->tokens().fontSizeSM);
+        const QFontMetrics fm(markFont);
+        m_layoutCache.markLayouts.reserve(m_marks.size());
+        for (auto it = m_marks.constBegin(); it != m_marks.constEnd(); ++it)
+        {
+            const qreal ratio = ratioForValue(it.key());
+            const QPointF center(m_layoutCache.grooveRect.left() + m_layoutCache.grooveRect.width() * ratio,
+                                 m_layoutCache.grooveRect.center().y());
+            const int textWidth = fm.horizontalAdvance(it.value());
+            MarkLayout mark;
+            mark.value = it.key();
+            mark.text = it.value();
+            mark.center = center;
+            mark.textRect = QRectF(center.x() - textWidth / 2.0,
+                                   m_layoutCache.grooveRect.bottom() + 12,
+                                   textWidth,
+                                   fm.height());
+            m_layoutCache.markLayouts.append(mark);
+        }
+    }
+
+    m_layoutCache.valid = true;
+    ++m_layoutBuildCount;
+    ++m_sizeHintResolveCount;
+    syncSliderPerfCounters();
+    return m_layoutCache;
 }
 
 QRectF AntSlider::grooveRect(const Metrics& metrics) const
@@ -651,6 +801,26 @@ QRectF AntSlider::handleRectForValue(const Metrics& metrics, int value) const
     }
 
     return QRectF(center.x() - size / 2.0, center.y() - size / 2.0, size, size);
+}
+
+QRectF AntSlider::cachedHandleRectForValue(const LayoutCache& cache, int value) const
+{
+    if (m_rangeMode)
+    {
+        if (value == m_rangeStart)
+        {
+            return cache.rangeStartHandleRect;
+        }
+        if (value == m_rangeEnd)
+        {
+            return cache.rangeEndHandleRect;
+        }
+    }
+    if (value == m_value)
+    {
+        return cache.valueHandleRect;
+    }
+    return handleRectForValue(cache.metrics, value);
 }
 
 qreal AntSlider::valueRatio() const
@@ -835,4 +1005,99 @@ void AntSlider::hideValueBubble()
 void AntSlider::updateCursor()
 {
     setCursor(isEnabled() ? Qt::PointingHandCursor : Qt::ArrowCursor);
+}
+
+QRect AntSlider::sliderValueDirtyRect(int oldValue, int newValue, qreal oldScale) const
+{
+    const LayoutCache& cache = layoutCache();
+    QRectF dirty = cache.grooveRect.adjusted(-cache.metrics.dotSize, -cache.metrics.dotSize,
+                                             cache.metrics.dotSize, cache.metrics.dotSize);
+    dirty = dirty.united(cachedHandleRectForValue(cache, oldValue));
+    dirty = dirty.united(cachedHandleRectForValue(cache, newValue));
+    dirty = dirty.united(cache.trackRect);
+    if (oldScale > 0.0)
+    {
+        const qreal currentScale = m_handleScale;
+        auto* self = const_cast<AntSlider*>(this);
+        self->m_handleScale = std::clamp(oldScale, 1.0, 1.2);
+        const QRectF oldScaleRect = handleRectForValue(cache.metrics, oldValue);
+        self->m_handleScale = currentScale;
+        dirty = dirty.united(oldScaleRect);
+    }
+    for (const MarkLayout& mark : cache.markLayouts)
+    {
+        const bool between = (mark.value >= std::min(oldValue, newValue) && mark.value <= std::max(oldValue, newValue));
+        if (between)
+        {
+            dirty = dirty.united(QRectF(mark.center.x() - cache.metrics.dotSize,
+                                        mark.center.y() - cache.metrics.dotSize,
+                                        cache.metrics.dotSize * 2,
+                                        cache.metrics.dotSize * 2));
+        }
+    }
+    return dirty.toAlignedRect().adjusted(-8, -8, 8, 8).intersected(rect());
+}
+
+QRect AntSlider::sliderRangeDirtyRect(int oldStart, int oldEnd, int newStart, int newEnd) const
+{
+    const LayoutCache& cache = layoutCache();
+    QRectF dirty = cache.grooveRect.adjusted(-cache.metrics.dotSize, -cache.metrics.dotSize,
+                                             cache.metrics.dotSize, cache.metrics.dotSize);
+    dirty = dirty.united(cachedHandleRectForValue(cache, oldStart));
+    dirty = dirty.united(cachedHandleRectForValue(cache, oldEnd));
+    dirty = dirty.united(cachedHandleRectForValue(cache, newStart));
+    dirty = dirty.united(cachedHandleRectForValue(cache, newEnd));
+    dirty = dirty.united(cache.trackRect);
+    const int low = std::min(std::min(oldStart, oldEnd), std::min(newStart, newEnd));
+    const int high = std::max(std::max(oldStart, oldEnd), std::max(newStart, newEnd));
+    for (const MarkLayout& mark : cache.markLayouts)
+    {
+        if (mark.value >= low && mark.value <= high)
+        {
+            dirty = dirty.united(QRectF(mark.center.x() - cache.metrics.dotSize,
+                                        mark.center.y() - cache.metrics.dotSize,
+                                        cache.metrics.dotSize * 2,
+                                        cache.metrics.dotSize * 2));
+        }
+    }
+    return dirty.toAlignedRect().adjusted(-8, -8, 8, 8).intersected(rect());
+}
+
+QRect AntSlider::sliderFocusDirtyRect() const
+{
+    const LayoutCache& cache = layoutCache();
+    return cachedHandleRectForValue(cache, activeDisplayValue())
+        .adjusted(-12, -12, 12, 12)
+        .toAlignedRect()
+        .intersected(rect());
+}
+
+void AntSlider::updateSliderRegion(const QRect& dirty, const QString& mode)
+{
+    QRect updateRect = dirty;
+    if (!updateRect.isValid() || updateRect.isEmpty())
+    {
+        updateRect = rect();
+    }
+    ++m_regionUpdateCount;
+    setProperty("antSliderLastUpdateMode", mode);
+    syncSliderPerfCounters();
+    update(updateRect);
+}
+
+void AntSlider::invalidateLayoutCache() const
+{
+    m_layoutCache.valid = false;
+    syncSliderPerfCounters();
+}
+
+void AntSlider::syncSliderPerfCounters() const
+{
+    auto* self = const_cast<AntSlider*>(this);
+    self->setProperty("antSliderLayoutBuildCount", m_layoutBuildCount);
+    self->setProperty("antSliderMetricsResolveCount", m_metricsResolveCount);
+    self->setProperty("antSliderSizeHintResolveCount", m_sizeHintResolveCount);
+    self->setProperty("antSliderRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antSliderHandleRegionUpdateCount", m_handleRegionUpdateCount);
+    self->setProperty("antSliderFocusRegionUpdateCount", m_focusRegionUpdateCount);
 }

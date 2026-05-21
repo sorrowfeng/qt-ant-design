@@ -29,6 +29,7 @@ private slots:
     void radioCachesLayoutAndScopesStateUpdates();
     void rateCachesStarLayoutAndScopesUpdates();
     void segmentedCachesLayoutAndScopesUpdates();
+    void sliderCachesGeometryAndScopesUpdates();
     void sliderMarksReserveLabelHeight();
     void sliderBubbleFloatsAboveMarkedHandle();
     void sliderBubbleArrowJoinsSurface();
@@ -618,6 +619,51 @@ void TestAntDataEntryA::segmentedCachesLayoutAndScopesUpdates()
     segmented.setBlock(true);
     segmented.sizeHint();
     QVERIFY(segmented.property("antSegmentedLayoutBuildCount").toInt() > layoutBuildsBeforeBlockHint);
+}
+
+void TestAntDataEntryA::sliderCachesGeometryAndScopesUpdates()
+{
+    AntSlider slider;
+    slider.setSingleStep(10);
+    slider.setMarks({{0, QStringLiteral("A")}, {50, QStringLiteral("B")}, {100, QStringLiteral("C")}});
+    slider.resize(260, slider.sizeHint().height());
+    slider.sizeHint();
+
+    const int sizeHintResolvesBefore = slider.property("antSliderSizeHintResolveCount").toInt();
+    const int layoutBuildsBefore = slider.property("antSliderLayoutBuildCount").toInt();
+    const int metricsResolvesBefore = slider.property("antSliderMetricsResolveCount").toInt();
+    slider.sizeHint();
+    slider.minimumSizeHint();
+    slider.sizeHint();
+    QCOMPARE(slider.property("antSliderSizeHintResolveCount").toInt(), sizeHintResolvesBefore);
+    QCOMPARE(slider.property("antSliderLayoutBuildCount").toInt(), layoutBuildsBefore);
+    QCOMPARE(slider.property("antSliderMetricsResolveCount").toInt(), metricsResolvesBefore);
+
+    const int regionUpdatesBeforeValue = slider.property("antSliderRegionUpdateCount").toInt();
+    slider.setValue(50);
+    QVERIFY(slider.property("antSliderRegionUpdateCount").toInt() > regionUpdatesBeforeValue);
+    QCOMPARE(slider.property("antSliderLastUpdateMode").toString(), QStringLiteral("value"));
+
+    const int regionUpdatesAfterSameValue = slider.property("antSliderRegionUpdateCount").toInt();
+    slider.setValue(50);
+    QCOMPARE(slider.property("antSliderRegionUpdateCount").toInt(), regionUpdatesAfterSameValue);
+
+    const int handleUpdatesBefore = slider.property("antSliderHandleRegionUpdateCount").toInt();
+    slider.setHandleScale(1.15);
+    QVERIFY(slider.property("antSliderHandleRegionUpdateCount").toInt() > handleUpdatesBefore);
+    QCOMPARE(slider.property("antSliderLastUpdateMode").toString(), QStringLiteral("handle"));
+
+    const int focusUpdatesBefore = slider.property("antSliderFocusRegionUpdateCount").toInt();
+    slider.setFocusProgress(0.7);
+    QVERIFY(slider.property("antSliderFocusRegionUpdateCount").toInt() > focusUpdatesBefore);
+    QCOMPARE(slider.property("antSliderLastUpdateMode").toString(), QStringLiteral("focus"));
+
+    slider.setRangeMode(true);
+    slider.setRangeValues(20, 80);
+    const int regionUpdatesBeforeRange = slider.property("antSliderRegionUpdateCount").toInt();
+    slider.setRangeValues(30, 70);
+    QVERIFY(slider.property("antSliderRegionUpdateCount").toInt() > regionUpdatesBeforeRange);
+    QCOMPARE(slider.property("antSliderLastUpdateMode").toString(), QStringLiteral("range"));
 }
 
 void TestAntDataEntryA::sliderMarksReserveLabelHeight()
