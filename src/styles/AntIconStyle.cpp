@@ -646,9 +646,7 @@ bool drawResourceIcon(const QString& iconName,
     QPixmap cachedPixmap;
     if (QPixmapCache::find(cacheKey, &cachedPixmap))
     {
-        const QSizeF sourceSize(cachedPixmap.width() / cachedPixmap.devicePixelRatioF(),
-                                cachedPixmap.height() / cachedPixmap.devicePixelRatioF());
-        painter->drawPixmap(iconRect, cachedPixmap, QRectF(QPointF(0, 0), sourceSize));
+        painter->drawPixmap(iconRect, cachedPixmap, QRectF(cachedPixmap.rect()));
         setIconRenderCacheDiagnostics(widget, true, QStringLiteral("resource"), cacheKey);
         return true;
     }
@@ -680,9 +678,7 @@ bool drawResourceIcon(const QString& iconName,
     }
     QPixmapCache::insert(cacheKey, pixmap);
 
-    const QSizeF sourceSize(pixmap.width() / pixmap.devicePixelRatioF(),
-                            pixmap.height() / pixmap.devicePixelRatioF());
-    painter->drawPixmap(iconRect, pixmap, QRectF(QPointF(0, 0), sourceSize));
+    painter->drawPixmap(iconRect, pixmap, QRectF(pixmap.rect()));
     setIconRenderCacheDiagnostics(widget, false, QStringLiteral("resource"), cacheKey);
     return true;
 }

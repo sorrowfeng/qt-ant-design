@@ -1,9 +1,14 @@
 #include <QImage>
+#include <QFile>
 #include <QPainter>
 #include <QPixmapCache>
 #include <QSignalSpy>
+#include <QSvgRenderer>
 #include <QTest>
 #include <QList>
+#include <QtMath>
+
+#include <limits>
 
 #include "widgets/AntIcon.h"
 
@@ -12,6 +17,7 @@ class TestAntIcon : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void resourceIconHighDpiCacheUsesFullPixmapSource();
 };
 
 void TestAntIcon::propertiesAndSignals()
@@ -164,6 +170,97 @@ void TestAntIcon::propertiesAndSignals()
     {
         QVERIFY(!AntIcon::builtinPaths(iconType, Ant::IconTheme::Outlined).primary.isEmpty());
     }
+}
+
+void TestAntIcon::resourceIconHighDpiCacheUsesFullPixmapSource()
+{
+    auto renderIconAtDpr = [](AntIcon& icon, qreal dpr) {
+        const QSize logicalSize = icon.size();
+        QImage image(QSize(qRound(logicalSize.width() * dpr), qRound(logicalSize.height() * dpr)),
+                     QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(dpr);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        icon.render(&painter, QPoint(), QRegion(), QWidget::RenderFlags());
+        painter.end();
+        return image;
+    };
+
+    auto renderSvgReferenceAtDpr = [](const QString& iconName, const QSize& logicalSize, qreal dpr, const QColor& color) {
+        QFile file(QStringLiteral(":/qt-ant-design/icons/antd/%1.svg").arg(iconName));
+        if (!file.open(QIODevice::ReadOnly))
+        {
+            return QImage();
+        }
+        QString svg = QString::fromUtf8(file.readAll());
+        svg.replace(QStringLiteral("__PRIMARY__"), color.name(QColor::HexRgb));
+        svg.replace(QStringLiteral("__SECONDARY__"), color.name(QColor::HexRgb));
+
+        QSvgRenderer renderer(svg.toUtf8());
+        if (!renderer.isValid())
+        {
+            return QImage();
+        }
+
+        QImage image(QSize(qRound(logicalSize.width() * dpr), qRound(logicalSize.height() * dpr)),
+                     QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(dpr);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        renderer.render(&painter, QRectF(1.0, 1.0, logicalSize.width() - 2.0, logicalSize.height() - 2.0));
+        painter.end();
+        return image;
+    };
+
+    auto meanPixelDifference = [](const QImage& actual, const QImage& expected) {
+        if (actual.size() != expected.size() || actual.isNull() || expected.isNull())
+        {
+            return std::numeric_limits<qreal>::max();
+        }
+        quint64 total = 0;
+        for (int y = 0; y < actual.height(); ++y)
+        {
+            for (int x = 0; x < actual.width(); ++x)
+            {
+                const QColor a = actual.pixelColor(x, y);
+                const QColor e = expected.pixelColor(x, y);
+                total += qAbs(a.red() - e.red());
+                total += qAbs(a.green() - e.green());
+                total += qAbs(a.blue() - e.blue());
+                total += qAbs(a.alpha() - e.alpha());
+            }
+        }
+        return static_cast<qreal>(total) / static_cast<qreal>(actual.width() * actual.height() * 4);
+    };
+
+    constexpr qreal highDpr = 2.0;
+    const QColor iconColor(QStringLiteral("#123456"));
+    QPixmapCache::clear();
+
+    AntIcon icon(QStringLiteral("GithubFilled"));
+    icon.setIconSize(24);
+    icon.setColor(iconColor);
+    icon.resize(24, 24);
+
+    const QImage reference = renderSvgReferenceAtDpr(QStringLiteral("GithubFilled"), icon.size(), highDpr, iconColor);
+    QVERIFY(!reference.isNull());
+    const QImage firstRender = renderIconAtDpr(icon, highDpr);
+    QCOMPARE(icon.property("antIconRenderCacheSource").toString(), QStringLiteral("resource"));
+    QCOMPARE(icon.property("antIconRenderCacheHit").toBool(), false);
+    const qreal firstDiff = meanPixelDifference(firstRender, reference);
+    QVERIFY2(firstDiff < 4.0,
+             qPrintable(QStringLiteral("High-DPI icon cache miss must render the full source pixmap, not a cropped top-left quadrant. diff=%1")
+                        .arg(firstDiff)));
+
+    const QString cacheKey = icon.property("antIconRenderCacheKey").toString();
+    QVERIFY(!cacheKey.isEmpty());
+    const QImage cachedRender = renderIconAtDpr(icon, highDpr);
+    QCOMPARE(icon.property("antIconRenderCacheHit").toBool(), true);
+    QCOMPARE(icon.property("antIconRenderCacheKey").toString(), cacheKey);
+    const qreal cachedDiff = meanPixelDifference(cachedRender, reference);
+    QVERIFY2(cachedDiff < 4.0,
+             qPrintable(QStringLiteral("High-DPI icon cache hit must render the full source pixmap, not a cropped top-left quadrant. diff=%1")
+                        .arg(cachedDiff)));
 }
 
 QTEST_MAIN(TestAntIcon)
