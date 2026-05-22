@@ -2,9 +2,12 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QRect>
+#include <QSize>
 #include <QWidget>
 #include <QVariantAnimation>
 
+class QEvent;
 class QVBoxLayout;
 
 class QT_ANT_DESIGN_EXPORT AntCollapsePanel : public QWidget
@@ -31,6 +34,7 @@ Q_SIGNALS:
     void titleChanged(const QString& title);
     void expandedChanged(bool expanded);
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
     void enterEvent(QEnterEvent*) override;
@@ -39,6 +43,12 @@ protected:
 private:
     void updateAnimation();
     void applyExpanded(bool expanded, bool animate = true);
+    void invalidateSizeHintCache() const;
+    QRect headerRect() const;
+    QRect contentPaintRect(int contentHeight) const;
+    void refreshStaticContentHeight(const QString& mode);
+    void requestPanelUpdate(const QRect& region, const QString& mode, bool contentScoped = false);
+    void syncPanelPerfCounters() const;
 
     QString m_title;
     bool m_expanded = false;
@@ -47,6 +57,14 @@ private:
     QVBoxLayout* m_layout = nullptr;
     QVariantAnimation* m_animation = nullptr;
     int m_contentHeight = 0;
+    mutable bool m_sizeHintDirty = true;
+    mutable QSize m_cachedSizeHint;
+    mutable int m_sizeHintBuildCount = 0;
+    mutable int m_sizeHintHitCount = 0;
+    int m_layoutUpdateCount = 0;
+    int m_panelRegionUpdateCount = 0;
+    int m_contentRegionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };
 
 class QT_ANT_DESIGN_EXPORT AntCollapse : public QWidget
@@ -76,10 +94,18 @@ protected:
     void paintEvent(QPaintEvent*) override;
 
 private:
+    friend class AntCollapsePanel;
+
     void onPanelExpanded(AntCollapsePanel* panel, bool expanded);
+    void invalidateSizeHintCache() const;
+    void syncCollapsePerfCounters() const;
 
     bool m_accordion = false;
     bool m_bordered = true;
     QVBoxLayout* m_layout = nullptr;
     QList<AntCollapsePanel*> m_panels;
+    mutable bool m_sizeHintDirty = true;
+    mutable QSize m_cachedSizeHint;
+    mutable int m_sizeHintBuildCount = 0;
+    mutable int m_sizeHintHitCount = 0;
 };

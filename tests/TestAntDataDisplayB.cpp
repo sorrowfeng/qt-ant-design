@@ -4,6 +4,7 @@
 #include <QColor>
 #include <QCoreApplication>
 #include <QImage>
+#include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QVBoxLayout>
@@ -32,6 +33,7 @@ private slots:
     void tableHoverUsesRowScopedUpdates();
     void tableSelectionCompatibilityApis();
     void carouselPausesAutoplayAndScopesTransitionWork();
+    void collapseCachesSizeHintsAndScopesAnimationUpdates();
     void qrCodeReusesRenderedModuleCache();
     void watermarkCachesRenderedPixmap();
     void timelineCachesPaintLayoutAndColors();
@@ -502,6 +504,56 @@ void TestAntDataDisplayB::carouselPausesAutoplayAndScopesTransitionWork()
 
     QTRY_VERIFY_WITH_TIMEOUT(first->isHidden(), 1000);
     QCOMPARE(second->geometry(), carousel.rect());
+}
+
+void TestAntDataDisplayB::collapseCachesSizeHintsAndScopesAnimationUpdates()
+{
+    AntCollapse collapse;
+    collapse.resize(320, 180);
+    auto* panel = collapse.addPanel(QStringLiteral("Details"));
+    auto* content = new QLabel(QStringLiteral("Cached animated content"));
+    content->setMinimumHeight(64);
+    panel->setContentWidget(content);
+
+    const QSize firstPanelHint = panel->sizeHint();
+    const int panelBuilds = panel->property("antCollapsePanelSizeHintBuildCount").toInt();
+    const int panelHits = panel->property("antCollapsePanelSizeHintHitCount").toInt();
+    QVERIFY(firstPanelHint.height() >= 46);
+    QVERIFY(panelBuilds > 0);
+    QCOMPARE(panel->sizeHint(), firstPanelHint);
+    QCOMPARE(panel->property("antCollapsePanelSizeHintBuildCount").toInt(), panelBuilds);
+    QVERIFY(panel->property("antCollapsePanelSizeHintHitCount").toInt() > panelHits);
+
+    const QSize firstCollapseHint = collapse.sizeHint();
+    const int collapseBuilds = collapse.property("antCollapseSizeHintBuildCount").toInt();
+    const int collapseHits = collapse.property("antCollapseSizeHintHitCount").toInt();
+    QCOMPARE(collapse.sizeHint(), firstCollapseHint);
+    QCOMPARE(collapse.property("antCollapseSizeHintBuildCount").toInt(), collapseBuilds);
+    QVERIFY(collapse.property("antCollapseSizeHintHitCount").toInt() > collapseHits);
+
+    collapse.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&collapse));
+    const int contentUpdates = panel->property("antCollapsePanelContentRegionUpdateCount").toInt();
+    const int layoutUpdates = panel->property("antCollapsePanelLayoutUpdateCount").toInt();
+    const int buildsBeforeExpand = panel->property("antCollapsePanelSizeHintBuildCount").toInt();
+    panel->setExpanded(true);
+    QCOMPARE(panel->isExpanded(), true);
+    QTRY_VERIFY(panel->property("antCollapsePanelContentRegionUpdateCount").toInt() > contentUpdates);
+    QVERIFY(panel->property("antCollapsePanelLayoutUpdateCount").toInt() > layoutUpdates);
+    QTRY_VERIFY_WITH_TIMEOUT(panel->sizeHint().height() > firstPanelHint.height(), 1000);
+    QVERIFY(panel->property("antCollapsePanelSizeHintBuildCount").toInt() > buildsBeforeExpand);
+
+    const int updatesAfterExpand = panel->property("antCollapsePanelContentRegionUpdateCount").toInt();
+    QTRY_VERIFY_WITH_TIMEOUT(panel->contentWidget()->isVisible(), 1000);
+    QTRY_COMPARE_WITH_TIMEOUT(panel->property("antCollapsePanelLastUpdateMode").toString(), QStringLiteral("animation"), 1000);
+    panel->setExpanded(false);
+    QTRY_VERIFY(panel->property("antCollapsePanelContentRegionUpdateCount").toInt() > updatesAfterExpand);
+
+    const int headerUpdates = panel->property("antCollapsePanelRegionUpdateCount").toInt();
+    QEnterEvent enterEvent(QPointF(12, 12), QPointF(12, 12), QPointF(panel->mapToGlobal(QPoint(12, 12))));
+    QCoreApplication::sendEvent(panel, &enterEvent);
+    QCOMPARE(panel->property("antCollapsePanelLastUpdateMode").toString(), QStringLiteral("hover"));
+    QVERIFY(panel->property("antCollapsePanelRegionUpdateCount").toInt() > headerUpdates);
 }
 
 void TestAntDataDisplayB::listWidgetCompatibilityApis()

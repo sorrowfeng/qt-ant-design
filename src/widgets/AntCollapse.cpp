@@ -1,7 +1,9 @@
 #include "AntCollapse.h"
 
+#include <QEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPaintEvent>
 #include <QVBoxLayout>
 
 #include "core/AntTheme.h"
@@ -31,14 +33,23 @@ AntCollapsePanel::AntCollapsePanel(const QString& title, QWidget* parent)
     m_animation->setDuration(220);
     m_animation->setEasingCurve(QEasingCurve::InOutCubic);
     connect(m_animation, &QVariantAnimation::valueChanged, this, [this](const QVariant& v) {
-        m_contentHeight = v.toInt();
+        const int nextHeight = v.toInt();
+        if (m_contentHeight == nextHeight)
+            return;
+        const QRect dirty = contentPaintRect(m_contentHeight).united(contentPaintRect(nextHeight));
+        m_contentHeight = nextHeight;
+        invalidateSizeHintCache();
+        ++m_layoutUpdateCount;
         updateGeometry();
-        update();
+        requestPanelUpdate(dirty, QStringLiteral("animation"), true);
     });
 
     setExpanded(false);
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        requestPanelUpdate(rect(), QStringLiteral("theme"));
+    });
+    syncPanelPerfCounters();
 }
 
 QString AntCollapsePanel::title() const { return m_title; }
@@ -46,7 +57,7 @@ void AntCollapsePanel::setTitle(const QString& title)
 {
     if (m_title == title) return;
     m_title = title;
-    update();
+    requestPanelUpdate(headerRect(), QStringLiteral("title"));
     Q_EMIT titleChanged(m_title);
 }
 
@@ -63,39 +74,58 @@ void AntCollapsePanel::setContentWidget(QWidget* widget)
 {
     if (m_content)
     {
+        m_content->removeEventFilter(this);
         m_layout->removeWidget(m_content);
         m_content->deleteLater();
     }
     m_content = widget;
     if (m_content)
     {
+        m_content->installEventFilter(this);
         m_content->setVisible(m_expanded);
         m_layout->addWidget(m_content);
         m_content->adjustSize();
         applyExpanded(m_expanded, false);
     }
+    invalidateSizeHintCache();
+    ++m_layoutUpdateCount;
     updateGeometry();
+    requestPanelUpdate(rect(), QStringLiteral("content"));
 }
 
 QSize AntCollapsePanel::sizeHint() const
 {
+    if (!m_sizeHintDirty)
+    {
+        ++m_sizeHintHitCount;
+        syncPanelPerfCounters();
+        return m_cachedSizeHint;
+    }
+
     int contentH = (m_content && m_expanded && m_animation->state() != QAbstractAnimation::Running)
                        ? m_content->sizeHint().height()
                        : m_contentHeight;
     if (contentH > 0)
         contentH += kCollapseContentPadding * 2;
-    return QSize(300, kCollapseHeaderHeight + contentH);
+    m_cachedSizeHint = QSize(300, kCollapseHeaderHeight + contentH);
+    m_sizeHintDirty = false;
+    ++m_sizeHintBuildCount;
+    syncPanelPerfCounters();
+    return m_cachedSizeHint;
 }
 
 void AntCollapsePanel::applyExpanded(bool expanded, bool animate)
 {
     if (m_expanded == expanded && m_animation->state() == QAbstractAnimation::Stopped)
         return;
+    const QRect oldContentRect = contentPaintRect(m_contentHeight);
     m_expanded = expanded;
-    m_layout->setContentsMargins(16,
-        kCollapseHeaderHeight + (expanded ? kCollapseContentPadding : 0),
-        16,
-        expanded ? kCollapseContentPadding : 0);
+    const QMargins targetMargins(16,
+                                 kCollapseHeaderHeight + (expanded ? kCollapseContentPadding : 0),
+                                 16,
+                                 expanded ? kCollapseContentPadding : 0);
+    if (m_layout->contentsMargins() != targetMargins)
+        m_layout->setContentsMargins(targetMargins);
 
     int targetH = 0;
     if (expanded && m_content)
@@ -116,9 +146,32 @@ void AntCollapsePanel::applyExpanded(bool expanded, bool animate)
     if (m_content)
         m_content->setVisible(expanded);
 
+    invalidateSizeHintCache();
+    ++m_layoutUpdateCount;
     updateGeometry();
-    update();
+    requestPanelUpdate(headerRect().united(oldContentRect).united(contentPaintRect(m_contentHeight)),
+                       expanded ? QStringLiteral("expand") : QStringLiteral("collapse"),
+                       true);
     Q_EMIT expandedChanged(m_expanded);
+}
+
+bool AntCollapsePanel::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_content)
+    {
+        switch (event->type())
+        {
+        case QEvent::LayoutRequest:
+        case QEvent::Resize:
+        case QEvent::FontChange:
+        case QEvent::StyleChange:
+            refreshStaticContentHeight(QStringLiteral("content"));
+            break;
+        default:
+            break;
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void AntCollapsePanel::paintEvent(QPaintEvent*)
@@ -169,14 +222,89 @@ void AntCollapsePanel::mousePressEvent(QMouseEvent* e)
 
 void AntCollapsePanel::enterEvent(QEnterEvent*)
 {
-    m_hovered = true;
-    update();
+    if (!m_hovered)
+    {
+        m_hovered = true;
+        requestPanelUpdate(headerRect(), QStringLiteral("hover"));
+    }
 }
 
 void AntCollapsePanel::leaveEvent(QEvent*)
 {
-    m_hovered = false;
-    update();
+    if (m_hovered)
+    {
+        m_hovered = false;
+        requestPanelUpdate(headerRect(), QStringLiteral("hover"));
+    }
+}
+
+void AntCollapsePanel::invalidateSizeHintCache() const
+{
+    m_sizeHintDirty = true;
+    if (auto* collapse = qobject_cast<AntCollapse*>(parentWidget()))
+        collapse->invalidateSizeHintCache();
+}
+
+QRect AntCollapsePanel::headerRect() const
+{
+    return QRect(0, 0, width(), kCollapseHeaderHeight).intersected(rect());
+}
+
+QRect AntCollapsePanel::contentPaintRect(int contentHeight) const
+{
+    if (contentHeight <= 0 && !m_content)
+        return QRect();
+    const int h = qMax(0, contentHeight) + (contentHeight > 0 ? kCollapseContentPadding * 2 : 0);
+    return QRect(0, kCollapseHeaderHeight, width(), h).intersected(rect());
+}
+
+void AntCollapsePanel::refreshStaticContentHeight(const QString& mode)
+{
+    invalidateSizeHintCache();
+    if (!m_content || !m_expanded || m_animation->state() == QAbstractAnimation::Running)
+    {
+        syncPanelPerfCounters();
+        return;
+    }
+
+    const int nextHeight = m_content->sizeHint().height();
+    if (m_contentHeight == nextHeight)
+    {
+        syncPanelPerfCounters();
+        return;
+    }
+
+    const QRect dirty = contentPaintRect(m_contentHeight).united(contentPaintRect(nextHeight));
+    m_contentHeight = nextHeight;
+    ++m_layoutUpdateCount;
+    updateGeometry();
+    requestPanelUpdate(dirty, mode, true);
+}
+
+void AntCollapsePanel::requestPanelUpdate(const QRect& region, const QString& mode, bool contentScoped)
+{
+    QRect dirty = region.isValid() && !region.isEmpty() ? region : rect();
+    dirty = dirty.intersected(rect());
+    if (dirty.isEmpty())
+        dirty = rect();
+
+    ++m_panelRegionUpdateCount;
+    if (contentScoped)
+        ++m_contentRegionUpdateCount;
+    m_lastUpdateMode = mode;
+    syncPanelPerfCounters();
+    update(dirty);
+}
+
+void AntCollapsePanel::syncPanelPerfCounters() const
+{
+    auto* self = const_cast<AntCollapsePanel*>(this);
+    self->setProperty("antCollapsePanelSizeHintBuildCount", m_sizeHintBuildCount);
+    self->setProperty("antCollapsePanelSizeHintHitCount", m_sizeHintHitCount);
+    self->setProperty("antCollapsePanelLayoutUpdateCount", m_layoutUpdateCount);
+    self->setProperty("antCollapsePanelRegionUpdateCount", m_panelRegionUpdateCount);
+    self->setProperty("antCollapsePanelContentRegionUpdateCount", m_contentRegionUpdateCount);
+    self->setProperty("antCollapsePanelLastUpdateMode", m_lastUpdateMode);
 }
 
 // ---- AntCollapse ----
@@ -191,6 +319,7 @@ AntCollapse::AntCollapse(QWidget* parent)
     setAttribute(Qt::WA_StyledBackground, false);
 
     connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+    syncCollapsePerfCounters();
 }
 
 bool AntCollapse::accordion() const { return m_accordion; }
@@ -211,6 +340,7 @@ void AntCollapse::setBordered(bool bordered)
 {
     if (m_bordered == bordered) return;
     m_bordered = bordered;
+    invalidateSizeHintCache();
     update();
     Q_EMIT borderedChanged(m_bordered);
 }
@@ -222,7 +352,10 @@ AntCollapsePanel* AntCollapse::addPanel(const QString& title)
     m_layout->addWidget(panel);
     connect(panel, &AntCollapsePanel::expandedChanged, this, [this, panel](bool expanded) {
         onPanelExpanded(panel, expanded);
+        invalidateSizeHintCache();
+        updateGeometry();
     });
+    invalidateSizeHintCache();
     updateGeometry();
     return panel;
 }
@@ -241,10 +374,21 @@ void AntCollapse::onPanelExpanded(AntCollapsePanel* panel, bool expanded)
 
 QSize AntCollapse::sizeHint() const
 {
+    if (!m_sizeHintDirty)
+    {
+        ++m_sizeHintHitCount;
+        syncCollapsePerfCounters();
+        return m_cachedSizeHint;
+    }
+
     int h = 0;
     for (auto* p : m_panels)
         h += p->sizeHint().height();
-    return QSize(300, h + (m_bordered ? 2 : 0));
+    m_cachedSizeHint = QSize(300, h + (m_bordered ? 2 : 0));
+    m_sizeHintDirty = false;
+    ++m_sizeHintBuildCount;
+    syncCollapsePerfCounters();
+    return m_cachedSizeHint;
 }
 
 void AntCollapse::paintEvent(QPaintEvent*)
@@ -264,4 +408,16 @@ void AntCollapse::paintEvent(QPaintEvent*)
         painter.setBrush(Qt::NoBrush);
         painter.drawPath(path);
     }
+}
+
+void AntCollapse::invalidateSizeHintCache() const
+{
+    m_sizeHintDirty = true;
+}
+
+void AntCollapse::syncCollapsePerfCounters() const
+{
+    auto* self = const_cast<AntCollapse*>(this);
+    self->setProperty("antCollapseSizeHintBuildCount", m_sizeHintBuildCount);
+    self->setProperty("antCollapseSizeHintHitCount", m_sizeHintHitCount);
 }
