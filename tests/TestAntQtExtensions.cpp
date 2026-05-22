@@ -699,6 +699,7 @@ private slots:
     void windowNativeHitTestSupportsSnapZones();
     void windowDwmFrameMarginsPreserveShadow();
     void windowLegacyFramePolicyRestoresShadowAfterResize();
+    void windowLegacyFrameDrawsThinBlackOutline();
     void windowMaximizedNcCalcKeepsFullWorkArea();
     void colorPicker();
     void colorPickerDragSmoothness();
@@ -4393,6 +4394,53 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
     const QRect resizedShadowGeometry = window.property("antWindowLegacySoftwareShadowGeometry").toRect();
     QVERIFY(resizedShadowGeometry.contains(window.geometry()));
     QCOMPARE(resizedShadowGeometry.marginsRemoved(shadowMargins), window.geometry());
+#endif
+}
+
+void TestAntQtExtensions::windowLegacyFrameDrawsThinBlackOutline()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows legacy frame outline is only available on Windows.");
+#else
+    AntWindow window;
+    window.setProperty("antWindowForceLegacyFramePolicy", true);
+    window.resize(520, 340);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    QTRY_COMPARE(window.property("antWindowUsesNativeCaptionFrame").toBool(), false);
+
+    const QImage image = window.grab().toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QVERIFY(!image.isNull());
+
+    auto isDarkOutlinePixel = [](const QColor& color) {
+        return color.alpha() >= 220 && color.red() <= 120 && color.green() <= 120 && color.blue() <= 120;
+    };
+    auto countDarkPixels = [&](const QRect& rect) {
+        int count = 0;
+        const QRect sample = rect.intersected(image.rect());
+        for (int y = sample.top(); y <= sample.bottom(); ++y)
+        {
+            for (int x = sample.left(); x <= sample.right(); ++x)
+            {
+                if (isDarkOutlinePixel(image.pixelColor(x, y)))
+                {
+                    ++count;
+                }
+            }
+        }
+        return count;
+    };
+
+    const int minHorizontal = qRound(image.width() * 0.72);
+    const int minVertical = qRound(image.height() * 0.72);
+    QVERIFY2(countDarkPixels(QRect(0, 0, image.width(), 1)) >= minHorizontal,
+             "legacy AntWindow should paint a thin dark top outline");
+    QVERIFY2(countDarkPixels(QRect(0, image.height() - 1, image.width(), 1)) >= minHorizontal,
+             "legacy AntWindow should paint a thin dark bottom outline");
+    QVERIFY2(countDarkPixels(QRect(0, 0, 1, image.height())) >= minVertical,
+             "legacy AntWindow should paint a thin dark left outline");
+    QVERIFY2(countDarkPixels(QRect(image.width() - 1, 0, 1, image.height())) >= minVertical,
+             "legacy AntWindow should paint a thin dark right outline");
 #endif
 }
 

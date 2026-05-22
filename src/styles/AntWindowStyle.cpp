@@ -12,6 +12,8 @@
 
 namespace
 {
+constexpr auto kForceLegacyFramePolicyProperty = "antWindowForceLegacyFramePolicy";
+
 QRectF centeredIconRect(const QRect& buttonRect, qreal iconSize = 14.0)
 {
     if (buttonRect.isNull())
@@ -50,6 +52,15 @@ bool drawAntdIcon(const QString& iconName, const QRectF& iconRect, const QColor&
 
     renderer.render(painter, iconRect);
     return true;
+}
+
+bool shouldDrawLegacyOutline(const AntWindow* window, bool maximized)
+{
+    if (!window || maximized || window->isFullScreen())
+    {
+        return false;
+    }
+    return window->usesLegacyOpaquePath() || window->property(kForceLegacyFramePolicyProperty).toBool();
 }
 }
 
@@ -295,6 +306,16 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
                      centeredIconRect(btnRect),
                      iconColorFor(AntWindow::TitleBarButton::Close, true),
                      painter);
+    }
+
+    if (shouldDrawLegacyOutline(window, maximized))
+    {
+        QPen outlinePen(QColor(0, 0, 0, 180));
+        outlinePen.setCosmetic(true);
+        outlinePen.setWidth(1);
+        painter->setPen(outlinePen);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRect(QRectF(option->rect).adjusted(0.5, 0.5, -0.5, -0.5));
     }
 
     painter->restore();
