@@ -11,6 +11,7 @@
 #include <QScreen>
 #include <QVBoxLayout>
 #include <QWindow>
+#include <QtMath>
 
 #include "AntButton.h"
 #include "core/AntTheme.h"
@@ -162,7 +163,11 @@ AntImage::AntImage(QWidget* parent)
     setCursor(Qt::PointingHandCursor);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-    connect(antTheme, &AntTheme::themeChanged, this, [this]() { update(); });
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidatePreviewOverlayCache();
+        requestImageUpdate(QStringLiteral("theme"));
+    });
+    syncImagePerfCounters();
 }
 
 QString AntImage::src() const { return m_src; }
@@ -172,8 +177,9 @@ void AntImage::setSrc(const QString& path)
     if (m_src == path) return;
     m_src = path;
     m_loaded = m_pixmap.load(path);
+    invalidateScaledPixmapCache();
     updateGeometry();
-    update();
+    requestImageUpdate(QStringLiteral("src"));
     Q_EMIT srcChanged(m_src);
 }
 
@@ -182,7 +188,7 @@ void AntImage::setAlt(const QString& text)
 {
     if (m_alt == text) return;
     m_alt = text;
-    update();
+    requestImageUpdate(QStringLiteral("alt"));
     Q_EMIT altChanged(m_alt);
 }
 
@@ -191,6 +197,8 @@ void AntImage::setPreview(bool enable)
 {
     if (m_preview == enable) return;
     m_preview = enable;
+    invalidatePreviewOverlayCache();
+    requestImageUpdate(QStringLiteral("preview"));
     Q_EMIT previewChanged(m_preview);
 }
 
@@ -199,8 +207,9 @@ void AntImage::setImgWidth(int w)
 {
     if (m_imgWidth == w) return;
     m_imgWidth = w;
+    invalidateScaledPixmapCache();
     updateGeometry();
-    update();
+    requestImageUpdate(QStringLiteral("width"));
     Q_EMIT imgWidthChanged(m_imgWidth);
 }
 
@@ -209,8 +218,9 @@ void AntImage::setImgHeight(int h)
 {
     if (m_imgHeight == h) return;
     m_imgHeight = h;
+    invalidateScaledPixmapCache();
     updateGeometry();
-    update();
+    requestImageUpdate(QStringLiteral("height"));
     Q_EMIT imgHeightChanged(m_imgHeight);
 }
 
@@ -230,12 +240,10 @@ void AntImage::paintEvent(QPaintEvent*)
     if (m_loaded)
     {
         const bool hasExplicitBox = m_imgWidth > 0 && m_imgHeight > 0;
-        const QPixmap scaled = m_pixmap.scaled(r.size().toSize(),
-                                               hasExplicitBox ? Qt::IgnoreAspectRatio : Qt::KeepAspectRatio,
-                                               Qt::SmoothTransformation);
-        const QPointF topLeft(r.x() + (r.width() - scaled.width()) / 2.0,
-                              r.y() + (r.height() - scaled.height()) / 2.0);
-        p.drawPixmap(topLeft, scaled);
+        const QPixmap scaled = cachedScaledPixmap(devicePixelRatioF(),
+                                                  r.size().toSize(),
+                                                  hasExplicitBox ? Qt::IgnoreAspectRatio : Qt::KeepAspectRatio);
+        p.drawPixmap(r.topLeft(), scaled);
     }
     else
     {
@@ -253,27 +261,8 @@ void AntImage::paintEvent(QPaintEvent*)
     // Preview overlay on hover
     if (m_hovered && m_preview && m_loaded)
     {
-        p.fillRect(r, QColor(0, 0, 0, 115));
-
-        const QPointF center = r.center();
-        QPainterPath eye;
-        eye.moveTo(center.x() - 17.0, center.y() - 10.0);
-        eye.cubicTo(center.x() - 8.0, center.y() - 20.0, center.x() + 8.0, center.y() - 20.0,
-                    center.x() + 17.0, center.y() - 10.0);
-        eye.cubicTo(center.x() + 8.0, center.y(), center.x() - 8.0, center.y(), center.x() - 17.0,
-                    center.y() - 10.0);
-
-        p.setPen(token.colorTextLightSolid);
-        p.setBrush(Qt::NoBrush);
-        p.drawPath(eye);
-        p.setBrush(token.colorTextLightSolid);
-        p.drawEllipse(QRectF(center.x() - 3.5, center.y() - 13.5, 7.0, 7.0));
-
-        QFont f = p.font();
-        f.setPixelSize(token.fontSize);
-        p.setFont(f);
-        p.drawText(QRectF(r.left(), center.y() + 4.0, r.width(), 22.0), Qt::AlignCenter,
-                   QStringLiteral("Preview"));
+        const QPixmap overlay = cachedPreviewOverlayPixmap(devicePixelRatioF(), r.size().toSize());
+        p.drawPixmap(r.topLeft(), overlay);
     }
 }
 
@@ -291,13 +280,15 @@ void AntImage::mousePressEvent(QMouseEvent* e)
 void AntImage::enterEvent(QEnterEvent*)
 {
     m_hovered = true;
-    update();
+    if (m_preview && m_loaded)
+        requestImageUpdate(QStringLiteral("hover"), rect());
 }
 
 void AntImage::leaveEvent(QEvent*)
 {
     m_hovered = false;
-    update();
+    if (m_preview && m_loaded)
+        requestImageUpdate(QStringLiteral("hover"), rect());
 }
 
 void AntImage::setPreviewGroup(const QList<AntImage*>& group)
@@ -341,4 +332,166 @@ void AntImage::showPreviewDialogAt(int index)
 
     auto* dlg = new ImagePreviewDialog(pixmaps, startIndex, window());
     dlg->exec();
+}
+
+QPixmap AntImage::cachedScaledPixmap(qreal devicePixelRatio,
+                                     const QSize& targetSize,
+                                     Qt::AspectRatioMode aspectMode) const
+{
+    if (!m_loaded || m_pixmap.isNull() || targetSize.isEmpty())
+    {
+        return {};
+    }
+
+    const qreal dpr = qMax<qreal>(1.0, devicePixelRatio);
+    const QSize logicalSize(qMax(1, targetSize.width()), qMax(1, targetSize.height()));
+    const qint64 sourceCacheKey = m_pixmap.cacheKey();
+    const QSize sourceSize = m_pixmap.size();
+    const qreal sourceDpr = m_pixmap.devicePixelRatio();
+
+    if (m_scaledPixmapCache.valid &&
+        qFuzzyCompare(m_scaledPixmapCache.devicePixelRatio, dpr) &&
+        qFuzzyCompare(m_scaledPixmapCache.sourceDevicePixelRatio, sourceDpr) &&
+        m_scaledPixmapCache.logicalSize == logicalSize &&
+        m_scaledPixmapCache.aspectMode == aspectMode &&
+        m_scaledPixmapCache.sourceCacheKey == sourceCacheKey &&
+        m_scaledPixmapCache.sourceSize == sourceSize)
+    {
+        ++m_scaledPixmapCacheHitCount;
+        syncImagePerfCounters();
+        return m_scaledPixmapCache.pixmap;
+    }
+
+    ++m_scaledPixmapBuildCount;
+
+    ScaledPixmapCache cache;
+    cache.valid = true;
+    cache.devicePixelRatio = dpr;
+    cache.sourceDevicePixelRatio = sourceDpr;
+    cache.logicalSize = logicalSize;
+    cache.aspectMode = aspectMode;
+    cache.sourceCacheKey = sourceCacheKey;
+    cache.sourceSize = sourceSize;
+    cache.pixmap = QPixmap(QSize(qCeil(logicalSize.width() * dpr), qCeil(logicalSize.height() * dpr)));
+    cache.pixmap.setDevicePixelRatio(dpr);
+    cache.pixmap.fill(Qt::transparent);
+
+    QRectF imageRect(QPointF(0, 0), QSizeF(logicalSize));
+    if (aspectMode == Qt::KeepAspectRatio)
+    {
+        const QSize scaledSize = sourceSize.scaled(logicalSize, Qt::KeepAspectRatio);
+        imageRect = QRectF((logicalSize.width() - scaledSize.width()) / 2.0,
+                           (logicalSize.height() - scaledSize.height()) / 2.0,
+                           scaledSize.width(),
+                           scaledSize.height());
+    }
+
+    QPainter painter(&cache.pixmap);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.drawPixmap(imageRect, m_pixmap, QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+
+    m_scaledPixmapCache = cache;
+    syncImagePerfCounters();
+    return m_scaledPixmapCache.pixmap;
+}
+
+QPixmap AntImage::cachedPreviewOverlayPixmap(qreal devicePixelRatio, const QSize& targetSize) const
+{
+    if (targetSize.isEmpty())
+    {
+        return {};
+    }
+
+    const auto& token = antTheme->tokens();
+    const qreal dpr = qMax<qreal>(1.0, devicePixelRatio);
+    const QSize logicalSize(qMax(1, targetSize.width()), qMax(1, targetSize.height()));
+    const QColor overlayColor(0, 0, 0, 115);
+    QFont overlayFont = font();
+    overlayFont.setPixelSize(token.fontSize);
+    const QString fontKey = overlayFont.key();
+
+    if (m_previewOverlayPixmapCache.valid &&
+        qFuzzyCompare(m_previewOverlayPixmapCache.devicePixelRatio, dpr) &&
+        m_previewOverlayPixmapCache.logicalSize == logicalSize &&
+        m_previewOverlayPixmapCache.textColor == token.colorTextLightSolid &&
+        m_previewOverlayPixmapCache.overlayColor == overlayColor &&
+        m_previewOverlayPixmapCache.fontSize == token.fontSize &&
+        m_previewOverlayPixmapCache.fontKey == fontKey)
+    {
+        ++m_previewOverlayPixmapCacheHitCount;
+        syncImagePerfCounters();
+        return m_previewOverlayPixmapCache.pixmap;
+    }
+
+    ++m_previewOverlayPixmapBuildCount;
+
+    PreviewOverlayPixmapCache cache;
+    cache.valid = true;
+    cache.devicePixelRatio = dpr;
+    cache.logicalSize = logicalSize;
+    cache.textColor = token.colorTextLightSolid;
+    cache.overlayColor = overlayColor;
+    cache.fontSize = token.fontSize;
+    cache.fontKey = fontKey;
+    cache.pixmap = QPixmap(QSize(qCeil(logicalSize.width() * dpr), qCeil(logicalSize.height() * dpr)));
+    cache.pixmap.setDevicePixelRatio(dpr);
+    cache.pixmap.fill(Qt::transparent);
+
+    const QRectF r(QPointF(0, 0), QSizeF(logicalSize));
+    QPainter painter(&cache.pixmap);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+    painter.fillRect(r, overlayColor);
+
+    const QPointF center = r.center();
+    QPainterPath eye;
+    eye.moveTo(center.x() - 17.0, center.y() - 10.0);
+    eye.cubicTo(center.x() - 8.0, center.y() - 20.0, center.x() + 8.0, center.y() - 20.0,
+                center.x() + 17.0, center.y() - 10.0);
+    eye.cubicTo(center.x() + 8.0, center.y(), center.x() - 8.0, center.y(), center.x() - 17.0,
+                center.y() - 10.0);
+
+    painter.setPen(token.colorTextLightSolid);
+    painter.setBrush(Qt::NoBrush);
+    painter.drawPath(eye);
+    painter.setBrush(token.colorTextLightSolid);
+    painter.drawEllipse(QRectF(center.x() - 3.5, center.y() - 13.5, 7.0, 7.0));
+    painter.setFont(overlayFont);
+    painter.drawText(QRectF(r.left(), center.y() + 4.0, r.width(), 22.0), Qt::AlignCenter,
+                     QStringLiteral("Preview"));
+
+    m_previewOverlayPixmapCache = cache;
+    syncImagePerfCounters();
+    return m_previewOverlayPixmapCache.pixmap;
+}
+
+void AntImage::invalidateScaledPixmapCache() const
+{
+    m_scaledPixmapCache.valid = false;
+}
+
+void AntImage::invalidatePreviewOverlayCache() const
+{
+    m_previewOverlayPixmapCache.valid = false;
+}
+
+void AntImage::requestImageUpdate(const QString& mode, const QRect& dirty)
+{
+    m_lastUpdateMode = mode;
+    ++m_regionUpdateCount;
+    syncImagePerfCounters();
+    if (dirty.isValid())
+        update(dirty);
+    else
+        update();
+}
+
+void AntImage::syncImagePerfCounters() const
+{
+    auto* self = const_cast<AntImage*>(this);
+    self->setProperty("antImageScaledPixmapBuildCount", m_scaledPixmapBuildCount);
+    self->setProperty("antImageScaledPixmapCacheHitCount", m_scaledPixmapCacheHitCount);
+    self->setProperty("antImagePreviewOverlayPixmapBuildCount", m_previewOverlayPixmapBuildCount);
+    self->setProperty("antImagePreviewOverlayPixmapCacheHitCount", m_previewOverlayPixmapCacheHitCount);
+    self->setProperty("antImageRegionUpdateCount", m_regionUpdateCount);
+    self->setProperty("antImageLastUpdateMode", m_lastUpdateMode);
 }

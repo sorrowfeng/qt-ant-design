@@ -19,7 +19,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `82` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `83` controls optimized in the current pass |
 
 ## Recent Completed Work
 
@@ -75,6 +75,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Optimized `AntCarousel` by pausing autoplay unless visible/enabled with multiple slides, skipping unchanged slide geometry work during transitions, and preventing dots overlay geometry/repaint churn on animation frames while keeping the slide motion intact.
 - Optimized `AntCollapse` by caching panel and aggregate size hints, preserving the expand/collapse height animation while skipping duplicate animation frames, repainting animation frames only in the content area, and limiting hover/title refresh to the header.
 - Optimized `AntEmpty` by caching layout and size-hint calculations on the widget, rendering the empty illustration through a DPR-aware pixmap cache, and preserving correct invalidation for description, image size, extra widget, and theme changes.
+- Optimized `AntImage` by caching target-size/DPR scaled pixmaps and the hover preview overlay, while keeping alt text, preview toggles, resize, and theme changes on explicit invalidation paths.
 - Optimized `AntNavItem` by moving label style updates out of paint and caching hover/active background plus indicator geometry.
 - Optimized `AntPlainTextEdit` by caching visual state application and scoping resize-grip cursor/paint updates to real hover-state changes across the editor's internal mouse-event targets.
 - Optimized `AntRibbon` by caching tab layout rectangles and repainting only affected tab, collapse button, and indicator regions during hover and indicator animation.

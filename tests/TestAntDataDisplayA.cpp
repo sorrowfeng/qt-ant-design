@@ -1,6 +1,7 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QDateTime>
+#include <QEnterEvent>
 #include <QLabel>
 #include <QRegularExpression>
 #include "core/AntTheme.h"
@@ -20,6 +21,7 @@ private slots:
     void calendarCachesSelectionAndViewMetrics();
     void cardCachesPaintAndSpinnerUpdates();
     void emptyCachesLayoutAndIllustrationPixmap();
+    void imageCachesScaledPixmapAndPreviewOverlay();
     void statisticFormattedValueCache();
     void cardTitlePaletteTracksTheme();
 };
@@ -481,6 +483,74 @@ void TestAntDataDisplayA::emptyCachesLayoutAndIllustrationPixmap()
     QCOMPARE(empty.property("antEmptyLastUpdateMode").toString(), QStringLiteral("theme"));
     empty.grab();
     QVERIFY(empty.property("antEmptyIllustrationPixmapBuildCount").toInt() > pixmapBuildsBeforeTheme);
+
+    antTheme->setThemeMode(previousMode);
+}
+
+void TestAntDataDisplayA::imageCachesScaledPixmapAndPreviewOverlay()
+{
+    const Ant::ThemeMode previousMode = antTheme->themeMode();
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntImage image;
+    image.setSrc(QStringLiteral(":/qt-ant-design/images/image-basic.png"));
+    image.setImgWidth(140);
+    image.setImgHeight(96);
+    image.resize(140, 96);
+    image.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&image));
+
+    image.grab();
+    const int scaledBuilds = image.property("antImageScaledPixmapBuildCount").toInt();
+    const int scaledHits = image.property("antImageScaledPixmapCacheHitCount").toInt();
+    QVERIFY(scaledBuilds > 0);
+
+    image.grab();
+    QCOMPARE(image.property("antImageScaledPixmapBuildCount").toInt(), scaledBuilds);
+    QVERIFY(image.property("antImageScaledPixmapCacheHitCount").toInt() > scaledHits);
+
+    QEnterEvent enterEvent(QPointF(8, 8), QPointF(8, 8), QPointF(image.mapToGlobal(QPoint(8, 8))));
+    QCoreApplication::sendEvent(&image, &enterEvent);
+    QCOMPARE(image.property("antImageLastUpdateMode").toString(), QStringLiteral("hover"));
+    image.grab();
+    const int overlayBuilds = image.property("antImagePreviewOverlayPixmapBuildCount").toInt();
+    const int overlayHits = image.property("antImagePreviewOverlayPixmapCacheHitCount").toInt();
+    QVERIFY(overlayBuilds > 0);
+
+    image.grab();
+    QCOMPARE(image.property("antImagePreviewOverlayPixmapBuildCount").toInt(), overlayBuilds);
+    QVERIFY(image.property("antImagePreviewOverlayPixmapCacheHitCount").toInt() > overlayHits);
+
+    const int scaledBeforeAlt = image.property("antImageScaledPixmapBuildCount").toInt();
+    image.setAlt(QStringLiteral("Fallback text only"));
+    QCOMPARE(image.property("antImageLastUpdateMode").toString(), QStringLiteral("alt"));
+    image.grab();
+    QCOMPARE(image.property("antImageScaledPixmapBuildCount").toInt(), scaledBeforeAlt);
+
+    const int scaledBeforeResize = image.property("antImageScaledPixmapBuildCount").toInt();
+    image.setImgWidth(156);
+    image.resize(156, 96);
+    QCOMPARE(image.property("antImageLastUpdateMode").toString(), QStringLiteral("width"));
+    image.grab();
+    QVERIFY(image.property("antImageScaledPixmapBuildCount").toInt() > scaledBeforeResize);
+
+    const int overlayBeforePreviewToggle = image.property("antImagePreviewOverlayPixmapBuildCount").toInt();
+    image.setPreview(false);
+    QCOMPARE(image.property("antImageLastUpdateMode").toString(), QStringLiteral("preview"));
+    image.grab();
+    QCOMPARE(image.property("antImagePreviewOverlayPixmapBuildCount").toInt(), overlayBeforePreviewToggle);
+
+    image.setPreview(true);
+    image.grab();
+    QVERIFY(image.property("antImagePreviewOverlayPixmapBuildCount").toInt() > overlayBeforePreviewToggle);
+
+    const int scaledBeforeTheme = image.property("antImageScaledPixmapBuildCount").toInt();
+    const int overlayBeforeTheme = image.property("antImagePreviewOverlayPixmapBuildCount").toInt();
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCOMPARE(image.property("antImageLastUpdateMode").toString(), QStringLiteral("theme"));
+    image.grab();
+    QCOMPARE(image.property("antImageScaledPixmapBuildCount").toInt(), scaledBeforeTheme);
+    QVERIFY(image.property("antImagePreviewOverlayPixmapBuildCount").toInt() > overlayBeforeTheme);
 
     antTheme->setThemeMode(previousMode);
 }

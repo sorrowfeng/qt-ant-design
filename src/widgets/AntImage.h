@@ -51,8 +51,38 @@ protected:
     void leaveEvent(QEvent*) override;
 
 private:
+    struct ScaledPixmapCache
+    {
+        bool valid = false;
+        qreal devicePixelRatio = 1.0;
+        qreal sourceDevicePixelRatio = 1.0;
+        QSize logicalSize;
+        Qt::AspectRatioMode aspectMode = Qt::KeepAspectRatio;
+        qint64 sourceCacheKey = 0;
+        QSize sourceSize;
+        QPixmap pixmap;
+    };
+
+    struct PreviewOverlayPixmapCache
+    {
+        bool valid = false;
+        qreal devicePixelRatio = 1.0;
+        QSize logicalSize;
+        QColor textColor;
+        QColor overlayColor;
+        int fontSize = 0;
+        QString fontKey;
+        QPixmap pixmap;
+    };
+
     void showPreviewDialog();
     void showPreviewDialogAt(int index);
+    QPixmap cachedScaledPixmap(qreal devicePixelRatio, const QSize& targetSize, Qt::AspectRatioMode aspectMode) const;
+    QPixmap cachedPreviewOverlayPixmap(qreal devicePixelRatio, const QSize& targetSize) const;
+    void invalidateScaledPixmapCache() const;
+    void invalidatePreviewOverlayCache() const;
+    void requestImageUpdate(const QString& mode, const QRect& dirty = QRect());
+    void syncImagePerfCounters() const;
 
     QList<AntImage*> m_previewGroup;
     QString m_src;
@@ -63,4 +93,12 @@ private:
     bool m_hovered = false;
     QPixmap m_pixmap;
     bool m_loaded = false;
+    mutable ScaledPixmapCache m_scaledPixmapCache;
+    mutable PreviewOverlayPixmapCache m_previewOverlayPixmapCache;
+    mutable int m_scaledPixmapBuildCount = 0;
+    mutable int m_scaledPixmapCacheHitCount = 0;
+    mutable int m_previewOverlayPixmapBuildCount = 0;
+    mutable int m_previewOverlayPixmapCacheHitCount = 0;
+    int m_regionUpdateCount = 0;
+    QString m_lastUpdateMode;
 };
