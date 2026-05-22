@@ -19,7 +19,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `83` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `84` controls optimized in the current pass |
 
 ## Recent Completed Work
 
@@ -38,6 +38,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Optimized `AntAutoComplete` by caching filtered suggestions, reusing popup suggestion widgets, skipping unchanged popup geometry, and limiting keyboard highlight repaint to old/new rows.
 - Optimized `AntCascader` by caching popup column state and popup metrics, skipping unchanged popup geometry, and scoping hover plus child-column expansion repaint to affected rows/columns.
 - Optimized `AntCheckBox` by caching indicator/text geometry, size hints, and mark paths, with checked, hover, and press repaint scoped to the indicator region.
+- Optimized `AntColorPicker` by caching trigger size hints and paint layout, skipping repeated hover repaint requests, and preserving the existing popup drag/background/live-refresh optimizations.
 - Optimized `AntDatePicker` by caching popup day-cell geometry/state, scoping hover repaint to old/new date cells, invalidating on month/range changes, and reusing widget-owned input metrics in the style.
 - Optimized `AntDescriptions` by updating header and item text in place, rebuilding the grid only for structural changes, applying theme changes to existing cells, and caching size hints.
 - Optimized `AntForm` by refreshing item label/help/extra/required/colon/status state in place, skipping repeated unchanged form settings, and applying spacing/item changes incrementally.

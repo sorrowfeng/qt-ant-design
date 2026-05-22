@@ -4451,6 +4451,38 @@ void TestAntQtExtensions::colorPicker()
     QCOMPARE(w->showText(), true);
     QCOMPARE(textSpy.count(), 1);
 
+    const QSize triggerHint = w->sizeHint();
+    const int hintBuilds = w->property("antColorPickerTriggerSizeHintBuildCount").toInt();
+    const int hintHits = w->property("antColorPickerTriggerSizeHintCacheHitCount").toInt();
+    QVERIFY(hintBuilds > 0);
+    QCOMPARE(w->sizeHint(), triggerHint);
+    QCOMPARE(w->property("antColorPickerTriggerSizeHintBuildCount").toInt(), hintBuilds);
+    QVERIFY(w->property("antColorPickerTriggerSizeHintCacheHitCount").toInt() > hintHits);
+
+    w->resize(triggerHint);
+    auto renderTrigger = [&]() {
+        QImage triggerImage(w->size(), QImage::Format_ARGB32_Premultiplied);
+        triggerImage.fill(Qt::transparent);
+        QPainter painter(&triggerImage);
+        w->render(&painter);
+    };
+    renderTrigger();
+    const int triggerLayoutBuilds = w->property("antColorPickerTriggerLayoutBuildCount").toInt();
+    const int triggerLayoutHits = w->property("antColorPickerTriggerLayoutCacheHitCount").toInt();
+    QVERIFY(triggerLayoutBuilds > 0);
+    renderTrigger();
+    QCOMPARE(w->property("antColorPickerTriggerLayoutBuildCount").toInt(), triggerLayoutBuilds);
+    QVERIFY(w->property("antColorPickerTriggerLayoutCacheHitCount").toInt() > triggerLayoutHits);
+
+    const int hoverUpdates = w->property("antColorPickerTriggerRegionUpdateCount").toInt();
+    QEnterEvent triggerEnter(QPointF(4, 4), QPointF(4, 4), QPointF(w->mapToGlobal(QPoint(4, 4))));
+    QCoreApplication::sendEvent(w, &triggerEnter);
+    QCOMPARE(w->property("antColorPickerLastTriggerUpdateMode").toString(), QStringLiteral("hover"));
+    QVERIFY(w->property("antColorPickerTriggerRegionUpdateCount").toInt() > hoverUpdates);
+    const int hoverUpdatesAfterEnter = w->property("antColorPickerTriggerRegionUpdateCount").toInt();
+    QCoreApplication::sendEvent(w, &triggerEnter);
+    QCOMPARE(w->property("antColorPickerTriggerRegionUpdateCount").toInt(), hoverUpdatesAfterEnter);
+
     QSignalSpy openSpy(w, &AntColorPicker::openChanged);
     w->setOpen(true);
     QCOMPARE(w->isOpen(), true);
@@ -4551,6 +4583,10 @@ void TestAntQtExtensions::colorPicker()
     QCOMPARE(selectedSpy.count(), 1);
     QCOMPARE(colorSpy.count(), 2);
     QCOMPARE(hueSatField->property("antColorPickerCursorPoint").toPoint(), QPoint(118, 69));
+    const int triggerLayoutBuildsBeforeColorRender = w->property("antColorPickerTriggerLayoutBuildCount").toInt();
+    renderTrigger();
+    QVERIFY(w->property("antColorPickerTriggerLayoutBuildCount").toInt() > triggerLayoutBuildsBeforeColorRender);
+    QCOMPARE(w->property("antColorPickerLastTriggerUpdateMode").toString(), QStringLiteral("color"));
     fieldImage.fill(Qt::transparent);
     {
         QPainter painter(&fieldImage);

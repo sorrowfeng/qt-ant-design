@@ -778,13 +778,15 @@ AntColorPicker::AntColorPicker(QWidget* parent)
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
     connect(antTheme, &AntTheme::themeModeChanged, this, [this]() {
-        update();
+        requestTriggerUpdate(QStringLiteral("themeMode"));
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        invalidateTriggerCaches();
         updateGeometry();
         updatePopupGeometry();
-        update();
+        requestTriggerUpdate(QStringLiteral("theme"));
     });
+    syncTriggerPerfCounters();
 }
 
 AntColorPicker::AntColorPicker(const QColor& initial, QWidget* parent)
@@ -803,11 +805,12 @@ void AntColorPicker::setCurrentColor(const QColor& color)
     }
 
     m_currentColor = color;
+    invalidateTriggerCaches();
     if (m_popup)
     {
         static_cast<ColorPickerPopup*>(m_popup)->setCurrentColor(m_currentColor);
     }
-    update();
+    requestTriggerUpdate(QStringLiteral("color"));
     Q_EMIT currentColorChanged(m_currentColor);
 }
 
@@ -821,8 +824,9 @@ void AntColorPicker::setShowText(bool showText)
     }
 
     m_showText = showText;
+    invalidateTriggerCaches();
     updateGeometry();
-    update();
+    requestTriggerUpdate(QStringLiteral("showText"));
     Q_EMIT showTextChanged(m_showText);
 }
 
@@ -884,33 +888,25 @@ void AntColorPicker::setOpen(bool open)
         });
     }
 
-    update();
+    requestTriggerUpdate(QStringLiteral("open"));
     Q_EMIT openChanged(m_open);
 }
 
 QSize AntColorPicker::sizeHint() const
 {
-    if (!m_showText)
-    {
-        return QSize(TriggerHeight, TriggerHeight);
-    }
-
-    QFont f = font();
-    f.setPixelSize(antTheme->tokens().fontSize);
-    const QFontMetrics fm(f);
-    const int textWidth = fm.horizontalAdvance(m_currentColor.name().toUpper());
-    return QSize(TriggerPadding + SwatchSize + TextGap + textWidth + TextRightPadding, TriggerHeight);
+    return cachedTriggerSizeHints().sizeHint;
 }
 
 QSize AntColorPicker::minimumSizeHint() const
 {
-    return m_showText ? QSize(TriggerHeight + TextGap + 48, TriggerHeight) : QSize(TriggerHeight, TriggerHeight);
+    return cachedTriggerSizeHints().minimumSizeHint;
 }
 
 void AntColorPicker::paintEvent(QPaintEvent* /*event*/)
 {
     const auto& token = antTheme->tokens();
     const bool enabled = isEnabled();
+    const TriggerLayoutCache& layout = cachedTriggerLayout();
 
     QColor border = enabled ? token.colorBorder : token.colorBorderSecondary;
     if (enabled && (m_hovered || hasFocus()))
@@ -923,15 +919,11 @@ void AntColorPicker::paintEvent(QPaintEvent* /*event*/)
     QPainter painter(this);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    const QRectF frame = QRectF(rect()).adjusted(TriggerBorderInset,
-                                                TriggerBorderInset,
-                                                -TriggerBorderInset,
-                                                -TriggerBorderInset);
     painter.setPen(QPen(border, token.lineWidth));
     painter.setBrush(background);
-    painter.drawRoundedRect(frame, token.borderRadius, token.borderRadius);
+    painter.drawRoundedRect(layout.frameRect, token.borderRadius, token.borderRadius);
 
-    QRect block = colorBlockRect();
+    const QRect block = layout.colorBlockRect;
     QColor color = m_currentColor;
     if (!enabled)
     {
@@ -948,23 +940,28 @@ void AntColorPicker::paintEvent(QPaintEvent* /*event*/)
         f.setPixelSize(token.fontSize);
         painter.setFont(f);
         painter.setPen(enabled ? token.colorText : token.colorTextDisabled);
-        const QRect textRect(block.right() + TextGap + 1, 0, width() - block.right() - TextGap - TextRightPadding, height());
-        painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, m_currentColor.name().toUpper());
+        painter.drawText(layout.textRect, Qt::AlignLeft | Qt::AlignVCenter, layout.displayText);
     }
 }
 
 void AntColorPicker::enterEvent(QEnterEvent* event)
 {
-    m_hovered = true;
-    update();
+    if (!m_hovered)
+    {
+        m_hovered = true;
+        requestTriggerUpdate(QStringLiteral("hover"));
+    }
     QWidget::enterEvent(event);
 }
 
 void AntColorPicker::leaveEvent(QEvent* event)
 {
-    m_hovered = false;
-    m_pressed = false;
-    update();
+    if (m_hovered || m_pressed)
+    {
+        m_hovered = false;
+        m_pressed = false;
+        requestTriggerUpdate(QStringLiteral("hover"));
+    }
     QWidget::leaveEvent(event);
 }
 
@@ -972,8 +969,11 @@ void AntColorPicker::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton && isEnabled())
     {
-        m_pressed = true;
-        update();
+        if (!m_pressed)
+        {
+            m_pressed = true;
+            requestTriggerUpdate(QStringLiteral("press"));
+        }
         event->accept();
         return;
     }
@@ -985,7 +985,7 @@ void AntColorPicker::mouseReleaseEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && m_pressed)
     {
         m_pressed = false;
-        update();
+        requestTriggerUpdate(QStringLiteral("release"));
         if (rect().contains(event->pos()))
         {
             openEditor();
@@ -1070,5 +1070,133 @@ void AntColorPicker::updatePopupGeometry()
 
 QRect AntColorPicker::colorBlockRect() const
 {
-    return QRect(TriggerPadding, (height() - SwatchSize) / 2, SwatchSize, SwatchSize);
+    return cachedTriggerLayout().colorBlockRect;
+}
+
+QString AntColorPicker::displayColorText() const
+{
+    return m_currentColor.name(QColor::HexRgb).toUpper();
+}
+
+const AntColorPicker::TriggerSizeHintCache& AntColorPicker::cachedTriggerSizeHints() const
+{
+    const auto& token = antTheme->tokens();
+    QFont f = font();
+    f.setPixelSize(token.fontSize);
+    const QString fontKey = f.key();
+    const QString displayText = displayColorText();
+
+    if (m_triggerSizeHintCache.valid &&
+        m_triggerSizeHintCache.showText == m_showText &&
+        m_triggerSizeHintCache.fontSize == token.fontSize &&
+        m_triggerSizeHintCache.fontKey == fontKey &&
+        m_triggerSizeHintCache.displayText == displayText)
+    {
+        ++m_triggerSizeHintCacheHitCount;
+        syncTriggerPerfCounters();
+        return m_triggerSizeHintCache;
+    }
+
+    ++m_triggerSizeHintBuildCount;
+    TriggerSizeHintCache cache;
+    cache.valid = true;
+    cache.showText = m_showText;
+    cache.fontSize = token.fontSize;
+    cache.fontKey = fontKey;
+    cache.displayText = displayText;
+    cache.minimumSizeHint = m_showText ? QSize(TriggerHeight + TextGap + 48, TriggerHeight)
+                                       : QSize(TriggerHeight, TriggerHeight);
+    if (m_showText)
+    {
+        const int textWidth = QFontMetrics(f).horizontalAdvance(displayText);
+        cache.sizeHint = QSize(TriggerPadding + SwatchSize + TextGap + textWidth + TextRightPadding,
+                               TriggerHeight);
+    }
+    else
+    {
+        cache.sizeHint = QSize(TriggerHeight, TriggerHeight);
+    }
+
+    m_triggerSizeHintCache = cache;
+    syncTriggerPerfCounters();
+    return m_triggerSizeHintCache;
+}
+
+const AntColorPicker::TriggerLayoutCache& AntColorPicker::cachedTriggerLayout() const
+{
+    const auto& token = antTheme->tokens();
+    QFont f = font();
+    f.setPixelSize(token.fontSize);
+    const QString fontKey = f.key();
+    const QString displayText = displayColorText();
+    const QSize widgetSize = size();
+
+    if (m_triggerLayoutCache.valid &&
+        m_triggerLayoutCache.showText == m_showText &&
+        m_triggerLayoutCache.fontSize == token.fontSize &&
+        m_triggerLayoutCache.fontKey == fontKey &&
+        m_triggerLayoutCache.displayText == displayText &&
+        m_triggerLayoutCache.widgetSize == widgetSize)
+    {
+        ++m_triggerLayoutCacheHitCount;
+        syncTriggerPerfCounters();
+        return m_triggerLayoutCache;
+    }
+
+    ++m_triggerLayoutBuildCount;
+    TriggerLayoutCache cache;
+    cache.valid = true;
+    cache.showText = m_showText;
+    cache.fontSize = token.fontSize;
+    cache.fontKey = fontKey;
+    cache.displayText = displayText;
+    cache.widgetSize = widgetSize;
+    cache.frameRect = QRectF(rect()).adjusted(TriggerBorderInset,
+                                              TriggerBorderInset,
+                                              -TriggerBorderInset,
+                                              -TriggerBorderInset);
+    cache.colorBlockRect = QRect(TriggerPadding, (height() - SwatchSize) / 2, SwatchSize, SwatchSize);
+    if (m_showText)
+    {
+        cache.textRect = QRect(cache.colorBlockRect.right() + TextGap + 1,
+                               0,
+                               width() - cache.colorBlockRect.right() - TextGap - TextRightPadding,
+                               height());
+    }
+
+    m_triggerLayoutCache = cache;
+    syncTriggerPerfCounters();
+    return m_triggerLayoutCache;
+}
+
+void AntColorPicker::invalidateTriggerCaches() const
+{
+    m_triggerSizeHintCache.valid = false;
+    m_triggerLayoutCache.valid = false;
+}
+
+void AntColorPicker::requestTriggerUpdate(const QString& mode, const QRect& dirty)
+{
+    m_lastTriggerUpdateMode = mode;
+    ++m_triggerRegionUpdateCount;
+    syncTriggerPerfCounters();
+    if (dirty.isValid())
+    {
+        update(dirty);
+    }
+    else
+    {
+        update();
+    }
+}
+
+void AntColorPicker::syncTriggerPerfCounters() const
+{
+    auto* self = const_cast<AntColorPicker*>(this);
+    self->setProperty("antColorPickerTriggerSizeHintBuildCount", m_triggerSizeHintBuildCount);
+    self->setProperty("antColorPickerTriggerSizeHintCacheHitCount", m_triggerSizeHintCacheHitCount);
+    self->setProperty("antColorPickerTriggerLayoutBuildCount", m_triggerLayoutBuildCount);
+    self->setProperty("antColorPickerTriggerLayoutCacheHitCount", m_triggerLayoutCacheHitCount);
+    self->setProperty("antColorPickerTriggerRegionUpdateCount", m_triggerRegionUpdateCount);
+    self->setProperty("antColorPickerLastTriggerUpdateMode", m_lastTriggerUpdateMode);
 }

@@ -4,6 +4,9 @@
 
 #include <QColor>
 #include <QRect>
+#include <QRectF>
+#include <QSize>
+#include <QString>
 #include <QWidget>
 
 #include "core/AntTypes.h"
@@ -45,6 +48,30 @@ Q_SIGNALS:
     void openChanged(bool open);
 
 private:
+    struct TriggerSizeHintCache
+    {
+        bool valid = false;
+        bool showText = false;
+        int fontSize = 0;
+        QString fontKey;
+        QString displayText;
+        QSize sizeHint;
+        QSize minimumSizeHint;
+    };
+
+    struct TriggerLayoutCache
+    {
+        bool valid = false;
+        bool showText = false;
+        int fontSize = 0;
+        QString fontKey;
+        QString displayText;
+        QSize widgetSize;
+        QRectF frameRect;
+        QRect colorBlockRect;
+        QRect textRect;
+    };
+
     bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEnterEvent* event) override;
@@ -56,6 +83,12 @@ private:
     void openEditor();
     void updatePopupGeometry();
     QRect colorBlockRect() const;
+    QString displayColorText() const;
+    const TriggerSizeHintCache& cachedTriggerSizeHints() const;
+    const TriggerLayoutCache& cachedTriggerLayout() const;
+    void invalidateTriggerCaches() const;
+    void requestTriggerUpdate(const QString& mode, const QRect& dirty = QRect());
+    void syncTriggerPerfCounters() const;
 
     bool m_showText = false;
     bool m_open = false;
@@ -66,4 +99,12 @@ private:
     int m_popupMotionSerial = 0;
     QColor m_currentColor = Qt::white;
     QFrame* m_popup = nullptr;
+    mutable TriggerSizeHintCache m_triggerSizeHintCache;
+    mutable TriggerLayoutCache m_triggerLayoutCache;
+    mutable int m_triggerSizeHintBuildCount = 0;
+    mutable int m_triggerSizeHintCacheHitCount = 0;
+    mutable int m_triggerLayoutBuildCount = 0;
+    mutable int m_triggerLayoutCacheHitCount = 0;
+    int m_triggerRegionUpdateCount = 0;
+    QString m_lastTriggerUpdateMode;
 };
