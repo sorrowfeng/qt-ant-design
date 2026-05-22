@@ -699,7 +699,7 @@ private slots:
     void windowNativeHitTestSupportsSnapZones();
     void windowDwmFrameMarginsPreserveShadow();
     void windowLegacyFramePolicyRestoresShadowAfterResize();
-    void windowLegacyFrameDrawsThinBlackOutline();
+    void windowLegacyFrameDrawsSoftOutline();
     void windowMaximizedNcCalcKeepsFullWorkArea();
     void colorPicker();
     void colorPickerDragSmoothness();
@@ -4397,11 +4397,14 @@ void TestAntQtExtensions::windowLegacyFramePolicyRestoresShadowAfterResize()
 #endif
 }
 
-void TestAntQtExtensions::windowLegacyFrameDrawsThinBlackOutline()
+void TestAntQtExtensions::windowLegacyFrameDrawsSoftOutline()
 {
 #ifndef Q_OS_WIN
     QSKIP("Windows legacy frame outline is only available on Windows.");
 #else
+    ThemeModeRestorerForExtensionTest themeRestorer;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
     AntWindow window;
     window.setProperty("antWindowForceLegacyFramePolicy", true);
     window.resize(520, 340);
@@ -4412,17 +4415,22 @@ void TestAntQtExtensions::windowLegacyFrameDrawsThinBlackOutline()
     const QImage image = window.grab().toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
     QVERIFY(!image.isNull());
 
-    auto isDarkOutlinePixel = [](const QColor& color) {
-        return color.alpha() >= 220 && color.red() <= 120 && color.green() <= 120 && color.blue() <= 120;
+    auto isSoftNeutralOutlinePixel = [](const QColor& color) {
+        const int maxChannel = qMax(color.red(), qMax(color.green(), color.blue()));
+        const int minChannel = qMin(color.red(), qMin(color.green(), color.blue()));
+        return color.alpha() >= 220 &&
+               minChannel >= 135 &&
+               maxChannel <= 215 &&
+               (maxChannel - minChannel) <= 8;
     };
-    auto countDarkPixels = [&](const QRect& rect) {
+    auto countSoftOutlinePixels = [&](const QRect& rect) {
         int count = 0;
         const QRect sample = rect.intersected(image.rect());
         for (int y = sample.top(); y <= sample.bottom(); ++y)
         {
             for (int x = sample.left(); x <= sample.right(); ++x)
             {
-                if (isDarkOutlinePixel(image.pixelColor(x, y)))
+                if (isSoftNeutralOutlinePixel(image.pixelColor(x, y)))
                 {
                     ++count;
                 }
@@ -4433,14 +4441,14 @@ void TestAntQtExtensions::windowLegacyFrameDrawsThinBlackOutline()
 
     const int minHorizontal = qRound(image.width() * 0.72);
     const int minVertical = qRound(image.height() * 0.72);
-    QVERIFY2(countDarkPixels(QRect(0, 0, image.width(), 1)) >= minHorizontal,
-             "legacy AntWindow should paint a thin dark top outline");
-    QVERIFY2(countDarkPixels(QRect(0, image.height() - 1, image.width(), 1)) >= minHorizontal,
-             "legacy AntWindow should paint a thin dark bottom outline");
-    QVERIFY2(countDarkPixels(QRect(0, 0, 1, image.height())) >= minVertical,
-             "legacy AntWindow should paint a thin dark left outline");
-    QVERIFY2(countDarkPixels(QRect(image.width() - 1, 0, 1, image.height())) >= minVertical,
-             "legacy AntWindow should paint a thin dark right outline");
+    QVERIFY2(countSoftOutlinePixels(QRect(0, 0, image.width(), 1)) >= minHorizontal,
+             "legacy AntWindow should paint a thin soft top outline");
+    QVERIFY2(countSoftOutlinePixels(QRect(0, image.height() - 1, image.width(), 1)) >= minHorizontal,
+             "legacy AntWindow should paint a thin soft bottom outline");
+    QVERIFY2(countSoftOutlinePixels(QRect(0, 0, 1, image.height())) >= minVertical,
+             "legacy AntWindow should paint a thin soft left outline");
+    QVERIFY2(countSoftOutlinePixels(QRect(image.width() - 1, 0, 1, image.height())) >= minVertical,
+             "legacy AntWindow should paint a thin soft right outline");
 #endif
 }
 

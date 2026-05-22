@@ -62,6 +62,13 @@ bool shouldDrawLegacyOutline(const AntWindow* window, bool maximized)
     }
     return window->usesLegacyOpaquePath() || window->property(kForceLegacyFramePolicyProperty).toBool();
 }
+
+QColor legacyOutlineColor()
+{
+    return antTheme->themeMode() == Ant::ThemeMode::Dark
+        ? QColor(255, 255, 255, 54)
+        : QColor(0, 0, 0, 88);
+}
 }
 
 AntWindowStyle::AntWindowStyle(QStyle* style)
@@ -310,7 +317,7 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
 
     if (shouldDrawLegacyOutline(window, maximized))
     {
-        QPen outlinePen(QColor(0, 0, 0, 180));
+        QPen outlinePen(legacyOutlineColor());
         outlinePen.setCosmetic(true);
         outlinePen.setWidth(1);
         painter->setPen(outlinePen);
