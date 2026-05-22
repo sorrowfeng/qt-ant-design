@@ -60,9 +60,16 @@ AntTypography* makeModalText(const QString& text, QWidget* parent, bool paragrap
     typography->setStrong(strong);
     if (paragraph)
     {
-        typography->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        typography->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        typography->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
     }
     return typography;
+}
+
+void applyModalPreviewLayout(AntCard* modal)
+{
+    modal->bodyLayout()->setContentsMargins(24, 20, 24, 16);
+    modal->bodyLayout()->setSpacing(10);
 }
 
 AntCard* makeModalPreview(QWidget* parent)
@@ -71,9 +78,11 @@ AntCard* makeModalPreview(QWidget* parent)
     modal->setFixedSize(484, 196);
     modal->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     modal->setBordered(true);
-    modal->bodyLayout()->setSpacing(12);
+    applyModalPreviewLayout(modal);
+    QObject::connect(antTheme, &AntTheme::themeChanged, modal, [modal]() { applyModalPreviewLayout(modal); });
 
     auto* header = new QWidget(modal->bodyWidget());
+    header->setFixedHeight(28);
     auto* headerLayout = new QHBoxLayout(header);
     headerLayout->setContentsMargins(0, 0, 0, 0);
     headerLayout->setSpacing(8);
@@ -91,9 +100,10 @@ AntCard* makeModalPreview(QWidget* parent)
         QStringLiteral("Ant Design 使用 CSS-in-JS 技术以提供动态与混合主题的能力。与此同时，我们使用组件级别的 CSS-in-JS 解决方案，让你的应用获得更好的性能。"),
         modal,
         true);
-    modal->bodyLayout()->addWidget(body);
+    modal->bodyLayout()->addWidget(body, 1);
 
     auto* footer = new QWidget(modal->bodyWidget());
+    footer->setFixedHeight(32);
     auto* footerLayout = new QHBoxLayout(footer);
     footerLayout->setContentsMargins(0, 0, 0, 0);
     footerLayout->setSpacing(8);

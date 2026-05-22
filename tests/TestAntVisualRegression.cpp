@@ -1,13 +1,16 @@
 #include <QColor>
+#include <QHBoxLayout>
 #include <QImage>
 #include <QLabel>
 #include <QPainter>
 #include <QPalette>
+#include <QSizePolicy>
 #include <QTest>
 #include <QVBoxLayout>
 #include <QWidget>
 
 #include <cmath>
+#include <memory>
 
 #include "core/AntTheme.h"
 #include "widgets/AntAlert.h"
@@ -37,6 +40,7 @@
 #include "widgets/AntTabs.h"
 #include "widgets/AntTable.h"
 #include "widgets/AntTag.h"
+#include "widgets/AntTypography.h"
 
 class TestAntVisualRegression : public QObject
 {
@@ -59,6 +63,7 @@ private slots:
     void popconfirmArrowSurfaceHasNoInternalSeam();
     void popupEffectShadowPaintsOutsidePanel();
     void dataDisplayBordersAndSeparatorsStayVisible();
+    void showcaseModalPreviewKeepsContentReadable();
     void navigationAndLayoutStructureStayVisible();
     void stepsFirstIconKeepsLeftBorderVisible();
     void complexPopupSurfacesStayElevated();
@@ -116,6 +121,78 @@ QImage renderCurrentWidget(QWidget* widget)
         widget->render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
     }
     return image;
+}
+
+AntTypography* makeShowcaseModalText(const QString& text, QWidget* parent, bool paragraph = false, bool strong = false)
+{
+    auto* typography = new AntTypography(text, parent);
+    typography->setParagraph(paragraph);
+    typography->setStrong(strong);
+    if (paragraph)
+    {
+        typography->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        typography->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    }
+    return typography;
+}
+
+void applyShowcaseModalPreviewLayout(AntCard* modal)
+{
+    modal->bodyLayout()->setContentsMargins(24, 20, 24, 16);
+    modal->bodyLayout()->setSpacing(10);
+}
+
+AntCard* makeShowcaseModalPreviewProbe()
+{
+    auto* modal = new AntCard;
+    modal->setFixedSize(484, 196);
+    modal->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    modal->setBordered(true);
+    applyShowcaseModalPreviewLayout(modal);
+
+    auto* header = new QWidget(modal->bodyWidget());
+    header->setObjectName(QStringLiteral("showcaseModalHeaderProbe"));
+    header->setFixedHeight(28);
+    auto* headerLayout = new QHBoxLayout(header);
+    headerLayout->setContentsMargins(0, 0, 0, 0);
+    headerLayout->setSpacing(8);
+    headerLayout->addWidget(makeShowcaseModalText(QStringLiteral("Ant Design"), header, false, true));
+    headerLayout->addStretch();
+
+    auto* close = new AntButton(header);
+    close->setButtonType(Ant::ButtonType::Text);
+    close->setButtonIconType(Ant::IconType::Close);
+    close->setFixedSize(28, 28);
+    headerLayout->addWidget(close);
+    modal->bodyLayout()->addWidget(header);
+
+    auto* body = makeShowcaseModalText(
+        QStringLiteral("Ant Design 使用 CSS-in-JS 技术以提供动态与混合主题的能力。与此同时，我们使用组件级别的 CSS-in-JS 解决方案，让你的应用获得更好的性能。"),
+        modal->bodyWidget(),
+        true);
+    body->setObjectName(QStringLiteral("showcaseModalBodyProbe"));
+    modal->bodyLayout()->addWidget(body, 1);
+
+    auto* footer = new QWidget(modal->bodyWidget());
+    footer->setObjectName(QStringLiteral("showcaseModalFooterProbe"));
+    footer->setFixedHeight(32);
+    auto* footerLayout = new QHBoxLayout(footer);
+    footerLayout->setContentsMargins(0, 0, 0, 0);
+    footerLayout->setSpacing(8);
+    footerLayout->addStretch();
+
+    auto* cancel = new AntButton(QStringLiteral("取消"), footer);
+    cancel->setButtonSize(Ant::Size::Middle);
+    cancel->setFixedWidth(64);
+    footerLayout->addWidget(cancel);
+
+    auto* ok = new AntButton(QStringLiteral("确定"), footer);
+    ok->setButtonType(Ant::ButtonType::Primary);
+    ok->setFixedWidth(64);
+    footerLayout->addWidget(ok);
+    modal->bodyLayout()->addWidget(footer);
+
+    return modal;
 }
 
 void prepareHost(QWidget& host, const QSize& size, const QColor& background)
@@ -858,6 +935,44 @@ void TestAntVisualRegression::dataDisplayBordersAndSeparatorsStayVisible()
     QVERIFY2(staleLightCalendarPixels < 1200,
              qPrintable(QStringLiteral("dark calendar should not keep stale light viewport pixels: %1")
                             .arg(staleLightCalendarPixels)));
+}
+
+void TestAntVisualRegression::showcaseModalPreviewKeepsContentReadable()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    std::unique_ptr<AntCard> modal(makeShowcaseModalPreviewProbe());
+    Q_UNUSED(renderWidget(modal.get(), QSize(484, 196)));
+
+    auto* header = modal->findChild<QWidget*>(QStringLiteral("showcaseModalHeaderProbe"));
+    auto* body = modal->findChild<AntTypography*>(QStringLiteral("showcaseModalBodyProbe"));
+    auto* footer = modal->findChild<QWidget*>(QStringLiteral("showcaseModalFooterProbe"));
+    QVERIFY(header);
+    QVERIFY(body);
+    QVERIFY(footer);
+
+    const QMargins margins = modal->bodyLayout()->contentsMargins();
+    QCOMPARE(margins.left(), 24);
+    QCOMPARE(margins.top(), 20);
+    QCOMPARE(margins.right(), 24);
+    QCOMPARE(margins.bottom(), 16);
+    QCOMPARE(header->height(), 28);
+    QCOMPARE(footer->height(), 32);
+    QVERIFY(body->width() > 360);
+
+    const int bodyRequiredHeight = body->heightForWidth(body->width());
+    QVERIFY2(body->height() >= bodyRequiredHeight,
+             qPrintable(QStringLiteral("showcase modal paragraph is clipped: actual %1, required %2")
+                            .arg(body->height())
+                            .arg(bodyRequiredHeight)));
+
+    const int headerTop = header->mapTo(modal.get(), QPoint(0, 0)).y();
+    const int footerBottom = footer->mapTo(modal.get(), QPoint(0, footer->height())).y();
+    QVERIFY2(headerTop >= 18 && headerTop <= 24,
+             qPrintable(QStringLiteral("showcase modal header moved out of expected top band: %1").arg(headerTop)));
+    QVERIFY2(footerBottom <= modal->height() - 14,
+             qPrintable(QStringLiteral("showcase modal footer is clipped at bottom: %1").arg(footerBottom)));
 }
 
 void TestAntVisualRegression::navigationAndLayoutStructureStayVisible()

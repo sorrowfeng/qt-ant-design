@@ -391,12 +391,9 @@ void AntCard::rebuildChrome()
     const bool headerVisible = !m_title.isEmpty() || !m_extra.isEmpty();
     const bool extraVisible = !m_extra.isEmpty();
     const bool actionsVisible = m_actionsLayout->count() > 0;
-    if (m_header->isVisible() != headerVisible)
-        m_header->setVisible(headerVisible);
-    if (m_extraLabel->isVisible() != extraVisible)
-        m_extraLabel->setVisible(extraVisible);
-    if (m_actions->isVisible() != actionsVisible)
-        m_actions->setVisible(actionsVisible);
+    m_header->setVisible(headerVisible);
+    m_extraLabel->setVisible(extraVisible);
+    m_actions->setVisible(actionsVisible);
     if (m_header->minimumHeight() != headerHeight)
         m_header->setMinimumHeight(headerHeight);
     if (m_header->maximumHeight() != headerHeight)
