@@ -19,6 +19,7 @@ private slots:
     void avatarCachesScaledImagePixmap();
     void calendarCachesSelectionAndViewMetrics();
     void cardCachesPaintAndSpinnerUpdates();
+    void emptyCachesLayoutAndIllustrationPixmap();
     void statisticFormattedValueCache();
     void cardTitlePaletteTracksTheme();
 };
@@ -418,6 +419,70 @@ void TestAntDataDisplayA::cardCachesPaintAndSpinnerUpdates()
     card.setCardSize(Ant::CardSize::Small);
     card.grab();
     QVERIFY(card.property("antCardPaintCacheBuildCount").toInt() > buildsBeforeSize);
+}
+
+void TestAntDataDisplayA::emptyCachesLayoutAndIllustrationPixmap()
+{
+    const Ant::ThemeMode previousMode = antTheme->themeMode();
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+
+    AntEmpty empty;
+    empty.resize(280, 190);
+    empty.setImageSize(QSize(137, 91));
+
+    const QSize firstHint = empty.sizeHint();
+    const int hintBuilds = empty.property("antEmptySizeHintBuildCount").toInt();
+    const int hintHits = empty.property("antEmptySizeHintHitCount").toInt();
+    QVERIFY(hintBuilds > 0);
+    QCOMPARE(empty.sizeHint(), firstHint);
+    QCOMPARE(empty.property("antEmptySizeHintBuildCount").toInt(), hintBuilds);
+    QVERIFY(empty.property("antEmptySizeHintHitCount").toInt() > hintHits);
+
+    empty.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&empty));
+    empty.grab();
+    const int layoutBuilds = empty.property("antEmptyLayoutCacheBuildCount").toInt();
+    const int layoutHits = empty.property("antEmptyLayoutCacheHitCount").toInt();
+    const int pixmapBuilds = empty.property("antEmptyIllustrationPixmapBuildCount").toInt();
+    const int pixmapHits = empty.property("antEmptyIllustrationPixmapHitCount").toInt();
+    QVERIFY(layoutBuilds > 0);
+    QVERIFY(pixmapBuilds > 0);
+
+    empty.grab();
+    QCOMPARE(empty.property("antEmptyLayoutCacheBuildCount").toInt(), layoutBuilds);
+    QVERIFY(empty.property("antEmptyLayoutCacheHitCount").toInt() > layoutHits);
+    QCOMPARE(empty.property("antEmptyIllustrationPixmapBuildCount").toInt(), pixmapBuilds);
+    QVERIFY(empty.property("antEmptyIllustrationPixmapHitCount").toInt() > pixmapHits);
+
+    const int hintBuildsBeforeDescription = empty.property("antEmptySizeHintBuildCount").toInt();
+    const int pixmapBuildsBeforeDescription = empty.property("antEmptyIllustrationPixmapBuildCount").toInt();
+    empty.setDescription(QStringLiteral("Nothing matched the current filters"));
+    QCOMPARE(empty.property("antEmptyLastUpdateMode").toString(), QStringLiteral("description"));
+    empty.sizeHint();
+    QVERIFY(empty.property("antEmptySizeHintBuildCount").toInt() > hintBuildsBeforeDescription);
+    empty.grab();
+    QCOMPARE(empty.property("antEmptyIllustrationPixmapBuildCount").toInt(), pixmapBuildsBeforeDescription);
+
+    const int pixmapBuildsBeforeSize = empty.property("antEmptyIllustrationPixmapBuildCount").toInt();
+    empty.setImageSize(QSize(143, 97));
+    QCOMPARE(empty.property("antEmptyLastUpdateMode").toString(), QStringLiteral("imageSize"));
+    empty.grab();
+    QVERIFY(empty.property("antEmptyIllustrationPixmapBuildCount").toInt() > pixmapBuildsBeforeSize);
+
+    auto* extra = new QLabel(QStringLiteral("Extra action"));
+    empty.setExtraWidget(extra);
+    const int extraGeometryBeforeResize = empty.property("antEmptyExtraGeometryUpdateCount").toInt();
+    empty.resize(320, 220);
+    QCoreApplication::processEvents();
+    QVERIFY(empty.property("antEmptyExtraGeometryUpdateCount").toInt() > extraGeometryBeforeResize);
+
+    const int pixmapBuildsBeforeTheme = empty.property("antEmptyIllustrationPixmapBuildCount").toInt();
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCOMPARE(empty.property("antEmptyLastUpdateMode").toString(), QStringLiteral("theme"));
+    empty.grab();
+    QVERIFY(empty.property("antEmptyIllustrationPixmapBuildCount").toInt() > pixmapBuildsBeforeTheme);
+
+    antTheme->setThemeMode(previousMode);
 }
 
 void TestAntDataDisplayA::statisticFormattedValueCache()
