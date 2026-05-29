@@ -236,6 +236,7 @@ private:
     };
 
     void rebuildAll();
+    void refreshTheme();
     void updateAddButton();
 
     int m_minCount = 0;

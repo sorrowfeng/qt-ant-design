@@ -3362,6 +3362,15 @@ void AntDockManager::floatDockWidget(AntDockWidget* dockWidget, const QRect& glo
     setEmbeddedDockTitleBarVisible(dockWidget, true);
     dockWidget->setWindowOpacity(1.0);
     dockWidget->setFloating(true);
+    Qt::WindowFlags floatingFlags = dockWidget->windowFlags();
+    floatingFlags &= ~Qt::WindowType_Mask;
+    floatingFlags |= Qt::Window;
+    floatingFlags |= Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint;
+    floatingFlags &= ~Qt::WindowTitleHint;
+    if (dockWidget->windowFlags() != floatingFlags)
+    {
+        dockWidget->setWindowFlags(floatingFlags);
+    }
     dockWidget->setMinimumSize(QSize(180, 120));
     dockWidget->setGeometry(targetGeometry);
     setFloatingDockOwner(dockWidget, this);

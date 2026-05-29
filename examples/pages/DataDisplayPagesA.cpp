@@ -107,10 +107,6 @@ protected:
         gradient.setColorAt(1.0, m_to);
         painter.fillPath(path, gradient);
 
-        QFont labelFont = painter.font();
-        labelFont.setPixelSize(24);
-        labelFont.setWeight(QFont::Medium);
-        painter.setFont(labelFont);
         painter.setPen(Qt::white);
         painter.drawText(rect(), Qt::AlignCenter, m_text);
     }

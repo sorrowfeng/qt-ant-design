@@ -12,6 +12,7 @@
 
 #include "../styles/AntFormStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 
 // ── AntFormProvider ──
 
@@ -756,8 +757,12 @@ AntFormList::AntFormList(QWidget* parent)
     m_layout->addWidget(m_addButton);
     updateAddButton();
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        rebuildAll();
+        refreshTheme();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
     });
 }
 
@@ -937,6 +942,35 @@ void AntFormList::rebuildAll()
     {
         addItem();
     }
+}
+
+void AntFormList::refreshTheme()
+{
+    const auto& token = antTheme->tokens();
+    const auto applyButtonFont = [&token](QPushButton* button) {
+        if (!button)
+        {
+            return;
+        }
+        QFont btnFont = button->font();
+        btnFont.setPixelSize(token.fontSizeSM);
+        if (button->font() != btnFont)
+        {
+            button->setFont(btnFont);
+        }
+        button->update();
+    };
+
+    applyButtonFont(m_addButton);
+    for (const ListItem& item : std::as_const(m_items))
+    {
+        applyButtonFont(item.removeButton);
+        if (item.container)
+        {
+            item.container->update();
+        }
+    }
+    update();
 }
 
 void AntFormList::updateAddButton()

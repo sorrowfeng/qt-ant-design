@@ -13,12 +13,12 @@ AntFormStyle::AntFormStyle(QStyle* style)
 
 void AntFormStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
 }
 
 void AntFormStyle::unpolish(QWidget* widget)
 {
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntFormStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

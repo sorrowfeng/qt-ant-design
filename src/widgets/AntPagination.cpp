@@ -14,6 +14,7 @@
 
 #include "../styles/AntPaginationStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 
 AntPagination::AntPagination(QWidget* parent)
     : QWidget(parent)
@@ -22,9 +23,12 @@ AntPagination::AntPagination(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     ensureQuickJumperEdit();
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidatePageItems();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         syncQuickJumperEdit();
         update();
     });

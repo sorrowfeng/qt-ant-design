@@ -17,6 +17,7 @@
 #include "../styles/AntCascaderStyle.h"
 #include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntPalette.h"
 
 #include "CascaderPopup.h"
@@ -35,8 +36,22 @@ AntCascader::AntCascader(QWidget* parent)
     m_arrowAnimation->setDuration(160);
     m_arrowAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-        updateGeometry();
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
+        if (m_popup)
+        {
+            auto* popup = static_cast<CascaderPopup*>(m_popup);
+            popup->invalidateCaches();
+            if (m_popup->isVisible())
+            {
+                popup->rebuildColumns();
+                popup->updateSizeAndPosition();
+                m_popup->update();
+            }
+        }
         update();
     });
 

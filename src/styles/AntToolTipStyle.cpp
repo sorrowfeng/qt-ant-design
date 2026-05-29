@@ -13,7 +13,7 @@ AntToolTipStyle::AntToolTipStyle(QStyle* style)
 
 void AntToolTipStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntToolTip*>(widget))
     {
         widget->installEventFilter(this);
@@ -26,7 +26,7 @@ void AntToolTipStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntToolTipStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

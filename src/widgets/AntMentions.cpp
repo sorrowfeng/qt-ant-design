@@ -18,6 +18,7 @@
 #include "core/AntPopupMotion.h"
 #include "core/AntStyleBase.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 
 namespace
 {
@@ -183,9 +184,18 @@ AntMentions::AntMentions(QWidget* parent)
     m_filterTimer->setInterval(0);
     connect(m_filterTimer, &QTimer::timeout, this, &AntMentions::refreshSuggestions);
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         applyLineEditTheme();
-        setFixedHeight(sizeHint().height());
+        const int nextHeight = sizeHint().height();
+        const bool fixedHeightChanged = minimumHeight() != nextHeight || maximumHeight() != nextHeight;
+        if (fixedHeightChanged)
+        {
+            setFixedHeight(nextHeight);
+        }
+        setProperty("antMentionsThemeFixedHeightChanged", fixedHeightChanged);
         for (AntMentionItem* item : std::as_const(m_itemWidgets))
         {
             if (item)
@@ -193,7 +203,7 @@ AntMentions::AntMentions(QWidget* parent)
                 item->update();
             }
         }
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
         if (m_popup && m_popup->isVisible())
         {

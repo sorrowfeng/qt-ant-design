@@ -9,6 +9,7 @@
 
 #include "../styles/AntSpinStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 
 AntSpin::AntSpin(QWidget* parent)
     : QWidget(parent)
@@ -31,9 +32,12 @@ AntSpin::AntSpin(QWidget* parent)
         requestSpinUpdate(spinVisualRect(), QStringLiteral("delay"));
     });
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateSpinLayout();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         requestSpinUpdate(spinVisualRect(), QStringLiteral("theme"));
     });
 

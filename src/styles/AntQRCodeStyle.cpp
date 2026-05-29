@@ -128,7 +128,7 @@ AntQRCodeStyle::AntQRCodeStyle(QStyle* style)
 
 void AntQRCodeStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntQRCode*>(widget))
     {
         widget->installEventFilter(this);
@@ -142,7 +142,7 @@ void AntQRCodeStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntQRCodeStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

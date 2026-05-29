@@ -457,6 +457,10 @@ void TestAntDataEntryA::inputNumberCachesMetricsAndScopesControlUpdates()
     input.minimumSizeHint();
     QCOMPARE(input.property("antInputNumberMetricsResolveCount").toInt(), metricsResolvesBefore);
 
+    const int editStyleBeforePrefix = input.property("antInputNumberEditStyleApplyCount").toInt();
+    input.setPrefixText(QStringLiteral("$"));
+    QCOMPARE(input.property("antInputNumberEditStyleApplyCount").toInt(), editStyleBeforePrefix);
+
     const int editStyleBeforeProgress = input.property("antInputNumberEditStyleApplyCount").toInt();
     const int insetBeforeProgress = input.property("antInputNumberControlsInsetUpdateCount").toInt();
     input.setControlsProgress(0.45);

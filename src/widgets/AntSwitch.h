@@ -123,7 +123,7 @@ private:
     void syncSwitchPerfCounters() const;
     void animateToChecked(bool checked);
     void animateStretch(qreal endValue);
-    void updateGeometryFromState();
+    void updateGeometryFromState(bool notifyGeometry = true);
 
     bool m_checked = false;
     bool m_loading = false;

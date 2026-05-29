@@ -16,7 +16,7 @@ AntDatePickerStyle::AntDatePickerStyle(QStyle* style)
 
 void AntDatePickerStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntDatePicker*>(widget))
     {
         widget->installEventFilter(this);
@@ -30,7 +30,7 @@ void AntDatePickerStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntDatePickerStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

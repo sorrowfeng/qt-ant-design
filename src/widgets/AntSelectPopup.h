@@ -1,7 +1,5 @@
 #pragma once
 
-#include "core/QtAntDesignExport.h"
-
 #include <QFrame>
 #include <QPainter>
 #include <QPainterPath>
@@ -16,7 +14,7 @@ class QHideEvent;
 class QMouseEvent;
 class QPaintEvent;
 
-class QT_ANT_DESIGN_EXPORT AntSelectPopup : public QFrame
+class AntSelectPopup : public QFrame
 {
 public:
     static constexpr int ShadowMargin = 32;
@@ -61,7 +59,7 @@ private:
     AntSelect* m_owner = nullptr;
 };
 
-class QT_ANT_DESIGN_EXPORT AntSelectOptionWidget : public QWidget
+class AntSelectOptionWidget : public QWidget
 {
 public:
     AntSelectOptionWidget(AntSelect* select, int index, QWidget* parent)

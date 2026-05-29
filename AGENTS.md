@@ -27,7 +27,7 @@
 - 同步日期：`2026-05-20`
 - 状态总览：`docs/project-status.md`
 - 项目问题清单（已解决 + 待解决）：`docs/issue-log.md`
-- 已实现公开组件总数：`84`（`src/widgets` 有 `105` 个 `Ant*.h`，包含 `84` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`）
+- 已实现公开组件总数：`84`（`src/widgets` 有 `105` 个 `Ant*.h`，包含 `84` 个公开组件头、`20` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`）
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
 - 子组件/变体完整度：`15 / 15`（100%）
 - Qt / 桌面扩展组件：`14`（AntWindow、AntRibbon、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntPlainTextEdit、AntDockManager、AntDockWidget、AntLog、AntNavItem）
@@ -39,7 +39,7 @@
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - README 组件截图画廊：`resources/images/components/` 提交 `166` 张 Light/Dark PNG，覆盖 `83` 个视觉组件条目；`AntDockManager` 通过 DockWidget 示例页展示，弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：当前 `37` 个 CTest 目标；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-10`）
+- 测试状态：当前 `37` 个 CTest 目标；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-29`）
 - 逐控件可靠性覆盖矩阵：`docs/reliability-coverage.md`，列出 84 个公开组件的专项行为/API、生命周期、Meta 属性、主题切换和渲染烟测覆盖情况
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
@@ -109,9 +109,9 @@
 - Windows 10 下 `AntWindow` 使用无 `WS_CAPTION` 的 native style，避免最大化/吸附还原后露出原生最小化/最大化/关闭按钮；非最大化时使用 legacy rounded mask 裁掉直角窗口边界，并用透明软件阴影宿主窗口绘制从窗口边缘直接外扩、轻量、更接近 Win11、缩放前后一致且圆角更干净的四周阴影；最大化 `WM_NCCALCSIZE` 不再重复扣除 resize border。
 - `AntWindow` 在 Windows 已显示状态下切换置顶/取消置顶时使用 `SetWindowPos(HWND_TOPMOST/HWND_NOTOPMOST)` 原地更新，避免 `setWindowFlag(Qt::WindowStaysOnTopHint)` 触发 hide/show 导致闪烁。
 - 标题栏按钮 hover 状态改为 `AntWindow` 统一维护，content/title/native leave 均会清理旧 hover，避免 hover 或离开主窗口后颜色残留。
-- 主题按钮切换 Light/Dark 时使用全窗口截图 overlay、captured new-frame 和 smootherstep 圆形软揭示动画，避免全量主题刷新期间卡顿、高 DPI 放大、黑色圆洞或生硬的纯色扩散。
+- 主题按钮切换 Light/Dark 时使用全窗口截图 crossfade overlay、captured new-frame 和 smootherstep 动画，避免全量主题刷新期间卡顿、高 DPI 放大、黑色圆洞或生硬的纯色扩散；Win10 / Win11 使用同一套 crossfade 动画。
 - 示例程序嵌入 Windows 10/11 manifest，并在 `ExampleWindow` 中启用全部标题栏按钮，去掉独立 dark 切换按钮。
-- 相关 targeted 验证覆盖 `TestAntQtExtensions|TestAntExampleCloseStress`，包含 Snap hit-test、标题栏 hover 清理、主题切换 overlay、8ms 动画帧率、320ms 时长、高 DPI 截图比例和无黑洞揭示路径。
+- 相关 targeted 验证覆盖 `TestAntQtExtensions|TestAntExampleCloseStress`，包含 Snap hit-test、标题栏 hover 清理、主题切换 crossfade overlay、16ms 动画帧率、220ms 时长、高 DPI 截图比例和无黑洞路径。
 
 ## Qt 官方常用接口兼容批次（2026-05-07）
 
@@ -291,12 +291,15 @@
   - `#include "../styles/Ant[Component]Style.h"`
 - CMake 安装时，公开 Style 头文件需安装到：
   - `install/include/qt-ant-design/styles/`
-- 已迁移到 `QProxyStyle` 的组件，应在构造函数中安装独立 Style，并在主题切换时触发：
-  - `polish` → `updateGeometry` → `update`
+- 已迁移到 `QProxyStyle` 的组件，应在构造函数中安装独立 Style，并通过 `AntStyleBase::connectThemeUpdate<T>()` 接入局部主题刷新：
+  - `themeModeAboutToChange` 阶段缓存旧 `sizeHint` / `minimumSizeHint`
+  - `themeModeChanged` 阶段只刷新该 Style 已 polish 的目标控件；共享 Style 可扫描其 QWidget parent 子树，只有无法解析本地目标时才兜底扫描全局 widgets
+  - `onThemeUpdate()` 默认执行 `update`，仅当主题前后的尺寸 hint 变化时才调用 `updateGeometry`
 - 纯容器/自绘非 QProxyStyle 组件（如 AntScrollArea、AntColorPicker）可不含独立 Style 类
 - 主题切换统一监听：
-  - `AntTheme::themeChanged`
-  - 或 `AntTheme::themeModeChanged`
+  - Style 类优先使用 `AntStyleBase::connectThemeUpdate<T>()`
+  - 组件自身刷新可按需要监听 `AntTheme::themeChanged` / `AntTheme::themeModeChanged`
+  - 需要比较主题切换前后尺寸或状态时监听 `AntTheme::themeModeAboutToChange`
 - 每次新增组件后，必须同步更新：
   - `AGENTS.md`
   - `README.md`
@@ -361,8 +364,8 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 - `installPaintFilter<T>(widget)` — 安装 eventFilter + WA_Hover
 - `removePaintFilter<T>(widget)` — 移除 eventFilter
 - `drawWidget(widget, event)` — 虚方法，子类重写实现绘制
-- `connectThemeUpdate<T>()` — 连接主题切换信号
-- `onThemeUpdate(w)` — 主题切换时的默认行为（updateGeometry + update）
+- `connectThemeUpdate<T>()` — 连接主题切换信号并局部收集目标控件，避免大窗口主题切换时每个 Style 全局扫描所有 widgets
+- `onThemeUpdate(w)` — 主题切换时的默认行为（尺寸 hint 变化时 `updateGeometry`，始终 `update`）
 - `drawCrispRoundedRect(painter, rect, pen, brush, rx, ry)` — 0.5px 子像素偏移绘制圆角矩形，解决边框锯齿问题
 
 ## 示例程序
@@ -418,7 +421,8 @@ cmake --install build --config Debug
 - **测试数量**：37 个 CTest 目标（33 个 QTest 可执行文件 + 1 个安装消费方 CMake 脚本测试 + 1 个 build-system CMake 脚本测试 + 1 个 example GUI subsystem 脚本测试 + 1 个 example 压力退出测试）
 - **覆盖组件**：84 个公开组件全部覆盖，内部 helper 随宿主组件测试；逐控件覆盖矩阵见 `docs/reliability-coverage.md`
 - **运行方式**：`ctest -C Debug --output-on-failure`
-- **最近全量结果**：`37 / 37` CTest 目标通过（Debug，2026-05-10），覆盖公开组件 API / getter-setter / 信号、真实鼠标键盘交互、生命周期、主题切换、渲染烟测、安装消费方和 example 子系统
+- **最近全量结果**：`37 / 37` CTest 目标通过（Debug，2026-05-29），覆盖公开组件 API / getter-setter / 信号、Qt 事件级鼠标键盘交互、生命周期、主题切换、渲染烟测、安装消费方和 example 子系统
+- **原生输入专项**：`TestAntQtExtensions` 的 Win32 `SendInput` 桌面输入路径默认关闭；需要真实桌面输入验证时显式设置 `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`
 
 ### 测试文件结构
 

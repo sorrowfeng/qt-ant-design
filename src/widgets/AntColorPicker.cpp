@@ -23,6 +23,7 @@
 
 #include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -486,7 +487,7 @@ class ColorPickerPopup : public QFrame
 {
 public:
     explicit ColorPickerPopup(AntColorPicker* owner)
-        : QFrame(owner, Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
+        : QFrame(owner, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint),
           m_owner(owner)
     {
         setObjectName(QStringLiteral("AntColorPickerPopup"));
@@ -536,7 +537,8 @@ private:
     void hideEvent(QHideEvent* event) override
     {
         flushLiveRefresh();
-        if (m_owner && m_owner->isOpen())
+        if (m_owner && m_owner->isOpen() &&
+            !property("antColorPickerPreserveOpenOnThemeChange").toBool())
         {
             m_owner->setOpen(false);
         }
@@ -777,13 +779,40 @@ AntColorPicker::AntColorPicker(QWidget* parent)
     setCursor(Qt::PointingHandCursor);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this]() {
+        AntThemeRefresh::cacheGeometryHints(this);
+        if (m_open && m_popup)
+        {
+            m_popup->setProperty("antColorPickerPreserveOpenOnThemeChange", true);
+        }
+    });
     connect(antTheme, &AntTheme::themeModeChanged, this, [this]() {
         requestTriggerUpdate(QStringLiteral("themeMode"));
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateTriggerCaches();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         updatePopupGeometry();
+        if (m_popup)
+        {
+            const bool preserveOpen = m_popup->property("antColorPickerPreserveOpenOnThemeChange").toBool();
+            m_popup->setProperty("antColorPickerPreserveOpenOnThemeChange", false);
+            if (preserveOpen && m_open)
+            {
+                if (!m_appEventFilterInstalled)
+                {
+                    qApp->installEventFilter(this);
+                    m_appEventFilterInstalled = true;
+                }
+                if (!m_popup->isVisible())
+                {
+                    m_popup->setWindowOpacity(1.0);
+                    m_popup->show();
+                    m_popup->raise();
+                }
+                m_popup->update();
+            }
+        }
         requestTriggerUpdate(QStringLiteral("theme"));
     });
     syncTriggerPerfCounters();
@@ -846,6 +875,7 @@ void AntColorPicker::setOpen(bool open)
         {
             m_popup = new ColorPickerPopup(this);
         }
+        m_popup->setProperty("antColorPickerPreserveOpenOnThemeChange", false);
         static_cast<ColorPickerPopup*>(m_popup)->setCurrentColor(m_currentColor);
         updatePopupGeometry();
         if (!m_appEventFilterInstalled)
@@ -863,6 +893,7 @@ void AntColorPicker::setOpen(bool open)
     }
     else if (m_popup)
     {
+        m_popup->setProperty("antColorPickerPreserveOpenOnThemeChange", false);
         if (m_appEventFilterInstalled)
         {
             qApp->removeEventFilter(this);
@@ -1023,7 +1054,10 @@ bool AntColorPicker::eventFilter(QObject* watched, QEvent* event)
     }
     else if (m_open && event->type() == QEvent::ApplicationDeactivate)
     {
-        setOpen(false);
+        if (!m_popup || !m_popup->property("antColorPickerPreserveOpenOnThemeChange").toBool())
+        {
+            setOpen(false);
+        }
     }
     return QWidget::eventFilter(watched, event);
 }

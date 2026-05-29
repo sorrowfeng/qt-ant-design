@@ -167,7 +167,7 @@ AntEmptyStyle::AntEmptyStyle(QStyle* style)
 
 void AntEmptyStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntEmpty*>(widget))
     {
         widget->installEventFilter(this);
@@ -181,7 +181,7 @@ void AntEmptyStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntEmptyStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

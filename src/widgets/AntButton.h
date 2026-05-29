@@ -92,7 +92,7 @@ private:
     QRectF contentRect(const Metrics& metrics) const;
     QColor waveColor() const;
     void updateCursorState();
-    void updateGeometryFromState();
+    void updateGeometryFromState(bool notifyGeometry = true);
     QRect spinnerIndicatorRect() const;
     void updateSpinnerRegion();
     void updateSpinnerTimer();

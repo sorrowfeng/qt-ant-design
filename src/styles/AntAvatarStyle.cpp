@@ -100,7 +100,7 @@ AntAvatarStyle::AntAvatarStyle(QStyle* style)
 
 void AntAvatarStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntAvatar*>(widget))
     {
         widget->installEventFilter(this);
@@ -114,7 +114,7 @@ void AntAvatarStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntAvatarStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

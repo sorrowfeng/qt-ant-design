@@ -20,6 +20,32 @@
 #include "widgets/AntCarousel.h"
 #include "widgets/AntCollapse.h"
 
+namespace
+{
+class ThemeModeRestorerForDataDisplayBTest
+{
+public:
+    ThemeModeRestorerForDataDisplayBTest()
+        : m_originalMode(antTheme->themeMode())
+    {
+    }
+
+    ~ThemeModeRestorerForDataDisplayBTest()
+    {
+        antTheme->setThemeMode(m_originalMode);
+        QCoreApplication::processEvents();
+    }
+
+    Ant::ThemeMode alternateMode() const
+    {
+        return m_originalMode == Ant::ThemeMode::Dark ? Ant::ThemeMode::Default : Ant::ThemeMode::Dark;
+    }
+
+private:
+    Ant::ThemeMode m_originalMode;
+};
+} // namespace
+
 class TestAntDataDisplayB : public QObject
 {
     Q_OBJECT
@@ -700,6 +726,15 @@ void TestAntDataDisplayB::listUsesExpandingLayoutPolicy()
     QCOMPARE(list->width(), host.width());
     QCOMPARE(list->height(), host.height());
     QVERIFY(list->maximumScrollOffset() > 0);
+
+    auto* firstItem = list->itemAt(0);
+    QVERIFY(firstItem);
+    ThemeModeRestorerForDataDisplayBTest restoreTheme;
+    const int itemThemeGeometryUpdates = firstItem->property("antThemeRefreshUpdateGeometryCount").toInt();
+    antTheme->setThemeMode(restoreTheme.alternateMode());
+    QCoreApplication::processEvents();
+    QCOMPARE(firstItem->property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(firstItem->property("antThemeRefreshUpdateGeometryCount").toInt(), itemThemeGeometryUpdates);
 }
 
 void TestAntDataDisplayB::treeCachesFlattenedVisibleNodes()

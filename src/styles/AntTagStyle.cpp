@@ -15,7 +15,7 @@ AntTagStyle::AntTagStyle(QStyle* style)
 
 void AntTagStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntTag*>(widget))
     {
         widget->installEventFilter(this);
@@ -29,7 +29,7 @@ void AntTagStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntTagStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

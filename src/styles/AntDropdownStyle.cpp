@@ -15,7 +15,7 @@ AntDropdownStyle::AntDropdownStyle(QStyle* style)
 
 void AntDropdownStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntDropdown*>(widget))
     {
         widget->installEventFilter(this);
@@ -28,7 +28,7 @@ void AntDropdownStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntDropdownStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

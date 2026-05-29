@@ -145,6 +145,7 @@ public Q_SLOTS:
     void toggleThemeMode();
 
 Q_SIGNALS:
+    void themeModeAboutToChange(Ant::ThemeMode mode);
     void themeModeChanged(Ant::ThemeMode mode);
     void themeChanged();
 

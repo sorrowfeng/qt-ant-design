@@ -9,14 +9,18 @@
 
 #include "../styles/AntLayoutStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 
 // ─── AntLayoutHeader ───
 
 AntLayoutHeader::AntLayoutHeader(QWidget* parent)
     : QWidget(parent)
 {
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
 }
@@ -43,8 +47,11 @@ void AntLayoutHeader::paintEvent(QPaintEvent* event)
 AntLayoutFooter::AntLayoutFooter(QWidget* parent)
     : QWidget(parent)
 {
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
 }
@@ -71,8 +78,11 @@ void AntLayoutFooter::paintEvent(QPaintEvent* event)
 AntLayoutContent::AntLayoutContent(QWidget* parent)
     : QWidget(parent)
 {
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
 }
@@ -99,8 +109,11 @@ void AntLayoutContent::paintEvent(QPaintEvent* event)
 AntLayoutSider::AntLayoutSider(QWidget* parent)
     : QWidget(parent)
 {
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
 }

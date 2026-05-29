@@ -13,7 +13,7 @@ AntTabsStyle::AntTabsStyle(QStyle* style)
 
 void AntTabsStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntTabs*>(widget))
     {
         widget->setAttribute(Qt::WA_Hover);
@@ -22,7 +22,7 @@ void AntTabsStyle::polish(QWidget* widget)
 
 void AntTabsStyle::unpolish(QWidget* widget)
 {
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntTabsStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

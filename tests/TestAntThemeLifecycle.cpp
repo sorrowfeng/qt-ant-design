@@ -4,12 +4,17 @@
 #include <QFrame>
 #include <QPointer>
 #include <QPushButton>
+#include <QStyle>
 #include <QTest>
+#include <QVector>
 #include <QWidget>
 
 #include <functional>
+#include <utility>
 
 #include "core/AntTheme.h"
+#include "core/AntStyleBase.h"
+#include "styles/AntTagStyle.h"
 #include "widgets/AntAffix.h"
 #include "widgets/AntAlert.h"
 #include "widgets/AntAnchor.h"
@@ -102,6 +107,7 @@ class TestAntThemeLifecycle : public QObject
 private slots:
     void allControlsSurviveThemeSwitchAndDestroyCleanly();
     void openPopupsSurviveThemeSwitch();
+    void styleThemeUpdateScopesToOwnedWidget();
 };
 
 namespace
@@ -133,6 +139,62 @@ public:
 
 private:
     Ant::ThemeMode m_originalMode;
+};
+
+class ThemeMetricProbe : public QWidget
+{
+    Q_OBJECT
+
+public:
+    using QWidget::QWidget;
+
+    QSize sizeHint() const override
+    {
+        return QSize(120, antTheme->themeMode() == Ant::ThemeMode::Dark ? 48 : 24);
+    }
+
+    QSize minimumSizeHint() const override
+    {
+        return sizeHint();
+    }
+};
+
+class ThemeMetricProbeStyle : public AntStyleBase
+{
+public:
+    explicit ThemeMetricProbeStyle(QStyle* style = nullptr)
+        : AntStyleBase(style)
+    {
+        connectThemeUpdate<ThemeMetricProbe>();
+    }
+};
+
+class ThemeStableProbe : public QWidget
+{
+    Q_OBJECT
+
+public:
+    using QWidget::QWidget;
+
+    QSize sizeHint() const override
+    {
+        return QSize(120, 24);
+    }
+
+    QSize minimumSizeHint() const override
+    {
+        return sizeHint();
+    }
+};
+
+class ThemeStableProbeStyle : public AntStyleBase
+{
+public:
+    explicit ThemeStableProbeStyle(QStyle* style = nullptr)
+        : AntStyleBase(style)
+    {
+        connectThemeUpdate<ThemeStableProbe>();
+    }
 };
 
 QList<ObjectCase> objectCases()
@@ -438,6 +500,97 @@ void TestAntThemeLifecycle::openPopupsSurviveThemeSwitch()
     dropdown.setOpen(false);
     popover.setOpen(false);
     tooltip.hideTooltip();
+}
+
+void TestAntThemeLifecycle::styleThemeUpdateScopesToOwnedWidget()
+{
+    ThemeModeGuard guard;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    QCoreApplication::processEvents();
+
+    QWidget host;
+    host.resize(900, 640);
+
+    QVector<AntTag*> tags;
+    tags.reserve(96);
+    for (int i = 0; i < 96; ++i)
+    {
+        auto* tag = new AntTag(QStringLiteral("Tag %1").arg(i), &host);
+        tag->move(8 + (i % 12) * 72, 8 + (i / 12) * 32);
+        tags.append(tag);
+    }
+
+    for (int i = 0; i < 240; ++i)
+    {
+        auto* decoy = new QWidget(&host);
+        decoy->setObjectName(QStringLiteral("ThemeDecoy_%1").arg(i));
+    }
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+
+    for (AntTag* tag : std::as_const(tags))
+    {
+        QObject* styleObject = tag->style();
+        QVERIFY(styleObject != nullptr);
+        QCOMPARE(styleObject->property("antStyleThemeUpdateCount").toInt(), 1);
+        QCOMPARE(styleObject->property("antStyleThemeUsesGlobalWidgetScan").toBool(), false);
+        QCOMPARE(styleObject->property("antStyleThemeCandidateCount").toInt(), 1);
+        QCOMPARE(styleObject->property("antStyleThemeUpdatedWidgetCount").toInt(), 1);
+        QVERIFY(tag->property("antStyleThemeSizeHintChanged").isValid());
+    }
+
+    auto* sharedStyle = new AntTagStyle(host.style());
+    sharedStyle->setParent(&host);
+    AntTag sharedA(QStringLiteral("Shared A"), &host);
+    AntTag sharedB(QStringLiteral("Shared B"), &host);
+    sharedA.setStyle(sharedStyle);
+    sharedB.setStyle(sharedStyle);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(sharedStyle->property("antStyleThemeUsesGlobalWidgetScan").toBool(), false);
+    QCOMPARE(sharedStyle->property("antStyleThemeCandidateCount").toInt(), 2);
+    QCOMPARE(sharedStyle->property("antStyleThemeUpdatedWidgetCount").toInt(), 2);
+    QVERIFY(sharedA.property("antStyleThemeSizeHintChanged").isValid());
+    QVERIFY(sharedB.property("antStyleThemeSizeHintChanged").isValid());
+
+    ThemeStableProbe stableProbe(&host);
+    auto* stableStyle = new ThemeStableProbeStyle(stableProbe.style());
+    stableStyle->setParent(&stableProbe);
+    stableProbe.setStyle(stableStyle);
+    stableProbe.ensurePolished();
+    QCOMPARE(stableProbe.sizeHint().height(), 24);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(stableStyle->property("antStyleThemeUsesGlobalWidgetScan").toBool(), false);
+    QCOMPARE(stableStyle->property("antStyleThemeCandidateCount").toInt(), 1);
+    QCOMPARE(stableStyle->property("antStyleThemeUpdatedWidgetCount").toInt(), 1);
+    QCOMPARE(stableProbe.property("antStyleThemeSizeHintChanged").toBool(), false);
+    QCOMPARE(stableProbe.property("antStyleThemeUpdateGeometryCount").toInt(), 0);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    QCoreApplication::processEvents();
+
+    ThemeMetricProbe metricProbe(&host);
+    auto* metricStyle = new ThemeMetricProbeStyle(metricProbe.style());
+    metricStyle->setParent(&metricProbe);
+    metricProbe.setStyle(metricStyle);
+    metricProbe.ensurePolished();
+    metricProbe.show();
+    QCOMPARE(metricProbe.sizeHint().height(), 24);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+
+    QCOMPARE(metricStyle->property("antStyleThemeUsesGlobalWidgetScan").toBool(), false);
+    QCOMPARE(metricStyle->property("antStyleThemeCandidateCount").toInt(), 1);
+    QCOMPARE(metricStyle->property("antStyleThemeUpdatedWidgetCount").toInt(), 1);
+    QCOMPARE(metricProbe.property("antStyleThemeSizeHintChanged").toBool(), true);
+    QCOMPARE(metricProbe.property("antStyleThemeUpdateGeometryCount").toInt(), 1);
 }
 
 QTEST_MAIN(TestAntThemeLifecycle)

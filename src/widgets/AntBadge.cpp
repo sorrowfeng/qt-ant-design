@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntPalette.h"
 #include "styles/AntBadgeStyle.h"
 
@@ -79,10 +80,15 @@ AntBadge::AntBadge(QWidget* parent)
     m_indicatorOverlay = new BadgeIndicatorOverlay(this);
     m_indicatorOverlay->raise();
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateBadgePaintCache();
-        updateGeometry();
-        updateContentGeometry();
+        if (AntThemeRefresh::updateGeometryIfSizeHintChanged(this))
+        {
+            updateContentGeometry();
+        }
         requestBadgeUpdate(rect(), QStringLiteral("theme"), true);
     });
 

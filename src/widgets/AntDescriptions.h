@@ -97,7 +97,7 @@ protected:
 private:
     void rebuildLayout();
     void rebuildGrid();
-    void updateTheme();
+    void updateTheme(bool notifyGeometry = true);
     void updateItemLabel(AntDescriptionsItem* item);
     void updateItemContent(AntDescriptionsItem* item);
     void invalidateSizeHintCache();

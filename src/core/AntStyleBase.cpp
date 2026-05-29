@@ -53,6 +53,18 @@ AntStyleBase::AntStyleBase(QStyle* style)
 {
 }
 
+void AntStyleBase::polish(QWidget* widget)
+{
+    QProxyStyle::polish(widget);
+    registerThemeWidget(widget);
+}
+
+void AntStyleBase::unpolish(QWidget* widget)
+{
+    unregisterThemeWidget(widget);
+    QProxyStyle::unpolish(widget);
+}
+
 void AntStyleBase::drawCrispRoundedRect(QPainter* painter, const QRect& rect,
     const QPen& pen, const QBrush& brush, qreal rx, qreal ry)
 {
@@ -84,4 +96,71 @@ bool AntStyleBase::eventFilter(QObject* watched, QEvent* event)
 bool AntStyleBase::drawWidget(QWidget* /*widget*/, QPaintEvent* /*event*/)
 {
     return false;
+}
+
+void AntStyleBase::updateThemeTarget(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    widget->setProperty("antStyleThemeSizeHintBefore", widget->property("antStyleThemeCachedSizeHint"));
+    widget->setProperty("antStyleThemeMinimumSizeHintBefore",
+                        widget->property("antStyleThemeCachedMinimumSizeHint"));
+    unpolish(widget);
+    polish(widget);
+    onThemeUpdate(widget);
+}
+
+void AntStyleBase::cacheThemeGeometryHints(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    widget->setProperty("antStyleThemeCachedSizeHint", widget->sizeHint());
+    widget->setProperty("antStyleThemeCachedMinimumSizeHint", widget->minimumSizeHint());
+}
+
+void AntStyleBase::pruneThemeWidgets()
+{
+    for (int i = m_themeWidgets.size() - 1; i >= 0; --i)
+    {
+        if (m_themeWidgets.at(i).isNull())
+        {
+            m_themeWidgets.removeAt(i);
+        }
+    }
+}
+
+void AntStyleBase::registerThemeWidget(QWidget* widget)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    pruneThemeWidgets();
+    for (const QPointer<QWidget>& watched : m_themeWidgets)
+    {
+        if (watched.data() == widget)
+        {
+            return;
+        }
+    }
+    m_themeWidgets.append(QPointer<QWidget>(widget));
+}
+
+void AntStyleBase::unregisterThemeWidget(QWidget* widget)
+{
+    for (int i = m_themeWidgets.size() - 1; i >= 0; --i)
+    {
+        QWidget* watched = m_themeWidgets.at(i).data();
+        if (!watched || watched == widget)
+        {
+            m_themeWidgets.removeAt(i);
+        }
+    }
 }

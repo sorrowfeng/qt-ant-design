@@ -5,6 +5,7 @@
 #include <QSignalSpy>
 #include <QPointer>
 #include <QTest>
+#include "core/AntTheme.h"
 #include "widgets/AntAlert.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntDrawer.h"
@@ -19,6 +20,27 @@
 #include "widgets/AntToolTip.h"
 #include "widgets/AntTour.h"
 #include "widgets/AntWindow.h"
+
+namespace
+{
+class ThemeModeRestorerForFeedbackTest
+{
+public:
+    ThemeModeRestorerForFeedbackTest()
+        : m_originalMode(antTheme->themeMode())
+    {
+    }
+
+    ~ThemeModeRestorerForFeedbackTest()
+    {
+        antTheme->setThemeMode(m_originalMode);
+        QCoreApplication::processEvents();
+    }
+
+private:
+    Ant::ThemeMode m_originalMode;
+};
+} // namespace
 
 class TestAntFeedback : public QObject
 {
@@ -1090,6 +1112,16 @@ void TestAntFeedback::skeletonCachesLayoutAndScopesShimmer()
     skeleton.grab();
     QVERIFY(skeleton.property("antSkeletonLayoutBuildCount").toInt() > buildsBeforeRound);
 
+    ThemeModeRestorerForFeedbackTest restoreTheme;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    QCoreApplication::processEvents();
+    const int themeGeometryUpdates = skeleton.property("antThemeRefreshUpdateGeometryCount").toInt();
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+    QCOMPARE(skeleton.property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(skeleton.property("antThemeRefreshUpdateGeometryCount").toInt(), themeGeometryUpdates);
+    QCOMPARE(skeleton.property("antSkeletonLastUpdateMode").toString(), QStringLiteral("theme"));
+
     skeleton.hide();
     const int pausedOffset = skeleton.shimmerOffset();
     QTest::qWait(90);
@@ -1165,6 +1197,16 @@ void TestAntFeedback::spinCachesLayoutAndScopesAnimation()
     QTRY_VERIFY_WITH_TIMEOUT(!spin.property("antSpinAnimationTimerActive").toBool(), 120);
     spin.grab();
     QVERIFY(spin.property("antSpinLayoutBuildCount").toInt() > buildsBeforePercent);
+
+    ThemeModeRestorerForFeedbackTest restoreTheme;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    QCoreApplication::processEvents();
+    const int themeGeometryUpdates = spin.property("antThemeRefreshUpdateGeometryCount").toInt();
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+    QCOMPARE(spin.property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(spin.property("antThemeRefreshUpdateGeometryCount").toInt(), themeGeometryUpdates);
+    QCOMPARE(spin.property("antSpinLastUpdateMode").toString(), QStringLiteral("theme"));
 
     spin.setPercent(-1);
     QTRY_VERIFY_WITH_TIMEOUT(spin.property("antSpinAnimationTimerActive").toBool(), 120);

@@ -14,7 +14,7 @@ AntSpaceStyle::AntSpaceStyle(QStyle* style)
 
 void AntSpaceStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntSpace*>(widget))
     {
         widget->installEventFilter(this);
@@ -27,7 +27,7 @@ void AntSpaceStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntSpaceStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

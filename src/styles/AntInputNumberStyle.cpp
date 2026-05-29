@@ -158,7 +158,7 @@ AntInputNumberStyle::AntInputNumberStyle(QStyle* style)
 
 void AntInputNumberStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntInputNumber*>(widget))
     {
         widget->installEventFilter(this);
@@ -172,7 +172,7 @@ void AntInputNumberStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntInputNumberStyle::drawComplexControl(ComplexControl control,

@@ -8,6 +8,7 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QWidget>
+#include "core/AntTheme.h"
 #include "widgets/AntCascader.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntTimePicker.h"
@@ -33,6 +34,29 @@ private slots:
 
 namespace
 {
+class ThemeModeRestorerForDataEntryBTest
+{
+public:
+    ThemeModeRestorerForDataEntryBTest()
+        : m_originalMode(antTheme->themeMode())
+    {
+    }
+
+    ~ThemeModeRestorerForDataEntryBTest()
+    {
+        antTheme->setThemeMode(m_originalMode);
+        QCoreApplication::processEvents();
+    }
+
+    Ant::ThemeMode alternateMode() const
+    {
+        return m_originalMode == Ant::ThemeMode::Dark ? Ant::ThemeMode::Default : Ant::ThemeMode::Dark;
+    }
+
+private:
+    Ant::ThemeMode m_originalMode;
+};
+
 QPoint cascaderPopupCellCenter(int column, int row, int rowHeight = 32)
 {
     constexpr int shadow = 32;
@@ -397,6 +421,15 @@ void TestAntDataEntryB::mentionsReusesPopupRowsAndScopesHighlight()
     QTest::keyClick(editor, Qt::Key_Down);
     QTRY_VERIFY(mentions.property("antMentionsHighlightedRowUpdateCount").toInt() > highlightedUpdatesAfterFirstMove);
 
+    ThemeModeRestorerForDataEntryBTest restoreMentionsTheme;
+    const int mentionsThemeGeometryUpdates = mentions.property("antThemeRefreshUpdateGeometryCount").toInt();
+    antTheme->setThemeMode(restoreMentionsTheme.alternateMode());
+    QCoreApplication::processEvents();
+    QCOMPARE(mentions.property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(mentions.property("antThemeRefreshUpdateGeometryCount").toInt(), mentionsThemeGeometryUpdates);
+    QCOMPARE(mentions.property("antMentionsThemeFixedHeightChanged").toBool(), false);
+    QVERIFY(popup->isVisible());
+
     QSignalSpy selectedSpy(&mentions, &AntMentions::mentionSelected);
     QTest::keyClick(editor, Qt::Key_Return);
     QCOMPARE(selectedSpy.count(), 1);
@@ -686,6 +719,14 @@ void TestAntDataEntryB::treeSelectReusesPopupTreeAndCachesRows()
     QCOMPARE(treeSelect.property("antTreeSelectPopupTreeRebuildCount").toInt(), 1);
     QVERIFY(treeSelect.property("antTreeSelectVisibleRowsCacheHitCount").toInt() > visibleRowHitsBeforeReopen);
     QVERIFY(treeSelect.property("antTreeSelectPopupGeometrySkipCount").toInt() > geometrySkipsBeforeReopen);
+
+    ThemeModeRestorerForDataEntryBTest restoreTreeTheme;
+    const int treeThemeGeometryUpdates = treeSelect.property("antThemeRefreshUpdateGeometryCount").toInt();
+    antTheme->setThemeMode(restoreTreeTheme.alternateMode());
+    QCoreApplication::processEvents();
+    QCOMPARE(treeSelect.property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(treeSelect.property("antThemeRefreshUpdateGeometryCount").toInt(), treeThemeGeometryUpdates);
+    QCOMPARE(treeSelect.property("antTreeSelectLastUpdateMode").toString(), QStringLiteral("theme"));
 
     const int rebuildsBeforeCheckable = treeSelect.property("antTreeSelectPopupTreeRebuildCount").toInt();
     treeSelect.setTreeCheckable(true);

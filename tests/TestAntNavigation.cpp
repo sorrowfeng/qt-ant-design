@@ -11,6 +11,7 @@
 #include <QScrollBar>
 #include <QStyle>
 #include <QVBoxLayout>
+#include "core/AntTheme.h"
 #include "widgets/AntBreadcrumb.h"
 #include "widgets/AntDropdown.h"
 #include "widgets/AntMenu.h"
@@ -18,6 +19,32 @@
 #include "widgets/AntSteps.h"
 #include "widgets/AntTabs.h"
 #include "widgets/AntAnchor.h"
+
+namespace
+{
+class ThemeModeRestorerForNavigationTest
+{
+public:
+    ThemeModeRestorerForNavigationTest()
+        : m_originalMode(antTheme->themeMode())
+    {
+    }
+
+    ~ThemeModeRestorerForNavigationTest()
+    {
+        antTheme->setThemeMode(m_originalMode);
+        QCoreApplication::processEvents();
+    }
+
+    Ant::ThemeMode alternateMode() const
+    {
+        return m_originalMode == Ant::ThemeMode::Dark ? Ant::ThemeMode::Default : Ant::ThemeMode::Dark;
+    }
+
+private:
+    Ant::ThemeMode m_originalMode;
+};
+} // namespace
 
 class TestAntNavigation : public QObject
 {
@@ -471,6 +498,13 @@ void TestAntNavigation::paginationCachesButtonGeometry()
     auto* jumper = pagination.findChild<QLineEdit*>(QStringLiteral("AntPaginationQuickJumper"));
     QVERIFY(jumper);
     QTRY_VERIFY(jumper->isVisible());
+
+    ThemeModeRestorerForNavigationTest restoreTheme;
+    const int themeGeometryUpdates = pagination.property("antThemeRefreshUpdateGeometryCount").toInt();
+    antTheme->setThemeMode(restoreTheme.alternateMode());
+    QCoreApplication::processEvents();
+    QCOMPARE(pagination.property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(pagination.property("antThemeRefreshUpdateGeometryCount").toInt(), themeGeometryUpdates);
 }
 
 void TestAntNavigation::stepsCachesLayoutAndScopesUpdates()

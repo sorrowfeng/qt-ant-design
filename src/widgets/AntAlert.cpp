@@ -9,6 +9,7 @@
 #include "AntButton.h"
 #include "AntIcon.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntAlertStyle.h"
 #include "styles/AntPalette.h"
 
@@ -19,11 +20,16 @@ AntAlert::AntAlert(QWidget* parent)
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateAlertLayout();
         clearIconPixmapCache();
-        syncLayout();
-        updateGeometry();
+        if (AntThemeRefresh::updateGeometryIfSizeHintChanged(this))
+        {
+            syncLayout();
+        }
         requestAlertUpdate(rect(), QStringLiteral("theme"));
     });
     syncAlertPerfCounters();

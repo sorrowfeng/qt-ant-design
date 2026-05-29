@@ -14,7 +14,7 @@ AntCardStyle::AntCardStyle(QStyle* style)
 
 void AntCardStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntCard*>(widget))
     {
         widget->installEventFilter(this);
@@ -28,7 +28,7 @@ void AntCardStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntCardStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

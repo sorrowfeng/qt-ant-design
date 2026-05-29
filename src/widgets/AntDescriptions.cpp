@@ -11,6 +11,7 @@
 
 #include "../styles/AntDescriptionsStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 
 namespace
 {
@@ -140,8 +141,12 @@ AntDescriptions::AntDescriptions(QWidget* parent)
     updateTheme();
     syncDescriptionsPerfCounters();
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateTheme();
+        updateTheme(false);
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
     });
 }
 
@@ -368,7 +373,7 @@ void AntDescriptions::rebuildGrid()
     syncDescriptionsPerfCounters();
 }
 
-void AntDescriptions::updateTheme()
+void AntDescriptions::updateTheme(bool notifyGeometry)
 {
     if (!m_titleLabel || !m_extraLabel)
     {
@@ -430,7 +435,10 @@ void AntDescriptions::updateTheme()
     }
 
     invalidateSizeHintCache();
-    updateGeometry();
+    if (notifyGeometry)
+    {
+        updateGeometry();
+    }
     update();
     syncDescriptionsPerfCounters();
 }

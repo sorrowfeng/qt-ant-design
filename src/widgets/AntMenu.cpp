@@ -23,6 +23,7 @@
 #include "AntIcon.h"
 #include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 
@@ -237,9 +238,12 @@ AntMenu::AntMenu(QWidget* parent)
     m_subMenuCloseTimer = new QTimer(this);
     m_subMenuCloseTimer->setSingleShot(true);
     connect(m_subMenuCloseTimer, &QTimer::timeout, this, &AntMenu::hideSubMenuPopup);
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateVisibleItems();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
     syncMenuPerfCounters();

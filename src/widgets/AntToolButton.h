@@ -72,7 +72,7 @@ private:
     };
     Metrics metrics() const;
     int cornerRadius(const Metrics& m) const;
-    void updateGeometryFromState();
+    void updateGeometryFromState(bool notifyGeometry = true);
     QRect spinnerIndicatorRect() const;
     QRect arrowIndicatorRect() const;
     void updateSpinnerRegion();

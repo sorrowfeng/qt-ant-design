@@ -21,7 +21,7 @@ AntRadioStyle::AntRadioStyle(QStyle* style)
 
 void AntRadioStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntRadio*>(widget))
     {
         widget->installEventFilter(this);
@@ -35,7 +35,7 @@ void AntRadioStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntRadioStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

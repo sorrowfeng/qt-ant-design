@@ -15,6 +15,7 @@
 
 #include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "../styles/AntTreeSelectStyle.h"
 
 namespace
@@ -287,11 +288,14 @@ AntTreeSelect::AntTreeSelect(QWidget* parent)
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     syncTreeSelectPerfCounters();
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateTriggerLayout();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         updateTriggerRegion(rect(), QStringLiteral("theme"));
-        if (m_popup)
+        if (m_popup && m_popup->isVisible())
         {
             m_popup->refreshFromOwner();
             m_popup->update();

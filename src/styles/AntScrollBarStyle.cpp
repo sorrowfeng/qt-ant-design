@@ -96,7 +96,7 @@ AntScrollBarStyle::AntScrollBarStyle(QStyle* style)
 
 void AntScrollBarStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntScrollBar*>(widget))
     {
         widget->setAttribute(Qt::WA_Hover, true);
@@ -106,7 +106,7 @@ void AntScrollBarStyle::polish(QWidget* widget)
 
 void AntScrollBarStyle::unpolish(QWidget* widget)
 {
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntScrollBarStyle::drawComplexControl(ComplexControl control,

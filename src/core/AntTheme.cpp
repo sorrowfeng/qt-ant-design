@@ -183,6 +183,7 @@ void AntTheme::setThemeMode(Ant::ThemeMode mode)
         return;
     }
 
+    Q_EMIT themeModeAboutToChange(mode);
     m_themeMode = mode;
     Q_EMIT themeModeChanged(m_themeMode);
     Q_EMIT themeChanged();

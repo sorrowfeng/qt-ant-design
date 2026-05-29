@@ -13,12 +13,12 @@ AntPopconfirmStyle::AntPopconfirmStyle(QStyle* style)
 
 void AntPopconfirmStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
 }
 
 void AntPopconfirmStyle::unpolish(QWidget* widget)
 {
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntPopconfirmStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

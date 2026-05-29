@@ -9,6 +9,7 @@
 #include <QScrollBar>
 #include <QTest>
 #include <QVBoxLayout>
+#include "core/AntTheme.h"
 #include "widgets/AntDivider.h"
 #include "widgets/AntFlex.h"
 #include "widgets/AntGrid.h"
@@ -16,6 +17,27 @@
 #include "widgets/AntLayout.h"
 #include "widgets/AntMasonry.h"
 #include "widgets/AntAffix.h"
+
+namespace
+{
+class ThemeModeRestorerForLayoutTest
+{
+public:
+    ThemeModeRestorerForLayoutTest()
+        : m_originalMode(antTheme->themeMode())
+    {
+    }
+
+    ~ThemeModeRestorerForLayoutTest()
+    {
+        antTheme->setThemeMode(m_originalMode);
+        QCoreApplication::processEvents();
+    }
+
+private:
+    Ant::ThemeMode m_originalMode;
+};
+} // namespace
 
 class TestAntLayout : public QObject
 {
@@ -370,6 +392,24 @@ void TestAntLayout::layout()
     QCOMPARE(footer->geometry(), QRect(0, 290, 640, 70));
     QCOMPARE(sider->geometry(), QRect(0, 64, 180, 226));
     QCOMPARE(content->geometry(), QRect(180, 64, 460, 226));
+
+    ThemeModeRestorerForLayoutTest restoreTheme;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    QCoreApplication::processEvents();
+    const int headerThemeGeometryUpdates = header->property("antThemeRefreshUpdateGeometryCount").toInt();
+    const int footerThemeGeometryUpdates = footer->property("antThemeRefreshUpdateGeometryCount").toInt();
+    const int contentThemeGeometryUpdates = content->property("antThemeRefreshUpdateGeometryCount").toInt();
+    const int siderThemeGeometryUpdates = sider->property("antThemeRefreshUpdateGeometryCount").toInt();
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+    QCOMPARE(header->property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(footer->property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(content->property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(sider->property("antThemeRefreshSizeHintChanged").toBool(), false);
+    QCOMPARE(header->property("antThemeRefreshUpdateGeometryCount").toInt(), headerThemeGeometryUpdates);
+    QCOMPARE(footer->property("antThemeRefreshUpdateGeometryCount").toInt(), footerThemeGeometryUpdates);
+    QCOMPARE(content->property("antThemeRefreshUpdateGeometryCount").toInt(), contentThemeGeometryUpdates);
+    QCOMPARE(sider->property("antThemeRefreshUpdateGeometryCount").toInt(), siderThemeGeometryUpdates);
 
     const int syncCount = w->property("antLayoutSyncCount").toInt();
     const int applyCount = w->property("antLayoutGeometryApplyCount").toInt();

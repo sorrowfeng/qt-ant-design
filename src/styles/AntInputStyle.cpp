@@ -83,7 +83,7 @@ AntInputStyle::AntInputStyle(QStyle* style)
 
 void AntInputStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntInput*>(widget))
     {
         widget->installEventFilter(this);
@@ -97,7 +97,7 @@ void AntInputStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntInputStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

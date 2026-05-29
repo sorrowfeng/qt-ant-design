@@ -9,6 +9,7 @@
 #include <QTimer>
 
 #include "../styles/AntToolButtonStyle.h"
+#include "core/AntThemeRefresh_p.h"
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
 
@@ -26,8 +27,12 @@ AntToolButton::AntToolButton(QWidget* parent)
     style->setParent(this);
     setStyle(style);
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometryFromState();
+        updateGeometryFromState(false);
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
 
@@ -222,15 +227,21 @@ int AntToolButton::cornerRadius(const Metrics& m) const
     return m.radius;
 }
 
-void AntToolButton::updateGeometryFromState()
+void AntToolButton::updateGeometryFromState(bool notifyGeometry)
 {
     const Metrics m = metrics();
     QFont f = font();
     f.setPixelSize(m.fontSize);
-    setFont(f);
+    if (font() != f)
+    {
+        setFont(f);
+    }
     setMinimumHeight(m.height);
     setMaximumHeight(m.height);
-    updateGeometry();
+    if (notifyGeometry)
+    {
+        updateGeometry();
+    }
 }
 
 QRect AntToolButton::spinnerIndicatorRect() const

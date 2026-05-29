@@ -10,6 +10,7 @@
 
 #include "../styles/AntListStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -54,8 +55,11 @@ int tokenLineHeight(int fontSize)
 AntListItemMeta::AntListItemMeta(QWidget* parent)
     : QWidget(parent)
 {
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
 }
@@ -209,8 +213,11 @@ void AntListItemMeta::syncAvatarGeometry()
 AntListItem::AntListItem(QWidget* parent)
     : QWidget(parent)
 {
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
 }

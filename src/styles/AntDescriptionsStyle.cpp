@@ -13,7 +13,7 @@ AntDescriptionsStyle::AntDescriptionsStyle(QStyle* style)
 
 void AntDescriptionsStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntDescriptions*>(widget))
     {
         widget->installEventFilter(this);
@@ -26,7 +26,7 @@ void AntDescriptionsStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntDescriptionsStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

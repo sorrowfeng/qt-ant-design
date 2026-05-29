@@ -10,6 +10,7 @@
 
 #include "../styles/AntCheckBoxStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "core/AntWave.h"
 
 namespace
@@ -34,9 +35,12 @@ AntCheckBox::AntCheckBox(QWidget* parent)
         invalidateLayoutCache();
         update();
     });
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateLayoutCache();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
     syncCheckBoxPerfCounters();

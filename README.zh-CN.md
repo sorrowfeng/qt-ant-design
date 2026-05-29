@@ -46,7 +46,7 @@
 - 逐控件性能优化进度：[docs/performance-optimization.md](docs/performance-optimization.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
-- 当前 CTest 目标数：`37`；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-10`）
+- 当前 CTest 目标数：`37`；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-29`）
 
 ## 最近 Ant Design 对齐更新
 
@@ -67,7 +67,7 @@
 - Windows 10 走无 native caption 的窗口样式，并使用 legacy rounded mask 与透明软件阴影宿主窗口，避免最大化/还原后露出原生标题栏按钮，同时让普通窗口在缩放前后都保持从窗口边缘直接外扩、轻量、更接近 Win11 且圆角更干净的四周阴影。
 - Windows 已显示窗口切换置顶/取消置顶时改用 native `SetWindowPos` 原地更新，避免 Qt flags 重建窗口造成可见闪烁。
 - 标题栏新增置顶和亮暗主题切换按钮，使用内置官方 Ant Design 图标；所有标题栏按钮均可通过公开 API 控制显示或隐藏。
-- 内置主题按钮使用全窗口截图 overlay 和柔和揭示动画，让 Light/Dark 全局切换更连续。
+- 内置主题按钮使用全窗口截图 crossfade overlay，让 Light/Dark 全局切换更连续。
 
 ## 最近 Qt API 兼容更新
 
@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 
 当前已实现公开组件总数：`84`
 
-`src/widgets` 当前包含 `105` 个 `Ant*.h` 头文件：`84` 个公开组件头、`20` 个 Qt 风格别名头，以及内部弹层 helper `AntSelectPopup`。
+`src/widgets` 当前包含 `105` 个 `Ant*.h` 头文件：`84` 个公开组件头、`20` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`。
 
 Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
 
@@ -426,7 +426,7 @@ card->bodyLayout()->addWidget(new AntTypography("Card content"));
 AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 ```
 
-目前主题切换会触发所有 `QProxyStyle` 组件的 `polish / updateGeometry / update`。`AntWindow` 内置主题按钮会用全窗口截图 overlay 和柔和揭示动画包裹这次重绘，让 Light/Dark 全局切换更连续。
+对于基于 `QProxyStyle` 的组件，`AntStyleBase::connectThemeUpdate<T>()` 现在只刷新该 Style 实例拥有的控件或其局部 parent 子树；只有无法解析本地目标时才兜底扫描全局 widgets。Style 路径会在主题模式真正变化前缓存尺寸 hint，随后执行 `polish / onThemeUpdate / update`；只有主题相关尺寸指标确实变化时才调用 `updateGeometry()`。`AntWindow` 内置主题按钮会用全窗口截图 crossfade overlay 包裹这次重绘，让 Light/Dark 全局切换更连续。
 
 ## 开发指南与贡献
 

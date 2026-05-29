@@ -42,7 +42,7 @@ void AntPlainTextEditStyle::onThemeUpdate(QWidget* w)
 
 void AntPlainTextEditStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntPlainTextEdit*>(widget))
     {
         widget->installEventFilter(this);
@@ -56,7 +56,7 @@ void AntPlainTextEditStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntPlainTextEditStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option,

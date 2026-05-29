@@ -16,7 +16,7 @@ AntBadgeStyle::AntBadgeStyle(QStyle* style)
 
 void AntBadgeStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntBadge*>(widget))
     {
         widget->installEventFilter(this);
@@ -30,7 +30,7 @@ void AntBadgeStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntBadgeStyle::drawPrimitive(PrimitiveElement element,

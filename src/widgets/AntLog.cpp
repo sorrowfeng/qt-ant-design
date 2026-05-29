@@ -8,6 +8,7 @@
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTime>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include <utility>
@@ -18,6 +19,7 @@
 namespace
 {
 constexpr int kLevelCount = 5;
+constexpr int kAppendFlushThreshold = 128;
 
 QColor levelColor(AntLog::Level level)
 {
@@ -79,10 +81,16 @@ AntLog::AntLog(QWidget* parent)
 
     layout->addWidget(m_view);
 
+    m_appendFlushTimer = new QTimer(this);
+    m_appendFlushTimer->setSingleShot(true);
+    m_appendFlushTimer->setInterval(0);
+    connect(m_appendFlushTimer, &QTimer::timeout, this, &AntLog::flushPendingAppendViewUpdates);
+
     m_levelFormats.resize(kLevelCount);
     updateTheme();
     updateDiagnostics();
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        flushPendingAppendViewUpdates();
         updateTheme();
         rebuildDocument();
     });
@@ -93,6 +101,7 @@ void AntLog::setMaxEntries(int n)
 {
     n = qMax(1, n);
     if (m_maxEntries == n) return;
+    flushPendingAppendViewUpdates();
     m_maxEntries = n;
     m_view->document()->setMaximumBlockCount(m_maxEntries);
     const int sizeBefore = m_entries.size();
@@ -123,6 +132,7 @@ void AntLog::log(Level level, const QString& message)
 
 void AntLog::clear()
 {
+    flushPendingAppendViewUpdates();
     m_entries.clear();
     m_view->clear();
     updateDiagnostics();
@@ -138,13 +148,9 @@ void AntLog::appendEntry(Level level, const QString& message)
     const int sizeBeforeTrim = m_entries.size();
     trimEntries();
     insertEntry(entry);
-    updateDiagnostics(sizeBeforeTrim - m_entries.size());
-
-    if (m_autoScroll)
-    {
-        auto* sb = m_view->verticalScrollBar();
-        sb->setValue(sb->maximum());
-    }
+    const int trimmedCount = sizeBeforeTrim - m_entries.size();
+    scheduleAppendFlush(trimmedCount);
+    updateDiagnostics(trimmedCount);
 }
 
 void AntLog::trimEntries()
@@ -161,6 +167,7 @@ void AntLog::updateTheme()
 {
     const auto& token = antTheme->tokens();
     const QColor background = token.colorFillQuaternary;
+    bool appliedThemeWork = false;
     QPalette pal = m_view->palette();
     pal.setColor(QPalette::Base, background);
     pal.setColor(QPalette::Window, background);
@@ -172,22 +179,60 @@ void AntLog::updateTheme()
     pal.setColor(QPalette::Disabled, QPalette::Base, background);
     pal.setColor(QPalette::Disabled, QPalette::Window, background);
     pal.setColor(QPalette::Disabled, QPalette::Text, token.colorTextDisabled);
-    m_view->setPalette(pal);
-    m_view->viewport()->setAutoFillBackground(true);
-    m_view->viewport()->setPalette(pal);
-    m_view->setStyleSheet(QStringLiteral("QPlainTextEdit { background-color: %1; border: none; }")
-                              .arg(background.name()));
+    if (m_cachedViewPalette != pal || m_view->palette() != pal)
+    {
+        m_view->setPalette(pal);
+        m_cachedViewPalette = pal;
+        appliedThemeWork = true;
+    }
+    if (!m_view->viewport()->autoFillBackground())
+    {
+        m_view->viewport()->setAutoFillBackground(true);
+        appliedThemeWork = true;
+    }
+    if (m_cachedViewportPalette != pal || m_view->viewport()->palette() != pal)
+    {
+        m_view->viewport()->setPalette(pal);
+        m_cachedViewportPalette = pal;
+        appliedThemeWork = true;
+    }
+
+    const QString styleSheet = QStringLiteral("QPlainTextEdit { background-color: %1; border: none; }")
+                                   .arg(background.name());
+    if (m_themeStyleSheet != styleSheet || m_view->styleSheet() != styleSheet)
+    {
+        m_view->setStyleSheet(styleSheet);
+        m_themeStyleSheet = styleSheet;
+        appliedThemeWork = true;
+    }
 
     for (int i = 0; i < m_levelFormats.size(); ++i)
     {
         QTextCharFormat fmt;
         fmt.setForeground(levelColor(static_cast<Level>(i)));
-        m_levelFormats[i] = fmt;
+        if (m_levelFormats.at(i) != fmt)
+        {
+            m_levelFormats[i] = fmt;
+            appliedThemeWork = true;
+        }
     }
+
+    if (appliedThemeWork)
+    {
+        ++m_themeApplyCount;
+    }
+    else
+    {
+        ++m_themeSkipCount;
+    }
+    setProperty("antLogThemeApplyCount", m_themeApplyCount);
+    setProperty("antLogThemeSkipCount", m_themeSkipCount);
+    setProperty("antLogThemeStyleSheet", m_themeStyleSheet);
 }
 
 void AntLog::rebuildDocument()
 {
+    flushPendingAppendViewUpdates();
     const bool shouldScroll = m_autoScroll;
     const bool updatesEnabled = m_view->updatesEnabled();
     QSignalBlocker blocker(m_view->document());
@@ -221,7 +266,81 @@ void AntLog::insertEntry(const Entry& entry)
     QTextCursor cursor(m_view->document());
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(line + QStringLiteral("\n"), formatForLevel(entry.level));
+    ++m_appendInsertCount;
     setProperty("antLogUsesDocumentCursor", true);
+}
+
+void AntLog::scheduleAppendFlush(int trimmedCount)
+{
+    if (!m_view)
+    {
+        return;
+    }
+
+    if (!m_appendBatchActive)
+    {
+        m_appendBatchActive = true;
+        m_viewUpdatesEnabledBeforeAppendBatch = m_view->updatesEnabled();
+        if (m_viewUpdatesEnabledBeforeAppendBatch)
+        {
+            m_view->setUpdatesEnabled(false);
+        }
+        ++m_appendBatchStartCount;
+    }
+
+    ++m_pendingAppendCount;
+    m_pendingTrimmedCount += qMax(0, trimmedCount);
+
+    if (m_pendingAppendCount >= kAppendFlushThreshold)
+    {
+        flushPendingAppendViewUpdates();
+        return;
+    }
+
+    if (m_appendFlushTimer && !m_appendFlushTimer->isActive())
+    {
+        m_appendFlushTimer->start();
+    }
+}
+
+void AntLog::flushPendingAppendViewUpdates()
+{
+    if (!m_appendBatchActive)
+    {
+        updateDiagnostics();
+        return;
+    }
+
+    if (m_appendFlushTimer && m_appendFlushTimer->isActive())
+    {
+        m_appendFlushTimer->stop();
+    }
+
+    if (m_view)
+    {
+        if (m_viewUpdatesEnabledBeforeAppendBatch && !m_view->updatesEnabled())
+        {
+            m_view->setUpdatesEnabled(true);
+        }
+        else if (!m_viewUpdatesEnabledBeforeAppendBatch && m_view->updatesEnabled())
+        {
+            m_view->setUpdatesEnabled(false);
+        }
+
+        m_view->viewport()->update();
+        if (m_autoScroll)
+        {
+            auto* sb = m_view->verticalScrollBar();
+            sb->setValue(sb->maximum());
+        }
+    }
+
+    ++m_appendFlushCount;
+    const int trimmedCount = m_pendingTrimmedCount;
+    m_pendingAppendCount = 0;
+    m_pendingTrimmedCount = 0;
+    m_appendBatchActive = false;
+    updateDiagnostics(trimmedCount);
 }
 
 QTextCharFormat AntLog::formatForLevel(Level level) const
@@ -243,4 +362,8 @@ void AntLog::updateDiagnostics(int trimmedCount)
     setProperty("antLogDocumentBlockCount", m_view ? m_view->document()->blockCount() : 0);
     setProperty("antLogLastTrimmedCount", qMax(0, trimmedCount));
     setProperty("antLogUndoRedoEnabled", m_view ? m_view->isUndoRedoEnabled() : false);
+    setProperty("antLogAppendInsertCount", m_appendInsertCount);
+    setProperty("antLogPendingAppendCount", m_pendingAppendCount);
+    setProperty("antLogAppendBatchStartCount", m_appendBatchStartCount);
+    setProperty("antLogAppendFlushCount", m_appendFlushCount);
 }

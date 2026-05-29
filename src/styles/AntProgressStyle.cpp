@@ -31,7 +31,7 @@ AntProgressStyle::AntProgressStyle(QStyle* style)
 
 void AntProgressStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntProgress*>(widget))
     {
         widget->installEventFilter(this);
@@ -44,7 +44,7 @@ void AntProgressStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntProgressStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

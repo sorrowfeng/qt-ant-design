@@ -100,7 +100,7 @@ AntFloatButtonStyle::AntFloatButtonStyle(QStyle* style)
 
 void AntFloatButtonStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntFloatButton*>(widget))
     {
         widget->installEventFilter(this);
@@ -114,7 +114,7 @@ void AntFloatButtonStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntFloatButtonStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

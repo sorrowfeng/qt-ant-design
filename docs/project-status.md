@@ -10,12 +10,12 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | --- | --- |
 | Ant Design standard coverage | `70 / 70` top-level components covered |
 | Public Qt component count | `84` public components |
-| Widget headers | `105` headers in `src/widgets`: `84` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup` |
+| Widget headers | `105` headers in `src/widgets`: `84` public component headers, `20` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup` |
 | Qt / desktop extensions | `14` components |
 | Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `84 / 84` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
 | Dedicated examples intentionally absent | None |
-| Tests | `37` CTest targets configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-10` |
+| Tests | `37` CTest targets configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-29` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
@@ -24,6 +24,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 ## Recent Completed Work
 
 - Hardened `AntMessage` / `AntNotification` anchoring for desktop-window scenarios: hidden anchors suppress premature popups, visible `AntWindow` anchors are tracked across move, resize, show, hide, and window-state changes, active relayout is scoped to matching anchors, and multiple `AntWindow` instances keep their feedback stacks isolated.
+- Optimized the shared `AntStyleBase` theme path so per-widget styles update their owning widget directly instead of scanning all application widgets, and only request layout when theme-driven size hints actually change.
 - Softened the non-maximized Windows 10 `AntWindow` outline so frameless windows remain visible on similar backgrounds without the harsh pure-black border.
 - Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, serialized splitter/tab/floating named perspectives, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, threshold-activated translucent drag previews, toggleable center/edge drop guide squares, deterministic guided drop placement, manager-owned floating dock windows using the AntWindow-style Windows native frame/DWM rounded-corner/shadow path, double-click maximize/restore, and drag-back-to-layout support.
 - Added `docs/performance-optimization.md` as the starting point for the performance pass, with conservative optimization rules, validation expectations, priority order, and per-component progress/test tables covering all `84` public components.
@@ -138,7 +139,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
   - Added DWM rounded corners, border/shadow integration, and a public `cornerRadius` API for Windows builds.
   - Added title-bar pin and light/dark theme buttons with bundled official Ant Design icons, plus public visibility APIs for every title-bar button.
   - Reworked title-bar hover state cleanup so hover colors clear reliably when leaving title/content/native areas.
-  - Added a captured-frame `AntWindow` theme transition overlay with an 8 ms timer, 320 ms duration, smootherstep easing, high-DPI-safe captures, and a soft reveal that avoids black-hole artifacts.
+  - Added a captured-frame `AntWindow` theme transition overlay with a 16 ms timer, 220 ms duration, smootherstep easing, high-DPI-safe captures, and a crossfade path that avoids black-hole artifacts.
   - Embedded the Windows 10/11 compatibility manifest in the example app so the native Snap Layout flyout can appear on the maximize button.
   - Split the Windows native frame policy by OS build: Windows 11 keeps the caption-backed Snap Layout path, while Windows 10 removes `WS_CAPTION`, uses a legacy rounded mask for non-maximized corners, preserves a 1 px DWM extended frame for the outer shadow, and leaves maximized `WM_NCCALCSIZE` rectangles unshrunk so the work area is fully covered.
   - Reworked visible Windows topmost toggles to use native `SetWindowPos(HWND_TOPMOST/HWND_NOTOPMOST)`, preserving the Qt window flags without forcing a hide/show cycle.
@@ -197,7 +198,7 @@ cmake --build build --config Debug --target TestAntQtExtensions
 ctest --test-dir build -C Debug -R "^TestAntQtExtensions$" --output-on-failure
 ```
 
-Result: `TestAntQtExtensions` passed on `2026-05-20`. The test now verifies that `AntWindow` theme transition capture uses synchronous `render()` without event-loop capture, uses 220 ms / 16 ms transition timing, switches Win10 opaque-path windows to a light crossfade overlay, and keeps the Win11 caption path on circular reveal. The same target verifies `AntColorPicker` popup windows have no QFrame/native shadow edge, their bottom software shadow fades without a hard stacked line, and the hue/saturation field reuses its cached background while dragging so only the indicator region repaints.
+Result: `TestAntQtExtensions` passed on `2026-05-20`, with the AntWindow theme transition later unified so Win10 and Win11 both use the same captured-frame crossfade overlay. The test verifies that `AntWindow` theme transition capture uses synchronous `render()` without event-loop capture, uses 220 ms / 16 ms transition timing, and reports `transitionMode=crossfade`. The same target verifies `AntColorPicker` popup windows have no QFrame/native shadow edge, their bottom software shadow fades without a hard stacked line, and the hue/saturation field reuses its cached background while dragging so only the indicator region repaints.
 
 Follow-up: the theme transition path now activates the visible window layout tree before capturing the new themed frame, preventing Showcase wrapped text from being painted with new font metrics inside stale geometry. The targeted `windowThemeButtonShowsTransitionOverlay` subtest checks that a theme-dependent `sizeHint()` change is applied immediately when the theme button click returns.
 
@@ -326,7 +327,7 @@ ctest --test-dir build -C Debug --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 ```
 
-Result: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded on `2026-05-10`, including public component API / getter-setter / signal coverage, real mouse/keyboard/popup interactions, lifecycle ownership, theme lifecycle, render smoke, visual regression guards, install consumer, build-system, and example subsystem checks.
+Result: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded on `2026-05-29`, including public component API / getter-setter / signal coverage, Qt event-level mouse/keyboard/popup interactions, lifecycle ownership, theme lifecycle, render smoke, visual regression guards, install consumer, build-system, and example subsystem checks. Win32 `SendInput` desktop-input checks are opt-in via `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`.
 
 Latest build-system / install targeted validation:
 

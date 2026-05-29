@@ -114,7 +114,7 @@ AntSelectStyle::AntSelectStyle(QStyle* style)
 
 void AntSelectStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntSelect*>(widget))
     {
         widget->installEventFilter(this);
@@ -128,7 +128,7 @@ void AntSelectStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntSelectStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

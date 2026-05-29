@@ -14,6 +14,7 @@
 
 #include "../styles/AntSwitchStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "core/AntWave.h"
 
 AntSwitch::AntSwitch(QWidget* parent)
@@ -40,8 +41,12 @@ AntSwitch::AntSwitch(QWidget* parent)
         updateSwitchRegion(switchLoadingDirtyRect(), QStringLiteral("loading"));
     });
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometryFromState();
+        updateGeometryFromState(false);
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("theme"));
     });
 
@@ -488,7 +493,7 @@ void AntSwitch::animateStretch(qreal endValue)
     m_stretchAnimation->start();
 }
 
-void AntSwitch::updateGeometryFromState()
+void AntSwitch::updateGeometryFromState(bool notifyGeometry)
 {
     const QSize oldMinimum = minimumSize();
     invalidateLayoutCache();
@@ -496,6 +501,9 @@ void AntSwitch::updateGeometryFromState()
     if (oldMinimum != newHint)
     {
         setMinimumSize(newHint);
-        updateGeometry();
+        if (notifyGeometry)
+        {
+            updateGeometry();
+        }
     }
 }

@@ -2,7 +2,7 @@
 
 Last verified: `2026-05-29`
 
-This inventory tracks reliability coverage for every public `Ant*` widget header, excluding Qt-style alias headers and the internal `AntSelectPopup` helper.
+This inventory tracks reliability coverage for every public `Ant*` widget header, excluding Qt-style alias headers and the internal non-installed `AntSelectPopup` helper.
 
 Coverage dimensions:
 
@@ -22,7 +22,7 @@ ctest --test-dir build -C Debug --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 ```
 
-Result on `2026-05-10`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Latest targeted feedback anchoring validation on `2026-05-29`: `TestAntFeedback` and `TestAntAdvancedInteractions` passed for hidden-anchor suppression, `AntWindow` move/resize following, multi-window stack isolation, Message click-through, and Notification loading countdown, with the example Debug build succeeding.
+Result on `2026-05-29`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Default CTest uses Qt event-level interaction checks; Win32 `SendInput` desktop-input checks in `TestAntQtExtensions` are opt-in via `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`.
 
 | Component | Behavior/API tests | Lifecycle | Meta | Theme | Render |
 | --- | --- | --- | --- | --- | --- |

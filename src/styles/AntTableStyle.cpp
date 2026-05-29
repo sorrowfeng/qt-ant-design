@@ -18,7 +18,7 @@ AntTableStyle::AntTableStyle(QStyle* style)
 
 void AntTableStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntTable*>(widget))
     {
         widget->installEventFilter(this);
@@ -31,7 +31,7 @@ void AntTableStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntTableStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

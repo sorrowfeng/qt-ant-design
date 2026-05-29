@@ -8,9 +8,7 @@
 #include <QList>
 #include <QMenu>
 #include <QPainter>
-#include <QPalette>
 #include <QPushButton>
-#include <QScrollArea>
 #include <QSpinBox>
 #include <QString>
 #include <QStringList>
@@ -32,7 +30,6 @@
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntRibbon.h"
 #include "widgets/AntScrollArea.h"
-#include "widgets/AntScrollBar.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntSwitch.h"
@@ -68,10 +65,6 @@ protected:
         painter.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5),
                                 token.borderRadius, token.borderRadius);
 
-        QFont font = painter.font();
-        font.setPixelSize(token.fontSize);
-        font.setWeight(QFont::DemiBold);
-        painter.setFont(font);
         painter.setPen(token.colorText);
         painter.drawText(rect().adjusted(12, 10, -12, -10),
                          Qt::AlignLeft | Qt::AlignTop, m_text);
@@ -107,17 +100,9 @@ protected:
         painter.setBrush(token.colorPrimary);
         painter.drawRoundedRect(QRectF(16, 18, 5, height() - 36), 2, 2);
 
-        QFont titleFont = painter.font();
-        titleFont.setPixelSize(token.fontSizeLG);
-        titleFont.setWeight(QFont::DemiBold);
-        painter.setFont(titleFont);
         painter.setPen(token.colorText);
         painter.drawText(QRect(32, 18, width() - 48, 24), Qt::AlignLeft | Qt::AlignVCenter, m_title);
 
-        QFont captionFont = painter.font();
-        captionFont.setPixelSize(token.fontSize);
-        captionFont.setWeight(QFont::Normal);
-        painter.setFont(captionFont);
         painter.setPen(token.colorTextSecondary);
         painter.drawText(QRect(32, 48, width() - 48, 24), Qt::AlignLeft | Qt::AlignVCenter, m_caption);
 
@@ -520,42 +505,10 @@ QWidget* createScrollBarPage(QWidget* /*owner*/)
         desc->setParagraph(true);
         cl->addWidget(desc);
 
-        auto* scrollArea = new QScrollArea(page);
-        scrollArea->setWidgetResizable(true);
-        auto applyScrollSurface = [scrollArea]() {
-            const auto& token = antTheme->tokens();
-            QPalette palette = scrollArea->palette();
-            palette.setColor(QPalette::Base, token.colorBgContainer);
-            palette.setColor(QPalette::Window, token.colorBgContainer);
-            palette.setColor(QPalette::Text, token.colorText);
-            palette.setColor(QPalette::WindowText, token.colorText);
-            scrollArea->setPalette(palette);
-            if (scrollArea->viewport())
-            {
-                scrollArea->viewport()->setPalette(palette);
-                scrollArea->viewport()->setAutoFillBackground(true);
-            }
-        };
-        applyScrollSurface();
-        QObject::connect(antTheme, &AntTheme::themeChanged, scrollArea, applyScrollSurface);
-        auto* verticalBar = new AntScrollBar(Qt::Vertical);
-        verticalBar->setAutoHide(false);
-        scrollArea->setVerticalScrollBar(verticalBar);
-        auto* horizontalBar = new AntScrollBar(Qt::Horizontal);
-        horizontalBar->setAutoHide(false);
-        scrollArea->setHorizontalScrollBar(horizontalBar);
+        auto* scrollArea = new AntScrollArea(page);
+        scrollArea->setAutoHideScrollBar(false);
 
-        auto* scrollContent = new QWidget();
-        auto applyContentSurface = [scrollContent]() {
-            const auto& token = antTheme->tokens();
-            QPalette palette = scrollContent->palette();
-            palette.setColor(QPalette::Window, token.colorBgContainer);
-            palette.setColor(QPalette::WindowText, token.colorText);
-            scrollContent->setPalette(palette);
-            scrollContent->setAutoFillBackground(true);
-        };
-        applyContentSurface();
-        QObject::connect(antTheme, &AntTheme::themeChanged, scrollContent, applyContentSurface);
+        auto* scrollContent = new AntWidget();
         auto* scrollLayout = new QVBoxLayout(scrollContent);
         scrollLayout->setContentsMargins(8, 8, 8, 8);
         scrollLayout->setSpacing(8);

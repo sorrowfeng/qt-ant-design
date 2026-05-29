@@ -46,7 +46,7 @@ The project focuses on:
 - Per-component performance optimization progress: [docs/performance-optimization.md](docs/performance-optimization.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
-- Current CTest target count: `37`; latest full component reliability sweep: `37 / 37` passed on `2026-05-10`
+- Current CTest target count: `37`; latest full component reliability sweep: `37 / 37` passed on `2026-05-29`
 
 ## Recent Ant Design Parity Updates
 
@@ -67,7 +67,7 @@ The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar p
 - Windows 10 uses a no-caption native frame path plus a legacy rounded mask and a transparent software shadow host, so maximized/restored windows do not expose native title buttons and normal windows keep a lightweight Win11-like four-sided outer shadow that starts at the window edge with cleaner rounded corners before and after resize.
 - Topmost toggles on visible Windows windows now use native `SetWindowPos` in place, avoiding the hide/show cycle that caused a visible flash.
 - Title-bar pin and light/dark theme buttons use bundled official Ant Design icons, and every title-bar button can be shown or hidden through public APIs.
-- The built-in theme button uses a captured-frame overlay with a soft reveal animation so full-window light/dark switching feels continuous.
+- The built-in theme button uses a captured-frame crossfade overlay so full-window light/dark switching feels continuous.
 
 ## Recent Qt API Compatibility Updates
 
@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 
 Total public components implemented: `84`
 
-`src/widgets` currently contains `105` `Ant*.h` headers: `84` public component headers, `20` Qt-style alias headers, and the internal popup helper `AntSelectPopup`.
+`src/widgets` currently contains `105` `Ant*.h` headers: `84` public component headers, `20` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup`.
 
 Ant Design standard components are counted by the top-level directories under [`ant-design/ant-design`](https://github.com/ant-design/ant-design)'s `components/` directory, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
 
@@ -426,7 +426,7 @@ card->bodyLayout()->addWidget(new AntTypography("Card content"));
 AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 ```
 
-A theme switch currently triggers `polish / updateGeometry / update` on every `QProxyStyle`-based component. `AntWindow`'s built-in theme button wraps the repaint in a captured-frame overlay with a soft reveal animation so full-window light/dark switches stay visually continuous.
+For `QProxyStyle`-based components, `AntStyleBase::connectThemeUpdate<T>()` now refreshes only widgets owned by the style instance or its local parent subtree, falling back to a global widget scan only when no local target can be resolved. The style path caches size hints before the theme mode changes, then runs `polish / onThemeUpdate / update`; `updateGeometry()` is issued only when themed metrics actually changed. `AntWindow`'s built-in theme button wraps the repaint in a captured-frame crossfade overlay so full-window light/dark switches stay visually continuous.
 
 ## Development Guide & Contributing
 

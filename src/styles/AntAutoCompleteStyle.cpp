@@ -20,7 +20,7 @@ void AntAutoCompleteStyle::onThemeUpdate(QWidget* w)
 
 void AntAutoCompleteStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntAutoComplete*>(widget))
         widget->installEventFilter(this);
 }
@@ -29,7 +29,7 @@ void AntAutoCompleteStyle::unpolish(QWidget* widget)
 {
     if (qobject_cast<AntAutoComplete*>(widget))
         widget->removeEventFilter(this);
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntAutoCompleteStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option,

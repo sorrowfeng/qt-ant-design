@@ -15,7 +15,7 @@ AntStatusBarStyle::AntStatusBarStyle(QStyle* style)
 
 void AntStatusBarStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntStatusBar*>(widget))
     {
         widget->installEventFilter(this);
@@ -28,7 +28,7 @@ void AntStatusBarStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntStatusBarStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -71,8 +71,7 @@ void AntStatusBarStyle::onThemeUpdate(QWidget* widget)
     }
 
     statusBar->invalidateLayoutCache();
-    statusBar->updateGeometry();
-    statusBar->update();
+    AntStyleBase::onThemeUpdate(widget);
 }
 
 namespace

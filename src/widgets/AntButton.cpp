@@ -9,6 +9,7 @@
 #include <QStyleOptionButton>
 
 #include "../styles/AntButtonStyle.h"
+#include "core/AntThemeRefresh_p.h"
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
 
@@ -32,8 +33,12 @@ AntButton::AntButton(QWidget* parent)
     buttonStyle->setParent(this);
     setStyle(buttonStyle);
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
-        updateGeometryFromState();
+        updateGeometryFromState(false);
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
     connect(&m_spinnerTimer, &QTimer::timeout, this, [this]() {
@@ -364,17 +369,23 @@ void AntButton::updateCursorState()
     setCursor(m_loading ? Qt::ArrowCursor : Qt::PointingHandCursor);
 }
 
-void AntButton::updateGeometryFromState()
+void AntButton::updateGeometryFromState(bool notifyGeometry)
 {
     const Metrics m = metrics();
     QFont f = font();
     f.setPixelSize(m.fontSize);
-    setFont(f);
+    if (font() != f)
+    {
+        setFont(f);
+    }
     const int totalHeight = m.height + focusPaddingFor() * 2;
     setMinimumHeight(totalHeight);
     setMaximumHeight(totalHeight);
     setSizePolicy(m_block ? QSizePolicy::Expanding : QSizePolicy::Minimum, QSizePolicy::Fixed);
-    updateGeometry();
+    if (notifyGeometry)
+    {
+        updateGeometry();
+    }
 }
 
 QRect AntButton::spinnerIndicatorRect() const

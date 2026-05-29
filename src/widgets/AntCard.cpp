@@ -11,6 +11,7 @@
 
 #include "../styles/AntCardStyle.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 
 AntCard::AntCard(QWidget* parent)
     : QFrame(parent)
@@ -75,10 +76,13 @@ AntCard::AntCard(QWidget* parent)
         requestCardUpdate(spinnerDirtyRect(), QStringLiteral("spinner"), true);
     });
     m_spinnerTimer.setTimerType(Qt::PreciseTimer);
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateCardPaintCache();
         updateTheme();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         requestCardUpdate(rect(), QStringLiteral("theme"));
     });
 

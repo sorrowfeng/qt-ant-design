@@ -15,7 +15,7 @@ AntMenuStyle::AntMenuStyle(QStyle* style)
 
 void AntMenuStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntMenu*>(widget))
     {
         widget->installEventFilter(this);
@@ -29,7 +29,7 @@ void AntMenuStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntMenuStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

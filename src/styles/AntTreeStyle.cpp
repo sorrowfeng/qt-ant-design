@@ -30,7 +30,7 @@ AntTreeStyle::AntTreeStyle(QStyle* style)
 
 void AntTreeStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntTree*>(widget))
     {
         widget->installEventFilter(this);
@@ -44,7 +44,7 @@ void AntTreeStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntTreeStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

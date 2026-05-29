@@ -78,6 +78,7 @@ private:
     void handleTargetLeave();
     void handlePopupEnter();
     void handlePopupLeave();
+    void setOpenInternal(bool open, bool hoverDriven);
 
     QStringList m_itemLabels;
     Ant::DropdownPlacement m_placement = Ant::DropdownPlacement::BottomLeft;
@@ -92,6 +93,7 @@ private:
     QTimer* m_closeTimer = nullptr;
     QTimer* m_hoverTicker = nullptr;
     int m_offTicks = 0;
+    bool m_hoverCloseTracking = false;
     QPoint m_lastContextPos;
     bool m_popupSizeDirty = true;
     bool m_popupGeometryCacheValid = false;

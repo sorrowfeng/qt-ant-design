@@ -2,7 +2,6 @@
 
 #include <QColor>
 #include <QHBoxLayout>
-#include <QPalette>
 #include <QSizePolicy>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -27,32 +26,6 @@
 
 namespace
 {
-class ShowcaseRoot : public AntWidget
-{
-public:
-    explicit ShowcaseRoot(QWidget* parent = nullptr)
-        : AntWidget(parent)
-    {
-        setAutoFillBackground(true);
-        syncPalette();
-    }
-
-protected:
-    void onThemeChanged(Ant::ThemeMode mode) override
-    {
-        Q_UNUSED(mode)
-        syncPalette();
-    }
-
-private:
-    void syncPalette()
-    {
-        QPalette palette = this->palette();
-        palette.setColor(QPalette::Window, tokens().colorBgContainer);
-        setPalette(palette);
-    }
-};
-
 AntTypography* makeModalText(const QString& text, QWidget* parent, bool paragraph = false, bool strong = false)
 {
     auto* typography = new AntTypography(text, parent);
@@ -146,7 +119,7 @@ namespace example::pages
 {
 QWidget* createShowcasePage(QWidget* /*owner*/)
 {
-    auto* page = new ShowcaseRoot();
+    auto* page = new AntWidget();
     page->setObjectName(QStringLiteral("showcasePage"));
     page->setMinimumSize(560, 620);
 

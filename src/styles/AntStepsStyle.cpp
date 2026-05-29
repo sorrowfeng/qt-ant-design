@@ -15,7 +15,7 @@ AntStepsStyle::AntStepsStyle(QStyle* style)
 
 void AntStepsStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntSteps*>(widget))
     {
         widget->installEventFilter(this);
@@ -28,7 +28,7 @@ void AntStepsStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntStepsStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

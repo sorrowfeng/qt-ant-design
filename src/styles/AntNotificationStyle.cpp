@@ -45,7 +45,7 @@ AntNotificationStyle::AntNotificationStyle(QStyle* style)
 
 void AntNotificationStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntNotification*>(widget))
     {
         widget->installEventFilter(this);
@@ -58,7 +58,7 @@ void AntNotificationStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntNotificationStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

@@ -6,6 +6,7 @@
 #include <QResizeEvent>
 
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntPalette.h"
 #include "styles/AntEmptyStyle.h"
 
@@ -14,9 +15,12 @@ AntEmpty::AntEmpty(QWidget* parent)
 {
     installAntStyle<AntEmptyStyle>(this);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateEmptyCaches();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         requestEmptyUpdate(rect(), QStringLiteral("theme"));
     });
     syncEmptyPerfCounters();

@@ -20,7 +20,7 @@ AntSliderStyle::AntSliderStyle(QStyle* style)
 
 void AntSliderStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntSlider*>(widget))
     {
         widget->installEventFilter(this);
@@ -34,7 +34,7 @@ void AntSliderStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntSliderStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

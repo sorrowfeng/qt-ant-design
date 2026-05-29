@@ -9,7 +9,6 @@
 #include <QHideEvent>
 #include <QHoverEvent>
 #include <QLayout>
-#include <QLineF>
 #include <QMargins>
 #include <QMetaType>
 #include <QMouseEvent>
@@ -157,23 +156,14 @@ void makeAntWindowShadowClickThrough(QWidget* widget)
 class AntWindowThemeTransitionOverlay : public QWidget
 {
 public:
-    enum class Mode
-    {
-        CircularReveal,
-        CrossFade,
-    };
-
-    AntWindowThemeTransitionOverlay(QWidget* parent, const QPixmap& oldFrame, const QPoint& origin, Mode mode)
+    AntWindowThemeTransitionOverlay(QWidget* parent, const QPixmap& oldFrame)
         : QWidget(parent)
         , m_oldFrame(oldFrame)
-        , m_origin(origin)
-        , m_mode(mode)
     {
         setObjectName(QString::fromLatin1(kThemeTransitionOverlayName));
         setAttribute(Qt::WA_TransparentForMouseEvents, true);
         setAttribute(Qt::WA_NoSystemBackground, true);
-        setAttribute(Qt::WA_TranslucentBackground, m_mode == Mode::CircularReveal);
-        setAttribute(Qt::WA_OpaquePaintEvent, m_mode == Mode::CrossFade);
+        setAttribute(Qt::WA_OpaquePaintEvent, true);
         setAutoFillBackground(false);
         setFocusPolicy(Qt::NoFocus);
         m_timer.setInterval(kThemeTransitionFrameIntervalMs);
@@ -185,8 +175,7 @@ public:
         setProperty("transitionDrawsCapturedNewFrame", true);
         setProperty("transitionCaptureMethod", QStringLiteral("render"));
         setProperty("transitionUsesEventLoopCapture", false);
-        setProperty("transitionMode",
-                    m_mode == Mode::CrossFade ? QStringLiteral("crossfade") : QStringLiteral("circular-reveal"));
+        setProperty("transitionMode", QStringLiteral("crossfade"));
         connect(&m_timer, &QTimer::timeout, this, [this]() {
             advanceAnimation();
         });
@@ -255,35 +244,16 @@ protected:
             return;
         }
 
-        const qreal radius = transitionRadius();
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing, true);
         drawFrame(&painter, m_oldFrame, 1.0);
 
-        if (m_newFrame.isNull() || radius <= 0.0)
+        if (m_newFrame.isNull())
         {
             return;
         }
 
-        if (m_mode == Mode::CrossFade)
-        {
-            drawFrame(&painter, m_newFrame, m_progress);
-            return;
-        }
-
-        drawRevealedNewFrame(&painter, radius);
-    }
-
-    qreal transitionRadius() const
-    {
-        const QRectF bounds(rect());
-        const QPointF origin(m_origin);
-        qreal radius = 0.0;
-        for (const QPointF corner : {bounds.topLeft(), bounds.topRight(), bounds.bottomLeft(), bounds.bottomRight()})
-        {
-            radius = qMax(radius, QLineF(origin, corner).length());
-        }
-        return (radius + kThemeTransitionEdgeFeather) * m_progress;
+        drawFrame(&painter, m_newFrame, m_progress);
     }
 
     static qreal smootherStep(qreal value)
@@ -300,44 +270,8 @@ protected:
         painter->restore();
     }
 
-    void drawRevealedNewFrame(QPainter* painter, qreal radius)
-    {
-        const qreal feather = qMin<qreal>(kThemeTransitionEdgeFeather, qMax<qreal>(1.0, radius));
-        const qreal solidRadius = qMax<qreal>(0.0, radius - feather);
-        const int featherSteps = qMax(1, qRound(feather));
-
-        painter->save();
-        QPainterPath solidPath;
-        solidPath.addEllipse(QPointF(m_origin), solidRadius, solidRadius);
-        painter->setClipPath(solidPath);
-        drawFrame(painter, m_newFrame, 1.0);
-        painter->restore();
-
-        for (int step = featherSteps; step >= 1; --step)
-        {
-            const qreal outerRadius = solidRadius + step;
-            const qreal innerRadius = qMax<qreal>(0.0, outerRadius - 1.0);
-            QPainterPath ring;
-            ring.addEllipse(QPointF(m_origin), outerRadius, outerRadius);
-            QPainterPath inner;
-            inner.addEllipse(QPointF(m_origin), innerRadius, innerRadius);
-            ring = ring.subtracted(inner);
-
-            const qreal alpha = qBound<qreal>(
-                0.0,
-                static_cast<qreal>(featherSteps - step + 1) / static_cast<qreal>(featherSteps + 1),
-                1.0);
-            painter->save();
-            painter->setClipPath(ring);
-            drawFrame(painter, m_newFrame, alpha * 0.9);
-            painter->restore();
-        }
-    }
-
     QPixmap m_oldFrame;
     QPixmap m_newFrame;
-    QPoint m_origin;
-    Mode m_mode = Mode::CircularReveal;
     QTimer m_timer;
     QElapsedTimer m_elapsed;
     std::function<void()> m_finished;
@@ -2613,13 +2547,7 @@ void AntWindow::startThemeModeTransition()
         return;
     }
 
-    const auto transitionMode = usesLegacyOpaquePath()
-        ? AntWindowThemeTransitionOverlay::Mode::CrossFade
-        : AntWindowThemeTransitionOverlay::Mode::CircularReveal;
-    auto* overlay = new AntWindowThemeTransitionOverlay(this,
-                                                        oldFrame,
-                                                        titleBarButtonRect(TitleBarButton::Theme).center(),
-                                                        transitionMode);
+    auto* overlay = new AntWindowThemeTransitionOverlay(this, oldFrame);
     m_themeTransitionOverlay = overlay;
     overlay->setGeometry(rect());
     overlay->raise();

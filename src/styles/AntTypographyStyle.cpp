@@ -159,7 +159,7 @@ AntTypographyStyle::AntTypographyStyle(QStyle* style)
 
 void AntTypographyStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (auto* typo = qobject_cast<AntTypography*>(widget))
     {
         widget->installEventFilter(this);
@@ -179,7 +179,7 @@ void AntTypographyStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntTypographyStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

@@ -14,11 +14,13 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <utility>
 
 #include "../styles/AntSelectStyle.h"
 #include "AntSelectPopup.h"
 #include "core/AntPopupMotion.h"
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntPalette.h"
 
 namespace
@@ -181,10 +183,35 @@ AntSelect::AntSelect(QWidget* parent)
         update();
     });
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateMetricsCache();
-        rebuildPopup();
-        updateGeometry();
+        const bool sizeHintChanged = AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
+        if (m_open || (m_popup && m_popup->isVisible()))
+        {
+            if (sizeHintChanged)
+            {
+                rebuildPopup();
+            }
+            else
+            {
+                for (AntSelectOptionWidget* option : std::as_const(m_popupOptionWidgets))
+                {
+                    if (option && option->isVisible())
+                    {
+                        option->update();
+                    }
+                }
+                updatePopupGeometry();
+                m_popup->update();
+            }
+        }
+        else
+        {
+            m_lastPopupGeometry = QRect();
+        }
         update();
     });
 

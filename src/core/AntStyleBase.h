@@ -4,8 +4,12 @@
 
 #include <QApplication>
 #include <QBrush>
+#include <QList>
 #include <QPen>
+#include <QPointer>
 #include <QProxyStyle>
+#include <QSize>
+#include <QVariant>
 #include <QWidget>
 
 #include "AntTheme.h"
@@ -24,12 +28,32 @@ public:
     static void drawCrispRoundedRect(QPainter* painter, const QRect& rect,
         const QPen& pen, const QBrush& brush, qreal rx, qreal ry);
 
+    void polish(QWidget* widget) override;
+    void unpolish(QWidget* widget) override;
+
 protected:
     // Called when theme changes. Override to customize.
-    // Default: calls updateGeometry() + update().
+    // Default: calls updateGeometry() only when themed metrics changed, then update().
     virtual void onThemeUpdate(QWidget* w)
     {
-        w->updateGeometry();
+        const QVariant beforeSizeHintValue = w->property("antStyleThemeSizeHintBefore");
+        const QVariant beforeMinimumSizeHintValue = w->property("antStyleThemeMinimumSizeHintBefore");
+        const QSize beforeSizeHint = beforeSizeHintValue.toSize();
+        const QSize beforeMinimumSizeHint = beforeMinimumSizeHintValue.toSize();
+        const QSize currentSizeHint = w->sizeHint();
+        const QSize currentMinimumSizeHint = w->minimumSizeHint();
+        const bool hasBeforeHints = beforeSizeHintValue.isValid() && beforeMinimumSizeHintValue.isValid();
+        const bool sizeHintChanged = !hasBeforeHints ||
+                                     beforeSizeHint != currentSizeHint ||
+                                     beforeMinimumSizeHint != currentMinimumSizeHint;
+
+        w->setProperty("antStyleThemeSizeHintChanged", sizeHintChanged);
+        if (sizeHintChanged)
+        {
+            w->updateGeometry();
+            w->setProperty("antStyleThemeUpdateGeometryCount",
+                           w->property("antStyleThemeUpdateGeometryCount").toInt() + 1);
+        }
         w->update();
     }
 
@@ -38,17 +62,29 @@ protected:
     template <typename WidgetType>
     void connectThemeUpdate()
     {
-        connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
-            const auto widgets = QApplication::allWidgets();
-            for (QWidget* w : widgets)
+        connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+            bool usedGlobalWidgetScan = false;
+            const QList<QWidget*> targets = collectThemeTargets<WidgetType>(&usedGlobalWidgetScan);
+            for (QWidget* widget : targets)
             {
-                if (qobject_cast<WidgetType*>(w) && w->style() == this)
-                {
-                    unpolish(w);
-                    polish(w);
-                    onThemeUpdate(w);
-                }
+                cacheThemeGeometryHints(widget);
             }
+        });
+
+        connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
+            const int updateCount = property("antStyleThemeUpdateCount").toInt() + 1;
+            bool usedGlobalWidgetScan = false;
+            const QList<QWidget*> targets = collectThemeTargets<WidgetType>(&usedGlobalWidgetScan);
+
+            for (QWidget* widget : targets)
+            {
+                updateThemeTarget(widget);
+            }
+
+            setProperty("antStyleThemeUpdateCount", updateCount);
+            setProperty("antStyleThemeUsesGlobalWidgetScan", usedGlobalWidgetScan);
+            setProperty("antStyleThemeCandidateCount", targets.size());
+            setProperty("antStyleThemeUpdatedWidgetCount", targets.size());
         });
     }
 
@@ -85,6 +121,74 @@ protected:
     // Called by the default eventFilter when a Paint event is received.
     // The base implementation draws nothing (returns false).
     virtual bool drawWidget(QWidget* widget, QPaintEvent* event);
+
+private:
+    void cacheThemeGeometryHints(QWidget* widget);
+    void pruneThemeWidgets();
+    void registerThemeWidget(QWidget* widget);
+    void unregisterThemeWidget(QWidget* widget);
+    void updateThemeTarget(QWidget* widget);
+
+    template <typename WidgetType>
+    QList<QWidget*> collectThemeTargets(bool* usedGlobalWidgetScan)
+    {
+        if (usedGlobalWidgetScan)
+        {
+            *usedGlobalWidgetScan = false;
+        }
+
+        pruneThemeWidgets();
+        QList<QWidget*> targets;
+
+        for (const QPointer<QWidget>& watched : m_themeWidgets)
+        {
+            QWidget* widget = watched.data();
+            if (widget && qobject_cast<WidgetType*>(widget) && widget->style() == this)
+            {
+                targets.append(widget);
+            }
+        }
+
+        if (targets.isEmpty())
+        {
+            if (auto* owner = qobject_cast<QWidget*>(parent()))
+            {
+                if (qobject_cast<WidgetType*>(owner) && owner->style() == this)
+                {
+                    targets.append(owner);
+                }
+
+                const auto children = owner->findChildren<WidgetType*>(QString(), Qt::FindChildrenRecursively);
+                for (WidgetType* child : children)
+                {
+                    if (child && child->style() == this)
+                    {
+                        targets.append(child);
+                    }
+                }
+            }
+        }
+
+        if (targets.isEmpty())
+        {
+            if (usedGlobalWidgetScan)
+            {
+                *usedGlobalWidgetScan = true;
+            }
+            const auto widgets = QApplication::allWidgets();
+            for (QWidget* w : widgets)
+            {
+                if (qobject_cast<WidgetType*>(w) && w->style() == this)
+                {
+                    targets.append(w);
+                }
+            }
+        }
+
+        return targets;
+    }
+
+    QList<QPointer<QWidget>> m_themeWidgets;
 };
 
 template <typename StyleType, typename WidgetType>

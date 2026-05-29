@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntAvatarStyle.h"
 
 AntAvatar::AntAvatar(QWidget* parent)
@@ -15,9 +16,12 @@ AntAvatar::AntAvatar(QWidget* parent)
 {
     installAntStyle<AntAvatarStyle>(this);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateImagePixmapCache();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         requestAvatarUpdate(QStringLiteral("theme"));
     });
     syncAvatarPerfCounters();

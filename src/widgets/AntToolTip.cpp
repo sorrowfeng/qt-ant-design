@@ -70,7 +70,10 @@ AntToolTip::AntToolTip(QWidget* parent)
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateToolTipLayout();
         invalidateToolTipPosition();
-        adjustSize();
+        if (isVisible())
+        {
+            updatePosition();
+        }
         requestToolTipUpdate(rect(), QStringLiteral("theme"));
     });
 

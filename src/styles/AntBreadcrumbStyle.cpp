@@ -16,7 +16,7 @@ AntBreadcrumbStyle::AntBreadcrumbStyle(QStyle* style)
 
 void AntBreadcrumbStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntBreadcrumb*>(widget))
     {
         widget->installEventFilter(this);
@@ -29,7 +29,7 @@ void AntBreadcrumbStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntBreadcrumbStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

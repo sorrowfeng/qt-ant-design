@@ -43,7 +43,7 @@ AntMessageStyle::AntMessageStyle(QStyle* style)
 
 void AntMessageStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntMessage*>(widget))
     {
         widget->installEventFilter(this);
@@ -56,7 +56,7 @@ void AntMessageStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntMessageStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

@@ -15,6 +15,17 @@ add_library(qt-ant-design
 get_target_property(QT_ANT_DESIGN_TARGET_TYPE qt-ant-design TYPE)
 if(QT_ANT_DESIGN_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
     target_compile_definitions(qt-ant-design PUBLIC QT_ANT_DESIGN_STATIC_DEFINE)
+    if(MSVC)
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.25")
+            set_property(TARGET qt-ant-design PROPERTY
+                MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>"
+            )
+        else()
+            target_compile_options(qt-ant-design PRIVATE
+                "$<$<CONFIG:Debug,RelWithDebInfo>:/Z7>"
+            )
+        endif()
+    endif()
 else()
     target_compile_definitions(qt-ant-design PRIVATE QT_ANT_DESIGN_LIBRARY)
 endif()
@@ -36,4 +47,6 @@ target_link_libraries(qt-ant-design
 install(DIRECTORY core styles widgets
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design
     FILES_MATCHING PATTERN "*.h"
+    PATTERN "*_p.h" EXCLUDE
+    PATTERN "AntSelectPopup.h" EXCLUDE
 )

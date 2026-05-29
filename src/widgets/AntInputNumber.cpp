@@ -677,14 +677,19 @@ void AntInputNumber::updateEditStyle()
                  token.colorPrimary.name(QColor::HexRgb),
                  token.colorTextLightSolid.name(QColor::HexRgb),
                  token.colorTextDisabled.name(QColor::HexRgb));
+    bool lineEditStyleSheetChanged = false;
     if (m_lineEditStyleSheet != styleSheet)
     {
         lineEdit()->setStyleSheet(styleSheet);
         m_lineEditStyleSheet = styleSheet;
+        lineEditStyleSheetChanged = true;
         changed = true;
     }
-    lineEdit()->setPalette(lePalette);
-    changed = true;
+    if (lineEditStyleSheetChanged || lineEdit()->palette() != lePalette)
+    {
+        lineEdit()->setPalette(lePalette);
+        changed = true;
+    }
     updateLineEditControlsInset();
 
     if (minimumHeight() != m.height)

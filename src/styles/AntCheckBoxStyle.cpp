@@ -20,7 +20,7 @@ AntCheckBoxStyle::AntCheckBoxStyle(QStyle* style)
 
 void AntCheckBoxStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntCheckBox*>(widget))
     {
         widget->installEventFilter(this);
@@ -34,7 +34,7 @@ void AntCheckBoxStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntCheckBoxStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

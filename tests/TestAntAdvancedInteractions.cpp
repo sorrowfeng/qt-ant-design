@@ -378,8 +378,9 @@ void TestAntAdvancedInteractions::watermarkDoesNotBlockCoveredControls()
     QSignalSpy indexSpy(&segmented, &AntSegmented::currentIndexChanged);
     QSignalSpy valueSpy(&segmented, &AntSegmented::valueChanged);
     QVERIFY(watermark.testAttribute(Qt::WA_TransparentForMouseEvents));
-    QWidget* topWidget = QApplication::widgetAt(globalClickPoint);
+    QWidget* topWidget = host.childAt(host.mapFromGlobal(globalClickPoint));
     QVERIFY(topWidget);
+    QVERIFY(topWidget == &segmented || segmented.isAncestorOf(topWidget));
     QTest::mouseClick(topWidget, Qt::LeftButton, Qt::NoModifier, topWidget->mapFromGlobal(globalClickPoint));
 
     QCOMPARE(segmented.currentIndex(), 1);

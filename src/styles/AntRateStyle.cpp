@@ -41,7 +41,7 @@ AntRateStyle::AntRateStyle(QStyle* style)
 
 void AntRateStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntRate*>(widget))
     {
         widget->installEventFilter(this);
@@ -55,7 +55,7 @@ void AntRateStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntRateStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

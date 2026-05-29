@@ -67,7 +67,7 @@ AntStatisticStyle::AntStatisticStyle(QStyle* style)
 
 void AntStatisticStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntStatistic*>(widget))
     {
         widget->installEventFilter(this);
@@ -81,7 +81,7 @@ void AntStatisticStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntStatisticStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

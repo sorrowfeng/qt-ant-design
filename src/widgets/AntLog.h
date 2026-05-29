@@ -2,11 +2,14 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QPalette>
+#include <QString>
 #include <QTextCharFormat>
 #include <QVector>
 #include <QWidget>
 
 class QPlainTextEdit;
+class QTimer;
 
 class QT_ANT_DESIGN_EXPORT AntLog : public QWidget
 {
@@ -51,12 +54,27 @@ private:
     void updateTheme();
     void rebuildDocument();
     void insertEntry(const Entry& entry);
+    void scheduleAppendFlush(int trimmedCount);
+    void flushPendingAppendViewUpdates();
     QTextCharFormat formatForLevel(Level level) const;
     void updateDiagnostics(int trimmedCount = 0);
 
     QPlainTextEdit* m_view = nullptr;
+    QTimer* m_appendFlushTimer = nullptr;
     QVector<Entry> m_entries;
     QVector<QTextCharFormat> m_levelFormats;
+    QPalette m_cachedViewPalette;
+    QPalette m_cachedViewportPalette;
+    QString m_themeStyleSheet;
     int m_maxEntries = 5000;
+    int m_themeApplyCount = 0;
+    int m_themeSkipCount = 0;
+    int m_pendingAppendCount = 0;
+    int m_pendingTrimmedCount = 0;
+    int m_appendBatchStartCount = 0;
+    int m_appendFlushCount = 0;
+    int m_appendInsertCount = 0;
+    bool m_appendBatchActive = false;
+    bool m_viewUpdatesEnabledBeforeAppendBatch = true;
     bool m_autoScroll = true;
 };

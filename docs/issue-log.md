@@ -368,8 +368,8 @@
 - **解决**:
   1. 新增同步 `render()` 捕获路径 `captureAntWindowFrame()` 替代 `grab()` + `processEvents()`。主题切换前后都直接 render 当前 widget tree 到带 DPR 的 `QPixmap`,不再通过事件循环强制刷新两次。
   2. overlay 动画从 320 ms / 8 ms tick 调整为 220 ms / 16 ms tick,减少总时长和每秒绘制次数。
-  3. Win10 opaque 路径改用轻量 crossfade 模式:旧帧铺底,新帧按 progress 淡入,不再做圆形 reveal / feather path 运算。Win11 caption 路径仍保留 circular reveal。
-  4. overlay 增加诊断属性 `transitionCaptureMethod=render`、`transitionUsesEventLoopCapture=false`、`transitionMode`。回归测试验证不再走事件循环捕获,并按 Win10/Win11 路径检查 crossfade / circular-reveal 模式。
+  3. 主题切换统一改用轻量 crossfade 模式:旧帧铺底,新帧按 progress 淡入,不再做圆形 reveal / feather path 运算。Win10 opaque 路径和 Win11 caption 路径使用同一套动画。
+  4. overlay 增加诊断属性 `transitionCaptureMethod=render`、`transitionUsesEventLoopCapture=false`、`transitionMode`。回归测试验证不再走事件循环捕获,并统一检查 `transitionMode=crossfade`。
 - **改动文件**:`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`
 
 ### 44. AntColorPicker 弹窗下方多重边缘 + 拖动选色卡顿

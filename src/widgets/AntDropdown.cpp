@@ -141,6 +141,8 @@ protected:
         if (m_owner && m_owner->m_open)
         {
             m_owner->m_open = false;
+            m_owner->m_hoverCloseTracking = false;
+            m_owner->m_hoverTicker->stop();
             qApp->removeEventFilter(m_owner);
             Q_EMIT m_owner->openChanged(false);
         }
@@ -180,7 +182,7 @@ AntDropdown::AntDropdown(QWidget* parent)
     connect(m_openTimer, &QTimer::timeout, this, [this]() {
         if (m_trigger == Ant::DropdownTrigger::Hover)
         {
-            setOpen(true);
+            setOpenInternal(true, true);
         }
     });
 
@@ -200,7 +202,7 @@ AntDropdown::AntDropdown(QWidget* parent)
     m_hoverTicker = new QTimer(this);
     m_hoverTicker->setInterval(60);
     connect(m_hoverTicker, &QTimer::timeout, this, [this]() {
-        if (m_trigger != Ant::DropdownTrigger::Hover || !m_open)
+        if (m_trigger != Ant::DropdownTrigger::Hover || !m_open || !m_hoverCloseTracking)
         {
             m_hoverTicker->stop();
             return;
@@ -329,11 +331,17 @@ bool AntDropdown::isOpen() const
 
 void AntDropdown::setOpen(bool open)
 {
+    setOpenInternal(open, false);
+}
+
+void AntDropdown::setOpenInternal(bool open, bool hoverDriven)
+{
     if (m_open == open)
     {
         return;
     }
     m_open = open;
+    m_hoverCloseTracking = open && hoverDriven && m_trigger == Ant::DropdownTrigger::Hover;
     m_openTimer->stop();
     m_closeTimer->stop();
 
@@ -342,7 +350,7 @@ void AntDropdown::setOpen(bool open)
         updatePopupGeometry(m_lastContextPos);
         AntPopupMotion::show(m_popup, AntPopupMotion::fromDropdownPlacement(m_renderPlacement));
         qApp->installEventFilter(this);
-        if (m_trigger == Ant::DropdownTrigger::Hover)
+        if (m_hoverCloseTracking)
         {
             m_offTicks = 0;
             m_hoverTicker->start();
@@ -351,6 +359,7 @@ void AntDropdown::setOpen(bool open)
     else
     {
         m_hoverTicker->stop();
+        m_hoverCloseTracking = false;
         qApp->removeEventFilter(this);
         AntPopupMotion::hide(m_popup, AntPopupMotion::fromDropdownPlacement(m_renderPlacement));
     }

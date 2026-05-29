@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "core/AntTheme.h"
+#include "core/AntThemeRefresh_p.h"
 #include "styles/AntPalette.h"
 #include "styles/AntSkeletonStyle.h"
 
@@ -24,9 +25,12 @@ AntSkeleton::AntSkeleton(QWidget* parent)
         requestSkeletonUpdate(shimmerDirtyRect(oldOffset, m_shimmerOffset), QStringLiteral("shimmer"));
     });
 
+    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        AntThemeRefresh::cacheGeometryHints(this);
+    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateSkeletonLayout();
-        updateGeometry();
+        AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         requestSkeletonUpdate(rect(), QStringLiteral("theme"));
         updateTimerState();
     });

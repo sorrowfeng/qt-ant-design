@@ -18,7 +18,7 @@ void AntCalendarStyle::onThemeUpdate(QWidget* w)
 
 void AntCalendarStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntCalendar*>(widget))
         widget->installEventFilter(this);
 }
@@ -27,7 +27,7 @@ void AntCalendarStyle::unpolish(QWidget* widget)
 {
     if (qobject_cast<AntCalendar*>(widget))
         widget->removeEventFilter(this);
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntCalendarStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option,

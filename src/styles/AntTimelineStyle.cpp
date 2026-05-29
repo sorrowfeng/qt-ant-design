@@ -15,7 +15,7 @@ AntTimelineStyle::AntTimelineStyle(QStyle* style)
 
 void AntTimelineStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntTimeline*>(widget))
     {
         widget->installEventFilter(this);
@@ -28,7 +28,7 @@ void AntTimelineStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntTimelineStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const

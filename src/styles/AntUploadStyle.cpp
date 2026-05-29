@@ -37,7 +37,7 @@ AntUploadStyle::AntUploadStyle(QStyle* style)
 
 void AntUploadStyle::polish(QWidget* widget)
 {
-    QProxyStyle::polish(widget);
+    AntStyleBase::polish(widget);
     if (qobject_cast<AntUpload*>(widget))
     {
         widget->installEventFilter(this);
@@ -51,7 +51,7 @@ void AntUploadStyle::unpolish(QWidget* widget)
     {
         widget->removeEventFilter(this);
     }
-    QProxyStyle::unpolish(widget);
+    AntStyleBase::unpolish(widget);
 }
 
 void AntUploadStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
