@@ -3,8 +3,10 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QColor>
+#include <QEvent>
 #include <QList>
 #include <QPixmap>
+#include <QPointer>
 #include <QRectF>
 #include <QWidget>
 
@@ -31,6 +33,7 @@ class QT_ANT_DESIGN_EXPORT AntMessage : public QWidget
 
 public:
     explicit AntMessage(QWidget* parent = nullptr);
+    ~AntMessage() override;
 
     static AntMessage* open(const QString& text,
                             Ant::MessageType type = Ant::MessageType::Info,
@@ -68,6 +71,7 @@ Q_SIGNALS:
     void closed();
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
@@ -111,6 +115,10 @@ private:
     void startTimers();
     void updateLoadingState();
     void drawLoadingIcon(QPainter& painter, const QRectF& rect) const;
+    void installAnchorWatcher(QWidget* anchor);
+    void uninstallAnchorWatcher();
+    bool anchorReady() const;
+    void handleAnchorChanged(QEvent::Type type);
 
     QString m_text;
     Ant::MessageType m_messageType = Ant::MessageType::Info;
@@ -118,7 +126,8 @@ private:
     bool m_pauseOnHover = true;
     bool m_hovered = false;
     int m_loadingAngle = 0;
-    QWidget* m_anchor = nullptr;
+    QPointer<QWidget> m_anchor;
+    QPointer<QWidget> m_anchorWindow;
     QTimer* m_closeTimer = nullptr;
     QTimer* m_loadingTimer = nullptr;
     mutable MessageLayout m_layoutCache;

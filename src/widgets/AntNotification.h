@@ -4,8 +4,10 @@
 
 #include <QColor>
 #include <QElapsedTimer>
+#include <QEvent>
 #include <QList>
 #include <QPixmap>
+#include <QPointer>
 #include <QRectF>
 #include <QWidget>
 
@@ -35,6 +37,7 @@ class QT_ANT_DESIGN_EXPORT AntNotification : public QWidget
 
 public:
     explicit AntNotification(QWidget* parent = nullptr);
+    ~AntNotification() override;
 
     static AntNotification* open(const QString& title,
                                  const QString& description,
@@ -116,6 +119,7 @@ Q_SIGNALS:
     void closed();
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
@@ -181,6 +185,10 @@ private:
     void pauseCloseTimer();
     void resumeCloseTimer();
     void updateSpinnerState();
+    void installAnchorWatcher(QWidget* anchor);
+    void uninstallAnchorWatcher();
+    bool anchorReady() const;
+    void handleAnchorChanged(QEvent::Type type);
 
     QString m_title;
     QString m_description;
@@ -195,7 +203,8 @@ private:
     bool m_hovered = false;
     bool m_closeHovered = false;
     int m_spinnerAngle = 0;
-    QWidget* m_anchor = nullptr;
+    QPointer<QWidget> m_anchor;
+    QPointer<QWidget> m_anchorWindow;
     QTimer* m_closeTimer = nullptr;
     QTimer* m_progressTimer = nullptr;
     QTimer* m_spinnerTimer = nullptr;

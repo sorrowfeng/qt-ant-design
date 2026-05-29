@@ -29,6 +29,20 @@ bool isBottomMessagePlacement(Ant::Placement placement)
            placement == Ant::Placement::BottomRight;
 }
 
+bool anchorCanHostMessage(QWidget* anchor)
+{
+    if (!anchor)
+    {
+        return true;
+    }
+
+    QWidget* window = anchor->window();
+    return anchor->isVisible() &&
+           (!window || window->isVisible()) &&
+           !anchor->size().isEmpty() &&
+           (!window || !window->size().isEmpty());
+}
+
 AntPopupMotion::Placement messageMotionPlacement(Ant::Placement placement)
 {
     return isBottomMessagePlacement(placement)
@@ -159,15 +173,34 @@ AntMessage::AntMessage(QWidget* parent)
     syncMessagePerfCounters();
 }
 
+AntMessage::~AntMessage()
+{
+    uninstallAnchorWatcher();
+}
+
 AntMessage* AntMessage::open(const QString& text, Ant::MessageType type, QWidget* anchor, int durationMs, Ant::Placement placement)
 {
     auto* message = new AntMessage();
-    message->m_anchor = anchor;
+    message->installAnchorWatcher(anchor);
     message->m_placement = placement;
     message->setText(text);
     message->setMessageType(type);
     message->setDuration(durationMs);
     message->applyMessageSizeHint();
+
+    if (!message->anchorReady())
+    {
+        message->setProperty("antMessageSuppressedForHiddenAnchor", true);
+        QPointer<AntMessage> guard(message);
+        QTimer::singleShot(0, message, [guard]() {
+            if (guard)
+            {
+                guard->deleteLater();
+            }
+        });
+        return message;
+    }
+
     activeMessages().append(message);
 
     QPointer<QWidget> anchorGuard(anchor);
@@ -281,6 +314,26 @@ void AntMessage::paintEvent(QPaintEvent* event)
     Q_UNUSED(event)
 }
 
+bool AntMessage::eventFilter(QObject* watched, QEvent* event)
+{
+    if ((watched == m_anchor.data() || watched == m_anchorWindow.data()) && event)
+    {
+        switch (event->type())
+        {
+        case QEvent::Move:
+        case QEvent::Resize:
+        case QEvent::Show:
+        case QEvent::Hide:
+        case QEvent::WindowStateChange:
+            handleAnchorChanged(event->type());
+            break;
+        default:
+            break;
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
 void AntMessage::showEvent(QShowEvent* event)
 {
     startTimers();
@@ -320,7 +373,7 @@ void AntMessage::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        sendMouseClick(widgetBelowMessageAt(m_anchor, this, event->globalPosition().toPoint()),
+        sendMouseClick(widgetBelowMessageAt(m_anchor.data(), this, event->globalPosition().toPoint()),
                        event->globalPosition().toPoint(),
                        event->modifiers());
         AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
@@ -366,6 +419,18 @@ void AntMessage::relayoutMessages(QWidget* anchor)
             {
                 continue;
             }
+            if (message->m_anchor.data() != anchor)
+            {
+                continue;
+            }
+            if (!message->anchorReady())
+            {
+                if (message->isVisible() && !AntPopupMotion::isClosing(message))
+                {
+                    AntPopupMotion::close(message, messageMotionPlacement(message->m_placement), MessageMotionDistance);
+                }
+                continue;
+            }
 
             message->applyMessageSizeHint();
             int x = targetRect.center().x() - message->width() / 2;
@@ -393,6 +458,10 @@ void AntMessage::relayoutMessages(QWidget* anchor)
                 }
                 else
                 {
+                    if (message->isVisible() && !AntPopupMotion::isClosing(message))
+                    {
+                        AntPopupMotion::stop(message);
+                    }
                     message->move(targetPos);
                     ++message->m_relayoutMoveCount;
                 }
@@ -408,6 +477,10 @@ void AntMessage::relayoutMessages(QWidget* anchor)
                 }
                 else
                 {
+                    if (message->isVisible() && !AntPopupMotion::isClosing(message))
+                    {
+                        AntPopupMotion::stop(message);
+                    }
                     message->move(targetPos);
                     ++message->m_relayoutMoveCount;
                 }
@@ -427,6 +500,75 @@ void AntMessage::relayoutMessages(QWidget* anchor)
     {
         layoutPlacement(placement);
     }
+}
+
+void AntMessage::installAnchorWatcher(QWidget* anchor)
+{
+    uninstallAnchorWatcher();
+    m_anchor = anchor;
+    if (!anchor)
+    {
+        return;
+    }
+
+    anchor->installEventFilter(this);
+    connect(anchor, &QObject::destroyed, this, [this]() {
+        if (m_anchorWindow && m_anchorWindow.data() != m_anchor.data())
+        {
+            m_anchorWindow->removeEventFilter(this);
+        }
+        m_anchor.clear();
+        m_anchorWindow.clear();
+        if (!AntPopupMotion::isClosing(this))
+        {
+            AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
+        }
+    });
+
+    QWidget* window = anchor->window();
+    if (window && window != anchor)
+    {
+        m_anchorWindow = window;
+        window->installEventFilter(this);
+    }
+}
+
+void AntMessage::uninstallAnchorWatcher()
+{
+    if (m_anchor)
+    {
+        m_anchor->removeEventFilter(this);
+    }
+    if (m_anchorWindow)
+    {
+        m_anchorWindow->removeEventFilter(this);
+    }
+    m_anchor.clear();
+    m_anchorWindow.clear();
+}
+
+bool AntMessage::anchorReady() const
+{
+    return anchorCanHostMessage(m_anchor.data());
+}
+
+void AntMessage::handleAnchorChanged(QEvent::Type type)
+{
+    if (type == QEvent::Hide)
+    {
+        if (isVisible() && !AntPopupMotion::isClosing(this))
+        {
+            AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
+        }
+        return;
+    }
+
+    if (!anchorReady())
+    {
+        return;
+    }
+
+    relayoutMessages(m_anchor.data());
 }
 
 const AntMessage::MessageLayout& AntMessage::messageLayout() const

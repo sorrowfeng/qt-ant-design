@@ -18,6 +18,7 @@
 #include "widgets/AntSpin.h"
 #include "widgets/AntToolTip.h"
 #include "widgets/AntTour.h"
+#include "widgets/AntWindow.h"
 
 class TestAntFeedback : public QObject
 {
@@ -31,6 +32,7 @@ private slots:
     void messageCachesLayoutShadowAndScopesUpdates();
     void notification();
     void notificationCachesLayoutShadowAndScopesUpdates();
+    void messageAndNotificationFollowAntWindowAnchor();
     void notificationLoadingProgressAutoCloses();
     void popconfirm();
     void popconfirmReusesActionWidgetAndSkipsRebuilds();
@@ -443,6 +445,70 @@ void TestAntFeedback::notificationCachesLayoutShadowAndScopesUpdates()
     if (first)
     {
         first->close();
+    }
+}
+
+void TestAntFeedback::messageAndNotificationFollowAntWindowAnchor()
+{
+    AntWindow hiddenHost;
+    hiddenHost.resize(520, 340);
+
+    QPointer<AntMessage> hiddenMessage =
+        AntMessage::success(QStringLiteral("Hidden"), &hiddenHost, 0, Ant::Placement::Top);
+    QVERIFY(hiddenMessage);
+    QCOMPARE(hiddenMessage->property("antMessageSuppressedForHiddenAnchor").toBool(), true);
+    QVERIFY(!hiddenMessage->isVisible());
+    QTRY_VERIFY_WITH_TIMEOUT(hiddenMessage.isNull(), 300);
+
+    QPointer<AntNotification> hiddenNotification =
+        AntNotification::success(QStringLiteral("Hidden"),
+                                 QStringLiteral("Host is not visible"),
+                                 &hiddenHost,
+                                 0,
+                                 Ant::Placement::TopRight);
+    QVERIFY(hiddenNotification);
+    QCOMPARE(hiddenNotification->property("antNotificationSuppressedForHiddenAnchor").toBool(), true);
+    QVERIFY(!hiddenNotification->isVisible());
+    QTRY_VERIFY_WITH_TIMEOUT(hiddenNotification.isNull(), 300);
+
+    AntWindow host;
+    host.resize(520, 340);
+    host.move(160, 160);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    QPointer<AntMessage> message =
+        AntMessage::success(QStringLiteral("Saved"), &host, 0, Ant::Placement::Top);
+    QPointer<AntNotification> notification =
+        AntNotification::success(QStringLiteral("Saved"),
+                                 QStringLiteral("Moved with host"),
+                                 &host,
+                                 0,
+                                 Ant::Placement::TopRight);
+    QVERIFY(message);
+    QVERIFY(notification);
+    QTRY_VERIFY_WITH_TIMEOUT(message->isVisible(), 300);
+    QTRY_VERIFY_WITH_TIMEOUT(notification->isVisible(), 300);
+    QTest::qWait(260);
+
+    const QPoint hostGlobalBefore = host.mapToGlobal(QPoint(0, 0));
+    const QPoint messagePosBefore = message->pos();
+    const QPoint notificationPosBefore = notification->pos();
+
+    host.move(host.pos() + QPoint(48, 32));
+    QTRY_VERIFY_WITH_TIMEOUT(host.mapToGlobal(QPoint(0, 0)) != hostGlobalBefore, 300);
+    const QPoint delta = host.mapToGlobal(QPoint(0, 0)) - hostGlobalBefore;
+
+    QTRY_COMPARE_WITH_TIMEOUT(message->pos(), messagePosBefore + delta, 500);
+    QTRY_COMPARE_WITH_TIMEOUT(notification->pos(), notificationPosBefore + delta, 500);
+
+    if (notification)
+    {
+        notification->close();
+    }
+    if (message)
+    {
+        message->close();
     }
 }
 

@@ -43,6 +43,20 @@ bool isRightPlacement(Ant::Placement placement)
     return placement == Ant::Placement::TopRight || placement == Ant::Placement::BottomRight;
 }
 
+bool anchorCanHostNotification(QWidget* anchor)
+{
+    if (!anchor)
+    {
+        return true;
+    }
+
+    QWidget* window = anchor->window();
+    return anchor->isVisible() &&
+           (!window || window->isVisible()) &&
+           !anchor->size().isEmpty() &&
+           (!window || !window->size().isEmpty());
+}
+
 AntPopupMotion::Placement notificationMotionPlacement(Ant::Placement placement)
 {
     if (isRightPlacement(placement))
@@ -120,6 +134,11 @@ AntNotification::AntNotification(QWidget* parent)
     syncNotificationPerfCounters();
 }
 
+AntNotification::~AntNotification()
+{
+    uninstallAnchorWatcher();
+}
+
 AntNotification* AntNotification::open(const QString& title,
                                        const QString& description,
                                        QWidget* anchor,
@@ -148,7 +167,7 @@ AntNotification* AntNotification::create(const QString& title,
                                          Ant::Placement placement)
 {
     auto* notification = new AntNotification();
-    notification->m_anchor = anchor;
+    notification->installAnchorWatcher(anchor);
     notification->setTitle(title);
     notification->setDescription(description);
     notification->setNotificationType(type);
@@ -156,6 +175,20 @@ AntNotification* AntNotification::create(const QString& title,
     notification->setPlacement(placement);
     notification->setDuration(durationMs);
     notification->applyNotificationSizeHint();
+
+    if (!notification->anchorReady())
+    {
+        notification->setProperty("antNotificationSuppressedForHiddenAnchor", true);
+        QPointer<AntNotification> guard(notification);
+        QTimer::singleShot(0, notification, [guard]() {
+            if (guard)
+            {
+                guard->deleteLater();
+            }
+        });
+        return notification;
+    }
+
     activeNotifications().append(notification);
 
     QPointer<QWidget> anchorGuard(anchor);
@@ -278,7 +311,7 @@ void AntNotification::setPlacement(Ant::Placement placement)
         return;
     }
     m_placement = placement;
-    relayoutNotifications(m_anchor);
+    relayoutNotifications(m_anchor.data());
     Q_EMIT placementChanged(m_placement);
 }
 
@@ -386,6 +419,26 @@ QSize AntNotification::minimumSizeHint() const
 void AntNotification::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
+}
+
+bool AntNotification::eventFilter(QObject* watched, QEvent* event)
+{
+    if ((watched == m_anchor.data() || watched == m_anchorWindow.data()) && event)
+    {
+        switch (event->type())
+        {
+        case QEvent::Move:
+        case QEvent::Resize:
+        case QEvent::Show:
+        case QEvent::Hide:
+        case QEvent::WindowStateChange:
+            handleAnchorChanged(event->type());
+            break;
+        default:
+            break;
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void AntNotification::showEvent(QShowEvent* event)
@@ -499,6 +552,20 @@ void AntNotification::relayoutNotifications(QWidget* anchor)
             {
                 continue;
             }
+            if (notification->m_anchor.data() != anchor)
+            {
+                continue;
+            }
+            if (!notification->anchorReady())
+            {
+                if (notification->isVisible() && !AntPopupMotion::isClosing(notification))
+                {
+                    AntPopupMotion::close(notification,
+                                          notificationMotionPlacement(notification->m_placement),
+                                          NotificationMotionDistance);
+                }
+                continue;
+            }
             notification->applyNotificationSizeHint();
             int x = targetRect.center().x() - notification->width() / 2;
             if (isLeftPlacement(placement))
@@ -527,12 +594,85 @@ void AntNotification::relayoutNotifications(QWidget* anchor)
             }
             else
             {
+                if (notification->isVisible() && !AntPopupMotion::isClosing(notification))
+                {
+                    AntPopupMotion::stop(notification);
+                }
                 notification->move(targetPos);
                 ++notification->m_relayoutMoveCount;
             }
             notification->syncNotificationPerfCounters();
         }
     }
+}
+
+void AntNotification::installAnchorWatcher(QWidget* anchor)
+{
+    uninstallAnchorWatcher();
+    m_anchor = anchor;
+    if (!anchor)
+    {
+        return;
+    }
+
+    anchor->installEventFilter(this);
+    connect(anchor, &QObject::destroyed, this, [this]() {
+        if (m_anchorWindow && m_anchorWindow.data() != m_anchor.data())
+        {
+            m_anchorWindow->removeEventFilter(this);
+        }
+        m_anchor.clear();
+        m_anchorWindow.clear();
+        if (!AntPopupMotion::isClosing(this))
+        {
+            AntPopupMotion::close(this, notificationMotionPlacement(m_placement), NotificationMotionDistance);
+        }
+    });
+
+    QWidget* window = anchor->window();
+    if (window && window != anchor)
+    {
+        m_anchorWindow = window;
+        window->installEventFilter(this);
+    }
+}
+
+void AntNotification::uninstallAnchorWatcher()
+{
+    if (m_anchor)
+    {
+        m_anchor->removeEventFilter(this);
+    }
+    if (m_anchorWindow)
+    {
+        m_anchorWindow->removeEventFilter(this);
+    }
+    m_anchor.clear();
+    m_anchorWindow.clear();
+}
+
+bool AntNotification::anchorReady() const
+{
+    return anchorCanHostNotification(m_anchor.data());
+}
+
+void AntNotification::handleAnchorChanged(QEvent::Type type)
+{
+    if (type == QEvent::Hide)
+    {
+        if (isVisible() && !AntPopupMotion::isClosing(this))
+        {
+            AntPopupMotion::close(this, notificationMotionPlacement(m_placement), NotificationMotionDistance);
+        }
+        return;
+    }
+
+    if (!anchorReady())
+    {
+        return;
+    }
+
+    relayoutNotifications(m_anchor.data());
 }
 
 QRectF AntNotification::noticeRect() const
