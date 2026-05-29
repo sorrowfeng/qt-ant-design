@@ -1,8 +1,8 @@
 # Project Status
 
-Updated: `2026-05-22`
+Updated: `2026-05-29`
 
-This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, and README component screenshot gallery.
+This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, feedback popup anchoring/multi-window scoping, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, and README component screenshot gallery.
 
 ## Summary
 
@@ -23,6 +23,8 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 
 ## Recent Completed Work
 
+- Hardened `AntMessage` / `AntNotification` anchoring for desktop-window scenarios: hidden anchors suppress premature popups, visible `AntWindow` anchors are tracked across move, resize, show, hide, and window-state changes, active relayout is scoped to matching anchors, and multiple `AntWindow` instances keep their feedback stacks isolated.
+- Softened the non-maximized Windows 10 `AntWindow` outline so frameless windows remain visible on similar backgrounds without the harsh pure-black border.
 - Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, serialized splitter/tab/floating named perspectives, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, threshold-activated translucent drag previews, toggleable center/edge drop guide squares, deterministic guided drop placement, manager-owned floating dock windows using the AntWindow-style Windows native frame/DWM rounded-corner/shadow path, double-click maximize/restore, and drag-back-to-layout support.
 - Added `docs/performance-optimization.md` as the starting point for the performance pass, with conservative optimization rules, validation expectations, priority order, and per-component progress/test tables covering all `84` public components.
 - Optimized `AntButton` by pausing hidden loading spinners and scoping spinner animation frames to the spinner indicator region.
@@ -212,6 +214,8 @@ Follow-up correction: the native child drag surface caused the HS cursor to stop
 Follow-up: `AntColorPicker` popup now uses a manual outside-click close path instead of relying on native popup auto-hide, so both trigger-close and outside-close go through the same 10px fade/slide enter and leave animation. The targeted `colorPicker` subtest verifies the motion properties and that close keeps the popup visible until the leave animation finishes.
 
 Follow-up: `AntWindow` close confirmation is now opt-in through `setCloseConfirmationEnabled(true)`, and public APIs customize the Modal title, content, exit text, and cancel-exit text. `forceClose()` is available for automation or programmatic shutdown paths that should bypass confirmation. The targeted `window` subtest verifies the default close path skips the Modal, cancel keeps the window open after opt-in, confirm closes it, and custom text is propagated to the Modal.
+
+Follow-up: `AntMessage` and `AntNotification` now suppress popups for hidden anchor windows, relayout only feedback entries that belong to the matching anchor, follow visible `AntWindow` move/resize/state changes, and keep multiple `AntWindow` feedback stacks isolated. Targeted validation covered `messageAndNotificationFollowAntWindowAnchor`, `messageAndNotificationStayScopedToTheirAntWindowAnchors`, Message click-through, and Notification loading countdown, with the example Debug build succeeding on `2026-05-29`.
 
 Follow-up: the performance pass started with `AntIcon`. Built-in enum path generation is now cached, and resource SVG icons are rendered into `QPixmapCache` entries keyed by icon name, color pair, size, and device pixel ratio. Rotation and spin remain painter transforms, so visible animation is preserved while repeated paints avoid qrc file reads and `QSvgRenderer` setup. Targeted validation covered `TestAntIcon` plus `TestAntButton` as a representative icon consumer.
 

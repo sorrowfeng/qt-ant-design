@@ -52,7 +52,7 @@ The project focuses on:
 
 The 2026-04-30 interaction and motion pass tightened several user-visible details:
 
-- Popup feedback: `AntPopover`, `AntMessage`, and `AntNotification` now have more stable hover/close behavior, stronger elevation, and placement-aware enter/exit motion. Passive overlays avoid stealing covered-control clicks: Message forwards its click, while Tooltip, Slider value bubbles, and Watermark are mouse-transparent.
+- Popup feedback: `AntPopover`, `AntMessage`, and `AntNotification` now have more stable hover/close behavior, stronger elevation, and placement-aware enter/exit motion. `AntMessage` and `AntNotification` also scope their placement to the supplied anchor window: hidden anchors suppress premature popups, visible `AntWindow` anchors are tracked across move / resize / show / hide / state changes, and multiple windows keep their feedback stacks isolated. Passive overlays avoid stealing covered-control clicks: Message forwards its click, while Tooltip, Slider value bubbles, and Watermark are mouse-transparent.
 - Popup shells: shared popup elevation now uses a softer multi-layer feather outside the panel body, so `AntDropdown`, `AntMenu`, selector popups, `AntColorPicker`, `AntDatePicker`, `AntTimePicker`, and `AntModal` keep AntD-like shadows in light and dark themes.
 - Motion: `AntCarousel`, `AntTabs`, `AntSkeleton`, `AntSpin`, `AntInputNumber`, `AntSwitch`, and loading buttons now better match Ant Design timing, direction, and state feedback.
 - Data interaction: `AntTransfer` now supports scrolling and header select-all correctly, while `AntTable` sorter clicks reorder rows instead of only changing the icon state.
@@ -336,7 +336,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntSwitch`: `checked / loading / small / text`, click wave feedback
 - `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation
 - `AntDatePicker` / `AntTimePicker`: hand-painted popup pickers
-- `AntMessage` / `AntNotification`: global feedback components with elevated surfaces, enter / exit motion, Message click-through to covered controls, and Notification loading progress countdown
+- `AntMessage` / `AntNotification`: global feedback components with elevated surfaces, enter / exit motion, anchor-scoped `AntWindow` following, multi-window stack isolation, Message click-through to covered controls, and Notification loading progress countdown
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`: common display components
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`: navigation components; `AntPagination` includes editable quick-jumper paging, and `AntTabs` includes tab-pane layout margin normalization helpers
 - `AntTable`: data table with column sorting, row selection (checkbox / radio), programmatic row selection, row tooltips, pagination, loading state
@@ -347,7 +347,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntRate`: rating component with `count / value / allowHalf / allowClear / disabled / size`, hover scaling, selected-star scale pulse, left / right keyboard control
 - `AntWidget`: base QWidget subclass that handles theme switching automatically
 - `AntTypography`: theme-aware text component, Title (H1-H5) / Text / Paragraph, with type / decoration / copy / ellipsis / alignment / pixel-size support
-- `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, Windows 10/11 DWM border shadow, and a smooth theme transition overlay
+- `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, softened Windows 10 outline/shadow handling, Windows 10/11 DWM border shadow, and a smooth theme transition overlay
 - `AntDrawer`: sliding panel with Left / Right / Top / Bottom placement, animation, and mask
 - `AntStatusBar`: status bar with left / right items, separators, message area, and size grip
 - `AntScrollBar`: custom 8 px slim scrollbar with auto-hide and no arrow buttons

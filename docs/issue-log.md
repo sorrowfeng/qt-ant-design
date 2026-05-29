@@ -463,6 +463,17 @@
 - **验证**:`TestAntQtExtensions::window` 覆盖默认关闭不弹 Modal、显式开启确认、自定义文案/按钮文本、取消退出保留窗口、确认退出关闭窗口,以及 `forceClose()` 直接关闭路径。
 - **改动文件**:`src/widgets/AntWindow.h`、`src/widgets/AntWindow.cpp`、`tests/TestAntQtExtensions.cpp`、`examples/main.cpp`
 
+### 54. AntMessage / AntNotification 在 AntWindow 未显示、移动或多窗口场景下定位错误
+
+- **现象**:在 `AntWindow` 尚未显示时提前调用 `AntMessage` / `AntNotification`,弹层会落到错误位置;窗口显示后移动或缩放时,已有弹层不会稳定跟随;多个 `AntWindow` 同时存在时,一个窗口移动存在影响其他窗口反馈弹层布局的风险。
+- **根因**:旧逻辑主要依赖创建弹层时的 anchor 几何和全局 relayout。anchor/window 的 `Move`、`Resize`、`Show`、`Hide`、`WindowStateChange` 没有统一安装按实例隔离的事件过滤器;活跃弹层列表 relayout 时也没有严格按 `m_anchor` 过滤。
+- **解决**:
+  1. anchor 或其顶层窗口不可见时,新建的 Message / Notification 立即收敛并销毁,避免主窗口未 show 前出现错误屏幕坐标。
+  2. 对可见 anchor 和 anchor window 安装 guarded event filter,在移动、缩放、显示、隐藏和窗口状态变化时触发定位刷新;anchor 隐藏时主动关闭对应弹层。
+  3. 活跃弹层 relayout 只处理 `m_anchor` 匹配的实例,多个 `AntWindow` 各自维护独立反馈栈,互不移动。
+- **验证**:`TestAntFeedback.exe messageAndNotificationFollowAntWindowAnchor messageAndNotificationStayScopedToTheirAntWindowAnchors messageCachesLayoutShadowAndScopesUpdates notificationCachesLayoutShadowAndScopesUpdates notificationLoadingProgressAutoCloses`、`TestAntAdvancedInteractions.exe messageAndNotificationManualDismissFlow messageClickPassesThroughToSegmented`,以及 `qt-ant-design-example` Debug 构建通过。
+- **改动文件**:`src/widgets/AntMessage.cpp`、`src/widgets/AntNotification.cpp`、`tests/TestAntFeedback.cpp`
+
 ## 未解决
 
 当前暂无记录。

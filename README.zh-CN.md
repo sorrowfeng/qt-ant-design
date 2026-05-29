@@ -43,6 +43,7 @@
 
 - 状态总览：[docs/project-status.md](docs/project-status.md)
 - 逐控件可靠性覆盖：[docs/reliability-coverage.md](docs/reliability-coverage.md)
+- 逐控件性能优化进度：[docs/performance-optimization.md](docs/performance-optimization.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
 - 当前 CTest 目标数：`37`；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-10`）
@@ -51,7 +52,7 @@
 
 2026-04-30 的交互与动效对齐批次补齐了多处用户可见细节：
 
-- 弹层反馈：`AntPopover`、`AntMessage`、`AntNotification` 的悬停/关闭行为更稳定，阴影层级更清晰，并补齐了按 placement 进入/退出的动效。被动浮层不会抢走下层控件点击：Message 点击时转发到底层控件，Tooltip、Slider 数值浮标和 Watermark 保持鼠标透明。
+- 弹层反馈：`AntPopover`、`AntMessage`、`AntNotification` 的悬停/关闭行为更稳定，阴影层级更清晰，并补齐了按 placement 进入/退出的动效。`AntMessage` 和 `AntNotification` 会按传入的 anchor 窗口定位：anchor 未显示时不提前弹出，已显示的 `AntWindow` 在移动、缩放、显示、隐藏和窗口状态变化时会带动反馈浮层同步调整，多 `AntWindow` 场景下各自的反馈栈互不影响。被动浮层不会抢走下层控件点击：Message 点击时转发到底层控件，Tooltip、Slider 数值浮标和 Watermark 保持鼠标透明。
 - 弹层外壳：共享弹层阴影改为围绕面板向外绘制柔和多层羽化，`AntDropdown`、`AntMenu`、选择类弹层、`AntColorPicker`、`AntDatePicker`、`AntTimePicker`、`AntModal` 在亮色/暗色主题下都保留接近 AntD 的阴影层级。
 - 动效表现：`AntCarousel`、`AntTabs`、`AntSkeleton`、`AntSpin`、`AntInputNumber`、`AntSwitch` 和 loading button 的方向、节奏、状态反馈更贴近 Ant Design。
 - 数据交互：`AntTransfer` 支持正常滚动和顶部全选，`AntTable` 表头排序点击会真正重排行数据。
@@ -335,7 +336,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntSwitch`：`checked / loading / small / text`、点击 Wave 反馈
 - `AntSpin`：`small / middle / large / percent / delay`、更平滑的高频动画
 - `AntDatePicker` / `AntTimePicker`：自绘弹层选择器
-- `AntMessage` / `AntNotification`：带浮层阴影、进入/退出动效、Message 点击透传到底层控件，以及 Notification loading 进度倒计时的全局反馈组件
+- `AntMessage` / `AntNotification`：带浮层阴影、进入/退出动效、按 `AntWindow` anchor 跟随定位、多窗口反馈栈隔离、Message 点击透传到底层控件，以及 Notification loading 进度倒计时的全局反馈组件
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`：常用展示组件
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`：导航组件；`AntPagination` 支持可输入页码的 quick jumper 跳页，`AntTabs` 提供 Tab 内容页布局 margins 归一化 helper
 - `AntTable`：数据表格，支持列排序、行选择（复选框/单选框）、程序化选中、行 tooltip、分页、加载状态
@@ -346,7 +347,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntRate`：评分组件，`count / value / allowHalf / allowClear / disabled / size`，hover 放大和选中星缩放动效，键盘左右箭头操作
 - `AntWidget`：基础 QWidget 子类，自动处理主题切换
 - `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略/对齐策略/像素字号
-- `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，Windows 10/11 DWM 边框阴影，以及平滑主题切换遮罩动画
+- `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，Windows 10 柔和边线/阴影处理，Windows 10/11 DWM 边框阴影，以及平滑主题切换遮罩动画
 - `AntDrawer`：滑动面板，支持 Left/Right/Top/Bottom 四个方向、动画、遮罩层
 - `AntStatusBar`：状态栏，左右项、分隔符、消息区、size grip
 - `AntScrollBar`：自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮

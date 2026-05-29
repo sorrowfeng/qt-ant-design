@@ -1,6 +1,6 @@
 # Component Reliability Coverage
 
-Last verified: `2026-05-15`
+Last verified: `2026-05-29`
 
 This inventory tracks reliability coverage for every public `Ant*` widget header, excluding Qt-style alias headers and the internal `AntSelectPopup` helper.
 
@@ -22,7 +22,7 @@ ctest --test-dir build -C Debug --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 ```
 
-Result on `2026-05-10`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Latest targeted passive-overlay hit-test validation on `2026-05-15`: `TestAntAdvancedInteractions`, `TestAntDataEntryA`, `TestAntDataDisplayB`, `TestAntFeedback`, and `TestAntPopupLifecycle` passed, with the example Debug build and smoke launch succeeding.
+Result on `2026-05-10`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Latest targeted feedback anchoring validation on `2026-05-29`: `TestAntFeedback` and `TestAntAdvancedInteractions` passed for hidden-anchor suppression, `AntWindow` move/resize following, multi-window stack isolation, Message click-through, and Notification loading countdown, with the example Debug build succeeding.
 
 | Component | Behavior/API tests | Lifecycle | Meta | Theme | Render |
 | --- | --- | --- | --- | --- | --- |
