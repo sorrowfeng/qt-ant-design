@@ -33,6 +33,7 @@ private slots:
     void notification();
     void notificationCachesLayoutShadowAndScopesUpdates();
     void messageAndNotificationFollowAntWindowAnchor();
+    void messageAndNotificationStayScopedToTheirAntWindowAnchors();
     void notificationLoadingProgressAutoCloses();
     void popconfirm();
     void popconfirmReusesActionWidgetAndSkipsRebuilds();
@@ -509,6 +510,81 @@ void TestAntFeedback::messageAndNotificationFollowAntWindowAnchor()
     if (message)
     {
         message->close();
+    }
+}
+
+void TestAntFeedback::messageAndNotificationStayScopedToTheirAntWindowAnchors()
+{
+    AntWindow firstHost;
+    AntWindow secondHost;
+    firstHost.resize(460, 320);
+    secondHost.resize(460, 320);
+    firstHost.move(120, 120);
+    secondHost.move(640, 180);
+    firstHost.show();
+    secondHost.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&firstHost));
+    QVERIFY(QTest::qWaitForWindowExposed(&secondHost));
+
+    QPointer<AntMessage> firstMessage =
+        AntMessage::success(QStringLiteral("First saved"), &firstHost, 0, Ant::Placement::Top);
+    QPointer<AntNotification> firstNotification =
+        AntNotification::success(QStringLiteral("First"),
+                                 QStringLiteral("First host notice"),
+                                 &firstHost,
+                                 0,
+                                 Ant::Placement::TopRight);
+    QPointer<AntMessage> secondMessage =
+        AntMessage::success(QStringLiteral("Second saved"), &secondHost, 0, Ant::Placement::Top);
+    QPointer<AntNotification> secondNotification =
+        AntNotification::success(QStringLiteral("Second"),
+                                 QStringLiteral("Second host notice"),
+                                 &secondHost,
+                                 0,
+                                 Ant::Placement::TopRight);
+
+    QVERIFY(firstMessage);
+    QVERIFY(firstNotification);
+    QVERIFY(secondMessage);
+    QVERIFY(secondNotification);
+    QTRY_VERIFY_WITH_TIMEOUT(firstMessage->isVisible(), 300);
+    QTRY_VERIFY_WITH_TIMEOUT(firstNotification->isVisible(), 300);
+    QTRY_VERIFY_WITH_TIMEOUT(secondMessage->isVisible(), 300);
+    QTRY_VERIFY_WITH_TIMEOUT(secondNotification->isVisible(), 300);
+    QTest::qWait(260);
+
+    const QPoint firstGlobalBefore = firstHost.mapToGlobal(QPoint(0, 0));
+    const QPoint secondGlobalBefore = secondHost.mapToGlobal(QPoint(0, 0));
+    const QPoint firstMessageBefore = firstMessage->pos();
+    const QPoint firstNotificationBefore = firstNotification->pos();
+    const QPoint secondMessageBefore = secondMessage->pos();
+    const QPoint secondNotificationBefore = secondNotification->pos();
+
+    firstHost.move(firstHost.pos() + QPoint(42, 28));
+    QTRY_VERIFY_WITH_TIMEOUT(firstHost.mapToGlobal(QPoint(0, 0)) != firstGlobalBefore, 300);
+    const QPoint delta = firstHost.mapToGlobal(QPoint(0, 0)) - firstGlobalBefore;
+
+    QTRY_COMPARE_WITH_TIMEOUT(firstMessage->pos(), firstMessageBefore + delta, 500);
+    QTRY_COMPARE_WITH_TIMEOUT(firstNotification->pos(), firstNotificationBefore + delta, 500);
+    QCOMPARE(secondHost.mapToGlobal(QPoint(0, 0)), secondGlobalBefore);
+    QCOMPARE(secondMessage->pos(), secondMessageBefore);
+    QCOMPARE(secondNotification->pos(), secondNotificationBefore);
+
+    if (secondNotification)
+    {
+        secondNotification->close();
+    }
+    if (secondMessage)
+    {
+        secondMessage->close();
+    }
+    if (firstNotification)
+    {
+        firstNotification->close();
+    }
+    if (firstMessage)
+    {
+        firstMessage->close();
     }
 }
 
