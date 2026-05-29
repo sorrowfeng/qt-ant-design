@@ -552,7 +552,7 @@ void AntPagination::ensureQuickJumperEdit()
     m_quickJumperEdit->setAlignment(Qt::AlignCenter);
     m_quickJumperEdit->setClearButtonEnabled(false);
     m_quickJumperEdit->setAttribute(Qt::WA_TranslucentBackground, true);
-    m_quickJumperEdit->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
+    m_quickJumperEdit->setAutoFillBackground(false);
     m_quickJumperEdit->setMouseTracking(true);
 
     m_quickJumperValidator = new QIntValidator(1, std::numeric_limits<int>::max(), m_quickJumperEdit);
@@ -618,6 +618,7 @@ void AntPagination::syncQuickJumperEdit()
     palette.setColor(QPalette::Highlight, token.colorPrimary);
     palette.setColor(QPalette::HighlightedText, Qt::white);
     m_quickJumperEdit->setPalette(palette);
+    m_quickJumperEdit->setAutoFillBackground(false);
 
     const bool simpleInput = m_simple && !m_showQuickJumper;
     if (simpleInput && !m_quickJumperEdit->hasFocus())

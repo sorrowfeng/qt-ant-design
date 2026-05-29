@@ -212,6 +212,7 @@ AntSelect::AntSelect(QWidget* parent)
         {
             m_lastPopupGeometry = QRect();
         }
+        updateEditFieldPalette();
         update();
     });
 
@@ -312,13 +313,9 @@ void AntSelect::setEditable(bool editable)
         {
             m_editField = new QLineEdit(this);
             m_editField->setFrame(false);
-            {
-                QPalette ep = m_editField->palette();
-                ep.setColor(QPalette::Base, Qt::transparent);
-                m_editField->setPalette(ep);
-            }
             m_editField->setAttribute(Qt::WA_TranslucentBackground, true);
-            m_editField->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
+            m_editField->setAutoFillBackground(false);
+            updateEditFieldPalette();
             m_editField->setVisible(false);
             connect(m_editField, &QLineEdit::textChanged, this, [this]() {
                 if (!m_open) setOpen(true);
@@ -994,6 +991,36 @@ QColor AntSelect::backgroundColor() const
         return QColor(0, 0, 0, 0);
     }
     return token.colorBgContainer;
+}
+
+void AntSelect::updateEditFieldPalette()
+{
+    if (!m_editField)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    QPalette palette = m_editField->palette();
+    palette.setColor(QPalette::Base, Qt::transparent);
+    palette.setColor(QPalette::Window, Qt::transparent);
+    palette.setColor(QPalette::Text, isEnabled() ? token.colorText : token.colorTextDisabled);
+    palette.setColor(QPalette::WindowText, isEnabled() ? token.colorText : token.colorTextDisabled);
+    palette.setColor(QPalette::Highlight, token.colorPrimary);
+    palette.setColor(QPalette::HighlightedText, token.colorTextLightSolid);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    palette.setColor(QPalette::PlaceholderText, isEnabled() ? token.colorTextPlaceholder : token.colorTextDisabled);
+#endif
+    if (m_editField->palette() != palette)
+    {
+        m_editField->setPalette(palette);
+    }
+    if (m_editField->hasFrame())
+    {
+        m_editField->setFrame(false);
+    }
+    m_editField->setAttribute(Qt::WA_TranslucentBackground, true);
+    m_editField->setAutoFillBackground(false);
 }
 
 void AntSelect::rebuildPopup()

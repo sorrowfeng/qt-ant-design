@@ -658,34 +658,16 @@ void AntInputNumber::updateEditStyle()
     if (!m_lineEditTransparent || !lineEdit()->testAttribute(Qt::WA_TranslucentBackground))
     {
         lineEdit()->setAttribute(Qt::WA_TranslucentBackground, true);
+        lineEdit()->setAutoFillBackground(false);
         m_lineEditTransparent = true;
         changed = true;
     }
-    const QString styleSheet = QStringLiteral(
-        "QLineEdit {"
-        " background: transparent;"
-        " border: none;"
-        " padding: 0;"
-        " color: %1;"
-        " selection-background-color: %2;"
-        " selection-color: %3;"
-        "}"
-        "QLineEdit:disabled {"
-        " color: %4;"
-        "}")
-            .arg(token.colorText.name(QColor::HexRgb),
-                 token.colorPrimary.name(QColor::HexRgb),
-                 token.colorTextLightSolid.name(QColor::HexRgb),
-                 token.colorTextDisabled.name(QColor::HexRgb));
-    bool lineEditStyleSheetChanged = false;
-    if (m_lineEditStyleSheet != styleSheet)
+    if (lineEdit()->autoFillBackground())
     {
-        lineEdit()->setStyleSheet(styleSheet);
-        m_lineEditStyleSheet = styleSheet;
-        lineEditStyleSheetChanged = true;
+        lineEdit()->setAutoFillBackground(false);
         changed = true;
     }
-    if (lineEditStyleSheetChanged || lineEdit()->palette() != lePalette)
+    if (lineEdit()->palette() != lePalette)
     {
         lineEdit()->setPalette(lePalette);
         changed = true;

@@ -65,7 +65,6 @@ private:
     QVector<QTextCharFormat> m_levelFormats;
     QPalette m_cachedViewPalette;
     QPalette m_cachedViewportPalette;
-    QString m_themeStyleSheet;
     int m_maxEntries = 5000;
     int m_themeApplyCount = 0;
     int m_themeSkipCount = 0;

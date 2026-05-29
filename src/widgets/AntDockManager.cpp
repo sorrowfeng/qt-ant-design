@@ -27,6 +27,7 @@
 #include <QTabBar>
 #include <QTabWidget>
 #include <QTimer>
+#include <QToolButton>
 #include <QVBoxLayout>
 #include <QWindow>
 
@@ -36,6 +37,7 @@
 #include "AntDockWidget.h"
 #include "AntMenu.h"
 #include "core/AntTheme.h"
+#include "styles/AntDockStyle.h"
 #include "../private/AntDockLayoutSerializer.h"
 
 #if defined(Q_OS_WIN)
@@ -81,20 +83,63 @@ private:
     QList<QPointer<QWidget>> m_widgets;
 };
 
-QString cssColor(const QColor& color)
-{
-    return QStringLiteral("rgba(%1,%2,%3,%4)")
-        .arg(color.red())
-        .arg(color.green())
-        .arg(color.blue())
-        .arg(color.alpha());
-}
-
 QColor translucent(const QColor& color, qreal alpha)
 {
     QColor result = color;
     result.setAlphaF(alpha);
     return result;
+}
+
+AntDockManager* dockManagerFor(QWidget* widget)
+{
+    QWidget* current = widget;
+    while (current)
+    {
+        if (auto* manager = qobject_cast<AntDockManager*>(current))
+        {
+            return manager;
+        }
+        current = current->parentWidget();
+    }
+    return nullptr;
+}
+
+void installDockStyle(QWidget* widget)
+{
+    if (!widget || dynamic_cast<AntDockStyle*>(widget->style()))
+    {
+        return;
+    }
+
+    auto* dockStyle = new AntDockStyle(widget->style());
+    dockStyle->setParent(widget);
+    widget->setStyle(dockStyle);
+    widget->setProperty("antDockStyleInstalled", true);
+    if (AntDockManager* manager = dockManagerFor(widget))
+    {
+        manager->setProperty("antDockStyleInstallCount",
+                             manager->property("antDockStyleInstallCount").toInt() + 1);
+    }
+}
+
+void installDockTabBarStyle(QTabBar* tabBar)
+{
+    if (!tabBar)
+    {
+        return;
+    }
+
+    installDockStyle(tabBar);
+    tabBar->setDocumentMode(true);
+    tabBar->setDrawBase(false);
+    tabBar->setExpanding(false);
+
+    const auto buttons = tabBar->findChildren<QToolButton*>();
+    for (QToolButton* button : buttons)
+    {
+        installDockStyle(button);
+        button->setAutoRaise(true);
+    }
 }
 
 QPoint mouseGlobalPosition(QMouseEvent* event)
@@ -741,13 +786,6 @@ public:
     void updateTheme()
     {
         const auto& token = antTheme->tokens();
-        QPalette pal = palette();
-        pal.setColor(QPalette::Window, token.colorBgLayout);
-        pal.setColor(QPalette::Base, token.colorBgLayout);
-        pal.setColor(QPalette::WindowText, token.colorTextSecondary);
-        pal.setColor(QPalette::Text, token.colorTextSecondary);
-        setPalette(pal);
-
         if (m_content)
         {
             QPalette contentPalette = m_content->palette();
@@ -763,14 +801,15 @@ public:
 protected:
     void paintEvent(QPaintEvent* event) override
     {
-        QWidget::paintEvent(event);
+        Q_UNUSED(event)
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.fillRect(rect(), token.colorBgLayout);
         if (!m_placeholderActive || m_content) return;
 
-        const auto& token = antTheme->tokens();
         const QRectF r = QRectF(rect()).adjusted(16.5, 16.5, -16.5, -16.5);
         if (r.width() < 40 || r.height() < 32) return;
 
-        QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
         QColor fill = translucent(token.colorPrimaryBg, antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.32 : 0.78);
@@ -1689,8 +1728,7 @@ private:
 AntDockManager::AntDockManager(QWidget* parent)
     : QMainWindow(parent)
 {
-    setAutoFillBackground(true);
-    setAttribute(Qt::WA_StyledBackground, true);
+    setAutoFillBackground(false);
     setAnimated(false);
     setDockNestingEnabled(false);
     setDockOptions(QMainWindow::AllowNestedDocks |
@@ -2256,6 +2294,7 @@ bool AntDockManager::restorePerspective(const QString& name)
         {
             auto* splitter = new QSplitter(node.orientation, this);
             splitter->setObjectName(QStringLiteral("AntDockSplitter"));
+            installDockStyle(splitter);
             splitter->setChildrenCollapsible(false);
             splitter->setHandleWidth(4);
 
@@ -2671,9 +2710,11 @@ AntDockManager::DockArea* AntDockManager::createDockArea()
 {
     auto* area = new DockArea(this);
     area->setObjectName(QStringLiteral("AntDockArea"));
+    installDockStyle(area);
     area->updateTheme();
     if (area->tabBar())
     {
+        installDockTabBarStyle(area->tabBar());
         area->tabBar()->installEventFilter(this);
     }
     connect(area, &QTabWidget::currentChanged, this, [this]() {
@@ -2867,6 +2908,7 @@ void AntDockManager::splitAreaWithWidget(QWidget* targetWidget, QWidget* newWidg
 
     auto* splitter = new QSplitter(orientation, this);
     splitter->setObjectName(QStringLiteral("AntDockSplitter"));
+    installDockStyle(splitter);
     splitter->setChildrenCollapsible(false);
     splitter->setHandleWidth(4);
 
@@ -4140,95 +4182,26 @@ QString AntDockManager::dropTargetLabel(AntDockWidget* dockWidget, DockPlacement
 
 void AntDockManager::updateTheme()
 {
-    const auto& token = antTheme->tokens();
-    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
-    QPalette pal = palette();
-    pal.setColor(QPalette::Window, token.colorBgLayout);
-    pal.setColor(QPalette::Base, token.colorBgLayout);
-    pal.setColor(QPalette::AlternateBase, token.colorFillQuaternary);
-    pal.setColor(QPalette::Button, token.colorBgElevated);
-    pal.setColor(QPalette::WindowText, token.colorText);
-    pal.setColor(QPalette::Text, token.colorText);
-    pal.setColor(QPalette::ButtonText, token.colorText);
-    setPalette(pal);
-
     if (m_workspace)
     {
         m_workspace->updateTheme();
     }
 
-    const QString style = QStringLiteral(
-        "QMainWindow { background: %1; }"
-        "QMainWindow::separator { background: %2; width: 4px; height: 4px; }"
-        "QMainWindow::separator:hover { background: %3; }"
-        "AntDockManager QSplitter::handle { background: %1; }"
-        "AntDockManager QSplitter::handle:hover { background: %8; }"
-        "AntDockManager QTabWidget { background: %1; }"
-        "AntDockManager QTabWidget::pane {"
-        "  background: %6;"
-        "  border: 1px solid %2;"
-        "  top: -1px;"
-        "}"
-        "AntDockManager QTabBar { background: %1; }"
-        "AntDockManager QTabBar::tab {"
-        "  background: %4;"
-        "  color: %5;"
-        "  border: 1px solid %2;"
-        "  border-bottom: none;"
-        "  border-top-left-radius: 6px;"
-        "  border-top-right-radius: 6px;"
-        "  margin-right: 2px;"
-        "  padding: 6px 14px;"
-        "  min-height: 24px;"
-        "}"
-        "AntDockManager QTabBar::tab:first { margin-left: 0px; }"
-        "AntDockManager QTabBar::tab:selected {"
-        "  background: %6;"
-        "  color: %7;"
-        "  border-color: %2;"
-        "  border-top: 2px solid %3;"
-        "  border-bottom: 1px solid %6;"
-        "}"
-        "AntDockManager QTabBar::tab:!selected:hover {"
-        "  background: %8;"
-        "  color: %7;"
-        "}"
-        "AntDockManager QTabBar QToolButton {"
-        "  background: %4;"
-        "  color: %7;"
-        "  border: 1px solid %2;"
-        "  border-radius: 4px;"
-        "  margin: 2px;"
-        "}"
-        "AntDockManager QTabBar QToolButton:hover { background: %8; }")
-        .arg(cssColor(token.colorBgLayout),
-             cssColor(dark ? token.colorBorderSecondary : token.colorSplit),
-             cssColor(token.colorPrimary),
-             cssColor(dark ? token.colorBgElevated : token.colorBgContainer),
-             cssColor(token.colorTextSecondary),
-             cssColor(token.colorBgContainer),
-             cssColor(token.colorText),
-             cssColor(dark ? token.colorFillTertiary : token.colorFillQuaternary));
-    if (m_appliedDockStyleSheet != style)
+    const auto splitters = findChildren<QSplitter*>();
+    for (QSplitter* splitter : splitters)
     {
-        setStyleSheet(style);
-        m_appliedDockStyleSheet = style;
-        setProperty("antDockStyleSheetApplyCount", property("antDockStyleSheetApplyCount").toInt() + 1);
-    }
-
-    const auto tabBars = findChildren<QTabBar*>();
-    for (QTabBar* tabBar : tabBars)
-    {
-        if (!tabBar) continue;
-        tabBar->setDocumentMode(true);
-        tabBar->setDrawBase(false);
-        tabBar->setExpanding(false);
+        if (splitter && splitter->objectName() == QStringLiteral("AntDockSplitter"))
+        {
+            installDockStyle(splitter);
+        }
     }
     const auto tabWidgets = findChildren<QTabWidget*>();
     for (QTabWidget* tabWidget : tabWidgets)
     {
         if (auto* area = dynamic_cast<DockArea*>(tabWidget))
         {
+            installDockStyle(area);
+            installDockTabBarStyle(area->tabBar());
             area->updateTheme();
         }
     }

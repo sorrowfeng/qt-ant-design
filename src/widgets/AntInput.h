@@ -160,7 +160,6 @@ private:
     QIcon m_suffixIcon;
     qint64 m_prefixIconCacheKey = 0;
     qint64 m_suffixIconCacheKey = 0;
-    bool m_lineEditStyleSheetApplied = false;
     mutable bool m_metricsDirty = true;
     mutable Metrics m_cachedMetrics;
     mutable bool m_sizeHintDirty = true;

@@ -196,13 +196,19 @@ void AntLog::updateTheme()
         m_cachedViewportPalette = pal;
         appliedThemeWork = true;
     }
-
-    const QString styleSheet = QStringLiteral("QPlainTextEdit { background-color: %1; border: none; }")
-                                   .arg(background.name());
-    if (m_themeStyleSheet != styleSheet || m_view->styleSheet() != styleSheet)
+    if (m_view->frameShape() != QFrame::NoFrame)
     {
-        m_view->setStyleSheet(styleSheet);
-        m_themeStyleSheet = styleSheet;
+        m_view->setFrameShape(QFrame::NoFrame);
+        appliedThemeWork = true;
+    }
+    if (!m_view->testAttribute(Qt::WA_TranslucentBackground))
+    {
+        m_view->setAttribute(Qt::WA_TranslucentBackground, true);
+        appliedThemeWork = true;
+    }
+    if (m_view->autoFillBackground())
+    {
+        m_view->setAutoFillBackground(false);
         appliedThemeWork = true;
     }
 
@@ -227,7 +233,7 @@ void AntLog::updateTheme()
     }
     setProperty("antLogThemeApplyCount", m_themeApplyCount);
     setProperty("antLogThemeSkipCount", m_themeSkipCount);
-    setProperty("antLogThemeStyleSheet", m_themeStyleSheet);
+    setProperty("antLogThemeUsesPalette", true);
 }
 
 void AntLog::rebuildDocument()

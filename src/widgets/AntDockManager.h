@@ -236,6 +236,5 @@ private:
     mutable int m_dockAreaHitTestCount = 0;
     mutable int m_dropTargetComputeCount = 0;
     mutable int m_dropTargetCacheHitCount = 0;
-    QString m_appliedDockStyleSheet;
     int m_autoObjectNameCounter = 0;
 };

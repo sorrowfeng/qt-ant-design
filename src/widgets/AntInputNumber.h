@@ -120,7 +120,6 @@ private:
     QPropertyAnimation* m_controlsAnimation = nullptr;
     QWidget* m_controlsOverlay = nullptr;
     bool m_lineEditTransparent = false;
-    QString m_lineEditStyleSheet;
     int m_lastControlsInset = -1;
     mutable bool m_metricsDirty = true;
     mutable Metrics m_cachedMetrics;

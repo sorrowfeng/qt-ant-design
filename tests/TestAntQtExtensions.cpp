@@ -35,6 +35,7 @@
 #include <thread>
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
+#include "styles/AntDockStyle.h"
 #include "widgets/AntApp.h"
 #include "widgets/AntConfigProvider.h"
 #include "widgets/AntForm.h"
@@ -1864,7 +1865,7 @@ void TestAntQtExtensions::dockManager()
     manager->resize(640, 420);
     QCOMPARE(manager->dockOptions().testFlag(QMainWindow::AllowNestedDocks), true);
     QCOMPARE(manager->dockOptions().testFlag(QMainWindow::AllowTabbedDocks), true);
-    QCOMPARE(manager->palette().color(QPalette::Window), antTheme->tokens().colorBgLayout);
+    QVERIFY(manager->styleSheet().isEmpty());
     QCOMPARE(manager->isDropGuideEnabled(), true);
     QCOMPARE(manager->isDropGuideVisible(), true);
     QCOMPARE(manager->activeDropGuide(), AntDockManager::DockPlacement::None);
@@ -2124,13 +2125,13 @@ void TestAntQtExtensions::dockManager()
     manager->addDockWidget(properties, inspector, AntDockManager::DockPlacement::Center);
     QTRY_VERIFY(manager->tabifiedDockWidgets(inspector).contains(properties));
     QTRY_VERIFY(dockAreaForExtensionTest(properties) == dockAreaForExtensionTest(inspector));
-    const int styleApplyCountBeforeRestore = manager->property("antDockStyleSheetApplyCount").toInt();
+    QVERIFY(manager->styleSheet().isEmpty());
     QVERIFY(manager->restorePerspective(QStringLiteral("default")));
     QCOMPARE(restoredSpy.count(), 1);
     QVERIFY(manager->property("antDockLastRestoreElapsedMs").isValid());
     QVERIFY(manager->property("antDockLastRestoreKeptEmbeddedDocks").toInt() >= 3);
     QVERIFY(manager->property("antDockLastRestoreAreaCount").toInt() >= 2);
-    QCOMPARE(manager->property("antDockStyleSheetApplyCount").toInt(), styleApplyCountBeforeRestore);
+    QVERIFY(manager->styleSheet().isEmpty());
     inspectorArea = dockAreaForExtensionTest(inspector);
     propertiesArea = dockAreaForExtensionTest(properties);
     QVERIFY(inspectorArea != nullptr);
@@ -3030,7 +3031,7 @@ void TestAntQtExtensions::dockManager()
 
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     const auto& darkToken = antTheme->tokens();
-    QCOMPARE(manager->palette().color(QPalette::Window), darkToken.colorBgLayout);
+    QVERIFY(manager->styleSheet().isEmpty());
     QCOMPARE(explorer->palette().color(QPalette::Window), darkToken.colorBgContainer);
     QCOMPARE(explorer->widget()->palette().color(QPalette::Window), darkToken.colorBgContainer);
     QCOMPARE(explorer->widget()->autoFillBackground(), true);
@@ -3038,6 +3039,7 @@ void TestAntQtExtensions::dockManager()
     {
         QCOMPARE(explorerArea->palette().color(QPalette::Window), darkToken.colorBgContainer);
         QCOMPARE(explorerArea->property("antDockAreaDarkSurfaceApplied").toBool(), true);
+        QVERIFY(dynamic_cast<AntDockStyle*>(explorerArea->style()) != nullptr);
         if (QTabBar* tabBar = explorerArea->tabBar())
         {
             QCOMPARE(tabBar->palette().color(QPalette::Button), darkToken.colorBgElevated);

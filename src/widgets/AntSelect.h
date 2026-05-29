@@ -197,6 +197,7 @@ private:
     QRectF clearButtonRect(const Metrics& metrics) const;
     QColor borderColor() const;
     QColor backgroundColor() const;
+    void updateEditFieldPalette();
     void rebuildPopup();
     void updatePopupGeometry();
     void selectOptionFromPopup(int index);

@@ -251,8 +251,8 @@
 - **根因**：
   1. 拖拽落位为了避开 mouse release 事件分发中的树重排风险，使用 queued meta-call 应用新布局；但旧逻辑先隐藏 drop preview，再等 queued call 才重建布局，中间会露出一帧旧布局空档。
   2. `restorePerspective()` 会先从旧 `DockArea` 移除全部 dock，并把 dock `setParent(nullptr)`。即使 dock 在新 perspective 中仍然是嵌入状态，也会短暂变成 top-level，Windows 下随后进入 `resetNativeFloatingWindowForEmbedding()` / `destroy(true, true)` / native style 归一化路径，造成不必要的 HWND 销毁重建。
-  3. restore 末尾无条件 `setStyleSheet()`，每次恢复布局都会让 Qt stylesheet 重新解析并 repolish 整个 DockManager 子树。
-- **解决**：嵌入态 dock 的 guided drop 现在在 release 事件返回前同步应用新布局，不再等 queued meta-call；浮动窗口回嵌这类生命周期更复杂的路径继续使用 queued apply，并保留 drop preview 直到布局切换真正应用，避免空白间隙。`restorePerspective()` 进入批量恢复模式，临时关闭 manager/workspace/dock 更新、延后 placeholder 刷新，并把仍会嵌入的 dock 暂挂到 manager child 上，不再临时顶层化；恢复 area 时批量添加 tab，仅最后设置当前 tab；`updateTheme()` 只有样式内容变化时才重新 `setStyleSheet()`。回归测试覆盖 restore 期间保留嵌入 dock、area 重建计数、stylesheet 不重复应用，以及嵌入态 guided drop 在 release 后立即完成布局切换。
+  3. restore 末尾依赖 `setStyleSheet()`，每次恢复布局都会让 Qt stylesheet 重新解析并 repolish 整个 DockManager 子树。
+- **解决**：嵌入态 dock 的 guided drop 现在在 release 事件返回前同步应用新布局，不再等 queued meta-call；浮动窗口回嵌这类生命周期更复杂的路径继续使用 queued apply，并保留 drop preview 直到布局切换真正应用，避免空白间隙。`restorePerspective()` 进入批量恢复模式，临时关闭 manager/workspace/dock 更新、延后 placeholder 刷新，并把仍会嵌入的 dock 暂挂到 manager child 上，不再临时顶层化；恢复 area 时批量添加 tab，仅最后设置当前 tab；DockManager 的 QTabWidget/QTabBar/QToolButton/QSplitter 外观迁移到 `AntDockStyle` 和 palette，不再通过 stylesheet 触发布局恢复后的整树 repolish。回归测试覆盖 restore 期间保留嵌入 dock、area 重建计数、无 DockManager stylesheet，以及嵌入态 guided drop 在 release 后立即完成布局切换。
 - **改动文件**：`src/widgets/AntDockManager.h`、`src/widgets/AntDockManager.cpp`、`tests/TestAntQtExtensions.cpp`
 
 ### 34. DockWidget 不可见时浮动窗口仍能嵌回布局

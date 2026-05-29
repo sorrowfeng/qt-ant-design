@@ -99,7 +99,8 @@ public:
         f.setWeight(QFont::DemiBold);
         f.setPixelSize(antTheme->tokens().fontSize);
         titleLabel->setFont(f);
-        titleLabel->setStyleSheet(QStringLiteral("background: transparent;"));
+        titleLabel->setAttribute(Qt::WA_TranslucentBackground, true);
+        titleLabel->setAutoFillBackground(false);
         closeBtn = new AntButton();
         closeBtn->setButtonType(Ant::ButtonType::Text);
         closeBtn->setButtonSize(Ant::Size::Small);
@@ -112,7 +113,8 @@ public:
 
         descLabel = new QLabel(tooltip);
         descLabel->setWordWrap(true);
-        descLabel->setStyleSheet(QStringLiteral("background: transparent;"));
+        descLabel->setAttribute(Qt::WA_TranslucentBackground, true);
+        descLabel->setAutoFillBackground(false);
         lay->addWidget(descLabel);
 
         auto* btnRow = new QHBoxLayout();

@@ -136,6 +136,8 @@ AntInput::AntInput(QWidget* parent)
     m_lineEdit = new QLineEdit(this);
     m_lineEdit->setFrame(false);
     m_lineEdit->setClearButtonEnabled(false);
+    m_lineEdit->setAttribute(Qt::WA_TranslucentBackground, true);
+    m_lineEdit->setAutoFillBackground(false);
     m_lineEdit->installEventFilter(this);
 
     m_clearButton = new AntInputIconButton(AntInputIconButton::Kind::Clear, this);
@@ -690,10 +692,9 @@ void AntInput::updateVisualState()
         m_lineEdit->setAttribute(Qt::WA_TranslucentBackground, true);
         changed = true;
     }
-    if (!m_lineEditStyleSheetApplied)
+    if (m_lineEdit->autoFillBackground())
     {
-        m_lineEdit->setStyleSheet(QStringLiteral("QLineEdit { background: transparent; border: none; padding: 0; }"));
-        m_lineEditStyleSheetApplied = true;
+        m_lineEdit->setAutoFillBackground(false);
         changed = true;
     }
 
