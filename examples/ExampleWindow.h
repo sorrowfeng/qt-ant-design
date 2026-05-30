@@ -1,12 +1,9 @@
 #pragma once
 
-#include <QVector>
-
 #include "widgets/AntWindow.h"
 
-class AntNavItem;
+class AntNav;
 class AntStackedWidget;
-class QVBoxLayout;
 class QWidget;
 
 class ExampleWindow : public AntWindow
@@ -22,16 +19,10 @@ protected:
 private:
     void buildSidebar();
     void buildPages();
-    void addCategoryHeader(const QString& title);
-    void addNavButton(const QString& text, int pageIndex);
-    void setActiveNav(int index);
-    void applyTheme();
 
     QWidget* m_central = nullptr;
     QWidget* m_sidebar = nullptr;
     QWidget* m_content = nullptr;
-    QVBoxLayout* m_navLayout = nullptr;
+    AntNav* m_nav = nullptr;
     AntStackedWidget* m_stack = nullptr;
-    QVector<AntNavItem*> m_navItems;
-    int m_activeIndex = 0;
 };

@@ -27,20 +27,20 @@
 - 同步日期：`2026-05-30`
 - 状态总览：`docs/project-status.md`
 - 项目问题清单（已解决 + 待解决）：`docs/issue-log.md`
-- 已实现公开组件总数：`87`（`src/widgets` 有 `107` 个 `Ant*.h`，包含 `87` 个公开组件头、`19` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`）
+- 已实现公开组件总数：`88`（`src/widgets` 有 `108` 个 `Ant*.h`，包含 `88` 个公开组件头、`19` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`）
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
 - 子组件/变体完整度：`15 / 15`（100%）
-- Qt / 桌面扩展组件：`17`（AntWindow、AntDialog、AntRibbon、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntStackedWidget、AntFileDialog、AntPlainTextEdit、AntDockManager、AntDockWidget、AntLog、AntNavItem）
+- Qt / 桌面扩展组件：`18`（AntWindow、AntDialog、AntRibbon、AntWidget、AntStatusBar、AntScrollBar、AntMenuBar、AntToolBar、AntToolButton、AntScrollArea、AntStackedWidget、AntFileDialog、AntPlainTextEdit、AntDockManager、AntDockWidget、AntLog、AntNav、AntNavItem）
 - 已迁移至 `QProxyStyle` 的组件数：`66` 个 `Ant*Style` 类
-- 不依赖独立 Style 类的组件：`AntAffix`、`AntAnchor`、`AntApp`、`AntCarousel`、`AntCollapse`、`AntColorPicker`、`AntConfigProvider`、`AntDockWidget`、`AntFlex`、`AntGrid`、`AntImage`、`AntLog`、`AntMasonry`、`AntMentions`、`AntNavItem`、`AntRibbon`、`AntScrollArea`、`AntSplitter`、`AntTour`、`AntTransfer`、`AntWidget`
-- 示例程序覆盖：`87 / 87` 个公开组件，另有独立 `Showcase` 页面；`AntDockManager` 合并在 DockWidget 示例页展示，其余公开组件均已提供独立示例页
+- 不依赖独立 Style 类的组件：`AntAffix`、`AntAnchor`、`AntApp`、`AntCarousel`、`AntCollapse`、`AntColorPicker`、`AntConfigProvider`、`AntDockWidget`、`AntFlex`、`AntGrid`、`AntImage`、`AntLog`、`AntMasonry`、`AntMentions`、`AntNav`、`AntNavItem`、`AntRibbon`、`AntScrollArea`、`AntSplitter`、`AntTour`、`AntTransfer`、`AntWidget`
+- 示例程序覆盖：`88 / 88` 个公开组件，另有独立 `Showcase` 页面；`AntDockManager` 合并在 DockWidget 示例页展示，其余公开组件均已提供独立示例页
 - Qt 风格别名：名字与常用 Qt 控件无法直观对应的组件提供轻量头文件别名（如 `AntLabel.h` → `AntTypography`）；仅大小写差异时以 Qt 命名为准（如 `AntCheckBox`、`AntToolTip`），不保留旧拼写兼容 alias。
-- 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
+- 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNav` / `AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - README 组件截图画廊：`resources/images/components/` 提交 `166` 张 Light/Dark PNG，覆盖 `83` 个视觉组件条目；`AntDockManager` 通过 DockWidget 示例页展示，弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
 - 测试状态：当前 `37` 个 CTest 目标；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-30`）
-- 逐控件可靠性覆盖矩阵：`docs/reliability-coverage.md`，列出 87 个公开组件的专项行为/API、生命周期、Meta 属性、主题切换和渲染烟测覆盖情况
+- 逐控件可靠性覆盖矩阵：`docs/reliability-coverage.md`，列出 88 个公开组件的专项行为/API、生命周期、Meta 属性、主题切换和渲染烟测覆盖情况
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
 
@@ -273,6 +273,7 @@
 | `AntToolButton` | `QProxyStyle` | 是 | 带下拉菜单的按钮 |
 | `AntPlainTextEdit` | `QProxyStyle` | 是 | 多行文本编辑器 |
 | `AntLog` | 自绘 | 是 | 日志输出控件 |
+| `AntNav` | 自绘组合 | 是 | 侧边栏/选择栏容器，管理分组标题、AntNavItem 选中状态、当前项信号和 AntScrollBar |
 | `AntNavItem` | 自绘 | 是 | 侧边栏导航项，active/hover 状态，clicked 信号 |
 | `AntWave` | — | — | 内部涟漪动画 overlay（core/），不计入 `src/widgets` 公开组件统计 |
 
@@ -384,7 +385,7 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 
 ## 示例程序
 
-当前 `examples/ExampleWindow.cpp` 已覆盖 `87 / 87` 个公开组件，另有 `Showcase` 页面用于首页展示控件对标。`AntDockManager` 合并在 DockWidget 示例页展示，左侧导航与右侧页面一一对应。
+当前 `examples/ExampleWindow.cpp` 已覆盖 `88 / 88` 个公开组件，另有 `Showcase` 页面用于首页展示控件对标。`AntDockManager` 合并在 DockWidget 示例页展示，左侧导航与右侧页面一一对应。
 
 示例程序架构：
 - `ExampleWindow` 继承 `AntWindow`（无边框窗口，自定义标题栏）
@@ -429,11 +430,11 @@ cmake --install build --config Debug
 
 ### 概述
 
-项目使用 QTest 与 CTest 脚本进行自动化测试，覆盖所有 87 个公开组件的属性、getter/setter、信号验证、生命周期压力场景和安装消费方验证。
+项目使用 QTest 与 CTest 脚本进行自动化测试，覆盖所有 88 个公开组件的属性、getter/setter、信号验证、生命周期压力场景和安装消费方验证。
 
 - **测试框架**：Qt Test（QTest + QSignalSpy，跟随自动检测到的 Qt 主版本）
 - **测试数量**：37 个 CTest 目标（33 个 QTest 可执行文件 + 1 个安装消费方 CMake 脚本测试 + 1 个 build-system CMake 脚本测试 + 1 个 example GUI subsystem 脚本测试 + 1 个 example 压力退出测试）
-- **覆盖组件**：87 个公开组件全部覆盖，内部 helper 随宿主组件测试；逐控件覆盖矩阵见 `docs/reliability-coverage.md`
+- **覆盖组件**：88 个公开组件全部覆盖，内部 helper 随宿主组件测试；逐控件覆盖矩阵见 `docs/reliability-coverage.md`
 - **运行方式**：`ctest -C Debug --output-on-failure`
 - **最近全量结果**：`37 / 37` CTest 目标通过（Debug，2026-05-30），覆盖公开组件 API / getter-setter / 信号、Qt 事件级鼠标键盘交互、生命周期、主题切换、渲染烟测、安装消费方和 example 子系统
 - **原生输入专项**：`TestAntQtExtensions` 的 Win32 `SendInput` 桌面输入路径默认关闭；需要真实桌面输入验证时显式设置 `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`
@@ -462,7 +463,7 @@ tests/
 ├── TestAntModal.cpp            # Modal 属性/命令式 API
 ├── TestAntNavigation.cpp       # Breadcrumb, Dropdown, Menu, Pagination, Steps, Tabs, Anchor
 ├── TestAntLayout.cpp           # Divider, Flex, Grid, Space, Layout, Masonry, Affix
-├── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, NavItem, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker
+├── TestAntQtExtensions.cpp     # App, ConfigProvider, Form, Log, Nav, NavItem, PlainTextEdit, ScrollArea, ScrollBar, Splitter, StatusBar, ToolButton, ToolBar, MenuBar, DockWidget, Widget, Window, ColorPicker
 ├── TestAntAliases.cpp          # Qt-style alias headers and type mapping coverage
 ├── TestAntObjectTree.cpp       # Public widget parent ownership, style ownership, and parent-driven destruction
 ├── TestAntChildOwnership.cpp   # Assigned child QWidget adoption and host-driven destruction coverage

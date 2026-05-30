@@ -60,6 +60,7 @@
 #include "widgets/AntMenuBar.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntModal.h"
+#include "widgets/AntNav.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntNotification.h"
 #include "widgets/AntPagination.h"
@@ -180,6 +181,7 @@ QList<ObjectCase> objectCases()
         {"AntMenuBar", [](QWidget* parent) { return new AntMenuBar(parent); }},
         {"AntMessage", [](QWidget* parent) { return new AntMessage(parent); }},
         {"AntModal", [](QWidget* parent) { return new AntModal(parent); }},
+        {"AntNav", [](QWidget* parent) { return new AntNav(parent); }},
         {"AntNavItem", [](QWidget* parent) { return new AntNavItem(QStringLiteral("Nav"), parent); }},
         {"AntNotification", [](QWidget* parent) { return new AntNotification(parent); }},
         {"AntPagination", [](QWidget* parent) { return new AntPagination(parent); }},

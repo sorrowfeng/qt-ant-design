@@ -73,6 +73,7 @@
 #include "widgets/AntMenuBar.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntModal.h"
+#include "widgets/AntNav.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntNotification.h"
 #include "widgets/AntPagination.h"
@@ -411,6 +412,13 @@ QList<RenderCase> renderCases()
              modal->setTitle(QStringLiteral("Modal"));
              modal->setContent(QStringLiteral("Content"));
          }, QSize(320, 180), false},
+        {"AntNav", [](QWidget* p) { return new AntNav(p); }, [](QWidget* w) {
+             auto* nav = qobject_cast<AntNav*>(w);
+             nav->addCategory(QStringLiteral("Main"));
+             nav->addItem(QStringLiteral("Overview"));
+             nav->addItem(QStringLiteral("Settings"));
+             nav->setCurrentIndex(1);
+         }, QSize(220, 140)},
         {"AntNavItem", [](QWidget* p) { return new AntNavItem(QStringLiteral("Nav"), p); }, nullptr, QSize(220, 48)},
         {"AntNotification", [](QWidget* p) { return new AntNotification(p); }, [](QWidget* w) {
              auto* notification = qobject_cast<AntNotification*>(w);

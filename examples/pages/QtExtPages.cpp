@@ -28,6 +28,7 @@
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
 #include "widgets/AntMenuBar.h"
+#include "widgets/AntNav.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntInputNumber.h"
@@ -378,6 +379,50 @@ QWidget* createNavItemPage(QWidget* /*owner*/)
         QObject::connect(settings, &AntNavItem::clicked, settings, [selectItem]() { selectItem(2); });
 
         demoRow->addWidget(navColumn);
+        demoRow->addWidget(detail, 1);
+        cl->addLayout(demoRow);
+
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* createNavPage(QWidget* /*owner*/)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    {
+        auto* card = new AntCard(QStringLiteral("AntNav"));
+        auto* cl = card->bodyLayout();
+
+        auto* desc = makeParagraph(QStringLiteral("AntNav wraps AntNavItem into a reusable selection rail with grouped headers, current-index state, item data and Ant scroll bars."),
+                                   page);
+        cl->addWidget(desc);
+
+        auto* demoRow = new QHBoxLayout();
+        demoRow->setSpacing(16);
+
+        auto* nav = new AntNav(page);
+        nav->setFixedWidth(220);
+        nav->addCategory(QStringLiteral("Workspace"));
+        nav->addItem(QStringLiteral("Overview"), QStringLiteral("overview"));
+        nav->addItem(QStringLiteral("Activity"), QStringLiteral("activity"));
+        nav->addCategory(QStringLiteral("Manage"));
+        nav->addItem(QStringLiteral("Members"), QStringLiteral("members"));
+        nav->addItem(QStringLiteral("Settings"), QStringLiteral("settings"));
+
+        auto* detail = makeParagraph(QStringLiteral("Overview selected"), page);
+        QObject::connect(nav, &AntNav::currentIndexChanged, nav, [nav, detail](int) {
+            detail->setText(QStringLiteral("%1 selected (%2)")
+                                .arg(nav->currentText(), nav->currentData().toString()));
+        });
+
+        demoRow->addWidget(nav);
         demoRow->addWidget(detail, 1);
         cl->addLayout(demoRow);
 

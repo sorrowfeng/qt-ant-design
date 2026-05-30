@@ -9,11 +9,11 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Area | Status |
 | --- | --- |
 | Ant Design standard coverage | `70 / 70` top-level components covered |
-| Public Qt component count | `87` public components |
-| Widget headers | `107` headers in `src/widgets`: `87` public component headers, `19` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup` |
-| Qt / desktop extensions | `17` components |
+| Public Qt component count | `88` public components |
+| Widget headers | `108` headers in `src/widgets`: `88` public component headers, `19` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup` |
+| Qt / desktop extensions | `18` components |
 | Style architecture | `66` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
-| Example coverage | `87 / 87` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
+| Example coverage | `88 / 88` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
 | Dedicated examples intentionally absent | None |
 | Tests | `37` CTest targets configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-30` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |

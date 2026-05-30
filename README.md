@@ -32,9 +32,9 @@ The project focuses on:
 
 - Built on Qt Widgets — lightweight, easy to embed, and consumable as either a static or shared library in existing projects
 - Built-in Design Token system with real-time light / dark theme switching
-- `87` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `17` Qt / desktop extension components)
+- `88` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `18` Qt / desktop extension components)
 - `66` style-driven components are rendered through a `QProxyStyle` architecture
-- The example app currently demos `87 / 87` public components, plus a standalone Ant Design homepage-style `Showcase`
+- The example app currently demos `88 / 88` public components, plus a standalone Ant Design homepage-style `Showcase`
 - `AntIcon` bundles `831` official SVG resources from `@ant-design/icons-svg@4.4.2`
 - Comparable standard components are tracked as visual-audit `Pass`; Qt-only desktop extensions are tracked as `Local Pass`
 - Clean code structure — `core / styles / widgets / examples` layering keeps the project easy to extend
@@ -198,9 +198,9 @@ int main(int argc, char* argv[])
 
 ## Ported Components
 
-Total public components implemented: `87`
+Total public components implemented: `88`
 
-`src/widgets` currently contains `107` `Ant*.h` headers: `87` public component headers, `19` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup`.
+`src/widgets` currently contains `108` `Ant*.h` headers: `88` public component headers, `19` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup`.
 
 Ant Design standard components are counted by the top-level directories under [`ant-design/ant-design`](https://github.com/ant-design/ant-design)'s `components/` directory, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
 
@@ -218,7 +218,7 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 | Feedback | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | Mixed (`QProxyStyle` / custom paint) |
 | Data Display | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | Mixed (`QProxyStyle` / custom paint) |
 | Layout & Misc | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | Mixed (`QProxyStyle` / custom paint / QObject helper) |
-| Qt / Desktop Extensions | `AntDialog` `AntDockManager` `AntDockWidget` `AntFileDialog` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStackedWidget` `AntStatusBar` `AntToolBar` `AntToolButton` | Mixed (`QProxyStyle` / custom paint) |
+| Qt / Desktop Extensions | `AntDialog` `AntDockManager` `AntDockWidget` `AntFileDialog` `AntLog` `AntMenuBar` `AntNav` `AntNavItem` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStackedWidget` `AntStatusBar` `AntToolBar` `AntToolButton` | Mixed (`QProxyStyle` / custom paint) |
 
 ### Component Screenshots
 

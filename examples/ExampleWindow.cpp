@@ -1,20 +1,16 @@
 #include "ExampleWindow.h"
 
-#include <QFrame>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QScrollArea>
 #include <QString>
 #include <QVBoxLayout>
 #include <QVector>
 #include <QWidget>
 
-#include "core/AntTheme.h"
 #include "core/AntTypes.h"
 #include "pages/PageCommon.h"
 #include "pages/PageRegistry.h"
-#include "widgets/AntNavItem.h"
-#include "widgets/AntScrollBar.h"
+#include "widgets/AntNav.h"
 #include "widgets/AntStackedWidget.h"
 #include "widgets/AntTypography.h"
 #include "widgets/AntWidget.h"
@@ -45,15 +41,19 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     m_stack->setVariant(Ant::Variant::Borderless);
     contentLayout->addWidget(m_stack, 1);
 
+    connect(m_nav, &AntNav::currentIndexChanged, this, [this](int index) {
+        if (m_stack && index >= 0 && index < m_stack->count())
+        {
+            m_stack->setCurrentIndex(index);
+        }
+    });
+
     buildPages();
 
     root->addWidget(m_sidebar);
     root->addWidget(m_content, 1);
     setCentralWidget(m_central);
     m_stack->setCurrentIndex(0);
-
-    connect(antTheme, &AntTheme::themeChanged, this, &ExampleWindow::applyTheme);
-    applyTheme();
 }
 
 void ExampleWindow::buildSidebar()
@@ -76,21 +76,8 @@ void ExampleWindow::buildSidebar()
 
     sideLayout->addWidget(brandArea);
 
-    auto* navScroll = new QScrollArea(m_sidebar);
-    navScroll->setWidgetResizable(true);
-    navScroll->setFrameShape(QFrame::NoFrame);
-    navScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    navScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    navScroll->setVerticalScrollBar(new AntScrollBar(Qt::Vertical));
-
-    auto* navContainer = new QWidget();
-    m_navLayout = new QVBoxLayout(navContainer);
-    m_navLayout->setContentsMargins(0, 8, 0, 0);
-    m_navLayout->setSpacing(0);
-    m_navLayout->addStretch();
-
-    navScroll->setWidget(navContainer);
-    sideLayout->addWidget(navScroll, 1);
+    m_nav = new AntNav(m_sidebar);
+    sideLayout->addWidget(m_nav, 1);
 }
 
 void ExampleWindow::buildPages()
@@ -105,67 +92,14 @@ void ExampleWindow::buildPages()
 
         if (entry.category != currentCategory)
         {
-            addCategoryHeader(entry.category);
+            m_nav->addCategory(entry.category);
             currentCategory = entry.category;
         }
-        addNavButton(entry.name, i);
+        m_nav->addItem(entry.name, i);
     }
-}
-
-void ExampleWindow::addCategoryHeader(const QString& title)
-{
-    auto* header = new AntTypography(title.toUpper());
-    header->setTitle(true);
-    header->setTitleLevel(Ant::TypographyTitleLevel::H5);
-    header->setContentsMargins(20, 12, 20, 4);
-    m_navLayout->insertWidget(m_navLayout->count() - 1, header);
-}
-
-void ExampleWindow::addNavButton(const QString& text, int pageIndex)
-{
-    auto* item = new AntNavItem(text);
-    m_navLayout->insertWidget(m_navLayout->count() - 1, item);
-    m_navItems.append(item);
-
-    connect(item, &AntNavItem::clicked, this, [this, item]() {
-        int idx = m_navItems.indexOf(item);
-        if (idx >= 0)
-        {
-            m_stack->setCurrentIndex(idx);
-            setActiveNav(idx);
-        }
-    });
-
-    connect(item, &QObject::destroyed, this, [this, item]() {
-        m_navItems.removeOne(item);
-    });
-
-    if (pageIndex == 0)
-    {
-        setActiveNav(0);
-    }
-}
-
-void ExampleWindow::setActiveNav(int index)
-{
-    if (index < 0 || index >= m_navItems.size())
-    {
-        return;
-    }
-
-    for (int i = 0; i < m_navItems.size(); ++i)
-    {
-        m_navItems[i]->setActive(i == index);
-    }
-    m_activeIndex = index;
 }
 
 QSize ExampleWindow::sizeHint() const
 {
     return QSize(1200, 800);
-}
-
-void ExampleWindow::applyTheme()
-{
-    setActiveNav(m_activeIndex);
 }

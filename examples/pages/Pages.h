@@ -95,6 +95,7 @@ QWidget* createDockWidgetPage(QWidget* owner);
 QWidget* createLogPage(QWidget* owner);
 QWidget* createMasonryPage(QWidget* owner);
 QWidget* createMenuBarPage(QWidget* owner);
+QWidget* createNavPage(QWidget* owner);
 QWidget* createNavItemPage(QWidget* owner);
 QWidget* createPlainTextEditPage(QWidget* owner);
 QWidget* createScrollAreaPage(QWidget* owner);

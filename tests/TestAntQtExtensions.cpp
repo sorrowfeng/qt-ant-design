@@ -65,6 +65,7 @@
 #include "widgets/AntToolBar.h"
 #include "widgets/AntMenu.h"
 #include "widgets/AntMenuBar.h"
+#include "widgets/AntNav.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntTypography.h"
 #include "widgets/AntDockManager.h"
@@ -727,6 +728,7 @@ private slots:
     void toolButton();
     void toolBar();
     void menuBar();
+    void nav();
     void navItem();
     void dockWidget();
     void dockManager();
@@ -1800,6 +1802,70 @@ void TestAntQtExtensions::navItem()
     QCoreApplication::sendEvent(&item, &leaveEvent);
     renderNavItem();
     QVERIFY(item.property("antNavItemPaintCacheBuildCount").toInt() > activePaintCacheBuilds);
+}
+
+void TestAntQtExtensions::nav()
+{
+    AntNav nav;
+    QSignalSpy currentSpy(&nav, &AntNav::currentIndexChanged);
+    QSignalSpy textSpy(&nav, &AntNav::currentTextChanged);
+    QSignalSpy dataSpy(&nav, &AntNav::currentDataChanged);
+    QSignalSpy clickedSpy(&nav, &AntNav::itemClicked);
+    QSignalSpy countSpy(&nav, &AntNav::countChanged);
+
+    nav.resize(240, 160);
+    nav.addCategory(QStringLiteral("Main"));
+    QCOMPARE(nav.addItem(QStringLiteral("Overview"), QStringLiteral("overview")), 0);
+    QCOMPARE(nav.addItem(QStringLiteral("Activity"), QStringLiteral("activity")), 1);
+    nav.addCategory(QStringLiteral("Admin"));
+    QCOMPARE(nav.addItem(QStringLiteral("Settings"), QStringLiteral("settings")), 2);
+
+    QCOMPARE(nav.count(), 3);
+    QCOMPARE(nav.currentIndex(), 0);
+    QCOMPARE(nav.currentText(), QStringLiteral("Overview"));
+    QCOMPARE(nav.currentData().toString(), QStringLiteral("overview"));
+    QVERIFY(nav.item(0)->isActive());
+    QVERIFY(!nav.item(1)->isActive());
+    QVERIFY(countSpy.count() >= 3);
+
+    nav.setCurrentIndex(2);
+    QCOMPARE(nav.currentIndex(), 2);
+    QCOMPARE(nav.currentText(), QStringLiteral("Settings"));
+    QCOMPARE(nav.currentData().toString(), QStringLiteral("settings"));
+    QVERIFY(nav.item(2)->isActive());
+    QVERIFY(currentSpy.count() >= 2);
+    QVERIFY(textSpy.count() >= 2);
+    QVERIFY(dataSpy.count() >= 2);
+
+    nav.setItemText(2, QStringLiteral("Preferences"));
+    QCOMPARE(nav.currentText(), QStringLiteral("Preferences"));
+    QVERIFY(textSpy.count() >= 3);
+
+    nav.setItemData(2, QStringLiteral("prefs"));
+    QCOMPARE(nav.currentData().toString(), QStringLiteral("prefs"));
+    QVERIFY(dataSpy.count() >= 3);
+
+    nav.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&nav));
+    qtMouseClickForExtensionTest(nav.item(1));
+    QCOMPARE(nav.currentIndex(), 1);
+    QCOMPARE(clickedSpy.count(), 1);
+    QCOMPARE(clickedSpy.takeFirst().at(0).toInt(), 1);
+
+    const int selectionApplies = nav.property("antNavSelectionApplyCount").toInt();
+    nav.setCurrentIndex(1);
+    QCOMPARE(nav.property("antNavSelectionApplyCount").toInt(), selectionApplies);
+
+    nav.removeItem(1);
+    QCOMPARE(nav.count(), 2);
+    QCOMPARE(nav.currentIndex(), 1);
+    QCOMPARE(nav.currentText(), QStringLiteral("Preferences"));
+
+    nav.clear();
+    QCOMPARE(nav.count(), 0);
+    QCOMPARE(nav.currentIndex(), -1);
+    QCOMPARE(nav.currentText(), QString());
+    QCOMPARE(nav.property("antNavItemCount").toInt(), 0);
 }
 
 void TestAntQtExtensions::dockWidget()

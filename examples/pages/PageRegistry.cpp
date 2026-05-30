@@ -118,6 +118,7 @@ QVector<PageEntry> buildPageRegistry()
     add(kQtExtensions, QStringLiteral("DockWidget"), &createDockWidgetPage);
     add(kQtExtensions, QStringLiteral("PlainTextEdit"), &createPlainTextEditPage);
     add(kQtExtensions, QStringLiteral("Log"), &createLogPage);
+    add(kQtExtensions, QStringLiteral("Nav"), &createNavPage);
     add(kQtExtensions, QStringLiteral("NavItem"), &createNavItemPage);
     add(kQtExtensions, QStringLiteral("Masonry"), &createMasonryPage);
 

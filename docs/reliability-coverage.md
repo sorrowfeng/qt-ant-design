@@ -70,6 +70,7 @@ Result on `2026-05-30`: `37 / 37` CTest targets passed and `qt-ant-design-exampl
 | `AntMenuBar` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntMessage` | `TestAntAdvancedInteractions`, `TestAntFeedback`, `TestAntStressLifecycle`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntModal` | `TestAntAliases`, `TestAntChildOwnership`, `TestAntModal`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
+| `AntNav` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntNavItem` | `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntNotification` | `TestAntAdvancedInteractions`, `TestAntFeedback`, `TestAntStressLifecycle`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntPagination` | `TestAntNavigation`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |

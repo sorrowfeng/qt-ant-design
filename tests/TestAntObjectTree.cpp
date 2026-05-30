@@ -48,6 +48,7 @@
 #include "widgets/AntMenuBar.h"
 #include "widgets/AntMessage.h"
 #include "widgets/AntModal.h"
+#include "widgets/AntNav.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntNotification.h"
 #include "widgets/AntPagination.h"
@@ -181,6 +182,7 @@ void TestAntObjectTree::parentOwnsWidgetsAndStyles()
     trackWidget(new AntMenuBar(root), true);
     trackWidget(new AntMessage(root), true);
     trackWidget(new AntModal(root), true);
+    trackWidget(new AntNav(root), false);
     trackWidget(new AntNavItem(QStringLiteral("Nav"), root), false);
     trackWidget(new AntNotification(root), true);
     trackWidget(new AntPagination(root), true);
