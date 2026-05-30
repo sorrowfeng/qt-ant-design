@@ -297,7 +297,7 @@ protected:
         makeWindowClickThrough(this);
     }
 
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
     {
         if (eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG")
         {
@@ -1298,7 +1298,7 @@ bool AntDockWidget::event(QEvent* event)
 {
 #if defined(Q_OS_WIN)
     if (isFloating() &&
-        (event->type() == QEvent::ScreenChangeInternal || event->type() == QEvent::DevicePixelRatioChange))
+        (event->type() == QEvent::ScreenChangeInternal || antIsDevicePixelRatioChangeEvent(event->type())))
     {
         if (QWindow* shadowWindow = m_legacySoftwareShadow ? m_legacySoftwareShadow->windowHandle() : nullptr)
         {
@@ -1650,7 +1650,7 @@ void AntDockWidget::hideLegacySoftwareShadow()
     }
 }
 
-bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
+bool AntDockWidget::nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result)
 {
     if (!isFloating() || (eventType != "windows_generic_MSG" && eventType != "windows_dispatcher_MSG"))
     {

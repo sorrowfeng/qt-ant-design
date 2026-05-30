@@ -63,7 +63,7 @@ public:
         connect(m_treeWidget, &AntTree::nodeSelected, this, [this](const QString& key) {
             if (!m_owner->m_multiple)
             {
-                m_owner->m_value = {key};
+                m_owner->m_value = QStringList{key};
                 m_owner->updateDisplayText();
                 m_owner->hidePopup();
                 Q_EMIT m_owner->valueChanged(m_owner->m_value);

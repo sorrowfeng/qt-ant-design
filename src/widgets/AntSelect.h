@@ -161,7 +161,7 @@ Q_SIGNALS:
     void tagRemoved(const QVariant& value);
 
 protected:
-    void enterEvent(QEnterEvent* event) override;
+    void enterEvent(AntEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;

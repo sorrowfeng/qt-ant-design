@@ -1,5 +1,7 @@
 #pragma once
 
+#include "QtAntDesignExport.h"
+
 #include <QObject>
 
 namespace Ant
@@ -525,5 +527,7 @@ constexpr int FontSize = 14;
 constexpr int FontSizeSmall = 12;
 constexpr int FontSizeLarge = 16;
 constexpr int BorderRadius = 6;
+
+QT_ANT_DESIGN_EXPORT void registerMetaTypes();
 
 } // namespace Ant

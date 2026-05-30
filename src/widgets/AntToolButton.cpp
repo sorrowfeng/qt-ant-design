@@ -132,7 +132,7 @@ QSize AntToolButton::minimumSizeHint() const
     return sizeHint();
 }
 
-void AntToolButton::enterEvent(QEnterEvent* event)
+void AntToolButton::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     update();

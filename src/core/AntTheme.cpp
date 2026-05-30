@@ -32,6 +32,7 @@ AntTheme::AntTheme(QObject* parent)
       m_lightTokens(createTokens(Ant::ThemeMode::Default)),
       m_darkTokens(createTokens(Ant::ThemeMode::Dark))
 {
+    Ant::registerMetaTypes();
 }
 
 Ant::ThemeMode AntTheme::themeMode() const

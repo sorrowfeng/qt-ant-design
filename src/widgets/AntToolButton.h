@@ -52,7 +52,7 @@ Q_SIGNALS:
     void arrowRotationChanged(qreal rotation);
 
 protected:
-    void enterEvent(QEnterEvent* event) override;
+    void enterEvent(AntEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;

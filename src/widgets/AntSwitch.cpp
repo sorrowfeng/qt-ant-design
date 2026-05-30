@@ -183,7 +183,7 @@ QSize AntSwitch::minimumSizeHint() const
     return layoutCache().minimumSizeHint;
 }
 
-void AntSwitch::enterEvent(QEnterEvent* event)
+void AntSwitch::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("hover"));

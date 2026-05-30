@@ -8,6 +8,7 @@
 #include <QStyle>
 #include <QToolTip>
 #include <QVariantAnimation>
+#include <QtMath>
 
 #include <algorithm>
 #include <cmath>
@@ -246,7 +247,7 @@ QSize AntRate::minimumSizeHint() const
     return sizeHint();
 }
 
-void AntRate::enterEvent(QEnterEvent* event)
+void AntRate::enterEvent(AntEnterEvent* event)
 {
     if (m_hovered)
     {
@@ -410,7 +411,7 @@ const AntRate::LayoutCache& AntRate::layoutCache() const
     m_layoutCache.starRects.reserve(m_count);
     m_layoutCache.starPaths.reserve(m_count);
 
-    const qreal startX = (width() - m_layoutCache.totalWidth) / 2.0;
+    const qreal startX = kSelectionPadding;
     const qreal startY = (height() - m_layoutCache.starSize) / 2.0;
     for (int i = 0; i < m_count; ++i)
     {
@@ -544,7 +545,7 @@ double AntRate::starValueAt(const QPoint& pos) const
         return -1.0;
     }
 
-    const int startX = qRound((width() - cache.totalWidth) / 2.0);
+    const int startX = kSelectionPadding;
     const int relativeX = pos.x() - startX;
     if (relativeX < 0)
     {

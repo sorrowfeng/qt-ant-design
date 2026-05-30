@@ -177,7 +177,7 @@ QSize AntButton::minimumSizeHint() const
     return sizeHint();
 }
 
-void AntButton::enterEvent(QEnterEvent* event)
+void AntButton::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     update();

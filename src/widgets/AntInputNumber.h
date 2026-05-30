@@ -73,7 +73,7 @@ Q_SIGNALS:
     void precisionChanged(int decimals);
 
 protected:
-    void enterEvent(QEnterEvent* event) override;
+    void enterEvent(AntEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;

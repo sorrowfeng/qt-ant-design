@@ -41,7 +41,7 @@ constexpr qreal kColorPickerPopupShadowStrength = 0.30;
 QPoint colorPickerGlobalMousePos(const QMouseEvent* event)
 {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    return event->globalPosition().toPoint();
+    return antEventGlobalPosition(event);
 #else
     return event->globalPos();
 #endif
@@ -975,7 +975,7 @@ void AntColorPicker::paintEvent(QPaintEvent* /*event*/)
     }
 }
 
-void AntColorPicker::enterEvent(QEnterEvent* event)
+void AntColorPicker::enterEvent(AntEnterEvent* event)
 {
     if (!m_hovered)
     {

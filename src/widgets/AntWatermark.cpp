@@ -7,6 +7,30 @@
 #include "core/AntTheme.h"
 #include "styles/AntWatermarkStyle.h"
 
+namespace
+{
+QFont::Weight normalizedFontWeight(int weight)
+{
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    if (weight > 99)
+    {
+        if (weight <= 100) return QFont::Thin;
+        if (weight <= 200) return QFont::ExtraLight;
+        if (weight <= 300) return QFont::Light;
+        if (weight <= 400) return QFont::Normal;
+        if (weight <= 500) return QFont::Medium;
+        if (weight <= 600) return QFont::DemiBold;
+        if (weight <= 700) return QFont::Bold;
+        if (weight <= 800) return QFont::ExtraBold;
+        return QFont::Black;
+    }
+    return static_cast<QFont::Weight>(qBound(0, weight, 99));
+#else
+    return static_cast<QFont::Weight>(qBound(1, weight, 1000));
+#endif
+}
+}
+
 AntWatermark::AntWatermark(QWidget* parent)
     : QWidget(parent)
 {
@@ -142,7 +166,7 @@ QPixmap AntWatermark::watermarkPixmap(qreal devicePixelRatio) const
             font.setFamily(m_font.fontFamily);
         }
         font.setPixelSize(m_font.fontSize);
-        font.setWeight(QFont::Weight(m_font.fontWeight));
+        font.setWeight(normalizedFontWeight(m_font.fontWeight));
 
         const QSize textSize = watermarkTextSize(&painter, font);
         if (!textSize.isEmpty())

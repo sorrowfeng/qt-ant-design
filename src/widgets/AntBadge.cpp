@@ -78,6 +78,7 @@ AntBadge::AntBadge(QWidget* parent)
     });
 
     m_indicatorOverlay = new BadgeIndicatorOverlay(this);
+    m_indicatorOverlay->hide();
     m_indicatorOverlay->raise();
 
     connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
@@ -328,6 +329,7 @@ void AntBadge::setContentWidget(QWidget* widget)
     if (m_indicatorOverlay)
     {
         m_indicatorOverlay->setGeometry(rect());
+        m_indicatorOverlay->setVisible(m_contentWidget != nullptr);
         m_indicatorOverlay->raise();
     }
     requestBadgeUpdate(oldDirty.united(rect()), QStringLiteral("content"), true);
@@ -370,6 +372,16 @@ QSize AntBadge::minimumSizeHint() const
 void AntBadge::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
+    if (!m_contentWidget)
+    {
+        QStyleOption option;
+        option.initFrom(this);
+        option.rect = rect();
+        QPainter painter(this);
+        style()->drawPrimitive(QStyle::PE_Widget, &option, &painter, this);
+        return;
+    }
+
     // The indicator is painted by m_indicatorOverlay (sibling layer above
     // the content widget). Piggy-back on our own paint to refresh it so
     // any call-site `update()` also repaints the indicator without every
@@ -405,6 +417,7 @@ void AntBadge::resizeEvent(QResizeEvent* event)
     if (m_indicatorOverlay)
     {
         m_indicatorOverlay->setGeometry(rect());
+        m_indicatorOverlay->setVisible(m_contentWidget != nullptr);
         m_indicatorOverlay->raise();
     }
     QWidget::resizeEvent(event);
@@ -535,7 +548,7 @@ QRectF AntBadge::indicatorRect() const
     const int h = m_dot ? dotSize() : indicatorHeight();
     if (!m_contentWidget)
     {
-        return QRectF((width() - w) / 2.0, (height() - h) / 2.0, w, h);
+        return QRectF(1, (height() - h) / 2.0, w, h);
     }
     const QRect content = contentRect();
     return QRectF(content.right() + 1 - w / 2.0 + m_offset.x(),
@@ -707,7 +720,7 @@ const AntBadge::BadgePaintCache& AntBadge::badgePaintCache(const QRect& widgetRe
     cache.contentRect = m_contentWidget
                             ? QRect(kShadowMargin, cache.contentTopReserve, contentSize.width(), contentSize.height())
                             : widgetRect;
-    cache.indicatorRect = QRectF((widgetRect.width() - cache.indicatorWidth) / 2.0,
+    cache.indicatorRect = QRectF(1,
                                  (widgetRect.height() - (m_dot ? cache.dotSize : cache.indicatorHeight)) / 2.0,
                                  cache.indicatorWidth,
                                  m_dot ? cache.dotSize : cache.indicatorHeight);

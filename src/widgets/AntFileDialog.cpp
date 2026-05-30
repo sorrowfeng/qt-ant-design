@@ -339,7 +339,7 @@ void AntFileDialog::selectFile(const QString& filename)
             m_view->scrollTo(index, QAbstractItemView::PositionAtCenter);
         }
     }
-    m_selectedFiles = {path};
+    m_selectedFiles = QStringList{path};
     updateAcceptButton();
 }
 
@@ -756,18 +756,18 @@ void AntFileDialog::acceptSelection()
         if (m_fileMode == QFileDialog::AnyFile)
         {
             path = appendDefaultSuffixIfNeeded(path);
-            files = {QFileInfo(path).absoluteFilePath()};
+            files = QStringList{QFileInfo(path).absoluteFilePath()};
         }
         else
         {
             const QFileInfo info(path);
             if (acceptsDirectoriesOnly() && info.isDir())
             {
-                files = {info.absoluteFilePath()};
+                files = QStringList{info.absoluteFilePath()};
             }
             else if (!acceptsDirectoriesOnly() && info.isFile())
             {
-                files = {info.absoluteFilePath()};
+                files = QStringList{info.absoluteFilePath()};
             }
         }
     }

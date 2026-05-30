@@ -126,7 +126,7 @@ protected:
         }
     }
 
-    void enterEvent(QEnterEvent*) override
+    void enterEvent(AntEnterEvent*) override
     {
         if (onHovered)
         {

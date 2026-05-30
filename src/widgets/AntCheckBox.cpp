@@ -196,7 +196,7 @@ QSize AntCheckBox::minimumSizeHint() const
     return QSize(16, 16);
 }
 
-void AntCheckBox::enterEvent(QEnterEvent* event)
+void AntCheckBox::enterEvent(AntEnterEvent* event)
 {
     if (!m_hovered)
     {

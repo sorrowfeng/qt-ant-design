@@ -100,7 +100,7 @@ protected:
         p.drawText(rect().adjusted(12, 0, -12, 0), Qt::AlignLeft | Qt::AlignVCenter, m_text);
     }
 
-    void enterEvent(QEnterEvent*) override { update(); }
+    void enterEvent(AntEnterEvent*) override { update(); }
     void leaveEvent(QEvent*) override { update(); }
     void mousePressEvent(QMouseEvent* event) override
     {

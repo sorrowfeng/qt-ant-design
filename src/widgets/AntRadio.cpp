@@ -156,7 +156,7 @@ QSize AntRadio::minimumSizeHint() const
     return layoutCache().minimumSizeHint;
 }
 
-void AntRadio::enterEvent(QEnterEvent* event)
+void AntRadio::enterEvent(AntEnterEvent* event)
 {
     if (m_hovered)
     {

@@ -99,7 +99,7 @@ Q_SIGNALS:
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
-    void enterEvent(QEnterEvent* event) override;
+    void enterEvent(AntEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void focusInEvent(QFocusEvent* event) override;

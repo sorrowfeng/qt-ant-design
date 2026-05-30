@@ -145,7 +145,7 @@ void installDockTabBarStyle(QTabBar* tabBar)
 QPoint mouseGlobalPosition(QMouseEvent* event)
 {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    return event->globalPosition().toPoint();
+    return antEventGlobalPosition(event);
 #else
     return event->globalPos();
 #endif
@@ -189,7 +189,7 @@ void makeTransparentToolWindowClickThrough(QWidget* widget)
 bool handleTransparentToolWindowNativeEvent(QWidget* widget,
                                             const QByteArray& eventType,
                                             void* message,
-                                            qintptr* result)
+                                            AntNativeEventResult* result)
 {
     if (eventType != "windows_generic_MSG" && eventType != "windows_dispatcher_MSG")
     {
@@ -1103,7 +1103,7 @@ protected:
         }
     }
 
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
     {
         if (handleTransparentToolWindowNativeEvent(this, eventType, message, result))
         {
@@ -1464,7 +1464,7 @@ protected:
         }
     }
 
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
     {
         if (handleTransparentToolWindowNativeEvent(this, eventType, message, result))
         {
@@ -1609,7 +1609,7 @@ protected:
         }
     }
 
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
     {
         if (handleTransparentToolWindowNativeEvent(this, eventType, message, result))
         {

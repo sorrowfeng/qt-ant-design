@@ -24,6 +24,7 @@
 #include <QAbstractItemView>
 #include <QHideEvent>
 #include <QFileDialog>
+#include <QScreen>
 #include <QSignalSpy>
 #include <QTabBar>
 #include <QTabWidget>
@@ -2768,9 +2769,9 @@ void TestAntQtExtensions::dockManager()
         outsideHitTestMessage.message = WM_NCHITTEST;
         const QPoint outsideFrameGlobal = explorer->mapToGlobal(QPoint(-4, explorer->height() / 2));
         outsideHitTestMessage.lParam = MAKELPARAM(outsideFrameGlobal.x(), outsideFrameGlobal.y());
-        const qintptr outsideHitTestResult =
+        const AntNativeEventResult outsideHitTestResult =
             ::SendMessageW(explorerHwnd, outsideHitTestMessage.message, 0, outsideHitTestMessage.lParam);
-        QCOMPARE(outsideHitTestResult, static_cast<qintptr>(HTTRANSPARENT));
+        QCOMPARE(outsideHitTestResult, static_cast<AntNativeEventResult>(HTTRANSPARENT));
         QCOMPARE(explorer->property("antDockLegacyOutsideClientHitTestTransparent").toBool(), true);
     }
 #endif
@@ -4290,7 +4291,7 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     public:
         using AntWindow::nativeEvent;
 
-        bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+        bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
         {
 #ifdef Q_OS_WIN
             if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
@@ -4342,20 +4343,20 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
         return QPoint(nativePoint.x, nativePoint.y);
     };
 
-    auto hitTest = [&](const QPoint& localPos) -> qintptr {
+    auto hitTest = [&](const QPoint& localPos) -> AntNativeEventResult {
         MSG msg{};
         msg.hwnd = hwnd;
         msg.message = WM_NCHITTEST;
         const QPoint globalPos = nativeGlobalPoint(localPos);
         msg.lParam = MAKELPARAM(globalPos.x(), globalPos.y());
-        qintptr result = 0;
+        AntNativeEventResult result = 0;
         if (!window.nativeEvent("windows_generic_MSG", &msg, &result))
         {
             return -1;
         }
         return result;
     };
-    auto systemHitTest = [&](const QPoint& localPos) -> qintptr {
+    auto systemHitTest = [&](const QPoint& localPos) -> AntNativeEventResult {
         const QPoint globalPos = nativeGlobalPoint(localPos);
         return ::SendMessageW(hwnd,
                               WM_NCHITTEST,
@@ -4363,27 +4364,27 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
                               MAKELPARAM(globalPos.x(), globalPos.y()));
     };
 
-    QCOMPARE(hitTest(QPoint(2, 2)), static_cast<qintptr>(HTTOPLEFT));
-    QCOMPARE(hitTest(QPoint(window.width() - 3, 2)), static_cast<qintptr>(HTTOPRIGHT));
-    QCOMPARE(hitTest(QPoint(2, window.height() - 3)), static_cast<qintptr>(HTBOTTOMLEFT));
-    QCOMPARE(hitTest(QPoint(window.width() - 3, window.height() - 3)), static_cast<qintptr>(HTBOTTOMRIGHT));
-    QCOMPARE(hitTest(QPoint(2, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTLEFT));
-    QCOMPARE(hitTest(QPoint(window.width() - 3, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTRIGHT));
-    QCOMPARE(hitTest(QPoint(80, 2)), static_cast<qintptr>(HTTOP));
-    QCOMPARE(hitTest(QPoint(80, window.height() - 3)), static_cast<qintptr>(HTBOTTOM));
-    QCOMPARE(hitTest(QPoint(-2, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTLEFT));
-    QCOMPARE(hitTest(QPoint(window.width() + 2, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTRIGHT));
-    QCOMPARE(hitTest(QPoint(80, -2)), static_cast<qintptr>(HTTOP));
-    QCOMPARE(hitTest(QPoint(80, window.height() + 2)), static_cast<qintptr>(HTBOTTOM));
-    QCOMPARE(hitTest(QPoint(-2, -2)), static_cast<qintptr>(HTTOPLEFT));
-    QCOMPARE(hitTest(QPoint(window.width() + 2, -2)), static_cast<qintptr>(HTTOPRIGHT));
-    QCOMPARE(hitTest(QPoint(-2, window.height() + 2)), static_cast<qintptr>(HTBOTTOMLEFT));
-    QCOMPARE(hitTest(QPoint(window.width() + 2, window.height() + 2)), static_cast<qintptr>(HTBOTTOMRIGHT));
-    QCOMPARE(systemHitTest(QPoint(-2, AntWindow::TitleBarHeight + 30)), static_cast<qintptr>(HTLEFT));
+    QCOMPARE(hitTest(QPoint(2, 2)), static_cast<AntNativeEventResult>(HTTOPLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() - 3, 2)), static_cast<AntNativeEventResult>(HTTOPRIGHT));
+    QCOMPARE(hitTest(QPoint(2, window.height() - 3)), static_cast<AntNativeEventResult>(HTBOTTOMLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() - 3, window.height() - 3)), static_cast<AntNativeEventResult>(HTBOTTOMRIGHT));
+    QCOMPARE(hitTest(QPoint(2, AntWindow::TitleBarHeight + 30)), static_cast<AntNativeEventResult>(HTLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() - 3, AntWindow::TitleBarHeight + 30)), static_cast<AntNativeEventResult>(HTRIGHT));
+    QCOMPARE(hitTest(QPoint(80, 2)), static_cast<AntNativeEventResult>(HTTOP));
+    QCOMPARE(hitTest(QPoint(80, window.height() - 3)), static_cast<AntNativeEventResult>(HTBOTTOM));
+    QCOMPARE(hitTest(QPoint(-2, AntWindow::TitleBarHeight + 30)), static_cast<AntNativeEventResult>(HTLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() + 2, AntWindow::TitleBarHeight + 30)), static_cast<AntNativeEventResult>(HTRIGHT));
+    QCOMPARE(hitTest(QPoint(80, -2)), static_cast<AntNativeEventResult>(HTTOP));
+    QCOMPARE(hitTest(QPoint(80, window.height() + 2)), static_cast<AntNativeEventResult>(HTBOTTOM));
+    QCOMPARE(hitTest(QPoint(-2, -2)), static_cast<AntNativeEventResult>(HTTOPLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() + 2, -2)), static_cast<AntNativeEventResult>(HTTOPRIGHT));
+    QCOMPARE(hitTest(QPoint(-2, window.height() + 2)), static_cast<AntNativeEventResult>(HTBOTTOMLEFT));
+    QCOMPARE(hitTest(QPoint(window.width() + 2, window.height() + 2)), static_cast<AntNativeEventResult>(HTBOTTOMRIGHT));
+    QCOMPARE(systemHitTest(QPoint(-2, AntWindow::TitleBarHeight + 30)), static_cast<AntNativeEventResult>(HTLEFT));
     QCOMPARE(systemHitTest(QPoint(window.width() + 2, AntWindow::TitleBarHeight + 30)),
-             static_cast<qintptr>(HTRIGHT));
-    QCOMPARE(systemHitTest(QPoint(80, -2)), static_cast<qintptr>(HTTOP));
-    QCOMPARE(systemHitTest(QPoint(80, window.height() + 2)), static_cast<qintptr>(HTBOTTOM));
+             static_cast<AntNativeEventResult>(HTRIGHT));
+    QCOMPARE(systemHitTest(QPoint(80, -2)), static_cast<AntNativeEventResult>(HTTOP));
+    QCOMPARE(systemHitTest(QPoint(80, window.height() + 2)), static_cast<AntNativeEventResult>(HTBOTTOM));
     if (nativeMouseInputAvailableForExtensionTest())
     {
         window.showNormal();
@@ -4437,24 +4438,24 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
                                     .arg(window.width())));
         }
     }
-    QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<qintptr>(HTCAPTION));
-    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Pin).center()), static_cast<qintptr>(HTCLIENT));
-    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center()), static_cast<qintptr>(HTCLIENT));
+    QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<AntNativeEventResult>(HTCAPTION));
+    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Pin).center()), static_cast<AntNativeEventResult>(HTCLIENT));
+    QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Theme).center()), static_cast<AntNativeEventResult>(HTCLIENT));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Minimize).center()),
-             static_cast<qintptr>(HTREDUCE));
+             static_cast<AntNativeEventResult>(HTREDUCE));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Maximize).center()),
-             static_cast<qintptr>(HTZOOM));
+             static_cast<AntNativeEventResult>(HTZOOM));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Close).center()),
-             static_cast<qintptr>(HTCLOSE));
+             static_cast<AntNativeEventResult>(HTCLOSE));
 
-    auto sendNonClientButtonMessage = [&](UINT message, WPARAM hitTestCode, const QPoint& localPos) -> qintptr {
+    auto sendNonClientButtonMessage = [&](UINT message, WPARAM hitTestCode, const QPoint& localPos) -> AntNativeEventResult {
         MSG msg{};
         msg.hwnd = hwnd;
         msg.message = message;
         msg.wParam = hitTestCode;
         const QPoint globalPos = nativeGlobalPoint(localPos);
         msg.lParam = MAKELPARAM(globalPos.x(), globalPos.y());
-        qintptr result = 0;
+        AntNativeEventResult result = 0;
         if (!window.nativeEvent("windows_generic_MSG", &msg, &result))
         {
             return -1;
@@ -4463,7 +4464,7 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     };
 
     const QPoint maximizePoint = window.titleBarButtonRect(AntWindow::TitleBarButton::Maximize).center();
-    QCOMPARE(hitTest(maximizePoint), static_cast<qintptr>(HTZOOM));
+    QCOMPARE(hitTest(maximizePoint), static_cast<AntNativeEventResult>(HTZOOM));
     QVERIFY(sendNonClientButtonMessage(WM_NCMOUSEMOVE, HTCLIENT, maximizePoint) != -1);
     QCOMPARE(window.hoveredTitleBarButton(), AntWindow::TitleBarButton::Maximize);
     sendNonClientButtonMessage(WM_NCMOUSELEAVE, HTZOOM, maximizePoint);
@@ -4478,11 +4479,11 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
     QVERIFY(QTest::qWaitForWindowExposed(&window));
     QCoreApplication::processEvents();
 
-    QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<qintptr>(HTCAPTION));
+    QCOMPARE(hitTest(QPoint(80, AntWindow::TitleBarHeight / 2)), static_cast<AntNativeEventResult>(HTCAPTION));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Maximize).center()),
-             static_cast<qintptr>(HTZOOM));
+             static_cast<AntNativeEventResult>(HTZOOM));
     QCOMPARE(hitTest(window.titleBarButtonRect(AntWindow::TitleBarButton::Close).center()),
-             static_cast<qintptr>(HTCLOSE));
+             static_cast<AntNativeEventResult>(HTCLOSE));
 #endif
 }
 
@@ -4793,9 +4794,9 @@ void TestAntQtExtensions::windowMaximizedNcCalcKeepsFullWorkArea()
     msg.wParam = TRUE;
     msg.lParam = reinterpret_cast<LPARAM>(&params);
 
-    qintptr result = -1;
+    AntNativeEventResult result = -1;
     QVERIFY(window.nativeEvent("windows_generic_MSG", &msg, &result));
-    QCOMPARE(result, static_cast<qintptr>(0));
+    QCOMPARE(result, static_cast<AntNativeEventResult>(0));
     QCOMPARE(params.rgrc[0].left, before.left);
     QCOMPARE(params.rgrc[0].top, before.top);
     QCOMPARE(params.rgrc[0].right, before.right);

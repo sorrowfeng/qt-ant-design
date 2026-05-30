@@ -688,7 +688,7 @@ protected:
         p.drawText(rect(), Qt::AlignCenter, text());
     }
 
-    void enterEvent(QEnterEvent*) override { m_hovered = true; update(); }
+    void enterEvent(AntEnterEvent*) override { m_hovered = true; update(); }
     void leaveEvent(QEvent*) override { m_hovered = false; update(); }
 
 private:
@@ -727,7 +727,7 @@ protected:
         p.drawText(rect(), Qt::AlignCenter, text());
     }
 
-    void enterEvent(QEnterEvent*) override { m_hovered = true; update(); }
+    void enterEvent(AntEnterEvent*) override { m_hovered = true; update(); }
     void leaveEvent(QEvent*) override { m_hovered = false; update(); }
 
 private:

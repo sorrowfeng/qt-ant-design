@@ -59,25 +59,30 @@ QPolygonF arrowPolygon(Qt::ArrowType arrow, const QRectF& rect)
 {
     const QPointF center = rect.center();
     const qreal half = qMin(rect.width(), rect.height()) * 0.28;
+    QPolygonF polygon;
     switch (arrow)
     {
     case Qt::LeftArrow:
-        return {QPointF(center.x() - half, center.y()),
-                QPointF(center.x() + half, center.y() - half),
-                QPointF(center.x() + half, center.y() + half)};
+        polygon << QPointF(center.x() - half, center.y())
+                << QPointF(center.x() + half, center.y() - half)
+                << QPointF(center.x() + half, center.y() + half);
+        return polygon;
     case Qt::RightArrow:
-        return {QPointF(center.x() + half, center.y()),
-                QPointF(center.x() - half, center.y() - half),
-                QPointF(center.x() - half, center.y() + half)};
+        polygon << QPointF(center.x() + half, center.y())
+                << QPointF(center.x() - half, center.y() - half)
+                << QPointF(center.x() - half, center.y() + half);
+        return polygon;
     case Qt::UpArrow:
-        return {QPointF(center.x(), center.y() - half),
-                QPointF(center.x() - half, center.y() + half),
-                QPointF(center.x() + half, center.y() + half)};
+        polygon << QPointF(center.x(), center.y() - half)
+                << QPointF(center.x() - half, center.y() + half)
+                << QPointF(center.x() + half, center.y() + half);
+        return polygon;
     case Qt::DownArrow:
     default:
-        return {QPointF(center.x(), center.y() + half),
-                QPointF(center.x() - half, center.y() - half),
-                QPointF(center.x() + half, center.y() - half)};
+        polygon << QPointF(center.x(), center.y() + half)
+                << QPointF(center.x() - half, center.y() - half)
+                << QPointF(center.x() + half, center.y() - half);
+        return polygon;
     }
 }
 

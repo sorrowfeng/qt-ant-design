@@ -220,7 +220,7 @@ void AntCollapsePanel::mousePressEvent(QMouseEvent* e)
     QWidget::mousePressEvent(e);
 }
 
-void AntCollapsePanel::enterEvent(QEnterEvent*)
+void AntCollapsePanel::enterEvent(AntEnterEvent*)
 {
     if (!m_hovered)
     {

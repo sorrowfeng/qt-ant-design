@@ -392,7 +392,7 @@ QAbstractSpinBox::StepEnabled AntInputNumber::stepEnabledFlags() const
     return stepEnabled();
 }
 
-void AntInputNumber::enterEvent(QEnterEvent* event)
+void AntInputNumber::enterEvent(AntEnterEvent* event)
 {
     if (m_hovered)
     {

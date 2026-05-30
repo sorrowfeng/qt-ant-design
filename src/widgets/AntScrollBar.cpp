@@ -65,7 +65,7 @@ QSize AntScrollBar::minimumSizeHint() const
     return QSize(32, 8);
 }
 
-void AntScrollBar::enterEvent(QEnterEvent* event)
+void AntScrollBar::enterEvent(AntEnterEvent* event)
 {
     if (!m_hovered)
     {

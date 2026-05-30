@@ -139,7 +139,7 @@ bool AntPlainTextEdit::eventFilter(QObject* watched, QEvent* event)
             auto* mouseEvent = static_cast<QMouseEvent*>(event);
             if (sourceWidget)
             {
-                const QPoint widgetPos = sourceWidget->mapTo(this, mouseEvent->position().toPoint());
+                const QPoint widgetPos = sourceWidget->mapTo(this, antEventPositionPoint(mouseEvent));
                 if (handleResizeGripMouseEvent(mouseEvent, widgetPos))
                 {
                     return true;
@@ -183,7 +183,7 @@ bool AntPlainTextEdit::handleResizeGripMouseEvent(QMouseEvent* event, const QPoi
     if (event->type() == QEvent::MouseButtonPress && event->button() == Qt::LeftButton && overGrip)
     {
         m_resizing = true;
-        m_resizeStartGlobal = event->globalPosition().toPoint();
+        m_resizeStartGlobal = antEventGlobalPosition(event);
         m_resizeStartSize = size();
         setResizeGripHovered(true);
         event->accept();
@@ -192,7 +192,7 @@ bool AntPlainTextEdit::handleResizeGripMouseEvent(QMouseEvent* event, const QPoi
 
     if (event->type() == QEvent::MouseMove && m_resizing)
     {
-        const QPoint delta = event->globalPosition().toPoint() - m_resizeStartGlobal;
+        const QPoint delta = antEventGlobalPosition(event) - m_resizeStartGlobal;
         const QSize minSize(120, 56);
         const QSize nextSize(qMax(minSize.width(), m_resizeStartSize.width() + delta.x()),
                              qMax(minSize.height(), m_resizeStartSize.height() + delta.y()));

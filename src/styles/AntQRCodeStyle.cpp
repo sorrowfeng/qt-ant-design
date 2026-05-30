@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOption>
+#include <QtMath>
 
 #include <cmath>
 

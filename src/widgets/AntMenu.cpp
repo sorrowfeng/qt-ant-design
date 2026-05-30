@@ -196,7 +196,7 @@ protected:
                                 token.borderRadiusLG, token.borderRadiusLG);
     }
 
-    void enterEvent(QEnterEvent* event) override
+    void enterEvent(AntEnterEvent* event) override
     {
         if (m_owner)
         {
@@ -417,7 +417,7 @@ bool AntMenu::eventFilter(QObject* watched, QEvent* event)
         if (event->type() == QEvent::MouseButtonPress)
         {
             auto* mouseEvent = static_cast<QMouseEvent*>(event);
-            const QPoint globalPos = mouseEvent->globalPosition().toPoint();
+            const QPoint globalPos = antEventGlobalPosition(mouseEvent);
             const QRect menuRect(mapToGlobal(QPoint(0, 0)), size());
             const bool insideMenu = menuRect.contains(globalPos);
             const bool insidePopup = m_subMenuPopup->geometry().contains(globalPos);

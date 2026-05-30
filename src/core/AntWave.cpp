@@ -157,7 +157,7 @@ void AntWave::showEvent(QShowEvent* event)
     makeWaveNativeInputTransparent(this);
 }
 
-bool AntWave::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
+bool AntWave::nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result)
 {
     if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
     {

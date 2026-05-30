@@ -68,11 +68,11 @@ protected:
     {
         const int oldColumn = m_hoveredColumn;
         const int oldRow = m_hoveredRow;
-        m_hoveredColumn = columnAt(event->position());
-        m_hoveredRow = rowAt(event->position());
+        m_hoveredColumn = columnAt(antEventPosition(event));
+        m_hoveredRow = rowAt(antEventPosition(event));
         const bool clickable = (m_hoveredColumn >= 0 && m_hoveredRow >= 0)
-            || nowRect().contains(event->position())
-            || okRect().contains(event->position());
+            || nowRect().contains(antEventPosition(event))
+            || okRect().contains(antEventPosition(event));
         if (m_cursorClickable != clickable)
         {
             m_cursorClickable = clickable;
@@ -114,22 +114,22 @@ protected:
             return;
         }
 
-        if (m_owner->m_showNow && nowRect().contains(event->position()))
+        if (m_owner->m_showNow && nowRect().contains(antEventPosition(event)))
         {
             m_owner->setPanelTime(QTime::currentTime());
             m_owner->setSelectedTime(m_owner->m_panelTime);
             event->accept();
             return;
         }
-        if (okRect().contains(event->position()))
+        if (okRect().contains(antEventPosition(event)))
         {
             m_owner->acceptPanelTime();
             event->accept();
             return;
         }
 
-        const int col = columnAt(event->position());
-        const int row = rowAt(event->position());
+        const int col = columnAt(antEventPosition(event));
+        const int row = rowAt(antEventPosition(event));
         if (col >= 0 && row >= 0)
         {
             QTime next = m_owner->m_panelTime;
@@ -161,7 +161,7 @@ protected:
 
     void wheelEvent(QWheelEvent* event) override
     {
-        const int col = columnAt(event->position());
+        const int col = columnAt(antEventPosition(event));
         if (!m_owner || col < 0)
         {
             QFrame::wheelEvent(event);
@@ -885,7 +885,7 @@ void AntTimePicker::paintEvent(QPaintEvent* event)
     Q_UNUSED(event)
 }
 
-void AntTimePicker::enterEvent(QEnterEvent* event)
+void AntTimePicker::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     update();
@@ -903,7 +903,7 @@ void AntTimePicker::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton && isEnabled())
     {
-        if (canClear() && iconRect(metrics()).contains(event->position()))
+        if (canClear() && iconRect(metrics()).contains(antEventPosition(event)))
         {
             clear();
             event->accept();

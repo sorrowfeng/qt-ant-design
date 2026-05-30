@@ -262,34 +262,34 @@ QVariant representativeValue(const QMetaProperty& property, const QVariant& curr
         return enumTestValue(property, current);
     }
 
-    const QMetaType metaType = property.metaType();
-    if (metaType == QMetaType::fromType<QString>())
+    const int metaTypeId = property.userType();
+    if (metaTypeId == qMetaTypeId<QString>())
         return QString::fromLatin1(property.name()) + QStringLiteral("-value");
-    if (metaType == QMetaType::fromType<QStringList>())
+    if (metaTypeId == qMetaTypeId<QStringList>())
         return current.toStringList() == QStringList{QStringLiteral("A"), QStringLiteral("B")}
             ? QStringList{QStringLiteral("C")}
             : QStringList{QStringLiteral("A"), QStringLiteral("B")};
-    if (metaType == QMetaType::fromType<bool>())
+    if (metaTypeId == qMetaTypeId<bool>())
         return !current.toBool();
-    if (metaType == QMetaType::fromType<int>())
+    if (metaTypeId == qMetaTypeId<int>())
         return current.toInt() == 7 ? 8 : 7;
-    if (metaType == QMetaType::fromType<double>() || QString::fromLatin1(property.typeName()) == QStringLiteral("qreal"))
+    if (metaTypeId == qMetaTypeId<double>() || QString::fromLatin1(property.typeName()) == QStringLiteral("qreal"))
         return qFuzzyCompare(current.toDouble(), 0.5) ? 0.75 : 0.5;
-    if (metaType == QMetaType::fromType<QColor>())
+    if (metaTypeId == qMetaTypeId<QColor>())
         return current.value<QColor>() == QColor(Qt::red) ? QColor(Qt::blue) : QColor(Qt::red);
-    if (metaType == QMetaType::fromType<QDate>())
+    if (metaTypeId == qMetaTypeId<QDate>())
         return current.toDate() == QDate(2026, 1, 2) ? QDate(2026, 1, 3) : QDate(2026, 1, 2);
-    if (metaType == QMetaType::fromType<QPoint>())
+    if (metaTypeId == qMetaTypeId<QPoint>())
         return current.toPoint() == QPoint(3, 4) ? QPoint(5, 6) : QPoint(3, 4);
-    if (metaType == QMetaType::fromType<QRectF>())
+    if (metaTypeId == qMetaTypeId<QRectF>())
         return current.toRectF() == QRectF(1.0, 2.0, 30.0, 4.0)
             ? QRectF(2.0, 3.0, 40.0, 5.0)
             : QRectF(1.0, 2.0, 30.0, 4.0);
-    if (metaType == QMetaType::fromType<QSize>())
+    if (metaTypeId == qMetaTypeId<QSize>())
         return current.toSize() == QSize(48, 32) ? QSize(64, 40) : QSize(48, 32);
-    if (metaType == QMetaType::fromType<QTime>())
+    if (metaTypeId == qMetaTypeId<QTime>())
         return current.toTime() == QTime(9, 30, 15) ? QTime(10, 45, 30) : QTime(9, 30, 15);
-    if (metaType == QMetaType::fromType<QVariant>())
+    if (metaTypeId == qMetaTypeId<QVariant>())
         return QVariant(QStringLiteral("meta-value"));
 
     const QString typeName = QString::fromLatin1(property.typeName());
@@ -340,7 +340,7 @@ void TestAntMetaProperties::everyControlHasReadableAndWritableMetaProperties()
             QVERIFY2(property.isReadable(), qPrintable(qualifiedName + QStringLiteral(" is not readable")));
 
             QVariant current = property.read(object);
-            const bool invalidQVariantIsAllowed = property.metaType() == QMetaType::fromType<QVariant>();
+            const bool invalidQVariantIsAllowed = property.userType() == qMetaTypeId<QVariant>();
             QVERIFY2(current.isValid() || invalidQVariantIsAllowed,
                      qPrintable(qualifiedName + QStringLiteral(" did not return a valid value")));
 

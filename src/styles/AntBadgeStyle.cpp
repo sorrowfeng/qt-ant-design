@@ -56,8 +56,17 @@ QSize AntBadgeStyle::sizeFromContents(ContentsType type,
 
 bool AntBadgeStyle::eventFilter(QObject* watched, QEvent* event)
 {
-    Q_UNUSED(watched)
-    Q_UNUSED(event)
+    auto* badge = qobject_cast<AntBadge*>(watched);
+    if (badge && event->type() == QEvent::Paint && !badge->contentWidget())
+    {
+        QStyleOption option;
+        option.initFrom(badge);
+        option.rect = badge->rect();
+        QPainter painter(badge);
+        drawBadge(&option, &painter, badge);
+        return true;
+    }
+
     // AntBadge paints through an overlay child so the indicator stays above
     // opaque content widgets. The owner widget keeps this filter only for
     // hover delivery and style consistency.

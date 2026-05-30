@@ -94,7 +94,7 @@ void AntSplitterHandle::paintEvent(QPaintEvent*)
     syncPerfCounters();
 }
 
-void AntSplitterHandle::enterEvent(QEnterEvent*)
+void AntSplitterHandle::enterEvent(AntEnterEvent*)
 {
     if (m_hovered)
     {

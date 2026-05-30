@@ -74,7 +74,7 @@ void AntNavItem::paintEvent(QPaintEvent* event)
     }
 }
 
-void AntNavItem::enterEvent(QEnterEvent* event)
+void AntNavItem::enterEvent(AntEnterEvent* event)
 {
     if (!m_hovered)
     {

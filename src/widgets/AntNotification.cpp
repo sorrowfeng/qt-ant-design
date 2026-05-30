@@ -459,7 +459,7 @@ void AntNotification::hideEvent(QHideEvent* event)
     QWidget::hideEvent(event);
 }
 
-void AntNotification::enterEvent(QEnterEvent* event)
+void AntNotification::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     if (m_pauseOnHover)
@@ -488,7 +488,7 @@ void AntNotification::leaveEvent(QEvent* event)
 
 void AntNotification::mouseMoveEvent(QMouseEvent* event)
 {
-    const bool hoveringClose = m_closable && closeButtonRect().contains(event->position());
+    const bool hoveringClose = m_closable && closeButtonRect().contains(antEventPosition(event));
     if (m_closeHovered != hoveringClose)
     {
         const QRect closeDirty = notificationLayout().closeRect.toAlignedRect().adjusted(-2, -2, 2, 2);
@@ -502,7 +502,7 @@ void AntNotification::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        if (m_closable && closeButtonRect().contains(event->position()))
+        if (m_closable && closeButtonRect().contains(antEventPosition(event)))
         {
             AntPopupMotion::close(this, notificationMotionPlacement(m_placement), NotificationMotionDistance);
             event->accept();

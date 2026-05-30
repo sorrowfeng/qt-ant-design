@@ -349,7 +349,7 @@ void AntMessage::hideEvent(QHideEvent* event)
     QWidget::hideEvent(event);
 }
 
-void AntMessage::enterEvent(QEnterEvent* event)
+void AntMessage::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     if (m_pauseOnHover)
@@ -373,8 +373,8 @@ void AntMessage::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        sendMouseClick(widgetBelowMessageAt(m_anchor.data(), this, event->globalPosition().toPoint()),
-                       event->globalPosition().toPoint(),
+        sendMouseClick(widgetBelowMessageAt(m_anchor.data(), this, antEventGlobalPosition(event)),
+                       antEventGlobalPosition(event),
                        event->modifiers());
         AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
         event->accept();

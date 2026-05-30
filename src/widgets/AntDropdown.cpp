@@ -118,7 +118,7 @@ protected:
         }
     }
 
-    void enterEvent(QEnterEvent* event) override
+    void enterEvent(AntEnterEvent* event) override
     {
         if (m_owner)
         {
@@ -426,7 +426,7 @@ bool AntDropdown::eventFilter(QObject* watched, QEvent* event)
     if (m_open && event->type() == QEvent::MouseButtonPress)
     {
         auto* me = static_cast<QMouseEvent*>(event);
-        const QPoint gp = me->globalPosition().toPoint();
+        const QPoint gp = antEventGlobalPosition(me);
         const bool insidePopup = m_popup && m_popup->isVisible() &&
                                  m_popup->geometry().contains(gp);
         const bool insideTarget = m_target &&
@@ -459,7 +459,7 @@ bool AntDropdown::eventFilter(QObject* watched, QEvent* event)
                 auto* mouseEvent = static_cast<QMouseEvent*>(event);
                 if (mouseEvent->button() == Qt::RightButton)
                 {
-                    m_lastContextPos = mouseEvent->globalPosition().toPoint();
+                    m_lastContextPos = antEventGlobalPosition(mouseEvent);
                     setOpen(true);
                     return true;
                 }

@@ -332,7 +332,7 @@ protected:
         setProperty("antWindowCornerSmootherNativeHwnd", hasNativeHwnd);
     }
 
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
     {
         if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
         {
@@ -403,7 +403,7 @@ protected:
         makeAntWindowShadowClickThrough(this);
     }
 
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
     {
         if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
         {
@@ -901,7 +901,7 @@ public:
     }
 
 protected:
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
     {
         if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
         {
@@ -1470,7 +1470,7 @@ bool AntWindow::event(QEvent* event)
     case QEvent::HoverMove:
     {
         auto* hoverEvent = static_cast<QHoverEvent*>(event);
-        updateTitleBarHover(hoverEvent->position().toPoint());
+        updateTitleBarHover(antEventPositionPoint(hoverEvent));
         break;
     }
     case QEvent::HoverLeave:
@@ -1478,7 +1478,6 @@ bool AntWindow::event(QEvent* event)
         clearTitleBarHover();
         break;
     case QEvent::ScreenChangeInternal:
-    case QEvent::DevicePixelRatioChange:
         // Moving across monitors with different scaling makes the shadow HWND
         // — which is an independent top-level window — keep its previous DPR
         // until its own QScreen is updated. Re-parent the shadow to the new
@@ -1500,6 +1499,23 @@ bool AntWindow::event(QEvent* event)
         update();
         break;
     default:
+        if (antIsDevicePixelRatioChangeEvent(event->type()))
+        {
+            if (QWindow* shadowWindow = m_legacySoftwareShadow ? m_legacySoftwareShadow->windowHandle() : nullptr)
+            {
+                if (QScreen* newScreen = windowHandle() ? windowHandle()->screen() : nullptr)
+                {
+                    if (shadowWindow->screen() != newScreen)
+                    {
+                        shadowWindow->setScreen(newScreen);
+                    }
+                }
+            }
+            applyNativeWindowFrame();
+            updateLegacySoftwareShadow();
+            updateCornerSmoother();
+            update();
+        }
         break;
     }
     return QMainWindow::event(event);
@@ -1510,10 +1526,10 @@ bool AntWindow::eventFilter(QObject* watched, QEvent* event)
     if (watched == m_contentWidget)
     {
         auto mapMousePosition = [this](QMouseEvent* mouseEvent) {
-            return m_contentWidget->mapTo(this, mouseEvent->position().toPoint());
+            return m_contentWidget->mapTo(this, antEventPositionPoint(mouseEvent));
         };
         auto mapHoverPosition = [this](QHoverEvent* hoverEvent) {
-            return m_contentWidget->mapTo(this, hoverEvent->position().toPoint());
+            return m_contentWidget->mapTo(this, antEventPositionPoint(hoverEvent));
         };
 
         switch (event->type())
@@ -1532,7 +1548,7 @@ bool AntWindow::eventFilter(QObject* watched, QEvent* event)
         {
             auto* mouseEvent = static_cast<QMouseEvent*>(event);
             if (handleTitleBarMousePress(mapMousePosition(mouseEvent),
-                                         mouseEvent->globalPosition().toPoint(),
+                                         antEventGlobalPosition(mouseEvent),
                                          mouseEvent->button()))
             {
                 return true;
@@ -1543,7 +1559,7 @@ bool AntWindow::eventFilter(QObject* watched, QEvent* event)
         {
             auto* mouseEvent = static_cast<QMouseEvent*>(event);
             if (handleTitleBarMouseMove(mapMousePosition(mouseEvent),
-                                        mouseEvent->globalPosition().toPoint(),
+                                        antEventGlobalPosition(mouseEvent),
                                         mouseEvent->buttons()))
             {
                 return true;
@@ -1554,7 +1570,7 @@ bool AntWindow::eventFilter(QObject* watched, QEvent* event)
         {
             auto* mouseEvent = static_cast<QMouseEvent*>(event);
             if (handleTitleBarMouseRelease(mapMousePosition(mouseEvent),
-                                           mouseEvent->globalPosition().toPoint(),
+                                           antEventGlobalPosition(mouseEvent),
                                            mouseEvent->button()))
             {
                 return true;
@@ -1580,7 +1596,7 @@ bool AntWindow::eventFilter(QObject* watched, QEvent* event)
 
 void AntWindow::mousePressEvent(QMouseEvent* event)
 {
-    if (handleTitleBarMousePress(event->pos(), event->globalPosition().toPoint(), event->button()))
+    if (handleTitleBarMousePress(event->pos(), antEventGlobalPosition(event), event->button()))
     {
         event->accept();
         return;
@@ -1591,7 +1607,7 @@ void AntWindow::mousePressEvent(QMouseEvent* event)
 
 void AntWindow::mouseMoveEvent(QMouseEvent* event)
 {
-    if (handleTitleBarMouseMove(event->pos(), event->globalPosition().toPoint(), event->buttons()))
+    if (handleTitleBarMouseMove(event->pos(), antEventGlobalPosition(event), event->buttons()))
     {
         event->accept();
         return;
@@ -1602,7 +1618,7 @@ void AntWindow::mouseMoveEvent(QMouseEvent* event)
 
 void AntWindow::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (handleTitleBarMouseRelease(event->pos(), event->globalPosition().toPoint(), event->button()))
+    if (handleTitleBarMouseRelease(event->pos(), antEventGlobalPosition(event), event->button()))
     {
         event->accept();
         return;
@@ -1724,7 +1740,7 @@ void AntWindow::paintEvent(QPaintEvent* event)
     QMainWindow::paintEvent(event);
 }
 
-bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
+bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result)
 {
 #ifdef Q_OS_WIN
     if (eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG")
@@ -2123,7 +2139,7 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr*
     return QMainWindow::nativeEvent(eventType, message, result);
 }
 
-bool AntWindow::nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result)
+bool AntWindow::nativeEventFilter(const QByteArray& eventType, void* message, AntNativeEventResult* result)
 {
 #ifdef Q_OS_WIN
     if ((eventType != "windows_generic_MSG" && eventType != "windows_dispatcher_MSG") || !message)

@@ -36,7 +36,7 @@ protected:
     void showEvent(QShowEvent* event) override;
     void changeEvent(QEvent* event) override;
 #if defined(Q_OS_WIN)
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override;
 #endif
 
 private:

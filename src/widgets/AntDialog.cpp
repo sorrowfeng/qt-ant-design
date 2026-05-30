@@ -83,7 +83,7 @@ bool antDialogShouldUseRoundedCorners(const QWidget* widget)
 QPoint antDialogGlobalPos(QMouseEvent* event)
 {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    return event->globalPosition().toPoint();
+    return antEventGlobalPosition(event);
 #else
     return event->globalPos();
 #endif

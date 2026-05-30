@@ -71,11 +71,11 @@ protected:
     {
         const QDate oldHoveredDate = m_hoveredDate;
         const bool oldOverButton = m_hoveringButton;
-        const QDate nextHoveredDate = dateAt(event->position());
-        const bool nextOverButton = previousYearRect().contains(event->position())
-            || previousRect().contains(event->position())
-            || nextRect().contains(event->position())
-            || nextYearRect().contains(event->position());
+        const QDate nextHoveredDate = dateAt(antEventPosition(event));
+        const bool nextOverButton = previousYearRect().contains(antEventPosition(event))
+            || previousRect().contains(antEventPosition(event))
+            || nextRect().contains(antEventPosition(event))
+            || nextYearRect().contains(antEventPosition(event));
         if (oldHoveredDate == nextHoveredDate && oldOverButton == nextOverButton)
         {
             QFrame::mouseMoveEvent(event);
@@ -106,32 +106,32 @@ protected:
             return;
         }
 
-        if (previousYearRect().contains(event->position()))
+        if (previousYearRect().contains(antEventPosition(event)))
         {
             m_owner->setPanelDate(m_owner->m_panelDate.addYears(-1));
             event->accept();
             return;
         }
-        if (previousRect().contains(event->position()))
+        if (previousRect().contains(antEventPosition(event)))
         {
             m_owner->setPanelDate(m_owner->m_panelDate.addMonths(-1));
             event->accept();
             return;
         }
-        if (nextRect().contains(event->position()))
+        if (nextRect().contains(antEventPosition(event)))
         {
             m_owner->setPanelDate(m_owner->m_panelDate.addMonths(1));
             event->accept();
             return;
         }
-        if (nextYearRect().contains(event->position()))
+        if (nextYearRect().contains(antEventPosition(event)))
         {
             m_owner->setPanelDate(m_owner->m_panelDate.addYears(1));
             event->accept();
             return;
         }
 
-        const QDate date = dateAt(event->position());
+        const QDate date = dateAt(antEventPosition(event));
         if (date.isValid() && m_owner->isDateInRange(date))
         {
             m_owner->selectDateFromPopup(date);
@@ -748,7 +748,7 @@ void AntDatePicker::paintEvent(QPaintEvent* event)
     Q_UNUSED(event)
 }
 
-void AntDatePicker::enterEvent(QEnterEvent* event)
+void AntDatePicker::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     update();
@@ -767,7 +767,7 @@ void AntDatePicker::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton && isEnabled())
     {
-        if (canClear() && iconRect(metrics()).contains(event->position()))
+        if (canClear() && iconRect(metrics()).contains(antEventPosition(event)))
         {
             clear();
             event->accept();

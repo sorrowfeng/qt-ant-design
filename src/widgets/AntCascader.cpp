@@ -331,7 +331,7 @@ bool AntCascader::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
-void AntCascader::enterEvent(QEnterEvent* event)
+void AntCascader::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     update();
@@ -351,7 +351,7 @@ void AntCascader::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && isEnabled())
     {
         const Metrics m = metrics();
-        if (canClear() && clearButtonRect(m).contains(event->position()))
+        if (canClear() && clearButtonRect(m).contains(antEventPosition(event)))
         {
             setValue(QStringList());
             event->accept();

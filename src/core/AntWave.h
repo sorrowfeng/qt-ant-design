@@ -31,7 +31,7 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 #if defined(Q_OS_WIN)
     void showEvent(QShowEvent* event) override;
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override;
 #endif
 
 private:

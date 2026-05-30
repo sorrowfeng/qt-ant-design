@@ -350,7 +350,7 @@ void AntTransfer::resizeEvent(QResizeEvent* event)
 
 void AntTransfer::wheelEvent(QWheelEvent* event)
 {
-    const QPoint pos = event->position().toPoint();
+    const QPoint pos = antEventPositionPoint(event);
     const bool inSource = panelRect(true).contains(pos);
     const bool inTarget = panelRect(false).contains(pos);
     if (!inSource && !inTarget)

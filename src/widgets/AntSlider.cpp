@@ -419,7 +419,7 @@ QSize AntSlider::minimumSizeHint() const
     return layoutCache().minimumSizeHint;
 }
 
-void AntSlider::enterEvent(QEnterEvent* event)
+void AntSlider::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     if (isEnabled())
@@ -451,11 +451,11 @@ void AntSlider::mousePressEvent(QMouseEvent* event)
         if (m_rangeMode)
         {
             const Metrics m = metrics();
-            const qreal startDistance = QLineF(event->position(), handleRectForValue(m, m_rangeStart).center()).length();
-            const qreal endDistance = QLineF(event->position(), handleRectForValue(m, m_rangeEnd).center()).length();
+            const qreal startDistance = QLineF(antEventPosition(event), handleRectForValue(m, m_rangeStart).center()).length();
+            const qreal endDistance = QLineF(antEventPosition(event), handleRectForValue(m, m_rangeEnd).center()).length();
             m_activeRangeHandle = startDistance <= endDistance ? 0 : 1;
         }
-        setValueFromUser(valueFromPosition(event->position()), false);
+        setValueFromUser(valueFromPosition(antEventPosition(event)), false);
         updateValueBubble();
         Q_EMIT sliderPressed();
         event->accept();
@@ -468,7 +468,7 @@ void AntSlider::mouseMoveEvent(QMouseEvent* event)
 {
     if (m_pressed && isEnabled())
     {
-        setValueFromUser(valueFromPosition(event->position()), false);
+        setValueFromUser(valueFromPosition(antEventPosition(event)), false);
         updateValueBubble();
         event->accept();
         return;
@@ -481,7 +481,7 @@ void AntSlider::mouseReleaseEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && m_pressed)
     {
         m_pressed = false;
-        setValueFromUser(valueFromPosition(event->position()), true);
+        setValueFromUser(valueFromPosition(antEventPosition(event)), true);
         if (!m_hovered && !hasFocus())
         {
             animateHandle(1.0);

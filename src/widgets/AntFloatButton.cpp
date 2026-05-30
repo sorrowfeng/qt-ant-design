@@ -289,7 +289,7 @@ void AntFloatButton::mouseReleaseEvent(QMouseEvent* event)
     QWidget::mouseReleaseEvent(event);
 }
 
-void AntFloatButton::enterEvent(QEnterEvent* event)
+void AntFloatButton::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     if (!m_children.isEmpty() && m_groupTrigger == Ant::Trigger::Hover)

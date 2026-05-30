@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AntCompat.h"
+
 #include <QtCore/QtGlobal>
 
 #if defined(QT_ANT_DESIGN_STATIC_DEFINE)

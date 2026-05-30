@@ -37,7 +37,7 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
-    void enterEvent(QEnterEvent*) override;
+    void enterEvent(AntEnterEvent*) override;
     void leaveEvent(QEvent*) override;
 
 private:

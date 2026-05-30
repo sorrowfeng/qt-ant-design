@@ -646,7 +646,22 @@ bool drawResourceIcon(const QString& iconName,
     QPixmap cachedPixmap;
     if (QPixmapCache::find(cacheKey, &cachedPixmap))
     {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        QString svg = resourceSvgTemplate(iconName);
+        svg.replace(QStringLiteral("__PRIMARY__"), primaryColor.name(QColor::HexRgb));
+        svg.replace(QStringLiteral("__SECONDARY__"), secondaryColor.name(QColor::HexRgb));
+        QSvgRenderer renderer(svg.toUtf8());
+        if (renderer.isValid())
+        {
+            renderer.render(painter, iconRect);
+        }
+        else
+        {
+            painter->drawPixmap(iconRect, cachedPixmap, QRectF(cachedPixmap.rect()));
+        }
+#else
         painter->drawPixmap(iconRect, cachedPixmap, QRectF(cachedPixmap.rect()));
+#endif
         setIconRenderCacheDiagnostics(widget, true, QStringLiteral("resource"), cacheKey);
         return true;
     }
@@ -667,18 +682,15 @@ bool drawResourceIcon(const QString& iconName,
     }
 
     QPixmap pixmap(pixelSize);
-    pixmap.setDevicePixelRatio(devicePixelRatio);
     pixmap.fill(Qt::transparent);
     {
         QPainter pixmapPainter(&pixmap);
         pixmapPainter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-        renderer.render(&pixmapPainter, QRectF(QPointF(0, 0),
-                                               QSizeF(pixelSize.width() / devicePixelRatio,
-                                                      pixelSize.height() / devicePixelRatio)));
+        renderer.render(&pixmapPainter, QRectF(QPointF(0, 0), QSizeF(pixelSize)));
     }
     QPixmapCache::insert(cacheKey, pixmap);
 
-    painter->drawPixmap(iconRect, pixmap, QRectF(pixmap.rect()));
+    renderer.render(painter, iconRect);
     setIconRenderCacheDiagnostics(widget, false, QStringLiteral("resource"), cacheKey);
     return true;
 }

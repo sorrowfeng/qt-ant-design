@@ -449,7 +449,7 @@ QSize AntInput::minimumSizeHint() const
     return m_cachedMinimumSizeHint;
 }
 
-void AntInput::enterEvent(QEnterEvent* event)
+void AntInput::enterEvent(AntEnterEvent* event)
 {
     if (m_hovered)
     {

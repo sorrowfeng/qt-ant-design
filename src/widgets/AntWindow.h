@@ -140,8 +140,8 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
-    bool nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result) override;
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override;
+    bool nativeEventFilter(const QByteArray& eventType, void* message, AntNativeEventResult* result) override;
 
 private:
     bool isTitleBarArea(const QPoint& pos) const;

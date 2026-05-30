@@ -119,7 +119,7 @@ void AntSelectOptionWidget::paintEvent(QPaintEvent* event)
     }
 }
 
-void AntSelectOptionWidget::enterEvent(QEnterEvent* event)
+void AntSelectOptionWidget::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     if (m_select)
@@ -755,7 +755,7 @@ QSize AntSelect::minimumSizeHint() const
     return m_metricsCache.minimumSizeHint;
 }
 
-void AntSelect::enterEvent(QEnterEvent* event)
+void AntSelect::enterEvent(AntEnterEvent* event)
 {
     m_hovered = true;
     update();
@@ -775,7 +775,7 @@ void AntSelect::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && isEnabled())
     {
         const Metrics m = metrics();
-        if (canClear() && clearButtonRect(m).contains(event->position()))
+        if (canClear() && clearButtonRect(m).contains(antEventPosition(event)))
         {
             clearSelection();
             event->accept();

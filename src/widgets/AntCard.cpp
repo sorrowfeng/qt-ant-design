@@ -349,7 +349,7 @@ void AntCard::changeEvent(QEvent* event)
     }
 }
 
-void AntCard::enterEvent(QEnterEvent* event)
+void AntCard::enterEvent(AntEnterEvent* event)
 {
     if (!m_hovered)
     {

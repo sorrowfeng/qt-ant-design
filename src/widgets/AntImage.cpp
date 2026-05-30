@@ -277,7 +277,7 @@ void AntImage::mousePressEvent(QMouseEvent* e)
     QWidget::mousePressEvent(e);
 }
 
-void AntImage::enterEvent(QEnterEvent*)
+void AntImage::enterEvent(AntEnterEvent*)
 {
     m_hovered = true;
     if (m_preview && m_loaded)

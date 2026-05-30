@@ -108,7 +108,7 @@ Q_SIGNALS:
     void inputRejected();
 
 protected:
-    void enterEvent(QEnterEvent* event) override;
+    void enterEvent(AntEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
     void changeEvent(QEvent* event) override;

@@ -124,7 +124,7 @@ public:
     }
 
 protected:
-    void enterEvent(QEnterEvent* event) override
+    void enterEvent(AntEnterEvent* event) override
     {
         m_hovered = true;
         update();
