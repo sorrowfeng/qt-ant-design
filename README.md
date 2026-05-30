@@ -295,16 +295,19 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 | Other | `AntApp` | <img src="resources/images/components/ant-app-light.png" width="360"> | <img src="resources/images/components/ant-app-dark.png" width="360"> |
 | Other | `AntConfigProvider` | <img src="resources/images/components/ant-config-provider-light.png" width="360"> | <img src="resources/images/components/ant-config-provider-dark.png" width="360"> |
 | Other | `AntFloatButton` | <img src="resources/images/components/ant-float-button-light.png" width="360"> | <img src="resources/images/components/ant-float-button-dark.png" width="360"> |
+| Qt Extensions | `AntDialog` | <img src="resources/images/components/ant-dialog-light.png" width="360"> | <img src="resources/images/components/ant-dialog-dark.png" width="360"> |
 | Qt Extensions | `AntWindow` | <img src="resources/images/components/ant-window-light.png" width="360"> | <img src="resources/images/components/ant-window-dark.png" width="360"> |
 | Qt Extensions | `AntWidget` | <img src="resources/images/components/ant-widget-light.png" width="360"> | <img src="resources/images/components/ant-widget-dark.png" width="360"> |
 | Qt Extensions | `AntScrollArea` | <img src="resources/images/components/ant-scroll-area-light.png" width="360"> | <img src="resources/images/components/ant-scroll-area-dark.png" width="360"> |
 | Qt Extensions | `AntScrollBar` | <img src="resources/images/components/ant-scroll-bar-light.png" width="360"> | <img src="resources/images/components/ant-scroll-bar-dark.png" width="360"> |
+| Qt Extensions | `AntStackedWidget` | <img src="resources/images/components/ant-stacked-widget-light.png" width="360"> | <img src="resources/images/components/ant-stacked-widget-dark.png" width="360"> |
 | Qt Extensions | `AntStatusBar` | <img src="resources/images/components/ant-status-bar-light.png" width="360"> | <img src="resources/images/components/ant-status-bar-dark.png" width="360"> |
 | Qt Extensions | `AntRibbon` | <img src="resources/images/components/ant-ribbon-light.png" width="360"> | <img src="resources/images/components/ant-ribbon-dark.png" width="360"> |
 | Qt Extensions | `AntMenuBar` | <img src="resources/images/components/ant-menu-bar-light.png" width="360"> | <img src="resources/images/components/ant-menu-bar-dark.png" width="360"> |
 | Qt Extensions | `AntToolBar` | <img src="resources/images/components/ant-tool-bar-light.png" width="360"> | <img src="resources/images/components/ant-tool-bar-dark.png" width="360"> |
 | Qt Extensions | `AntToolButton` | <img src="resources/images/components/ant-tool-button-light.png" width="360"> | <img src="resources/images/components/ant-tool-button-dark.png" width="360"> |
 | Qt Extensions | `AntDockWidget` | <img src="resources/images/components/ant-dock-widget-light.png" width="360"> | <img src="resources/images/components/ant-dock-widget-dark.png" width="360"> |
+| Qt Extensions | `AntFileDialog` | <img src="resources/images/components/ant-file-dialog-light.png" width="360"> | <img src="resources/images/components/ant-file-dialog-dark.png" width="360"> |
 | Qt Extensions | `AntPlainTextEdit` | <img src="resources/images/components/ant-plain-text-edit-light.png" width="360"> | <img src="resources/images/components/ant-plain-text-edit-dark.png" width="360"> |
 | Qt Extensions | `AntLog` | <img src="resources/images/components/ant-log-light.png" width="360"> | <img src="resources/images/components/ant-log-dark.png" width="360"> |
 | Qt Extensions | `AntNav` | <img src="resources/images/components/ant-nav-light.png" width="360"> | <img src="resources/images/components/ant-nav-dark.png" width="360"> |

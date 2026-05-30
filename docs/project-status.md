@@ -17,7 +17,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Dedicated examples intentionally absent | None |
 | Tests | `37` CTest targets configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-30` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
-| README component gallery | `168` committed PNGs: light/dark screenshots for `84` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
+| README component gallery | `174` committed PNGs: light/dark screenshots for `87` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
 | Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` previously tracked public components have a defined optimization and validation path, with `84` controls optimized in the current pass |
 
@@ -453,7 +453,7 @@ Add-Type -AssemblyName System.Drawing
 Select-String -Path README.md,README.zh-CN.md -Pattern 'resources/images/components/[^" ]+\.png' -AllMatches
 ```
 
-Result: `168` committed PNG screenshots validated at `960x540`, and `168` unique README image references resolved on `2026-05-30`.
+Result: `174` committed PNG screenshots validated at `960x540`, and `174` unique README image references resolved on `2026-05-30`.
 
 Latest targeted README dark thumbnail refresh validation:
 

@@ -218,7 +218,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 | 反馈 | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | 混合（`QProxyStyle` / 自绘） |
 | 数据展示 | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | 混合（`QProxyStyle` / 自绘） |
 | 布局与其他 | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | 混合（`QProxyStyle` / 自绘 / QObject 工具） |
-| Qt / 桌面扩展 | `AntDialog` `AntDockManager` `AntDockWidget` `AntFileDialog` `AntLog` `AntMenuBar` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStackedWidget` `AntStatusBar` `AntToolBar` `AntToolButton` | 混合（`QProxyStyle` / 自绘） |
+| Qt / 桌面扩展 | `AntDialog` `AntDockManager` `AntDockWidget` `AntFileDialog` `AntLog` `AntMenuBar` `AntNav` `AntNavItem` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStackedWidget` `AntStatusBar` `AntToolBar` `AntToolButton` | 混合（`QProxyStyle` / 自绘） |
 
 ### 组件截图
 
@@ -295,16 +295,19 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 | 其他 | `AntApp` | <img src="resources/images/components/ant-app-light.png" width="360"> | <img src="resources/images/components/ant-app-dark.png" width="360"> |
 | 其他 | `AntConfigProvider` | <img src="resources/images/components/ant-config-provider-light.png" width="360"> | <img src="resources/images/components/ant-config-provider-dark.png" width="360"> |
 | 其他 | `AntFloatButton` | <img src="resources/images/components/ant-float-button-light.png" width="360"> | <img src="resources/images/components/ant-float-button-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntDialog` | <img src="resources/images/components/ant-dialog-light.png" width="360"> | <img src="resources/images/components/ant-dialog-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntWindow` | <img src="resources/images/components/ant-window-light.png" width="360"> | <img src="resources/images/components/ant-window-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntWidget` | <img src="resources/images/components/ant-widget-light.png" width="360"> | <img src="resources/images/components/ant-widget-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntScrollArea` | <img src="resources/images/components/ant-scroll-area-light.png" width="360"> | <img src="resources/images/components/ant-scroll-area-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntScrollBar` | <img src="resources/images/components/ant-scroll-bar-light.png" width="360"> | <img src="resources/images/components/ant-scroll-bar-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntStackedWidget` | <img src="resources/images/components/ant-stacked-widget-light.png" width="360"> | <img src="resources/images/components/ant-stacked-widget-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntStatusBar` | <img src="resources/images/components/ant-status-bar-light.png" width="360"> | <img src="resources/images/components/ant-status-bar-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntRibbon` | <img src="resources/images/components/ant-ribbon-light.png" width="360"> | <img src="resources/images/components/ant-ribbon-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntMenuBar` | <img src="resources/images/components/ant-menu-bar-light.png" width="360"> | <img src="resources/images/components/ant-menu-bar-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntToolBar` | <img src="resources/images/components/ant-tool-bar-light.png" width="360"> | <img src="resources/images/components/ant-tool-bar-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntToolButton` | <img src="resources/images/components/ant-tool-button-light.png" width="360"> | <img src="resources/images/components/ant-tool-button-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntDockWidget` | <img src="resources/images/components/ant-dock-widget-light.png" width="360"> | <img src="resources/images/components/ant-dock-widget-dark.png" width="360"> |
+| Qt / 桌面扩展 | `AntFileDialog` | <img src="resources/images/components/ant-file-dialog-light.png" width="360"> | <img src="resources/images/components/ant-file-dialog-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntPlainTextEdit` | <img src="resources/images/components/ant-plain-text-edit-light.png" width="360"> | <img src="resources/images/components/ant-plain-text-edit-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntLog` | <img src="resources/images/components/ant-log-light.png" width="360"> | <img src="resources/images/components/ant-log-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntNav` | <img src="resources/images/components/ant-nav-light.png" width="360"> | <img src="resources/images/components/ant-nav-dark.png" width="360"> |
