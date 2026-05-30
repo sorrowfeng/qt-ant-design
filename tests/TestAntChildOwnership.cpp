@@ -10,6 +10,7 @@
 #include "widgets/AntCarousel.h"
 #include "widgets/AntCollapse.h"
 #include "widgets/AntDescriptions.h"
+#include "widgets/AntDialog.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntDrawer.h"
 #include "widgets/AntEmpty.h"
@@ -27,6 +28,7 @@
 #include "widgets/AntSkeleton.h"
 #include "widgets/AntSpace.h"
 #include "widgets/AntSplitter.h"
+#include "widgets/AntStackedWidget.h"
 #include "widgets/AntStatistic.h"
 #include "widgets/AntTabs.h"
 #include "widgets/AntWindow.h"
@@ -284,6 +286,20 @@ void TestAntChildOwnership::assignedChildWidgetsAreOwnedByHostTree()
         owner->addWidget(left);
         owner->addWidget(right);
         verifyOwnedChildren(owner, {left, right}, "AntSplitter::addWidget");
+    }
+    {
+        auto* owner = new AntStackedWidget;
+        auto* first = childWidget("stacked-first");
+        auto* second = childWidget("stacked-second");
+        owner->addWidget(first);
+        owner->addWidget(second);
+        verifyOwnedChildren(owner, {first, second}, "AntStackedWidget::addWidget");
+    }
+    {
+        auto* owner = new AntDialog;
+        auto* content = childWidget("dialog-content");
+        owner->setContentWidget(content);
+        verifyOwnedChildren(owner, {content}, "AntDialog::setContentWidget");
     }
     {
         auto* owner = new AntStatistic;

@@ -97,7 +97,7 @@ bool hasDockManagerAncestor(const QWidget* widget)
 } // namespace
 
 AntDockStyle::AntDockStyle(QStyle* style)
-    : QProxyStyle(style)
+    : AntStyleBase(style)
 {
 }
 

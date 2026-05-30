@@ -3,6 +3,7 @@
 #include <QComboBox>
 #include <QDateEdit>
 #include <QDoubleSpinBox>
+#include <QFileDialog>
 #include <QFile>
 #include <QImage>
 #include <QLabel>
@@ -16,12 +17,14 @@
 #include <QScrollArea>
 #include <QSignalSpy>
 #include <QSlider>
+#include <QStackedWidget>
 #include <QStatusBar>
 #include <QTableWidget>
 #include <QTest>
 #include <QTimeEdit>
 #include <QToolButton>
 #include <QTreeWidget>
+#include <QVBoxLayout>
 #include <QWidget>
 
 #include <functional>
@@ -45,6 +48,7 @@
 #include "widgets/AntConfigProvider.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDescriptions.h"
+#include "widgets/AntDialog.h"
 #include "widgets/AntDivider.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
@@ -53,6 +57,7 @@
 #include "widgets/AntEmpty.h"
 #include "widgets/AntFlex.h"
 #include "widgets/AntFloatButton.h"
+#include "widgets/AntFileDialog.h"
 #include "widgets/AntForm.h"
 #include "widgets/AntGrid.h"
 #include "widgets/AntIcon.h"
@@ -88,6 +93,7 @@
 #include "widgets/AntSpace.h"
 #include "widgets/AntSpin.h"
 #include "widgets/AntSplitter.h"
+#include "widgets/AntStackedWidget.h"
 #include "widgets/AntStatistic.h"
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntRibbon.h"
@@ -284,6 +290,13 @@ QList<RenderCase> renderCases()
              descriptions->setTitle(QStringLiteral("User"));
              descriptions->addItem(QStringLiteral("Name"), QStringLiteral("Alice"));
          }, QSize(320, 160)},
+        {"AntDialog", [](QWidget* p) { return new AntDialog(p); }, [](QWidget* w) {
+             auto* dialog = qobject_cast<AntDialog*>(w);
+             dialog->setWindowTitle(QStringLiteral("Dialog"));
+             auto* layout = new QVBoxLayout(dialog->contentWidget());
+             layout->setContentsMargins(20, 16, 20, 16);
+             layout->addWidget(new AntTypography(QStringLiteral("Dialog body"), dialog->contentWidget()));
+         }, QSize(320, 180)},
         {"AntDivider", [](QWidget* p) { return new AntDivider(QStringLiteral("OR"), p); }, nullptr},
         {"AntDockManager", [](QWidget* p) { return new AntDockManager(p); }, [](QWidget* w) {
              auto* manager = qobject_cast<AntDockManager*>(w);
@@ -310,6 +323,12 @@ QList<RenderCase> renderCases()
              qobject_cast<AntFlex*>(w)->addWidget(new AntButton(QStringLiteral("A")));
          }, QSize(220, 72), false},
         {"AntFloatButton", [](QWidget* p) { return new AntFloatButton(p); }, nullptr, QSize(72, 72)},
+        {"AntFileDialog", [](QWidget* p) { return new AntFileDialog(p); }, [](QWidget* w) {
+             auto* dialog = qobject_cast<AntFileDialog*>(w);
+             dialog->setOption(QFileDialog::DontUseNativeDialog, true);
+             dialog->setFileMode(QFileDialog::ExistingFile);
+             dialog->refreshAntStyle();
+         }, QSize(520, 340)},
         {"AntFormItem", [](QWidget* p) { return new AntFormItem(p); }, [](QWidget* w) {
              auto* item = qobject_cast<AntFormItem*>(w);
              item->setLabel(QStringLiteral("Email"));
@@ -466,6 +485,12 @@ QList<RenderCase> renderCases()
              splitter->addWidget(coloredBox(splitter));
              splitter->addWidget(coloredBox(splitter, QColor(0x52, 0xc4, 0x1a)));
          }, QSize(260, 120), false},
+        {"AntStackedWidget", [](QWidget* p) { return new AntStackedWidget(p); }, [](QWidget* w) {
+             auto* stack = qobject_cast<AntStackedWidget*>(w);
+             stack->addWidget(coloredBox(stack));
+             stack->addWidget(coloredBox(stack, QColor(0x52, 0xc4, 0x1a)));
+             stack->setCurrentIndex(1);
+         }, QSize(260, 140)},
         {"AntStatistic", [](QWidget* p) { return new AntStatistic(QStringLiteral("Revenue"), p); }, [](QWidget* w) {
              auto* statistic = qobject_cast<AntStatistic*>(w);
              statistic->setPrefix(QStringLiteral("$"));
@@ -681,6 +706,18 @@ void TestAntRenderSmoke::qtAnalogWidgetsFollowNativeLayoutPolicies()
     QScrollArea nativeScrollArea;
     AntScrollArea scrollArea;
     expectSameLayoutPolicy("AntScrollArea", scrollArea, nativeScrollArea);
+
+    QStackedWidget nativeStackedWidget;
+    AntStackedWidget stackedWidget;
+    expectSameLayoutPolicy("AntStackedWidget", stackedWidget, nativeStackedWidget);
+
+    QDialog nativeDialog;
+    AntDialog dialog;
+    expectSameLayoutPolicy("AntDialog", dialog, nativeDialog);
+
+    QFileDialog nativeFileDialog;
+    AntFileDialog fileDialog;
+    expectSameLayoutPolicy("AntFileDialog", fileDialog, nativeFileDialog);
 
     QStatusBar nativeStatusBar;
     AntStatusBar statusBar;

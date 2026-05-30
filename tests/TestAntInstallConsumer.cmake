@@ -81,7 +81,6 @@ file(WRITE "${consumer_source_dir}/main.cpp" [=[
 static_assert(std::is_same_v<AntCalendarWidget, AntCalendar>);
 static_assert(std::is_same_v<AntComboBox, AntSelect>);
 static_assert(std::is_same_v<AntDateEdit, AntDatePicker>);
-static_assert(std::is_same_v<AntDialog, AntModal>);
 static_assert(std::is_same_v<AntDoubleSpinBox, AntInputNumber>);
 static_assert(std::is_same_v<AntLabel, AntTypography>);
 static_assert(std::is_same_v<AntLineEdit, AntInput>);
@@ -113,11 +112,14 @@ int main(int argc, char** argv)
 
     AntLabel label(QStringLiteral("Alias Label"));
     AntPushButton aliasButton(QStringLiteral("Alias Button"));
+    AntDialog dialog;
+    dialog.setWindowTitle(QStringLiteral("Install Consumer Dialog"));
 
     return button.text() == QStringLiteral("Install Consumer") &&
            resourcesAvailable &&
            label.text() == QStringLiteral("Alias Label") &&
-           aliasButton.text() == QStringLiteral("Alias Button") ? 0 : 1;
+           aliasButton.text() == QStringLiteral("Alias Button") &&
+           dialog.contentWidget() != nullptr ? 0 : 1;
 }
 ]=])
 

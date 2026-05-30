@@ -2,9 +2,9 @@
 
 #include "core/QtAntDesignExport.h"
 
-#include <QProxyStyle>
+#include "core/AntStyleBase.h"
 
-class QT_ANT_DESIGN_EXPORT AntDockStyle : public QProxyStyle
+class QT_ANT_DESIGN_EXPORT AntDockStyle : public AntStyleBase
 {
 public:
     explicit AntDockStyle(QStyle* style = nullptr);

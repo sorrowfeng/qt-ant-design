@@ -1,6 +1,6 @@
 # Project Status
 
-Updated: `2026-05-29`
+Updated: `2026-05-30`
 
 This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, feedback popup anchoring/multi-window scoping, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, and README component screenshot gallery.
 
@@ -9,25 +9,26 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Area | Status |
 | --- | --- |
 | Ant Design standard coverage | `70 / 70` top-level components covered |
-| Public Qt component count | `84` public components |
-| Widget headers | `105` headers in `src/widgets`: `84` public component headers, `20` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup` |
-| Qt / desktop extensions | `14` components |
-| Style architecture | `62` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
-| Example coverage | `84 / 84` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
+| Public Qt component count | `87` public components |
+| Widget headers | `107` headers in `src/widgets`: `87` public component headers, `19` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup` |
+| Qt / desktop extensions | `17` components |
+| Style architecture | `66` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
+| Example coverage | `87 / 87` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
 | Dedicated examples intentionally absent | None |
-| Tests | `37` CTest targets configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-29` |
+| Tests | `37` CTest targets configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-30` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `166` committed PNGs: light/dark screenshots for `83` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` public components have a defined optimization and validation path, with `84` controls optimized in the current pass |
+| Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` previously tracked public components have a defined optimization and validation path, with `84` controls optimized in the current pass |
 
 ## Recent Completed Work
 
+- Added `AntDialog`, `AntStackedWidget`, and `AntFileDialog` as Qt desktop extension ports: `AntDialog` is a frameless `QDialog` replacement with an Ant token title bar that reacts to theme changes, theme-aware child palettes, Ant scroll bars, close-button hover state, and a reusable `contentWidget()` body host; `AntStackedWidget` wraps `QStackedWidget` with an `AntStackedWidgetStyle` frame/background path and Outlined / Filled / Borderless variants, while `AntFileDialog` is a fully custom Ant Design file dialog built on `AntDialog`, `QFileSystemModel`, `QTreeView`, Ant inputs/select/buttons, token-painted panels, Ant scroll bars, and a scoped `AntFileDialogStyle` for file-view primitives.
 - Hardened `AntMessage` / `AntNotification` anchoring for desktop-window scenarios: hidden anchors suppress premature popups, visible `AntWindow` anchors are tracked across move, resize, show, hide, and window-state changes, active relayout is scoped to matching anchors, and multiple `AntWindow` instances keep their feedback stacks isolated.
 - Optimized the shared `AntStyleBase` theme path so per-widget styles update their owning widget directly instead of scanning all application widgets, and only request layout when theme-driven size hints actually change.
 - Softened the non-maximized Windows 10 `AntWindow` outline so frameless windows remain visible on similar backgrounds without the harsh pure-black border.
 - Added `AntDockManager` as the themed docking workspace companion for `AntDockWidget`, with a custom splitter/tab dock tree instead of Qt's native dock layout, center tab placement, serialized splitter/tab/floating named perspectives, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, threshold-activated translucent drag previews, toggleable center/edge drop guide squares, deterministic guided drop placement, manager-owned floating dock windows using the AntWindow-style Windows native frame/DWM rounded-corner/shadow path, double-click maximize/restore, and drag-back-to-layout support.
-- Added `docs/performance-optimization.md` as the starting point for the performance pass, with conservative optimization rules, validation expectations, priority order, and per-component progress/test tables covering all `84` public components.
+- Added `docs/performance-optimization.md` as the starting point for the performance pass, with conservative optimization rules, validation expectations, priority order, and per-component progress/test tables covering the `84` public components tracked when that pass began.
 - Optimized `AntButton` by pausing hidden loading spinners and scoping spinner animation frames to the spinner indicator region.
 - Optimized `AntFloatButton` by skipping unchanged positioning, reusing child group layout geometry and visibility, and avoiding duplicate style-level theme refresh.
 - Optimized `AntTypography` by caching repeated text measurements and copy hit rectangles, while scoping copy hover/press repaint to the copy icon region.

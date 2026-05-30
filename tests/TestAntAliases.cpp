@@ -54,7 +54,7 @@ void TestAntAliases::qtStyleAliasesMapToCanonicalWidgets()
     QVERIFY((std::is_same_v<AntCalendarWidget, AntCalendar>));
     QVERIFY((std::is_same_v<AntComboBox, AntSelect>));
     QVERIFY((std::is_same_v<AntDateEdit, AntDatePicker>));
-    QVERIFY((std::is_same_v<AntDialog, AntModal>));
+    QVERIFY((!std::is_same_v<AntDialog, AntModal>));
     QVERIFY((std::is_same_v<AntDoubleSpinBox, AntInputNumber>));
     QVERIFY((std::is_same_v<AntLabel, AntTypography>));
     QVERIFY((std::is_same_v<AntLineEdit, AntInput>));
@@ -77,6 +77,9 @@ void TestAntAliases::qtStyleAliasesMapToCanonicalWidgets()
 
     AntPushButton button(QStringLiteral("Alias"));
     QCOMPARE(button.text(), QStringLiteral("Alias"));
+
+    AntDialog dialog;
+    QVERIFY(dialog.contentWidget() != nullptr);
 }
 
 QTEST_MAIN(TestAntAliases)

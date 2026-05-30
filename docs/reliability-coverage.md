@@ -1,6 +1,6 @@
 # Component Reliability Coverage
 
-Last verified: `2026-05-29`
+Last verified: `2026-05-30`
 
 This inventory tracks reliability coverage for every public `Ant*` widget header, excluding Qt-style alias headers and the internal non-installed `AntSelectPopup` helper.
 
@@ -22,7 +22,7 @@ ctest --test-dir build -C Debug --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 ```
 
-Result on `2026-05-29`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Default CTest uses Qt event-level interaction checks; Win32 `SendInput` desktop-input checks in `TestAntQtExtensions` are opt-in via `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`.
+Result on `2026-05-30`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Default CTest uses Qt event-level interaction checks; Win32 `SendInput` desktop-input checks in `TestAntQtExtensions` are opt-in via `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`.
 
 | Component | Behavior/API tests | Lifecycle | Meta | Theme | Render |
 | --- | --- | --- | --- | --- | --- |
@@ -45,6 +45,7 @@ Result on `2026-05-29`: `37 / 37` CTest targets passed and `qt-ant-design-exampl
 | `AntConfigProvider` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntDatePicker` | `TestAntAliases`, `TestAntDataEntryB`, `TestAntInteractions`, `TestAntPopupLifecycle`, `TestAntStressLifecycle` | Yes | Yes | Yes | Yes |
 | `AntDescriptions` | `TestAntChildOwnership`, `TestAntDataDisplayB`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
+| `AntDialog` | `TestAntChildOwnership`, `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntDivider` | `TestAntLayout` | Yes | Yes | Yes | Yes |
 | `AntDockManager` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntDockWidget` | `TestAntChildOwnership`, `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
@@ -53,6 +54,7 @@ Result on `2026-05-29`: `37 / 37` CTest targets passed and `qt-ant-design-exampl
 | `AntEmpty` | `TestAntChildOwnership`, `TestAntDataDisplayA` | Yes | Yes | Yes | Yes |
 | `AntFlex` | `TestAntChildOwnership`, `TestAntLayout` | Yes | Yes | Yes | Yes |
 | `AntFloatButton` | `TestAntFloatButton` | Yes | Yes | Yes | Yes |
+| `AntFileDialog` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntForm` | `TestAntChildOwnership`, `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntGrid` | `TestAntChildOwnership`, `TestAntLayout` | Yes | Yes | Yes | Yes |
 | `AntIcon` | `TestAntIcon` | Yes | Yes | Yes | Yes |
@@ -89,6 +91,7 @@ Result on `2026-05-29`: `37 / 37` CTest targets passed and `qt-ant-design-exampl
 | `AntSpace` | `TestAntChildOwnership`, `TestAntLayout` | Yes | Yes | Yes | Yes |
 | `AntSpin` | `TestAntFeedback` | Yes | Yes | Yes | Yes |
 | `AntSplitter` | `TestAntChildOwnership`, `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
+| `AntStackedWidget` | `TestAntChildOwnership`, `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntStatistic` | `TestAntChildOwnership`, `TestAntDataDisplayA` | Yes | Yes | Yes | Yes |
 | `AntStatusBar` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntSteps` | `TestAntNavigation`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |

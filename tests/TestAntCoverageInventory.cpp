@@ -42,7 +42,6 @@ QSet<QString> publicWidgetHeaders()
         QStringLiteral("AntCalendarWidget"),
         QStringLiteral("AntComboBox"),
         QStringLiteral("AntDateEdit"),
-        QStringLiteral("AntDialog"),
         QStringLiteral("AntDoubleSpinBox"),
         QStringLiteral("AntLabel"),
         QStringLiteral("AntLineEdit"),

@@ -5,7 +5,7 @@
 #include "widgets/AntWindow.h"
 
 class AntNavItem;
-class QStackedWidget;
+class AntStackedWidget;
 class QVBoxLayout;
 class QWidget;
 
@@ -31,7 +31,7 @@ private:
     QWidget* m_sidebar = nullptr;
     QWidget* m_content = nullptr;
     QVBoxLayout* m_navLayout = nullptr;
-    QStackedWidget* m_stack = nullptr;
+    AntStackedWidget* m_stack = nullptr;
     QVector<AntNavItem*> m_navItems;
     int m_activeIndex = 0;
 };

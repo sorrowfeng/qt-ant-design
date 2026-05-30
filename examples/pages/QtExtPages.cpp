@@ -2,6 +2,7 @@
 
 #include <QAction>
 #include <QComboBox>
+#include <QDir>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLineEdit>
@@ -20,8 +21,10 @@
 #include "core/AntTypes.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntButton.h"
+#include "widgets/AntDialog.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
+#include "widgets/AntFileDialog.h"
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
 #include "widgets/AntMenuBar.h"
@@ -31,6 +34,7 @@
 #include "widgets/AntRibbon.h"
 #include "widgets/AntScrollArea.h"
 #include "widgets/AntSelect.h"
+#include "widgets/AntStackedWidget.h"
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntToolBar.h"
@@ -165,6 +169,165 @@ QWidget* createWidgetPage(QWidget* /*owner*/)
     return page;
 }
 
+QWidget* createDialogPage(QWidget* /*owner*/)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    {
+        auto* card = new AntCard(QStringLiteral("AntDialog"));
+        auto* cl = card->bodyLayout();
+
+        auto* desc = makeParagraph(QStringLiteral("AntDialog is a frameless QDialog replacement with an Ant token title bar, theme-aware child palettes, Ant scroll bars, and a content widget for custom dialog bodies."),
+                                   page);
+        cl->addWidget(desc);
+
+        auto* result = makeParagraph(QStringLiteral("Dialog result: not opened"), page);
+
+        auto* openButton = new AntButton(QStringLiteral("Open Dialog"), page);
+        openButton->setButtonType(Ant::ButtonType::Primary);
+        QObject::connect(openButton, &AntButton::clicked, page, [page, result]() {
+            AntDialog dialog(page);
+            dialog.setWindowTitle(QStringLiteral("AntDialog"));
+
+            auto* bodyLayout = new QVBoxLayout(dialog.contentWidget());
+            bodyLayout->setContentsMargins(24, 20, 24, 20);
+            bodyLayout->setSpacing(12);
+
+            auto* title = new AntTypography(QStringLiteral("Theme-aware dialog surface"), dialog.contentWidget());
+            title->setTitle(true);
+            title->setTitleLevel(Ant::TypographyTitleLevel::H4);
+            bodyLayout->addWidget(title);
+
+            auto* text = new AntTypography(QStringLiteral("The custom title bar and body palette both react to AntTheme changes without stylesheets."), dialog.contentWidget());
+            text->setParagraph(true);
+            text->setWordWrap(true);
+            bodyLayout->addWidget(text);
+
+            auto* actionRow = new QHBoxLayout();
+            actionRow->addStretch();
+            auto* cancel = new AntButton(QStringLiteral("Cancel"), dialog.contentWidget());
+            auto* ok = new AntButton(QStringLiteral("OK"), dialog.contentWidget());
+            ok->setButtonType(Ant::ButtonType::Primary);
+            QObject::connect(cancel, &AntButton::clicked, &dialog, &QDialog::reject);
+            QObject::connect(ok, &AntButton::clicked, &dialog, &QDialog::accept);
+            actionRow->addWidget(cancel);
+            actionRow->addWidget(ok);
+            bodyLayout->addLayout(actionRow);
+
+            dialog.resize(460, 240);
+            result->setText(dialog.exec() == QDialog::Accepted
+                                ? QStringLiteral("Dialog result: accepted")
+                                : QStringLiteral("Dialog result: rejected"));
+        });
+
+        cl->addWidget(openButton);
+        cl->addWidget(result);
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* createStackedWidgetPage(QWidget* /*owner*/)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    {
+        auto* card = new AntCard(QStringLiteral("AntStackedWidget"));
+        auto* cl = card->bodyLayout();
+
+        auto* stack = new AntStackedWidget(page);
+        stack->setMinimumHeight(220);
+
+        const QStringList titles = {
+            QStringLiteral("Overview"),
+            QStringLiteral("Details"),
+            QStringLiteral("Activity"),
+        };
+        const QStringList captions = {
+            QStringLiteral("A themed QStackedWidget replacement with Ant token background and border painting."),
+            QStringLiteral("Pages keep native QStackedWidget ownership and current-index behavior."),
+            QStringLiteral("Variant changes are handled by AntStackedWidgetStyle without stylesheets."),
+        };
+        for (int i = 0; i < titles.size(); ++i)
+        {
+            auto* panel = new AntWidget(stack);
+            auto* panelLayout = new QVBoxLayout(panel);
+            panelLayout->setContentsMargins(20, 18, 20, 18);
+            panelLayout->setSpacing(8);
+
+            auto* title = new AntTypography(titles.at(i), panel);
+            title->setTitle(true);
+            title->setTitleLevel(Ant::TypographyTitleLevel::H4);
+            panelLayout->addWidget(title);
+
+            auto* caption = new AntTypography(captions.at(i), panel);
+            caption->setParagraph(true);
+            caption->setWordWrap(true);
+            panelLayout->addWidget(caption);
+            panelLayout->addStretch();
+
+            stack->addWidget(panel);
+        }
+
+        auto* actionRow = new QHBoxLayout();
+        actionRow->setSpacing(8);
+        for (int i = 0; i < titles.size(); ++i)
+        {
+            auto* button = new AntButton(titles.at(i), page);
+            if (i == 0)
+            {
+                button->setButtonType(Ant::ButtonType::Primary);
+            }
+            QObject::connect(button, &AntButton::clicked, stack, [stack, i]() {
+                stack->setCurrentIndex(i);
+            });
+            QObject::connect(stack, &QStackedWidget::currentChanged, button, [button, i](int current) {
+                button->setButtonType(current == i ? Ant::ButtonType::Primary : Ant::ButtonType::Default);
+            });
+            actionRow->addWidget(button);
+        }
+
+        auto* variantSelect = new AntSelect(page);
+        variantSelect->addOption(QStringLiteral("Outlined"), QStringLiteral("outlined"));
+        variantSelect->addOption(QStringLiteral("Filled"), QStringLiteral("filled"));
+        variantSelect->addOption(QStringLiteral("Borderless"), QStringLiteral("borderless"));
+        variantSelect->setCurrentIndex(0);
+        QObject::connect(variantSelect, &AntSelect::currentIndexChanged, stack, [stack](int index) {
+            switch (index)
+            {
+            case 1:
+                stack->setVariant(Ant::Variant::Filled);
+                break;
+            case 2:
+                stack->setVariant(Ant::Variant::Borderless);
+                break;
+            default:
+                stack->setVariant(Ant::Variant::Outlined);
+                break;
+            }
+        });
+
+        actionRow->addSpacing(8);
+        actionRow->addWidget(variantSelect);
+        actionRow->addStretch();
+
+        cl->addLayout(actionRow);
+        cl->addWidget(stack);
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
+
 QWidget* createNavItemPage(QWidget* /*owner*/)
 {
     auto* page = new QWidget();
@@ -218,6 +381,67 @@ QWidget* createNavItemPage(QWidget* /*owner*/)
         demoRow->addWidget(detail, 1);
         cl->addLayout(demoRow);
 
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* createFileDialogPage(QWidget* /*owner*/)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    {
+        auto* card = new AntCard(QStringLiteral("AntFileDialog"));
+        auto* cl = card->bodyLayout();
+
+        auto* desc = makeParagraph(QStringLiteral("AntFileDialog is a fully custom Ant Design file browser built from AntDialog, QFileSystemModel, QTreeView, Ant inputs, Ant select, Ant buttons, token-painted panels, and a scoped QProxyStyle for the file view."),
+                                   page);
+        cl->addWidget(desc);
+
+        auto* selected = makeParagraph(QStringLiteral("No file selected"), page);
+
+        auto* actionRow = new QHBoxLayout();
+        actionRow->setSpacing(8);
+
+        auto* openButton = new AntButton(QStringLiteral("Open File"), page);
+        openButton->setButtonType(Ant::ButtonType::Primary);
+        QObject::connect(openButton, &AntButton::clicked, page, [page, selected]() {
+            AntFileDialog dialog(page,
+                                 QStringLiteral("Open with AntFileDialog"),
+                                 QDir::homePath(),
+                                 QStringLiteral("All Files (*.*);;Images (*.png *.jpg *.jpeg);;Text Files (*.txt *.md)"));
+            dialog.setAcceptMode(QFileDialog::AcceptOpen);
+            dialog.setFileMode(QFileDialog::ExistingFile);
+            if (dialog.exec() == QDialog::Accepted && !dialog.selectedFiles().isEmpty())
+            {
+                selected->setText(QStringLiteral("Selected: %1").arg(dialog.selectedFiles().constFirst()));
+            }
+        });
+        actionRow->addWidget(openButton);
+
+        auto* saveButton = new AntButton(QStringLiteral("Save As"), page);
+        QObject::connect(saveButton, &AntButton::clicked, page, [page, selected]() {
+            AntFileDialog dialog(page,
+                                 QStringLiteral("Save with AntFileDialog"),
+                                 QDir::homePath(),
+                                 QStringLiteral("Text Files (*.txt);;All Files (*.*)"));
+            dialog.setAcceptMode(QFileDialog::AcceptSave);
+            dialog.setFileMode(QFileDialog::AnyFile);
+            if (dialog.exec() == QDialog::Accepted && !dialog.selectedFiles().isEmpty())
+            {
+                selected->setText(QStringLiteral("Save target: %1").arg(dialog.selectedFiles().constFirst()));
+            }
+        });
+        actionRow->addWidget(saveButton);
+        actionRow->addStretch();
+
+        cl->addLayout(actionRow);
+        cl->addWidget(selected);
         layout->addWidget(card);
     }
 

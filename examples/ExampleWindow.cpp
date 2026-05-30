@@ -4,7 +4,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QScrollArea>
-#include <QStackedWidget>
 #include <QString>
 #include <QVBoxLayout>
 #include <QVector>
@@ -16,6 +15,7 @@
 #include "pages/PageRegistry.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntScrollBar.h"
+#include "widgets/AntStackedWidget.h"
 #include "widgets/AntTypography.h"
 #include "widgets/AntWidget.h"
 
@@ -41,7 +41,8 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
 
-    m_stack = new QStackedWidget(m_content);
+    m_stack = new AntStackedWidget(m_content);
+    m_stack->setVariant(Ant::Variant::Borderless);
     contentLayout->addWidget(m_stack, 1);
 
     buildPages();

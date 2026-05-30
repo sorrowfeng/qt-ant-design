@@ -23,6 +23,7 @@
 #include "widgets/AntConfigProvider.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDescriptions.h"
+#include "widgets/AntDialog.h"
 #include "widgets/AntDivider.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
@@ -31,6 +32,7 @@
 #include "widgets/AntEmpty.h"
 #include "widgets/AntFlex.h"
 #include "widgets/AntFloatButton.h"
+#include "widgets/AntFileDialog.h"
 #include "widgets/AntForm.h"
 #include "widgets/AntGrid.h"
 #include "widgets/AntIcon.h"
@@ -66,6 +68,7 @@
 #include "widgets/AntSpace.h"
 #include "widgets/AntSpin.h"
 #include "widgets/AntSplitter.h"
+#include "widgets/AntStackedWidget.h"
 #include "widgets/AntStatistic.h"
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntRibbon.h"
@@ -143,6 +146,7 @@ void TestAntObjectTree::parentOwnsWidgetsAndStyles()
     trackWidget(new AntDatePicker(root), true);
     trackWidget(new AntDescriptionsItem(root), false);
     trackWidget(new AntDescriptions(root), true);
+    trackWidget(new AntDialog(root), true);
     trackWidget(new AntDivider(root), true);
     trackWidget(new AntDockManager(root), false);
     trackWidget(new AntDockWidget(root), false);
@@ -151,6 +155,7 @@ void TestAntObjectTree::parentOwnsWidgetsAndStyles()
     trackWidget(new AntEmpty(root), true);
     trackWidget(new AntFlex(root), false);
     trackWidget(new AntFloatButton(root), true);
+    trackWidget(new AntFileDialog(root), true);
     trackWidget(new AntFormItem(root), false);
     trackWidget(new AntFormProvider(root), false);
     trackWidget(new AntForm(root), true);
@@ -196,6 +201,7 @@ void TestAntObjectTree::parentOwnsWidgetsAndStyles()
     trackWidget(new AntSpace(root), true);
     trackWidget(new AntSpin(root), true);
     trackWidget(new AntSplitter(root), false);
+    trackWidget(new AntStackedWidget(root), true);
     trackWidget(new AntStatistic(root), true);
     trackWidget(new AntStatusBar(root), true);
     trackWidget(new AntRibbon(root), false);

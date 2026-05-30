@@ -10,6 +10,7 @@
 #include <QGuiApplication>
 #include <QImage>
 #include <QLabel>
+#include <QLineEdit>
 #include <QFrame>
 #include <QMargins>
 #include <QMainWindow>
@@ -20,12 +21,15 @@
 #include <QComboBox>
 #include <QPixmap>
 #include <QAction>
+#include <QAbstractItemView>
 #include <QHideEvent>
+#include <QFileDialog>
 #include <QSignalSpy>
 #include <QTabBar>
 #include <QTabWidget>
 #include <QHoverEvent>
 #include <QTest>
+#include <QTemporaryDir>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QWindow>
@@ -35,16 +39,22 @@
 #include <thread>
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
+#include "styles/AntDialogStyle.h"
 #include "styles/AntDockStyle.h"
+#include "styles/AntFileDialogStyle.h"
+#include "styles/AntStackedWidgetStyle.h"
 #include "widgets/AntApp.h"
 #include "widgets/AntConfigProvider.h"
+#include "widgets/AntDialog.h"
 #include "widgets/AntForm.h"
+#include "widgets/AntFileDialog.h"
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
 #include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntScrollArea.h"
 #include "widgets/AntScrollBar.h"
 #include "widgets/AntSplitter.h"
+#include "widgets/AntStackedWidget.h"
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntRibbon.h"
 #include "widgets/AntSwitch.h"
@@ -718,6 +728,9 @@ private slots:
     void navItem();
     void dockWidget();
     void dockManager();
+    void dialog();
+    void stackedWidget();
+    void fileDialog();
     void widget();
     void window();
     void windowTitleBarButtonsHandleChildDeliveredClicks();
@@ -3557,6 +3570,214 @@ void TestAntQtExtensions::widget()
     QCOMPARE(sized.property("antWidgetThemeChangeCount").toInt(), 2);
     QCOMPARE(sized.property("antWidgetUpdateGeometryCount").toInt(), 2);
     QCOMPARE(sized.property("antWidgetOnThemeChangedCount").toInt(), 2);
+}
+
+void TestAntQtExtensions::dialog()
+{
+    ThemeModeRestorerForExtensionTest guard;
+
+    AntDialog dialog;
+    dialog.setWindowTitle(QStringLiteral("Ant dialog"));
+    QVERIFY(dynamic_cast<AntDialogStyle*>(dialog.style()) != nullptr);
+    QCOMPARE(dialog.style()->parent(), &dialog);
+    QVERIFY(dialog.styleSheet().isEmpty());
+    QCOMPARE(dialog.cornerRadius(), 8);
+    QVERIFY(dialog.isTitleBarVisible());
+    QVERIFY(dialog.isCloseButtonVisible());
+    QVERIFY(dialog.contentWidget() != nullptr);
+    QCOMPARE(dialog.contentWidget()->parentWidget(), &dialog);
+    QVERIFY(dialog.property("antDialogUsesRoundedCorners").isValid());
+    QCOMPARE(dialog.property("antDialogCornerRadius").toInt(), 8);
+    const QByteArray dialogLegacyPolicy = qgetenv("QT_ANT_DESIGN_FORCE_LEGACY_FRAME").trimmed().toLower();
+    const bool forcedLegacyDialog =
+        dialogLegacyPolicy == "1" || dialogLegacyPolicy == "true" ||
+        dialogLegacyPolicy == "yes" || dialogLegacyPolicy == "on";
+#ifdef Q_OS_WIN
+    const bool expectedRoundedDialog = supportsNativeCaptionSnapLayoutsForTest() && !forcedLegacyDialog;
+    QCOMPARE(dialog.usesRoundedCorners(), expectedRoundedDialog);
+    QCOMPARE(dialog.testAttribute(Qt::WA_TranslucentBackground), expectedRoundedDialog);
+    QCOMPARE(dialog.usesLegacyOpaquePath(), !expectedRoundedDialog);
+#else
+    QCOMPARE(dialog.usesRoundedCorners(), !forcedLegacyDialog);
+    QCOMPARE(dialog.testAttribute(Qt::WA_TranslucentBackground), !forcedLegacyDialog);
+    QCOMPARE(dialog.usesLegacyOpaquePath(), forcedLegacyDialog);
+#endif
+    QCOMPARE(dialog.property("antDialogUsesRoundedCorners").toBool(), dialog.usesRoundedCorners());
+    QCOMPARE(dialog.property("antDialogEffectiveCornerRadius").toInt(),
+             dialog.usesRoundedCorners() ? dialog.cornerRadius() : 0);
+
+    auto* bodyLayout = new QVBoxLayout(dialog.contentWidget());
+    bodyLayout->setContentsMargins(16, 12, 16, 12);
+    bodyLayout->addWidget(new QLabel(QStringLiteral("Dialog body"), dialog.contentWidget()));
+
+    QSignalSpy titleBarSpy(&dialog, &AntDialog::titleBarVisibleChanged);
+    dialog.setTitleBarVisible(false);
+    QCOMPARE(dialog.isTitleBarVisible(), false);
+    QCOMPARE(titleBarSpy.count(), 1);
+    dialog.setTitleBarVisible(true);
+    QCOMPARE(dialog.isTitleBarVisible(), true);
+    QCOMPARE(titleBarSpy.count(), 2);
+
+    QSignalSpy closeVisibleSpy(&dialog, &AntDialog::closeButtonVisibleChanged);
+    dialog.setCloseButtonVisible(false);
+    QCOMPARE(dialog.isCloseButtonVisible(), false);
+    QCOMPARE(closeVisibleSpy.count(), 1);
+    dialog.setCloseButtonVisible(true);
+    QCOMPARE(dialog.isCloseButtonVisible(), true);
+    QCOMPARE(closeVisibleSpy.count(), 2);
+
+    QSignalSpy cornerSpy(&dialog, &AntDialog::cornerRadiusChanged);
+    dialog.setCornerRadius(12);
+    QCOMPARE(dialog.cornerRadius(), 12);
+    QCOMPARE(cornerSpy.count(), 1);
+    QCOMPARE(dialog.property("antDialogEffectiveCornerRadius").toInt(),
+             dialog.usesRoundedCorners() ? 12 : 0);
+    dialog.setCornerRadius(-1);
+    QCOMPARE(dialog.cornerRadius(), 0);
+    QCOMPARE(cornerSpy.count(), 2);
+    QVERIFY(!dialog.usesRoundedCorners());
+    dialog.setCornerRadius(8);
+    QCOMPARE(dialog.cornerRadius(), 8);
+    QCOMPARE(cornerSpy.count(), 3);
+
+#ifdef Q_OS_WIN
+    AntDialog legacyDialog;
+    legacyDialog.setProperty("antDialogForceLegacyFramePolicy", true);
+    QVERIFY(!legacyDialog.usesRoundedCorners());
+    QVERIFY(legacyDialog.usesLegacyOpaquePath());
+    QVERIFY(!legacyDialog.testAttribute(Qt::WA_TranslucentBackground));
+    legacyDialog.resize(180, 120);
+    const QImage legacyDialogImage = renderForExtensionTest(&legacyDialog);
+    QVERIFY(!legacyDialogImage.isNull());
+    QVERIFY2(legacyDialogImage.pixelColor(0, 0).alpha() >= 220,
+             "forced legacy AntDialog path should paint opaque square Win10-style corners");
+#endif
+
+    dialog.refreshAntStyle();
+    QVERIFY(dialog.property("antDialogChildSyncCount").toInt() > 0);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    dialog.resize(360, 200);
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    QCoreApplication::processEvents();
+
+    const QImage lightImage = renderForExtensionTest(&dialog);
+    QVERIFY(!lightImage.isNull());
+    const QColor lightCornerColor = lightImage.pixelColor(0, 0);
+    if (dialog.usesRoundedCorners())
+    {
+        QVERIFY2(lightCornerColor.alpha() < 64,
+                 qPrintable(QStringLiteral("AntDialog rounded path should leave transparent corner pixels, got %1")
+                                .arg(colorStringForExtensionTest(lightCornerColor))));
+    }
+    else
+    {
+        QVERIFY2(lightCornerColor.alpha() >= 220,
+                 qPrintable(QStringLiteral("AntDialog legacy path should keep opaque square corner pixels, got %1")
+                                .arg(colorStringForExtensionTest(lightCornerColor))));
+    }
+    const QColor lightTitleColor = lightImage.pixelColor(dialog.titleBarRect().center());
+    QVERIFY(countNearColorForExtensionTest(lightImage, antTheme->tokens().colorBgElevated, 30) > 0);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+    const QImage darkImage = renderForExtensionTest(&dialog);
+    QVERIFY(!darkImage.isNull());
+    const QColor darkTitleColor = darkImage.pixelColor(dialog.titleBarRect().center());
+    QVERIFY(!colorNearForExtensionTest(lightTitleColor, darkTitleColor, 8));
+    QVERIFY(countNearColorForExtensionTest(darkImage, antTheme->tokens().colorBgElevated, 30) > 0);
+    QVERIFY(dialog.property("antDialogThemeChangeCount").toInt() > 0);
+
+    QSignalSpy rejectedSpy(&dialog, &QDialog::rejected);
+    QTest::mouseClick(&dialog, Qt::LeftButton, Qt::NoModifier, dialog.titleBarCloseButtonRect().center());
+    QCOMPARE(rejectedSpy.count(), 1);
+}
+
+void TestAntQtExtensions::stackedWidget()
+{
+    AntStackedWidget stack;
+    QVERIFY(dynamic_cast<AntStackedWidgetStyle*>(stack.style()) != nullptr);
+    QCOMPARE(stack.style()->parent(), &stack);
+    QCOMPARE(stack.variant(), Ant::Variant::Outlined);
+    QVERIFY(stack.styleSheet().isEmpty());
+
+    auto* first = new QLabel(QStringLiteral("First"));
+    auto* second = new QLabel(QStringLiteral("Second"));
+    stack.addWidget(first);
+    stack.addWidget(second);
+    QCOMPARE(stack.count(), 2);
+    QCOMPARE(stack.currentWidget(), first);
+
+    QSignalSpy currentSpy(&stack, &QStackedWidget::currentChanged);
+    stack.setCurrentIndex(1);
+    QCOMPARE(stack.currentWidget(), second);
+    QCOMPARE(currentSpy.count(), 1);
+
+    QSignalSpy variantSpy(&stack, &AntStackedWidget::variantChanged);
+    stack.setVariant(Ant::Variant::Filled);
+    QCOMPARE(stack.variant(), Ant::Variant::Filled);
+    QCOMPARE(variantSpy.count(), 1);
+    QVERIFY(stack.contentsMargins().left() > 0);
+
+    stack.setVariant(Ant::Variant::Borderless);
+    QCOMPARE(stack.contentsMargins(), QMargins());
+
+    stack.resize(180, 90);
+    stack.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&stack));
+    const QImage image = renderForExtensionTest(&stack);
+    QVERIFY(!image.isNull());
+    QVERIFY(countNearColorForExtensionTest(image, antTheme->tokens().colorText, 40) > 0);
+}
+
+void TestAntQtExtensions::fileDialog()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    AntFileDialog dialog(nullptr,
+                         QStringLiteral("Ant file dialog"),
+                         tempDir.path(),
+                         QStringLiteral("Text Files (*.txt);;All Files (*.*)"));
+    QVERIFY(dynamic_cast<AntFileDialogStyle*>(dialog.style()) != nullptr);
+    QCOMPARE(dialog.style()->parent(), &dialog);
+    QVERIFY(qobject_cast<AntDialog*>(&dialog) != nullptr);
+    QVERIFY(dialog.isTitleBarVisible());
+    QVERIFY(dialog.findChildren<QFileDialog*>().isEmpty());
+    QVERIFY(dialog.testOption(QFileDialog::DontUseNativeDialog));
+    QVERIFY(dialog.styleSheet().isEmpty());
+
+    dialog.setAcceptMode(QFileDialog::AcceptOpen);
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.refreshAntStyle();
+    QVERIFY(dialog.property("antFileDialogChildSyncCount").toInt() > 0);
+    QCOMPARE(dialog.property("antFileDialogUsesNativeDialog").toBool(), false);
+
+    const auto lineEdits = dialog.findChildren<QLineEdit*>();
+    for (QLineEdit* lineEdit : lineEdits)
+    {
+        QVERIFY(lineEdit->styleSheet().isEmpty());
+        QCOMPARE(lineEdit->hasFrame(), false);
+        QCOMPARE(lineEdit->palette().color(QPalette::Text), antTheme->tokens().colorText);
+    }
+
+    const auto views = dialog.findChildren<QAbstractItemView*>();
+    for (QAbstractItemView* view : views)
+    {
+        QVERIFY(view->styleSheet().isEmpty());
+        QCOMPARE(view->palette().color(QPalette::Text), antTheme->tokens().colorText);
+    }
+
+    dialog.resize(720, 480);
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    QCoreApplication::processEvents();
+    QVERIFY(dialog.property("antFileDialogChildSyncCount").toInt() > 1);
+
+    const QImage image = renderForExtensionTest(&dialog);
+    QVERIFY(!image.isNull());
+    QVERIFY(countNearColorForExtensionTest(image, antTheme->tokens().colorBgContainer, 30) > 0);
 }
 
 void TestAntQtExtensions::window()

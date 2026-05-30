@@ -268,6 +268,10 @@ void setFloatingDockOwner(AntDockWidget* dockWidget, QWidget* ownerWidget)
     // resolve to the actual top-level widget so the floating dock is owned by
     // a real top-level HWND.
     QWidget* ownerTopLevel = ownerWidget ? ownerWidget->window() : nullptr;
+    if (ownerTopLevel && !ownerTopLevel->isVisible())
+    {
+        ownerTopLevel = nullptr;
+    }
 
     QWindow* ownerWindow = nullptr;
     if (ownerTopLevel)
@@ -297,7 +301,9 @@ void setFloatingDockOwner(AntDockWidget* dockWidget, QWidget* ownerWidget)
         ownerHwnd = reinterpret_cast<HWND>(ownerTopLevel->winId());
     }
 
-    HWND dockHwnd = reinterpret_cast<HWND>(dockWidget->winId());
+    HWND dockHwnd = ownerHwnd
+        ? reinterpret_cast<HWND>(dockWidget->winId())
+        : reinterpret_cast<HWND>(dockWidget->internalWinId());
     if (dockHwnd)
     {
         ::SetWindowLongPtrW(dockHwnd, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(ownerHwnd));

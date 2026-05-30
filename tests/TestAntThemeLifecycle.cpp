@@ -34,6 +34,7 @@
 #include "widgets/AntConfigProvider.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDescriptions.h"
+#include "widgets/AntDialog.h"
 #include "widgets/AntDivider.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
@@ -42,6 +43,7 @@
 #include "widgets/AntEmpty.h"
 #include "widgets/AntFlex.h"
 #include "widgets/AntFloatButton.h"
+#include "widgets/AntFileDialog.h"
 #include "widgets/AntForm.h"
 #include "widgets/AntGrid.h"
 #include "widgets/AntIcon.h"
@@ -77,6 +79,7 @@
 #include "widgets/AntSpace.h"
 #include "widgets/AntSpin.h"
 #include "widgets/AntSplitter.h"
+#include "widgets/AntStackedWidget.h"
 #include "widgets/AntStatistic.h"
 #include "widgets/AntStatusBar.h"
 #include "widgets/AntRibbon.h"
@@ -222,6 +225,7 @@ QList<ObjectCase> objectCases()
         {"AntDatePicker", [](QWidget* parent) { return new AntDatePicker(parent); }},
         {"AntDescriptionsItem", [](QWidget* parent) { return new AntDescriptionsItem(parent); }},
         {"AntDescriptions", [](QWidget* parent) { return new AntDescriptions(parent); }},
+        {"AntDialog", [](QWidget* parent) { return new AntDialog(parent); }},
         {"AntDivider", [](QWidget* parent) { return new AntDivider(parent); }},
         {"AntDockManager", [](QWidget* parent) { return new AntDockManager(parent); }},
         {"AntDockWidget", [](QWidget* parent) { return new AntDockWidget(parent); }},
@@ -230,6 +234,7 @@ QList<ObjectCase> objectCases()
         {"AntEmpty", [](QWidget* parent) { return new AntEmpty(parent); }},
         {"AntFlex", [](QWidget* parent) { return new AntFlex(parent); }},
         {"AntFloatButton", [](QWidget* parent) { return new AntFloatButton(parent); }},
+        {"AntFileDialog", [](QWidget* parent) { return new AntFileDialog(parent); }},
         {"AntFormItem", [](QWidget* parent) { return new AntFormItem(parent); }},
         {"AntFormProvider", [](QWidget* parent) { return new AntFormProvider(parent); }},
         {"AntForm", [](QWidget* parent) { return new AntForm(parent); }},
@@ -275,6 +280,7 @@ QList<ObjectCase> objectCases()
         {"AntSpace", [](QWidget* parent) { return new AntSpace(parent); }},
         {"AntSpin", [](QWidget* parent) { return new AntSpin(parent); }},
         {"AntSplitter", [](QWidget* parent) { return new AntSplitter(parent); }},
+        {"AntStackedWidget", [](QWidget* parent) { return new AntStackedWidget(parent); }},
         {"AntStatistic", [](QWidget* parent) { return new AntStatistic(parent); }},
         {"AntStatusBar", [](QWidget* parent) { return new AntStatusBar(parent); }},
         {"AntRibbon", [](QWidget* parent) { return new AntRibbon(parent); }},
