@@ -307,6 +307,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 | Qt Extensions | `AntDockWidget` | <img src="resources/images/components/ant-dock-widget-light.png" width="360"> | <img src="resources/images/components/ant-dock-widget-dark.png" width="360"> |
 | Qt Extensions | `AntPlainTextEdit` | <img src="resources/images/components/ant-plain-text-edit-light.png" width="360"> | <img src="resources/images/components/ant-plain-text-edit-dark.png" width="360"> |
 | Qt Extensions | `AntLog` | <img src="resources/images/components/ant-log-light.png" width="360"> | <img src="resources/images/components/ant-log-dark.png" width="360"> |
+| Qt Extensions | `AntNav` | <img src="resources/images/components/ant-nav-light.png" width="360"> | <img src="resources/images/components/ant-nav-dark.png" width="360"> |
 | Qt Extensions | `AntNavItem` | <img src="resources/images/components/ant-nav-item-light.png" width="360"> | <img src="resources/images/components/ant-nav-item-dark.png" width="360"> |
 | Qt Extensions | `AntMasonry` | <img src="resources/images/components/ant-masonry-light.png" width="360"> | <img src="resources/images/components/ant-masonry-dark.png" width="360"> |
 

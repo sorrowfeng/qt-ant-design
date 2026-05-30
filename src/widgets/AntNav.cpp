@@ -1,13 +1,35 @@
 #include "AntNav.h"
 
 #include <QFrame>
+#include <QPalette>
 #include <QScrollArea>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "core/AntTheme.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntScrollBar.h"
 #include "widgets/AntTypography.h"
+
+namespace
+{
+
+void applyNavSurfaceColors(QWidget* widget, const QColor& bg, const QColor& text)
+{
+    if (!widget)
+    {
+        return;
+    }
+
+    QPalette palette = widget->palette();
+    palette.setColor(QPalette::Window, bg);
+    palette.setColor(QPalette::Base, bg);
+    palette.setColor(QPalette::Text, text);
+    palette.setColor(QPalette::WindowText, text);
+    widget->setPalette(palette);
+}
+
+} // namespace
 
 AntNav::AntNav(QWidget* parent)
     : AntWidget(parent)
@@ -31,6 +53,24 @@ AntNav::AntNav(QWidget* parent)
 
     m_scrollArea->setWidget(m_scrollContent);
     root->addWidget(m_scrollArea, 1);
+
+    updateTheme();
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        updateTheme();
+        update();
+        if (m_scrollArea)
+        {
+            m_scrollArea->update();
+            if (m_scrollArea->viewport())
+            {
+                m_scrollArea->viewport()->update();
+            }
+        }
+        if (m_scrollContent)
+        {
+            m_scrollContent->update();
+        }
+    });
 
     syncNavPerfCounters();
 }
@@ -285,6 +325,34 @@ int AntNav::indexOfItem(AntNavItem* item) const
         }
     }
     return -1;
+}
+
+void AntNav::updateTheme()
+{
+    const auto& token = antTheme->tokens();
+    const QColor bg = token.colorBgContainer;
+    const QColor text = token.colorText;
+
+    setAutoFillBackground(false);
+    applyNavSurfaceColors(this, bg, text);
+
+    if (m_scrollArea)
+    {
+        m_scrollArea->setAutoFillBackground(false);
+        applyNavSurfaceColors(m_scrollArea, bg, text);
+
+        if (QWidget* viewport = m_scrollArea->viewport())
+        {
+            viewport->setAutoFillBackground(true);
+            applyNavSurfaceColors(viewport, bg, text);
+        }
+    }
+
+    if (m_scrollContent)
+    {
+        m_scrollContent->setAutoFillBackground(true);
+        applyNavSurfaceColors(m_scrollContent, bg, text);
+    }
 }
 
 void AntNav::syncActiveItemStates()

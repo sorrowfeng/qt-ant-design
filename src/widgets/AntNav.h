@@ -68,6 +68,7 @@ private:
     int normalizedInsertIndex(int index) const;
     int layoutIndexForItemInsert(int index) const;
     int indexOfItem(AntNavItem* item) const;
+    void updateTheme();
     void syncActiveItemStates();
     void emitCurrentChanged(const QString& previousText, const QVariant& previousData, int previousIndex);
     void syncNavPerfCounters() const;

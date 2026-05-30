@@ -1806,6 +1806,7 @@ void TestAntQtExtensions::navItem()
 
 void TestAntQtExtensions::nav()
 {
+    ThemeModeRestorerForExtensionTest themeRestorer;
     AntNav nav;
     QSignalSpy currentSpy(&nav, &AntNav::currentIndexChanged);
     QSignalSpy textSpy(&nav, &AntNav::currentTextChanged);
@@ -1847,6 +1848,14 @@ void TestAntQtExtensions::nav()
 
     nav.show();
     QVERIFY(QTest::qWaitForWindowExposed(&nav));
+
+    auto* scrollArea = nav.findChild<QScrollArea*>();
+    QVERIFY(scrollArea != nullptr);
+    QVERIFY(scrollArea->viewport() != nullptr);
+    QVERIFY(scrollArea->widget() != nullptr);
+    QCOMPARE(scrollArea->viewport()->palette().color(QPalette::Base), antTheme->tokens().colorBgContainer);
+    QCOMPARE(scrollArea->widget()->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+
     qtMouseClickForExtensionTest(nav.item(1));
     QCOMPARE(nav.currentIndex(), 1);
     QCOMPARE(clickedSpy.count(), 1);
@@ -1866,6 +1875,14 @@ void TestAntQtExtensions::nav()
     QCOMPARE(nav.currentIndex(), -1);
     QCOMPARE(nav.currentText(), QString());
     QCOMPARE(nav.property("antNavItemCount").toInt(), 0);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+    QCOMPARE(scrollArea->viewport()->palette().color(QPalette::Base), antTheme->tokens().colorBgContainer);
+    QCOMPARE(scrollArea->widget()->palette().color(QPalette::Window), antTheme->tokens().colorBgContainer);
+
+    const QImage darkNavImage = renderForExtensionTest(&nav);
+    QVERIFY(countNearColorForExtensionTest(darkNavImage, antTheme->tokens().colorBgContainer, 18) > 1000);
 }
 
 void TestAntQtExtensions::dockWidget()

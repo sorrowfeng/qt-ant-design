@@ -37,7 +37,7 @@
 - Qt 风格别名：名字与常用 Qt 控件无法直观对应的组件提供轻量头文件别名（如 `AntLabel.h` → `AntTypography`）；仅大小写差异时以 Qt 命名为准（如 `AntCheckBox`、`AntToolTip`），不保留旧拼写兼容 alias。
 - 示例程序架构：`ExampleWindow` 继承 `AntWindow`，使用 `AntWidget` 构建布局，`AntNav` / `AntNavItem` 实现侧边栏导航，`AntCard` 作为各示例区块容器，`AntTypography` 替代 `QLabel` 实现主题感知文本，示例页面零样式操作（无 QPalette/setAutoFillBackground/setFont/setStyleSheet）
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
-- README 组件截图画廊：`resources/images/components/` 提交 `166` 张 Light/Dark PNG，覆盖 `83` 个视觉组件条目；`AntDockManager` 通过 DockWidget 示例页展示，弹层/反馈类控件截图使用代表性的打开或激活状态
+- README 组件截图画廊：`resources/images/components/` 提交 `168` 张 Light/Dark PNG，覆盖 `84` 个视觉组件条目；`AntDockManager` 通过 DockWidget 示例页展示，弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
 - 测试状态：当前 `37` 个 CTest 目标；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-30`）
 - 逐控件可靠性覆盖矩阵：`docs/reliability-coverage.md`，列出 88 个公开组件的专项行为/API、生命周期、Meta 属性、主题切换和渲染烟测覆盖情况
