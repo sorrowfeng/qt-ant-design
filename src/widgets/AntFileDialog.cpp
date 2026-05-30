@@ -459,22 +459,6 @@ void AntFileDialog::buildUi()
     rootLayout->setContentsMargins(token.paddingLG, token.paddingLG, token.paddingLG, token.paddingLG);
     rootLayout->setSpacing(token.margin);
 
-    auto* headerLayout = new QVBoxLayout;
-    headerLayout->setContentsMargins(0, 0, 0, 0);
-    headerLayout->setSpacing(4);
-
-    m_titleLabel = new AntTypography(this);
-    m_titleLabel->setTitle(true);
-    m_titleLabel->setTitleLevel(Ant::TypographyTitleLevel::H4);
-    m_titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    headerLayout->addWidget(m_titleLabel);
-
-    m_hintLabel = new AntTypography(this);
-    m_hintLabel->setType(Ant::TypographyType::Secondary);
-    headerLayout->addWidget(m_hintLabel);
-
-    rootLayout->addLayout(headerLayout);
-
     auto* toolbarLayout = new QHBoxLayout;
     toolbarLayout->setContentsMargins(0, 0, 0, 0);
     toolbarLayout->setSpacing(token.marginXS);
@@ -650,14 +634,6 @@ void AntFileDialog::updateHeaderText()
     if (!m_hasExplicitCaption)
     {
         setWindowTitle(title);
-    }
-    if (m_titleLabel)
-    {
-        m_titleLabel->setText(title);
-    }
-    if (m_hintLabel)
-    {
-        m_hintLabel->setText(hintForMode());
     }
 }
 
@@ -1003,21 +979,6 @@ QString AntFileDialog::defaultTitleForMode() const
     return m_acceptMode == QFileDialog::AcceptSave
         ? QStringLiteral("Save File")
         : QStringLiteral("Open File");
-}
-
-QString AntFileDialog::hintForMode() const
-{
-    if (acceptsDirectoriesOnly())
-    {
-        return QStringLiteral("Choose a folder from the custom Ant Design file browser.");
-    }
-    if (m_acceptMode == QFileDialog::AcceptSave)
-    {
-        return QStringLiteral("Pick a folder, enter a file name, and save using the selected file type.");
-    }
-    return m_fileMode == QFileDialog::ExistingFiles
-        ? QStringLiteral("Select one or more files from the custom Ant Design file browser.")
-        : QStringLiteral("Select a file from the custom Ant Design file browser.");
 }
 
 QString AntFileDialog::acceptTextForMode() const

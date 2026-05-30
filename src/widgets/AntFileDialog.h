@@ -11,7 +11,6 @@
 class AntButton;
 class AntInput;
 class AntSelect;
-class AntTypography;
 class QFileSystemModel;
 class QModelIndex;
 class QAbstractButton;
@@ -110,7 +109,6 @@ private:
     QString appendDefaultSuffixIfNeeded(const QString& path) const;
     QStringList patternsForFilter(const QString& filter) const;
     QString defaultTitleForMode() const;
-    QString hintForMode() const;
     QString acceptTextForMode() const;
     bool acceptsDirectoriesOnly() const;
     void scheduleChildSync();
@@ -119,8 +117,6 @@ private:
 
     QFileSystemModel* m_model = nullptr;
     QTreeView* m_view = nullptr;
-    AntTypography* m_titleLabel = nullptr;
-    AntTypography* m_hintLabel = nullptr;
     AntInput* m_pathInput = nullptr;
     AntInput* m_fileNameInput = nullptr;
     AntSelect* m_filterSelect = nullptr;

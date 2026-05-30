@@ -65,6 +65,7 @@
 #include "widgets/AntMenu.h"
 #include "widgets/AntMenuBar.h"
 #include "widgets/AntNavItem.h"
+#include "widgets/AntTypography.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntWidget.h"
@@ -3747,6 +3748,12 @@ void TestAntQtExtensions::fileDialog()
     QVERIFY(dialog.findChildren<QFileDialog*>().isEmpty());
     QVERIFY(dialog.testOption(QFileDialog::DontUseNativeDialog));
     QVERIFY(dialog.styleSheet().isEmpty());
+    const auto textBlocks = dialog.findChildren<AntTypography*>();
+    for (AntTypography* textBlock : textBlocks)
+    {
+        QVERIFY(textBlock->text() != dialog.windowTitle());
+        QVERIFY(!textBlock->text().contains(QStringLiteral("custom Ant Design file browser")));
+    }
 
     dialog.setAcceptMode(QFileDialog::AcceptOpen);
     dialog.setFileMode(QFileDialog::ExistingFile);
