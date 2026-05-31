@@ -1,6 +1,6 @@
 # Project Status
 
-Updated: `2026-05-30`
+Updated: `2026-06-01`
 
 This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, feedback popup anchoring/multi-window scoping, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, and README component screenshot gallery.
 
@@ -23,7 +23,8 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 
 ## Recent Completed Work
 
-- Added `AntDialog`, `AntStackedWidget`, and `AntFileDialog` as Qt desktop extension ports: `AntDialog` is a frameless `QDialog` replacement with an Ant token title bar that reacts to theme changes, theme-aware child palettes, Ant scroll bars, close-button hover state, and a reusable `contentWidget()` body host; `AntStackedWidget` wraps `QStackedWidget` with an `AntStackedWidgetStyle` frame/background path and Outlined / Filled / Borderless variants, while `AntFileDialog` is a fully custom Ant Design file dialog built on `AntDialog`, `QFileSystemModel`, `QTreeView`, Ant inputs/select/buttons, token-painted panels, Ant scroll bars, and a scoped `AntFileDialogStyle` for file-view primitives.
+- Completed a targeted desktop-widget polish batch: `AntCarousel` now exposes slide click signals, previous/next slots, arrow visibility, and manual-navigation controls; `AntListItem`, `AntNavItem`, and `AntNav` accept `AntIcon` values as well as `QPixmap` / `QImage` media; `AntScrollArea` supports optional mouse-drag scrolling without stealing scrollbar drags; `AntFloatButton` has press/wave feedback with an unclipped internal shadow margin; `AntDialog` / `AntFileDialog` render matching outer shadows; and the example page wrapper keeps scrollbars just inside the `AntWindow` resize band.
+- Added `AntDialog`, `AntStackedWidget`, and `AntFileDialog` as Qt desktop extension ports: `AntDialog` is a frameless `QDialog` replacement with an Ant token title bar that reacts to theme changes, theme-aware child palettes, Ant scroll bars, close-button hover state, and a reusable `contentWidget()` body host; `AntStackedWidget` wraps `QStackedWidget` with an `AntStackedWidgetStyle` frame/background path and Outlined / Filled / Borderless variants, while `AntFileDialog` is a fully custom Ant Design file dialog built on `AntDialog`, common places, a collapsed directory tree, file-list `QFileSystemModel` / `QTreeView` surfaces, Ant inputs/select/buttons, token-painted panels, Ant scroll bars, and a scoped `AntFileDialogStyle` for file-view primitives.
 - Hardened `AntMessage` / `AntNotification` anchoring for desktop-window scenarios: hidden anchors suppress premature popups, visible `AntWindow` anchors are tracked across move, resize, show, hide, and window-state changes, active relayout is scoped to matching anchors, and multiple `AntWindow` instances keep their feedback stacks isolated.
 - Optimized the shared `AntStyleBase` theme path so per-widget styles update their owning widget directly instead of scanning all application widgets, and only request layout when theme-driven size hints actually change.
 - Softened the non-maximized Windows 10 `AntWindow` outline so frameless windows remain visible on similar backgrounds without the harsh pure-black border.

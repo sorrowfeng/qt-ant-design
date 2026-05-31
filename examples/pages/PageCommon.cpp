@@ -1,21 +1,27 @@
 #include "PageCommon.h"
 
-#include <QFrame>
-#include <QScrollArea>
+#include <QVBoxLayout>
 
-#include "widgets/AntScrollBar.h"
+#include "widgets/AntScrollArea.h"
+#include "widgets/AntWidget.h"
 
 namespace example::pages
 {
-QScrollArea* wrapPage(QWidget* page)
+QWidget* wrapPage(QWidget* page)
 {
-    auto* scroll = new QScrollArea();
+    constexpr int resizeGuardMargin = 9;
+
+    auto* host = new AntWidget();
+    auto* layout = new QVBoxLayout(host);
+    layout->setContentsMargins(0, 0, resizeGuardMargin, resizeGuardMargin);
+    layout->setSpacing(0);
+
+    auto* scroll = new AntScrollArea(host);
     scroll->setWidgetResizable(true);
-    scroll->setFrameShape(QFrame::NoFrame);
-    scroll->setVerticalScrollBar(new AntScrollBar(Qt::Vertical));
-    scroll->setHorizontalScrollBar(new AntScrollBar(Qt::Horizontal));
+    scroll->setAutoHideScrollBar(false);
     scroll->setWidget(page);
-    return scroll;
+    layout->addWidget(scroll);
+    return host;
 }
 
 AntTypography* makeText(const QString& text, QWidget* parent, Ant::TypographyType type)

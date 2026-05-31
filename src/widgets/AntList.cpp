@@ -12,6 +12,7 @@
 #include "core/AntTheme.h"
 #include "core/AntThemeRefresh_p.h"
 #include "styles/AntPalette.h"
+#include "widgets/AntIcon.h"
 
 namespace
 {
@@ -240,6 +241,11 @@ QString AntListItem::text() const { return m_text; }
 void AntListItem::setIcon(const QIcon& icon)
 {
     m_icon = icon;
+    m_iconSource = m_icon.isNull() ? IconSource::None : IconSource::QtIcon;
+    m_iconType = Ant::IconType::None;
+    m_iconName.clear();
+    m_iconPixmap = QPixmap();
+    syncAntIconWidget();
     updateGeometry();
     update();
     Q_EMIT iconChanged();
@@ -247,6 +253,177 @@ void AntListItem::setIcon(const QIcon& icon)
 }
 
 QIcon AntListItem::icon() const { return m_icon; }
+
+void AntListItem::setIcon(Ant::IconType iconType, Ant::IconTheme theme)
+{
+    if (m_iconSource == IconSource::AntIconType && m_iconType == iconType && m_iconTheme == theme)
+    {
+        return;
+    }
+    m_iconSource = iconType == Ant::IconType::None ? IconSource::None : IconSource::AntIconType;
+    m_icon = QIcon();
+    m_iconType = iconType;
+    m_iconName.clear();
+    m_iconPixmap = QPixmap();
+    m_iconTheme = theme;
+    syncAntIconWidget();
+    updateGeometry();
+    update();
+    Q_EMIT iconSizeChanged(m_iconSize);
+    Q_EMIT iconChanged();
+    Q_EMIT changed();
+}
+
+Ant::IconType AntListItem::iconType() const { return m_iconType; }
+
+void AntListItem::setIconName(const QString& iconName, Ant::IconTheme theme)
+{
+    if (m_iconSource == IconSource::AntIconName && m_iconName == iconName && m_iconTheme == theme)
+    {
+        return;
+    }
+    m_iconSource = iconName.isEmpty() ? IconSource::None : IconSource::AntIconName;
+    m_icon = QIcon();
+    m_iconName = iconName;
+    m_iconType = Ant::IconType::None;
+    m_iconPixmap = QPixmap();
+    m_iconTheme = theme;
+    syncAntIconWidget();
+    updateGeometry();
+    update();
+    Q_EMIT iconChanged();
+    Q_EMIT changed();
+}
+
+QString AntListItem::iconName() const { return m_iconName; }
+
+void AntListItem::setIconTheme(Ant::IconTheme theme)
+{
+    if (m_iconTheme == theme)
+    {
+        return;
+    }
+    m_iconTheme = theme;
+    syncAntIconWidget();
+    update();
+    Q_EMIT iconChanged();
+    Q_EMIT changed();
+}
+
+Ant::IconTheme AntListItem::iconTheme() const { return m_iconTheme; }
+
+void AntListItem::setIconColor(const QColor& color)
+{
+    if (m_iconColor == color)
+    {
+        return;
+    }
+    m_iconColor = color;
+    syncAntIconWidget();
+    update();
+    Q_EMIT iconChanged();
+    Q_EMIT changed();
+}
+
+QColor AntListItem::iconColor() const { return m_iconColor; }
+
+void AntListItem::setIconTwoToneColor(const QColor& color)
+{
+    if (m_iconTwoToneColor == color)
+    {
+        return;
+    }
+    m_iconTwoToneColor = color;
+    syncAntIconWidget();
+    update();
+    Q_EMIT iconChanged();
+    Q_EMIT changed();
+}
+
+QColor AntListItem::iconTwoToneColor() const { return m_iconTwoToneColor; }
+
+void AntListItem::setIconPixmap(const QPixmap& pixmap)
+{
+    if (m_iconSource == IconSource::Pixmap && m_iconPixmap.cacheKey() == pixmap.cacheKey())
+    {
+        return;
+    }
+    m_iconPixmap = pixmap;
+    m_iconSource = m_iconPixmap.isNull() ? IconSource::None : IconSource::Pixmap;
+    m_icon = QIcon();
+    m_iconType = Ant::IconType::None;
+    m_iconName.clear();
+    syncAntIconWidget();
+    updateGeometry();
+    update();
+    Q_EMIT iconChanged();
+    Q_EMIT changed();
+}
+
+QPixmap AntListItem::iconPixmap() const { return m_iconPixmap; }
+
+void AntListItem::setIconImage(const QImage& image)
+{
+    setIconPixmap(image.isNull() ? QPixmap() : QPixmap::fromImage(image));
+}
+
+QImage AntListItem::iconImage() const
+{
+    return m_iconPixmap.isNull() ? QImage() : m_iconPixmap.toImage();
+}
+
+void AntListItem::setIconSize(const QSize& size)
+{
+    const QSize normalized(qMax(0, size.width()), qMax(0, size.height()));
+    if (m_iconSize == normalized)
+    {
+        return;
+    }
+    m_iconSize = normalized;
+    syncAntIconWidget();
+    updateGeometry();
+    update();
+    Q_EMIT iconChanged();
+    Q_EMIT changed();
+}
+
+QSize AntListItem::iconSize() const { return m_iconSize; }
+
+bool AntListItem::hasIcon() const
+{
+    switch (m_iconSource)
+    {
+    case IconSource::QtIcon:
+        return !m_icon.isNull();
+    case IconSource::AntIconType:
+        return m_iconType != Ant::IconType::None;
+    case IconSource::AntIconName:
+        return !m_iconName.isEmpty();
+    case IconSource::Pixmap:
+        return !m_iconPixmap.isNull();
+    case IconSource::None:
+    default:
+        return false;
+    }
+}
+
+void AntListItem::clearIcon()
+{
+    if (!hasIcon() && m_iconSource == IconSource::None)
+    {
+        return;
+    }
+    m_iconSource = IconSource::None;
+    m_icon = QIcon();
+    m_iconType = Ant::IconType::None;
+    m_iconName.clear();
+    m_iconPixmap = QPixmap();
+    syncAntIconWidget();
+    updateGeometry();
+    update();
+    Q_EMIT iconChanged();
+    Q_EMIT changed();
+}
 
 void AntListItem::setData(int role, const QVariant& value)
 {
@@ -258,6 +435,16 @@ void AntListItem::setData(int role, const QVariant& value)
     if (role == Qt::DecorationRole && value.canConvert<QIcon>())
     {
         setIcon(value.value<QIcon>());
+        return;
+    }
+    if (role == Qt::DecorationRole && value.canConvert<QPixmap>())
+    {
+        setIconPixmap(value.value<QPixmap>());
+        return;
+    }
+    if (role == Qt::DecorationRole && value.canConvert<QImage>())
+    {
+        setIconImage(value.value<QImage>());
         return;
     }
     if (role == Qt::CheckStateRole)
@@ -283,7 +470,19 @@ QVariant AntListItem::data(int role) const
     }
     if (role == Qt::DecorationRole)
     {
-        return QVariant::fromValue(m_icon);
+        switch (m_iconSource)
+        {
+        case IconSource::Pixmap:
+            return QVariant::fromValue(m_iconPixmap);
+        case IconSource::AntIconType:
+            return QVariant::fromValue(static_cast<int>(m_iconType));
+        case IconSource::AntIconName:
+            return m_iconName;
+        case IconSource::QtIcon:
+        case IconSource::None:
+        default:
+            return QVariant::fromValue(m_icon);
+        }
     }
     if (role == Qt::CheckStateRole)
     {
@@ -443,6 +642,10 @@ QSize AntListItem::sizeHint() const
     {
         contentHeight = qMax(contentHeight, tokenLineHeight(token.fontSize));
     }
+    if (hasIcon())
+    {
+        contentHeight = qMax(contentHeight, effectiveIconSize().height());
+    }
     if (m_content)
     {
         contentHeight = qMax(contentHeight, m_content->sizeHint().height());
@@ -478,12 +681,16 @@ void AntListItem::paintEvent(QPaintEvent* event)
         painter.drawRoundedRect(selectedRect, token.borderRadiusSM, token.borderRadiusSM);
     }
 
+    if (usesPaintedIcon())
+    {
+        drawPaintedIcon(&painter, leadingIconRect());
+    }
+
     if (!m_text.isEmpty() && !m_meta && !m_content)
     {
         const auto* list = parentListForItem(this);
         const int paddingV = listItemPaddingV(list);
         const int paddingH = listItemPaddingH(list);
-        const int iconSize = m_icon.isNull() ? 0 : 16;
         const int checkSize = m_checkState == Qt::Unchecked ? 0 : 14;
         int x = paddingH + token.paddingSM;
         const int centerY = height() / 2;
@@ -497,11 +704,10 @@ void AntListItem::paintEvent(QPaintEvent* event)
             x += checkSize + token.paddingXS;
         }
 
-        if (iconSize > 0)
+        if (hasIcon())
         {
-            const QRect iconRect(x, centerY - iconSize / 2, iconSize, iconSize);
-            m_icon.paint(&painter, iconRect);
-            x += iconSize + token.paddingXS;
+            const QSize iconSize = effectiveIconSize();
+            x += iconSize.width() + token.paddingXS;
         }
 
         QFont textFont = painter.font();
@@ -557,6 +763,12 @@ QRect AntListItem::metaRect() const
     const int paddingV = listItemPaddingV(list);
     const int paddingH = listItemPaddingH(list);
     const QSize sz = m_meta->sizeHint();
+    int left = paddingH;
+    if (hasIcon())
+    {
+        const QRect iconRect = leadingIconRect();
+        left = iconRect.left() + iconRect.width() + token.paddingXS;
+    }
     int right = width() - paddingH;
     if (m_extra)
     {
@@ -566,7 +778,7 @@ QRect AntListItem::metaRect() const
     {
         right = qMin(right, actionsRect().left() - token.paddingXL);
     }
-    return QRect(paddingH, paddingV, qMax(0, qMin(sz.width(), right - paddingH)), height() - paddingV * 2);
+    return QRect(left, paddingV, qMax(0, qMin(sz.width(), right - left)), height() - paddingV * 2);
 }
 
 QRect AntListItem::extraRect() const
@@ -618,8 +830,112 @@ int AntListItem::actionsWidth() const
     return width;
 }
 
+QRect AntListItem::leadingIconRect() const
+{
+    if (!hasIcon())
+    {
+        return {};
+    }
+
+    const auto& token = antTheme->tokens();
+    const auto* list = parentListForItem(this);
+    const int paddingH = listItemPaddingH(list);
+    const int checkSize = m_checkState == Qt::Unchecked ? 0 : 14;
+    int x = paddingH + token.paddingSM;
+    if (checkSize > 0)
+    {
+        x += checkSize + token.paddingXS;
+    }
+
+    const QSize iconSize = effectiveIconSize();
+    return QRect(x, height() / 2 - iconSize.height() / 2, iconSize.width(), iconSize.height());
+}
+
+void AntListItem::syncAntIconWidget()
+{
+    if (!usesAntIconWidget())
+    {
+        if (m_antIconWidget)
+        {
+            m_antIconWidget->hide();
+        }
+        return;
+    }
+
+    if (!m_antIconWidget)
+    {
+        m_antIconWidget = new AntIcon(this);
+        m_antIconWidget->hide();
+    }
+
+    if (m_iconSource == IconSource::AntIconType)
+    {
+        m_antIconWidget->setIconType(m_iconType);
+    }
+    else
+    {
+        m_antIconWidget->setIconName(m_iconName);
+    }
+    m_antIconWidget->setIconTheme(m_iconTheme);
+    m_antIconWidget->setColor(m_iconColor);
+    m_antIconWidget->setTwoToneColor(m_iconTwoToneColor);
+
+    const QRect iconRect = leadingIconRect();
+    const int squareSize = qMax(1, qMin(iconRect.width(), iconRect.height()));
+    m_antIconWidget->setIconSize(squareSize);
+    if (!iconRect.isEmpty())
+    {
+        m_antIconWidget->setGeometry(iconRect);
+        m_antIconWidget->show();
+    }
+}
+
+bool AntListItem::usesAntIconWidget() const
+{
+    return m_iconSource == IconSource::AntIconType || m_iconSource == IconSource::AntIconName;
+}
+
+bool AntListItem::usesPaintedIcon() const
+{
+    return m_iconSource == IconSource::QtIcon || m_iconSource == IconSource::Pixmap;
+}
+
+QSize AntListItem::effectiveIconSize() const
+{
+    if (m_iconSize.isValid() && !m_iconSize.isEmpty())
+    {
+        return m_iconSize;
+    }
+    return QSize(16, 16);
+}
+
+void AntListItem::drawPaintedIcon(QPainter* painter, const QRect& iconRect) const
+{
+    if (!painter || iconRect.isEmpty() || !usesPaintedIcon())
+    {
+        return;
+    }
+
+    if (m_iconSource == IconSource::QtIcon)
+    {
+        m_icon.paint(painter, iconRect);
+        return;
+    }
+
+    if (m_iconPixmap.isNull())
+    {
+        return;
+    }
+    const QPixmap scaled = m_iconPixmap.scaled(iconRect.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    const QPoint topLeft(iconRect.left() + (iconRect.width() - scaled.width()) / 2,
+                         iconRect.top() + (iconRect.height() - scaled.height()) / 2);
+    painter->drawPixmap(topLeft, scaled);
+}
+
 void AntListItem::syncLayout()
 {
+    syncAntIconWidget();
+
     if (m_meta)
     {
         m_meta->setGeometry(metaRect());
@@ -637,7 +953,12 @@ void AntListItem::syncLayout()
         const int paddingH = listItemPaddingH(list);
         const QRect mr = metaRect();
         const QRect er = m_extra ? extraRect() : QRect(width(), 0, 0, 0);
-        const int left = m_meta ? mr.right() + antTheme->tokens().padding : paddingH;
+        int left = m_meta ? mr.right() + antTheme->tokens().padding : paddingH;
+        if (!m_meta && hasIcon())
+        {
+            const QRect iconRect = leadingIconRect();
+            left = iconRect.left() + iconRect.width() + antTheme->tokens().paddingXS;
+        }
         int right = er.left() - antTheme->tokens().padding;
         if (!m_actions.isEmpty())
         {

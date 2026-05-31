@@ -1,5 +1,9 @@
 # qt-ant-design
 
+<p align="center">
+  <img src="assets/qt-ant-design-icon.png" alt="qt-ant-design logo" width="160">
+</p>
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Qt](https://img.shields.io/badge/Qt-6%20%7C%205-green.svg)](https://www.qt.io)
 [![CMake](https://img.shields.io/badge/CMake-3.16+-blue.svg)](https://cmake.org)
@@ -32,9 +36,9 @@
 
 - 基于 Qt Widgets，轻量、易集成，可作为静态库或动态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
-- 当前已移植 `87` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `17` 个 Qt / 桌面扩展组件）
+- 当前已移植 `88` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `18` 个 Qt / 桌面扩展组件）
 - 当前 `66` 个组件使用 `QProxyStyle` 架构绘制
-- 示例程序当前覆盖 `87 / 87` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
+- 示例程序当前覆盖 `88 / 88` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
 - `AntIcon` 已内置 `831` 个来自 `@ant-design/icons-svg@4.4.2` 的官方 SVG 资源
 - 可对比的标准组件已在视觉审计矩阵中标记为 `Pass`，Qt-only 桌面扩展标记为 `Local Pass`
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
@@ -198,9 +202,9 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现公开组件总数：`87`
+当前已实现公开组件总数：`88`
 
-`src/widgets` 当前包含 `107` 个 `Ant*.h` 头文件：`87` 个公开组件头、`19` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`。
+`src/widgets` 当前包含 `108` 个 `Ant*.h` 头文件：`88` 个公开组件头、`19` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`。
 
 Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
 
@@ -329,7 +333,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntAlert`：`success / info / warning / error`、图标、描述、关闭、横幅、自定义 action
 - `AntModal`：遮罩层、标题、正文、自定义内容、自定义 footer、确认/取消、居中或顶部偏移布局，以及不会在对话框边缘被裁切的柔和外阴影
 - `AntResult`：状态图标（success / error / warning / info）、暗色透明图标背景、标题、描述、自定义 extra 操作区
-- `AntList`：`header / footer / bordered / split / size`，`AntListItem` 支持 `Meta`（头像、标题、描述）、操作区、内部滚动和 QListWidget 风格文本/数据/选择 helper
+- `AntList`：`header / footer / bordered / split / size`，`AntListItem` 支持 `Meta`（头像、标题、描述）、`AntIcon` / 图片媒体、操作区、内部滚动和 QListWidget 风格文本/数据/选择 helper
 - `AntStatistic`：数值展示、千分位分隔、前缀后缀、精度控制
 - `AntPopover`：标题、正文、action、点击/悬停触发、placement、箭头
 - `AntPopconfirm`：确认标题、说明、确认/取消按钮、禁用态、placement，以及箭头与弹层主体一体化绘制
@@ -356,13 +360,13 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntStatusBar`：状态栏，左右项、分隔符、消息区、size grip
 - `AntScrollBar`：自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮
 - `AntSegmented`：分段控制器，选项块均衡分布，滑动指示器动画，支持图标/禁用/提示，并补齐完整视觉轨道点击命中
-- `AntFloatButton`：浮动操作按钮，圆形/方形，Primary/Default，Group 展开/收起,BackTop 返回顶部，Badge
+- `AntFloatButton`：浮动操作按钮，圆形/方形，Primary/Default，Group 展开/收起，BackTop 返回顶部，Badge，点击反馈和不裁切阴影
 - `AntWatermark`：鼠标透明的水印叠加层，旋转文本平铺，多行内容，自定义字体/颜色/间距/偏移/角度
 - `AntQRCode`：二维码展示，内置 byte-mode + Reed-Solomon QR 生成器（无外部依赖），默认内容指向仓库地址，示例支持编辑内容后重新生成，状态叠加层（过期/加载/已扫描），图标，无边框
 - `AntAffix`：固钉工具，QObject 辅助类，监听滚动容器，自动吸附/解除，占位保持布局
 - `AntAutoComplete`：自动完成输入，弹出建议列表，键盘导航
 - `AntCalendar`：日历面板，Day/Month/Year 三态切换，日期选择
-- `AntCarousel`：轮播图，自动播放，圆点指示器，滑动切换动效，点击翻页
+- `AntCarousel`：轮播图，自动播放，圆点指示器，左右箭头，previous / next 槽，slideClicked 信号，滑动切换动效，点击翻页
 - `AntCollapse`：折叠面板/手风琴，InOutCubic 展开动画，accordion 互斥模式
 - `AntColorPicker`：内联颜色触发器，可显示文本，弹窗内提供 HS field + value slider + RGB/HSV 输入、预设/自定义颜色
 - `AntImage`：图片展示，placeholder fallback，点击全屏预览
@@ -381,9 +385,9 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntToolBar`：QToolBar 主题化，浮动阴影
 - `AntDockWidget` / `AntDockManager`：主题化停靠面板，自定义标题栏，使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，支持中心标签页停靠、可序列化保存/恢复 splitter、tab 和浮窗状态的命名布局快照、tab 拖动排序、tab/标题栏右键菜单、浮动和 Dock 特性的程序化 API、可通过 `setDropGuideEnabled()` 开关的中心/边缘停靠小方格、按引导位置确定落位、超过拖动阈值后才激活的半透明拖动预览、由 manager 归属的浮动 Dock 原生窗口、AntWindow 风格 Windows native frame / DWM 圆角阴影、双击最大化/还原，以及从浮窗拖回布局
 - `AntDialog`：无边框 QDialog 替代控件，提供 Ant token 标题栏、主题感知子控件 palette、AntScrollBar、关闭按钮 hover 状态和可复用的 `contentWidget()` 内容宿主
-- `AntScrollArea`：QScrollArea + AntScrollBar + QScroller 手势滚动
+- `AntScrollArea`：QScrollArea + AntScrollBar + 触摸手势滚动 + 不抢滚动条拖拽的可开关鼠标拖动滚动
 - `AntStackedWidget`：兼容 QStackedWidget 的页面栈，使用 Ant token 绘制背景/边框，并支持 Outlined / Filled / Borderless 变体
-- `AntFileDialog`：完全自定义的 Ant Design 文件对话框，基于 `AntDialog`、`QFileSystemModel`、`QTreeView`、Ant 输入框/下拉框/按钮、token 绘制面板和文件视图专用 `QProxyStyle`
+- `AntFileDialog`：完全自定义的 Ant Design 文件对话框，基于 `AntDialog`、常用位置、默认折叠目录树、文件列表 `QFileSystemModel` / `QTreeView`、Ant 输入框/下拉框/按钮、token 绘制面板和文件视图专用 `QProxyStyle`
 - `AntPlainTextEdit`：多行文本编辑器，3 种变体，TextArea 式右下角缩放柄，上下文菜单
 - `AntLog`：5 级别彩色日志输出（Debug/Info/Success/Warning/Error），时间戳
 

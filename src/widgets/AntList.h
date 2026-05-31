@@ -3,16 +3,24 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QAbstractItemView>
+#include <QColor>
 #include <QHash>
 #include <QIcon>
+#include <QImage>
 #include <QList>
+#include <QPixmap>
 #include <QPointer>
+#include <QSize>
 #include <QStringList>
 #include <QVariant>
 #include <QWidget>
 
+#include "core/AntTypes.h"
+
+class AntIcon;
 class QKeyEvent;
 class QPaintEvent;
+class QPainter;
 class QMouseEvent;
 class QResizeEvent;
 class QWheelEvent;
@@ -64,6 +72,24 @@ public:
 
     void setIcon(const QIcon& icon);
     QIcon icon() const;
+    void setIcon(Ant::IconType iconType, Ant::IconTheme theme = Ant::IconTheme::Outlined);
+    Ant::IconType iconType() const;
+    void setIconName(const QString& iconName, Ant::IconTheme theme = Ant::IconTheme::Outlined);
+    QString iconName() const;
+    void setIconTheme(Ant::IconTheme theme);
+    Ant::IconTheme iconTheme() const;
+    void setIconColor(const QColor& color);
+    QColor iconColor() const;
+    void setIconTwoToneColor(const QColor& color);
+    QColor iconTwoToneColor() const;
+    void setIconPixmap(const QPixmap& pixmap);
+    QPixmap iconPixmap() const;
+    void setIconImage(const QImage& image);
+    QImage iconImage() const;
+    void setIconSize(const QSize& size);
+    QSize iconSize() const;
+    bool hasIcon() const;
+    void clearIcon();
 
     void setData(int role, const QVariant& value);
     QVariant data(int role) const;
@@ -94,6 +120,7 @@ public:
 Q_SIGNALS:
     void textChanged(const QString& text);
     void iconChanged();
+    void iconSizeChanged(const QSize& size);
     void dataChanged(int role, const QVariant& value);
     void checkStateChanged(Qt::CheckState state);
     void flagsChanged(Qt::ItemFlags flags);
@@ -105,11 +132,26 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
+    enum class IconSource
+    {
+        None,
+        QtIcon,
+        AntIconType,
+        AntIconName,
+        Pixmap,
+    };
+
     QRect metaRect() const;
     QRect extraRect() const;
     QRect actionsRect() const;
+    QRect leadingIconRect() const;
     int actionsWidth() const;
     void syncLayout();
+    void syncAntIconWidget();
+    bool usesAntIconWidget() const;
+    bool usesPaintedIcon() const;
+    QSize effectiveIconSize() const;
+    void drawPaintedIcon(QPainter* painter, const QRect& iconRect) const;
 
     QPointer<AntListItemMeta> m_meta;
     QPointer<QWidget> m_extra;
@@ -117,6 +159,15 @@ private:
     QList<QPointer<QWidget>> m_actions;
     QString m_text;
     QIcon m_icon;
+    IconSource m_iconSource = IconSource::None;
+    Ant::IconType m_iconType = Ant::IconType::None;
+    QString m_iconName;
+    Ant::IconTheme m_iconTheme = Ant::IconTheme::Outlined;
+    QColor m_iconColor;
+    QColor m_iconTwoToneColor;
+    QPixmap m_iconPixmap;
+    QSize m_iconSize = QSize(16, 16);
+    AntIcon* m_antIconWidget = nullptr;
     QHash<int, QVariant> m_roleData;
     Qt::CheckState m_checkState = Qt::Unchecked;
     Qt::ItemFlags m_flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable;

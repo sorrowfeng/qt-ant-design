@@ -245,6 +245,146 @@ void AntNav::setItemData(int index, const QVariant& data)
     emitCurrentChanged(previousText, previousData, previousIndex);
 }
 
+QIcon AntNav::itemIcon(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->icon() : QIcon();
+}
+
+void AntNav::setItemIcon(int index, const QIcon& icon)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->setIcon(icon);
+    }
+}
+
+Ant::IconType AntNav::itemIconType(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->iconType() : Ant::IconType::None;
+}
+
+void AntNav::setItemIcon(int index, Ant::IconType iconType, Ant::IconTheme theme)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->setIcon(iconType, theme);
+    }
+}
+
+QString AntNav::itemIconName(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->iconName() : QString();
+}
+
+void AntNav::setItemIconName(int index, const QString& iconName, Ant::IconTheme theme)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->setIconName(iconName, theme);
+    }
+}
+
+Ant::IconTheme AntNav::itemIconTheme(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->iconTheme() : Ant::IconTheme::Outlined;
+}
+
+void AntNav::setItemIconTheme(int index, Ant::IconTheme theme)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->setIconTheme(theme);
+    }
+}
+
+QColor AntNav::itemIconColor(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->iconColor() : QColor();
+}
+
+void AntNav::setItemIconColor(int index, const QColor& color)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->setIconColor(color);
+    }
+}
+
+QColor AntNav::itemIconTwoToneColor(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->iconTwoToneColor() : QColor();
+}
+
+void AntNav::setItemIconTwoToneColor(int index, const QColor& color)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->setIconTwoToneColor(color);
+    }
+}
+
+QPixmap AntNav::itemIconPixmap(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->iconPixmap() : QPixmap();
+}
+
+void AntNav::setItemIconPixmap(int index, const QPixmap& pixmap)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->setIconPixmap(pixmap);
+    }
+}
+
+QImage AntNav::itemIconImage(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->iconImage() : QImage();
+}
+
+void AntNav::setItemIconImage(int index, const QImage& image)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->setIconImage(image);
+    }
+}
+
+QSize AntNav::itemIconSize(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->iconSize() : QSize();
+}
+
+void AntNav::setItemIconSize(int index, const QSize& size)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->setIconSize(size);
+    }
+}
+
+bool AntNav::itemHasIcon(int index) const
+{
+    AntNavItem* navItem = item(index);
+    return navItem ? navItem->hasIcon() : false;
+}
+
+void AntNav::clearItemIcon(int index)
+{
+    if (AntNavItem* navItem = item(index))
+    {
+        navItem->clearIcon();
+    }
+}
+
 int AntNav::currentIndex() const
 {
     return m_currentIndex;

@@ -9,6 +9,8 @@
 
 #include "core/AntTypes.h"
 
+class QPropertyAnimation;
+
 class QT_ANT_DESIGN_EXPORT AntFloatButton : public QWidget
 {
     Q_OBJECT
@@ -18,8 +20,12 @@ class QT_ANT_DESIGN_EXPORT AntFloatButton : public QWidget
     Q_PROPERTY(Ant::FloatButtonShape floatButtonShape READ floatButtonShape WRITE setFloatButtonShape NOTIFY floatButtonShapeChanged)
     Q_PROPERTY(Ant::FloatButtonPlacement placement READ placement WRITE setPlacement NOTIFY placementChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
+    Q_PROPERTY(qreal pressProgress READ pressProgress WRITE setPressProgress)
 
 public:
+    static constexpr int VisualButtonSize = 40;
+    static constexpr int ShadowMargin = 20;
+
     explicit AntFloatButton(QWidget* parent = nullptr);
 
     // Main button
@@ -63,6 +69,12 @@ public:
     Ant::FloatButtonPlacement placement() const;
     void setPlacement(Ant::FloatButtonPlacement placement);
 
+    bool isHoveredState() const;
+    bool isPressedState() const;
+    qreal pressProgress() const;
+    void setPressProgress(qreal progress);
+    QRect buttonRect() const;
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -79,6 +91,7 @@ Q_SIGNALS:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void enterEvent(AntEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
@@ -89,6 +102,9 @@ private:
     void updatePosition();
     void layoutChildren();
     void updateContentSize();
+    QSize visualButtonSize() const;
+    void startPressAnimation(qreal endValue, int duration);
+    void updateHoverState(const QPoint& pos);
     void checkBackTopVisibility();
     void animateScrollToTop();
     void syncFloatButtonPerfCounters() const;
@@ -119,6 +135,8 @@ private:
     Ant::FloatButtonPlacement m_placement = Ant::FloatButtonPlacement::BottomRight;
     bool m_hovered = false;
     bool m_pressed = false;
+    qreal m_pressProgress = 0.0;
+    QPropertyAnimation* m_pressAnimation = nullptr;
     QTimer* m_positionTimer = nullptr;
     bool m_childLayoutDirty = true;
     int m_positionApplyCount = 0;

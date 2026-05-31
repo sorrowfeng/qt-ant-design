@@ -46,7 +46,7 @@
 
 ### 第一批：Qt 基础设施（9 个）
 - `AntToolButton` — QToolButton + QProxyStyle，dropdown 箭头动画
-- `AntScrollArea` — QScrollArea 包裹器，AntScrollBar + QScroller
+- `AntScrollArea` — QScrollArea 包裹器，AntScrollBar + 触摸手势滚动 + 可开关鼠标拖动滚动
 - `AntPlainTextEdit` — QPlainTextEdit + eventFilter Style，3 变体
 - `AntMenuBar` — QMenuBar + drawControl Style
 - `AntToolBar` — QToolBar + drawControl Style，浮动阴影
@@ -157,7 +157,7 @@
 | 组件 | Ant Design 对应目录 | 绘制方式 | 示例覆盖 | 说明 |
 | --- | --- | --- | --- | --- |
 | `AntButton` | `button` | `QProxyStyle` | 是 | 五种类型、三种尺寸、三种形状 |
-| `AntFloatButton` | `float-button` | `QProxyStyle` | 是 | 圆形/方形、Group/BackTop、Badge |
+| `AntFloatButton` | `float-button` | `QProxyStyle` | 是 | 圆形/方形、Group/BackTop、Badge，点击反馈和不裁切阴影 |
 | `AntIcon` | `icon` | `QProxyStyle` | 是 | 831 个官方 SVG 图标资源、字符串名称 API、Outlined/Filled/TwoTone、旋转、spin |
 | `AntTypography` | `typography` | `QProxyStyle` | 是 | Title(H1-H5)/Text/Paragraph/Link，对齐策略，setPixelSize |
 
@@ -225,11 +225,11 @@
 | `AntBadge` | `badge` | `QProxyStyle` | 是 | count/dot/status/processing/Ribbon |
 | `AntCalendar` | `calendar` | `QProxyStyle` | 是 | Day/Month/Year 三态，内部 QTableView viewport 跟随主题 |
 | `AntCard` | `card` | `QProxyStyle` | 是 | 封面、extra、action 区、loading、Meta、Grid，主题切换标题 palette |
-| `AntCarousel` | `carousel` | 自绘 | 是 | 自动播放、圆点指示器 |
+| `AntCarousel` | `carousel` | 自绘 | 是 | 自动播放、圆点指示器、左右箭头、手动切换、点击事件 |
 | `AntCollapse` | `collapse` | 自绘 | 是 | 折叠面板、accordion 模式、动画 |
 | `AntEmpty` | `empty` | `QProxyStyle` | 是 | 默认插画、simple 模式 |
 | `AntImage` | `image` | 自绘 | 是 | 图片展示、全屏预览、PreviewGroup |
-| `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size，内部滚动，平衡选中高亮 inset，`AntListWidget` 覆盖常用 QListWidget-style API |
+| `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size，item 支持 AntIcon 与 QPixmap/QImage 媒体，内部滚动，平衡选中高亮 inset，`AntListWidget` 覆盖常用 QListWidget-style API |
 | `AntPopover` | — | `QProxyStyle` | 是 | 已在反馈类 |
 | `AntQRCode` | `qr-code` | `QProxyStyle` | 是 | 内置 byte-mode + Reed-Solomon QR 生成、默认仓库地址、示例可编辑重生成、状态叠加 |
 | `AntStatistic` | `statistic` | `QProxyStyle` | 是 | title/value/precision/prefix/suffix/Countdown |
@@ -265,16 +265,16 @@
 | `AntStatusBar` | `QProxyStyle` | 是 | 状态栏 |
 | `AntRibbon` | 自绘 | 是 | Ribbon 顶部命令区，Page/Group、大/小 action、嵌入 Ant/Qt 控件，支持 Tab 指示条/折叠动画、折叠弹出并可接入 AntWindow |
 | `AntScrollBar` | `QProxyStyle` | 是 | 8px 细滚动条，自动隐藏，示例 QScrollArea 暗色 surface 跟随主题 |
-| `AntScrollArea` | — | 是 | QScrollArea + AntScrollBar + QScroller |
+| `AntScrollArea` | — | 是 | QScrollArea + AntScrollBar + 触摸手势滚动 + 可开关鼠标拖动滚动 |
 | `AntStackedWidget` | `QProxyStyle` | 是 | QStackedWidget 风格页面栈，Ant token 背景/边框，Outlined/Filled/Borderless 变体 |
-| `AntFileDialog` | `AntDialog` + `QProxyStyle` | 是 | 完全自定义 Ant Design 文件对话框，使用 QFileSystemModel/QTreeView、Ant 输入/下拉/按钮和 token 绘制面板 |
+| `AntFileDialog` | `AntDialog` + `QProxyStyle` | 是 | 完全自定义 Ant Design 文件对话框，左侧常用位置 + 默认折叠目录树，右侧文件列表使用 QFileSystemModel/QTreeView，配套 Ant 输入/下拉/按钮和 token 绘制面板 |
 | `AntMenuBar` | `QProxyStyle` | 是 | 菜单栏 |
 | `AntToolBar` | `QProxyStyle` | 是 | 工具栏 |
 | `AntToolButton` | `QProxyStyle` | 是 | 带下拉菜单的按钮 |
 | `AntPlainTextEdit` | `QProxyStyle` | 是 | 多行文本编辑器 |
 | `AntLog` | 自绘 | 是 | 日志输出控件 |
-| `AntNav` | 自绘组合 | 是 | 侧边栏/选择栏容器，管理分组标题、AntNavItem 选中状态、当前项信号和 AntScrollBar |
-| `AntNavItem` | 自绘 | 是 | 侧边栏导航项，active/hover 状态，clicked 信号 |
+| `AntNav` | 自绘组合 | 是 | 侧边栏/选择栏容器，管理分组标题、AntNavItem 图标/媒体、选中状态、当前项信号和 AntScrollBar |
+| `AntNavItem` | 自绘 | 是 | 侧边栏导航项，支持 AntIcon 与 QPixmap/QImage 媒体，active/hover 状态，clicked 信号 |
 | `AntWave` | — | — | 内部涟漪动画 overlay（core/），不计入 `src/widgets` 公开组件统计 |
 
 ## 开发规范

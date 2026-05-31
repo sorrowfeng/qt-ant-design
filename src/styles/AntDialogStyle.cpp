@@ -69,7 +69,7 @@ void AntDialogStyle::drawDialog(AntDialog* dialog, QPainter* painter) const
     }
 
     const auto& token = antTheme->tokens();
-    const QRect surface = dialog->rect().adjusted(0, 0, -1, -1);
+    const QRect surface = dialog->surfaceRect().adjusted(0, 0, -1, -1);
     if (!surface.isValid())
     {
         return;
@@ -89,6 +89,14 @@ void AntDialogStyle::drawDialog(AntDialog* dialog, QPainter* painter) const
     if (rounded)
     {
         painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+        if (dialog->shadowMargin() > 0)
+        {
+            antTheme->drawEffectShadow(painter,
+                                       surface,
+                                       dialog->shadowMargin(),
+                                       radius,
+                                       antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.58 : 0.72);
+        }
         AntStyleBase::drawCrispRoundedRect(painter, surface,
                                            QPen(token.colorBorderSecondary, token.lineWidth),
                                            token.colorBgContainer,
@@ -97,7 +105,7 @@ void AntDialogStyle::drawDialog(AntDialog* dialog, QPainter* painter) const
     else
     {
         painter->setRenderHint(QPainter::Antialiasing, false);
-        painter->fillRect(dialog->rect(), token.colorBgContainer);
+        painter->fillRect(surface, token.colorBgContainer);
         painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(surface);
@@ -126,7 +134,7 @@ void AntDialogStyle::drawTitleBar(AntDialog* dialog, QPainter* painter) const
     if (dialog->usesRoundedCorners())
     {
         QPainterPath clip;
-        const QRectF surface = dialog->rect().adjusted(0, 0, -1, -1);
+        const QRectF surface = dialog->surfaceRect().adjusted(0, 0, -1, -1);
         const int radius = dialog->effectiveCornerRadius();
         clip.addRoundedRect(surface, radius, radius);
         painter->setClipPath(clip, Qt::IntersectClip);
@@ -171,7 +179,7 @@ void AntDialogStyle::drawCloseButton(AntDialog* dialog, QPainter* painter) const
     if (dialog->usesRoundedCorners())
     {
         QPainterPath clip;
-        const QRectF surface = dialog->rect().adjusted(0, 0, -1, -1);
+        const QRectF surface = dialog->surfaceRect().adjusted(0, 0, -1, -1);
         const int radius = dialog->effectiveCornerRadius();
         clip.addRoundedRect(surface, radius, radius);
         painter->setClipPath(clip, Qt::IntersectClip);

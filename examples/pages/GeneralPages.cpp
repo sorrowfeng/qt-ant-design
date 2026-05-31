@@ -4,8 +4,10 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QList>
+#include <QLayoutItem>
 #include <QPainterPath>
 #include <QPair>
+#include <QVector>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -14,6 +16,7 @@
 #include "core/AntTypes.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntIcon.h"
+#include "widgets/AntInput.h"
 #include "widgets/AntTypography.h"
 
 namespace example::pages
@@ -207,19 +210,89 @@ QWidget* createIconPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("Official Icon Library"));
         auto* cl = card->bodyLayout();
         const QStringList iconNames = AntIcon::builtinIconNames();
+        card->setProperty("antExampleIconGalleryTotal", iconNames.size());
+
         auto* summary = new AntTypography(QStringLiteral("%1 official Ant Design icons bundled").arg(iconNames.size()));
         summary->setType(Ant::TypographyType::Secondary);
         cl->addWidget(summary);
+
+        auto* searchRow = new QHBoxLayout();
+        searchRow->setSpacing(12);
+        auto* searchInput = new AntInput(card);
+        searchInput->setObjectName(QStringLiteral("IconGallerySearchInput"));
+        searchInput->setPlaceholderText(QStringLiteral("Search icons by name"));
+        searchInput->setAllowClear(true);
+        searchInput->setSearchMode(true);
+        searchInput->setMinimumWidth(320);
+        searchInput->setMaximumWidth(420);
+        searchRow->addWidget(searchInput);
+
+        auto* countLabel = new AntTypography(card);
+        countLabel->setObjectName(QStringLiteral("IconGalleryCountLabel"));
+        countLabel->setType(Ant::TypographyType::Secondary);
+        searchRow->addWidget(countLabel);
+        searchRow->addStretch();
+        cl->addLayout(searchRow);
 
         auto* grid = new QGridLayout();
         grid->setContentsMargins(0, 4, 0, 0);
         grid->setHorizontalSpacing(18);
         grid->setVerticalSpacing(16);
-        const int visibleCount = qMin(iconNames.size(), 120);
-        for (int i = 0; i < visibleCount; ++i)
+
+        struct GalleryEntry
         {
-            grid->addWidget(createNamedIconBlock(iconNames.at(i)), i / 6, i % 6);
+            QString name;
+            QWidget* widget = nullptr;
+        };
+        QVector<GalleryEntry> galleryEntries;
+        galleryEntries.reserve(iconNames.size());
+        for (const QString& iconName : iconNames)
+        {
+            QWidget* block = createNamedIconBlock(iconName);
+            block->setParent(card);
+            galleryEntries.append({iconName, block});
         }
+
+        auto* emptyLabel = new AntTypography(QStringLiteral("No icons found"), card);
+        emptyLabel->setType(Ant::TypographyType::Secondary);
+        emptyLabel->setAlignment(Qt::AlignHCenter);
+
+        auto relayoutIconGallery = [card, grid, countLabel, emptyLabel, galleryEntries](const QString& text) {
+            while (QLayoutItem* item = grid->takeAt(0))
+            {
+                delete item;
+            }
+
+            const QString query = text.trimmed();
+            constexpr int columns = 6;
+            int visibleCount = 0;
+            for (const GalleryEntry& entry : galleryEntries)
+            {
+                const bool matched = query.isEmpty() || entry.name.contains(query, Qt::CaseInsensitive);
+                if (matched)
+                {
+                    grid->addWidget(entry.widget, visibleCount / columns, visibleCount % columns);
+                    entry.widget->setVisible(true);
+                    ++visibleCount;
+                }
+                else
+                {
+                    entry.widget->hide();
+                }
+            }
+
+            emptyLabel->setVisible(visibleCount == 0);
+            if (visibleCount == 0)
+            {
+                grid->addWidget(emptyLabel, 0, 0, 1, columns);
+            }
+
+            countLabel->setText(QStringLiteral("%1 / %2 icons").arg(visibleCount).arg(galleryEntries.size()));
+            card->setProperty("antExampleIconGalleryVisible", visibleCount);
+        };
+        QObject::connect(searchInput, &AntInput::textChanged, card, relayoutIconGallery);
+        relayoutIconGallery(QString());
+
         cl->addLayout(grid);
         layout->addWidget(card);
     }

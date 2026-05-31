@@ -1,5 +1,9 @@
 # qt-ant-design
 
+<p align="center">
+  <img src="assets/qt-ant-design-icon.png" alt="qt-ant-design logo" width="160">
+</p>
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Qt](https://img.shields.io/badge/Qt-6%20%7C%205-green.svg)](https://www.qt.io)
 [![CMake](https://img.shields.io/badge/CMake-3.16+-blue.svg)](https://cmake.org)
@@ -329,7 +333,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntAlert`: `success / info / warning / error`, icon, description, closable, banner, custom action
 - `AntModal`: mask, title, body, custom content, custom footer, confirm / cancel, centered or top-offset layout, and a soft outer shadow that fades before the dialog edge
 - `AntResult`: status icons (success / error / warning / info), transparent icon background in dark mode, title, description, custom extra actions area
-- `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description), action areas, internal scrolling, and QListWidget-style text/data/selection helpers through the `AntListWidget` alias
+- `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description), `AntIcon` / image media, action areas, internal scrolling, and QListWidget-style text/data/selection helpers through the `AntListWidget` alias
 - `AntStatistic`: numeric display, thousands separators, prefix / suffix, precision control
 - `AntPopover`: title, body, action, click / hover triggers, placement, arrow
 - `AntPopconfirm`: confirm title, description, confirm / cancel buttons, disabled state, placement, and a one-piece popup arrow surface
@@ -356,13 +360,13 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntStatusBar`: status bar with left / right items, separators, message area, and size grip
 - `AntScrollBar`: custom 8 px slim scrollbar with auto-hide and no arrow buttons
 - `AntSegmented`: segmented control with value and index selection APIs, evenly distributed options, animated indicator, icon / disabled / tooltip support, and reliable full-track click hit testing
-- `AntFloatButton`: floating action button — circle / square, Primary / Default, expandable Group, BackTop, Badge
+- `AntFloatButton`: floating action button — circle / square, Primary / Default, expandable Group, BackTop, Badge, click feedback, and unclipped elevation shadow
 - `AntWatermark`: mouse-transparent watermark overlay with rotated tiled text, multi-line content, and customizable font / color / spacing / offset / angle
 - `AntQRCode`: QR code display with embedded byte-mode + Reed-Solomon generator (no external dependency), default repository URL payload, editable regenerate example, status overlays (expired / loading / scanned), icon, no border
 - `AntAffix`: pin helper — a QObject utility that watches the scroll container and auto-pins / un-pins while preserving layout
 - `AntAutoComplete`: autocomplete input with popup suggestions and keyboard navigation
 - `AntCalendar`: calendar panel with Day / Month / Year mode switching and date selection
-- `AntCarousel`: carousel with autoplay, dot indicators, animated slide transitions, and click-to-page
+- `AntCarousel`: carousel with autoplay, dot indicators, arrow buttons, previous / next slots, slide-click signals, animated slide transitions, and click-to-page
 - `AntCollapse`: collapse panel / accordion with InOutCubic expand animation and accordion exclusivity
 - `AntColorPicker`: inline color trigger with optional text, plus popup HS field + value slider + RGB / HSV inputs, preset and custom colors
 - `AntImage`: image display with placeholder fallback and click-to-fullscreen preview
@@ -381,9 +385,9 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntToolBar`: themed QToolBar with floating shadow
 - `AntDockWidget` / `AntDockManager`: themed dock panels with custom title bars, a custom splitter/tab dock tree, center tab placement, serialized splitter/tab/floating layout perspectives, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, toggleable center / edge drop guide squares (`setDropGuideEnabled()`), deterministic guided drop placement that does not rely on Qt's native dock layout, threshold-activated translucent drag previews, manager-owned floating dock windows with AntWindow-style Windows native frame / DWM rounded corners and shadow handling, double-click maximize / restore, and drag-back-to-layout support
 - `AntDialog`: frameless QDialog replacement with an Ant token title bar, theme-aware child palettes, Ant scroll bars, close-button hover state, and a `contentWidget()` host for reusable dialog bodies
-- `AntScrollArea`: QScrollArea + AntScrollBar + QScroller gesture scrolling
+- `AntScrollArea`: QScrollArea + AntScrollBar + touch gesture scrolling + optional mouse-drag scrolling that does not steal scrollbar drags
 - `AntStackedWidget`: QStackedWidget-compatible page stack with Ant token background, border painting, and Outlined / Filled / Borderless variants
-- `AntFileDialog`: fully custom Ant Design file dialog built on `AntDialog`, `QFileSystemModel`, `QTreeView`, Ant inputs/select/buttons, token-painted panels, and a scoped `QProxyStyle` for the file view
+- `AntFileDialog`: fully custom Ant Design file dialog built on `AntDialog`, common places, a collapsed directory tree, file-list `QFileSystemModel` / `QTreeView` surfaces, Ant inputs/select/buttons, token-painted panels, and a scoped `QProxyStyle` for file views
 - `AntPlainTextEdit`: multi-line text editor with 3 variants, TextArea-style resize grip, and a context menu
 - `AntLog`: 5-level colored log output (Debug / Info / Success / Warning / Error) with timestamps
 

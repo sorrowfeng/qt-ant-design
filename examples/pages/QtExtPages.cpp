@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QImage>
 #include <QLineEdit>
 #include <QList>
 #include <QMenu>
@@ -48,6 +49,20 @@ namespace example::pages
 {
 namespace
 {
+QImage makeNavMediaImage(const QColor& color)
+{
+    QImage image(36, 36, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawRoundedRect(QRectF(3, 3, 30, 30), 7, 7);
+    painter.setBrush(QColor(255, 255, 255, 215));
+    painter.drawEllipse(QRectF(13, 13, 10, 10));
+    return image;
+}
+
 class MasonryTile : public QWidget
 {
 public:
@@ -355,8 +370,11 @@ QWidget* createNavItemPage(QWidget* /*owner*/)
         navLayout->setSpacing(0);
 
         auto* overview = new AntNavItem(QStringLiteral("Overview"), navColumn);
+        overview->setIcon(Ant::IconType::Home);
         auto* activity = new AntNavItem(QStringLiteral("Activity"), navColumn);
+        activity->setIconName(QStringLiteral("GithubOutlined"));
         auto* settings = new AntNavItem(QStringLiteral("Settings"), navColumn);
+        settings->setIconImage(makeNavMediaImage(QColor("#52c41a")));
         const QVector<AntNavItem*> items{overview, activity, settings};
         for (AntNavItem* item : items)
         {
@@ -411,10 +429,14 @@ QWidget* createNavPage(QWidget* /*owner*/)
         nav->setFixedWidth(220);
         nav->addCategory(QStringLiteral("Workspace"));
         nav->addItem(QStringLiteral("Overview"), QStringLiteral("overview"));
+        nav->setItemIcon(0, Ant::IconType::Home);
         nav->addItem(QStringLiteral("Activity"), QStringLiteral("activity"));
+        nav->setItemIconName(1, QStringLiteral("GithubOutlined"));
         nav->addCategory(QStringLiteral("Manage"));
         nav->addItem(QStringLiteral("Members"), QStringLiteral("members"));
+        nav->setItemIconImage(2, makeNavMediaImage(QColor("#1677ff")));
         nav->addItem(QStringLiteral("Settings"), QStringLiteral("settings"));
+        nav->setItemIcon(3, Ant::IconType::Setting);
 
         auto* detail = makeParagraph(QStringLiteral("Overview selected"), page);
         QObject::connect(nav, &AntNav::currentIndexChanged, nav, [nav, detail](int) {
@@ -444,7 +466,7 @@ QWidget* createFileDialogPage(QWidget* /*owner*/)
         auto* card = new AntCard(QStringLiteral("AntFileDialog"));
         auto* cl = card->bodyLayout();
 
-        auto* desc = makeParagraph(QStringLiteral("AntFileDialog is a fully custom Ant Design file browser built from AntDialog, QFileSystemModel, QTreeView, Ant inputs, Ant select, Ant buttons, token-painted panels, and a scoped QProxyStyle for the file view."),
+        auto* desc = makeParagraph(QStringLiteral("AntFileDialog is a fully custom Ant Design file browser built from AntDialog, common places, a collapsed directory tree, QFileSystemModel/QTreeView file views, Ant inputs, Ant select, Ant buttons, token-painted panels, and a scoped QProxyStyle for file views."),
                                    page);
         cl->addWidget(desc);
 

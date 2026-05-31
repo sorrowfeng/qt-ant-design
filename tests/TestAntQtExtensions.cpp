@@ -8,6 +8,7 @@
 #include <QEventLoop>
 #include <QGraphicsOpacityEffect>
 #include <QGuiApplication>
+#include <QHeaderView>
 #include <QImage>
 #include <QLabel>
 #include <QLineEdit>
@@ -24,14 +25,19 @@
 #include <QAbstractItemView>
 #include <QHideEvent>
 #include <QFileDialog>
+#include <QFileInfo>
+#include <QFileSystemModel>
 #include <QScreen>
+#include <QScrollBar>
 #include <QSignalSpy>
+#include <QStyleOptionSlider>
 #include <QTabBar>
 #include <QTabWidget>
 #include <QHoverEvent>
 #include <QTest>
 #include <QTemporaryDir>
 #include <QToolButton>
+#include <QTreeView>
 #include <QVBoxLayout>
 #include <QWindow>
 
@@ -67,6 +73,7 @@
 #include "widgets/AntMenuBar.h"
 #include "widgets/AntNav.h"
 #include "widgets/AntNavItem.h"
+#include "widgets/AntIcon.h"
 #include "widgets/AntTypography.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
@@ -1192,6 +1199,7 @@ void TestAntQtExtensions::scrollArea()
     auto* w = new AntScrollArea;
     QCOMPARE(w->autoHideScrollBar(), true);
     QCOMPARE(w->isGestureEnabled(), true);
+    QCOMPARE(w->isMouseDragScrollEnabled(), true);
 
     QSignalSpy hideSpy(w, &AntScrollArea::autoHideScrollBarChanged);
     w->setAutoHideScrollBar(false);
@@ -1202,6 +1210,18 @@ void TestAntQtExtensions::scrollArea()
     w->setEnableGesture(false);
     QCOMPARE(w->isGestureEnabled(), false);
     QCOMPARE(gestureSpy.count(), 1);
+
+    w->setEnableGesture(true);
+    QCOMPARE(w->isGestureEnabled(), true);
+    QCOMPARE(gestureSpy.count(), 2);
+
+    QSignalSpy mouseDragSpy(w, &AntScrollArea::mouseDragScrollEnabledChanged);
+    w->setMouseDragScrollEnabled(false);
+    QCOMPARE(w->isMouseDragScrollEnabled(), false);
+    QCOMPARE(mouseDragSpy.count(), 1);
+    w->setMouseDragScrollEnabled(true);
+    QCOMPARE(w->isMouseDragScrollEnabled(), true);
+    QCOMPARE(mouseDragSpy.count(), 2);
 
     const int surfacePaletteApplyCount = w->property("antScrollAreaSurfacePaletteApplyCount").toInt();
     const int viewportPaletteApplyCount = w->property("antScrollAreaViewportPaletteApplyCount").toInt();
@@ -1219,6 +1239,80 @@ void TestAntQtExtensions::scrollArea()
     QCOMPARE(w->property("antScrollAreaSurfacePaletteApplyCount").toInt(), surfacePaletteApplyCount);
     QCOMPARE(w->property("antScrollAreaViewportPaletteApplyCount").toInt(), viewportPaletteApplyCount);
     QCOMPARE(w->property("antScrollAreaContentPaletteApplyCount").toInt(), initialContentPaletteApplyCount + 2);
+
+    replacementContent->setMinimumHeight(480);
+    w->resize(180, 120);
+    w->show();
+    QVERIFY(QTest::qWaitForWindowExposed(w));
+    QCoreApplication::processEvents();
+
+    QScrollBar* verticalBar = w->verticalScrollBar();
+    QVERIFY(verticalBar != nullptr);
+    QTRY_VERIFY(verticalBar->isVisible());
+
+    auto sendMouse = [](QWidget* target,
+                        QEvent::Type type,
+                        const QPoint& pos,
+                        Qt::MouseButton button,
+                        Qt::MouseButtons buttons) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QMouseEvent event(type,
+                          QPointF(pos),
+                          QPointF(target->mapToGlobal(pos)),
+                          button,
+                          buttons,
+                          Qt::NoModifier);
+#else
+        QMouseEvent event(type,
+                          pos,
+                          target->mapToGlobal(pos),
+                          button,
+                          buttons,
+                          Qt::NoModifier);
+#endif
+        QCoreApplication::sendEvent(target, &event);
+        QCoreApplication::processEvents();
+    };
+
+    verticalBar->setValue(0);
+    sendMouse(replacementContent, QEvent::MouseButtonPress, QPoint(40, 84), Qt::LeftButton, Qt::LeftButton);
+    sendMouse(replacementContent, QEvent::MouseMove, QPoint(40, 24), Qt::NoButton, Qt::LeftButton);
+    sendMouse(replacementContent, QEvent::MouseButtonRelease, QPoint(40, 24), Qt::LeftButton, Qt::NoButton);
+    QVERIFY(verticalBar->value() > 0);
+
+    verticalBar->setValue(0);
+    w->setMouseDragScrollEnabled(false);
+    QCOMPARE(mouseDragSpy.count(), 3);
+    sendMouse(replacementContent, QEvent::MouseButtonPress, QPoint(40, 84), Qt::LeftButton, Qt::LeftButton);
+    sendMouse(replacementContent, QEvent::MouseMove, QPoint(40, 24), Qt::NoButton, Qt::LeftButton);
+    sendMouse(replacementContent, QEvent::MouseButtonRelease, QPoint(40, 24), Qt::LeftButton, Qt::NoButton);
+    QCOMPARE(verticalBar->value(), 0);
+    w->setMouseDragScrollEnabled(true);
+    QCOMPARE(mouseDragSpy.count(), 4);
+
+    verticalBar->setValue(0);
+    const int valueBeforeDrag = verticalBar->value();
+    QStyleOptionSlider scrollOption;
+    scrollOption.initFrom(verticalBar);
+    scrollOption.rect = verticalBar->rect();
+    scrollOption.orientation = Qt::Vertical;
+    scrollOption.minimum = verticalBar->minimum();
+    scrollOption.maximum = verticalBar->maximum();
+    scrollOption.pageStep = verticalBar->pageStep();
+    scrollOption.singleStep = verticalBar->singleStep();
+    scrollOption.sliderPosition = verticalBar->sliderPosition();
+    scrollOption.sliderValue = verticalBar->value();
+    const QRect sliderRect = verticalBar->style()->subControlRect(QStyle::CC_ScrollBar,
+                                                                 &scrollOption,
+                                                                 QStyle::SC_ScrollBarSlider,
+                                                                 verticalBar);
+    QVERIFY(sliderRect.isValid());
+    const QPoint dragStart = sliderRect.center();
+    const QPoint dragEnd = dragStart + QPoint(0, 36);
+    sendMouse(verticalBar, QEvent::MouseButtonPress, dragStart, Qt::LeftButton, Qt::LeftButton);
+    sendMouse(verticalBar, QEvent::MouseMove, dragEnd, Qt::NoButton, Qt::LeftButton);
+    sendMouse(verticalBar, QEvent::MouseButtonRelease, dragEnd, Qt::LeftButton, Qt::NoButton);
+    QVERIFY(verticalBar->value() > valueBeforeDrag);
 
     const int viewportUpdatesBeforeTheme = w->property("antScrollAreaViewportUpdateCount").toInt();
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
@@ -1802,6 +1896,38 @@ void TestAntQtExtensions::navItem()
     QCoreApplication::sendEvent(&item, &leaveEvent);
     renderNavItem();
     QVERIFY(item.property("antNavItemPaintCacheBuildCount").toInt() > activePaintCacheBuilds);
+
+    QSignalSpy iconSpy(&item, &AntNavItem::iconChanged);
+    QSignalSpy iconSizeSpy(&item, &AntNavItem::iconSizeChanged);
+    item.setIcon(Ant::IconType::Home);
+    QVERIFY(item.hasIcon());
+    QCOMPARE(item.iconType(), Ant::IconType::Home);
+    auto* antIcon = item.findChild<AntIcon*>(QStringLiteral("AntNavItemAntIcon"));
+    QVERIFY(antIcon != nullptr);
+    QVERIFY(antIcon->isVisible());
+    QCOMPARE(antIcon->iconType(), Ant::IconType::Home);
+
+    item.setIconSize(QSize(18, 18));
+    QCOMPARE(item.iconSize(), QSize(18, 18));
+    QCOMPARE(iconSizeSpy.count(), 1);
+
+    QImage image(18, 18, QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor("#ff4d4f"));
+    item.setIconImage(image);
+    QVERIFY(item.hasIcon());
+    QCOMPARE(item.iconImage().size(), image.size());
+    auto* imageLabel = item.findChild<QLabel*>(QStringLiteral("AntNavItemImageLabel"));
+    QVERIFY(imageLabel != nullptr);
+    QVERIFY(imageLabel->isVisible());
+    QVERIFY(!imageLabel->pixmap(Qt::ReturnByValue).isNull());
+
+    const QImage imageNavItem = item.grab().toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QVERIFY(countNearColorForExtensionTest(imageNavItem, QColor("#ff4d4f"), 8) > 40);
+
+    item.clearIcon();
+    QVERIFY(!item.hasIcon());
+    QVERIFY(item.iconPixmap().isNull());
+    QVERIFY(iconSpy.count() >= 3);
 }
 
 void TestAntQtExtensions::nav()
@@ -1845,6 +1971,22 @@ void TestAntQtExtensions::nav()
     nav.setItemData(2, QStringLiteral("prefs"));
     QCOMPARE(nav.currentData().toString(), QStringLiteral("prefs"));
     QVERIFY(dataSpy.count() >= 3);
+
+    nav.setItemIcon(0, Ant::IconType::Home);
+    QVERIFY(nav.itemHasIcon(0));
+    QCOMPARE(nav.itemIconType(0), Ant::IconType::Home);
+    nav.setItemIconName(1, QStringLiteral("GithubOutlined"));
+    QCOMPARE(nav.itemIconName(1), QStringLiteral("GithubOutlined"));
+    nav.setItemIconSize(1, QSize(18, 18));
+    QCOMPARE(nav.itemIconSize(1), QSize(18, 18));
+
+    QImage navIconImage(16, 16, QImage::Format_ARGB32_Premultiplied);
+    navIconImage.fill(QColor("#52c41a"));
+    nav.setItemIconImage(2, navIconImage);
+    QVERIFY(nav.itemHasIcon(2));
+    QCOMPARE(nav.itemIconImage(2).size(), navIconImage.size());
+    nav.clearItemIcon(1);
+    QVERIFY(!nav.itemHasIcon(1));
 
     nav.show();
     QVERIFY(QTest::qWaitForWindowExposed(&nav));
@@ -3690,6 +3832,8 @@ void TestAntQtExtensions::dialog()
     QCOMPARE(dialog.property("antDialogUsesRoundedCorners").toBool(), dialog.usesRoundedCorners());
     QCOMPARE(dialog.property("antDialogEffectiveCornerRadius").toInt(),
              dialog.usesRoundedCorners() ? dialog.cornerRadius() : 0);
+    QCOMPARE(dialog.property("antDialogShadowMargin").toInt(),
+             dialog.usesRoundedCorners() ? 14 : 0);
 
     auto* bodyLayout = new QVBoxLayout(dialog.contentWidget());
     bodyLayout->setContentsMargins(16, 12, 16, 12);
@@ -3736,6 +3880,20 @@ void TestAntQtExtensions::dialog()
     QVERIFY(!legacyDialogImage.isNull());
     QVERIFY2(legacyDialogImage.pixelColor(0, 0).alpha() >= 220,
              "forced legacy AntDialog path should paint opaque square Win10-style corners");
+    legacyDialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&legacyDialog));
+    QCoreApplication::processEvents();
+    QTRY_COMPARE(legacyDialog.property("antDialogLegacySoftwareShadowEnabled").toBool(), true);
+    QCOMPARE(legacyDialog.property("antDialogLegacySoftwareShadowMargin").toInt(), 14);
+    auto* legacyDialogShadow = legacyDialog.findChild<QWidget*>(QStringLiteral("AntDialogLegacySoftwareShadow"));
+    QVERIFY(legacyDialogShadow != nullptr);
+    QTRY_VERIFY(legacyDialogShadow->isVisible());
+    QVERIFY(legacyDialogShadow->testAttribute(Qt::WA_TransparentForMouseEvents));
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    QVERIFY(legacyDialogShadow->windowFlags().testFlag(Qt::WindowTransparentForInput));
+#endif
+    const QRect legacyDialogShadowGeometry = legacyDialog.property("antDialogLegacySoftwareShadowGeometry").toRect();
+    QCOMPARE(legacyDialogShadowGeometry.marginsRemoved(QMargins(14, 14, 14, 14)), legacyDialog.geometry());
 #endif
 
     dialog.refreshAntStyle();
@@ -3749,18 +3907,39 @@ void TestAntQtExtensions::dialog()
 
     const QImage lightImage = renderForExtensionTest(&dialog);
     QVERIFY(!lightImage.isNull());
+    auto maxAlphaInRect = [](const QImage& image, const QRect& sampleRect) {
+        int maxAlpha = 0;
+        const QRect clipped = sampleRect.intersected(image.rect());
+        for (int y = clipped.top(); y <= clipped.bottom(); ++y)
+        {
+            for (int x = clipped.left(); x <= clipped.right(); ++x)
+            {
+                maxAlpha = qMax(maxAlpha, image.pixelColor(x, y).alpha());
+            }
+        }
+        return maxAlpha;
+    };
+    const int shadowMargin = dialog.property("antDialogShadowMargin").toInt();
     const QColor lightCornerColor = lightImage.pixelColor(0, 0);
     if (dialog.usesRoundedCorners())
     {
         QVERIFY2(lightCornerColor.alpha() < 64,
                  qPrintable(QStringLiteral("AntDialog rounded path should leave transparent corner pixels, got %1")
                                 .arg(colorStringForExtensionTest(lightCornerColor))));
+        QCOMPARE(shadowMargin, 14);
+        QVERIFY(maxAlphaInRect(lightImage, QRect(shadowMargin, 0, lightImage.width() - shadowMargin * 2, shadowMargin)) > 0);
+        QVERIFY(maxAlphaInRect(lightImage, QRect(0, shadowMargin, shadowMargin, lightImage.height() - shadowMargin * 2)) > 0);
     }
     else
     {
+        QCOMPARE(shadowMargin, 0);
         QVERIFY2(lightCornerColor.alpha() >= 220,
                  qPrintable(QStringLiteral("AntDialog legacy path should keep opaque square corner pixels, got %1")
                                 .arg(colorStringForExtensionTest(lightCornerColor))));
+#ifdef Q_OS_WIN
+        QTRY_COMPARE(dialog.property("antDialogLegacySoftwareShadowEnabled").toBool(), true);
+        QVERIFY(dialog.findChild<QWidget*>(QStringLiteral("AntDialogLegacySoftwareShadow")) != nullptr);
+#endif
     }
     const QColor lightTitleColor = lightImage.pixelColor(dialog.titleBarRect().center());
     QVERIFY(countNearColorForExtensionTest(lightImage, antTheme->tokens().colorBgElevated, 30) > 0);
@@ -3820,6 +3999,10 @@ void TestAntQtExtensions::fileDialog()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
+    QDir tempRoot(tempDir.path());
+    QVERIFY(tempRoot.mkpath(QStringLiteral("alpha/beta")));
+    const QString alphaPath = tempRoot.filePath(QStringLiteral("alpha"));
+    const QString betaPath = tempRoot.filePath(QStringLiteral("alpha/beta"));
 
     AntFileDialog dialog(nullptr,
                          QStringLiteral("Ant file dialog"),
@@ -3832,12 +4015,61 @@ void TestAntQtExtensions::fileDialog()
     QVERIFY(dialog.findChildren<QFileDialog*>().isEmpty());
     QVERIFY(dialog.testOption(QFileDialog::DontUseNativeDialog));
     QVERIFY(dialog.styleSheet().isEmpty());
+    QCOMPARE(dialog.property("antDialogShadowMargin").toInt(),
+             dialog.usesRoundedCorners() ? 14 : 0);
     const auto textBlocks = dialog.findChildren<AntTypography*>();
     for (AntTypography* textBlock : textBlocks)
     {
         QVERIFY(textBlock->text() != dialog.windowTitle());
         QVERIFY(!textBlock->text().contains(QStringLiteral("custom Ant Design file browser")));
     }
+
+    auto* placesTitle = dialog.findChild<AntTypography*>(QStringLiteral("antFileDialogPlacesTitle"));
+    QVERIFY(placesTitle != nullptr);
+    QCOMPARE(placesTitle->text(), QStringLiteral("Quick access"));
+    const auto placeButtons = dialog.findChildren<AntButton*>(QStringLiteral("antFileDialogPlaceButton"));
+    QVERIFY(placeButtons.size() >= 3);
+    AntButton* homePlaceButton = nullptr;
+    const QString homePath = QDir(QDir::homePath()).absolutePath();
+    for (AntButton* button : placeButtons)
+    {
+        const QString placePath = button->property("antFileDialogPlacePath").toString();
+        QVERIFY(!placePath.isEmpty());
+        QVERIFY(QFileInfo(placePath).isDir());
+        if (QDir(placePath).absolutePath() == homePath)
+        {
+            homePlaceButton = button;
+        }
+    }
+    QVERIFY(homePlaceButton != nullptr);
+    homePlaceButton->click();
+    QCOMPARE(dialog.directory().absolutePath(), homePath);
+
+    auto* directoryTree = dialog.findChild<QTreeView*>(QStringLiteral("antFileDialogDirectoryTree"));
+    QVERIFY(directoryTree != nullptr);
+    auto* directoryModel = qobject_cast<QFileSystemModel*>(directoryTree->model());
+    QVERIFY(directoryModel != nullptr);
+    QVERIFY(directoryTree->rootIsDecorated());
+    QVERIFY(directoryTree->itemsExpandable());
+    QVERIFY(directoryTree->header()->isHidden());
+    QVERIFY(directoryTree->isColumnHidden(1));
+    QVERIFY(directoryTree->isColumnHidden(2));
+    QVERIFY(directoryTree->isColumnHidden(3));
+    QVERIFY(directoryModel->filter().testFlag(QDir::AllDirs));
+    QVERIFY(!directoryModel->filter().testFlag(QDir::Files));
+
+    dialog.setDirectory(betaPath);
+    QCoreApplication::processEvents();
+    QTRY_VERIFY(directoryModel->index(betaPath).isValid());
+    QCOMPARE(QDir(directoryModel->filePath(directoryTree->currentIndex())).absolutePath(),
+             QDir(betaPath).absolutePath());
+    QCOMPARE(directoryTree->property("antFileDialogDirectoryTreeAutoExpandsCurrent").toBool(), false);
+    QVERIFY(!directoryTree->isExpanded(directoryModel->index(alphaPath)));
+    QVERIFY(!directoryTree->isExpanded(directoryModel->index(betaPath)));
+
+    directoryTree->setCurrentIndex(directoryModel->index(alphaPath));
+    QCoreApplication::processEvents();
+    QCOMPARE(dialog.directory().absolutePath(), QDir(alphaPath).absolutePath());
 
     dialog.setAcceptMode(QFileDialog::AcceptOpen);
     dialog.setFileMode(QFileDialog::ExistingFile);
@@ -3869,6 +4101,13 @@ void TestAntQtExtensions::fileDialog()
     const QImage image = renderForExtensionTest(&dialog);
     QVERIFY(!image.isNull());
     QVERIFY(countNearColorForExtensionTest(image, antTheme->tokens().colorBgContainer, 30) > 0);
+#ifdef Q_OS_WIN
+    if (dialog.usesLegacyOpaquePath())
+    {
+        QTRY_COMPARE(dialog.property("antDialogLegacySoftwareShadowEnabled").toBool(), true);
+        QVERIFY(dialog.findChild<QWidget*>(QStringLiteral("AntDialogLegacySoftwareShadow")) != nullptr);
+    }
+#endif
 }
 
 void TestAntQtExtensions::window()
@@ -4468,6 +4707,70 @@ void TestAntQtExtensions::windowNativeHitTestSupportsSnapZones()
              static_cast<AntNativeEventResult>(HTRIGHT));
     QCOMPARE(systemHitTest(QPoint(80, -2)), static_cast<AntNativeEventResult>(HTTOP));
     QCOMPARE(systemHitTest(QPoint(80, window.height() + 2)), static_cast<AntNativeEventResult>(HTBOTTOM));
+
+    {
+        NativeHitTestWindow scrollWindow;
+        scrollWindow.resize(360, 240);
+
+        auto* scrollHost = new QWidget;
+        auto* scrollHostLayout = new QVBoxLayout(scrollHost);
+        scrollHostLayout->setContentsMargins(0, 0, 9, 9);
+        scrollHostLayout->setSpacing(0);
+
+        auto* scrollArea = new AntScrollArea(scrollHost);
+        scrollArea->setObjectName(QStringLiteral("AntWindowHitTestScrollArea"));
+        scrollArea->setWidgetResizable(true);
+        scrollArea->setAutoHideScrollBar(false);
+
+        auto* scrollContent = new QWidget;
+        scrollContent->setMinimumHeight(900);
+        auto* scrollContentLayout = new QVBoxLayout(scrollContent);
+        scrollContentLayout->setContentsMargins(16, 16, 16, 16);
+        scrollContentLayout->addStretch();
+        scrollArea->setWidget(scrollContent);
+        scrollHostLayout->addWidget(scrollArea);
+
+        scrollWindow.setCentralWidget(scrollHost);
+        scrollWindow.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&scrollWindow));
+        QCoreApplication::processEvents();
+
+        const HWND scrollHwnd = reinterpret_cast<HWND>(scrollWindow.winId());
+        QVERIFY(scrollHwnd != nullptr);
+
+        auto scrollNativeGlobalPoint = [&](const QPoint& localPos) {
+            POINT nativePoint{qRound(localPos.x() * scrollWindow.devicePixelRatioF()),
+                              qRound(localPos.y() * scrollWindow.devicePixelRatioF())};
+            ::ClientToScreen(scrollHwnd, &nativePoint);
+            return QPoint(nativePoint.x, nativePoint.y);
+        };
+        auto scrollHitTest = [&](const QPoint& localPos) -> AntNativeEventResult {
+            MSG msg{};
+            msg.hwnd = scrollHwnd;
+            msg.message = WM_NCHITTEST;
+            const QPoint globalPos = scrollNativeGlobalPoint(localPos);
+            msg.lParam = MAKELPARAM(globalPos.x(), globalPos.y());
+            AntNativeEventResult result = 0;
+            if (!scrollWindow.nativeEvent("windows_generic_MSG", &msg, &result))
+            {
+                return -1;
+            }
+            return result;
+        };
+
+        QScrollBar* verticalBar = scrollArea->verticalScrollBar();
+        QVERIFY(verticalBar != nullptr);
+        QTRY_VERIFY(verticalBar->isVisible());
+        const QPoint scrollBarPoint = verticalBar->mapTo(&scrollWindow, verticalBar->rect().center());
+        QVERIFY(scrollBarPoint.x() < scrollWindow.width() - 8);
+        QVERIFY(scrollWindow.width() - scrollBarPoint.x() <= 14);
+        QCOMPARE(scrollHitTest(scrollBarPoint), static_cast<AntNativeEventResult>(HTCLIENT));
+        QCOMPARE(scrollHitTest(QPoint(scrollWindow.width() - 3, scrollBarPoint.y())),
+                 static_cast<AntNativeEventResult>(HTRIGHT));
+        QCOMPARE(scrollHitTest(QPoint(scrollWindow.width() + 2, scrollBarPoint.y())),
+                 static_cast<AntNativeEventResult>(HTRIGHT));
+    }
+
     if (nativeMouseInputAvailableForExtensionTest())
     {
         window.showNormal();

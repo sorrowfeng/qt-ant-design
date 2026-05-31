@@ -19,6 +19,7 @@ class QAbstractScrollArea;
 class QHeaderView;
 class QLineEdit;
 class QTreeView;
+class QVBoxLayout;
 class QWidget;
 
 class QT_ANT_DESIGN_EXPORT AntFileDialog : public AntDialog
@@ -111,10 +112,16 @@ private:
     QString defaultTitleForMode() const;
     QString acceptTextForMode() const;
     bool acceptsDirectoriesOnly() const;
+    void buildCommonPlaces(QVBoxLayout* sidebarLayout);
+    void navigateToCommonPlace(const QString& path);
+    void navigateToDirectoryTreeIndex(const QModelIndex& index);
+    void syncDirectoryTreeToCurrent();
     void scheduleChildSync();
     void syncChildControls();
     void applyDialogPalette(QWidget* widget);
 
+    QFileSystemModel* m_directoryModel = nullptr;
+    QTreeView* m_directoryTree = nullptr;
     QFileSystemModel* m_model = nullptr;
     QTreeView* m_view = nullptr;
     AntInput* m_pathInput = nullptr;

@@ -1,7 +1,21 @@
 #include "AntScrollArea.h"
 
+#include <QAbstractButton>
+#include <QAbstractItemView>
+#include <QAbstractScrollArea>
+#include <QAbstractSlider>
+#include <QAbstractSpinBox>
+#include <QApplication>
+#include <QComboBox>
+#include <QEvent>
+#include <QLineEdit>
+#include <QMouseEvent>
 #include <QPalette>
+#include <QPlainTextEdit>
+#include <QScrollBar>
 #include <QScroller>
+#include <QTabBar>
+#include <QTextEdit>
 
 #include "AntScrollBar.h"
 #include "core/AntTheme.h"
@@ -58,18 +72,17 @@ AntScrollArea::AntScrollArea(QWidget* parent)
         }
     });
 
-    QScroller::grabGesture(this, QScroller::LeftMouseButtonGesture);
-    QScrollerProperties sp = QScroller::scroller(this)->scrollerProperties();
-    sp.setScrollMetric(QScrollerProperties::MousePressEventDelay, 0.5);
-    sp.setScrollMetric(QScrollerProperties::OvershootDragResistanceFactor, 0.35);
-    sp.setScrollMetric(QScrollerProperties::OvershootScrollTime, 0.5);
-    sp.setScrollMetric(QScrollerProperties::FrameRate, QScrollerProperties::Fps60);
-    QScroller::scroller(this)->setScrollerProperties(sp);
+    updateGestureGrab();
+    updateMouseDragTargets();
 }
 
 void AntScrollArea::setWidget(QWidget* widget)
 {
+    clearMouseDragTargets();
+    resetMouseDragScrollState();
     QScrollArea::setWidget(widget);
+    updateGestureGrab();
+    updateMouseDragTargets();
     updateTheme();
 }
 
@@ -90,11 +103,289 @@ void AntScrollArea::setEnableGesture(bool enable)
 {
     if (m_enableGesture == enable) return;
     m_enableGesture = enable;
-    if (enable)
-        QScroller::grabGesture(this, QScroller::LeftMouseButtonGesture);
-    else
-        QScroller::ungrabGesture(this);
+    updateGestureGrab();
     Q_EMIT enableGestureChanged(m_enableGesture);
+}
+
+bool AntScrollArea::isMouseDragScrollEnabled() const { return m_mouseDragScrollEnabled; }
+
+void AntScrollArea::setMouseDragScrollEnabled(bool enabled)
+{
+    if (m_mouseDragScrollEnabled == enabled) return;
+    m_mouseDragScrollEnabled = enabled;
+    resetMouseDragScrollState();
+    updateMouseDragTargets();
+    Q_EMIT mouseDragScrollEnabledChanged(m_mouseDragScrollEnabled);
+}
+
+bool AntScrollArea::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event->type() == QEvent::ChildAdded || event->type() == QEvent::ChildRemoved)
+    {
+        if (watched == viewport() || watched == widget())
+        {
+            updateMouseDragTargets();
+        }
+    }
+
+    if (handleMouseDragScrollEvent(watched, event))
+    {
+        return true;
+    }
+
+    return QScrollArea::eventFilter(watched, event);
+}
+
+void AntScrollArea::updateGestureGrab()
+{
+#ifndef QT_NO_GESTURES
+    QScroller::ungrabGesture(this);
+    QWidget* target = viewport();
+    if (!target)
+    {
+        return;
+    }
+
+    QScroller::ungrabGesture(target);
+    if (m_vScrollBar)
+    {
+        QScroller::ungrabGesture(m_vScrollBar);
+    }
+    if (m_hScrollBar)
+    {
+        QScroller::ungrabGesture(m_hScrollBar);
+    }
+    if (!m_enableGesture)
+    {
+        return;
+    }
+
+    QScroller::grabGesture(target, QScroller::TouchGesture);
+    QScrollerProperties sp = QScroller::scroller(target)->scrollerProperties();
+    sp.setScrollMetric(QScrollerProperties::MousePressEventDelay, 0.5);
+    sp.setScrollMetric(QScrollerProperties::OvershootDragResistanceFactor, 0.35);
+    sp.setScrollMetric(QScrollerProperties::OvershootScrollTime, 0.5);
+    sp.setScrollMetric(QScrollerProperties::FrameRate, QScrollerProperties::Fps60);
+    QScroller::scroller(target)->setScrollerProperties(sp);
+#endif
+}
+
+void AntScrollArea::updateMouseDragTargets()
+{
+    clearMouseDragTargets();
+    if (!m_mouseDragScrollEnabled)
+    {
+        return;
+    }
+
+    installMouseDragTarget(viewport());
+
+    QWidget* content = widget();
+    if (!content)
+    {
+        return;
+    }
+
+    installMouseDragTarget(content);
+    const auto descendants = content->findChildren<QWidget*>();
+    for (QWidget* child : descendants)
+    {
+        installMouseDragTarget(child);
+    }
+}
+
+void AntScrollArea::clearMouseDragTargets()
+{
+    for (const QPointer<QObject>& object : m_mouseDragFilteredObjects)
+    {
+        if (object)
+        {
+            object->removeEventFilter(this);
+        }
+    }
+    m_mouseDragFilteredObjects.clear();
+}
+
+void AntScrollArea::installMouseDragTarget(QWidget* target)
+{
+    if (!isMouseDragTargetCandidate(target))
+    {
+        return;
+    }
+
+    for (const QPointer<QObject>& object : m_mouseDragFilteredObjects)
+    {
+        if (object == target)
+        {
+            return;
+        }
+    }
+
+    target->installEventFilter(this);
+    m_mouseDragFilteredObjects.append(target);
+}
+
+bool AntScrollArea::isMouseDragTargetCandidate(QWidget* target) const
+{
+    if (!target || target == m_vScrollBar || target == m_hScrollBar)
+    {
+        return false;
+    }
+    if (qobject_cast<QScrollBar*>(target))
+    {
+        return false;
+    }
+    if (target == viewport())
+    {
+        return true;
+    }
+    if (qobject_cast<QAbstractScrollArea*>(target) ||
+        qobject_cast<QAbstractButton*>(target) ||
+        qobject_cast<QAbstractItemView*>(target) ||
+        qobject_cast<QAbstractSlider*>(target) ||
+        qobject_cast<QAbstractSpinBox*>(target) ||
+        qobject_cast<QComboBox*>(target) ||
+        qobject_cast<QLineEdit*>(target) ||
+        qobject_cast<QPlainTextEdit*>(target) ||
+        qobject_cast<QTabBar*>(target) ||
+        qobject_cast<QTextEdit*>(target))
+    {
+        return false;
+    }
+    if (target == widget())
+    {
+        return true;
+    }
+    if (target->focusPolicy() != Qt::NoFocus)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool AntScrollArea::handleMouseDragScrollEvent(QObject* watched, QEvent* event)
+{
+    if (!m_mouseDragScrollEnabled)
+    {
+        return false;
+    }
+
+    auto* target = qobject_cast<QWidget*>(watched);
+    if (!target)
+    {
+        return false;
+    }
+    if (!isMouseDragTargetCandidate(target))
+    {
+        return false;
+    }
+
+    switch (event->type())
+    {
+    case QEvent::MouseButtonPress:
+    {
+        auto* mouseEvent = static_cast<QMouseEvent*>(event);
+        if (mouseEvent->button() != Qt::LeftButton || !hasMouseDragScrollableRange())
+        {
+            return false;
+        }
+
+        m_mouseDragPressed = true;
+        m_mouseDragActive = false;
+        m_mouseDragStartPos = mouseDragViewportPos(watched, mouseEvent);
+        m_mouseDragStartHValue = horizontalScrollBar() ? horizontalScrollBar()->value() : 0;
+        m_mouseDragStartVValue = verticalScrollBar() ? verticalScrollBar()->value() : 0;
+        return false;
+    }
+
+    case QEvent::MouseMove:
+    {
+        if (!m_mouseDragPressed)
+        {
+            return false;
+        }
+
+        auto* mouseEvent = static_cast<QMouseEvent*>(event);
+        if (!mouseEvent->buttons().testFlag(Qt::LeftButton))
+        {
+            resetMouseDragScrollState();
+            return false;
+        }
+
+        const QPoint pos = mouseDragViewportPos(watched, mouseEvent);
+        const QPoint delta = pos - m_mouseDragStartPos;
+        if (!m_mouseDragActive && delta.manhattanLength() < QApplication::startDragDistance())
+        {
+            return false;
+        }
+
+        m_mouseDragActive = true;
+        if (horizontalScrollBar())
+        {
+            horizontalScrollBar()->setValue(m_mouseDragStartHValue - delta.x());
+        }
+        if (verticalScrollBar())
+        {
+            verticalScrollBar()->setValue(m_mouseDragStartVValue - delta.y());
+        }
+        mouseEvent->accept();
+        return true;
+    }
+
+    case QEvent::MouseButtonRelease:
+    {
+        auto* mouseEvent = static_cast<QMouseEvent*>(event);
+        if (mouseEvent->button() != Qt::LeftButton || !m_mouseDragPressed)
+        {
+            return false;
+        }
+
+        const bool wasActive = m_mouseDragActive;
+        resetMouseDragScrollState();
+        if (wasActive)
+        {
+            mouseEvent->accept();
+        }
+        return wasActive;
+    }
+
+    case QEvent::Leave:
+    case QEvent::Hide:
+        if (m_mouseDragPressed && !QApplication::mouseButtons().testFlag(Qt::LeftButton))
+        {
+            resetMouseDragScrollState();
+        }
+        return false;
+
+    default:
+        break;
+    }
+
+    return false;
+}
+
+bool AntScrollArea::hasMouseDragScrollableRange() const
+{
+    const QScrollBar* hBar = horizontalScrollBar();
+    const QScrollBar* vBar = verticalScrollBar();
+    return (hBar && hBar->maximum() > hBar->minimum()) ||
+           (vBar && vBar->maximum() > vBar->minimum());
+}
+
+QPoint AntScrollArea::mouseDragViewportPos(QObject* watched, const QMouseEvent* event) const
+{
+    auto* target = qobject_cast<QWidget*>(watched);
+    if (!target || !event || target == viewport())
+    {
+        return event ? event->pos() : QPoint();
+    }
+    return target->mapTo(viewport(), event->pos());
+}
+
+void AntScrollArea::resetMouseDragScrollState()
+{
+    m_mouseDragPressed = false;
+    m_mouseDragActive = false;
 }
 
 bool AntScrollArea::updateTheme()

@@ -10,7 +10,10 @@
 
 struct AntThemeTokens;
 class QEvent;
+class QHideEvent;
 class QMouseEvent;
+class QMoveEvent;
+class QResizeEvent;
 class QShowEvent;
 class QVBoxLayout;
 class QWidget;
@@ -76,6 +79,9 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void moveEvent(QMoveEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
     void showEvent(QShowEvent* event) override;
 
 private:
@@ -84,7 +90,11 @@ private:
     void initializeAntStyle();
     void updateRoundedCornerPolicy();
     int effectiveCornerRadius() const;
+    int shadowMargin() const;
+    QRect surfaceRect() const;
     void updateChromeMargins();
+    void updateLegacySoftwareShadow();
+    void hideLegacySoftwareShadow();
     void handleThemeChanged(Ant::ThemeMode mode);
     bool refreshCachedHints();
     void refreshThemeCache();
@@ -114,6 +124,7 @@ private:
     QSize m_cachedSizeHint;
     QSize m_cachedMinimumSizeHint;
     qint64 m_cachedPaletteKey = 0;
+    QWidget* m_legacySoftwareShadow = nullptr;
     bool m_childSyncQueued = false;
     int m_childSyncCount = 0;
     int m_themeChangeCount = 0;

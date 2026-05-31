@@ -2,15 +2,38 @@
 #include <QTest>
 #include <QCoreApplication>
 #include <QEvent>
+#include <QImage>
+#include <QPainter>
 #include <QWidget>
 
+#include "core/AntWave.h"
 #include "widgets/AntFloatButton.h"
+
+namespace
+{
+
+int maxAlphaInRect(const QImage& image, const QRect& rect)
+{
+    int maxAlpha = 0;
+    const QRect bounded = rect.intersected(image.rect());
+    for (int y = bounded.top(); y <= bounded.bottom(); ++y)
+    {
+        for (int x = bounded.left(); x <= bounded.right(); ++x)
+        {
+            maxAlpha = qMax(maxAlpha, qAlpha(image.pixel(x, y)));
+        }
+    }
+    return maxAlpha;
+}
+
+} // namespace
 
 class TestAntFloatButton : public QObject
 {
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void shadowMarginAndClickAnimation();
 };
 
 void TestAntFloatButton::propertiesAndSignals()
@@ -93,6 +116,45 @@ void TestAntFloatButton::propertiesAndSignals()
     const int contentSizeAfterText = group->property("antFloatButtonContentSizeApplyCount").toInt();
     group->setContent(QStringLiteral("Support"));
     QCOMPARE(group->property("antFloatButtonContentSizeApplyCount").toInt(), contentSizeAfterText);
+}
+
+void TestAntFloatButton::shadowMarginAndClickAnimation()
+{
+    QWidget host;
+    host.resize(180, 180);
+
+    auto* button = new AntFloatButton(&host);
+    button->move(40, 40);
+    button->show();
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    const QRect visualRect = button->buttonRect();
+    QCOMPARE(visualRect.size(), QSize(AntFloatButton::VisualButtonSize, AntFloatButton::VisualButtonSize));
+    QVERIFY(button->sizeHint().width() > visualRect.width());
+    QVERIFY(button->sizeHint().height() > visualRect.height());
+
+    QImage image(button->size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        button->render(&painter);
+    }
+
+    const QRect topShadowRect(visualRect.left(), 0, visualRect.width(), visualRect.top());
+    QVERIFY(maxAlphaInRect(image, topShadowRect) > 0);
+    QVERIFY(qAlpha(image.pixel(visualRect.center())) > 200);
+
+    QSignalSpy clickSpy(button, &AntFloatButton::clicked);
+    QTest::mouseClick(button, Qt::LeftButton, Qt::NoModifier, QPoint(1, 1));
+    QCOMPARE(clickSpy.count(), 0);
+
+    QTest::mousePress(button, Qt::LeftButton, Qt::NoModifier, visualRect.center());
+    QTRY_VERIFY(button->pressProgress() > 0.0);
+    QTest::mouseRelease(button, Qt::LeftButton, Qt::NoModifier, visualRect.center());
+    QCOMPARE(clickSpy.count(), 1);
+    QTRY_VERIFY(!host.findChildren<AntWave*>().isEmpty());
+    QTRY_VERIFY(button->pressProgress() < 0.05);
 }
 
 QTEST_MAIN(TestAntFloatButton)

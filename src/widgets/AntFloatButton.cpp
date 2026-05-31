@@ -1,5 +1,6 @@
 #include "AntFloatButton.h"
 
+#include <QCursor>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPropertyAnimation>
@@ -7,6 +8,7 @@
 #include <QScrollBar>
 
 #include "core/AntTheme.h"
+#include "core/AntWave.h"
 #include "styles/AntFloatButtonStyle.h"
 
 AntFloatButton::AntFloatButton(QWidget* parent)
@@ -15,7 +17,11 @@ AntFloatButton::AntFloatButton(QWidget* parent)
     installAntStyle<AntFloatButtonStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
-    setFixedSize(40, 40);
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAttribute(Qt::WA_NoSystemBackground, true);
+    setFixedSize(sizeHint());
+
+    m_pressAnimation = new QPropertyAnimation(this, "pressProgress", this);
 
     m_positionTimer = new QTimer(this);
     m_positionTimer->setSingleShot(true);
@@ -237,12 +243,12 @@ void AntFloatButton::setPlacement(Ant::FloatButtonPlacement placement)
 
 QSize AntFloatButton::sizeHint() const
 {
-    return QSize(40, 40);
+    return visualButtonSize() + QSize(ShadowMargin * 2, ShadowMargin * 2);
 }
 
 QSize AntFloatButton::minimumSizeHint() const
 {
-    return QSize(40, 40);
+    return sizeHint();
 }
 
 void AntFloatButton::paintEvent(QPaintEvent* event)
@@ -254,7 +260,14 @@ void AntFloatButton::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
+        if (!buttonRect().contains(event->pos()))
+        {
+            QWidget::mousePressEvent(event);
+            return;
+        }
+
         m_pressed = true;
+        startPressAnimation(1.0, 90);
         update();
         event->accept();
         return;
@@ -266,8 +279,22 @@ void AntFloatButton::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton && m_pressed)
     {
+        const bool clickedInside = buttonRect().contains(event->pos());
         m_pressed = false;
+        startPressAnimation(0.0, 170);
         update();
+
+        if (!clickedInside)
+        {
+            event->accept();
+            return;
+        }
+
+        const QRect waveRect = buttonRect();
+        const int waveRadius = m_shape == Ant::FloatButtonShape::Circle
+            ? waveRect.height() / 2
+            : antTheme->tokens().borderRadius;
+        AntWave::triggerRect(this, waveRect, antTheme->tokens().colorPrimary, waveRadius, true);
 
         if (m_backTop)
         {
@@ -289,9 +316,15 @@ void AntFloatButton::mouseReleaseEvent(QMouseEvent* event)
     QWidget::mouseReleaseEvent(event);
 }
 
+void AntFloatButton::mouseMoveEvent(QMouseEvent* event)
+{
+    updateHoverState(event->pos());
+    QWidget::mouseMoveEvent(event);
+}
+
 void AntFloatButton::enterEvent(AntEnterEvent* event)
 {
-    m_hovered = true;
+    updateHoverState(mapFromGlobal(QCursor::pos()));
     if (!m_children.isEmpty() && m_groupTrigger == Ant::Trigger::Hover)
     {
         setOpen(true);
@@ -303,7 +336,11 @@ void AntFloatButton::enterEvent(AntEnterEvent* event)
 void AntFloatButton::leaveEvent(QEvent* event)
 {
     m_hovered = false;
-    m_pressed = false;
+    if (m_pressed || m_pressProgress > 0.0)
+    {
+        m_pressed = false;
+        startPressAnimation(0.0, 170);
+    }
     // Don't close on hover leave immediately — let user move to children
     update();
     QWidget::leaveEvent(event);
@@ -365,11 +402,11 @@ void AntFloatButton::updatePosition()
 
     const int margin = antTheme->tokens().margin;
     const int x = (m_placement == Ant::FloatButtonPlacement::BottomRight || m_placement == Ant::FloatButtonPlacement::TopRight)
-                      ? p->width() - width() - margin
-                      : margin;
+                      ? p->width() - width() - margin + ShadowMargin
+                      : margin - ShadowMargin;
     const int y = (m_placement == Ant::FloatButtonPlacement::BottomRight || m_placement == Ant::FloatButtonPlacement::BottomLeft)
-                      ? p->height() - height() - margin
-                      : margin;
+                      ? p->height() - height() - margin + ShadowMargin
+                      : margin - ShadowMargin;
 
     const QPoint targetPos(x, y);
     const bool moved = pos() != targetPos;
@@ -394,7 +431,6 @@ void AntFloatButton::updatePosition()
 void AntFloatButton::layoutChildren()
 {
     const int spacing = 12;
-    const int childSize = 32;
     int yOffset = 0;
     bool changed = false;
 
@@ -403,11 +439,12 @@ void AntFloatButton::layoutChildren()
         auto* child = m_children[i];
         if (m_open)
         {
-            yOffset -= (childSize + spacing);
-            const QRect childGeometry(pos().x() + (width() - childSize) / 2,
+            const QSize childSize = child->sizeHint();
+            yOffset -= (VisualButtonSize + spacing);
+            const QRect childGeometry(pos().x() + (width() - childSize.width()) / 2,
                                       pos().y() + yOffset,
-                                      childSize,
-                                      childSize);
+                                      childSize.width(),
+                                      childSize.height());
             bool childChanged = false;
             if (child->geometry() != childGeometry)
             {
@@ -449,12 +486,7 @@ void AntFloatButton::layoutChildren()
 
 void AntFloatButton::updateContentSize()
 {
-    QFont f = font();
-    f.setPixelSize(antTheme->tokens().fontSizeSM);
-    const int textWidth = m_content.isEmpty() ? 0 : QFontMetrics(f).horizontalAdvance(m_content);
-    const QSize targetSize = (!m_content.isEmpty() && m_shape == Ant::FloatButtonShape::Square)
-        ? QSize(qMax(40, textWidth + 32), 40)
-        : QSize(40, 40);
+    const QSize targetSize = sizeHint();
 
     if (size() == targetSize && minimumSize() == targetSize && maximumSize() == targetSize)
     {
@@ -465,6 +497,80 @@ void AntFloatButton::updateContentSize()
     m_childLayoutDirty = true;
     ++m_contentSizeApplyCount;
     syncFloatButtonPerfCounters();
+}
+
+QSize AntFloatButton::visualButtonSize() const
+{
+    QFont f = font();
+    f.setPixelSize(antTheme->tokens().fontSizeSM);
+    const int textWidth = m_content.isEmpty() ? 0 : QFontMetrics(f).horizontalAdvance(m_content);
+    if (!m_content.isEmpty() && m_shape == Ant::FloatButtonShape::Square)
+    {
+        return QSize(qMax(VisualButtonSize, textWidth + 32), VisualButtonSize);
+    }
+    return QSize(VisualButtonSize, VisualButtonSize);
+}
+
+bool AntFloatButton::isHoveredState() const
+{
+    return m_hovered;
+}
+
+bool AntFloatButton::isPressedState() const
+{
+    return m_pressed;
+}
+
+qreal AntFloatButton::pressProgress() const
+{
+    return m_pressProgress;
+}
+
+void AntFloatButton::setPressProgress(qreal progress)
+{
+    const qreal normalized = qBound<qreal>(0.0, progress, 1.0);
+    if (qFuzzyCompare(m_pressProgress, normalized))
+    {
+        return;
+    }
+
+    m_pressProgress = normalized;
+    update();
+}
+
+QRect AntFloatButton::buttonRect() const
+{
+    const QSize visualSize = visualButtonSize();
+    return QRect(QPoint((width() - visualSize.width()) / 2,
+                        (height() - visualSize.height()) / 2),
+                 visualSize);
+}
+
+void AntFloatButton::startPressAnimation(qreal endValue, int duration)
+{
+    if (!m_pressAnimation)
+    {
+        return;
+    }
+
+    m_pressAnimation->stop();
+    m_pressAnimation->setDuration(duration);
+    m_pressAnimation->setStartValue(m_pressProgress);
+    m_pressAnimation->setEndValue(qBound<qreal>(0.0, endValue, 1.0));
+    m_pressAnimation->setEasingCurve(endValue > m_pressProgress ? QEasingCurve::OutCubic
+                                                                 : QEasingCurve::OutBack);
+    m_pressAnimation->start();
+}
+
+void AntFloatButton::updateHoverState(const QPoint& pos)
+{
+    const bool hovered = buttonRect().contains(pos);
+    if (m_hovered == hovered)
+    {
+        return;
+    }
+    m_hovered = hovered;
+    update();
 }
 
 void AntFloatButton::checkBackTopVisibility()

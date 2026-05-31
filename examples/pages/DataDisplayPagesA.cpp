@@ -3,6 +3,7 @@
 #include <QFrame>
 #include <QFont>
 #include <QHBoxLayout>
+#include <QImage>
 #include <QLinearGradient>
 #include <QList>
 #include <QPaintEvent>
@@ -20,6 +21,7 @@
 #include "core/AntTypes.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntBadge.h"
+#include "widgets/AntButton.h"
 #include "widgets/AntCalendar.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntCarousel.h"
@@ -29,11 +31,26 @@
 #include "widgets/AntIcon.h"
 #include "widgets/AntImage.h"
 #include "widgets/AntList.h"
+#include "widgets/AntSwitch.h"
 #include "widgets/AntTag.h"
 #include "widgets/AntTypography.h"
 
 namespace
 {
+QImage makeListMediaImage(const QColor& color)
+{
+    QImage image(40, 40, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawRoundedRect(QRectF(4, 4, 32, 32), 8, 8);
+    painter.setBrush(QColor(255, 255, 255, 210));
+    painter.drawEllipse(QRectF(14, 14, 12, 12));
+    return image;
+}
+
 class CardCoverPreview : public QWidget
 {
 public:
@@ -372,7 +389,42 @@ QWidget* createCarouselPage(QWidget* /*owner*/)
         carousel->addSlide(new CarouselSlidePreview(QStringLiteral("Slide 2"), QColor(QStringLiteral("#722ed1")), QColor(QStringLiteral("#eb2f96")), carousel));
         carousel->addSlide(new CarouselSlidePreview(QStringLiteral("Slide 3"), QColor(QStringLiteral("#fa8c16")), QColor(QStringLiteral("#fadb14")), carousel));
 
+        auto* controlRow = new QHBoxLayout();
+        controlRow->setSpacing(12);
+        auto* previous = new AntButton(QStringLiteral("Previous"), card);
+        auto* next = new AntButton(QStringLiteral("Next"), card);
+        auto* manualSwitch = new AntSwitch(card);
+        manualSwitch->setChecked(carousel->manualNavigationEnabled());
+        manualSwitch->setCheckedText(QStringLiteral("On"));
+        manualSwitch->setUncheckedText(QStringLiteral("Off"));
+        auto* arrowsSwitch = new AntSwitch(card);
+        arrowsSwitch->setChecked(carousel->showArrows());
+        arrowsSwitch->setCheckedText(QStringLiteral("On"));
+        arrowsSwitch->setUncheckedText(QStringLiteral("Off"));
+        auto* detail = makeSecondaryText(QStringLiteral("Slide 1 ready"), card);
+
+        QObject::connect(previous, &AntButton::clicked, carousel, &AntCarousel::previous);
+        QObject::connect(next, &AntButton::clicked, carousel, &AntCarousel::next);
+        QObject::connect(manualSwitch, &AntSwitch::toggled, carousel, &AntCarousel::setManualNavigationEnabled);
+        QObject::connect(arrowsSwitch, &AntSwitch::toggled, carousel, &AntCarousel::setShowArrows);
+        QObject::connect(carousel, &AntCarousel::currentIndexChanged, detail, [detail](int index) {
+            detail->setText(QStringLiteral("Slide %1 selected").arg(index + 1));
+        });
+        QObject::connect(carousel, &AntCarousel::slideClicked, detail, [detail](int index, QWidget*) {
+            detail->setText(QStringLiteral("Slide %1 clicked").arg(index + 1));
+        });
+
+        controlRow->addWidget(previous);
+        controlRow->addWidget(next);
+        controlRow->addSpacing(12);
+        controlRow->addWidget(makeSecondaryText(QStringLiteral("Manual"), card));
+        controlRow->addWidget(manualSwitch);
+        controlRow->addWidget(makeSecondaryText(QStringLiteral("Arrows"), card));
+        controlRow->addWidget(arrowsSwitch);
+        controlRow->addWidget(detail, 1);
+
         cl->addWidget(carousel);
+        cl->addLayout(controlRow);
         cl->addStretch();
         layout->addWidget(card);
     }
@@ -533,6 +585,19 @@ QWidget* createListPage(QWidget* /*owner*/)
         for (int i = 1; i <= 3; ++i)
         {
             auto* item = new AntListItem(basicList);
+            if (i == 1)
+            {
+                item->setIcon(Ant::IconType::Home);
+            }
+            else if (i == 2)
+            {
+                item->setIconName(QStringLiteral("GithubOutlined"));
+            }
+            else
+            {
+                item->setIconImage(makeListMediaImage(QColor("#1677ff")));
+                item->setIconSize(QSize(20, 20));
+            }
             auto* text = new AntTypography(QStringLiteral("Item %1").arg(i), item);
             item->setContentWidget(text);
             basicList->addItem(item);
@@ -555,6 +620,7 @@ QWidget* createListPage(QWidget* /*owner*/)
             meta->setTitle(QStringLiteral("Ant Design Title %1").arg(i));
             meta->setDescription(QStringLiteral("Description %1").arg(i));
             item->setMeta(meta);
+            item->setIcon(i == 1 ? Ant::IconType::User : Ant::IconType::Setting);
 
             auto* edit = new AntTypography(QStringLiteral("Edit"), item);
             edit->setType(Ant::TypographyType::Link);

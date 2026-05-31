@@ -9,13 +9,20 @@
 #include <QEvent>
 #include <QFrame>
 #include <QHeaderView>
+#include <QHideEvent>
 #include <QLineEdit>
+#include <QMoveEvent>
+#include <QPainter>
+#include <QPainterPath>
 #include <QPalette>
+#include <QResizeEvent>
+#include <QScreen>
 #include <QShowEvent>
 #include <QStyle>
 #include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QWindow>
 
 #include "../styles/AntDialogStyle.h"
 #include "AntScrollBar.h"
@@ -31,6 +38,9 @@
 namespace
 {
 constexpr auto kAntDialogForceLegacyFramePolicyProperty = "antDialogForceLegacyFramePolicy";
+constexpr auto kAntDialogLegacySoftwareShadowObjectName = "AntDialogLegacySoftwareShadow";
+constexpr int kAntDialogShadowMargin = 14;
+constexpr int kAntDialogShadowInnerClearance = 0;
 
 bool antDialogLegacyPolicyEnabled(const QWidget* widget)
 {
@@ -45,6 +55,47 @@ bool antDialogLegacyPolicyEnabled(const QWidget* widget)
 
 #ifdef Q_OS_WIN
 using AntDialogRtlGetVersionFn = LONG(WINAPI*)(OSVERSIONINFOW*);
+
+bool makeAntDialogNativeInputTransparent(QWidget* widget, const char* propertyName)
+{
+    if (!widget)
+    {
+        return false;
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (!hwnd)
+    {
+        return false;
+    }
+
+    const LONG_PTR currentStyle = ::GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    const LONG_PTR clickThroughStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
+    const LONG_PTR nextStyle = currentStyle | clickThroughStyle;
+    if (nextStyle != currentStyle)
+    {
+        ::SetWindowLongPtrW(hwnd, GWL_EXSTYLE, nextStyle);
+        ::SetWindowPos(hwnd,
+                       nullptr,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE |
+                           SWP_FRAMECHANGED);
+    }
+
+    if (propertyName)
+    {
+        widget->setProperty(propertyName, true);
+    }
+    return true;
+}
+
+void makeAntDialogShadowClickThrough(QWidget* widget)
+{
+    makeAntDialogNativeInputTransparent(widget, "antDialogLegacySoftwareShadowClickThrough");
+}
 
 int antDialogWindowsBuildNumber()
 {
@@ -73,6 +124,110 @@ bool antDialogShouldUseRoundedCorners(const QWidget* widget)
     constexpr int kWindows11Build = 22000;
     return antDialogWindowsBuildNumber() >= kWindows11Build && !antDialogLegacyPolicyEnabled(widget);
 }
+
+class AntDialogLegacySoftwareShadow : public QWidget
+{
+public:
+    explicit AntDialogLegacySoftwareShadow(QWidget* owner)
+        : QWidget(owner, Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint | Qt::WindowDoesNotAcceptFocus)
+    {
+        setObjectName(QString::fromLatin1(kAntDialogLegacySoftwareShadowObjectName));
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        setAttribute(Qt::WA_ShowWithoutActivating, true);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        setWindowFlag(Qt::WindowTransparentForInput, true);
+#endif
+        setFocusPolicy(Qt::NoFocus);
+        setProperty("shadowMargin", kAntDialogShadowMargin);
+        setProperty("shadowInnerClearance", kAntDialogShadowInnerClearance);
+        setProperty("antDialogLegacySoftwareShadowClickThrough", false);
+    }
+
+    void setCornerRadius(int radius)
+    {
+        m_cornerRadius = qMax(0, radius);
+        update();
+    }
+
+protected:
+    void showEvent(QShowEvent* event) override
+    {
+        QWidget::showEvent(event);
+        makeAntDialogShadowClickThrough(this);
+    }
+
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
+    {
+        if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
+        {
+            auto* msg = static_cast<MSG*>(message);
+            if (msg->message == WM_NCHITTEST)
+            {
+                *result = HTTRANSPARENT;
+                setProperty("antDialogLegacySoftwareShadowClickThrough", true);
+                return true;
+            }
+        }
+        return QWidget::nativeEvent(eventType, message, result);
+    }
+
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.setCompositionMode(QPainter::CompositionMode_Source);
+        painter.fillRect(rect(), Qt::transparent);
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+
+        const int shadowWidth = kAntDialogShadowMargin;
+        const QRectF panelRect = QRectF(rect()).adjusted(shadowWidth,
+                                                        shadowWidth,
+                                                        -shadowWidth,
+                                                        -shadowWidth);
+        if (panelRect.isEmpty())
+        {
+            return;
+        }
+
+        QColor shadowBase = antTheme->tokens().colorShadow;
+        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.046 : 0.032;
+        const qreal effectiveSpread = qMax<qreal>(1.0, shadowWidth - kAntDialogShadowInnerClearance);
+        for (int distance = shadowWidth; distance > kAntDialogShadowInnerClearance; --distance)
+        {
+            const qreal t = qBound<qreal>(
+                0.0,
+                1.0 - static_cast<qreal>(distance - kAntDialogShadowInnerClearance - 1) / effectiveSpread,
+                1.0);
+            const qreal eased = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+            const qreal opacity = qBound<qreal>(0.0, maxOpacity * eased, 0.22);
+            if (opacity <= 0.0)
+            {
+                continue;
+            }
+
+            QColor shadow = shadowBase;
+            shadow.setAlphaF(opacity);
+
+            const qreal radiusGrowth = static_cast<qreal>(distance) * 0.55;
+            QPainterPath outerPath;
+            const QRectF outer = panelRect.adjusted(-distance, -distance, distance, distance);
+            outerPath.addRoundedRect(outer, m_cornerRadius + radiusGrowth, m_cornerRadius + radiusGrowth);
+
+            QPainterPath innerPath;
+            const int innerDistance = qMax(kAntDialogShadowInnerClearance, distance - 1);
+            const qreal innerRadiusGrowth = static_cast<qreal>(innerDistance) * 0.55;
+            const QRectF inner = panelRect.adjusted(-innerDistance, -innerDistance, innerDistance, innerDistance);
+            innerPath.addRoundedRect(inner, m_cornerRadius + innerRadiusGrowth, m_cornerRadius + innerRadiusGrowth);
+
+            painter.fillPath(outerPath.subtracted(innerPath), shadow);
+        }
+    }
+
+private:
+    int m_cornerRadius = 0;
+};
 #else
 bool antDialogShouldUseRoundedCorners(const QWidget* widget)
 {
@@ -247,6 +402,8 @@ void AntDialog::setCornerRadius(int radius)
 
     m_cornerRadius = normalized;
     updateRoundedCornerPolicy();
+    updateChromeMargins();
+    updateGeometry();
     update();
     syncDialogPerfCounters();
     Q_EMIT cornerRadiusChanged(m_cornerRadius);
@@ -268,8 +425,16 @@ QRect AntDialog::titleBarRect() const
     {
         return QRect();
     }
+    const QRect surface = surfaceRect();
+    if (!surface.isValid())
+    {
+        return QRect();
+    }
     const int inset = qMax(1, antTheme->tokens().lineWidth);
-    return QRect(inset, inset, qMax(0, width() - inset * 2), m_titleBarHeight);
+    return QRect(surface.left() + inset,
+                 surface.top() + inset,
+                 qMax(0, surface.width() - inset * 2),
+                 m_titleBarHeight);
 }
 
 QRect AntDialog::titleBarTextRect() const
@@ -307,6 +472,7 @@ void AntDialog::refreshAntStyle()
 {
     syncChildControls();
     updateChromeMargins();
+    updateLegacySoftwareShadow();
     update();
 }
 
@@ -336,6 +502,8 @@ bool AntDialog::event(QEvent* event)
         if (propertyEvent->propertyName() == kAntDialogForceLegacyFramePolicyProperty)
         {
             updateRoundedCornerPolicy();
+            updateChromeMargins();
+            updateGeometry();
             update();
         }
         break;
@@ -413,10 +581,29 @@ void AntDialog::mouseReleaseEvent(QMouseEvent* event)
     QDialog::mouseReleaseEvent(event);
 }
 
+void AntDialog::moveEvent(QMoveEvent* event)
+{
+    QDialog::moveEvent(event);
+    updateLegacySoftwareShadow();
+}
+
+void AntDialog::resizeEvent(QResizeEvent* event)
+{
+    QDialog::resizeEvent(event);
+    updateLegacySoftwareShadow();
+}
+
+void AntDialog::hideEvent(QHideEvent* event)
+{
+    hideLegacySoftwareShadow();
+    QDialog::hideEvent(event);
+}
+
 void AntDialog::showEvent(QShowEvent* event)
 {
     QDialog::showEvent(event);
     scheduleChildSync();
+    updateLegacySoftwareShadow();
 }
 
 void AntDialog::initializeAntStyle()
@@ -446,11 +633,25 @@ void AntDialog::updateRoundedCornerPolicy()
     setProperty("antDialogUsesLegacyOpaquePath", usesLegacyOpaquePath());
     setProperty("antDialogCornerRadius", m_cornerRadius);
     setProperty("antDialogEffectiveCornerRadius", effectiveCornerRadius());
+    setProperty("antDialogShadowMargin", shadowMargin());
+    setProperty("antDialogShadowInnerClearance", kAntDialogShadowInnerClearance);
+    updateLegacySoftwareShadow();
 }
 
 int AntDialog::effectiveCornerRadius() const
 {
     return usesRoundedCorners() ? m_cornerRadius : 0;
+}
+
+int AntDialog::shadowMargin() const
+{
+    return usesRoundedCorners() ? kAntDialogShadowMargin : 0;
+}
+
+QRect AntDialog::surfaceRect() const
+{
+    const int margin = shadowMargin();
+    return rect().adjusted(margin, margin, -margin, -margin);
 }
 
 void AntDialog::updateChromeMargins()
@@ -460,9 +661,117 @@ void AntDialog::updateChromeMargins()
         return;
     }
 
+    const int shadow = shadowMargin();
     const int lineWidth = qMax(1, antTheme->tokens().lineWidth);
     const int top = m_titleBarVisible ? m_titleBarHeight + lineWidth : lineWidth;
-    m_rootLayout->setContentsMargins(lineWidth, top, lineWidth, lineWidth);
+    m_rootLayout->setContentsMargins(shadow + lineWidth,
+                                     shadow + top,
+                                     shadow + lineWidth,
+                                     shadow + lineWidth);
+}
+
+void AntDialog::updateLegacySoftwareShadow()
+{
+#ifdef Q_OS_WIN
+    const bool enabled = isVisible()
+        && windowHandle()
+        && usesLegacyOpaquePath()
+        && !isMinimized();
+
+    setProperty("antDialogLegacySoftwareShadowEnabled", enabled);
+    setProperty("antDialogLegacySoftwareShadowMargin", kAntDialogShadowMargin);
+    setProperty("antDialogLegacySoftwareShadowInnerClearance", kAntDialogShadowInnerClearance);
+
+    if (!enabled)
+    {
+        hideLegacySoftwareShadow();
+        return;
+    }
+
+    if (!m_legacySoftwareShadow)
+    {
+        auto* shadow = new AntDialogLegacySoftwareShadow(this);
+        m_legacySoftwareShadow = shadow;
+        connect(antTheme, &AntTheme::themeChanged, shadow, qOverload<>(&QWidget::update));
+    }
+
+    if (auto* shadow = static_cast<AntDialogLegacySoftwareShadow*>(m_legacySoftwareShadow))
+    {
+        shadow->setCornerRadius(0);
+    }
+
+    if (QWindow* shadowWindow = m_legacySoftwareShadow->windowHandle())
+    {
+        if (QScreen* hostScreen = windowHandle() ? windowHandle()->screen() : nullptr)
+        {
+            if (shadowWindow->screen() != hostScreen)
+            {
+                shadowWindow->setScreen(hostScreen);
+            }
+        }
+    }
+
+    const QRect shadowGeometry = geometry().adjusted(-kAntDialogShadowMargin,
+                                                     -kAntDialogShadowMargin,
+                                                     kAntDialogShadowMargin,
+                                                     kAntDialogShadowMargin);
+    m_legacySoftwareShadow->setGeometry(shadowGeometry);
+    setProperty("antDialogLegacySoftwareShadowGeometry", shadowGeometry);
+    setProperty("antDialogLegacySoftwareShadowGeometryMode", QStringLiteral("qt-logical"));
+    m_legacySoftwareShadow->setProperty("antDialogLegacySoftwareShadowGeometry", shadowGeometry);
+    m_legacySoftwareShadow->setProperty("antDialogLegacySoftwareShadowGeometryMode", QStringLiteral("qt-logical"));
+    if (!m_legacySoftwareShadow->isVisible())
+    {
+        m_legacySoftwareShadow->show();
+    }
+    m_legacySoftwareShadow->setProperty("antDialogLegacySoftwareShadowDevicePixelRatio",
+                                        m_legacySoftwareShadow->devicePixelRatioF());
+
+    const HWND hwnd = reinterpret_cast<HWND>(winId());
+    const HWND shadowHwnd = reinterpret_cast<HWND>(m_legacySoftwareShadow->winId());
+    if (shadowHwnd && hwnd)
+    {
+        makeAntDialogShadowClickThrough(m_legacySoftwareShadow);
+        ::SetWindowPos(shadowHwnd,
+                       hwnd,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
+    }
+    else
+    {
+        m_legacySoftwareShadow->show();
+    }
+#else
+    hideLegacySoftwareShadow();
+#endif
+}
+
+void AntDialog::hideLegacySoftwareShadow()
+{
+    setProperty("antDialogLegacySoftwareShadowEnabled", false);
+    if (m_legacySoftwareShadow)
+    {
+#ifdef Q_OS_WIN
+        if (const WId shadowId = m_legacySoftwareShadow->internalWinId())
+        {
+            HWND shadowHwnd = reinterpret_cast<HWND>(shadowId);
+            makeAntDialogShadowClickThrough(m_legacySoftwareShadow);
+            ::ShowWindow(shadowHwnd, SW_HIDE);
+            ::SetWindowPos(shadowHwnd,
+                           nullptr,
+                           0,
+                           0,
+                           0,
+                           0,
+                           SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                               SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
+        }
+#endif
+        m_legacySoftwareShadow->hide();
+    }
 }
 
 void AntDialog::handleThemeChanged(Ant::ThemeMode mode)
@@ -486,6 +795,7 @@ void AntDialog::handleThemeChanged(Ant::ThemeMode mode)
 
     ++m_surfaceUpdateCount;
     refreshThemeCache();
+    updateLegacySoftwareShadow();
     syncDialogPerfCounters();
     onThemeChanged(mode);
 }

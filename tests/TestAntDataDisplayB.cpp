@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPixmap>
 #include <QVBoxLayout>
 #include "core/AntTheme.h"
 #include "widgets/AntList.h"
@@ -52,6 +53,7 @@ class TestAntDataDisplayB : public QObject
 private slots:
     void propertiesAndSignals();
     void listWidgetCompatibilityApis();
+    void listItemIconMediaApis();
     void listBulkInsertionCoalescesLayout();
     void listInternalScrolling();
     void listUsesExpandingLayoutPolicy();
@@ -413,6 +415,8 @@ void TestAntDataDisplayB::propertiesAndSignals()
     QCOMPARE(car->autoPlay(), true);
     QCOMPARE(car->interval(), 3000);
     QCOMPARE(car->showDots(), true);
+    QCOMPARE(car->manualNavigationEnabled(), true);
+    QCOMPARE(car->showArrows(), true);
     QCOMPARE(car->currentIndex(), 0);
     QCOMPARE(car->count(), 0);
 
@@ -430,6 +434,16 @@ void TestAntDataDisplayB::propertiesAndSignals()
     car->setShowDots(false);
     QCOMPARE(car->showDots(), false);
     QCOMPARE(dotsSpy.count(), 1);
+
+    QSignalSpy manualSpy(car, &AntCarousel::manualNavigationEnabledChanged);
+    car->setManualNavigationEnabled(false);
+    QCOMPARE(car->manualNavigationEnabled(), false);
+    QCOMPARE(manualSpy.count(), 1);
+
+    QSignalSpy arrowsSpy(car, &AntCarousel::showArrowsChanged);
+    car->setShowArrows(false);
+    QCOMPARE(car->showArrows(), false);
+    QCOMPARE(arrowsSpy.count(), 1);
 
     auto* s1 = new QWidget;
     auto* s2 = new QWidget;
@@ -502,6 +516,15 @@ void TestAntDataDisplayB::carouselPausesAutoplayAndScopesTransitionWork()
     QVERIFY(QTest::qWaitForWindowExposed(&carousel));
     QTRY_VERIFY(carousel.property("antCarouselAutoPlayTimerActive").toBool());
 
+    const int timerRefreshBeforeManualNext = carousel.property("antCarouselAutoPlayTimerRefreshCount").toInt();
+    carousel.next();
+    QCOMPARE(carousel.currentIndex(), 1);
+    QVERIFY(carousel.property("antCarouselAutoPlayTimerRefreshCount").toInt() > timerRefreshBeforeManualNext);
+    QTRY_COMPARE_WITH_TIMEOUT(second->geometry(), carousel.rect(), 1000);
+    carousel.previous();
+    QCOMPARE(carousel.currentIndex(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(first->geometry(), carousel.rect(), 1000);
+
     const int indexBeforeHide = carousel.currentIndex();
     carousel.hide();
     QCoreApplication::processEvents();
@@ -530,6 +553,39 @@ void TestAntDataDisplayB::carouselPausesAutoplayAndScopesTransitionWork()
 
     QTRY_VERIFY_WITH_TIMEOUT(first->isHidden(), 1000);
     QCOMPARE(second->geometry(), carousel.rect());
+
+    QSignalSpy slideClickedSpy(&carousel, &AntCarousel::slideClicked);
+    QTest::mouseClick(second, Qt::LeftButton, Qt::NoModifier, second->rect().center());
+    QCOMPARE(slideClickedSpy.count(), 1);
+    QCOMPARE(slideClickedSpy.first().at(0).toInt(), 1);
+    QCOMPARE(qvariant_cast<QWidget*>(slideClickedSpy.first().at(1)), second);
+
+    carousel.previous();
+    QCOMPARE(carousel.currentIndex(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(first->geometry(), carousel.rect(), 1000);
+
+    carousel.next();
+    QCOMPARE(carousel.currentIndex(), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(second->geometry(), carousel.rect(), 1000);
+
+    carousel.setCurrentIndex(0);
+    QTRY_COMPARE_WITH_TIMEOUT(first->geometry(), carousel.rect(), 1000);
+    QTest::mouseClick(&carousel, Qt::LeftButton, Qt::NoModifier, QPoint(carousel.width() - 20, carousel.height() / 2));
+    QCOMPARE(carousel.currentIndex(), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(second->geometry(), carousel.rect(), 1000);
+
+    carousel.setManualNavigationEnabled(false);
+    const int clicksBeforeDisabledNav = slideClickedSpy.count();
+    QTest::mouseClick(second, Qt::LeftButton, Qt::NoModifier, QPoint(20, second->height() / 2));
+    QCOMPARE(carousel.currentIndex(), 1);
+    QCOMPARE(slideClickedSpy.count(), clicksBeforeDisabledNav + 1);
+
+    carousel.setManualNavigationEnabled(true);
+    carousel.setShowArrows(false);
+    const int clicksBeforeHiddenArrows = slideClickedSpy.count();
+    QTest::mouseClick(second, Qt::LeftButton, Qt::NoModifier, QPoint(20, second->height() / 2));
+    QCOMPARE(carousel.currentIndex(), 1);
+    QCOMPARE(slideClickedSpy.count(), clicksBeforeHiddenArrows + 1);
 }
 
 void TestAntDataDisplayB::collapseCachesSizeHintsAndScopesAnimationUpdates()
@@ -639,6 +695,67 @@ void TestAntDataDisplayB::listWidgetCompatibilityApis()
     QCOMPARE(taken->parentWidget(), nullptr);
     delete taken;
     QCOMPARE(list.count(), 3);
+}
+
+void TestAntDataDisplayB::listItemIconMediaApis()
+{
+    auto* item = new AntListItem;
+    QSignalSpy iconSpy(item, &AntListItem::iconChanged);
+    QSignalSpy iconSizeSpy(item, &AntListItem::iconSizeChanged);
+
+    item->setText(QStringLiteral("Media"));
+    item->setIcon(Ant::IconType::Home);
+    QVERIFY(item->hasIcon());
+    QCOMPARE(item->iconType(), Ant::IconType::Home);
+    QCOMPARE(item->iconTheme(), Ant::IconTheme::Outlined);
+    QCOMPARE(item->data(Qt::DecorationRole).toInt(), static_cast<int>(Ant::IconType::Home));
+
+    item->setIconName(QStringLiteral("GithubOutlined"), Ant::IconTheme::Outlined);
+    QCOMPARE(item->iconName(), QStringLiteral("GithubOutlined"));
+    QCOMPARE(item->data(Qt::DecorationRole).toString(), QStringLiteral("GithubOutlined"));
+
+    item->setIconSize(QSize(20, 18));
+    QCOMPARE(item->iconSize(), QSize(20, 18));
+    QCOMPARE(iconSizeSpy.count(), 1);
+
+    QImage image(18, 18, QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor("#ff4d4f"));
+    item->setIconImage(image);
+    QVERIFY(item->hasIcon());
+    QCOMPARE(item->iconImage().size(), image.size());
+    QVERIFY(item->data(Qt::DecorationRole).canConvert<QPixmap>());
+
+    AntList list;
+    list.setBordered(true);
+    list.resize(220, 72);
+    list.addItem(item);
+    list.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&list));
+
+    QImage rendered(list.size(), QImage::Format_ARGB32_Premultiplied);
+    rendered.fill(Qt::transparent);
+    QPainter painter(&rendered);
+    list.render(&painter);
+
+    int redPixels = 0;
+    for (int y = 0; y < rendered.height(); ++y)
+    {
+        for (int x = 0; x < rendered.width(); ++x)
+        {
+            const QColor pixel = QColor::fromRgba(rendered.pixel(x, y));
+            if (pixel.red() > 220 && pixel.green() < 120 && pixel.blue() < 120 && pixel.alpha() > 180)
+            {
+                ++redPixels;
+            }
+        }
+    }
+    QVERIFY(redPixels > 80);
+
+    item->clearIcon();
+    QVERIFY(!item->hasIcon());
+    QVERIFY(item->icon().isNull());
+    QVERIFY(item->iconPixmap().isNull());
+    QVERIFY(iconSpy.count() >= 4);
 }
 
 void TestAntDataDisplayB::listBulkInsertionCoalescesLayout()

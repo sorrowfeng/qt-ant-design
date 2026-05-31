@@ -10,15 +10,13 @@
 namespace
 {
 
-int floatButtonSize(const AntFloatButton* fb)
-{
-    return fb->floatButtonShape() == Ant::FloatButtonShape::Square ? fb->width() : 40;
-}
-
-int floatButtonRadius(const AntFloatButton* fb)
+int floatButtonRadius(const AntFloatButton* fb, const QRectF& rect)
 {
     const auto& token = antTheme->tokens();
-    if (fb->floatButtonShape() == Ant::FloatButtonShape::Circle) return 20;
+    if (fb->floatButtonShape() == Ant::FloatButtonShape::Circle)
+    {
+        return qRound(qMin(rect.width(), rect.height()) / 2.0);
+    }
     return token.borderRadius;
 }
 
@@ -163,15 +161,23 @@ void AntFloatButtonStyle::drawFloatButton(const QStyleOption* option, QPainter* 
 void AntFloatButtonStyle::drawMainButton(const QStyleOption* option, QPainter* painter, const AntFloatButton* fb) const
 {
     const auto& token = antTheme->tokens();
-    const QRectF r = option->rect;
-    const int radius = floatButtonRadius(fb);
-    const bool hovered = option->state & QStyle::State_MouseOver;
+    const QRectF button = fb->buttonRect();
+    const qreal pressProgress = fb->pressProgress();
+    const qreal pressInset = 1.6 * pressProgress;
+    const QRectF r = button.adjusted(pressInset, pressInset, -pressInset, -pressInset);
+    const int radius = floatButtonRadius(fb, r);
+    const bool hovered = fb->isHoveredState();
+    const bool pressed = fb->isPressedState() || pressProgress > 0.35;
 
     // Shadow
-    antTheme->drawEffectShadow(painter, r.toRect(), 12, radius, hovered ? 0.22 : 0.12);
+    antTheme->drawEffectShadow(painter,
+                               button.toAlignedRect(),
+                               8,
+                               floatButtonRadius(fb, button),
+                               pressed ? 0.50 : (hovered ? 0.90 : 0.72));
 
     // Background
-    QColor bg = floatButtonBgColor(fb, hovered, false);
+    QColor bg = floatButtonBgColor(fb, hovered, pressed);
     if (fb->floatButtonShape() == Ant::FloatButtonShape::Circle)
     {
         painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));

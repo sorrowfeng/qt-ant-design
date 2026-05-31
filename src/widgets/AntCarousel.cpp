@@ -6,6 +6,7 @@
 #include <QHideEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPropertyAnimation>
 #include <QResizeEvent>
 #include <QShowEvent>
@@ -13,6 +14,7 @@
 
 #include <algorithm>
 
+#include "core/AntCompat.h"
 #include "core/AntTheme.h"
 
 namespace
@@ -33,7 +35,7 @@ public:
 protected:
     void paintEvent(QPaintEvent*) override
     {
-        if (!m_carousel || !m_carousel->showDots() || m_carousel->count() <= 1)
+        if (!m_carousel || m_carousel->count() <= 1)
             return;
 
         const auto& token = antTheme->tokens();
@@ -48,20 +50,57 @@ protected:
         constexpr qreal dotOffset = 12.0;
 
         const int count = m_carousel->count();
-        const int active = m_carousel->currentIndex();
-        const qreal totalWidth = dotActiveWidth + (count - 1) * dotWidth + (count - 1) * dotGap;
-        qreal x = (width() - totalWidth) / 2.0;
-        const qreal y = height() - dotOffset - dotHeight;
-
-        for (int i = 0; i < count; ++i)
+        if (m_carousel->showDots())
         {
-            const bool isActive = i == active;
-            const qreal w = isActive ? dotActiveWidth : dotWidth;
-            QColor color = token.colorBgContainer;
-            color.setAlphaF(isActive ? 1.0 : 0.2);
-            painter.setBrush(color);
-            painter.drawRoundedRect(QRectF(x, y, w, dotHeight), dotHeight / 2.0, dotHeight / 2.0);
-            x += w + dotGap;
+            const int active = m_carousel->currentIndex();
+            const qreal totalWidth = dotActiveWidth + (count - 1) * dotWidth + (count - 1) * dotGap;
+            qreal x = (width() - totalWidth) / 2.0;
+            const qreal y = height() - dotOffset - dotHeight;
+
+            for (int i = 0; i < count; ++i)
+            {
+                const bool isActive = i == active;
+                const qreal w = isActive ? dotActiveWidth : dotWidth;
+                QColor color = token.colorBgContainer;
+                color.setAlphaF(isActive ? 1.0 : 0.2);
+                painter.setBrush(color);
+                painter.drawRoundedRect(QRectF(x, y, w, dotHeight), dotHeight / 2.0, dotHeight / 2.0);
+                x += w + dotGap;
+            }
+        }
+
+        if (m_carousel->manualNavigationEnabled() && m_carousel->showArrows() && count > 1)
+        {
+            auto drawArrow = [&painter, &token](const QRect& rect, bool left) {
+                QColor bg = token.colorBgContainer;
+                bg.setAlphaF(0.72);
+                QColor border = token.colorBorderSecondary;
+                border.setAlphaF(0.78);
+                painter.setPen(QPen(border, token.lineWidth));
+                painter.setBrush(bg);
+                painter.drawEllipse(QRectF(rect).adjusted(0.5, 0.5, -0.5, -0.5));
+
+                QPen pen(token.colorText, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+                painter.setPen(pen);
+                painter.setBrush(Qt::NoBrush);
+                const QPointF center(rect.left() + rect.width() / 2.0, rect.top() + rect.height() / 2.0);
+                const qreal halfWidth = 3.4;
+                const qreal halfHeight = 5.2;
+                const qreal tipOffset = left ? -halfWidth : halfWidth;
+                QPainterPath path;
+                path.moveTo(center.x() - tipOffset, center.y() - halfHeight);
+                path.lineTo(center.x() + tipOffset, center.y());
+                path.lineTo(center.x() - tipOffset, center.y() + halfHeight);
+                painter.drawPath(path);
+            };
+            const QSize arrowSize(28, 28);
+            const int margin = 12;
+            drawArrow(QRect(margin, (height() - arrowSize.height()) / 2, arrowSize.width(), arrowSize.height()), true);
+            drawArrow(QRect(width() - margin - arrowSize.width(),
+                            (height() - arrowSize.height()) / 2,
+                            arrowSize.width(),
+                            arrowSize.height()),
+                      false);
         }
     }
 
@@ -127,6 +166,28 @@ void AntCarousel::setShowDots(bool show)
     Q_EMIT showDotsChanged(m_showDots);
 }
 
+bool AntCarousel::manualNavigationEnabled() const { return m_manualNavigationEnabled; }
+
+void AntCarousel::setManualNavigationEnabled(bool enabled)
+{
+    if (m_manualNavigationEnabled == enabled)
+        return;
+    m_manualNavigationEnabled = enabled;
+    updateDotsOverlay();
+    Q_EMIT manualNavigationEnabledChanged(m_manualNavigationEnabled);
+}
+
+bool AntCarousel::showArrows() const { return m_showArrows; }
+
+void AntCarousel::setShowArrows(bool show)
+{
+    if (m_showArrows == show)
+        return;
+    m_showArrows = show;
+    updateDotsOverlay();
+    Q_EMIT showArrowsChanged(m_showArrows);
+}
+
 int AntCarousel::currentIndex() const { return m_currentIndex; }
 void AntCarousel::setCurrentIndex(int index)
 {
@@ -155,7 +216,10 @@ int AntCarousel::count() const { return m_slides.size(); }
 
 void AntCarousel::addSlide(QWidget* widget)
 {
+    if (!widget)
+        return;
     widget->setParent(this);
+    widget->installEventFilter(this);
     widget->hide();
     m_slides.append(widget);
     updateSlideVisibility();
@@ -167,6 +231,7 @@ void AntCarousel::removeSlide(int index)
     if (index < 0 || index >= m_slides.size()) return;
     m_transitionAnimation->stop();
     m_previousIndex = -1;
+    m_slides[index]->removeEventFilter(this);
     m_slides[index]->deleteLater();
     m_slides.removeAt(index);
     if (m_currentIndex >= m_slides.size()) m_currentIndex = 0;
@@ -177,7 +242,11 @@ void AntCarousel::removeSlide(int index)
 void AntCarousel::clearSlides()
 {
     m_transitionAnimation->stop();
-    for (auto* w : m_slides) w->deleteLater();
+    for (auto* w : m_slides)
+    {
+        w->removeEventFilter(this);
+        w->deleteLater();
+    }
     m_slides.clear();
     m_currentIndex = 0;
     m_previousIndex = -1;
@@ -185,6 +254,34 @@ void AntCarousel::clearSlides()
     updateDotsOverlay();
     updateAutoPlayTimer();
     update();
+}
+
+void AntCarousel::previous()
+{
+    setCurrentIndex(m_currentIndex - 1);
+    resetAutoPlayTimer();
+}
+
+void AntCarousel::next()
+{
+    setCurrentIndex(m_currentIndex + 1);
+    resetAutoPlayTimer();
+}
+
+bool AntCarousel::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event->type() == QEvent::MouseButtonRelease)
+    {
+        auto* slide = qobject_cast<QWidget*>(watched);
+        auto* mouseEvent = static_cast<QMouseEvent*>(event);
+        if (slide && mouseEvent->button() == Qt::LeftButton && m_slides.contains(slide))
+        {
+            const QPoint pos = slide->mapTo(this, antEventPositionPoint(mouseEvent));
+            handleManualClick(pos, true);
+            return true;
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void AntCarousel::changeEvent(QEvent* event)
@@ -274,10 +371,11 @@ void AntCarousel::paintEvent(QPaintEvent*)
 
 void AntCarousel::mousePressEvent(QMouseEvent* e)
 {
-    if (e->x() < width() / 3)
-        setCurrentIndex(m_currentIndex - 1);
-    else if (e->x() > width() * 2 / 3)
-        setCurrentIndex(m_currentIndex + 1);
+    if (e->button() == Qt::LeftButton && handleManualClick(antEventPositionPoint(e), false))
+    {
+        e->accept();
+        return;
+    }
     QWidget::mousePressEvent(e);
 }
 
@@ -295,7 +393,8 @@ void AntCarousel::updateDotsOverlay(bool repaint)
     if (!m_dotsOverlay)
         return;
 
-    const bool shouldShow = m_showDots && m_slides.size() > 1;
+    const bool shouldShow = m_slides.size() > 1 &&
+                            (m_showDots || (m_manualNavigationEnabled && m_showArrows));
     bool needsPaint = repaint;
     if (m_dotsOverlay->geometry() != rect())
     {
@@ -335,6 +434,110 @@ void AntCarousel::raiseDotsOverlay()
         return;
     m_dotsOverlay->raise();
     ++m_dotsRaiseCount;
+}
+
+QRect AntCarousel::previousArrowRect() const
+{
+    const QSize arrowSize(28, 28);
+    const int margin = 12;
+    return QRect(margin, (height() - arrowSize.height()) / 2, arrowSize.width(), arrowSize.height());
+}
+
+QRect AntCarousel::nextArrowRect() const
+{
+    const QSize arrowSize(28, 28);
+    const int margin = 12;
+    return QRect(width() - margin - arrowSize.width(),
+                 (height() - arrowSize.height()) / 2,
+                 arrowSize.width(),
+                 arrowSize.height());
+}
+
+int AntCarousel::dotIndexAt(const QPoint& pos) const
+{
+    if (!m_showDots || m_slides.size() <= 1)
+        return -1;
+
+    constexpr qreal dotWidth = 16.0;
+    constexpr qreal dotActiveWidth = 24.0;
+    constexpr qreal dotHeight = 3.0;
+    constexpr qreal dotGap = 8.0;
+    constexpr qreal dotOffset = 12.0;
+
+    const int slideCount = m_slides.size();
+    const qreal totalWidth = dotActiveWidth + (slideCount - 1) * dotWidth + (slideCount - 1) * dotGap;
+    qreal x = (width() - totalWidth) / 2.0;
+    const qreal y = height() - dotOffset - dotHeight;
+    const QRectF hitBand((width() - totalWidth) / 2.0 - dotGap / 2.0,
+                         y - 8.0,
+                         totalWidth + dotGap,
+                         dotHeight + 16.0);
+    if (!hitBand.contains(pos))
+        return -1;
+
+    for (int i = 0; i < slideCount; ++i)
+    {
+        const bool active = i == m_currentIndex;
+        const qreal w = active ? dotActiveWidth : dotWidth;
+        const QRectF hitRect(x - dotGap / 2.0, y - 8.0, w + dotGap, dotHeight + 16.0);
+        if (hitRect.contains(pos))
+            return i;
+        x += w + dotGap;
+    }
+    return -1;
+}
+
+bool AntCarousel::handleManualClick(const QPoint& pos, bool emitSlideClick)
+{
+    if (m_slides.isEmpty())
+        return false;
+
+    if (m_manualNavigationEnabled && m_slides.size() > 1)
+    {
+        const int dotIndex = dotIndexAt(pos);
+        if (dotIndex >= 0)
+        {
+            setCurrentIndex(dotIndex);
+            resetAutoPlayTimer();
+            return true;
+        }
+        if (m_showArrows && previousArrowRect().contains(pos))
+        {
+            previous();
+            return true;
+        }
+        if (m_showArrows && nextArrowRect().contains(pos))
+        {
+            next();
+            return true;
+        }
+    }
+
+    if (emitSlideClick)
+    {
+        emitSlideClicked();
+        return true;
+    }
+    return false;
+}
+
+void AntCarousel::emitSlideClicked()
+{
+    if (m_currentIndex < 0 || m_currentIndex >= m_slides.size())
+        return;
+    Q_EMIT slideClicked(m_currentIndex, m_slides.at(m_currentIndex));
+}
+
+void AntCarousel::resetAutoPlayTimer()
+{
+    if (!m_autoPlay || !isVisible() || !isEnabled() || m_slides.size() <= 1)
+    {
+        syncCarouselPerfCounters();
+        return;
+    }
+    m_timer->start(m_interval);
+    ++m_autoPlayTimerRefreshCount;
+    syncCarouselPerfCounters();
 }
 
 void AntCarousel::startTransition(int from, int to, int requestedIndex)
@@ -427,4 +630,6 @@ void AntCarousel::syncCarouselPerfCounters() const
     self->setProperty("antCarouselDotsPaintUpdateCount", m_dotsPaintUpdateCount);
     self->setProperty("antCarouselDotsRaiseCount", m_dotsRaiseCount);
     self->setProperty("antCarouselLastUpdateMode", m_lastUpdateMode);
+    self->setProperty("antCarouselManualNavigationEnabled", m_manualNavigationEnabled);
+    self->setProperty("antCarouselShowArrows", m_showArrows);
 }

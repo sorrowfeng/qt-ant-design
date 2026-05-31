@@ -20,6 +20,7 @@
 #include <QTimer>
 #include <QToolButton>
 #include <QTreeView>
+#include <QVector>
 #include <QVBoxLayout>
 
 #include "../styles/AntFileDialogStyle.h"
@@ -120,6 +121,83 @@ AntButton* createIconButton(Ant::IconType icon, const QString& toolTip, QWidget*
     button->setFixedWidth(36);
     button->setFocusPolicy(Qt::StrongFocus);
     return button;
+}
+
+struct CommonPlace
+{
+    QString label;
+    QString path;
+    Ant::IconType icon = Ant::IconType::Home;
+};
+
+QString existingDirectoryPath(const QString& path)
+{
+    if (path.trimmed().isEmpty())
+    {
+        return QString();
+    }
+
+    const QFileInfo info(path);
+    if (!info.exists() || !info.isDir())
+    {
+        return QString();
+    }
+    return QDir(info.absoluteFilePath()).absolutePath();
+}
+
+void appendCommonPlace(QVector<CommonPlace>& places,
+                       QSet<QString>& seen,
+                       const QString& label,
+                       const QString& path,
+                       Ant::IconType icon)
+{
+    const QString absolutePath = existingDirectoryPath(path);
+    if (absolutePath.isEmpty() || seen.contains(absolutePath))
+    {
+        return;
+    }
+
+    seen.insert(absolutePath);
+    places.append({label, absolutePath, icon});
+}
+
+QVector<CommonPlace> commonPlaces()
+{
+    QVector<CommonPlace> places;
+    QSet<QString> seen;
+
+    appendCommonPlace(places, seen, QStringLiteral("Home"), QDir::homePath(), Ant::IconType::Home);
+    appendCommonPlace(places,
+                      seen,
+                      QStringLiteral("Desktop"),
+                      QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
+                      Ant::IconType::Star);
+    appendCommonPlace(places,
+                      seen,
+                      QStringLiteral("Documents"),
+                      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+                      Ant::IconType::Edit);
+    appendCommonPlace(places,
+                      seen,
+                      QStringLiteral("Downloads"),
+                      QStandardPaths::writableLocation(QStandardPaths::DownloadLocation),
+                      Ant::IconType::CloudUpload);
+    appendCommonPlace(places,
+                      seen,
+                      QStringLiteral("Pictures"),
+                      QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
+                      Ant::IconType::Star);
+    appendCommonPlace(places,
+                      seen,
+                      QStringLiteral("Music"),
+                      QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
+                      Ant::IconType::Bell);
+    appendCommonPlace(places,
+                      seen,
+                      QStringLiteral("Videos"),
+                      QStandardPaths::writableLocation(QStandardPaths::MoviesLocation),
+                      Ant::IconType::Setting);
+    return places;
 }
 } // namespace
 
@@ -483,39 +561,39 @@ void AntFileDialog::buildUi()
     bodyLayout->setSpacing(token.margin);
 
     m_sidebar = new AntFileDialogPanel(AntFileDialogPanel::Role::Sidebar, this);
-    m_sidebar->setMinimumWidth(164);
-    m_sidebar->setMaximumWidth(190);
+    m_sidebar->setMinimumWidth(220);
+    m_sidebar->setMaximumWidth(260);
     auto* sidebarLayout = new QVBoxLayout(m_sidebar);
-    sidebarLayout->setContentsMargins(token.paddingSM, token.paddingSM, token.paddingSM, token.paddingSM);
-    sidebarLayout->setSpacing(4);
+    sidebarLayout->setContentsMargins(token.paddingXS, token.paddingXS, token.paddingXS, token.paddingXS);
+    sidebarLayout->setSpacing(token.paddingXXS);
 
-    auto addLocationButton = [this, sidebarLayout](const QString& label, Ant::IconType icon,
-                                                   const QString& path) {
-        if (path.isEmpty())
-        {
-            return;
-        }
-        auto* button = new AntButton(label, m_sidebar);
-        button->setButtonType(Ant::ButtonType::Text);
-        button->setButtonIconType(icon);
-        button->setBlock(true);
-        button->setToolTip(QDir::toNativeSeparators(path));
-        button->setProperty("antFileDialogLocationPath", path);
-        connect(button, &QAbstractButton::clicked, this, [this, path]() {
-            setCurrentDirectory(QDir(path));
-        });
-        sidebarLayout->addWidget(button);
-    };
+    buildCommonPlaces(sidebarLayout);
 
-    addLocationButton(QStringLiteral("Home"), Ant::IconType::Home, QDir::homePath());
-    addLocationButton(QStringLiteral("Desktop"), Ant::IconType::Star,
-                      QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
-    addLocationButton(QStringLiteral("Documents"), Ant::IconType::Edit,
-                      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
-    addLocationButton(QStringLiteral("Downloads"), Ant::IconType::CloudUpload,
-                      QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
-    addLocationButton(QStringLiteral("Root"), Ant::IconType::Setting, QDir::rootPath());
-    sidebarLayout->addStretch(1);
+    m_directoryModel = new QFileSystemModel(this);
+    m_directoryModel->setReadOnly(true);
+    m_directoryModel->setNameFilterDisables(false);
+    m_directoryModel->setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Drives);
+    m_directoryModel->setRootPath(QString());
+
+    m_directoryTree = new QTreeView(m_sidebar);
+    m_directoryTree->setObjectName(QStringLiteral("antFileDialogDirectoryTree"));
+    m_directoryTree->setModel(m_directoryModel);
+    m_directoryTree->setFrameShape(QFrame::NoFrame);
+    m_directoryTree->setHeaderHidden(true);
+    m_directoryTree->setRootIsDecorated(true);
+    m_directoryTree->setItemsExpandable(true);
+    m_directoryTree->setUniformRowHeights(true);
+    m_directoryTree->setAlternatingRowColors(false);
+    m_directoryTree->setMouseTracking(true);
+    m_directoryTree->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_directoryTree->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_directoryTree->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_directoryTree->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    for (int column = 1; column < m_directoryModel->columnCount(); ++column)
+    {
+        m_directoryTree->setColumnHidden(column, true);
+    }
+    sidebarLayout->addWidget(m_directoryTree, 1);
     bodyLayout->addWidget(m_sidebar);
 
     auto* contentPanel = new AntFileDialogPanel(AntFileDialogPanel::Role::Content, this);
@@ -624,6 +702,10 @@ void AntFileDialog::wireUi()
     connect(m_view, &QTreeView::doubleClicked, this, &AntFileDialog::navigateToIndex);
     connect(m_view->selectionModel(), &QItemSelectionModel::selectionChanged,
             this, [this]() { updateSelectionFromView(); });
+    connect(m_directoryTree->selectionModel(), &QItemSelectionModel::currentChanged,
+            this, [this](const QModelIndex& current) { navigateToDirectoryTreeIndex(current); });
+    connect(m_directoryTree, &QTreeView::activated,
+            this, &AntFileDialog::navigateToDirectoryTreeIndex);
 }
 
 void AntFileDialog::updateHeaderText()
@@ -829,6 +911,7 @@ void AntFileDialog::setCurrentDirectory(const QDir& directory, bool addToHistory
         m_view->setColumnWidth(0, 280);
         m_view->clearSelection();
     }
+    syncDirectoryTreeToCurrent();
     if (m_fileNameInput)
     {
         m_fileNameInput->clear();
@@ -856,6 +939,54 @@ void AntFileDialog::navigateToIndex(const QModelIndex& index)
         selectFile(info.absoluteFilePath());
         acceptSelection();
     }
+}
+
+void AntFileDialog::navigateToDirectoryTreeIndex(const QModelIndex& index)
+{
+    if (!index.isValid() || !m_directoryModel)
+    {
+        return;
+    }
+
+    const QModelIndex directoryIndex = index.sibling(index.row(), 0);
+    const QFileInfo info(m_directoryModel->filePath(directoryIndex));
+    if (!info.isDir())
+    {
+        return;
+    }
+
+    const QDir directory(info.absoluteFilePath());
+    const QString absolutePath = directory.absolutePath();
+    if (QDir(m_currentDir.absolutePath()).absolutePath() == absolutePath)
+    {
+        return;
+    }
+    setCurrentDirectory(directory);
+}
+
+void AntFileDialog::syncDirectoryTreeToCurrent()
+{
+    if (!m_directoryModel || !m_directoryTree)
+    {
+        return;
+    }
+
+    const QModelIndex index = m_directoryModel->index(m_currentDir.absolutePath());
+    if (!index.isValid())
+    {
+        return;
+    }
+
+    if (QItemSelectionModel* selection = m_directoryTree->selectionModel())
+    {
+        QSignalBlocker blocker(selection);
+        m_directoryTree->setCurrentIndex(index);
+    }
+    else
+    {
+        m_directoryTree->setCurrentIndex(index);
+    }
+    m_directoryTree->setProperty("antFileDialogDirectoryTreeAutoExpandsCurrent", false);
 }
 
 QStringList AntFileDialog::selectedFilesFromView() const
@@ -995,6 +1126,59 @@ QString AntFileDialog::acceptTextForMode() const
 bool AntFileDialog::acceptsDirectoriesOnly() const
 {
     return m_fileMode == QFileDialog::Directory || m_options.testFlag(QFileDialog::ShowDirsOnly);
+}
+
+void AntFileDialog::buildCommonPlaces(QVBoxLayout* sidebarLayout)
+{
+    if (!sidebarLayout || !m_sidebar)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+
+    auto* placesTitle = new AntTypography(QStringLiteral("Quick access"), m_sidebar);
+    placesTitle->setObjectName(QStringLiteral("antFileDialogPlacesTitle"));
+    placesTitle->setType(Ant::TypographyType::Secondary);
+    placesTitle->setPixelSize(token.fontSizeSM);
+    sidebarLayout->addWidget(placesTitle);
+
+    const QVector<CommonPlace> places = commonPlaces();
+    for (const CommonPlace& place : places)
+    {
+        auto* button = new AntButton(place.label, m_sidebar);
+        button->setObjectName(QStringLiteral("antFileDialogPlaceButton"));
+        button->setProperty("antFileDialogPlacePath", place.path);
+        button->setProperty("antFileDialogPlaceLabel", place.label);
+        button->setButtonType(Ant::ButtonType::Text);
+        button->setButtonSize(Ant::Size::Small);
+        button->setButtonIconType(place.icon);
+        button->setBlock(true);
+        button->setMinimumHeight(30);
+        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        button->setToolTip(QDir::toNativeSeparators(place.path));
+        sidebarLayout->addWidget(button);
+        connect(button, &QAbstractButton::clicked, this, [this, path = place.path]() {
+            navigateToCommonPlace(path);
+        });
+    }
+
+    auto* treeTitle = new AntTypography(QStringLiteral("Folders"), m_sidebar);
+    treeTitle->setObjectName(QStringLiteral("antFileDialogDirectoryTreeTitle"));
+    treeTitle->setType(Ant::TypographyType::Secondary);
+    treeTitle->setPixelSize(token.fontSizeSM);
+    sidebarLayout->addSpacing(token.paddingXXS);
+    sidebarLayout->addWidget(treeTitle);
+}
+
+void AntFileDialog::navigateToCommonPlace(const QString& path)
+{
+    const QString absolutePath = existingDirectoryPath(path);
+    if (absolutePath.isEmpty())
+    {
+        return;
+    }
+    setCurrentDirectory(QDir(absolutePath));
 }
 
 void AntFileDialog::scheduleChildSync()
