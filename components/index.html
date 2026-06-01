@@ -7263,7 +7263,7 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
       </div>
       
     </article>
-    <h2 class="section-title">Qt 风格别名</h2>
+    <h2 class="section-title" id="overview-Qt 风格别名">Qt 风格别名</h2>
     <article class="component alias-card doc-card" id="antcalendarwidget" data-category="Qt 风格别名"
       data-keywords="antcalendarwidget antcalendar">
       <div class="component-head">
@@ -7573,6 +7573,7 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
     const scrollTargets = Array.from(document.querySelectorAll('[id]')).filter(element => {
       return element.classList.contains('component') ||
         element.classList.contains('overview-section') ||
+        element.classList.contains('section-title') ||
         element.classList.contains('enum-section') ||
         element.id === 'overview' ||
         element.id === 'api-details';
