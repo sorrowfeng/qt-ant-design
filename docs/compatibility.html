@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>兼容性与质量 - qt-ant-design</title>
+  <meta name="description" content="qt-ant-design 的 Qt5/Qt6、高 DPI、测试和 GitHub Pages 发布说明。">
+  <link rel="icon" type="image/svg+xml" href="../assets/qt-ant-design-icon.svg">
+  <link rel="alternate icon" type="image/png" href="../assets/qt-ant-design-icon.png">
+  <link rel="apple-touch-icon" href="../assets/qt-ant-design-icon.png">
+  <style>
+
+:root {
+  color-scheme: light;
+  --brand: #1677ff;
+  --brand-hover: #4096ff;
+  --qt: #41cd52;
+  --ink: rgba(0, 0, 0, 0.88);
+  --text: rgba(0, 0, 0, 0.72);
+  --muted: rgba(0, 0, 0, 0.48);
+  --line: #f0f0f0;
+  --line-strong: #d9d9d9;
+  --bg: #fff;
+  --surface: #fff;
+  --soft: #f5f8ff;
+  --code: #f6f8fa;
+  --radius: 8px;
+  --shadow: 0 8px 24px rgba(18, 35, 64, 0.08);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  font-size: 14px;
+  line-height: 1.7;
+}
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--brand); }
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 190px;
+  font-weight: 700;
+  font-size: 18px;
+}
+.brand img { width: 32px; height: 32px; }
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nav a {
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--text);
+}
+.nav a.active,
+.nav a:hover {
+  color: var(--brand);
+  background: #e6f4ff;
+}
+.hero {
+  position: relative;
+  min-height: clamp(500px, 74vh, 720px);
+  display: flex;
+  align-items: center;
+  padding: 72px max(32px, calc((100vw - 1180px) / 2)) 82px;
+  overflow: hidden;
+  isolation: isolate;
+  background-image: url("resources/images/showcase-light.png");
+  background-size: cover;
+  background-position: center;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.78);
+}
+.hero-copy {
+  width: min(720px, 100%);
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+h1 {
+  margin: 18px 0 18px;
+  font-size: clamp(44px, 7vw, 82px);
+  line-height: 1.04;
+  letter-spacing: 0;
+}
+.hero p {
+  margin: 0;
+  max-width: 660px;
+  color: rgba(0, 0, 0, 0.68);
+  font-size: 18px;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 34px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+}
+.btn.primary {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.18);
+}
+.btn.primary:hover { background: var(--brand-hover); color: #fff; }
+.section {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 68px 32px;
+}
+.section.compact { padding-top: 46px; }
+.section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.section h2 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+.section-head p,
+.lead {
+  margin: 8px 0 0;
+  max-width: 760px;
+  color: var(--text);
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.stat,
+.card,
+.doc-card,
+.shot {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.stat {
+  padding: 20px;
+}
+.stat strong {
+  display: block;
+  font-size: 32px;
+  line-height: 1.1;
+}
+.stat span { color: var(--muted); }
+.feature-grid,
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.card,
+.doc-card {
+  padding: 22px;
+}
+.card h3,
+.doc-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.card p,
+.doc-card p {
+  margin: 0;
+  color: var(--text);
+}
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.shot {
+  overflow: hidden;
+}
+.shot img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #f5f5f5;
+}
+.shot figcaption {
+  padding: 12px 14px;
+  color: var(--muted);
+}
+.component-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+.component-strip a {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+.component-strip img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-bottom: 1px solid var(--line);
+}
+.component-strip span {
+  display: block;
+  padding: 9px 10px;
+  color: var(--text);
+}
+.page-hero {
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.page-hero .section {
+  padding-top: 58px;
+  padding-bottom: 48px;
+}
+.page-hero h1 {
+  margin: 12px 0 10px;
+  font-size: clamp(36px, 5vw, 56px);
+}
+.content-grid {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+.side {
+  position: sticky;
+  top: 88px;
+  border-right: 1px solid var(--line);
+  padding-right: 18px;
+}
+.side a {
+  display: block;
+  padding: 8px 0;
+  color: var(--muted);
+}
+.article {
+  min-width: 0;
+}
+.article section {
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+}
+.article h2 {
+  margin: 0 0 12px;
+  font-size: 26px;
+}
+.article h3 {
+  margin: 22px 0 8px;
+  font-size: 18px;
+}
+.article p,
+.article li {
+  color: var(--text);
+}
+.article ul,
+.article ol {
+  padding-left: 20px;
+}
+pre {
+  margin: 14px 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--code);
+}
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+}
+pre code {
+  display: block;
+  padding: 16px;
+  line-height: 1.65;
+}
+.callout {
+  padding: 16px 18px;
+  border: 1px solid #91caff;
+  border-radius: var(--radius);
+  background: #e6f4ff;
+  color: rgba(0, 0, 0, 0.72);
+}
+.footer {
+  border-top: 1px solid var(--line);
+  padding: 24px 32px;
+  color: var(--muted);
+  text-align: center;
+}
+@media (max-width: 980px) {
+  .site-header { padding: 0 18px; }
+  .nav { gap: 0; }
+  .nav a { padding: 7px 9px; }
+  .stats,
+  .feature-grid,
+  .doc-grid,
+  .component-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  .side {
+    position: static;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 0 0 14px;
+  }
+}
+@media (max-width: 680px) {
+  .brand span { display: none; }
+  .nav a:nth-last-child(-n + 2) { display: none; }
+  .hero { padding: 54px 20px 62px; }
+  .hero p { font-size: 16px; }
+  .section { padding: 44px 20px; }
+  .section-head { display: block; }
+  .stats,
+  .feature-grid,
+  .doc-grid,
+  .showcase-grid,
+  .component-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../index.html"><img src="../assets/qt-ant-design-icon.png" alt="qt-ant-design logo"><span>qt-ant-design</span></a>
+    <nav class="nav" aria-label="主导航"><a href="../index.html">首页</a><a href="../components/">组件</a><a href="../docs/getting-started.html">指南</a><a href="../docs/design.html">设计</a><a class="active" href="../docs/compatibility.html">兼容性</a><a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a><a href="https://ant.design/index-cn">Ant Design</a></nav>
+  </header>
+
+  <main>
+    <section class="page-hero">
+      <div class="section">
+        <span class="eyebrow">Compatibility</span>
+        <h1>兼容性与质量</h1>
+        <p class="lead">项目同时面向 Qt5 与 Qt6，重点处理控件默认样式、图标渲染、高 DPI、窗口系统和多分辨率显示差异。</p>
+      </div>
+    </section>
+    <section class="section content-grid">
+      <aside class="side">
+        <a href="#qt">Qt 版本</a>
+        <a href="#dpi">高 DPI</a>
+        <a href="#quality">质量门禁</a>
+        <a href="#pages">Pages 发布</a>
+      </aside>
+      <article class="article">
+        <section id="qt">
+          <h2>Qt 版本</h2>
+          <p>CMake 配置时使用 <code>find_package(QT NAMES Qt6 Qt5 ...)</code> 自动识别 Qt6 或 Qt5。当前重点验证环境包含 Qt 5.15.2 和 Qt 6.x。</p>
+          <ul>
+            <li>Qt5 / Qt6 AntIcon 渲染保持同一 SVG 资源路径和视觉结果。</li>
+            <li>输入框、树、列表、滚动区域、对话框和文件对话框覆盖专项视觉回归。</li>
+            <li>安装包消费工程通过 <code>find_package(qt-ant-design CONFIG REQUIRED)</code> 验证。</li>
+          </ul>
+        </section>
+        <section id="dpi">
+          <h2>高 DPI 与多分辨率</h2>
+          <p><code>AntDesign::configureHighDpi()</code> 在 Qt5 下启用逻辑高 DPI 缩放和高 DPI pixmap，并使用 pass-through scale rounding 策略减少 125%、150% 缩放下的尺寸漂移。</p>
+          <div class="callout">示例程序在主屏幕分辨率和缩放比例之外，还通过自动化测试覆盖 1.0、1.25、1.5 等比例的逻辑截图尺寸。</div>
+        </section>
+        <section id="quality">
+          <h2>质量门禁</h2>
+          <div class="feature-grid">
+            <article class="card"><h3>组件可靠性</h3><p>公开组件覆盖 API、信号、生命周期、主题切换和渲染烟测。</p></article>
+            <article class="card"><h3>视觉对齐</h3><p>组件截图和 Qt5/Qt6 atlas 对比用于发现渲染差异。</p></article>
+            <article class="card"><h3>无 QSS 示例</h3><p>示例程序保持零样式表操作，避免绕开控件自身绘制。</p></article>
+            <article class="card"><h3>真实页面遍历</h3><p>示例程序会遍历全部页面并对滚动和空白渲染做检查。</p></article>
+          </div>
+        </section>
+        <section id="pages">
+          <h2>Pages 发布</h2>
+          <p>GitHub Pages 使用独立 <code>gh_page</code> 分支承载静态产物，开发分支只保留生成脚本和源文档。项目页目标路径为 <code>www.sorrowfeng.top/qt-ant-design</code>。</p>
+        </section>
+      </article>
+    </section>
+  </main>
+  <footer class="footer">qt-ant-design · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
+</body>
+</html>
