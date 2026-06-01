@@ -63,6 +63,10 @@ qrc_*.cpp
 *.user
 *.autosave
 
+# Python tooling
+__pycache__/
+*.pyc
+
 # OS
 .DS_Store
 Thumbs.db
