@@ -25,6 +25,7 @@
 ## 项目状态
 
 - 同步日期：`2026-05-30`
+- 当前版本：`0.1.0`（根目录 `VERSION` 为唯一版本源；CMake 生成并安装 `core/QtAntDesignVersion.h`；发布记录见 `CHANGELOG.md`，流程见 `docs/versioning.md`）
 - 状态总览：`docs/project-status.md`
 - 项目问题清单（已解决 + 待解决）：`docs/issue-log.md`
 - 已实现公开组件总数：`89`（`src/widgets` 有 `109` 个 `Ant*.h`，包含 `89` 个公开组件头、`19` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`）

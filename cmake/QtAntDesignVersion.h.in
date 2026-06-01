@@ -1,0 +1,28 @@
+#pragma once
+
+#define QT_ANT_DESIGN_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define QT_ANT_DESIGN_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define QT_ANT_DESIGN_VERSION_PATCH @PROJECT_VERSION_PATCH@
+
+#define QT_ANT_DESIGN_VERSION_CHECK(major, minor, patch) \
+    (((major) << 16) | ((minor) << 8) | (patch))
+
+#define QT_ANT_DESIGN_VERSION \
+    QT_ANT_DESIGN_VERSION_CHECK(QT_ANT_DESIGN_VERSION_MAJOR, QT_ANT_DESIGN_VERSION_MINOR, QT_ANT_DESIGN_VERSION_PATCH)
+
+#define QT_ANT_DESIGN_VERSION_STR "@PROJECT_VERSION@"
+
+namespace QtAntDesign
+{
+inline constexpr int VersionMajor = QT_ANT_DESIGN_VERSION_MAJOR;
+inline constexpr int VersionMinor = QT_ANT_DESIGN_VERSION_MINOR;
+inline constexpr int VersionPatch = QT_ANT_DESIGN_VERSION_PATCH;
+inline constexpr int Version = QT_ANT_DESIGN_VERSION;
+inline constexpr const char* VersionString = QT_ANT_DESIGN_VERSION_STR;
+
+inline constexpr int versionMajor() noexcept { return VersionMajor; }
+inline constexpr int versionMinor() noexcept { return VersionMinor; }
+inline constexpr int versionPatch() noexcept { return VersionPatch; }
+inline constexpr int version() noexcept { return Version; }
+inline constexpr const char* versionString() noexcept { return VersionString; }
+}

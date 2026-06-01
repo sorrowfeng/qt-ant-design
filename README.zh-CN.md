@@ -8,6 +8,7 @@
 [![Qt](https://img.shields.io/badge/Qt-6%20%7C%205-green.svg)](https://www.qt.io)
 [![CMake](https://img.shields.io/badge/CMake-3.16+-blue.svg)](https://cmake.org)
 [![C++](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com)
+[![Release](https://img.shields.io/github/v/release/sorrowfeng/qt-ant-design)](https://github.com/sorrowfeng/qt-ant-design/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/sorrowfeng/qt-ant-design?style=social)](https://github.com/sorrowfeng/qt-ant-design/stargazers)
 [![Last Commit](https://img.shields.io/github/last-commit/sorrowfeng/qt-ant-design)](https://github.com/sorrowfeng/qt-ant-design/commits/main)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sorrowfeng/qt-ant-design)
@@ -25,6 +26,8 @@
 - 使用 `QPainter` / `QProxyStyle` 构建可维护的桌面绘制体系
 
 > 当前实现与视觉审计状态记录在 [docs/project-status.md](docs/project-status.md) 和 [docs/visual-audit.md](docs/visual-audit.md)。
+
+> 当前版本：`0.1.0`。版本管理与发布流程见 [docs/versioning.md](docs/versioning.md)，发布说明见 [CHANGELOG.md](CHANGELOG.md)。
 
 > 欢迎提交 Issue 和 PR：视觉差异、交互缺失、Qt 集成问题、文档遗漏、组件修复、测试、示例和文档改进都很欢迎。
 

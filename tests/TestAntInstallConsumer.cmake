@@ -53,6 +53,7 @@ file(WRITE "${consumer_source_dir}/main.cpp" [=[
 #include <type_traits>
 
 #include "core/AntDesign.h"
+#include "core/QtAntDesignVersion.h"
 #include "widgets/AntCalendarWidget.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCheckBox.h"
@@ -98,6 +99,10 @@ static_assert(std::is_same_v<AntTableWidget, AntTable>);
 static_assert(std::is_same_v<AntTimeEdit, AntTimePicker>);
 static_assert(std::is_same_v<AntTreeView, AntTree>);
 static_assert(std::is_same_v<AntTreeWidget, AntTree>);
+static_assert(QT_ANT_DESIGN_VERSION_MAJOR == 0);
+static_assert(QT_ANT_DESIGN_VERSION_MINOR == 1);
+static_assert(QT_ANT_DESIGN_VERSION_PATCH == 0);
+static_assert(QtAntDesign::versionMajor() == QT_ANT_DESIGN_VERSION_MAJOR);
 
 int main(int argc, char** argv)
 {
@@ -126,7 +131,9 @@ int main(int argc, char** argv)
            label.text() == QStringLiteral("Alias Label") &&
            aliasButton.text() == QStringLiteral("Alias Button") &&
            dialog.contentWidget() != nullptr &&
-           inputDialog.textValue() == QStringLiteral("qt-ant-design") ? 0 : 1;
+           inputDialog.textValue() == QStringLiteral("qt-ant-design") &&
+           QString::fromLatin1(QT_ANT_DESIGN_VERSION_STR) == QStringLiteral("0.1.0") &&
+           QString::fromLatin1(QtAntDesign::versionString()) == QStringLiteral("0.1.0") ? 0 : 1;
 }
 ]=])
 

@@ -10,6 +10,7 @@ add_library(qt-ant-design
     ${QT_ANT_DESIGN_HEADERS}
     ${QT_ANT_DESIGN_SOURCES}
     ${QT_ANT_DESIGN_RESOURCES}
+    ${QT_ANT_DESIGN_VERSION_HEADER}
 )
 
 get_target_property(QT_ANT_DESIGN_TARGET_TYPE qt-ant-design TYPE)
@@ -33,6 +34,7 @@ endif()
 target_include_directories(qt-ant-design
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${QT_ANT_DESIGN_GENERATED_INCLUDE_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design>
 )
 
@@ -49,4 +51,8 @@ install(DIRECTORY core styles widgets
     FILES_MATCHING PATTERN "*.h"
     PATTERN "*_p.h" EXCLUDE
     PATTERN "AntSelectPopup.h" EXCLUDE
+)
+
+install(FILES ${QT_ANT_DESIGN_VERSION_HEADER}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt-ant-design/core
 )
