@@ -16,6 +16,8 @@
 
 `qt-ant-design` 是一个基于 Qt Widgets 的 C++ 组件库，配置时可自动识别 Qt6 或 Qt5，目标是将 Ant Design 设计系统移植到原生桌面组件中。
 
+在线文档：[www.sorrowfeng.top/qt-ant-design](http://www.sorrowfeng.top/qt-ant-design/)
+
 项目强调：
 
 - 亮暗主题动态切换
@@ -49,6 +51,7 @@
 - 逐控件可靠性覆盖：[docs/reliability-coverage.md](docs/reliability-coverage.md)
 - 逐控件性能优化进度：[docs/performance-optimization.md](docs/performance-optimization.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
+- 在线组件 / API 说明页：[www.sorrowfeng.top/qt-ant-design/components](http://www.sorrowfeng.top/qt-ant-design/components/)
 - 本地中文组件 / API 说明页：[docs/component-api-overview-cn.html](docs/component-api-overview-cn.html)
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
 - 当前 CTest 条目数：`46`；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-30`）；Qt5/Qt6 定向视觉一致性、视觉 atlas 缩放烟测、度量审计、真实 example 页面遍历/截图对比、Windows High DPI 缩放和无 QSS 门禁检查已于 `2026-06-01` 通过

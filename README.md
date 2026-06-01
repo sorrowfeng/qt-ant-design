@@ -16,6 +16,8 @@ English | [简体中文](README.zh-CN.md)
 
 `qt-ant-design` is a C++ component library built on Qt Widgets that auto-detects Qt 6 or Qt 5 at configure time and ports the Ant Design system to native desktop widgets.
 
+Online documentation: [www.sorrowfeng.top/qt-ant-design](http://www.sorrowfeng.top/qt-ant-design/)
+
 The project focuses on:
 
 - Dynamic light / dark theme switching
@@ -49,6 +51,7 @@ The project focuses on:
 - Per-component reliability coverage: [docs/reliability-coverage.md](docs/reliability-coverage.md)
 - Per-component performance optimization progress: [docs/performance-optimization.md](docs/performance-optimization.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
+- Online component/API reference: [www.sorrowfeng.top/qt-ant-design/components](http://www.sorrowfeng.top/qt-ant-design/components/)
 - Local Chinese component/API reference: [docs/component-api-overview-cn.html](docs/component-api-overview-cn.html)
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
 - Current CTest entry count: `46`; latest full component reliability sweep: `37 / 37` passed on `2026-05-30`; targeted Qt5/Qt6 visual parity, visual-atlas scale-factor smoke, metric audit, real example page traversal/comparison, Windows High DPI scaling, and no-QSS guard checks passed on `2026-06-01`
