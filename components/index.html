@@ -469,6 +469,69 @@
       max-width: 92%;
       max-height: 190px;
       object-fit: contain;
+      cursor: zoom-in;
+      transition: transform .16s ease, filter .16s ease;
+    }
+    .component-preview img:hover {
+      transform: scale(1.02);
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .12));
+    }
+    .image-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: grid;
+      place-items: center;
+      padding: 80px 48px 48px;
+      background: rgba(5, 5, 5, .72);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+    }
+    .image-lightbox.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .image-lightbox-panel {
+      position: relative;
+      max-width: min(1120px, calc(100vw - 96px));
+      max-height: calc(100vh - 128px);
+      padding: 12px;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 24px 72px rgba(0, 0, 0, .34);
+      transform: scale(.98);
+      transition: transform .18s ease;
+    }
+    .image-lightbox.open .image-lightbox-panel {
+      transform: scale(1);
+    }
+    .image-lightbox img {
+      display: block;
+      max-width: min(100%, calc(100vw - 120px));
+      max-height: calc(100vh - 168px);
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .image-lightbox-close {
+      position: absolute;
+      top: -42px;
+      right: 0;
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(255, 255, 255, .35);
+      border-radius: 50%;
+      background: rgba(0, 0, 0, .28);
+      color: #fff;
+      font-size: 22px;
+      line-height: 30px;
+      cursor: pointer;
+    }
+    .image-lightbox-caption {
+      margin: 10px 2px 0;
+      color: var(--subtle);
+      font-size: 13px;
+      line-height: 1.6;
     }
     .usage-panel h4 {
       margin: 0 0 8px;
@@ -569,6 +632,9 @@
       .api-count { margin-top: 12px; }
       table { display: block; overflow-x: auto; }
       .enum-section li { grid-template-columns: 1fr; }
+      .image-lightbox { padding: 64px 16px 24px; }
+      .image-lightbox-panel { max-width: calc(100vw - 32px); max-height: calc(100vh - 88px); }
+      .image-lightbox img { max-width: calc(100vw - 56px); max-height: calc(100vh - 128px); }
     }
   </style>
 </head>
@@ -7816,7 +7882,83 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
         code.innerHTML = highlightCpp(code.textContent);
       });
     }
+    function initImagePreview() {
+      const previewImages = Array.from(document.querySelectorAll('.component-preview img'));
+      if (!previewImages.length) return;
+
+      const lightbox = document.createElement('div');
+      lightbox.className = 'image-lightbox';
+      lightbox.setAttribute('role', 'dialog');
+      lightbox.setAttribute('aria-modal', 'true');
+      lightbox.setAttribute('aria-hidden', 'true');
+
+      const panel = document.createElement('div');
+      panel.className = 'image-lightbox-panel';
+
+      const closeButton = document.createElement('button');
+      closeButton.className = 'image-lightbox-close';
+      closeButton.type = 'button';
+      closeButton.setAttribute('aria-label', '关闭图片预览');
+      closeButton.textContent = '×';
+
+      const image = document.createElement('img');
+      const caption = document.createElement('p');
+      caption.className = 'image-lightbox-caption';
+
+      panel.append(closeButton, image, caption);
+      lightbox.append(panel);
+      document.body.append(lightbox);
+
+      let lastFocusedImage = null;
+
+      function openPreview(sourceImage) {
+        lastFocusedImage = sourceImage;
+        image.src = sourceImage.currentSrc || sourceImage.src;
+        image.alt = sourceImage.alt || '';
+        caption.textContent = sourceImage.alt || '';
+        caption.hidden = !sourceImage.alt;
+        lightbox.classList.add('open');
+        lightbox.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        closeButton.focus({ preventScroll: true });
+      }
+
+      function closePreview() {
+        if (!lightbox.classList.contains('open')) return;
+        lightbox.classList.remove('open');
+        lightbox.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        if (lastFocusedImage) {
+          lastFocusedImage.focus({ preventScroll: true });
+        }
+      }
+
+      previewImages.forEach(sourceImage => {
+        sourceImage.tabIndex = 0;
+        sourceImage.setAttribute('role', 'button');
+        sourceImage.setAttribute('aria-label', sourceImage.alt ? `查看大图：${sourceImage.alt}` : '查看大图');
+        sourceImage.addEventListener('click', event => {
+          event.preventDefault();
+          openPreview(sourceImage);
+        });
+        sourceImage.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openPreview(sourceImage);
+          }
+        });
+      });
+
+      closeButton.addEventListener('click', closePreview);
+      lightbox.addEventListener('click', event => {
+        if (event.target === lightbox) closePreview();
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closePreview();
+      });
+    }
     highlightUsageCode();
+    initImagePreview();
     initAnchorNavigation();
     input.addEventListener('input', applyFilter);
   </script>
