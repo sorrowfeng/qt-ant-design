@@ -662,6 +662,11 @@ void AntInputNumber::updateEditStyle()
         m_lineEditTransparent = true;
         changed = true;
     }
+    if (!lineEdit()->testAttribute(Qt::WA_NoSystemBackground))
+    {
+        lineEdit()->setAttribute(Qt::WA_NoSystemBackground, true);
+        changed = true;
+    }
     if (lineEdit()->autoFillBackground())
     {
         lineEdit()->setAutoFillBackground(false);
@@ -673,6 +678,18 @@ void AntInputNumber::updateEditStyle()
         changed = true;
     }
     updateLineEditControlsInset();
+
+    const int contentHeight = qMax(1, m.height - 2 * token.lineWidth);
+    if (lineEdit()->minimumHeight() != contentHeight)
+    {
+        lineEdit()->setMinimumHeight(contentHeight);
+        changed = true;
+    }
+    if (lineEdit()->maximumHeight() != contentHeight)
+    {
+        lineEdit()->setMaximumHeight(contentHeight);
+        changed = true;
+    }
 
     if (minimumHeight() != m.height)
     {

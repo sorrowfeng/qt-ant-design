@@ -197,6 +197,7 @@ QRect AntInputNumberStyle::subControlRect(ComplexControl control,
     if (control == QStyle::CC_SpinBox)
     {
         const auto* input = qobject_cast<const AntInputNumber*>(widget);
+        const auto& token = antTheme->tokens();
         const InputNumberMetrics metrics = metricsFor(input);
         const QRectF controlRect = controlRectFor(input, option ? option->rect : QRect());
         const int handlerWidth = handlerWidthFor(input, metrics);
@@ -205,9 +206,9 @@ QRect AntInputNumberStyle::subControlRect(ComplexControl control,
         if (subControl == SC_SpinBoxEditField)
         {
             return controlRect.adjusted(metrics.paddingX,
-                                        0,
+                                        token.lineWidth,
                                         -(metrics.paddingX + handlerWidth + addonAfterWidth),
-                                        0).toRect();
+                                        -token.lineWidth).toRect();
         }
         if (subControl == SC_SpinBoxUp && handlerWidth > 0)
         {
@@ -285,6 +286,7 @@ bool AntInputNumberStyle::eventFilter(QObject* watched, QEvent* event)
 
         QPainter painter(input);
         drawComplexControl(CC_SpinBox, &option, &painter, input);
+        return true;
     }
 
     return QProxyStyle::eventFilter(watched, event);

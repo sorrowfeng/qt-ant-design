@@ -23,6 +23,7 @@ class TestAntDataEntryA : public QObject
 private slots:
     void propertiesAndSignals();
     void inputNumberDefaultsToIntegerAndEnablesDecimals();
+    void inputNumberOutlinedFrameStaysVisibleAroundLineEdit();
     void inputNumberLineEditPaletteTracksDarkTheme();
     void inputNumberUsesLayoutFriendlyPolicy();
     void inputNumberCachesMetricsAndScopesControlUpdates();
@@ -52,6 +53,35 @@ QImage renderWidgetImage(QWidget& widget)
     QPainter painter(&image);
     widget.render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
     return image;
+}
+
+bool closeToColor(const QColor& color, const QColor& target)
+{
+    return color.alpha() > 80 &&
+           qAbs(color.red() - target.red()) <= 48 &&
+           qAbs(color.green() - target.green()) <= 64 &&
+           qAbs(color.blue() - target.blue()) <= 64;
+}
+
+int countPrimaryPixelsOnRows(const QImage& image, const QList<int>& rows)
+{
+    const QColor primary = antTheme->tokens().colorPrimary;
+    int count = 0;
+    for (const int y : rows)
+    {
+        if (y < 0 || y >= image.height())
+        {
+            continue;
+        }
+        for (int x = 28; x < image.width() - 28; ++x)
+        {
+            if (closeToColor(image.pixelColor(x, y), primary))
+            {
+                ++count;
+            }
+        }
+    }
+    return count;
 }
 
 int sliderVisualHandleCenterY()
@@ -388,6 +418,38 @@ void TestAntDataEntryA::inputNumberDefaultsToIntegerAndEnablesDecimals()
     input.setValue(1.125);
     QCOMPARE(input.value(), 1.125);
     QCOMPARE(input.cleanText(), QStringLiteral("1.125"));
+}
+
+void TestAntDataEntryA::inputNumberOutlinedFrameStaysVisibleAroundLineEdit()
+{
+    AntInputNumber input;
+    input.resize(448, input.sizeHint().height());
+    input.show();
+    input.setFocus(Qt::OtherFocusReason);
+    auto* editor = input.findChild<QLineEdit*>();
+    if (editor)
+    {
+        editor->setFocus(Qt::OtherFocusReason);
+    }
+    QCoreApplication::processEvents();
+
+    QVERIFY(editor != nullptr);
+    QVERIFY(editor->geometry().top() > input.rect().top());
+    QVERIFY(editor->geometry().bottom() < input.rect().bottom());
+
+    const QImage image = renderWidgetImage(input);
+    input.hide();
+    QVERIFY(!image.isNull());
+
+    const int topPrimary = countPrimaryPixelsOnRows(image, {0, 1, 2, 3});
+    const int bottomPrimary = countPrimaryPixelsOnRows(image, {image.height() - 4,
+                                                               image.height() - 3,
+                                                               image.height() - 2,
+                                                               image.height() - 1});
+    QVERIFY2(topPrimary > image.width() / 2,
+             qPrintable(QStringLiteral("top input-number border primary pixels too sparse: %1").arg(topPrimary)));
+    QVERIFY2(bottomPrimary > image.width() / 2,
+             qPrintable(QStringLiteral("bottom input-number border primary pixels too sparse: %1").arg(bottomPrimary)));
 }
 
 void TestAntDataEntryA::inputNumberLineEditPaletteTracksDarkTheme()
