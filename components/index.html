@@ -25,7 +25,7 @@
       --shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
     }
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: auto; }
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
@@ -180,9 +180,14 @@
       margin-bottom: 4px;
     }
     .category-nav a:hover,
-    .category-nav a:first-child {
+    .category-nav a.active {
       color: var(--ant-blue);
       background: var(--ant-blue-bg);
+    }
+    .category-nav a:active,
+    .side-group a:active,
+    .toc a:active {
+      background: #bae0ff;
     }
     .category-nav b {
       font-size: 13px;
@@ -206,6 +211,17 @@
       padding: 7px 12px;
       border-radius: 6px;
       color: var(--subtle);
+    }
+    .side-group a:hover,
+    .side-group a.active {
+      color: var(--ant-blue);
+      background: var(--ant-blue-bg);
+    }
+    .side-group a.active {
+      font-weight: 500;
+    }
+    .side-group a.active small {
+      color: var(--ant-blue);
     }
     .side-group small {
       color: var(--muted);
@@ -397,13 +413,17 @@
     .component[hidden],
     .overview-card[hidden] { display: none; }
     .doc-card {
+      scroll-margin-top: 88px;
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       margin: 24px 0 32px;
       overflow: hidden;
-      content-visibility: auto;
-      contain-intrinsic-size: 900px;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .doc-card.is-target {
+      border-color: var(--ant-blue-border);
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.08), var(--shadow);
     }
     .component-head {
       display: flex;
@@ -526,6 +546,10 @@
       display: block;
       padding: 6px 0;
       color: var(--muted);
+    }
+    .toc a:hover,
+    .toc a.active {
+      color: var(--ant-blue);
     }
     @media (max-width: 1180px) {
       .layout { grid-template-columns: 1fr; }
@@ -7545,6 +7569,158 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
     const overviewCards = Array.from(document.querySelectorAll('.component-card'));
     const sectionTitles = Array.from(document.querySelectorAll('.section-title'));
     const overviewSections = Array.from(document.querySelectorAll('.overview-section'));
+    const anchorLinks = Array.from(document.querySelectorAll('.sidebar a[href^="#"], .toc a[href^="#"], .overview-card[href^="#"]'));
+    const scrollTargets = Array.from(document.querySelectorAll('[id]')).filter(element => {
+      return element.classList.contains('component') ||
+        element.classList.contains('overview-section') ||
+        element.classList.contains('enum-section') ||
+        element.id === 'overview' ||
+        element.id === 'api-details';
+    });
+    let activeTargetId = '';
+    let suppressScrollSpy = false;
+
+    function hashToId(hash) {
+      if (!hash) return '';
+      const raw = hash.charAt(0) === '#' ? hash.slice(1) : hash;
+      try {
+        return decodeURIComponent(raw);
+      } catch (error) {
+        return raw;
+      }
+    }
+
+    function linkTargetId(link) {
+      return hashToId(link.getAttribute('href') || '');
+    }
+
+    function topOffset() {
+      const topbar = document.querySelector('.topbar');
+      return (topbar ? topbar.getBoundingClientRect().height : 0) + 18;
+    }
+
+    function targetById(id) {
+      return id ? document.getElementById(id) : null;
+    }
+
+    function revealTarget(target) {
+      if (!target || !input.value) return;
+      if (target.hidden || target.closest('[hidden]')) {
+        input.value = '';
+        applyFilter();
+      }
+    }
+
+    function updateHash(id, replace = false) {
+      if (!id) return;
+      const next = `${location.pathname}${location.search}#${encodeURIComponent(id)}`;
+      if (replace) {
+        history.replaceState(null, '', next);
+      } else if (location.hash !== `#${encodeURIComponent(id)}` && hashToId(location.hash) !== id) {
+        history.pushState(null, '', next);
+      }
+    }
+
+    function setActiveTarget(id, options = {}) {
+      if (!id || activeTargetId === id && !options.force) return;
+      activeTargetId = id;
+
+      anchorLinks.forEach(link => {
+        const active = linkTargetId(link) === id;
+        link.classList.toggle('active', active);
+        if (active) {
+          link.setAttribute('aria-current', 'true');
+          if (options.scrollSidebar && link.closest('.sidebar')) {
+            link.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+          }
+        } else {
+          link.removeAttribute('aria-current');
+        }
+      });
+
+      components.forEach(card => card.classList.toggle('is-target', card.id === id));
+
+      const target = targetById(id);
+      const category = target && target.dataset && target.dataset.category
+        ? target.dataset.category
+        : id.startsWith('overview-') ? id.slice('overview-'.length) : '';
+      document.querySelectorAll('.category-nav a').forEach(link => {
+        const categoryId = linkTargetId(link).replace(/^overview-/, '');
+        link.classList.toggle('active', category && categoryId === category);
+      });
+    }
+
+    function scrollToTarget(target, options = {}) {
+      if (!target) return false;
+      revealTarget(target);
+      const y = Math.max(0, Math.round(window.scrollY + target.getBoundingClientRect().top - topOffset()));
+      suppressScrollSpy = true;
+      setActiveTarget(target.id, { force: true, scrollSidebar: true });
+      window.scrollTo({ top: y, behavior: 'auto' });
+      updateHash(target.id, options.replaceHash);
+      window.setTimeout(() => {
+        const correctedY = Math.max(0, Math.round(window.scrollY + target.getBoundingClientRect().top - topOffset()));
+        if (Math.abs(correctedY - window.scrollY) > 2) {
+          window.scrollTo({ top: correctedY, behavior: 'auto' });
+        }
+        suppressScrollSpy = false;
+        updateActiveFromScroll();
+      }, 0);
+      return true;
+    }
+
+    function updateActiveFromScroll() {
+      if (suppressScrollSpy) return;
+      const marker = window.scrollY + topOffset() + 8;
+      let current = scrollTargets[0] ? scrollTargets[0].id : '';
+      for (const target of scrollTargets) {
+        if (target.hidden || target.closest('[hidden]')) continue;
+        if (target.offsetTop <= marker) {
+          current = target.id;
+        } else {
+          break;
+        }
+      }
+      if (current) {
+        setActiveTarget(current, { scrollSidebar: false });
+      }
+    }
+
+    function handleAnchorClick(event) {
+      const link = event.currentTarget;
+      const target = targetById(linkTargetId(link));
+      if (!target) return;
+      event.preventDefault();
+      scrollToTarget(target);
+    }
+
+    function initAnchorNavigation() {
+      anchorLinks.forEach(link => link.addEventListener('click', handleAnchorClick));
+      if (location.hash) {
+        const target = targetById(hashToId(location.hash));
+        if (target) {
+          requestAnimationFrame(() => scrollToTarget(target, { replaceHash: true }));
+          return;
+        }
+      }
+      updateActiveFromScroll();
+    }
+
+    let scrollSpyRaf = 0;
+    window.addEventListener('scroll', () => {
+      if (scrollSpyRaf) return;
+      scrollSpyRaf = requestAnimationFrame(() => {
+        scrollSpyRaf = 0;
+        updateActiveFromScroll();
+      });
+    }, { passive: true });
+    window.addEventListener('hashchange', () => {
+      const target = targetById(hashToId(location.hash));
+      if (target) {
+        scrollToTarget(target, { replaceHash: true });
+      }
+    });
+
     function applyFilter() {
       const term = input.value.trim().toLowerCase();
       components.forEach(card => {
@@ -7571,6 +7747,7 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
         }
         title.hidden = term && !visible;
       });
+      updateActiveFromScroll();
     }
     function escapeHtml(value) {
       return value
@@ -7639,6 +7816,7 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
       });
     }
     highlightUsageCode();
+    initAnchorNavigation();
     input.addEventListener('input', applyFilter);
   </script>
 </body>
