@@ -81,6 +81,8 @@ a:hover { color: var(--brand); }
   min-height: clamp(500px, 74vh, 720px);
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: clamp(36px, 8vw, 104px);
   padding: 72px max(32px, calc((100vw - 1180px) / 2)) 82px;
   overflow: hidden;
   isolation: isolate;
@@ -96,7 +98,16 @@ a:hover { color: var(--brand); }
   background: rgba(255, 255, 255, 0.78);
 }
 .hero-copy {
-  width: min(720px, 100%);
+  flex: 1 1 640px;
+  max-width: 720px;
+  min-width: 0;
+}
+.hero-logo {
+  flex: 0 0 auto;
+  width: clamp(190px, 23vw, 330px);
+  height: auto;
+  max-width: 34vw;
+  filter: drop-shadow(0 22px 34px rgba(22, 119, 255, 0.18));
 }
 .eyebrow {
   display: inline-flex;
@@ -341,6 +352,15 @@ pre code {
   .site-header { padding: 0 18px; }
   .nav { gap: 0; }
   .nav a { padding: 7px 9px; }
+  .hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .hero-logo {
+    order: -1;
+    width: 148px;
+    max-width: 42vw;
+  }
   .stats,
   .feature-grid,
   .doc-grid,
@@ -359,8 +379,9 @@ pre code {
 }
 @media (max-width: 680px) {
   .brand span { display: none; }
-  .nav a:nth-last-child(-n + 2) { display: none; }
+  .nav a:not(.active):nth-child(n + 3) { display: none; }
   .hero { padding: 54px 20px 62px; }
+  .hero-logo { width: 120px; }
   .hero p { font-size: 16px; }
   .section { padding: 44px 20px; }
   .section-head { display: block; }
