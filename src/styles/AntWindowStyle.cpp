@@ -1,35 +1,20 @@
 #include "AntWindowStyle.h"
 
 #include <QEvent>
-#include <QIcon>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStyleOption>
 
-#include "styles/AntIconSvgRenderer.h"
+#include "styles/AntWindowChrome.h"
 #include "widgets/AntWindow.h"
+
+static_assert(AntWindow::TitleBarHeight == AntWindowChrome::TitleBarHeight,
+              "AntWindow chrome metrics must stay shared.");
+static_assert(AntWindow::TitleBarButtonWidth == AntWindowChrome::TitleBarButtonWidth,
+              "AntWindow button metrics must stay shared.");
 
 namespace
 {
 constexpr auto kForceLegacyFramePolicyProperty = "antWindowForceLegacyFramePolicy";
-
-QRectF centeredIconRect(const QRect& buttonRect, qreal iconSize = 14.0)
-{
-    if (buttonRect.isNull())
-    {
-        return {};
-    }
-
-    return QRectF(buttonRect.center().x() - iconSize / 2.0,
-                  buttonRect.center().y() - iconSize / 2.0,
-                  iconSize,
-                  iconSize);
-}
-
-bool drawAntdIcon(const QString& iconName, const QRectF& iconRect, const QColor& color, QPainter* painter)
-{
-    return painter && AntIconSvgRenderer::drawIcon(*painter, iconName, iconRect, color);
-}
 
 bool shouldDrawLegacyOutline(const AntWindow* window, bool maximized)
 {
@@ -38,13 +23,6 @@ bool shouldDrawLegacyOutline(const AntWindow* window, bool maximized)
         return false;
     }
     return window->usesLegacyOpaquePath() || window->property(kForceLegacyFramePolicyProperty).toBool();
-}
-
-QColor legacyOutlineColor()
-{
-    return antTheme->themeMode() == Ant::ThemeMode::Dark
-        ? QColor(255, 255, 255, 54)
-        : QColor(0, 0, 0, 88);
 }
 }
 
@@ -110,10 +88,6 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
         return;
     }
 
-    const auto& token = antTheme->tokens();
-    painter->save();
-    painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-
     const int titleBarH = AntWindow::TitleBarHeight;
     const int w = option->rect.width();
     const bool maximized = window->isMaximized();
@@ -133,174 +107,46 @@ void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, c
     // also occasionally gets stuck square after an interrupted resize loop.
     const bool forceSquareCorners = window->usesLegacyOpaquePath();
     const int cornerRadius = (maximized || liveResize || forceSquareCorners) ? 0 : window->cornerRadius();
-    const QRectF windowRect(option->rect);
-    QPainterPath windowPath;
-    if (cornerRadius > 0)
-    {
-        windowPath.addRoundedRect(windowRect, cornerRadius, cornerRadius);
-        painter->setClipPath(windowPath);
-    }
-    else
-    {
-        windowPath.addRect(windowRect);
-    }
 
-    // ─── Draw window background ───
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(token.colorBgContainer);
-    painter->drawPath(windowPath);
+    AntWindowChrome::PaintOptions chrome;
+    chrome.surfaceRect = option->rect;
+    chrome.titleBarRect = QRect(0, 0, w, titleBarH);
+    chrome.widget = window;
+    chrome.title = window->windowTitle();
+    chrome.icon = window->windowIcon();
+    chrome.cornerRadius = cornerRadius;
+    chrome.maximized = maximized;
+    chrome.drawLegacyOutline = shouldDrawLegacyOutline(window, maximized);
 
-    // ─── Draw title bar background ───
-    const QRect titleBarRect(0, 0, w, titleBarH);
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(token.colorBgContainer);
-    painter->drawRect(titleBarRect);
-
-    // ─── Draw title bar bottom border ───
-    painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawLine(QPointF(0, titleBarH - 0.5), QPointF(w, titleBarH - 0.5));
-
-    // ─── Draw window icon ───
-    const QIcon windowIcon = window->windowIcon();
-    if (!windowIcon.isNull())
-    {
-        const int iconSize = 16;
-        const int iconLeft = 12;
-        const int iconTop = (titleBarH - iconSize) / 2;
-        const QPixmap pixmap = windowIcon.pixmap(iconSize, iconSize);
-        painter->drawPixmap(iconLeft, iconTop, pixmap);
-    }
-
-    // ─── Draw title text ───
-    const QString titleText = window->windowTitle();
-    if (!titleText.isEmpty())
-    {
-        QFont titleFont = window->font();
-        titleFont.setPixelSize(token.fontSizeLG);
-        titleFont.setWeight(QFont::DemiBold);
-        painter->setFont(titleFont);
-        painter->setPen(token.colorText);
-
-        int controlsLeft = w;
-        for (AntWindow::TitleBarButton button : {AntWindow::TitleBarButton::Pin,
-                                                 AntWindow::TitleBarButton::Theme,
-                                                 AntWindow::TitleBarButton::Minimize,
-                                                 AntWindow::TitleBarButton::Maximize,
-                                                 AntWindow::TitleBarButton::Close})
-        {
-            const QRect rect = window->titleBarButtonRect(button);
-            if (!rect.isNull())
-            {
-                controlsLeft = qMin(controlsLeft, rect.left());
-            }
-        }
-
-        const int iconOffset = windowIcon.isNull() ? 12 : 12 + 16 + 8;
-        const int textMaxWidth = qMax(0, controlsLeft - iconOffset - 12);
-        const QRect textRect(iconOffset, 0, textMaxWidth, titleBarH);
-        painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft | Qt::TextSingleLine, titleText);
-    }
-
-    // ─── Draw title bar buttons ───
     const AntWindow::TitleBarButton hoveredButton = window->hoveredTitleBarButton();
-
-    auto drawButtonBackground = [&](AntWindow::TitleBarButton button, bool destructive = false, bool active = false) {
-        const QRect btnRect = window->titleBarButtonRect(button);
-        if (btnRect.isNull())
+    auto appendButton = [&](AntWindow::TitleBarButton source,
+                            AntWindowChrome::TitleBarButton target,
+                            bool destructive = false,
+                            bool active = false) {
+        const QRect rect = window->titleBarButtonRect(source);
+        if (!rect.isValid())
         {
-            return btnRect;
+            return;
         }
-
-        const bool hovered = hoveredButton == button;
-        if (hovered || active)
-        {
-            painter->setPen(Qt::NoPen);
-            if (destructive && hovered)
-            {
-                painter->setBrush(token.colorError);
-            }
-            else if (active)
-            {
-                painter->setBrush(token.colorPrimaryBg);
-            }
-            else
-            {
-                painter->setBrush(token.colorFillTertiary);
-            }
-            painter->drawRect(btnRect);
-        }
-
-        return btnRect;
+        AntWindowChrome::TitleBarButtonState state;
+        state.button = target;
+        state.rect = rect;
+        state.hovered = hoveredButton == source;
+        state.active = active;
+        state.destructive = destructive;
+        chrome.buttons.append(state);
     };
 
-    auto iconColorFor = [&](AntWindow::TitleBarButton button, bool destructive = false, bool active = false) {
-        const QRect btnRect = window->titleBarButtonRect(button);
-        const bool hovered = hoveredButton == button;
-        if (destructive && hovered)
-        {
-            return QColor(Qt::white);
-        }
-        if (active)
-        {
-            return token.colorPrimary;
-        }
-        return hovered ? token.colorTextSecondary : token.colorText;
-    };
+    appendButton(AntWindow::TitleBarButton::Pin,
+                 AntWindowChrome::TitleBarButton::Pin,
+                 false,
+                 window->isAlwaysOnTop());
+    appendButton(AntWindow::TitleBarButton::Theme, AntWindowChrome::TitleBarButton::Theme);
+    appendButton(AntWindow::TitleBarButton::Minimize, AntWindowChrome::TitleBarButton::Minimize);
+    appendButton(AntWindow::TitleBarButton::Maximize, AntWindowChrome::TitleBarButton::Maximize);
+    appendButton(AntWindow::TitleBarButton::Close,
+                 AntWindowChrome::TitleBarButton::Close,
+                 true);
 
-    // Pin button
-    {
-        const bool active = window->isAlwaysOnTop();
-        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Pin, false, active);
-        const QString iconName = active ? QStringLiteral("PushpinFilled") : QStringLiteral("PushpinOutlined");
-        drawAntdIcon(iconName, centeredIconRect(btnRect), iconColorFor(AntWindow::TitleBarButton::Pin, false, active), painter);
-    }
-
-    // Theme toggle button
-    {
-        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Theme);
-        const QString iconName = antTheme->themeMode() == Ant::ThemeMode::Dark
-            ? QStringLiteral("SunOutlined")
-            : QStringLiteral("MoonOutlined");
-        drawAntdIcon(iconName, centeredIconRect(btnRect), iconColorFor(AntWindow::TitleBarButton::Theme), painter);
-    }
-
-    // Minimize button
-    {
-        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Minimize);
-        drawAntdIcon(QStringLiteral("MinusOutlined"),
-                     centeredIconRect(btnRect),
-                     iconColorFor(AntWindow::TitleBarButton::Minimize),
-                     painter);
-    }
-
-    // Maximize/Restore button
-    {
-        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Maximize);
-        drawAntdIcon(maximized ? QStringLiteral("FullscreenExitOutlined") : QStringLiteral("FullscreenOutlined"),
-                     centeredIconRect(btnRect),
-                     iconColorFor(AntWindow::TitleBarButton::Maximize),
-                     painter);
-    }
-
-    // Close button
-    {
-        const QRect btnRect = drawButtonBackground(AntWindow::TitleBarButton::Close, true);
-        drawAntdIcon(QStringLiteral("CloseOutlined"),
-                     centeredIconRect(btnRect),
-                     iconColorFor(AntWindow::TitleBarButton::Close, true),
-                     painter);
-    }
-
-    if (shouldDrawLegacyOutline(window, maximized))
-    {
-        QPen outlinePen(legacyOutlineColor());
-        outlinePen.setCosmetic(true);
-        outlinePen.setWidth(1);
-        painter->setPen(outlinePen);
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRect(QRectF(option->rect).adjusted(0.5, 0.5, -0.5, -0.5));
-    }
-
-    painter->restore();
+    AntWindowChrome::drawChrome(painter, chrome);
 }

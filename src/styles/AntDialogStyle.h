@@ -24,6 +24,4 @@ protected:
 
 private:
     void drawDialog(AntDialog* dialog, QPainter* painter) const;
-    void drawTitleBar(AntDialog* dialog, QPainter* painter) const;
-    void drawCloseButton(AntDialog* dialog, QPainter* painter) const;
 };

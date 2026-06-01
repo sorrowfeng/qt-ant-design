@@ -37,6 +37,9 @@ public:
     explicit AntDialog(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::Dialog);
     ~AntDialog() override = default;
 
+    static constexpr int TitleBarHeight = 40;
+    static constexpr int TitleBarButtonWidth = 46;
+
     const AntThemeTokens& tokens() const;
     Ant::ThemeMode currentTheme() const;
 
@@ -111,7 +114,7 @@ private:
     QWidget* m_contentWidget = nullptr;
     bool m_titleBarVisible = true;
     bool m_closeButtonVisible = true;
-    int m_titleBarHeight = 44;
+    int m_titleBarHeight = TitleBarHeight;
     int m_cornerRadius = 8;
     bool m_useRoundedCorners = true;
     TitleBarButton m_hoveredButton = TitleBarButton::None;

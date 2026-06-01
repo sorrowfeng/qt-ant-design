@@ -430,16 +430,13 @@ QRect AntDialog::titleBarRect() const
     {
         return QRect();
     }
-    const int inset = qMax(1, antTheme->tokens().lineWidth);
-    return QRect(surface.left() + inset,
-                 surface.top() + inset,
-                 qMax(0, surface.width() - inset * 2),
-                 m_titleBarHeight);
+    return QRect(surface.left(), surface.top(), surface.width(), m_titleBarHeight);
 }
 
 QRect AntDialog::titleBarTextRect() const
 {
-    QRect textRect = titleBarRect().adjusted(16, 0, -16, 0);
+    const int iconOffset = windowIcon().isNull() ? 0 : 16 + 8;
+    QRect textRect = titleBarRect().adjusted(12 + iconOffset, 0, -12, 0);
     if (m_closeButtonVisible)
     {
         textRect.setRight(qMin(textRect.right(), titleBarCloseButtonRect().left() - 12));
@@ -454,7 +451,7 @@ QRect AntDialog::titleBarCloseButtonRect() const
         return QRect();
     }
     const QRect bar = titleBarRect();
-    const int width = 46;
+    const int width = TitleBarButtonWidth;
     return QRect(bar.right() - width + 1, bar.top(), width, bar.height());
 }
 
@@ -493,6 +490,7 @@ bool AntDialog::event(QEvent* event)
     case QEvent::StyleChange:
         scheduleChildSync();
         break;
+    case QEvent::WindowIconChange:
     case QEvent::WindowTitleChange:
         update(titleBarRect());
         break;

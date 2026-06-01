@@ -3869,6 +3869,9 @@ void TestAntQtExtensions::dialog()
     QCOMPARE(dialog.style()->parent(), &dialog);
     QVERIFY(dialog.styleSheet().isEmpty());
     QCOMPARE(dialog.cornerRadius(), 8);
+    QCOMPARE(dialog.titleBarHeight(), AntDialog::TitleBarHeight);
+    QCOMPARE(AntDialog::TitleBarHeight, AntWindow::TitleBarHeight);
+    QCOMPARE(AntDialog::TitleBarButtonWidth, AntWindow::TitleBarButtonWidth);
     QVERIFY(dialog.isTitleBarVisible());
     QVERIFY(dialog.isCloseButtonVisible());
     QVERIFY(dialog.contentWidget() != nullptr);
@@ -3894,6 +3897,10 @@ void TestAntQtExtensions::dialog()
              dialog.usesRoundedCorners() ? dialog.cornerRadius() : 0);
     QCOMPARE(dialog.property("antDialogShadowMargin").toInt(),
              dialog.usesRoundedCorners() ? 14 : 0);
+    QCOMPARE(dialog.titleBarRect().left(), dialog.property("antDialogShadowMargin").toInt());
+    QCOMPARE(dialog.titleBarRect().top(), dialog.property("antDialogShadowMargin").toInt());
+    QCOMPARE(dialog.titleBarCloseButtonRect().width(), AntDialog::TitleBarButtonWidth);
+    QCOMPARE(dialog.titleBarCloseButtonRect().height(), dialog.titleBarHeight());
 
     auto* bodyLayout = new QVBoxLayout(dialog.contentWidget());
     bodyLayout->setContentsMargins(16, 12, 16, 12);
@@ -4002,7 +4009,12 @@ void TestAntQtExtensions::dialog()
 #endif
     }
     const QColor lightTitleColor = lightImage.pixelColor(dialog.titleBarRect().center());
-    QVERIFY(countNearColorForExtensionTest(lightImage, antTheme->tokens().colorBgElevated, 30) > 0);
+    const QColor lightTitleBg = antTheme->tokens().colorBgContainer;
+    QVERIFY2(colorNearForExtensionTest(lightTitleColor, lightTitleBg, 30),
+             qPrintable(QStringLiteral("AntDialog title bar should reuse AntWindow container chrome, actual %1 expected %2")
+                            .arg(colorStringForExtensionTest(lightTitleColor),
+                                 colorStringForExtensionTest(lightTitleBg))));
+    QVERIFY(countNearColorForExtensionTest(lightImage, antTheme->tokens().colorBgContainer, 30) > 0);
 
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
     QCoreApplication::processEvents();
@@ -4010,7 +4022,11 @@ void TestAntQtExtensions::dialog()
     QVERIFY(!darkImage.isNull());
     const QColor darkTitleColor = darkImage.pixelColor(dialog.titleBarRect().center());
     QVERIFY(!colorNearForExtensionTest(lightTitleColor, darkTitleColor, 8));
-    QVERIFY(countNearColorForExtensionTest(darkImage, antTheme->tokens().colorBgElevated, 30) > 0);
+    QVERIFY2(colorNearForExtensionTest(darkTitleColor, antTheme->tokens().colorBgContainer, 30),
+             qPrintable(QStringLiteral("AntDialog dark title bar should reuse AntWindow container chrome, actual %1 expected %2")
+                            .arg(colorStringForExtensionTest(darkTitleColor),
+                                 colorStringForExtensionTest(antTheme->tokens().colorBgContainer))));
+    QVERIFY(countNearColorForExtensionTest(darkImage, antTheme->tokens().colorBgContainer, 30) > 0);
     QVERIFY(dialog.property("antDialogThemeChangeCount").toInt() > 0);
 
     QSignalSpy rejectedSpy(&dialog, &QDialog::rejected);
