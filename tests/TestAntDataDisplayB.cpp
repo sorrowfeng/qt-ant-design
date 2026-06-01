@@ -1,17 +1,21 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QAbstractItemView>
+#include <QApplication>
 #include <QColor>
+#include <QContextMenuEvent>
 #include <QCoreApplication>
 #include <QImage>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPixmap>
+#include <QPointer>
 #include <QVBoxLayout>
 #include "core/AntTheme.h"
 #include "widgets/AntList.h"
 #include "widgets/AntListWidget.h"
+#include "widgets/AntMenu.h"
 #include "widgets/AntTable.h"
 #include "widgets/AntToolTip.h"
 #include "widgets/AntTree.h"
@@ -66,6 +70,19 @@ protected:
 private:
     QColor m_color;
 };
+
+QWidget* visibleListContextMenuPopup()
+{
+    const auto widgets = QApplication::topLevelWidgets();
+    for (QWidget* widget : widgets)
+    {
+        if (widget && widget->objectName() == QStringLiteral("AntListContextMenuPopup") && widget->isVisible())
+        {
+            return widget;
+        }
+    }
+    return nullptr;
+}
 } // namespace
 
 class TestAntDataDisplayB : public QObject
@@ -74,6 +91,7 @@ class TestAntDataDisplayB : public QObject
 private slots:
     void propertiesAndSignals();
     void listWidgetCompatibilityApis();
+    void listContextMenusUseAntMenu();
     void listItemIconMediaApis();
     void listBulkInsertionCoalescesLayout();
     void listInternalScrolling();
@@ -726,6 +744,80 @@ void TestAntDataDisplayB::listWidgetCompatibilityApis()
     QCOMPARE(taken->parentWidget(), nullptr);
     delete taken;
     QCOMPARE(list.count(), 3);
+}
+
+void TestAntDataDisplayB::listContextMenusUseAntMenu()
+{
+    AntListWidget list;
+    list.addItems({QStringLiteral("Alpha"), QStringLiteral("Beta"), QStringLiteral("Gamma")});
+    list.resize(260, 180);
+
+    auto* fallbackMenu = new AntMenu(&list);
+    fallbackMenu->setSelectable(false);
+    fallbackMenu->addItem(QStringLiteral("refresh"), QStringLiteral("Refresh"), Ant::IconType::Home);
+    list.setContextMenu(fallbackMenu);
+
+    auto* itemMenu = new AntMenu(&list);
+    itemMenu->setSelectable(false);
+    itemMenu->addItem(QStringLiteral("open"), QStringLiteral("Open"), Ant::IconType::Edit);
+    itemMenu->addItem(QStringLiteral("delete"), QStringLiteral("Delete"), Ant::IconType::Delete, QString(), false, true);
+    list.setItemContextMenu(list.item(1), itemMenu);
+
+    QSignalSpy requestedSpy(&list, &AntList::contextMenuRequested);
+    QSignalSpy aboutToShowSpy(&list, &AntList::contextMenuAboutToShow);
+    QSignalSpy itemMenuClickSpy(itemMenu, &AntMenu::itemClicked);
+
+    list.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&list));
+
+    const QPoint betaPos = list.visualItemRect(list.item(1)).center();
+    QContextMenuEvent betaContextEvent(QContextMenuEvent::Mouse, betaPos, list.mapToGlobal(betaPos));
+    QCoreApplication::sendEvent(&list, &betaContextEvent);
+
+    QVERIFY(betaContextEvent.isAccepted());
+    QCOMPARE(list.contextMenuItem(), list.item(1));
+    QCOMPARE(list.currentItem(), list.item(1));
+    QCOMPARE(requestedSpy.count(), 1);
+    QCOMPARE(requestedSpy.at(0).at(0).value<AntListItem*>(), list.item(1));
+    QCOMPARE(aboutToShowSpy.count(), 1);
+    QCOMPARE(aboutToShowSpy.at(0).at(0).value<AntMenu*>(), itemMenu);
+
+    QTRY_VERIFY(visibleListContextMenuPopup() != nullptr);
+    QWidget* popup = visibleListContextMenuPopup();
+    QVERIFY(popup);
+    auto* popupMenu = popup->findChild<AntMenu*>(QStringLiteral("AntListContextMenu"));
+    QVERIFY(popupMenu);
+    QVERIFY(popupMenu != itemMenu);
+    QCOMPARE(popupMenu->itemAt(0).key, QStringLiteral("open"));
+    QCOMPARE(popupMenu->itemAt(1).danger, true);
+
+    QPointer<QWidget> popupGuard = popup;
+    QTest::mouseClick(popupMenu,
+                      Qt::LeftButton,
+                      Qt::NoModifier,
+                      QPoint(popupMenu->width() / 2, qMin(24, qMax(0, popupMenu->height() - 1))));
+    QTRY_COMPARE(itemMenuClickSpy.count(), 1);
+    QCOMPARE(itemMenuClickSpy.takeFirst().at(0).toString(), QStringLiteral("open"));
+    QTRY_VERIFY(!popupGuard || !popupGuard->isVisible());
+    QTRY_VERIFY(list.contextMenuItem() == nullptr);
+
+    const QPoint blankPos(12, list.height() - 12);
+    QContextMenuEvent blankContextEvent(QContextMenuEvent::Mouse, blankPos, list.mapToGlobal(blankPos));
+    QCoreApplication::sendEvent(&list, &blankContextEvent);
+
+    QVERIFY(blankContextEvent.isAccepted());
+    QCOMPARE(list.contextMenuItem(), nullptr);
+    QCOMPARE(requestedSpy.count(), 2);
+    QCOMPARE(aboutToShowSpy.count(), 2);
+    QCOMPARE(aboutToShowSpy.at(1).at(0).value<AntMenu*>(), fallbackMenu);
+
+    QTRY_VERIFY(visibleListContextMenuPopup() != nullptr);
+    popup = visibleListContextMenuPopup();
+    QVERIFY(popup);
+    popupMenu = popup->findChild<AntMenu*>(QStringLiteral("AntListContextMenu"));
+    QVERIFY(popupMenu);
+    QCOMPARE(popupMenu->itemAt(0).key, QStringLiteral("refresh"));
+    popup->close();
 }
 
 void TestAntDataDisplayB::listItemIconMediaApis()

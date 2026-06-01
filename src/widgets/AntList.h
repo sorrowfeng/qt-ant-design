@@ -15,9 +15,12 @@
 #include <QVariant>
 #include <QWidget>
 
+#include "AntMenu.h"
 #include "core/AntTypes.h"
 
 class AntIcon;
+class QContextMenuEvent;
+class QEvent;
 class QKeyEvent;
 class QPaintEvent;
 class QPainter;
@@ -242,6 +245,14 @@ public:
     void setVerticalScrollOffset(int offset);
     void scrollToItem(AntListItem* item);
 
+    void setContextMenu(AntMenu* menu);
+    AntMenu* contextMenu() const;
+    void clearContextMenu();
+    void setItemContextMenu(AntListItem* item, AntMenu* menu);
+    AntMenu* itemContextMenu(AntListItem* item) const;
+    void clearItemContextMenu(AntListItem* item);
+    AntListItem* contextMenuItem() const;
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -256,8 +267,12 @@ Q_SIGNALS:
     void currentItemChanged(AntListItem* current, AntListItem* previous);
     void currentRowChanged(int currentRow);
     void itemSelectionChanged();
+    void contextMenuRequested(AntListItem* item, const QPoint& globalPos);
+    void contextMenuAboutToShow(AntMenu* menu, AntListItem* item);
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+    void contextMenuEvent(QContextMenuEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
@@ -290,6 +305,11 @@ private:
     bool setItemSelectedInternal(AntListItem* item, bool selected, bool clearOthers);
     bool clearSelectionExcept(AntListItem* keepItem);
     AntListItem* enabledSelectableItem(int startRow, int direction) const;
+    AntMenu* menuForContextItem(AntListItem* item) const;
+    bool showContextMenuForPosition(const QPoint& pos, const QPoint& globalPos);
+    AntListItem* itemForContextObject(QObject* object) const;
+    void installContextMenuFilters(QObject* object);
+    void uninstallContextMenuFilters(QObject* object);
 
     bool m_bordered = false;
     bool m_split = true;
@@ -300,4 +320,8 @@ private:
     QPointer<AntListItem> m_currentItem;
     QAbstractItemView::SelectionMode m_selectionMode = QAbstractItemView::SingleSelection;
     int m_verticalScrollOffset = 0;
+    QPointer<AntMenu> m_contextMenu;
+    QHash<AntListItem*, QPointer<AntMenu>> m_itemContextMenus;
+    QPointer<AntListItem> m_contextMenuItem;
+    QPointer<QWidget> m_contextMenuPopup;
 };

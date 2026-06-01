@@ -127,16 +127,11 @@ void AntTheme::drawEffectShadow(QPainter* painter, const QRect& rect, int shadow
             const qreal centerDistance = (outerDistance + innerDistance) * 0.5;
             const qreal proximity = std::clamp(1.0 - centerDistance / spread, 0.0, 1.0);
             const qreal eased = proximity * proximity * proximity * (proximity * (proximity * 6.0 - 15.0) + 10.0);
-            const qreal edgeClearance = qMin<qreal>(2.0, spread * 0.14);
-            if (centerDistance <= edgeClearance)
-            {
-                continue;
-            }
             const qreal edgeSoftness = qMin<qreal>(4.0, spread * 0.28);
             qreal edgeRamp = 1.0;
             if (edgeSoftness > 0.0)
             {
-                const qreal t = std::clamp((centerDistance - edgeClearance) / edgeSoftness, 0.0, 1.0);
+                const qreal t = std::clamp(centerDistance / edgeSoftness, 0.0, 1.0);
                 edgeRamp = t * t * (3.0 - 2.0 * t);
             }
             const qreal opacity =

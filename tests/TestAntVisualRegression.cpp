@@ -868,8 +868,11 @@ void TestAntVisualRegression::popupEffectShadowPaintsOutsidePanel()
         const int edgeAlpha = bottomAlphaAt(1);
         const int bodyAlpha = qMax(bottomAlphaAt(4), bottomAlphaAt(6));
         const int tailAlpha = bottomAlphaAt(18);
-        QVERIFY2(edgeAlpha <= 8,
-                 qPrintable(QStringLiteral("popup shadow must not create a second border immediately below the panel; edge alpha: %1")
+        QVERIFY2(edgeAlpha > 0,
+                 qPrintable(QStringLiteral("popup shadow should start immediately next to the panel edge; edge alpha: %1")
+                                .arg(edgeAlpha)));
+        QVERIFY2(edgeAlpha <= 18,
+                 qPrintable(QStringLiteral("popup shadow beside the panel edge should stay soft, not read as a second border; edge alpha: %1")
                                 .arg(edgeAlpha)));
         QVERIFY2(qMax(edgeAlpha, bodyAlpha) > tailAlpha,
                  qPrintable(QStringLiteral("popup bottom shadow should fade outward; peak/tail alpha: %1/%2")

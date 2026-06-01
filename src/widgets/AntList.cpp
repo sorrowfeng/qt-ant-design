@@ -1,15 +1,26 @@
 #include "AntList.h"
 
+#include <QApplication>
+#include <QChildEvent>
+#include <QContextMenuEvent>
+#include <QFrame>
 #include <QFontMetrics>
+#include <QGuiApplication>
+#include <QHideEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QRegularExpression>
 #include <QResizeEvent>
+#include <QScreen>
+#include <QVBoxLayout>
 #include <QtMath>
 #include <QWheelEvent>
+#include <QWindow>
 
 #include "../styles/AntListStyle.h"
+#include "AntMenu.h"
+#include "core/AntCompat.h"
 #include "core/AntTheme.h"
 #include "core/AntThemeRefresh_p.h"
 #include "styles/AntPalette.h"
@@ -17,9 +28,28 @@
 
 namespace
 {
+constexpr int kListContextMenuShadowMargin = 18;
+constexpr int kListContextMenuPanelInset = 1;
+constexpr int kListContextMenuMinWidth = 148;
+constexpr int kListContextMenuMaxWidth = 320;
+
 const AntList* parentListForItem(const QWidget* widget)
 {
     return widget ? qobject_cast<const AntList*>(widget->parentWidget()) : nullptr;
+}
+
+QRect availableScreenGeometryForListPopup(const QPoint& globalPos, const QWidget* fallback)
+{
+    QScreen* screen = QGuiApplication::screenAt(globalPos);
+    if (!screen && fallback && fallback->windowHandle())
+    {
+        screen = fallback->windowHandle()->screen();
+    }
+    if (!screen)
+    {
+        screen = QGuiApplication::primaryScreen();
+    }
+    return screen ? screen->availableGeometry() : QRect(globalPos - QPoint(400, 300), QSize(800, 600));
 }
 
 int listItemPaddingV(const AntList* list)
@@ -50,6 +80,336 @@ int tokenLineHeight(int fontSize)
 {
     return qRound(fontSize * antTheme->tokens().lineHeight);
 }
+
+class AntListContextMenuPopup : public QFrame
+{
+public:
+    explicit AntListContextMenuPopup(QWidget* parent)
+        : QFrame(parent, Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+    {
+        setObjectName(QStringLiteral("AntListContextMenuPopup"));
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAttribute(Qt::WA_ShowWithoutActivating, true);
+        setAutoFillBackground(false);
+        setMouseTracking(true);
+
+        auto* layout = new QVBoxLayout(this);
+        const int margin = kListContextMenuShadowMargin + kListContextMenuPanelInset;
+        layout->setContentsMargins(margin, margin, margin, margin);
+        layout->setSpacing(0);
+
+        m_menu = new AntMenu(this);
+        m_menu->setObjectName(QStringLiteral("AntListContextMenu"));
+        m_menu->setMode(Ant::MenuMode::Vertical);
+        m_menu->setCompact(true);
+        layout->addWidget(m_menu);
+
+        connect(m_menu, &AntMenu::itemClicked, this, [this](const QString& key) {
+            handleItemClicked(key);
+        });
+        connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+            syncTheme();
+            update();
+        });
+    }
+
+    ~AntListContextMenuPopup() override
+    {
+        uninstallGlobalEventFilter();
+    }
+
+    void setSourceMenu(AntMenu* menu)
+    {
+        m_sourceMenu = menu;
+        rebuildMenu();
+    }
+
+    AntMenu* menu() const { return m_menu; }
+
+    void popupAt(const QPoint& globalPos)
+    {
+        rebuildGeometry();
+        QRect geometry(globalPos, size());
+        const QRect screenRect = availableScreenGeometryForListPopup(globalPos, parentWidget());
+        geometry.moveLeft(qBound(screenRect.left() + 4, geometry.left(), screenRect.right() - geometry.width() - 4));
+        geometry.moveTop(qBound(screenRect.top() + 4, geometry.top(), screenRect.bottom() - geometry.height() - 4));
+        setGeometry(geometry);
+        installGlobalEventFilter();
+        show();
+        raise();
+    }
+
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (!isVisible())
+        {
+            return QFrame::eventFilter(watched, event);
+        }
+
+        if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonDblClick)
+        {
+            auto* mouseEvent = static_cast<QMouseEvent*>(event);
+            if (!geometry().contains(antEventGlobalPosition(mouseEvent)))
+            {
+                close();
+            }
+            return false;
+        }
+
+        if (event->type() == QEvent::KeyPress)
+        {
+            auto* keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_Escape)
+            {
+                close();
+                return true;
+            }
+        }
+
+        if (event->type() == QEvent::WindowDeactivate)
+        {
+            close();
+        }
+
+        return QFrame::eventFilter(watched, event);
+    }
+
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event)
+        const auto& token = antTheme->tokens();
+        QPainter painter(this);
+        painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+
+        const QRect panel = rect().adjusted(kListContextMenuShadowMargin,
+                                            kListContextMenuShadowMargin,
+                                            -kListContextMenuShadowMargin,
+                                            -kListContextMenuShadowMargin);
+        antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.72);
+        const QColor border = antTheme->themeMode() == Ant::ThemeMode::Dark
+                                  ? AntPalette::alpha(token.colorTextLightSolid, 0.18)
+                                  : token.colorBorder;
+        painter.setPen(QPen(border, token.lineWidth));
+        painter.setBrush(token.colorBgElevated);
+        painter.drawRoundedRect(QRectF(panel).adjusted(0.5, 0.5, -0.5, -0.5),
+                                token.borderRadiusLG,
+                                token.borderRadiusLG);
+    }
+
+    void hideEvent(QHideEvent* event) override
+    {
+        uninstallGlobalEventFilter();
+        QFrame::hideEvent(event);
+        deleteLater();
+    }
+
+private:
+    void installGlobalEventFilter()
+    {
+        if (!qApp || m_eventFilterInstalled)
+        {
+            return;
+        }
+        qApp->installEventFilter(this);
+        m_eventFilterInstalled = true;
+    }
+
+    void uninstallGlobalEventFilter()
+    {
+        if (!qApp || !m_eventFilterInstalled)
+        {
+            return;
+        }
+        qApp->removeEventFilter(this);
+        m_eventFilterInstalled = false;
+    }
+
+    void syncTheme()
+    {
+        if (!m_menu)
+        {
+            return;
+        }
+        m_menu->setMenuTheme(antTheme->themeMode() == Ant::ThemeMode::Dark
+                                 ? Ant::MenuTheme::Dark
+                                 : Ant::MenuTheme::Light);
+    }
+
+    void addClonedItem(const AntMenuItem& item)
+    {
+        if (!m_menu)
+        {
+            return;
+        }
+
+        if (item.divider)
+        {
+            m_menu->addDivider();
+            return;
+        }
+
+        const bool hasAntIcon = item.iconType != Ant::IconType::None;
+        if (item.subMenu)
+        {
+            if (hasAntIcon)
+            {
+                m_menu->addSubMenu(item.key, item.label, item.iconType, item.disabled);
+            }
+            else
+            {
+                m_menu->addSubMenu(item.key, item.label, item.iconText, item.disabled);
+            }
+            return;
+        }
+
+        if (!item.parentKey.isEmpty())
+        {
+            if (hasAntIcon)
+            {
+                m_menu->addSubItem(item.parentKey,
+                                   item.key,
+                                   item.label,
+                                   item.iconType,
+                                   item.extra,
+                                   item.disabled,
+                                   item.danger);
+            }
+            else
+            {
+                m_menu->addSubItem(item.parentKey,
+                                   item.key,
+                                   item.label,
+                                   item.iconText,
+                                   item.extra,
+                                   item.disabled,
+                                   item.danger);
+            }
+            return;
+        }
+
+        if (hasAntIcon)
+        {
+            m_menu->addItem(item.key, item.label, item.iconType, item.extra, item.disabled, item.danger);
+        }
+        else
+        {
+            m_menu->addItem(item.key, item.label, item.iconText, item.extra, item.disabled, item.danger);
+        }
+    }
+
+    void rebuildMenu()
+    {
+        if (!m_menu)
+        {
+            return;
+        }
+
+        m_menu->clearItems();
+        if (!m_sourceMenu)
+        {
+            return;
+        }
+
+        syncTheme();
+        m_menu->setSelectable(m_sourceMenu->isSelectable());
+        m_menu->setSelectedKey(m_sourceMenu->selectedKey());
+        for (int i = 0; i < m_sourceMenu->itemCount(); ++i)
+        {
+            addClonedItem(m_sourceMenu->itemAt(i));
+        }
+    }
+
+    void rebuildGeometry()
+    {
+        if (!m_menu)
+        {
+            return;
+        }
+
+        rebuildMenu();
+
+        const auto& token = antTheme->tokens();
+        QFont textFont = m_menu->font();
+        textFont.setPixelSize(token.fontSize);
+        const QFontMetrics fm(textFont);
+
+        int maxTextWidth = 96;
+        bool hasIcon = false;
+        for (int i = 0; m_sourceMenu && i < m_sourceMenu->itemCount(); ++i)
+        {
+            const AntMenuItem item = m_sourceMenu->itemAt(i);
+            if (item.divider || !item.parentKey.isEmpty())
+            {
+                continue;
+            }
+            maxTextWidth = qMax(maxTextWidth, fm.horizontalAdvance(item.label));
+            hasIcon = hasIcon || item.iconType != Ant::IconType::None || !item.iconText.isEmpty();
+        }
+
+        const int iconSpace = hasIcon ? 48 : 28;
+        const int menuWidth = qBound(kListContextMenuMinWidth,
+                                     maxTextWidth + token.paddingLG * 2 + iconSpace,
+                                     kListContextMenuMaxWidth);
+        m_menu->setFixedWidth(menuWidth);
+        m_menu->adjustSize();
+
+        const int margin = kListContextMenuShadowMargin + kListContextMenuPanelInset;
+        setFixedSize(menuWidth + margin * 2, m_menu->sizeHint().height() + margin * 2);
+        update();
+    }
+
+    AntMenuItem sourceItemForKey(const QString& key) const
+    {
+        if (!m_sourceMenu)
+        {
+            return {};
+        }
+        for (int i = 0; i < m_sourceMenu->itemCount(); ++i)
+        {
+            const AntMenuItem item = m_sourceMenu->itemAt(i);
+            if (item.key == key)
+            {
+                return item;
+            }
+        }
+        return {};
+    }
+
+    void handleItemClicked(const QString& key)
+    {
+        if (!m_sourceMenu)
+        {
+            close();
+            return;
+        }
+
+        const AntMenuItem item = sourceItemForKey(key);
+        if (item.subMenu)
+        {
+            return;
+        }
+
+        QPointer<AntMenu> sourceGuard = m_sourceMenu;
+        QPointer<QAction> action = item.action;
+        Q_EMIT sourceGuard->itemClicked(key);
+        if (sourceGuard && sourceGuard->isSelectable())
+        {
+            sourceGuard->setSelectedKey(key);
+            Q_EMIT sourceGuard->itemSelected(key);
+        }
+        if (action)
+        {
+            action->trigger();
+        }
+        close();
+    }
+
+    QPointer<AntMenu> m_sourceMenu;
+    AntMenu* m_menu = nullptr;
+    bool m_eventFilterInstalled = false;
+};
 } // namespace
 
 // ─── AntListItemMeta ───
@@ -1490,6 +1850,71 @@ void AntList::scrollToItem(AntListItem* item)
     setVerticalScrollOffset(nextOffset);
 }
 
+void AntList::setContextMenu(AntMenu* menu)
+{
+    if (m_contextMenu == menu)
+    {
+        return;
+    }
+    m_contextMenu = menu;
+    if (m_contextMenu && !m_contextMenu->parent())
+    {
+        m_contextMenu->setParent(this);
+    }
+}
+
+AntMenu* AntList::contextMenu() const
+{
+    return m_contextMenu.data();
+}
+
+void AntList::clearContextMenu()
+{
+    setContextMenu(nullptr);
+}
+
+void AntList::setItemContextMenu(AntListItem* item, AntMenu* menu)
+{
+    if (!item || row(item) < 0)
+    {
+        return;
+    }
+    if (!menu)
+    {
+        clearItemContextMenu(item);
+        return;
+    }
+    if (!menu->parent())
+    {
+        menu->setParent(this);
+    }
+    m_itemContextMenus.insert(item, menu);
+}
+
+AntMenu* AntList::itemContextMenu(AntListItem* item) const
+{
+    if (!item)
+    {
+        return nullptr;
+    }
+    const auto it = m_itemContextMenus.constFind(item);
+    return it == m_itemContextMenus.constEnd() ? nullptr : it.value().data();
+}
+
+void AntList::clearItemContextMenu(AntListItem* item)
+{
+    if (!item)
+    {
+        return;
+    }
+    m_itemContextMenus.remove(item);
+}
+
+AntListItem* AntList::contextMenuItem() const
+{
+    return m_contextMenuItem.data();
+}
+
 void AntList::adoptItem(AntListItem* item)
 {
     if (!item)
@@ -1497,6 +1922,7 @@ void AntList::adoptItem(AntListItem* item)
         return;
     }
     item->setParent(this);
+    installContextMenuFilters(item);
     item->show();
     disconnect(item, &AntListItem::changed, this, nullptr);
     connect(item, &AntListItem::changed, this, [this, item]() {
@@ -1511,7 +1937,13 @@ void AntList::detachItem(AntListItem* item)
         return;
     }
     disconnect(item, &AntListItem::changed, this, nullptr);
+    uninstallContextMenuFilters(item);
     const bool wasSelected = item->isSelected();
+    m_itemContextMenus.remove(item);
+    if (m_contextMenuItem == item)
+    {
+        m_contextMenuItem = nullptr;
+    }
     if (m_currentItem == item)
     {
         AntListItem* previous = m_currentItem.data();
@@ -1671,6 +2103,51 @@ QSize AntList::minimumSizeHint() const
     return QSize(200, 60);
 }
 
+bool AntList::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event && event->type() == QEvent::ContextMenu)
+    {
+        AntListItem* item = itemForContextObject(watched);
+        if (item)
+        {
+            auto* contextEvent = static_cast<QContextMenuEvent*>(event);
+            QPoint listPos = mapFromGlobal(contextEvent->globalPos());
+            if (contextEvent->globalPos().isNull())
+            {
+                if (auto* widget = qobject_cast<QWidget*>(watched))
+                {
+                    listPos = widget->mapTo(this, contextEvent->pos());
+                }
+            }
+            if (showContextMenuForPosition(listPos, contextEvent->globalPos()))
+            {
+                contextEvent->accept();
+                return true;
+            }
+        }
+    }
+    else if (event && event->type() == QEvent::ChildAdded)
+    {
+        if (itemForContextObject(watched))
+        {
+            auto* childEvent = static_cast<QChildEvent*>(event);
+            installContextMenuFilters(childEvent->child());
+        }
+    }
+
+    return QWidget::eventFilter(watched, event);
+}
+
+void AntList::contextMenuEvent(QContextMenuEvent* event)
+{
+    if (event && showContextMenuForPosition(event->pos(), event->globalPos()))
+    {
+        event->accept();
+        return;
+    }
+    QWidget::contextMenuEvent(event);
+}
+
 void AntList::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
@@ -1770,6 +2247,129 @@ void AntList::wheelEvent(QWheelEvent* event)
 
     setVerticalScrollOffset(m_verticalScrollOffset - delta);
     event->accept();
+}
+
+AntMenu* AntList::menuForContextItem(AntListItem* item) const
+{
+    if (item)
+    {
+        const auto it = m_itemContextMenus.constFind(item);
+        if (it != m_itemContextMenus.constEnd() && it.value())
+        {
+            return it.value().data();
+        }
+    }
+    return m_contextMenu.data();
+}
+
+bool AntList::showContextMenuForPosition(const QPoint& pos, const QPoint& globalPos)
+{
+    AntListItem* clickedItem = itemAt(pos);
+    const QPoint popupPos = globalPos.isNull() ? mapToGlobal(pos) : globalPos;
+    m_contextMenuItem = clickedItem;
+
+    if (clickedItem && clickedItem->isEnabled() && (clickedItem->flags() & Qt::ItemIsEnabled))
+    {
+        setFocus(Qt::MouseFocusReason);
+        setCurrentItemInternal(clickedItem);
+    }
+
+    Q_EMIT contextMenuRequested(clickedItem, popupPos);
+
+    AntMenu* menu = menuForContextItem(clickedItem);
+    if (!menu)
+    {
+        m_contextMenuItem = nullptr;
+        return false;
+    }
+
+    Q_EMIT contextMenuAboutToShow(menu, clickedItem);
+    if (menu->itemCount() <= 0)
+    {
+        m_contextMenuItem = nullptr;
+        return false;
+    }
+
+    if (m_contextMenuPopup)
+    {
+        m_contextMenuPopup->close();
+    }
+
+    auto* popup = new AntListContextMenuPopup(this);
+    m_contextMenuPopup = popup;
+    connect(popup, &QObject::destroyed, this, [this, popup]() {
+        if (m_contextMenuPopup == popup)
+        {
+            m_contextMenuPopup = nullptr;
+            m_contextMenuItem = nullptr;
+        }
+    });
+    popup->setSourceMenu(menu);
+    popup->popupAt(popupPos);
+    return true;
+}
+
+AntListItem* AntList::itemForContextObject(QObject* object) const
+{
+    auto* widget = qobject_cast<QWidget*>(object);
+    while (widget && widget != this)
+    {
+        auto* item = qobject_cast<AntListItem*>(widget);
+        if (item && row(item) >= 0)
+        {
+            return item;
+        }
+        widget = widget->parentWidget();
+    }
+    return nullptr;
+}
+
+void AntList::installContextMenuFilters(QObject* object)
+{
+    if (!object)
+    {
+        return;
+    }
+
+    if (auto* widget = qobject_cast<QWidget*>(object))
+    {
+        widget->removeEventFilter(this);
+        widget->installEventFilter(this);
+        const auto childWidgets = widget->findChildren<QWidget*>();
+        for (QWidget* child : childWidgets)
+        {
+            if (child)
+            {
+                child->removeEventFilter(this);
+                child->installEventFilter(this);
+            }
+        }
+        return;
+    }
+
+    object->removeEventFilter(this);
+    object->installEventFilter(this);
+}
+
+void AntList::uninstallContextMenuFilters(QObject* object)
+{
+    if (!object)
+    {
+        return;
+    }
+
+    object->removeEventFilter(this);
+    if (auto* widget = qobject_cast<QWidget*>(object))
+    {
+        const auto childWidgets = widget->findChildren<QWidget*>();
+        for (QWidget* child : childWidgets)
+        {
+            if (child)
+            {
+                child->removeEventFilter(this);
+            }
+        }
+    }
 }
 
 void AntList::paintEvent(QPaintEvent* event)
