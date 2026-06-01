@@ -20,6 +20,7 @@ namespace
 {
 constexpr int kDatePickerPopupShadowMargin = 32;
 constexpr int kDatePickerPopupTopMargin = 12;
+constexpr int kDatePickerPopupTriggerGap = 4;
 constexpr int kDatePickerPopupPanelWidth = 288;
 constexpr int kDatePickerPopupPanelHeight = 332;
 }
@@ -936,7 +937,7 @@ void AntDatePicker::updatePopupGeometry()
         return;
     }
     const QPoint globalPos = mapToGlobal(QPoint(-kDatePickerPopupShadowMargin,
-                                                height() + 4 - kDatePickerPopupShadowMargin));
+                                                height() + kDatePickerPopupTriggerGap - kDatePickerPopupTopMargin));
     m_popup->move(globalPos);
 }
 

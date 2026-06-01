@@ -118,7 +118,16 @@ AntCarousel::AntCarousel(QWidget* parent)
     m_timer = new QTimer(this);
     m_timer->setInterval(m_interval);
     connect(m_timer, &QTimer::timeout, this, [this]() {
-        if (m_slides.size() <= 1) return;
+        if (!shouldAutoPlayTimerRun())
+        {
+            updateAutoPlayTimer();
+            return;
+        }
+        if (isTransitionRunning())
+        {
+            resetAutoPlayTimer();
+            return;
+        }
         setCurrentIndex(m_currentIndex + 1);
     });
 
@@ -258,14 +267,18 @@ void AntCarousel::clearSlides()
 
 void AntCarousel::previous()
 {
+    const int previousIndex = m_currentIndex;
     setCurrentIndex(m_currentIndex - 1);
-    resetAutoPlayTimer();
+    if (previousIndex == m_currentIndex)
+        resetAutoPlayTimer();
 }
 
 void AntCarousel::next()
 {
+    const int previousIndex = m_currentIndex;
     setCurrentIndex(m_currentIndex + 1);
-    resetAutoPlayTimer();
+    if (previousIndex == m_currentIndex)
+        resetAutoPlayTimer();
 }
 
 bool AntCarousel::eventFilter(QObject* watched, QEvent* event)
@@ -302,23 +315,50 @@ void AntCarousel::hideEvent(QHideEvent* event)
 {
     if (m_timer->isActive())
         m_timer->stop();
+    m_restartAutoPlayAfterTransition = false;
     syncCarouselPerfCounters();
     QWidget::hideEvent(event);
 }
 
+bool AntCarousel::shouldAutoPlayTimerRun() const
+{
+    return m_autoPlay && isVisible() && isEnabled() && m_slides.size() > 1;
+}
+
+bool AntCarousel::isTransitionRunning() const
+{
+    return m_previousIndex >= 0;
+}
+
 void AntCarousel::updateAutoPlayTimer()
 {
-    const bool shouldRun = m_autoPlay && isVisible() && isEnabled() && m_slides.size() > 1;
+    const bool shouldRun = shouldAutoPlayTimerRun();
+    if (shouldRun && isTransitionRunning())
+    {
+        if (m_timer->isActive())
+            m_timer->stop();
+        m_restartAutoPlayAfterTransition = true;
+        ++m_autoPlayTimerRefreshCount;
+        syncCarouselPerfCounters();
+        return;
+    }
+
     if (shouldRun)
     {
         if (!m_timer->isActive())
             m_timer->start(m_interval);
         else if (m_timer->interval() != m_interval)
             m_timer->setInterval(m_interval);
+        m_restartAutoPlayAfterTransition = false;
     }
     else if (m_timer->isActive())
     {
         m_timer->stop();
+        m_restartAutoPlayAfterTransition = false;
+    }
+    else
+    {
+        m_restartAutoPlayAfterTransition = false;
     }
 
     ++m_autoPlayTimerRefreshCount;
@@ -327,7 +367,7 @@ void AntCarousel::updateAutoPlayTimer()
 
 void AntCarousel::updateSlideVisibility()
 {
-    if (m_transitionAnimation->state() == QAbstractAnimation::Running)
+    if (isTransitionRunning())
     {
         layoutTransitionSlides();
         return;
@@ -382,7 +422,7 @@ void AntCarousel::mousePressEvent(QMouseEvent* e)
 void AntCarousel::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    if (m_transitionAnimation->state() == QAbstractAnimation::Running)
+    if (isTransitionRunning())
         layoutTransitionSlides();
     else
         updateSlideVisibility();
@@ -497,8 +537,10 @@ bool AntCarousel::handleManualClick(const QPoint& pos, bool emitSlideClick)
         const int dotIndex = dotIndexAt(pos);
         if (dotIndex >= 0)
         {
+            const int previousIndex = m_currentIndex;
             setCurrentIndex(dotIndex);
-            resetAutoPlayTimer();
+            if (previousIndex == m_currentIndex)
+                resetAutoPlayTimer();
             return true;
         }
         if (m_showArrows && previousArrowRect().contains(pos))
@@ -530,13 +572,40 @@ void AntCarousel::emitSlideClicked()
 
 void AntCarousel::resetAutoPlayTimer()
 {
-    if (!m_autoPlay || !isVisible() || !isEnabled() || m_slides.size() <= 1)
+    if (!shouldAutoPlayTimerRun())
     {
+        if (m_timer->isActive())
+            m_timer->stop();
+        m_restartAutoPlayAfterTransition = false;
+        syncCarouselPerfCounters();
+        return;
+    }
+    if (isTransitionRunning())
+    {
+        if (m_timer->isActive())
+            m_timer->stop();
+        m_restartAutoPlayAfterTransition = true;
+        ++m_autoPlayTimerRefreshCount;
         syncCarouselPerfCounters();
         return;
     }
     m_timer->start(m_interval);
+    m_restartAutoPlayAfterTransition = false;
     ++m_autoPlayTimerRefreshCount;
+    syncCarouselPerfCounters();
+}
+
+void AntCarousel::pauseAutoPlayTimerForTransition()
+{
+    if (m_timer->isActive())
+    {
+        m_timer->stop();
+    }
+    m_restartAutoPlayAfterTransition = shouldAutoPlayTimerRun();
+    if (m_restartAutoPlayAfterTransition)
+    {
+        ++m_autoPlayTimerRefreshCount;
+    }
     syncCarouselPerfCounters();
 }
 
@@ -547,9 +616,11 @@ void AntCarousel::startTransition(int from, int to, int requestedIndex)
         m_previousIndex = -1;
         m_transitionProgress = 1.0;
         updateSlideVisibility();
+        resetAutoPlayTimer();
         return;
     }
 
+    pauseAutoPlayTimerForTransition();
     m_transitionAnimation->stop();
     m_previousIndex = from;
     m_transitionDirection = transitionDirection(from, to, requestedIndex);
@@ -605,9 +676,17 @@ void AntCarousel::layoutTransitionSlides()
 
 void AntCarousel::finishTransition()
 {
+    const bool restartAutoPlay = m_restartAutoPlayAfterTransition;
+    m_restartAutoPlayAfterTransition = false;
     m_previousIndex = -1;
     m_transitionProgress = 1.0;
     updateSlideVisibility();
+    if (restartAutoPlay && shouldAutoPlayTimerRun())
+    {
+        m_timer->start(m_interval);
+        ++m_autoPlayTimerRefreshCount;
+        syncCarouselPerfCounters();
+    }
 }
 
 int AntCarousel::transitionDirection(int from, int to, int requestedIndex) const
@@ -632,4 +711,7 @@ void AntCarousel::syncCarouselPerfCounters() const
     self->setProperty("antCarouselLastUpdateMode", m_lastUpdateMode);
     self->setProperty("antCarouselManualNavigationEnabled", m_manualNavigationEnabled);
     self->setProperty("antCarouselShowArrows", m_showArrows);
+    self->setProperty("antCarouselTransitionRunning", isTransitionRunning());
+    self->setProperty("antCarouselDeferredAutoPlayRestart", m_restartAutoPlayAfterTransition);
+    self->setProperty("antCarouselAutoPlayTimerRemainingMs", m_timer ? m_timer->remainingTime() : -1);
 }

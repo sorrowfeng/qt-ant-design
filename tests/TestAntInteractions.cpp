@@ -74,6 +74,11 @@ QPoint datePickerCellCenter(int column, int row)
                   qRound(topMargin + gridTopInset + (row + 0.5) * cellHeight));
 }
 
+QRect popupPanelGlobalRect(QWidget* popup, int leftMargin, int topMargin, const QSize& panelSize)
+{
+    return QRect(popup->mapToGlobal(QPoint(leftMargin, topMargin)), panelSize);
+}
+
 bool writeTempFile(const QString& path, const QByteArray& data)
 {
     QFile file(path);
@@ -241,6 +246,11 @@ void TestAntInteractions::datePickerPopupSelection()
 
     auto* popup = directVisibleFrameChild(&picker);
     QVERIFY(popup);
+    const int dateTriggerBottom = picker.mapToGlobal(QPoint(0, picker.height())).y();
+    QTRY_VERIFY_WITH_TIMEOUT(popupPanelGlobalRect(popup, 32, 12, QSize(288, 332)).top() >= dateTriggerBottom + 4,
+                             300);
+    QVERIFY(!popupPanelGlobalRect(popup, 32, 12, QSize(288, 332))
+                 .intersects(QRect(picker.mapToGlobal(QPoint(0, 0)), picker.size())));
 
     // 2026-04-15 is row 2, column 3 in the April 2026 panel.
     QTest::mouseClick(popup, Qt::LeftButton, Qt::NoModifier, datePickerCellCenter(3, 2));
@@ -266,6 +276,11 @@ void TestAntInteractions::timePickerPopupSelection()
 
     auto* popup = directVisibleFrameChild(&picker);
     QVERIFY(popup);
+    const int timeTriggerBottom = picker.mapToGlobal(QPoint(0, picker.height())).y();
+    QTRY_VERIFY_WITH_TIMEOUT(popupPanelGlobalRect(popup, 32, 12, QSize(168, 274)).top() >= timeTriggerBottom + 4,
+                             300);
+    QVERIFY(!popupPanelGlobalRect(popup, 32, 12, QSize(168, 274))
+                 .intersects(QRect(picker.mapToGlobal(QPoint(0, 0)), picker.size())));
 
     // Minute column, row 1: current minute plus one step.
     QTest::mouseClick(popup, Qt::LeftButton, Qt::NoModifier, QPoint(92, 54));

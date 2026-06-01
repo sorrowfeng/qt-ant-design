@@ -1,13 +1,12 @@
 #include "AntWindowStyle.h"
 
 #include <QEvent>
-#include <QFile>
 #include <QIcon>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOption>
-#include <QSvgRenderer>
 
+#include "styles/AntIconSvgRenderer.h"
 #include "widgets/AntWindow.h"
 
 namespace
@@ -29,29 +28,7 @@ QRectF centeredIconRect(const QRect& buttonRect, qreal iconSize = 14.0)
 
 bool drawAntdIcon(const QString& iconName, const QRectF& iconRect, const QColor& color, QPainter* painter)
 {
-    if (iconName.isEmpty() || iconRect.isEmpty() || !painter)
-    {
-        return false;
-    }
-
-    QFile file(QStringLiteral(":/qt-ant-design/icons/antd/%1.svg").arg(iconName));
-    if (!file.open(QIODevice::ReadOnly))
-    {
-        return false;
-    }
-
-    QString svg = QString::fromUtf8(file.readAll());
-    svg.replace(QStringLiteral("__PRIMARY__"), color.name(QColor::HexRgb));
-    svg.replace(QStringLiteral("__SECONDARY__"), color.name(QColor::HexRgb));
-
-    QSvgRenderer renderer(svg.toUtf8());
-    if (!renderer.isValid())
-    {
-        return false;
-    }
-
-    renderer.render(painter, iconRect);
-    return true;
+    return painter && AntIconSvgRenderer::drawIcon(*painter, iconName, iconRect, color);
 }
 
 bool shouldDrawLegacyOutline(const AntWindow* window, bool maximized)

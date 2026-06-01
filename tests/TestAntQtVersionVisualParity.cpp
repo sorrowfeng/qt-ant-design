@@ -494,6 +494,54 @@ QWidget* makeButtonsScene()
     return surface;
 }
 
+QWidget* makeIconResourceScene()
+{
+    QWidget* surface = makeSurface();
+    auto* layout = makeVBox(surface);
+    layout->addWidget(makeLabel(QStringLiteral("Official resource icons"), surface));
+
+    auto* grid = new QWidget(surface);
+    auto* gridLayout = new QGridLayout(grid);
+    gridLayout->setContentsMargins(0, 0, 0, 0);
+    gridLayout->setHorizontalSpacing(28);
+    gridLayout->setVerticalSpacing(18);
+
+    const QStringList iconNames = {
+        QStringLiteral("HomeOutlined"),
+        QStringLiteral("UserOutlined"),
+        QStringLiteral("SearchOutlined"),
+        QStringLiteral("SettingOutlined"),
+        QStringLiteral("StarOutlined"),
+        QStringLiteral("HeartOutlined"),
+        QStringLiteral("AccountBookOutlined"),
+        QStringLiteral("AccountBookTwoTone"),
+        QStringLiteral("AimOutlined"),
+        QStringLiteral("AlertFilled"),
+        QStringLiteral("AlipayCircleFilled"),
+        QStringLiteral("AlibabaOutlined"),
+        QStringLiteral("AlignCenterOutlined"),
+        QStringLiteral("AndroidOutlined"),
+        QStringLiteral("AppleFilled"),
+        QStringLiteral("DotNetOutlined"),
+        QStringLiteral("TwitchFilled"),
+        QStringLiteral("XFilled"),
+    };
+
+    const QColor twoToneColor = antTheme->tokens().colorPrimary;
+    for (int i = 0; i < iconNames.size(); ++i)
+    {
+        auto* icon = new AntIcon(iconNames.at(i), grid);
+        icon->setIconSize(24);
+        icon->setFixedSize(28, 28);
+        icon->setTwoToneColor(twoToneColor);
+        gridLayout->addWidget(icon, i / 9, i % 9, Qt::AlignCenter);
+    }
+
+    layout->addWidget(grid);
+    layout->addStretch();
+    return surface;
+}
+
 QWidget* makeSelectionScene()
 {
     QWidget* surface = makeSurface();
@@ -1894,6 +1942,8 @@ QList<Scene> scenes()
     return {
         {QStringLiteral("buttons"), QSize(760, 136), makeButtonsScene,
          {QStringLiteral("AntButton"), QStringLiteral("AntIcon"), QStringLiteral("AntTypography")}, 8.0, 0.18},
+        {QStringLiteral("icon-resources"), QSize(760, 164), makeIconResourceScene,
+         {QStringLiteral("AntIcon"), QStringLiteral("AntTypography")}, 6.0, 0.16},
         {QStringLiteral("selection-controls"), QSize(520, 128), makeSelectionScene,
          {QStringLiteral("AntCheckBox"), QStringLiteral("AntRadio"), QStringLiteral("AntSwitch")}, 8.0, 0.20},
         {QStringLiteral("input-controls"), QSize(760, 132), makeInputScene,
@@ -2249,6 +2299,13 @@ void TestAntQtVersionVisualParity::criticalWidgetScenesMatchQtBaseline()
     const QString baselineDir = QString::fromLocal8Bit(qgetenv("ANT_QT_PARITY_BASELINE_DIR"));
     const qreal meanScale = envReal("ANT_QT_PARITY_MEAN_SCALE", 1.0);
     const qreal changedScale = envReal("ANT_QT_PARITY_CHANGED_SCALE", 1.0);
+    QSet<QString> sceneFilter;
+    const QStringList sceneFilterValues =
+        QString::fromLocal8Bit(qgetenv("ANT_QT_PARITY_SCENE_FILTER")).split(QLatin1Char(','), Qt::SkipEmptyParts);
+    for (const QString& value : sceneFilterValues)
+    {
+        sceneFilter.insert(value.trimmed());
+    }
 
     QList<QPair<QString, QImage>> renderedScenes;
     QList<ComparisonRecord> comparisons;
@@ -2260,6 +2317,11 @@ void TestAntQtVersionVisualParity::criticalWidgetScenesMatchQtBaseline()
         for (const Scene& scene : scenes())
         {
             const QString renderName = variantSceneName(theme, scene);
+            if (!sceneFilter.isEmpty() && !sceneFilter.contains(scene.name) && !sceneFilter.contains(renderName))
+            {
+                continue;
+            }
+
             std::unique_ptr<QWidget> widget(scene.create());
             QVERIFY2(widget != nullptr, qPrintable(renderName));
 

@@ -42,4 +42,6 @@ private:
                           const QWidget* widget) const;
     void drawHeaderSection(const QStyleOption* option, QPainter* painter,
                            const QWidget* widget) const;
+    void drawHeaderLabel(const QStyleOption* option, QPainter* painter,
+                         const QWidget* widget) const;
 };

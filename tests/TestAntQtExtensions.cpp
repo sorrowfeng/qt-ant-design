@@ -1933,12 +1933,25 @@ void TestAntQtExtensions::navItem()
 void TestAntQtExtensions::nav()
 {
     ThemeModeRestorerForExtensionTest themeRestorer;
+    qRegisterMetaType<QVector<int>>("QVector<int>");
     AntNav nav;
     QSignalSpy currentSpy(&nav, &AntNav::currentIndexChanged);
     QSignalSpy textSpy(&nav, &AntNav::currentTextChanged);
     QSignalSpy dataSpy(&nav, &AntNav::currentDataChanged);
+    QSignalSpy multipleSpy(&nav, &AntNav::multipleChanged);
+    QSignalSpy selectionSpy(&nav, &AntNav::selectionChanged);
     QSignalSpy clickedSpy(&nav, &AntNav::itemClicked);
     QSignalSpy countSpy(&nav, &AntNav::countChanged);
+    auto expectSelected = [&nav](std::initializer_list<int> expected) {
+        const QVector<int> actual = nav.selectedIndices();
+        QCOMPARE(actual.size(), static_cast<int>(expected.size()));
+        int i = 0;
+        for (int expectedIndex : expected)
+        {
+            QCOMPARE(actual.at(i), expectedIndex);
+            ++i;
+        }
+    };
 
     nav.resize(240, 160);
     nav.addCategory(QStringLiteral("Main"));
@@ -1951,14 +1964,25 @@ void TestAntQtExtensions::nav()
     QCOMPARE(nav.currentIndex(), 0);
     QCOMPARE(nav.currentText(), QStringLiteral("Overview"));
     QCOMPARE(nav.currentData().toString(), QStringLiteral("overview"));
+    QCOMPARE(nav.isMultiple(), false);
+    expectSelected({0});
+    QVERIFY(nav.isItemSelected(0));
     QVERIFY(nav.item(0)->isActive());
     QVERIFY(!nav.item(1)->isActive());
     QVERIFY(countSpy.count() >= 3);
+
+    nav.item(1)->setActive(true);
+    QCOMPARE(nav.currentIndex(), 1);
+    expectSelected({1});
+    QVERIFY(!nav.item(0)->isActive());
+    QVERIFY(nav.item(1)->isActive());
+    QVERIFY(!nav.item(2)->isActive());
 
     nav.setCurrentIndex(2);
     QCOMPARE(nav.currentIndex(), 2);
     QCOMPARE(nav.currentText(), QStringLiteral("Settings"));
     QCOMPARE(nav.currentData().toString(), QStringLiteral("settings"));
+    expectSelected({2});
     QVERIFY(nav.item(2)->isActive());
     QVERIFY(currentSpy.count() >= 2);
     QVERIFY(textSpy.count() >= 2);
@@ -1987,6 +2011,35 @@ void TestAntQtExtensions::nav()
     QCOMPARE(nav.itemIconImage(2).size(), navIconImage.size());
     nav.clearItemIcon(1);
     QVERIFY(!nav.itemHasIcon(1));
+
+    nav.setMultiple(true);
+    QCOMPARE(nav.isMultiple(), true);
+    QCOMPARE(multipleSpy.count(), 1);
+    nav.setItemSelected(0, true);
+    expectSelected({0, 2});
+    QVERIFY(nav.item(0)->isActive());
+    QVERIFY(nav.item(2)->isActive());
+    nav.setItemSelected(1, true);
+    expectSelected({0, 1, 2});
+    QCOMPARE(nav.currentIndex(), 1);
+    nav.setItemSelected(0, false);
+    expectSelected({1, 2});
+    QVERIFY(!nav.item(0)->isActive());
+    QVERIFY(nav.item(1)->isActive());
+    QVERIFY(nav.item(2)->isActive());
+    nav.setSelectedIndices(QVector<int>{0, 2});
+    expectSelected({0, 2});
+    QVERIFY(nav.item(0)->isActive());
+    QVERIFY(!nav.item(1)->isActive());
+    QVERIFY(nav.item(2)->isActive());
+    nav.setMultiple(false);
+    QCOMPARE(nav.isMultiple(), false);
+    QCOMPARE(multipleSpy.count(), 2);
+    QCOMPARE(nav.selectedIndices().size(), 1);
+    QCOMPARE(nav.item(nav.currentIndex())->isActive(), true);
+    nav.setCurrentIndex(2);
+    expectSelected({2});
+    QVERIFY(selectionSpy.count() >= 6);
 
     nav.show();
     QVERIFY(QTest::qWaitForWindowExposed(&nav));
@@ -3997,6 +4050,7 @@ void TestAntQtExtensions::stackedWidget()
 
 void TestAntQtExtensions::fileDialog()
 {
+    ThemeModeRestorerForExtensionTest themeRestorer;
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     QDir tempRoot(tempDir.path());
@@ -4027,6 +4081,10 @@ void TestAntQtExtensions::fileDialog()
     auto* placesTitle = dialog.findChild<AntTypography*>(QStringLiteral("antFileDialogPlacesTitle"));
     QVERIFY(placesTitle != nullptr);
     QCOMPARE(placesTitle->text(), QStringLiteral("Quick access"));
+    auto* placesPanel = dialog.findChild<QWidget*>(QStringLiteral("antFileDialogPlacesPanel"));
+    QVERIFY(placesPanel != nullptr);
+    QVERIFY(placesPanel->sizePolicy().verticalPolicy() == QSizePolicy::Fixed);
+    QVERIFY(placesPanel->maximumHeight() <= 32);
     const auto placeButtons = dialog.findChildren<AntButton*>(QStringLiteral("antFileDialogPlaceButton"));
     QVERIFY(placeButtons.size() >= 3);
     AntButton* homePlaceButton = nullptr;
@@ -4034,7 +4092,14 @@ void TestAntQtExtensions::fileDialog()
     for (AntButton* button : placeButtons)
     {
         const QString placePath = button->property("antFileDialogPlacePath").toString();
+        const QString placeLabel = button->property("antFileDialogPlaceLabel").toString();
         QVERIFY(!placePath.isEmpty());
+        QVERIFY(!placeLabel.isEmpty());
+        QVERIFY(button->text().isEmpty());
+        QVERIFY(!button->isBlock());
+        QCOMPARE(button->width(), button->height());
+        QVERIFY(button->height() <= 32);
+        QVERIFY(button->toolTip().contains(placeLabel));
         QVERIFY(QFileInfo(placePath).isDir());
         if (QDir(placePath).absolutePath() == homePath)
         {
@@ -4047,6 +4112,7 @@ void TestAntQtExtensions::fileDialog()
 
     auto* directoryTree = dialog.findChild<QTreeView*>(QStringLiteral("antFileDialogDirectoryTree"));
     QVERIFY(directoryTree != nullptr);
+    QVERIFY(directoryTree->minimumHeight() >= 180);
     auto* directoryModel = qobject_cast<QFileSystemModel*>(directoryTree->model());
     QVERIFY(directoryModel != nullptr);
     QVERIFY(directoryTree->rootIsDecorated());
@@ -4070,6 +4136,11 @@ void TestAntQtExtensions::fileDialog()
     directoryTree->setCurrentIndex(directoryModel->index(alphaPath));
     QCoreApplication::processEvents();
     QCOMPARE(dialog.directory().absolutePath(), QDir(alphaPath).absolutePath());
+
+    auto* fileView = dialog.findChild<QTreeView*>(QStringLiteral("antFileDialogFileView"));
+    QVERIFY(fileView != nullptr);
+    QVERIFY(fileView->header() != nullptr);
+    QCOMPARE(fileView->header()->style(), dialog.style());
 
     dialog.setAcceptMode(QFileDialog::AcceptOpen);
     dialog.setFileMode(QFileDialog::ExistingFile);
@@ -4101,6 +4172,39 @@ void TestAntQtExtensions::fileDialog()
     const QImage image = renderForExtensionTest(&dialog);
     QVERIFY(!image.isNull());
     QVERIFY(countNearColorForExtensionTest(image, antTheme->tokens().colorBgContainer, 30) > 0);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    dialog.refreshAntStyle();
+    QCoreApplication::processEvents();
+    const QImage darkImage = renderForExtensionTest(&dialog);
+    QVERIFY(!darkImage.isNull());
+    const QRect headerRect(fileView->header()->mapTo(&dialog, QPoint(0, 0)),
+                           fileView->header()->size());
+    const QRect sampledHeaderRect = headerRect.adjusted(2, 2, -2, -3).intersected(darkImage.rect());
+    QVERIFY(sampledHeaderRect.isValid());
+
+    int darkHeaderPixels = 0;
+    int lightHeaderPixels = 0;
+    for (int y = sampledHeaderRect.top(); y <= sampledHeaderRect.bottom(); ++y)
+    {
+        for (int x = sampledHeaderRect.left(); x <= sampledHeaderRect.right(); ++x)
+        {
+            const QColor pixel = darkImage.pixelColor(x, y);
+            if (colorNearForExtensionTest(pixel, antTheme->tokens().colorBgContainer, 30))
+            {
+                ++darkHeaderPixels;
+            }
+            if (colorNearForExtensionTest(pixel, QColor(Qt::white), 24))
+            {
+                ++lightHeaderPixels;
+            }
+        }
+    }
+    const int sampledHeaderPixels = sampledHeaderRect.width() * sampledHeaderRect.height();
+    QVERIFY2(darkHeaderPixels > sampledHeaderPixels / 2,
+             "AntFileDialog file view header should use dark container background in dark mode.");
+    QVERIFY2(lightHeaderPixels < sampledHeaderPixels / 4,
+             "AntFileDialog file view header must not keep a white native header in dark mode.");
 #ifdef Q_OS_WIN
     if (dialog.usesLegacyOpaquePath())
     {

@@ -1,5 +1,7 @@
 #include "AntNav.h"
 
+#include <algorithm>
+
 #include <QFrame>
 #include <QPalette>
 #include <QScrollArea>
@@ -27,6 +29,22 @@ void applyNavSurfaceColors(QWidget* widget, const QColor& bg, const QColor& text
     palette.setColor(QPalette::Text, text);
     palette.setColor(QPalette::WindowText, text);
     widget->setPalette(palette);
+}
+
+bool sameIndices(const QVector<int>& left, const QVector<int>& right)
+{
+    if (left.size() != right.size())
+    {
+        return false;
+    }
+    for (int i = 0; i < left.size(); ++i)
+    {
+        if (left.at(i) != right.at(i))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace
@@ -109,10 +127,29 @@ int AntNav::insertItem(int index, const QString& text, const QVariant& data)
         setCurrentIndex(itemIndex);
         Q_EMIT itemClicked(itemIndex);
     });
+    connect(navItem, &AntNavItem::activeChanged, this, [this, navItem](bool active) {
+        if (m_syncingItemStates)
+        {
+            return;
+        }
+        const int itemIndex = indexOfItem(navItem);
+        if (itemIndex < 0)
+        {
+            return;
+        }
+        setItemSelected(itemIndex, active);
+    });
 
     if (m_currentIndex >= index)
     {
         ++m_currentIndex;
+    }
+    for (int& selectedIndex : m_selectedIndices)
+    {
+        if (selectedIndex >= index)
+        {
+            ++selectedIndex;
+        }
     }
 
     Q_EMIT countChanged(m_entries.size());
@@ -138,6 +175,7 @@ void AntNav::removeItem(int index)
     const int previousIndex = m_currentIndex;
     const QString previousText = currentText();
     const QVariant previousData = currentData();
+    const QVector<int> previousSelectedIndices = m_selectedIndices;
 
     NavEntry entry = m_entries.takeAt(index);
     if (entry.item)
@@ -149,6 +187,7 @@ void AntNav::removeItem(int index)
     if (m_entries.isEmpty())
     {
         m_currentIndex = -1;
+        m_selectedIndices.clear();
     }
     else if (previousIndex == index)
     {
@@ -159,9 +198,34 @@ void AntNav::removeItem(int index)
         m_currentIndex = previousIndex - 1;
     }
 
+    QVector<int> nextSelectedIndices;
+    for (int selectedIndex : previousSelectedIndices)
+    {
+        if (selectedIndex == index)
+        {
+            continue;
+        }
+        nextSelectedIndices.append(selectedIndex > index ? selectedIndex - 1 : selectedIndex);
+    }
+    if (m_currentIndex >= 0 && !nextSelectedIndices.contains(m_currentIndex))
+    {
+        if (m_multiple)
+        {
+            nextSelectedIndices.append(m_currentIndex);
+        }
+        else
+        {
+            nextSelectedIndices = QVector<int>{m_currentIndex};
+        }
+    }
+    m_selectedIndices = normalizedSelectedIndices(nextSelectedIndices);
     syncActiveItemStates();
     Q_EMIT countChanged(m_entries.size());
     emitCurrentChanged(previousText, previousData, previousIndex);
+    if (!sameIndices(previousSelectedIndices, m_selectedIndices))
+    {
+        Q_EMIT selectionChanged(m_selectedIndices);
+    }
     syncNavPerfCounters();
 }
 
@@ -183,9 +247,11 @@ void AntNav::clear()
 
     m_entries.clear();
     m_currentIndex = -1;
+    m_selectedIndices.clear();
 
     Q_EMIT countChanged(0);
     emitCurrentChanged(previousText, previousData, previousIndex);
+    Q_EMIT selectionChanged(m_selectedIndices);
     syncNavPerfCounters();
 }
 
@@ -400,6 +466,21 @@ QVariant AntNav::currentData() const
     return itemData(m_currentIndex);
 }
 
+bool AntNav::isMultiple() const
+{
+    return m_multiple;
+}
+
+QVector<int> AntNav::selectedIndices() const
+{
+    return m_selectedIndices;
+}
+
+bool AntNav::isItemSelected(int index) const
+{
+    return m_selectedIndices.contains(index);
+}
+
 QSize AntNav::sizeHint() const
 {
     return QSize(220, 320);
@@ -412,20 +493,81 @@ QSize AntNav::minimumSizeHint() const
 
 void AntNav::setCurrentIndex(int index)
 {
-    if (index < -1 || index >= m_entries.size() || m_currentIndex == index)
+    if (index < -1 || index >= m_entries.size())
     {
         return;
     }
 
-    const int previousIndex = m_currentIndex;
-    const QString previousText = currentText();
-    const QVariant previousData = currentData();
+    if (index < 0)
+    {
+        applySelection({}, -1);
+        return;
+    }
 
-    m_currentIndex = index;
-    syncActiveItemStates();
-    scrollToIndex(index);
-    emitCurrentChanged(previousText, previousData, previousIndex);
+    QVector<int> nextSelectedIndices = m_multiple ? m_selectedIndices : QVector<int>();
+    if (!nextSelectedIndices.contains(index))
+    {
+        nextSelectedIndices.append(index);
+    }
+    applySelection(nextSelectedIndices, index);
+}
+
+void AntNav::setMultiple(bool multiple)
+{
+    if (m_multiple == multiple)
+    {
+        return;
+    }
+
+    m_multiple = multiple;
+    if (!m_multiple && m_selectedIndices.size() > 1)
+    {
+        const int keptIndex = m_selectedIndices.contains(m_currentIndex) ? m_currentIndex : m_selectedIndices.first();
+        applySelection(QVector<int>{keptIndex}, keptIndex, false);
+    }
     syncNavPerfCounters();
+    Q_EMIT multipleChanged(m_multiple);
+}
+
+void AntNav::setSelectedIndices(const QVector<int>& indices)
+{
+    QVector<int> nextSelectedIndices = normalizedSelectedIndices(indices);
+    int nextCurrentIndex = -1;
+    if (!nextSelectedIndices.isEmpty())
+    {
+        nextCurrentIndex = nextSelectedIndices.contains(m_currentIndex) ? m_currentIndex : nextSelectedIndices.first();
+    }
+    applySelection(nextSelectedIndices, nextCurrentIndex);
+}
+
+void AntNav::setItemSelected(int index, bool selected)
+{
+    if (index < 0 || index >= m_entries.size())
+    {
+        return;
+    }
+
+    QVector<int> nextSelectedIndices = m_multiple ? m_selectedIndices : QVector<int>();
+    if (selected)
+    {
+        if (!nextSelectedIndices.contains(index))
+        {
+            nextSelectedIndices.append(index);
+        }
+        applySelection(nextSelectedIndices, index);
+        return;
+    }
+
+    nextSelectedIndices.removeAll(index);
+    const int nextCurrentIndex = m_currentIndex == index
+        ? (nextSelectedIndices.isEmpty() ? -1 : nextSelectedIndices.first())
+        : m_currentIndex;
+    applySelection(nextSelectedIndices, nextCurrentIndex);
+}
+
+void AntNav::clearSelection()
+{
+    applySelection({}, -1);
 }
 
 void AntNav::scrollToIndex(int index)
@@ -498,13 +640,86 @@ void AntNav::updateTheme()
 void AntNav::syncActiveItemStates()
 {
     ++m_selectionApplyCount;
+    m_syncingItemStates = true;
     for (int i = 0; i < m_entries.size(); ++i)
     {
         if (m_entries.at(i).item)
         {
-            m_entries.at(i).item->setActive(i == m_currentIndex);
+            m_entries.at(i).item->setActive(m_selectedIndices.contains(i));
         }
     }
+    m_syncingItemStates = false;
+}
+
+QVector<int> AntNav::normalizedSelectedIndices(const QVector<int>& indices) const
+{
+    QVector<int> normalized;
+    normalized.reserve(indices.size());
+    for (int index : indices)
+    {
+        if (index >= 0 && index < m_entries.size() && !normalized.contains(index))
+        {
+            normalized.append(index);
+        }
+    }
+    std::sort(normalized.begin(), normalized.end());
+    if (!m_multiple && normalized.size() > 1)
+    {
+        normalized = QVector<int>{normalized.first()};
+    }
+    return normalized;
+}
+
+void AntNav::applySelection(const QVector<int>& indices, int currentIndex, bool scrollCurrent)
+{
+    QVector<int> nextSelectedIndices = normalizedSelectedIndices(indices);
+    int nextCurrentIndex = (currentIndex >= 0 && currentIndex < m_entries.size()) ? currentIndex : -1;
+
+    if (nextCurrentIndex >= 0 && !nextSelectedIndices.contains(nextCurrentIndex))
+    {
+        if (m_multiple)
+        {
+            nextSelectedIndices.append(nextCurrentIndex);
+            std::sort(nextSelectedIndices.begin(), nextSelectedIndices.end());
+        }
+        else
+        {
+            nextSelectedIndices = QVector<int>{nextCurrentIndex};
+        }
+    }
+
+    if (nextCurrentIndex < 0 && !nextSelectedIndices.isEmpty())
+    {
+        nextCurrentIndex = nextSelectedIndices.first();
+    }
+    if (nextSelectedIndices.isEmpty())
+    {
+        nextCurrentIndex = -1;
+    }
+
+    if (m_currentIndex == nextCurrentIndex && sameIndices(m_selectedIndices, nextSelectedIndices))
+    {
+        return;
+    }
+
+    const int previousIndex = m_currentIndex;
+    const QString previousText = currentText();
+    const QVariant previousData = currentData();
+    const QVector<int> previousSelectedIndices = m_selectedIndices;
+
+    m_currentIndex = nextCurrentIndex;
+    m_selectedIndices = nextSelectedIndices;
+    syncActiveItemStates();
+    if (scrollCurrent)
+    {
+        scrollToIndex(m_currentIndex);
+    }
+    emitCurrentChanged(previousText, previousData, previousIndex);
+    if (!sameIndices(previousSelectedIndices, m_selectedIndices))
+    {
+        Q_EMIT selectionChanged(m_selectedIndices);
+    }
+    syncNavPerfCounters();
 }
 
 void AntNav::emitCurrentChanged(const QString& previousText, const QVariant& previousData, int previousIndex)
@@ -529,4 +744,12 @@ void AntNav::syncNavPerfCounters() const
     self->setProperty("antNavSelectionApplyCount", m_selectionApplyCount);
     self->setProperty("antNavItemCount", m_entries.size());
     self->setProperty("antNavCurrentIndex", m_currentIndex);
+    QVariantList selected;
+    selected.reserve(m_selectedIndices.size());
+    for (int index : m_selectedIndices)
+    {
+        selected.append(index);
+    }
+    self->setProperty("antNavSelectedIndices", selected);
+    self->setProperty("antNavMultiple", m_multiple);
 }

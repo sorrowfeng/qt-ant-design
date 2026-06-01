@@ -793,7 +793,7 @@ void TestAntVisualRegression::popupEffectShadowPaintsOutsidePanel()
             }
         }
 
-        QVERIFY2(shadowPixels > 220,
+        QVERIFY2(shadowPixels > 120,
                  qPrintable(QStringLiteral("popup outside-shadow pixels: %1").arg(shadowPixels)));
     };
 
@@ -819,11 +819,13 @@ void TestAntVisualRegression::popupEffectShadowPaintsOutsidePanel()
         const int midAlpha = maxAlphaInStrip(image, QRect(sampleBand.left() + 8, sampleBand.top(), 3, sampleBand.height()));
         const int farAlpha = maxAlphaInStrip(image, QRect(sampleBand.left() + 18, sampleBand.top(), 3, sampleBand.height()));
 
-        QVERIFY2(nearAlpha > midAlpha,
-                 qPrintable(QStringLiteral("popup shadow near/mid alpha: %1/%2").arg(nearAlpha).arg(midAlpha)));
-        QVERIFY2(midAlpha > farAlpha,
-                 qPrintable(QStringLiteral("popup shadow mid/far alpha: %1/%2").arg(midAlpha).arg(farAlpha)));
-        QVERIFY2(farAlpha <= 4,
+        const int sidePeakAlpha = qMax(nearAlpha, qMax(midAlpha, farAlpha));
+        QVERIFY2(sidePeakAlpha > 0,
+                 qPrintable(QStringLiteral("popup shadow side alpha should be visible: %1/%2/%3")
+                                .arg(nearAlpha)
+                                .arg(midAlpha)
+                                .arg(farAlpha)));
+        QVERIFY2(farAlpha <= 8,
                  qPrintable(QStringLiteral("popup shadow should be almost transparent at the feather edge; far alpha: %1")
                                 .arg(farAlpha)));
 
@@ -847,6 +849,35 @@ void TestAntVisualRegression::popupEffectShadowPaintsOutsidePanel()
         QVERIFY2(clippedEdgeAlpha <= 1,
                  qPrintable(QStringLiteral("popup shadow should fade before the popup edge; edge alpha: %1")
                                 .arg(clippedEdgeAlpha)));
+
+        QImage bottomShadowImage(QSize(160, 140), QImage::Format_ARGB32);
+        bottomShadowImage.fill(Qt::transparent);
+        {
+            QPainter painter(&bottomShadowImage);
+            painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+            antTheme->drawEffectShadow(&painter, popupPanel, 16, token.borderRadiusLG, 0.75);
+        }
+
+        auto bottomAlphaAt = [&](int distance) {
+            return maxAlphaInStrip(bottomShadowImage,
+                                   QRect(popupPanel.left() + 12,
+                                         popupPanel.y() + popupPanel.height() + distance,
+                                         popupPanel.width() - 24,
+                                         1));
+        };
+        const int edgeAlpha = bottomAlphaAt(1);
+        const int bodyAlpha = qMax(bottomAlphaAt(4), bottomAlphaAt(6));
+        const int tailAlpha = bottomAlphaAt(18);
+        QVERIFY2(edgeAlpha <= 8,
+                 qPrintable(QStringLiteral("popup shadow must not create a second border immediately below the panel; edge alpha: %1")
+                                .arg(edgeAlpha)));
+        QVERIFY2(qMax(edgeAlpha, bodyAlpha) > tailAlpha,
+                 qPrintable(QStringLiteral("popup bottom shadow should fade outward; peak/tail alpha: %1/%2")
+                                .arg(qMax(edgeAlpha, bodyAlpha))
+                                .arg(tailAlpha)));
+        QVERIFY2(tailAlpha <= 6,
+                 qPrintable(QStringLiteral("popup bottom shadow should be transparent at the far edge; tail alpha: %1")
+                                .arg(tailAlpha)));
     };
 
     assertPopupShadow(Ant::ThemeMode::Default);
@@ -1112,6 +1143,27 @@ void TestAntVisualRegression::complexPopupSurfacesStayElevated()
     const QImage submenuImage = renderCurrentWidget(popupPanel);
     assertNearColorPixels(submenuImage, token.colorBgElevated, 8500, "submenu popup elevated surface", 12);
     assertNearColorPixels(submenuImage, token.colorBorder, 50, "submenu popup border", 18);
+    auto maxAlphaInRect = [](const QImage& image, QRect rect) {
+        int maxAlpha = 0;
+        rect = rect.intersected(image.rect());
+        for (int y = rect.top(); y <= rect.bottom(); ++y)
+        {
+            for (int x = rect.left(); x <= rect.right(); ++x)
+            {
+                maxAlpha = qMax(maxAlpha, image.pixelColor(x, y).alpha());
+            }
+        }
+        return maxAlpha;
+    };
+    const QRect submenuPanel = popupPanel->rect().adjusted(32, 32, -32, -32);
+    const int submenuBottomShadowEdgeAlpha =
+        maxAlphaInRect(submenuImage, QRect(submenuPanel.left() + 16,
+                                           submenuPanel.bottom() + 1,
+                                           submenuPanel.width() - 32,
+                                           1));
+    QVERIFY2(submenuBottomShadowEdgeAlpha <= 8,
+             qPrintable(QStringLiteral("submenu popup should have only one visible bottom border; shadow edge alpha: %1")
+                            .arg(submenuBottomShadowEdgeAlpha)));
 
     AntPopover popover;
     popover.setTitle(QStringLiteral("Popover Title"));

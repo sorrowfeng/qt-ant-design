@@ -12,6 +12,7 @@
 #include <QScrollBar>
 #include <QTextStream>
 #include <QTimer>
+#include <QVector>
 
 #include "ExampleWindow.h"
 #include "core/AntDesign.h"
@@ -39,6 +40,7 @@ struct ExampleTraversalOptions
     int stepIntervalMs = 5;
     QString exportDir;
     QString baselineDir;
+    QString pageFilter;
     qreal maxMeanDelta = 18.0;
     qreal maxChanged32Ratio = 0.28;
 };
@@ -347,7 +349,21 @@ bool renderExamplePageForSmoke(QApplication& app,
 
 void startExamplePageTraversal(QApplication& app, ExampleWindow& window, const ExampleTraversalOptions& options)
 {
-    const int pageCount = window.examplePageCount();
+    QVector<int> pageIndices;
+    const int availablePageCount = window.examplePageCount();
+    const QString normalizedPageFilter = options.pageFilter.trimmed().toLower();
+    for (int i = 0; i < availablePageCount; ++i)
+    {
+        const QString pageName = window.examplePageName(i);
+        if (normalizedPageFilter.isEmpty() ||
+            pageName.toLower().contains(normalizedPageFilter) ||
+            QString::number(i) == normalizedPageFilter)
+        {
+            pageIndices.append(i);
+        }
+    }
+
+    const int pageCount = pageIndices.size();
     if (pageCount <= 0)
     {
         qWarning("Example traversal found no pages.");
@@ -363,6 +379,7 @@ void startExamplePageTraversal(QApplication& app, ExampleWindow& window, const E
     auto* timer = new QTimer(&window);
     timer->setInterval(qMax(1, options.stepIntervalMs));
     QObject::connect(timer, &QTimer::timeout, &window, [&app, &window, timer, pageCount,
+                                                        pageIndices,
                                                         options,
                                                         pageIndex = 0,
                                                         themePass = 0,
@@ -384,22 +401,24 @@ void startExamplePageTraversal(QApplication& app, ExampleWindow& window, const E
 
         if (scrollPositions.isEmpty())
         {
-            if (!window.setExamplePageIndex(pageIndex))
+            const int actualPageIndex = pageIndices.at(pageIndex);
+            if (!window.setExamplePageIndex(actualPageIndex))
             {
-                qWarning().noquote() << QStringLiteral("Example traversal failed to select page %1").arg(pageIndex);
+                qWarning().noquote() << QStringLiteral("Example traversal failed to select page %1").arg(actualPageIndex);
                 app.exit(3);
                 timer->stop();
                 return;
             }
             QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
-            scrollPositions = pageScrollProbes(window.examplePageWidget(pageIndex),
+            scrollPositions = pageScrollProbes(window.examplePageWidget(actualPageIndex),
                                                !options.exportDir.isEmpty() || !options.baselineDir.isEmpty());
             scrollIndex = 0;
         }
 
         const QString themeLabel = themePass == 0 ? QStringLiteral("light") : QStringLiteral("dark");
         const ScrollProbe scrollProbe = scrollPositions.value(scrollIndex, {QStringLiteral("top"), 0});
-        if (!renderExamplePageForSmoke(app, window, pageIndex, scrollProbe, themeLabel, options))
+        const int actualPageIndex = pageIndices.at(pageIndex);
+        if (!renderExamplePageForSmoke(app, window, actualPageIndex, scrollProbe, themeLabel, options))
         {
             app.exit(4);
             timer->stop();
@@ -457,6 +476,9 @@ int main(int argc, char* argv[])
     QCommandLineOption smokeTraverseBaselineDirOption(QStringLiteral("smoke-traverse-baseline-dir"),
                                                       QStringLiteral("Compare example traversal PNGs with baseline images from <dir>."),
                                                       QStringLiteral("dir"));
+    QCommandLineOption smokeTraversePageFilterOption(QStringLiteral("smoke-traverse-page-filter"),
+                                                     QStringLiteral("Traverse only pages whose name contains <text>, or the page at zero-based index <text>."),
+                                                     QStringLiteral("text"));
     QCommandLineOption smokeTraverseMaxMeanOption(QStringLiteral("smoke-traverse-max-mean-delta"),
                                                   QStringLiteral("Maximum allowed mean pixel delta when comparing traversal frames."),
                                                   QStringLiteral("delta"),
@@ -472,6 +494,7 @@ int main(int argc, char* argv[])
     parser.addOption(smokeTraverseStepOption);
     parser.addOption(smokeTraverseExportDirOption);
     parser.addOption(smokeTraverseBaselineDirOption);
+    parser.addOption(smokeTraversePageFilterOption);
     parser.addOption(smokeTraverseMaxMeanOption);
     parser.addOption(smokeTraverseMaxChangedOption);
     parser.process(app);
@@ -492,6 +515,7 @@ int main(int argc, char* argv[])
         }
         traversalOptions.exportDir = parser.value(smokeTraverseExportDirOption);
         traversalOptions.baselineDir = parser.value(smokeTraverseBaselineDirOption);
+        traversalOptions.pageFilter = parser.value(smokeTraversePageFilterOption);
 
         bool thresholdOk = false;
         const qreal maxMean = parser.value(smokeTraverseMaxMeanOption).toDouble(&thresholdOk);

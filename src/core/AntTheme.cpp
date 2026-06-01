@@ -127,7 +127,20 @@ void AntTheme::drawEffectShadow(QPainter* painter, const QRect& rect, int shadow
             const qreal centerDistance = (outerDistance + innerDistance) * 0.5;
             const qreal proximity = std::clamp(1.0 - centerDistance / spread, 0.0, 1.0);
             const qreal eased = proximity * proximity * proximity * (proximity * (proximity * 6.0 - 15.0) + 10.0);
-            const qreal opacity = std::clamp(maxOpacity * std::pow(eased, falloff) * strength, 0.0, 0.35);
+            const qreal edgeClearance = qMin<qreal>(2.0, spread * 0.14);
+            if (centerDistance <= edgeClearance)
+            {
+                continue;
+            }
+            const qreal edgeSoftness = qMin<qreal>(4.0, spread * 0.28);
+            qreal edgeRamp = 1.0;
+            if (edgeSoftness > 0.0)
+            {
+                const qreal t = std::clamp((centerDistance - edgeClearance) / edgeSoftness, 0.0, 1.0);
+                edgeRamp = t * t * (3.0 - 2.0 * t);
+            }
+            const qreal opacity =
+                std::clamp(maxOpacity * std::pow(eased, falloff) * edgeRamp * strength, 0.0, 0.35);
             if (opacity <= 0.0)
             {
                 continue;
@@ -166,9 +179,11 @@ void AntTheme::drawEffectShadow(QPainter* painter, const QRect& rect, int shadow
     };
 
     const qreal baseWidth = static_cast<qreal>(shadowWidth);
-    paintFeatherLayer(panelRect, baseWidth * 0.38, baseWidth * 1.90, 0.030, 1.65);
-    paintFeatherLayer(panelRect, baseWidth * 0.18, baseWidth * 1.45, 0.050, 1.75);
-    paintFeatherLayer(panelRect, baseWidth * 0.06, baseWidth * 0.75, 0.055, 1.35);
+    // Popup panels draw their own border. Keep the feather layers anchored to
+    // the panel edge so staggered inner edges do not read as stacked borders.
+    paintFeatherLayer(panelRect, 0.0, baseWidth * 1.70, 0.024, 1.65);
+    paintFeatherLayer(panelRect, 0.0, baseWidth * 1.10, 0.034, 1.50);
+    paintFeatherLayer(panelRect, 0.0, baseWidth * 0.55, 0.030, 1.20);
 
     if (shadowWidth <= 2)
     {

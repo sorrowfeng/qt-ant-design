@@ -22,6 +22,7 @@ namespace
 {
 constexpr int kTimePickerPopupShadowMargin = 32;
 constexpr int kTimePickerPopupTopMargin = 12;
+constexpr int kTimePickerPopupTriggerGap = 4;
 constexpr int kTimePickerPopupPanelWidth = 168;
 constexpr int kTimePickerPopupPanelHeight = 274;
 }
@@ -1071,7 +1072,7 @@ void AntTimePicker::updatePopupGeometry()
         return;
     }
     const QPoint target = mapToGlobal(QPoint(-kTimePickerPopupShadowMargin,
-                                             height() + 4 - kTimePickerPopupShadowMargin));
+                                             height() + kTimePickerPopupTriggerGap - kTimePickerPopupTopMargin));
     if (m_hasPopupGeometryTarget && m_lastPopupGeometryTarget == target)
     {
         ++m_popupGeometrySkipCount;

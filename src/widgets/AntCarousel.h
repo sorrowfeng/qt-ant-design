@@ -73,6 +73,8 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
+    bool shouldAutoPlayTimerRun() const;
+    bool isTransitionRunning() const;
     void updateAutoPlayTimer();
     void updateSlideVisibility();
     void updateDotsOverlay(bool repaint = true);
@@ -83,6 +85,7 @@ private:
     bool handleManualClick(const QPoint& pos, bool emitSlideClick);
     void emitSlideClicked();
     void resetAutoPlayTimer();
+    void pauseAutoPlayTimerForTransition();
     void startTransition(int from, int to, int requestedIndex);
     void layoutTransitionSlides();
     void finishTransition();
@@ -98,6 +101,7 @@ private:
     bool m_showDots = true;
     bool m_manualNavigationEnabled = true;
     bool m_showArrows = true;
+    bool m_restartAutoPlayAfterTransition = false;
     int m_currentIndex = 0;
     int m_previousIndex = -1;
     int m_transitionDirection = 1;

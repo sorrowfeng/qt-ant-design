@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QFileSystemModel>
 #include <QFrame>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QItemSelectionModel>
@@ -589,6 +590,8 @@ void AntFileDialog::buildUi()
     m_directoryTree->setSelectionMode(QAbstractItemView::SingleSelection);
     m_directoryTree->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_directoryTree->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_directoryTree->setMinimumHeight(180);
+    m_directoryTree->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     for (int column = 1; column < m_directoryModel->columnCount(); ++column)
     {
         m_directoryTree->setColumnHidden(column, true);
@@ -1144,24 +1147,42 @@ void AntFileDialog::buildCommonPlaces(QVBoxLayout* sidebarLayout)
     sidebarLayout->addWidget(placesTitle);
 
     const QVector<CommonPlace> places = commonPlaces();
+    const int quickAccessColumns = qMax(1, places.size());
+    const int quickAccessButtonSide = qMax(token.controlHeightSM, 24);
+    const int quickAccessSpacing = qMax(1, token.paddingXXS / 2);
+    auto* placesPanel = new QWidget(m_sidebar);
+    placesPanel->setObjectName(QStringLiteral("antFileDialogPlacesPanel"));
+    placesPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    auto* placesLayout = new QGridLayout(placesPanel);
+    placesLayout->setContentsMargins(0, 0, 0, 0);
+    placesLayout->setHorizontalSpacing(quickAccessSpacing);
+    placesLayout->setVerticalSpacing(quickAccessSpacing);
+
+    int placeIndex = 0;
     for (const CommonPlace& place : places)
     {
-        auto* button = new AntButton(place.label, m_sidebar);
+        auto* button = new AntButton(placesPanel);
         button->setObjectName(QStringLiteral("antFileDialogPlaceButton"));
         button->setProperty("antFileDialogPlacePath", place.path);
         button->setProperty("antFileDialogPlaceLabel", place.label);
         button->setButtonType(Ant::ButtonType::Text);
         button->setButtonSize(Ant::Size::Small);
         button->setButtonIconType(place.icon);
-        button->setBlock(true);
-        button->setMinimumHeight(30);
-        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-        button->setToolTip(QDir::toNativeSeparators(place.path));
-        sidebarLayout->addWidget(button);
+        button->setAccessibleName(place.label);
+        button->setFixedSize(quickAccessButtonSide, quickAccessButtonSide);
+        button->setToolTip(QStringLiteral("%1\n%2").arg(place.label, QDir::toNativeSeparators(place.path)));
+        const int row = placeIndex / quickAccessColumns;
+        const int column = placeIndex % quickAccessColumns;
+        placesLayout->addWidget(button, row, column, Qt::AlignLeft);
         connect(button, &QAbstractButton::clicked, this, [this, path = place.path]() {
             navigateToCommonPlace(path);
         });
+        ++placeIndex;
     }
+    const int quickAccessRows = qMax(1, (placeIndex + quickAccessColumns - 1) / quickAccessColumns);
+    placesPanel->setMaximumHeight(quickAccessRows * quickAccessButtonSide
+                                  + qMax(0, quickAccessRows - 1) * quickAccessSpacing);
+    sidebarLayout->addWidget(placesPanel);
 
     auto* treeTitle = new AntTypography(QStringLiteral("Folders"), m_sidebar);
     treeTitle->setObjectName(QStringLiteral("antFileDialogDirectoryTreeTitle"));
@@ -1226,6 +1247,10 @@ void AntFileDialog::syncChildControls()
     const auto headers = findChildren<QHeaderView*>();
     for (QHeaderView* header : headers)
     {
+        if (header->style() != style())
+        {
+            header->setStyle(style());
+        }
         header->setHighlightSections(false);
         applyDialogPalette(header);
     }

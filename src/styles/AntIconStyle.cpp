@@ -6,11 +6,13 @@
 #include <QPainter>
 #include <QPainterPathStroker>
 #include <QPixmapCache>
+#include <QRegularExpression>
 #include <QStyleOption>
-#include <QSvgRenderer>
 #include <QTransform>
+#include <QVector>
 #include <QtMath>
 
+#include "styles/AntIconSvgRenderer.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntIcon.h"
 
@@ -631,6 +633,731 @@ QSize renderedIconPixelSize(const QRectF& iconRect, const QPainter* painter)
                  qMax(1, qRound(iconRect.height() * devicePixelRatio)));
 }
 
+struct SvgPathLayer
+{
+    QPainterPath path;
+    QColor fill;
+    qreal opacity = 1.0;
+    QTransform sourceTransform;
+};
+
+struct ParsedSvgIcon
+{
+    QRectF viewBox;
+    QVector<SvgPathLayer> layers;
+
+    bool isValid() const
+    {
+        return viewBox.isValid() && !layers.isEmpty();
+    }
+};
+
+qreal boundedUnit(qreal value)
+{
+    return qBound<qreal>(-1.0, value, 1.0);
+}
+
+qreal vectorAngle(qreal ux, qreal uy, qreal vx, qreal vy)
+{
+    const qreal dot = ux * vx + uy * vy;
+    const qreal len = qSqrt((ux * ux + uy * uy) * (vx * vx + vy * vy));
+    if (qFuzzyIsNull(len))
+    {
+        return 0.0;
+    }
+
+    qreal angle = qAcos(boundedUnit(dot / len));
+    if (ux * vy - uy * vx < 0)
+    {
+        angle = -angle;
+    }
+    return angle;
+}
+
+QPointF svgArcPoint(qreal cx, qreal cy, qreal rx, qreal ry, qreal cosPhi, qreal sinPhi, qreal angle)
+{
+    const qreal x = qCos(angle);
+    const qreal y = qSin(angle);
+    return QPointF(cx + rx * x * cosPhi - ry * y * sinPhi,
+                   cy + rx * x * sinPhi + ry * y * cosPhi);
+}
+
+QPointF svgArcControl(qreal cx, qreal cy, qreal rx, qreal ry, qreal cosPhi, qreal sinPhi, qreal x, qreal y)
+{
+    return QPointF(cx + rx * x * cosPhi - ry * y * sinPhi,
+                   cy + rx * x * sinPhi + ry * y * cosPhi);
+}
+
+void appendSvgArc(QPainterPath* path,
+                  const QPointF& start,
+                  qreal rx,
+                  qreal ry,
+                  qreal xAxisRotation,
+                  bool largeArc,
+                  bool sweep,
+                  const QPointF& end)
+{
+    if (!path)
+    {
+        return;
+    }
+
+    rx = qAbs(rx);
+    ry = qAbs(ry);
+    if (qFuzzyIsNull(rx) || qFuzzyIsNull(ry))
+    {
+        path->lineTo(end);
+        return;
+    }
+
+    if (qAbs(start.x() - end.x()) < 1e-9 && qAbs(start.y() - end.y()) < 1e-9)
+    {
+        return;
+    }
+
+    const qreal phi = qDegreesToRadians(xAxisRotation);
+    const qreal cosPhi = qCos(phi);
+    const qreal sinPhi = qSin(phi);
+    const qreal dx = (start.x() - end.x()) / 2.0;
+    const qreal dy = (start.y() - end.y()) / 2.0;
+    const qreal x1p = cosPhi * dx + sinPhi * dy;
+    const qreal y1p = -sinPhi * dx + cosPhi * dy;
+
+    qreal rx2 = rx * rx;
+    qreal ry2 = ry * ry;
+    const qreal x1p2 = x1p * x1p;
+    const qreal y1p2 = y1p * y1p;
+    const qreal radiusScale = x1p2 / rx2 + y1p2 / ry2;
+    if (radiusScale > 1.0)
+    {
+        const qreal scale = qSqrt(radiusScale);
+        rx *= scale;
+        ry *= scale;
+        rx2 = rx * rx;
+        ry2 = ry * ry;
+    }
+
+    const qreal denominator = rx2 * y1p2 + ry2 * x1p2;
+    if (qFuzzyIsNull(denominator))
+    {
+        path->lineTo(end);
+        return;
+    }
+
+    const qreal numerator = qMax<qreal>(0.0, rx2 * ry2 - denominator);
+    qreal coefficient = qSqrt(numerator / denominator);
+    if (largeArc == sweep)
+    {
+        coefficient = -coefficient;
+    }
+
+    const qreal cxp = coefficient * (rx * y1p / ry);
+    const qreal cyp = coefficient * (-ry * x1p / rx);
+    const qreal cx = cosPhi * cxp - sinPhi * cyp + (start.x() + end.x()) / 2.0;
+    const qreal cy = sinPhi * cxp + cosPhi * cyp + (start.y() + end.y()) / 2.0;
+
+    const qreal theta1 = vectorAngle(1.0, 0.0, (x1p - cxp) / rx, (y1p - cyp) / ry);
+    qreal deltaTheta = vectorAngle((x1p - cxp) / rx,
+                                   (y1p - cyp) / ry,
+                                   (-x1p - cxp) / rx,
+                                   (-y1p - cyp) / ry);
+    const qreal twoPi = qAcos(-1.0) * 2.0;
+    if (!sweep && deltaTheta > 0)
+    {
+        deltaTheta -= twoPi;
+    }
+    else if (sweep && deltaTheta < 0)
+    {
+        deltaTheta += twoPi;
+    }
+
+    const qreal halfPi = qAcos(-1.0) / 2.0;
+    const int segments = qMax(1, qCeil(qAbs(deltaTheta) / halfPi));
+    const qreal segmentTheta = deltaTheta / segments;
+    qreal angle = theta1;
+
+    for (int i = 0; i < segments; ++i)
+    {
+        const qreal nextAngle = angle + segmentTheta;
+        const qreal alpha = 4.0 / 3.0 * qTan((nextAngle - angle) / 4.0);
+        const qreal x1 = qCos(angle);
+        const qreal y1 = qSin(angle);
+        const qreal x2 = qCos(nextAngle);
+        const qreal y2 = qSin(nextAngle);
+
+        const QPointF c1 = svgArcControl(cx, cy, rx, ry, cosPhi, sinPhi, x1 - alpha * y1, y1 + alpha * x1);
+        const QPointF c2 = svgArcControl(cx, cy, rx, ry, cosPhi, sinPhi, x2 + alpha * y2, y2 - alpha * x2);
+        const QPointF p2 = svgArcPoint(cx, cy, rx, ry, cosPhi, sinPhi, nextAngle);
+        path->cubicTo(c1, c2, p2);
+        angle = nextAngle;
+    }
+}
+
+class SvgPathParser
+{
+public:
+    explicit SvgPathParser(QString data)
+        : m_data(std::move(data))
+    {
+    }
+
+    bool parse(QPainterPath* path)
+    {
+        if (!path)
+        {
+            return false;
+        }
+
+        path->setFillRule(Qt::WindingFill);
+        while (true)
+        {
+            skipSeparators();
+            if (atEnd())
+            {
+                return true;
+            }
+
+            if (isCommand(m_data.at(m_pos)))
+            {
+                m_command = m_data.at(m_pos++);
+            }
+            else if (m_command.isNull())
+            {
+                return false;
+            }
+
+            if (!applyCommand(path))
+            {
+                return false;
+            }
+        }
+    }
+
+private:
+    bool atEnd() const
+    {
+        return m_pos >= m_data.size();
+    }
+
+    static bool isCommand(QChar ch)
+    {
+        return ch.isLetter();
+    }
+
+    static bool isNumberStart(QChar ch)
+    {
+        return ch == QLatin1Char('-') || ch == QLatin1Char('+') || ch == QLatin1Char('.') || ch.isDigit();
+    }
+
+    void skipSeparators()
+    {
+        while (!atEnd())
+        {
+            const QChar ch = m_data.at(m_pos);
+            if (!ch.isSpace() && ch != QLatin1Char(','))
+            {
+                break;
+            }
+            ++m_pos;
+        }
+    }
+
+    bool hasNumberAhead() const
+    {
+        int pos = m_pos;
+        while (pos < m_data.size())
+        {
+            const QChar ch = m_data.at(pos);
+            if (!ch.isSpace() && ch != QLatin1Char(','))
+            {
+                return isNumberStart(ch);
+            }
+            ++pos;
+        }
+        return false;
+    }
+
+    bool readNumber(qreal* value)
+    {
+        if (!value)
+        {
+            return false;
+        }
+
+        skipSeparators();
+        if (atEnd())
+        {
+            return false;
+        }
+
+        const int start = m_pos;
+        if (m_data.at(m_pos) == QLatin1Char('-') || m_data.at(m_pos) == QLatin1Char('+'))
+        {
+            ++m_pos;
+        }
+
+        bool hasDigit = false;
+        while (!atEnd() && m_data.at(m_pos).isDigit())
+        {
+            hasDigit = true;
+            ++m_pos;
+        }
+        if (!atEnd() && m_data.at(m_pos) == QLatin1Char('.'))
+        {
+            ++m_pos;
+            while (!atEnd() && m_data.at(m_pos).isDigit())
+            {
+                hasDigit = true;
+                ++m_pos;
+            }
+        }
+        if (!hasDigit)
+        {
+            return false;
+        }
+
+        if (!atEnd() && (m_data.at(m_pos) == QLatin1Char('e') || m_data.at(m_pos) == QLatin1Char('E')))
+        {
+            const int exponentStart = m_pos;
+            ++m_pos;
+            if (!atEnd() && (m_data.at(m_pos) == QLatin1Char('-') || m_data.at(m_pos) == QLatin1Char('+')))
+            {
+                ++m_pos;
+            }
+            bool hasExponentDigit = false;
+            while (!atEnd() && m_data.at(m_pos).isDigit())
+            {
+                hasExponentDigit = true;
+                ++m_pos;
+            }
+            if (!hasExponentDigit)
+            {
+                m_pos = exponentStart;
+            }
+        }
+
+        bool ok = false;
+        *value = m_data.mid(start, m_pos - start).toDouble(&ok);
+        return ok;
+    }
+
+    bool readFlag(bool* flag)
+    {
+        if (!flag)
+        {
+            return false;
+        }
+
+        skipSeparators();
+        if (atEnd())
+        {
+            return false;
+        }
+
+        const QChar ch = m_data.at(m_pos);
+        if (ch != QLatin1Char('0') && ch != QLatin1Char('1'))
+        {
+            return false;
+        }
+
+        *flag = ch == QLatin1Char('1');
+        ++m_pos;
+        return true;
+    }
+
+    static QPointF reflectedPoint(const QPointF& center, const QPointF& point)
+    {
+        return QPointF(2.0 * center.x() - point.x(), 2.0 * center.y() - point.y());
+    }
+
+    QPointF point(qreal x, qreal y, bool relative) const
+    {
+        return relative ? QPointF(m_current.x() + x, m_current.y() + y) : QPointF(x, y);
+    }
+
+    void resetControls()
+    {
+        m_hasLastCubicControl = false;
+        m_hasLastQuadraticControl = false;
+    }
+
+    bool applyCommand(QPainterPath* path)
+    {
+        const QChar lower = m_command.toLower();
+        const bool relative = m_command.isLower();
+
+        if (lower == QLatin1Char('z'))
+        {
+            path->closeSubpath();
+            m_current = m_subpathStart;
+            resetControls();
+            return true;
+        }
+
+        bool parsed = false;
+        if (lower == QLatin1Char('m'))
+        {
+            bool firstPoint = true;
+            while (hasNumberAhead())
+            {
+                qreal x = 0.0;
+                qreal y = 0.0;
+                if (!readNumber(&x) || !readNumber(&y))
+                {
+                    return false;
+                }
+                const QPointF p = point(x, y, relative);
+                if (firstPoint)
+                {
+                    path->moveTo(p);
+                    m_subpathStart = p;
+                    firstPoint = false;
+                }
+                else
+                {
+                    path->lineTo(p);
+                }
+                m_current = p;
+                parsed = true;
+            }
+            m_command = relative ? QLatin1Char('l') : QLatin1Char('L');
+            resetControls();
+            return parsed;
+        }
+
+        while (hasNumberAhead())
+        {
+            parsed = true;
+            if (lower == QLatin1Char('l'))
+            {
+                qreal x = 0.0;
+                qreal y = 0.0;
+                if (!readNumber(&x) || !readNumber(&y))
+                {
+                    return false;
+                }
+                m_current = point(x, y, relative);
+                path->lineTo(m_current);
+                resetControls();
+            }
+            else if (lower == QLatin1Char('h'))
+            {
+                qreal x = 0.0;
+                if (!readNumber(&x))
+                {
+                    return false;
+                }
+                m_current = relative ? QPointF(m_current.x() + x, m_current.y()) : QPointF(x, m_current.y());
+                path->lineTo(m_current);
+                resetControls();
+            }
+            else if (lower == QLatin1Char('v'))
+            {
+                qreal y = 0.0;
+                if (!readNumber(&y))
+                {
+                    return false;
+                }
+                m_current = relative ? QPointF(m_current.x(), m_current.y() + y) : QPointF(m_current.x(), y);
+                path->lineTo(m_current);
+                resetControls();
+            }
+            else if (lower == QLatin1Char('c'))
+            {
+                qreal x1 = 0.0;
+                qreal y1 = 0.0;
+                qreal x2 = 0.0;
+                qreal y2 = 0.0;
+                qreal x = 0.0;
+                qreal y = 0.0;
+                if (!readNumber(&x1) || !readNumber(&y1) || !readNumber(&x2) || !readNumber(&y2) ||
+                    !readNumber(&x) || !readNumber(&y))
+                {
+                    return false;
+                }
+                const QPointF c1 = point(x1, y1, relative);
+                const QPointF c2 = point(x2, y2, relative);
+                m_current = point(x, y, relative);
+                path->cubicTo(c1, c2, m_current);
+                m_lastCubicControl = c2;
+                m_hasLastCubicControl = true;
+                m_hasLastQuadraticControl = false;
+            }
+            else if (lower == QLatin1Char('s'))
+            {
+                qreal x2 = 0.0;
+                qreal y2 = 0.0;
+                qreal x = 0.0;
+                qreal y = 0.0;
+                if (!readNumber(&x2) || !readNumber(&y2) || !readNumber(&x) || !readNumber(&y))
+                {
+                    return false;
+                }
+                const QPointF c1 = m_hasLastCubicControl ? reflectedPoint(m_current, m_lastCubicControl) : m_current;
+                const QPointF c2 = point(x2, y2, relative);
+                m_current = point(x, y, relative);
+                path->cubicTo(c1, c2, m_current);
+                m_lastCubicControl = c2;
+                m_hasLastCubicControl = true;
+                m_hasLastQuadraticControl = false;
+            }
+            else if (lower == QLatin1Char('q'))
+            {
+                qreal x1 = 0.0;
+                qreal y1 = 0.0;
+                qreal x = 0.0;
+                qreal y = 0.0;
+                if (!readNumber(&x1) || !readNumber(&y1) || !readNumber(&x) || !readNumber(&y))
+                {
+                    return false;
+                }
+                const QPointF c = point(x1, y1, relative);
+                m_current = point(x, y, relative);
+                path->quadTo(c, m_current);
+                m_lastQuadraticControl = c;
+                m_hasLastQuadraticControl = true;
+                m_hasLastCubicControl = false;
+            }
+            else if (lower == QLatin1Char('t'))
+            {
+                qreal x = 0.0;
+                qreal y = 0.0;
+                if (!readNumber(&x) || !readNumber(&y))
+                {
+                    return false;
+                }
+                const QPointF c = m_hasLastQuadraticControl ? reflectedPoint(m_current, m_lastQuadraticControl) : m_current;
+                m_current = point(x, y, relative);
+                path->quadTo(c, m_current);
+                m_lastQuadraticControl = c;
+                m_hasLastQuadraticControl = true;
+                m_hasLastCubicControl = false;
+            }
+            else if (lower == QLatin1Char('a'))
+            {
+                qreal rx = 0.0;
+                qreal ry = 0.0;
+                qreal rotation = 0.0;
+                bool largeArc = false;
+                bool sweep = false;
+                qreal x = 0.0;
+                qreal y = 0.0;
+                if (!readNumber(&rx) || !readNumber(&ry) || !readNumber(&rotation) || !readFlag(&largeArc) ||
+                    !readFlag(&sweep) || !readNumber(&x) || !readNumber(&y))
+                {
+                    return false;
+                }
+                const QPointF end = point(x, y, relative);
+                appendSvgArc(path, m_current, rx, ry, rotation, largeArc, sweep, end);
+                m_current = end;
+                resetControls();
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return parsed;
+    }
+
+    QString m_data;
+    int m_pos = 0;
+    QChar m_command;
+    QPointF m_current;
+    QPointF m_subpathStart;
+    QPointF m_lastCubicControl;
+    QPointF m_lastQuadraticControl;
+    bool m_hasLastCubicControl = false;
+    bool m_hasLastQuadraticControl = false;
+};
+
+QString svgAttribute(const QString& attributes, const QString& name)
+{
+    const QRegularExpression regex(QStringLiteral("\\b%1\\s*=\\s*([\"'])(.*?)\\1").arg(QRegularExpression::escape(name)));
+    const QRegularExpressionMatch match = regex.match(attributes);
+    return match.hasMatch() ? match.captured(2) : QString();
+}
+
+QVector<qreal> svgNumberList(const QString& text)
+{
+    QVector<qreal> numbers;
+    static const QRegularExpression numberRegex(QStringLiteral("[-+]?(?:\\d*\\.\\d+|\\d+\\.?)(?:[eE][-+]?\\d+)?"));
+    QRegularExpressionMatchIterator it = numberRegex.globalMatch(text);
+    while (it.hasNext())
+    {
+        bool ok = false;
+        const qreal value = it.next().captured(0).toDouble(&ok);
+        if (ok)
+        {
+            numbers.append(value);
+        }
+    }
+    return numbers;
+}
+
+Qt::FillRule svgFillRule(const QString& value, Qt::FillRule inherited)
+{
+    if (value.compare(QStringLiteral("evenodd"), Qt::CaseInsensitive) == 0)
+    {
+        return Qt::OddEvenFill;
+    }
+    if (value.compare(QStringLiteral("nonzero"), Qt::CaseInsensitive) == 0)
+    {
+        return Qt::WindingFill;
+    }
+    return inherited;
+}
+
+qreal svgOpacity(const QString& value, qreal inherited)
+{
+    if (value.isEmpty())
+    {
+        return inherited;
+    }
+
+    bool ok = false;
+    const qreal parsed = value.toDouble(&ok);
+    return ok ? qBound<qreal>(0.0, inherited * parsed, 1.0) : inherited;
+}
+
+QTransform svgTransform(const QString& value)
+{
+    QTransform transform;
+    if (value.isEmpty())
+    {
+        return transform;
+    }
+
+    static const QRegularExpression transformRegex(QStringLiteral("([A-Za-z]+)\\s*\\(([^)]*)\\)"));
+    QRegularExpressionMatchIterator it = transformRegex.globalMatch(value);
+    while (it.hasNext())
+    {
+        const QRegularExpressionMatch match = it.next();
+        const QString type = match.captured(1).toLower();
+        const QVector<qreal> values = svgNumberList(match.captured(2));
+        if (type == QStringLiteral("translate") && !values.isEmpty())
+        {
+            transform.translate(values.at(0), values.size() > 1 ? values.at(1) : 0.0);
+        }
+        else if (type == QStringLiteral("scale") && !values.isEmpty())
+        {
+            transform.scale(values.at(0), values.size() > 1 ? values.at(1) : values.at(0));
+        }
+        else if (type == QStringLiteral("matrix") && values.size() >= 6)
+        {
+            transform = transform * QTransform(values.at(0), values.at(1), values.at(2), values.at(3), values.at(4), values.at(5));
+        }
+    }
+    return transform;
+}
+
+QString activeGroupAttributes(const QString& svg, int pathOffset)
+{
+    const int groupOpen = svg.lastIndexOf(QStringLiteral("<g"), pathOffset, Qt::CaseInsensitive);
+    if (groupOpen < 0)
+    {
+        return QString();
+    }
+
+    const int groupClose = svg.lastIndexOf(QStringLiteral("</g>"), pathOffset, Qt::CaseInsensitive);
+    if (groupClose > groupOpen)
+    {
+        return QString();
+    }
+
+    const int groupEnd = svg.indexOf(QLatin1Char('>'), groupOpen);
+    if (groupEnd < 0 || groupEnd > pathOffset)
+    {
+        return QString();
+    }
+
+    return svg.mid(groupOpen + 2, groupEnd - groupOpen - 2);
+}
+
+QString svgRootAttributes(const QString& svg)
+{
+    const int svgOpen = svg.indexOf(QStringLiteral("<svg"), 0, Qt::CaseInsensitive);
+    if (svgOpen < 0)
+    {
+        return QString();
+    }
+    const int svgEnd = svg.indexOf(QLatin1Char('>'), svgOpen);
+    if (svgEnd < 0)
+    {
+        return QString();
+    }
+    return svg.mid(svgOpen + 4, svgEnd - svgOpen - 4);
+}
+
+ParsedSvgIcon parseSvgIcon(const QString& svg)
+{
+    ParsedSvgIcon icon;
+    const QString rootAttributes = svgRootAttributes(svg);
+    const QVector<qreal> viewBox = svgNumberList(svgAttribute(rootAttributes, QStringLiteral("viewBox")));
+    if (viewBox.size() >= 4 && viewBox.at(2) > 0 && viewBox.at(3) > 0)
+    {
+        icon.viewBox = QRectF(viewBox.at(0), viewBox.at(1), viewBox.at(2), viewBox.at(3));
+    }
+    else
+    {
+        return icon;
+    }
+
+    const Qt::FillRule rootFillRule = svgFillRule(svgAttribute(rootAttributes, QStringLiteral("fill-rule")), Qt::WindingFill);
+    static const QRegularExpression pathRegex(QStringLiteral("<path\\b([^>]*)>"), QRegularExpression::CaseInsensitiveOption);
+    QRegularExpressionMatchIterator it = pathRegex.globalMatch(svg);
+    while (it.hasNext())
+    {
+        const QRegularExpressionMatch match = it.next();
+        const QString pathAttributes = match.captured(1);
+        const QString pathData = svgAttribute(pathAttributes, QStringLiteral("d"));
+        if (pathData.isEmpty())
+        {
+            continue;
+        }
+
+        QPainterPath path;
+        SvgPathParser parser(pathData);
+        if (!parser.parse(&path))
+        {
+            return ParsedSvgIcon();
+        }
+
+        const QString groupAttributes = activeGroupAttributes(svg, match.capturedStart(0));
+        Qt::FillRule fillRule = svgFillRule(svgAttribute(groupAttributes, QStringLiteral("fill-rule")), rootFillRule);
+        fillRule = svgFillRule(svgAttribute(pathAttributes, QStringLiteral("fill-rule")), fillRule);
+        path.setFillRule(fillRule);
+
+        QString fillValue = svgAttribute(pathAttributes, QStringLiteral("fill"));
+        if (fillValue.isEmpty())
+        {
+            fillValue = svgAttribute(groupAttributes, QStringLiteral("fill"));
+        }
+        QColor fill = fillValue.isEmpty() ? QColor(Qt::black) : QColor(fillValue);
+        if (!fill.isValid() && fillValue.compare(QStringLiteral("none"), Qt::CaseInsensitive) == 0)
+        {
+            fill = Qt::transparent;
+        }
+        if (!fill.isValid())
+        {
+            fill = Qt::black;
+        }
+
+        SvgPathLayer layer;
+        layer.path = path;
+        layer.fill = fill;
+        layer.opacity = svgOpacity(svgAttribute(groupAttributes, QStringLiteral("opacity")), 1.0);
+        layer.opacity = svgOpacity(svgAttribute(groupAttributes, QStringLiteral("fill-opacity")), layer.opacity);
+        layer.opacity = svgOpacity(svgAttribute(pathAttributes, QStringLiteral("opacity")), layer.opacity);
+        layer.opacity = svgOpacity(svgAttribute(pathAttributes, QStringLiteral("fill-opacity")), layer.opacity);
+        layer.sourceTransform = svgTransform(svgAttribute(groupAttributes, QStringLiteral("transform")));
+        icon.layers.append(layer);
+    }
+
+    return icon;
+}
+
 bool renderSvgToPixmap(const QString& svg, const QSize& pixelSize, QPixmap* pixmap)
 {
     if (svg.isEmpty() || pixelSize.isEmpty() || !pixmap)
@@ -638,8 +1365,8 @@ bool renderSvgToPixmap(const QString& svg, const QSize& pixelSize, QPixmap* pixm
         return false;
     }
 
-    QSvgRenderer renderer(svg.toUtf8());
-    if (!renderer.isValid())
+    const ParsedSvgIcon icon = parseSvgIcon(svg);
+    if (!icon.isValid())
     {
         return false;
     }
@@ -649,7 +1376,26 @@ bool renderSvgToPixmap(const QString& svg, const QSize& pixelSize, QPixmap* pixm
     {
         QPainter pixmapPainter(&rendered);
         pixmapPainter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-        renderer.render(&pixmapPainter, QRectF(QPointF(0, 0), QSizeF(pixelSize)));
+        pixmapPainter.setPen(Qt::NoPen);
+
+        QTransform viewTransform;
+        viewTransform.translate(0.0, 0.0);
+        viewTransform.scale(pixelSize.width() / icon.viewBox.width(), pixelSize.height() / icon.viewBox.height());
+        viewTransform.translate(-icon.viewBox.x(), -icon.viewBox.y());
+
+        for (const SvgPathLayer& layer : icon.layers)
+        {
+            if (layer.fill.alpha() == 0 || qFuzzyIsNull(layer.opacity))
+            {
+                continue;
+            }
+
+            QColor fill = layer.fill;
+            fill.setAlphaF(qBound<qreal>(0.0, fill.alphaF() * layer.opacity, 1.0));
+            QPainterPath sourcePath = layer.sourceTransform.map(layer.path);
+            QPainterPath targetPath = viewTransform.map(sourcePath);
+            pixmapPainter.fillPath(targetPath, fill);
+        }
     }
 
     *pixmap = rendered;
@@ -817,6 +1563,72 @@ bool drawOfficialTwoToneIcon(Ant::IconType type, const QRectF& iconRect, const Q
     return drawSvgPixmap(svg, iconRect, painter);
 }
 } // namespace
+
+namespace AntIconSvgRenderer
+{
+bool drawIcon(QPainter& painter,
+              const QString& iconName,
+              const QRectF& iconRect,
+              const QColor& primaryColor,
+              const QColor& secondaryColor)
+{
+    if (iconName.isEmpty() || iconRect.isEmpty())
+    {
+        return false;
+    }
+
+    QString svg = resourceSvgTemplate(iconName);
+    if (svg.isEmpty())
+    {
+        return false;
+    }
+
+    const QColor resolvedSecondary = secondaryColor.isValid() ? secondaryColor : primaryColor;
+    svg.replace(QStringLiteral("__PRIMARY__"), primaryColor.name(QColor::HexRgb));
+    svg.replace(QStringLiteral("__SECONDARY__"), resolvedSecondary.name(QColor::HexRgb));
+
+    QPixmap pixmap;
+    if (!renderSvgToPixmap(svg, renderedIconPixelSize(iconRect, &painter), &pixmap))
+    {
+        return false;
+    }
+
+    painter.drawPixmap(iconRect, pixmap, QRectF(pixmap.rect()));
+    return true;
+}
+
+QPixmap renderIconPixmap(const QString& iconName,
+                         qreal iconSize,
+                         const QColor& primaryColor,
+                         qreal devicePixelRatio,
+                         const QColor& secondaryColor)
+{
+    if (iconName.isEmpty() || iconSize <= 0.0)
+    {
+        return {};
+    }
+
+    QString svg = resourceSvgTemplate(iconName);
+    if (svg.isEmpty())
+    {
+        return {};
+    }
+
+    const QColor resolvedSecondary = secondaryColor.isValid() ? secondaryColor : primaryColor;
+    svg.replace(QStringLiteral("__PRIMARY__"), primaryColor.name(QColor::HexRgb));
+    svg.replace(QStringLiteral("__SECONDARY__"), resolvedSecondary.name(QColor::HexRgb));
+
+    const qreal dpr = qMax<qreal>(1.0, devicePixelRatio);
+    const QSize pixelSize(qMax(1, qCeil(iconSize * dpr)), qMax(1, qCeil(iconSize * dpr)));
+    QPixmap pixmap;
+    if (!renderSvgToPixmap(svg, pixelSize, &pixmap))
+    {
+        return {};
+    }
+    pixmap.setDevicePixelRatio(dpr);
+    return pixmap;
+}
+} // namespace AntIconSvgRenderer
 
 AntIconStyle::AntIconStyle(QStyle* style)
     : AntStyleBase(style)

@@ -534,11 +534,22 @@ void TestAntDataDisplayB::carouselPausesAutoplayAndScopesTransitionWork()
     QVERIFY(QTest::qWaitForWindowExposed(&carousel));
     QTRY_VERIFY(carousel.property("antCarouselAutoPlayTimerActive").toBool());
 
+    carousel.setInterval(80);
     const int timerRefreshBeforeManualNext = carousel.property("antCarouselAutoPlayTimerRefreshCount").toInt();
     carousel.next();
     QCOMPARE(carousel.currentIndex(), 1);
     QVERIFY(carousel.property("antCarouselAutoPlayTimerRefreshCount").toInt() > timerRefreshBeforeManualNext);
+    QVERIFY(carousel.property("antCarouselTransitionRunning").toBool());
+    QVERIFY(!carousel.property("antCarouselAutoPlayTimerActive").toBool());
+    QVERIFY(carousel.property("antCarouselDeferredAutoPlayRestart").toBool());
+    QTest::qWait(220);
+    QCOMPARE(carousel.currentIndex(), 1);
+    QVERIFY(!carousel.property("antCarouselAutoPlayTimerActive").toBool());
+    carousel.setInterval(1000);
     QTRY_COMPARE_WITH_TIMEOUT(second->geometry(), carousel.rect(), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(!carousel.property("antCarouselTransitionRunning").toBool(), 1000);
+    QVERIFY(carousel.property("antCarouselAutoPlayTimerActive").toBool());
+    QVERIFY(!carousel.property("antCarouselDeferredAutoPlayRestart").toBool());
     carousel.previous();
     QCOMPARE(carousel.currentIndex(), 0);
     QTRY_COMPARE_WITH_TIMEOUT(first->geometry(), carousel.rect(), 1000);

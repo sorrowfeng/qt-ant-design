@@ -26,6 +26,7 @@ class QT_ANT_DESIGN_EXPORT AntNav : public AntWidget
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(QString currentText READ currentText NOTIFY currentTextChanged)
     Q_PROPERTY(QVariant currentData READ currentData NOTIFY currentDataChanged)
+    Q_PROPERTY(bool multiple READ isMultiple WRITE setMultiple NOTIFY multipleChanged)
 
 public:
     explicit AntNav(QWidget* parent = nullptr);
@@ -69,18 +70,27 @@ public:
     int currentIndex() const;
     QString currentText() const;
     QVariant currentData() const;
+    bool isMultiple() const;
+    QVector<int> selectedIndices() const;
+    bool isItemSelected(int index) const;
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
 public Q_SLOTS:
     void setCurrentIndex(int index);
+    void setMultiple(bool multiple);
+    void setSelectedIndices(const QVector<int>& indices);
+    void setItemSelected(int index, bool selected);
+    void clearSelection();
     void scrollToIndex(int index);
 
 Q_SIGNALS:
     void currentIndexChanged(int index);
     void currentTextChanged(const QString& text);
     void currentDataChanged(const QVariant& data);
+    void multipleChanged(bool multiple);
+    void selectionChanged(const QVector<int>& selectedIndices);
     void itemClicked(int index);
     void countChanged(int count);
 
@@ -96,6 +106,8 @@ private:
     int indexOfItem(AntNavItem* item) const;
     void updateTheme();
     void syncActiveItemStates();
+    QVector<int> normalizedSelectedIndices(const QVector<int>& indices) const;
+    void applySelection(const QVector<int>& indices, int currentIndex, bool scrollCurrent = true);
     void emitCurrentChanged(const QString& previousText, const QVariant& previousData, int previousIndex);
     void syncNavPerfCounters() const;
 
@@ -103,6 +115,9 @@ private:
     QWidget* m_scrollContent = nullptr;
     QVBoxLayout* m_navLayout = nullptr;
     QVector<NavEntry> m_entries;
+    QVector<int> m_selectedIndices;
     int m_currentIndex = -1;
+    bool m_multiple = false;
+    bool m_syncingItemStates = false;
     mutable int m_selectionApplyCount = 0;
 };

@@ -1,7 +1,6 @@
 #include "AntDockWidget.h"
 
 #include <QEvent>
-#include <QFile>
 #include <QHideEvent>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -17,12 +16,12 @@
 #include <QResizeEvent>
 #include <QScreen>
 #include <QShowEvent>
-#include <QSvgRenderer>
 #include <QTimer>
 #include <QWindow>
 #include <QtMath>
 
 #include "core/AntTheme.h"
+#include "styles/AntIconSvgRenderer.h"
 
 #if defined(Q_OS_WIN)
 #include <windows.h>
@@ -73,37 +72,7 @@ QRectF centeredIconRect(const QRect& buttonRect, qreal iconSize = 14.0)
 
 QPixmap renderAntdIconPixmap(const QString& iconName, qreal iconSize, const QColor& color, qreal devicePixelRatio)
 {
-    if (iconName.isEmpty() || iconSize <= 0.0)
-    {
-        return {};
-    }
-
-    QFile file(QStringLiteral(":/qt-ant-design/icons/antd/%1.svg").arg(iconName));
-    if (!file.open(QIODevice::ReadOnly))
-    {
-        return {};
-    }
-
-    QString svg = QString::fromUtf8(file.readAll());
-    svg.replace(QStringLiteral("__PRIMARY__"), color.name(QColor::HexRgb));
-    svg.replace(QStringLiteral("__SECONDARY__"), color.name(QColor::HexRgb));
-
-    QSvgRenderer renderer(svg.toUtf8());
-    if (!renderer.isValid())
-    {
-        return {};
-    }
-
-    const qreal dpr = qMax<qreal>(1.0, devicePixelRatio);
-    const QSize pixelSize(qMax(1, qCeil(iconSize * dpr)), qMax(1, qCeil(iconSize * dpr)));
-    QPixmap pixmap(pixelSize);
-    pixmap.setDevicePixelRatio(dpr);
-    pixmap.fill(Qt::transparent);
-
-    QPainter painter(&pixmap);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    renderer.render(&painter, QRectF(0, 0, iconSize, iconSize));
-    return pixmap;
+    return AntIconSvgRenderer::renderIconPixmap(iconName, iconSize, color, devicePixelRatio);
 }
 
 #if defined(Q_OS_WIN)

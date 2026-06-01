@@ -168,8 +168,15 @@ void AntFileDialogStyle::drawControl(ControlElement element, const QStyleOption*
         case QStyle::CE_ItemViewItem:
             drawItemViewItem(option, painter, widget);
             return;
+        case QStyle::CE_Header:
+            drawHeaderSection(option, painter, widget);
+            drawHeaderLabel(option, painter, widget);
+            return;
         case QStyle::CE_HeaderSection:
             drawHeaderSection(option, painter, widget);
+            return;
+        case QStyle::CE_HeaderLabel:
+            drawHeaderLabel(option, painter, widget);
             return;
         default:
             break;
@@ -495,8 +502,60 @@ void AntFileDialogStyle::drawHeaderSection(const QStyleOption* option, QPainter*
     }
     const auto& token = antTheme->tokens();
     painter->save();
-    painter->fillRect(option->rect, token.colorFillQuaternary);
+    painter->fillRect(option->rect, token.colorBgContainer);
     painter->setPen(QPen(token.colorSplit, token.lineWidth));
     painter->drawLine(option->rect.bottomLeft(), option->rect.bottomRight());
+    painter->restore();
+}
+
+void AntFileDialogStyle::drawHeaderLabel(const QStyleOption* option, QPainter* painter,
+                                         const QWidget* widget) const
+{
+    Q_UNUSED(widget)
+    const auto* headerOption = qstyleoption_cast<const QStyleOptionHeader*>(option);
+    if (!headerOption || !painter)
+    {
+        return;
+    }
+
+    const auto& token = antTheme->tokens();
+    QRect textRect = headerOption->rect.adjusted(token.paddingSM, 0, -token.paddingSM, 0);
+    const bool hasSortIndicator =
+        headerOption->sortIndicator != QStyleOptionHeader::None && headerOption->section != -1;
+    if (hasSortIndicator)
+    {
+        textRect.adjust(0, 0, -(token.fontSizeSM + token.paddingXXS), 0);
+    }
+
+    painter->save();
+    painter->setRenderHint(QPainter::TextAntialiasing, true);
+    painter->setPen(stateEnabled(option) ? token.colorTextSecondary : token.colorTextDisabled);
+    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter,
+                      headerOption->text);
+
+    if (hasSortIndicator)
+    {
+        const QRect arrowRect(headerOption->rect.right() - token.paddingSM - token.fontSizeSM,
+                              headerOption->rect.center().y() - token.fontSizeSM / 2,
+                              token.fontSizeSM,
+                              token.fontSizeSM);
+        const QPointF c = arrowRect.center();
+        QPolygonF arrow;
+        if (headerOption->sortIndicator == QStyleOptionHeader::SortDown)
+        {
+            arrow << QPointF(c.x() - 4, c.y() - 2)
+                  << QPointF(c.x() + 4, c.y() - 2)
+                  << QPointF(c.x(), c.y() + 3);
+        }
+        else
+        {
+            arrow << QPointF(c.x() - 4, c.y() + 2)
+                  << QPointF(c.x() + 4, c.y() + 2)
+                  << QPointF(c.x(), c.y() - 3);
+        }
+        painter->setBrush(token.colorTextSecondary);
+        painter->setPen(Qt::NoPen);
+        painter->drawPolygon(arrow);
+    }
     painter->restore();
 }
