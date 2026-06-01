@@ -113,6 +113,12 @@ foreach(ANT_HIGH_DPI_SCALE IN ITEMS 1.0 1.25 1.5)
         PROPERTIES ENVIRONMENT "QT_SCALE_FACTOR=${ANT_HIGH_DPI_SCALE};QT_ENABLE_HIGHDPI_SCALING=1"
     )
 endforeach()
+add_test(NAME TestAntHighDpiScaling_InitializeDefault
+    COMMAND $<TARGET_FILE:TestAntHighDpiScaling>
+)
+set_tests_properties(TestAntHighDpiScaling_InitializeDefault
+    PROPERTIES ENVIRONMENT "ANT_TEST_INITIALIZE_CONFIGURES_HIGHDPI=1;QT_SCALE_FACTOR=1.25;QT_ENABLE_HIGHDPI_SCALING=1"
+)
 
 # Installed package consumer coverage
 add_test(NAME TestAntInstallConsumer

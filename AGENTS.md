@@ -39,7 +39,7 @@
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - README 组件截图画廊：`resources/images/components/` 提交 `176` 张 Light/Dark PNG，覆盖 `88` 个视觉组件条目；`AntDockManager` 通过 DockWidget 示例页展示，弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：当前 `46` 个 CTest 条目；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-30`），Qt5/Qt6 定向视觉一致性、视觉 atlas 缩放烟测、度量审计、真实 example 页面遍历/截图对比、Windows High DPI 缩放和无 QSS 门禁检查在 `2026-06-01` 通过
+- 测试状态：当前 `47` 个 CTest 条目；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-30`），Qt5/Qt6 定向视觉一致性、视觉 atlas 缩放烟测、度量审计、真实 example 页面遍历/截图对比、Windows High DPI 缩放和无 QSS 门禁检查在 `2026-06-01` 通过
 - 逐控件可靠性覆盖矩阵：`docs/reliability-coverage.md`，列出 89 个公开组件的专项行为/API、生命周期、Meta 属性、主题切换和渲染烟测覆盖情况
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
@@ -124,7 +124,7 @@
 - `AntDatePicker` / `AntTimePicker` 补齐 `QDateEdit` / `QTimeEdit` 风格 date/time 别名、minimum/maximum range API、range changed 信号，并对越界输入做边界收敛。
 - `AntList` / `AntListWidget` 补齐常用 `QListWidget` 风格 API/信号，包括字符串 add/insert/addItems/insertItems、item/text/icon/data/checkState/flags、findItems/sortItems、currentItem/currentRow、selectionMode/selectedItems/setItemSelected、内部滚动、scrollToItem、itemClicked/itemDoubleClicked/itemActivated/itemChanged/current/itemSelection 信号；`AntTable` 补齐 rows/selectRow/currentRowIndex 和行级 tooltip；`AntTree` 继续覆盖 tree 风格 helper。
 - `AntMenu` 接入 QWidget `QAction` 体系：`addAction/removeAction` 会同步自绘菜单项，action text/enabled/shortcut 变更会刷新显示，点击菜单项会触发对应 QAction；`AntToolButton` / `AntToolBar` 的默认 action 和 toolbar action 触发行为已有测试保护。
-- `AntDesign::configureHighDpi()` + `AntDesign::initialize(&app)` 作为外部项目统一启动入口：前者必须在 `QApplication` 创建前调用，用于 Qt5/Windows 逻辑 High DPI 缩放和 High DPI pixmap；后者在 app 创建后注册 `qt_ant_design` 资源、应用内置字体并初始化主题单例，替代分散的 `Q_INIT_RESOURCE` / `AntFont::applyToApplication` / `AntTheme::instance` 调用。
+- `AntDesign::configureHighDpi()` + `AntDesign::initialize(&app)` 作为外部项目统一启动入口：前者必须在 `QApplication` 创建前调用，用于 Qt5/Windows 逻辑 High DPI 缩放和 High DPI pixmap；`initialize()` 若在无 `QApplication` 实例时被调用会自动补 High DPI 预配置并返回，创建 app 后仍需再次调用 `initialize(&app)` 注册 `qt_ant_design` 资源、应用内置字体并初始化主题单例，替代分散的 `Q_INIT_RESOURCE` / `AntFont::applyToApplication` / `AntTheme::instance` 调用。
 - 相关 targeted 验证覆盖 `TestAntInput|TestAntCheckBox|TestAntDataEntryA|TestAntDataEntryB|TestAntDataDisplayB|TestAntFeedback|TestAntNavigation|TestAntQtExtensions|TestAntTypography|TestAntSelect|TestAntMetaProperties|TestAntRenderSmoke`。
 
 ## 子组件/变体完整度（完成于 2026-04-26，状态复核 2026-04-30）
@@ -434,7 +434,7 @@ cmake --install build --config Debug
 项目使用 QTest 与 CTest 脚本进行自动化测试，覆盖所有 89 个公开组件的属性、getter/setter、信号验证、生命周期压力场景和安装消费方验证。
 
 - **测试框架**：Qt Test（QTest + QSignalSpy，跟随自动检测到的 Qt 主版本）
-- **测试数量**：46 个 CTest 条目（36 个 QTest 可执行文件，其中 `TestAntHighDpiScaling` 以 1.0 / 1.25 / 1.5 三档缩放注册为 3 个 CTest 条目，`TestAntQtVersionVisualParity` 另以 1.25 / 1.5 两档缩放注册 atlas smoke 条目；另含安装消费方、build-system、无 QSS 门禁、example GUI subsystem、example 压力退出、example 页面遍历和覆盖盘点脚本/可执行测试）
+- **测试数量**：47 个 CTest 条目（36 个 QTest 可执行文件，其中 `TestAntHighDpiScaling` 以 1.0 / 1.25 / 1.5 三档缩放和 initialize 默认预配置注册为 4 个 CTest 条目，`TestAntQtVersionVisualParity` 另以 1.25 / 1.5 两档缩放注册 atlas smoke 条目；另含安装消费方、build-system、无 QSS 门禁、example GUI subsystem、example 压力退出、example 页面遍历和覆盖盘点脚本/可执行测试）
 - **覆盖组件**：89 个公开组件全部覆盖，内部 helper 随宿主组件测试；逐控件覆盖矩阵见 `docs/reliability-coverage.md`
 - **运行方式**：`ctest -C Debug --output-on-failure`
 - **最近全量结果**：`37 / 37` CTest 目标通过（Debug，2026-05-30），覆盖公开组件 API / getter-setter / 信号、Qt 事件级鼠标键盘交互、生命周期、主题切换、渲染烟测、安装消费方和 example 子系统；`2026-06-01` 新增 Qt5/Qt6 视觉一致性、视觉 atlas 缩放烟测、度量审计、Windows High DPI 缩放、无 QSS 门禁和 example 页面遍历目标并通过定向验证，真实 example 全页面 Qt5-vs-Qt6 截图对比通过 352 帧
@@ -479,7 +479,7 @@ tests/
 ├── TestAntVisualRegression.cpp # Token-color, input handler, data display, selection, tag/badge, feedback surface, navigation/layout/popup, and light/dark visual guards
 ├── TestAntQtVersionVisualParity.cpp # Optional Qt5-vs-Qt6 atlas export/comparison plus public-header atlas coverage guard
 ├── TestAntQtVersionMetricAudit.cpp # Optional Qt5-vs-Qt6 QStyle/QPalette/font/geometry metric export/comparison
-├── TestAntHighDpiScaling.cpp   # Windows/Qt High DPI startup and logical-geometry checks at 1.0, 1.25, and 1.5 scale factors
+├── TestAntHighDpiScaling.cpp   # Windows/Qt High DPI startup, initialize default, and logical-geometry checks at 1.0, 1.25, and 1.5 scale factors
 ├── TestAntInstallConsumer.cmake # Installed package can be found and linked by an external CMake consumer
 ├── TestAntBuildSystem.cmake # Build options cover Qt major detection and static/shared library settings
 ├── TestAntNoStyleSheetUsage.cmake # Source/example/test/resource guard against QSS/QStyleSheet usage
