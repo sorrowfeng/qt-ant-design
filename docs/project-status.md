@@ -9,24 +9,25 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Area | Status |
 | --- | --- |
 | Ant Design standard coverage | `70 / 70` top-level components covered |
-| Public Qt component count | `88` public components |
-| Widget headers | `108` headers in `src/widgets`: `88` public component headers, `19` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup` |
-| Qt / desktop extensions | `18` components |
-| Style architecture | `66` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
-| Example coverage | `88 / 88` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
+| Public Qt component count | `89` public components |
+| Widget headers | `109` headers in `src/widgets`: `89` public component headers, `19` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup` |
+| Qt / desktop extensions | `19` components |
+| Style architecture | `67` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
+| Example coverage | `89 / 89` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
 | Dedicated examples intentionally absent | None |
 | Tests | `46` CTest entries configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-30`; latest Qt6 and Qt5 adaptation-focused CTest sweep passed `9 / 9` entries per build tree on `2026-06-01` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
-| README component gallery | `174` committed PNGs: light/dark screenshots for `87` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
+| README component gallery | `176` committed PNGs: light/dark screenshots for `88` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Local component/API reference | `docs/component-api-overview-cn.html` generated from public widget headers, with searchable component descriptions and API tables |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
 | Performance optimization | Initial per-component plan, progress matrix, and test matrix in `docs/performance-optimization.md`; `84 / 84` previously tracked public components have a defined optimization and validation path, with `84` controls optimized in the current pass |
 
 ## Recent Completed Work
 
+- Added `AntInputDialog` as the QInputDialog desktop-extension port. It builds on `AntDialog` for frameless title bar, shadow, child palette, and theme synchronization, and exposes text, integer, double, and item-selection modes, static convenience helpers, configurable button text/options, `UsePlainTextEditForTextInput`, `NoButtons`, and changed/selected signals. The example app now has a dedicated InputDialog page, README light/dark thumbnails were added, and Qt6/Qt5 targeted builds plus behavior/meta/theme/render/object-tree coverage were verified on `2026-06-01`.
 - Expanded `TestAntQtVersionVisualParity`, a Qt5/Qt6 visual parity atlas exporter/comparator, to 26 representative Button, selection, input, interaction-state, acceptance-state matrix, Popover, Modal, Drawer, Dropdown, Popconfirm, Tour, advanced entry, navigation, feedback, rich display, data-display, Tree, ScrollArea/ScrollBar/Carousel, structural layout, desktop, dock, file-dialog, and window scenes. Each scene now renders in both light and dark themes, so the comparator checks 52 themed snapshots and guards public-header atlas coverage. The latest Qt5.15.2-vs-Qt6.9.1 comparison passed with per-scene mean pixel deltas between `0.091` and `5.942`; details are tracked in `docs/qt5-visual-adaptation-report.md`.
 - Added `TestAntQtVersionMetricAudit`, a Qt5/Qt6 `QStyle` / `QPalette` / font / default-draw / complex-geometry metric exporter and comparator. The latest Qt5.15.2-vs-Qt6.9.1 run passed `216` rows: `105` audit-only Qt default rows documenting root-cause drift such as `windowsvista` vs `windows11`, `PM_ScrollBarExtent` `17` vs `12`, indicator metrics `13` vs `16`, and different default draw hashes for push button, checkbox, line edit panel, combo box, tab, header, and scrollbar probes, plus `111` strict adapted-Ant rows with `0` failures. The strict sample now includes Menu, Pagination, Tag, Badge, Table, and ToolTip alongside the earlier core widgets.
-- Added `TestAntExamplePageTraversal`, which starts the real `qt-ant-design-example`, traverses all 88 pages through `ExampleWindow` in light and dark themes, scrolls pages with vertical content to top/bottom, grabs each real window frame, and fails on invalid or blank renders. The targeted traversal passed on both Qt6 and Qt5 on `2026-06-01`; the export/baseline mode also passed a real-example Qt5.15.2-vs-Qt6.9.1 comparison across 352 frames with mean deltas from `0.018` to `0.576`, average mean delta `0.043136`, and maximum `changed32Ratio` `0.0043`.
+- Added `TestAntExamplePageTraversal`, which starts the real `qt-ant-design-example`, traverses the then-current 88 pages through `ExampleWindow` in light and dark themes, scrolls pages with vertical content to top/bottom, grabs each real window frame, and fails on invalid or blank renders. The targeted traversal passed on both Qt6 and Qt5 on `2026-06-01`; the export/baseline mode also passed a real-example Qt5.15.2-vs-Qt6.9.1 comparison across 352 frames with mean deltas from `0.018` to `0.576`, average mean delta `0.043136`, and maximum `changed32Ratio` `0.0043`.
 - Replaced the remaining stylesheet-backed carousel test fixture with a tiny QPainter-based solid-color widget, and added `TestAntNoStyleSheetUsage` as a CTest guard over `src`, `examples`, `tests`, and `resources`, so production sources, examples, active tests, and committed resources all follow the no-QSS styling rule used for Qt5 visual adaptation.
 - Added a local Chinese component/API reference page at `docs/component-api-overview-cn.html`, generated from `src/widgets/*.h`, `src/core/AntTypes.h`, and `AGENTS.md`, with searchable sections for component descriptions, headers, inheritance, properties, public methods, slots, signals, data structures, aliases, and shared enums.
 - Added the Windows High DPI startup path and regression coverage: `AntDesign::configureHighDpi()` is called before `QApplication` to enable Qt5 logical High DPI scaling / High DPI pixmaps and pass-through scale rounding, the example app uses the new startup order, `TestAntHighDpiScaling_1_0`, `_1_25`, and `_1_5` verify logical grab geometry for representative widgets and `AntWindow`, and `TestAntQtVersionVisualParity_Scale_1_25` / `_1_5` smoke the full 26-scene atlas at fractional scaling. The latest adaptation-focused CTest sweep passed `9 / 9` entries in both Qt6 and Qt5 build trees.
@@ -462,7 +463,7 @@ Add-Type -AssemblyName System.Drawing
 Select-String -Path README.md,README.zh-CN.md -Pattern 'resources/images/components/[^" ]+\.png' -AllMatches
 ```
 
-Result: `174` committed PNG screenshots validated at `960x540`, and `174` unique README image references resolved on `2026-05-30`.
+Result: `176` committed PNG screenshots validated at `960x540`, and `176` unique README image references resolved on `2026-06-01`.
 
 Latest targeted README dark thumbnail refresh validation:
 

@@ -38,6 +38,7 @@
 #include "widgets/AntIcon.h"
 #include "widgets/AntImage.h"
 #include "widgets/AntInput.h"
+#include "widgets/AntInputDialog.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntLayout.h"
 #include "widgets/AntList.h"
@@ -166,6 +167,7 @@ void TestAntObjectTree::parentOwnsWidgetsAndStyles()
     trackWidget(new AntIcon(root), true);
     trackWidget(new AntImage(root), false);
     trackWidget(new AntInput(root), true);
+    trackWidget(new AntInputDialog(root), true);
     trackWidget(new AntInputNumber(root), true);
     trackWidget(new AntLayoutHeader(root), false);
     trackWidget(new AntLayoutFooter(root), false);

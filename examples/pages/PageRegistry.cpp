@@ -106,6 +106,7 @@ QVector<PageEntry> buildPageRegistry()
     add(kQtExtensions, QStringLiteral("Window"), &createWindowPage);
     add(kQtExtensions, QStringLiteral("Widget"), &createWidgetPage);
     add(kQtExtensions, QStringLiteral("Dialog"), &createDialogPage);
+    add(kQtExtensions, QStringLiteral("InputDialog"), &createInputDialogPage);
     add(kQtExtensions, QStringLiteral("StackedWidget"), &createStackedWidgetPage);
     add(kQtExtensions, QStringLiteral("ScrollArea"), &createScrollAreaPage);
     add(kQtExtensions, QStringLiteral("ScrollBar"), &createScrollBarPage);

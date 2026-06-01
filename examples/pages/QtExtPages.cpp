@@ -26,6 +26,7 @@
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntFileDialog.h"
+#include "widgets/AntInputDialog.h"
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
 #include "widgets/AntMenuBar.h"
@@ -240,6 +241,98 @@ QWidget* createDialogPage(QWidget* /*owner*/)
         });
 
         cl->addWidget(openButton);
+        cl->addWidget(result);
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* createInputDialogPage(QWidget* /*owner*/)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    {
+        auto* card = new AntCard(QStringLiteral("AntInputDialog"));
+        auto* cl = card->bodyLayout();
+
+        auto* desc = makeParagraph(QStringLiteral("AntInputDialog is the Ant Design replacement for QInputDialog. It reuses AntDialog chrome and provides text, integer, double, item selection, button text, options, and changed/selected signals without using the native dialog."),
+                                   page);
+        cl->addWidget(desc);
+
+        auto* result = makeParagraph(QStringLiteral("Input result: not opened"), page);
+
+        auto* actionRow = new QHBoxLayout();
+        actionRow->setSpacing(8);
+
+        auto* textButton = new AntButton(QStringLiteral("Text"), page);
+        textButton->setButtonType(Ant::ButtonType::Primary);
+        QObject::connect(textButton, &AntButton::clicked, page, [page, result]() {
+            AntInputDialog dialog(page);
+            dialog.setWindowTitle(QStringLiteral("Text input"));
+            dialog.setLabelText(QStringLiteral("Project name"));
+            dialog.setPlaceholderText(QStringLiteral("qt-ant-design"));
+            dialog.setTextValue(QStringLiteral("qt-ant-design"));
+            if (dialog.exec() == QDialog::Accepted)
+            {
+                result->setText(QStringLiteral("Text: %1").arg(dialog.textValue()));
+            }
+        });
+        actionRow->addWidget(textButton);
+
+        auto* intButton = new AntButton(QStringLiteral("Integer"), page);
+        QObject::connect(intButton, &AntButton::clicked, page, [page, result]() {
+            AntInputDialog dialog(page);
+            dialog.setWindowTitle(QStringLiteral("Integer input"));
+            dialog.setLabelText(QStringLiteral("Retry count"));
+            dialog.setInputMode(AntInputDialog::IntInput);
+            dialog.setIntRange(0, 10);
+            dialog.setIntStep(1);
+            dialog.setIntValue(3);
+            if (dialog.exec() == QDialog::Accepted)
+            {
+                result->setText(QStringLiteral("Integer: %1").arg(dialog.intValue()));
+            }
+        });
+        actionRow->addWidget(intButton);
+
+        auto* doubleButton = new AntButton(QStringLiteral("Double"), page);
+        QObject::connect(doubleButton, &AntButton::clicked, page, [page, result]() {
+            AntInputDialog dialog(page);
+            dialog.setWindowTitle(QStringLiteral("Double input"));
+            dialog.setLabelText(QStringLiteral("Opacity"));
+            dialog.setInputMode(AntInputDialog::DoubleInput);
+            dialog.setDoubleRange(0.0, 1.0);
+            dialog.setDoubleDecimals(2);
+            dialog.setDoubleValue(0.72);
+            if (dialog.exec() == QDialog::Accepted)
+            {
+                result->setText(QStringLiteral("Double: %1").arg(dialog.doubleValue(), 0, 'f', 2));
+            }
+        });
+        actionRow->addWidget(doubleButton);
+
+        auto* itemButton = new AntButton(QStringLiteral("Item"), page);
+        QObject::connect(itemButton, &AntButton::clicked, page, [page, result]() {
+            AntInputDialog dialog(page);
+            dialog.setWindowTitle(QStringLiteral("Item input"));
+            dialog.setLabelText(QStringLiteral("Theme mode"));
+            dialog.setComboBoxEditable(false);
+            dialog.setComboBoxItems({QStringLiteral("Default"), QStringLiteral("Dark"), QStringLiteral("Compact")});
+            dialog.setTextValue(QStringLiteral("Dark"));
+            if (dialog.exec() == QDialog::Accepted)
+            {
+                result->setText(QStringLiteral("Item: %1").arg(dialog.textValue()));
+            }
+        });
+        actionRow->addWidget(itemButton);
+        actionRow->addStretch();
+
+        cl->addLayout(actionRow);
         cl->addWidget(result);
         layout->addWidget(card);
     }

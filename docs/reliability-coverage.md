@@ -64,6 +64,7 @@ Result on `2026-05-30`: `37 / 37` CTest targets passed and `qt-ant-design-exampl
 | `AntIcon` | `TestAntIcon` | Yes | Yes | Yes | Yes |
 | `AntImage` | `TestAntDataDisplayA` | Yes | Yes | Yes | Yes |
 | `AntInput` | `TestAntAliases`, `TestAntChildOwnership`, `TestAntInput`, `TestAntStressLifecycle` | Yes | Yes | Yes | Yes |
+| `AntInputDialog` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntInputNumber` | `TestAntAliases`, `TestAntDataEntryA`, `TestAntInteractions`, `TestAntStressLifecycle`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntLayout` | `TestAntChildOwnership`, `TestAntLayout`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntList` | `TestAntAliases`, `TestAntChildOwnership`, `TestAntDataDisplayB`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |

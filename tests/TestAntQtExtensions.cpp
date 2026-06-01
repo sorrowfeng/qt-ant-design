@@ -34,6 +34,7 @@
 #include <QTabBar>
 #include <QTabWidget>
 #include <QHoverEvent>
+#include <QInputDialog>
 #include <QTest>
 #include <QTemporaryDir>
 #include <QToolButton>
@@ -49,12 +50,14 @@
 #include "styles/AntDialogStyle.h"
 #include "styles/AntDockStyle.h"
 #include "styles/AntFileDialogStyle.h"
+#include "styles/AntInputDialogStyle.h"
 #include "styles/AntStackedWidgetStyle.h"
 #include "widgets/AntApp.h"
 #include "widgets/AntConfigProvider.h"
 #include "widgets/AntDialog.h"
 #include "widgets/AntForm.h"
 #include "widgets/AntFileDialog.h"
+#include "widgets/AntInputDialog.h"
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
 #include "widgets/AntPlainTextEdit.h"
@@ -74,7 +77,10 @@
 #include "widgets/AntNav.h"
 #include "widgets/AntNavItem.h"
 #include "widgets/AntIcon.h"
+#include "widgets/AntInput.h"
 #include "widgets/AntTypography.h"
+#include "widgets/AntInputNumber.h"
+#include "widgets/AntSelect.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntWidget.h"
@@ -740,6 +746,7 @@ private slots:
     void dockWidget();
     void dockManager();
     void dialog();
+    void inputDialog();
     void stackedWidget();
     void fileDialog();
     void widget();
@@ -4009,6 +4016,151 @@ void TestAntQtExtensions::dialog()
     QSignalSpy rejectedSpy(&dialog, &QDialog::rejected);
     QTest::mouseClick(&dialog, Qt::LeftButton, Qt::NoModifier, dialog.titleBarCloseButtonRect().center());
     QCOMPARE(rejectedSpy.count(), 1);
+}
+
+void TestAntQtExtensions::inputDialog()
+{
+    ThemeModeRestorerForExtensionTest themeRestorer;
+
+    AntInputDialog dialog;
+    dialog.setWindowTitle(QStringLiteral("Ant input dialog"));
+    QVERIFY(dynamic_cast<AntInputDialogStyle*>(dialog.style()) != nullptr);
+    QVERIFY(dynamic_cast<AntDialogStyle*>(dialog.style()) != nullptr);
+    QCOMPARE(dialog.style()->parent(), &dialog);
+    QVERIFY(qobject_cast<AntDialog*>(&dialog) != nullptr);
+    QVERIFY(dialog.findChildren<QInputDialog*>().isEmpty());
+    QVERIFY(dialog.styleSheet().isEmpty());
+    QCOMPARE(dialog.inputMode(), AntInputDialog::TextInput);
+    QCOMPARE(dialog.okButtonText(), QStringLiteral("OK"));
+    QCOMPARE(dialog.cancelButtonText(), QStringLiteral("Cancel"));
+    QCOMPARE(dialog.property("antInputDialogUsesNativeDialog").toBool(), false);
+
+    QSignalSpy labelSpy(&dialog, &AntInputDialog::labelTextChanged);
+    dialog.setLabelText(QStringLiteral("Project name"));
+    QCOMPARE(dialog.labelText(), QStringLiteral("Project name"));
+    QCOMPARE(labelSpy.count(), 1);
+    auto* label = dialog.findChild<AntTypography*>(QStringLiteral("antInputDialogLabel"));
+    QVERIFY(label != nullptr);
+    QCOMPARE(label->text(), QStringLiteral("Project name"));
+
+    QSignalSpy textSpy(&dialog, &AntInputDialog::textValueChanged);
+    dialog.setTextValue(QStringLiteral("qt-ant-design"));
+    QCOMPARE(dialog.textValue(), QStringLiteral("qt-ant-design"));
+    QCOMPARE(textSpy.count(), 1);
+    auto* textInput = dialog.findChild<AntInput*>(QStringLiteral("antInputDialogTextInput"));
+    QVERIFY(textInput != nullptr);
+    QCOMPARE(textInput->text(), QStringLiteral("qt-ant-design"));
+
+    QSignalSpy echoSpy(&dialog, &AntInputDialog::textEchoModeChanged);
+    dialog.setTextEchoMode(QLineEdit::Password);
+    QCOMPARE(dialog.textEchoMode(), QLineEdit::Password);
+    QCOMPARE(textInput->echoMode(), QLineEdit::Password);
+    QCOMPARE(echoSpy.count(), 1);
+
+    QSignalSpy placeholderSpy(&dialog, &AntInputDialog::placeholderTextChanged);
+    dialog.setPlaceholderText(QStringLiteral("Type here"));
+    QCOMPARE(dialog.placeholderText(), QStringLiteral("Type here"));
+    QCOMPARE(textInput->placeholderText(), QStringLiteral("Type here"));
+    QCOMPARE(placeholderSpy.count(), 1);
+
+    dialog.setOption(AntInputDialog::UsePlainTextEditForTextInput);
+    auto* plainText = dialog.findChild<AntPlainTextEdit*>(QStringLiteral("antInputDialogPlainTextInput"));
+    QVERIFY(plainText != nullptr);
+    QVERIFY(!plainText->isHidden());
+    QVERIFY(textInput->isHidden());
+    plainText->setPlainText(QStringLiteral("multi\nline"));
+    QCOMPARE(dialog.textValue(), QStringLiteral("multi\nline"));
+    QVERIFY(textSpy.count() >= 2);
+
+    dialog.setOption(AntInputDialog::NoButtons);
+    auto* buttonRow = dialog.findChild<QWidget*>(QStringLiteral("antInputDialogButtonRow"));
+    QVERIFY(buttonRow != nullptr);
+    QVERIFY(buttonRow->isHidden());
+    QVERIFY(dialog.testOption(AntInputDialog::NoButtons));
+    dialog.setOption(AntInputDialog::NoButtons, false);
+    QVERIFY(!buttonRow->isHidden());
+
+    QSignalSpy comboItemsSpy(&dialog, &AntInputDialog::comboBoxItemsChanged);
+    dialog.setOption(AntInputDialog::UsePlainTextEditForTextInput, false);
+    dialog.setComboBoxEditable(false);
+    dialog.setComboBoxItems({QStringLiteral("Default"), QStringLiteral("Dark"), QStringLiteral("Compact")});
+    dialog.setTextValue(QStringLiteral("Dark"));
+    QCOMPARE(comboItemsSpy.count(), 1);
+    QCOMPARE(dialog.comboBoxItems().size(), 3);
+    auto* combo = dialog.findChild<AntSelect*>(QStringLiteral("antInputDialogComboBox"));
+    QVERIFY(combo != nullptr);
+    QVERIFY(!combo->isHidden());
+    QCOMPARE(combo->currentText(), QStringLiteral("Dark"));
+    QCOMPARE(dialog.textValue(), QStringLiteral("Dark"));
+    QVERIFY(!dialog.isComboBoxEditable());
+
+    QSignalSpy textSelectedSpy(&dialog, &AntInputDialog::textValueSelected);
+    dialog.done(QDialog::Accepted);
+    QCOMPARE(textSelectedSpy.count(), 1);
+    QCOMPARE(textSelectedSpy.takeFirst().at(0).toString(), QStringLiteral("Dark"));
+
+    AntInputDialog intDialog;
+    QSignalSpy modeSpy(&intDialog, &AntInputDialog::inputModeChanged);
+    QSignalSpy intRangeSpy(&intDialog, &AntInputDialog::intRangeChanged);
+    QSignalSpy intStepSpy(&intDialog, &AntInputDialog::intStepChanged);
+    QSignalSpy intSpy(&intDialog, &AntInputDialog::intValueChanged);
+    intDialog.setInputMode(AntInputDialog::IntInput);
+    intDialog.setIntRange(0, 10);
+    intDialog.setIntStep(2);
+    intDialog.setIntValue(12);
+    QCOMPARE(modeSpy.count(), 1);
+    QCOMPARE(intRangeSpy.count(), 1);
+    QCOMPARE(intStepSpy.count(), 1);
+    QCOMPARE(intDialog.intValue(), 10);
+    QCOMPARE(intSpy.count(), 1);
+    auto* intNumber = intDialog.findChild<AntInputNumber*>(QStringLiteral("antInputDialogNumberInput"));
+    QVERIFY(intNumber != nullptr);
+    QCOMPARE(intNumber->decimals(), 0);
+    QCOMPARE(qRound(intNumber->value()), 10);
+    QSignalSpy intSelectedSpy(&intDialog, &AntInputDialog::intValueSelected);
+    intDialog.done(QDialog::Accepted);
+    QCOMPARE(intSelectedSpy.count(), 1);
+    QCOMPARE(intSelectedSpy.takeFirst().at(0).toInt(), 10);
+
+    AntInputDialog doubleDialog;
+    QSignalSpy doubleRangeSpy(&doubleDialog, &AntInputDialog::doubleRangeChanged);
+    QSignalSpy doubleDecimalsSpy(&doubleDialog, &AntInputDialog::doubleDecimalsChanged);
+    QSignalSpy doubleSpy(&doubleDialog, &AntInputDialog::doubleValueChanged);
+    doubleDialog.setInputMode(AntInputDialog::DoubleInput);
+    doubleDialog.setDoubleRange(0.0, 1.0);
+    doubleDialog.setDoubleDecimals(2);
+    doubleDialog.setDoubleValue(0.72);
+    QCOMPARE(doubleRangeSpy.count(), 1);
+    QCOMPARE(doubleDecimalsSpy.count(), 1);
+    QCOMPARE(doubleDialog.doubleValue(), 0.72);
+    QCOMPARE(doubleSpy.count(), 1);
+    auto* doubleNumber = doubleDialog.findChild<AntInputNumber*>(QStringLiteral("antInputDialogNumberInput"));
+    QVERIFY(doubleNumber != nullptr);
+    QCOMPARE(doubleNumber->decimals(), 2);
+    QCOMPARE(doubleNumber->value(), 0.72);
+    QSignalSpy doubleSelectedSpy(&doubleDialog, &AntInputDialog::doubleValueSelected);
+    doubleDialog.done(QDialog::Accepted);
+    QCOMPARE(doubleSelectedSpy.count(), 1);
+    QCOMPARE(doubleSelectedSpy.takeFirst().at(0).toDouble(), 0.72);
+
+    AntInputDialog renderDialog;
+    renderDialog.setLabelText(QStringLiteral("Render label"));
+    renderDialog.setTextValue(QStringLiteral("Render value"));
+    renderDialog.resize(420, 220);
+    renderDialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&renderDialog));
+    QCoreApplication::processEvents();
+    QVERIFY(renderDialog.property("antInputDialogChildSyncCount").toInt() > 0);
+    const QImage lightImage = renderForExtensionTest(&renderDialog);
+    QVERIFY(!lightImage.isNull());
+    QVERIFY(countNearColorForExtensionTest(lightImage, antTheme->tokens().colorBgContainer, 30) > 0);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    renderDialog.refreshAntStyle();
+    QCoreApplication::processEvents();
+    const QImage darkImage = renderForExtensionTest(&renderDialog);
+    QVERIFY(!darkImage.isNull());
+    QVERIFY(countNearColorForExtensionTest(darkImage, antTheme->tokens().colorBgContainer, 30) > 0);
 }
 
 void TestAntQtExtensions::stackedWidget()

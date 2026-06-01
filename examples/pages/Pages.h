@@ -101,6 +101,7 @@ QWidget* createPlainTextEditPage(QWidget* owner);
 QWidget* createScrollAreaPage(QWidget* owner);
 QWidget* createScrollBarPage(QWidget* owner);
 QWidget* createDialogPage(QWidget* owner);
+QWidget* createInputDialogPage(QWidget* owner);
 QWidget* createStackedWidgetPage(QWidget* owner);
 QWidget* createStatusBarPage(QWidget* owner);
 QWidget* createRibbonPage(QWidget* owner);

@@ -50,6 +50,7 @@
 #include "widgets/AntIcon.h"
 #include "widgets/AntImage.h"
 #include "widgets/AntInput.h"
+#include "widgets/AntInputDialog.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntLayout.h"
 #include "widgets/AntList.h"
@@ -165,6 +166,7 @@ QList<ObjectCase> objectCases()
         {"AntIcon", [](QWidget* parent) { return new AntIcon(parent); }},
         {"AntImage", [](QWidget* parent) { return new AntImage(parent); }},
         {"AntInput", [](QWidget* parent) { return new AntInput(parent); }},
+        {"AntInputDialog", [](QWidget* parent) { return new AntInputDialog(parent); }},
         {"AntInputNumber", [](QWidget* parent) { return new AntInputNumber(parent); }},
         {"AntLayoutHeader", [](QWidget* parent) { return new AntLayoutHeader(parent); }},
         {"AntLayoutFooter", [](QWidget* parent) { return new AntLayoutFooter(parent); }},

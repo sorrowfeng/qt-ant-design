@@ -69,6 +69,7 @@
 #include "widgets/AntIcon.h"
 #include "widgets/AntImage.h"
 #include "widgets/AntInput.h"
+#include "widgets/AntInputDialog.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntLayout.h"
 #include "widgets/AntList.h"
@@ -1411,6 +1412,13 @@ QWidget* makeDesktopExtensionScene()
     dialogLayout->addWidget(new AntTypography(QStringLiteral("Dialog body"), dialog->contentWidget()));
     rowLayout->addWidget(dialog);
 
+    auto* inputDialog = new AntInputDialog(row);
+    inputDialog->setWindowTitle(QStringLiteral("InputDialog"));
+    inputDialog->setLabelText(QStringLiteral("Name"));
+    inputDialog->setTextValue(QStringLiteral("qt-ant-design"));
+    inputDialog->setFixedSize(300, 148);
+    rowLayout->addWidget(inputDialog);
+
     auto* floatButton = new AntFloatButton(row);
     floatButton->setIcon(QStringLiteral("plus"));
     rowLayout->addWidget(floatButton, 0, Qt::AlignTop);
@@ -1984,9 +1992,9 @@ QList<Scene> scenes()
          {QStringLiteral("AntTree")}, 10.0, 0.28},
         {QStringLiteral("scroll-carousel"), QSize(720, 210), makeScrollAndCarouselScene,
          {QStringLiteral("AntScrollArea"), QStringLiteral("AntScrollBar"), QStringLiteral("AntCarousel")}, 14.0, 0.30},
-        {QStringLiteral("desktop-extensions"), QSize(720, 218), makeDesktopExtensionScene,
+        {QStringLiteral("desktop-extensions"), QSize(980, 218), makeDesktopExtensionScene,
          {QStringLiteral("AntNav"), QStringLiteral("AntNavItem"), QStringLiteral("AntDialog"),
-          QStringLiteral("AntFloatButton")}, 18.0, 0.40},
+          QStringLiteral("AntInputDialog"), QStringLiteral("AntFloatButton")}, 18.0, 0.40},
         {QStringLiteral("advanced-entry"), QSize(900, 340), makeAdvancedEntryScene,
          {QStringLiteral("AntAutoComplete"), QStringLiteral("AntMentions"), QStringLiteral("AntCascader"),
           QStringLiteral("AntTreeSelect"), QStringLiteral("AntColorPicker"), QStringLiteral("AntSlider"),

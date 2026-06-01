@@ -15,7 +15,7 @@
 
 ## 总体结论
 
-当前项目已经补齐了一批常用 Qt 风格接口，尤其是 `AntInput`、`AntSelect`、`AntList`、`AntDatePicker`、`AntTimePicker`、`AntProgress` 等控件的基础值、状态和常用信号。不过若目标是“替代 Qt 官方控件”或让别名类接近 drop-in replacement，仍有几类明显缺口：
+当前项目已经补齐了一批常用 Qt 风格接口，尤其是 `AntInput`、`AntSelect`、`AntList`、`AntDatePicker`、`AntTimePicker`、`AntProgress`、`AntInputDialog` 等控件的基础值、状态和常用信号。不过若目标是“替代 Qt 官方控件”或让别名类接近 drop-in replacement，仍有几类明显缺口：
 
 - `AntTableWidget` / `AntTreeWidget` / `AntListView` / `AntTableView` / `AntTreeView` 的差距最大。它们当前是 `AntTable`、`AntTree`、`AntList` 的别名，并不是 `QAbstractItemView` 体系，缺少 model/index/delegate/selectionModel 和大量 item API。
 - `AntComboBox` 当前是 `AntSelect` 别名，覆盖了常用 item 管理，但缺少 `QComboBox` 的 model/delegate/view、editable lineEdit、icon/separator、insertPolicy 和 `editTextChanged` 等接口。
@@ -51,6 +51,7 @@
 | `AntTabWidget` / `AntTabs` | `QTabWidget` | 自绘 `QWidget` + 内部 `QStackedWidget` | key-based tabs，缺大量 index/widget API |
 | `AntStatusBar` | `QStatusBar` | 自绘 `QWidget` | message 覆盖，缺 widget 插入 API |
 | `AntFileDialog` | `QFileDialog` | `AntDialog` + 自定义 file view | 核心流程覆盖，缺高级属性和信号 |
+| `AntInputDialog` | `QInputDialog` | `AntDialog` + Ant 输入控件 | 常用 text/int/double/item 输入流程已覆盖 |
 | `AntPlainTextEdit` | `QPlainTextEdit` | 继承 `QPlainTextEdit` | Qt API 基本保留 |
 | `AntScrollArea` | `QScrollArea` | 继承 `QScrollArea` | Qt API 基本保留 |
 | `AntScrollBar` | `QScrollBar` | 继承 `QScrollBar` | Qt API 基本保留 |
@@ -115,6 +116,29 @@
 - P1：补 `lineEdit()`、`setEditText()`、`clearEditText()`、`editTextChanged`、`itemIcon`、`iconSize`、`insertSeparator`、`showPopup/hidePopup`。
 - P2：补 `insertPolicy`、`duplicatesEnabled`、`minimumContentsLength`、`sizeAdjustPolicy`。
 - P3：是否支持 `setModel` / `setView` / delegate 需要架构决策；若不支持，应在 `AntComboBox` 文档声明它是 AntD Select，不是完整 `QComboBox` model/view 替代。
+
+### AntInputDialog vs QInputDialog
+
+已覆盖：
+
+- 静态便捷函数：`getText()`、`getInt()`、`getDouble()`、`getItem()`。
+- 输入模式：`TextInput`、`IntInput`、`DoubleInput`，其中 `getItem()` 通过 `comboBoxItems` / `comboBoxEditable` 实现下拉项选择。
+- 文本输入：`labelText`、`textValue`、`textEchoMode`、`placeholderText`、`UsePlainTextEditForTextInput`。
+- 数值输入：`intValue`、`intMinimum/intMaximum`、`intStep`、`doubleValue`、`doubleMinimum/doubleMaximum`、`doubleDecimals`。
+- 选项与按钮：`NoButtons`、`UseListViewForComboBoxItems`（记录选项，AntSelect 弹层本身就是列表式）、`okButtonText`、`cancelButtonText`。
+- 信号：`textValueChanged/Selected`、`intValueChanged/Selected`、`doubleValueChanged/Selected`，以及输入模式、范围、精度、下拉项和按钮文案变更信号。
+- 运行形态：复用 `AntDialog` 的标题栏、阴影、子控件 palette 同步和 Qt5/Qt6 frameless 策略，不调用原生 `QInputDialog`。
+
+主要缺口：
+
+- 尚未提供 `open(QObject*, const char*)` 这类 Qt 异步 receiver/member 便捷接口。
+- 未完整复刻 `QInputDialog` 的内部 `QComboBox` / `QSpinBox` 对象访问路径；Ant 侧暴露的是高层值 API。
+- `UseListViewForComboBoxItems` 当前作为兼容选项保存，不切换到 Qt 的 `QListView`，因为 `AntSelect` 已使用自绘列表弹层。
+
+建议：
+
+- P2：如果后续需要无阻塞弹窗流程，可补 `open()` receiver/member API，并增加 signal-to-member 测试。
+- P3：如用户需要更强的 Qt 内部控件访问兼容，再考虑公开 `textInput()`、`numberInput()`、`comboBox()` 等 Ant 子控件 getter。
 
 ### AntInputNumber / AntDoubleSpinBox / AntSpinBox vs QDoubleSpinBox / QSpinBox
 

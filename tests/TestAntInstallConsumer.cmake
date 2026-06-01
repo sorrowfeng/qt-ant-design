@@ -61,6 +61,7 @@ file(WRITE "${consumer_source_dir}/main.cpp" [=[
 #include "widgets/AntDialog.h"
 #include "widgets/AntDoubleSpinBox.h"
 #include "widgets/AntIcon.h"
+#include "widgets/AntInputDialog.h"
 #include "widgets/AntLabel.h"
 #include "widgets/AntLineEdit.h"
 #include "widgets/AntListView.h"
@@ -116,12 +117,16 @@ int main(int argc, char** argv)
     AntPushButton aliasButton(QStringLiteral("Alias Button"));
     AntDialog dialog;
     dialog.setWindowTitle(QStringLiteral("Install Consumer Dialog"));
+    AntInputDialog inputDialog;
+    inputDialog.setLabelText(QStringLiteral("Name"));
+    inputDialog.setTextValue(QStringLiteral("qt-ant-design"));
 
     return button.text() == QStringLiteral("Install Consumer") &&
            resourcesAvailable &&
            label.text() == QStringLiteral("Alias Label") &&
            aliasButton.text() == QStringLiteral("Alias Button") &&
-           dialog.contentWidget() != nullptr ? 0 : 1;
+           dialog.contentWidget() != nullptr &&
+           inputDialog.textValue() == QStringLiteral("qt-ant-design") ? 0 : 1;
 }
 ]=])
 

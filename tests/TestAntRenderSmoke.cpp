@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QFile>
 #include <QImage>
+#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -63,6 +64,7 @@
 #include "widgets/AntIcon.h"
 #include "widgets/AntImage.h"
 #include "widgets/AntInput.h"
+#include "widgets/AntInputDialog.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntLayout.h"
 #include "widgets/AntList.h"
@@ -357,6 +359,13 @@ QList<RenderCase> renderCases()
         {"AntInput", [](QWidget* p) { return new AntInput(p); }, [](QWidget* w) {
              qobject_cast<AntInput*>(w)->setText(QStringLiteral("Input"));
          }},
+        {"AntInputDialog", [](QWidget* p) { return new AntInputDialog(p); }, [](QWidget* w) {
+             auto* dialog = qobject_cast<AntInputDialog*>(w);
+             dialog->setWindowTitle(QStringLiteral("Input"));
+             dialog->setLabelText(QStringLiteral("Name"));
+             dialog->setTextValue(QStringLiteral("qt-ant-design"));
+             dialog->refreshAntStyle();
+         }, QSize(420, 220)},
         {"AntInputNumber", [](QWidget* p) { return new AntInputNumber(p); }, [](QWidget* w) {
              qobject_cast<AntInputNumber*>(w)->setValue(42);
          }},
@@ -722,6 +731,10 @@ void TestAntRenderSmoke::qtAnalogWidgetsFollowNativeLayoutPolicies()
     QDialog nativeDialog;
     AntDialog dialog;
     expectSameLayoutPolicy("AntDialog", dialog, nativeDialog);
+
+    QInputDialog nativeInputDialog;
+    AntInputDialog inputDialog;
+    expectSameLayoutPolicy("AntInputDialog", inputDialog, nativeInputDialog);
 
     QFileDialog nativeFileDialog;
     AntFileDialog fileDialog;
