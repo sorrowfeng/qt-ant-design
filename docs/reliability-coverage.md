@@ -1,6 +1,6 @@
 # Component Reliability Coverage
 
-Last verified: `2026-05-30`
+Last verified: `2026-06-01`
 
 This inventory tracks reliability coverage for every public `Ant*` widget header, excluding Qt-style alias headers and the internal non-installed `AntSelectPopup` helper.
 
@@ -11,6 +11,10 @@ Coverage dimensions:
 - `Meta`: covered by `TestAntMetaProperties`.
 - `Theme`: covered by `TestAntThemeLifecycle`.
 - `Render`: covered by `TestAntRenderSmoke`.
+- `Qt version visual parity`: representative Qt5/Qt6 visual atlas export and comparison is covered by `TestAntQtVersionVisualParity`; the current atlas contains 26 scenes spanning basic controls, interaction states, a consolidated acceptance-state matrix, top-level popup surfaces, advanced data entry, navigation, feedback, rich data display, scroll/carousel, structural layout, desktop, dock, file-dialog, and window surfaces. The test also guards public-header atlas coverage, with only utility/popup-controller headers explicitly deferred from static scene rendering. The real example app also has a 352-frame Qt5-vs-Qt6 traversal/export comparison path. Details are in `docs/qt5-visual-adaptation-report.md`.
+- `Qt version metric audit`: `TestAntQtVersionMetricAudit` exports and compares Qt default `QStyle` metrics, default draw fingerprints, palette roles, font metrics, complex-control geometry, and adapted Ant widget metrics. Qt default rows are audit-only root-cause evidence; adapted Ant rows are strict comparison rows, including representative success-standard controls such as Menu, Pagination, Tag, Badge, Table, and ToolTip.
+- `Windows High DPI scaling`: startup policy and logical render geometry at 1.0, 1.25, and 1.5 scale factors are covered by `TestAntHighDpiScaling_1_0`, `TestAntHighDpiScaling_1_25`, and `TestAntHighDpiScaling_1_5`; the full visual atlas is also smoke-rendered at 1.25 and 1.5 by `TestAntQtVersionVisualParity_Scale_1_25` and `TestAntQtVersionVisualParity_Scale_1_5`.
+- `No QSS/QStyleSheet guard`: `TestAntNoStyleSheetUsage` scans `src`, `examples`, `tests`, and `resources` and fails on `setStyleSheet()`, `QStyleSheet`, `styleSheet:` in UI files, or committed `.qss` files.
 
 The guard `TestAntCoverageInventory::publicWidgetHeadersAreInBehaviorReliabilityTests()` fails if any public component is missing from component-specific behavior/API coverage. `publicWidgetHeadersAreInCoverageTests()` also fails if any public component is missing from lifecycle, meta-property, theme-lifecycle, or render-smoke coverage.
 
@@ -22,7 +26,7 @@ ctest --test-dir build -C Debug --output-on-failure
 cmake --build build --config Debug --target qt-ant-design-example
 ```
 
-Result on `2026-05-30`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Default CTest uses Qt event-level interaction checks; Win32 `SendInput` desktop-input checks in `TestAntQtExtensions` are opt-in via `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`.
+Result on `2026-05-30`: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded. Current configured CTest entry count is `46` after adding `TestAntQtVersionVisualParity`, two `TestAntQtVersionVisualParity_Scale` entries, `TestAntQtVersionMetricAudit`, three `TestAntHighDpiScaling` scale-factor entries, `TestAntNoStyleSheetUsage`, and `TestAntExamplePageTraversal`; the latest combined adaptation-focused run passed `9 / 9` entries in both Qt6 and Qt5 build trees on `2026-06-01`. Default CTest uses Qt event-level interaction checks; Win32 `SendInput` desktop-input checks in `TestAntQtExtensions` are opt-in via `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`.
 
 | Component | Behavior/API tests | Lifecycle | Meta | Theme | Render |
 | --- | --- | --- | --- | --- | --- |

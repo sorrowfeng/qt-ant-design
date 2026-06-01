@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QRegularExpression>
 #include <QResizeEvent>
+#include <QtMath>
 #include <QWheelEvent>
 
 #include "../styles/AntListStyle.h"
@@ -926,9 +927,16 @@ void AntListItem::drawPaintedIcon(QPainter* painter, const QRect& iconRect) cons
     {
         return;
     }
-    const QPixmap scaled = m_iconPixmap.scaled(iconRect.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    const QPoint topLeft(iconRect.left() + (iconRect.width() - scaled.width()) / 2,
-                         iconRect.top() + (iconRect.height() - scaled.height()) / 2);
+    const qreal dpr = painter->device() ? qMax<qreal>(1.0, painter->device()->devicePixelRatioF()) : devicePixelRatioF();
+    const QSize pixelSize(qMax(1, qCeil(iconRect.width() * dpr)),
+                          qMax(1, qCeil(iconRect.height() * dpr)));
+    QPixmap scaled = m_iconPixmap.scaled(pixelSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    scaled.setDevicePixelRatio(dpr);
+
+    const QSizeF logicalSize(static_cast<qreal>(scaled.width()) / dpr,
+                             static_cast<qreal>(scaled.height()) / dpr);
+    const QPointF topLeft(iconRect.left() + (iconRect.width() - logicalSize.width()) / 2.0,
+                          iconRect.top() + (iconRect.height() - logicalSize.height()) / 2.0);
     painter->drawPixmap(topLeft, scaled);
 }
 

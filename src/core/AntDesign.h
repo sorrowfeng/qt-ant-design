@@ -9,5 +9,6 @@ class QApplication;
 class QT_ANT_DESIGN_EXPORT AntDesign
 {
 public:
+    static void configureHighDpi();
     static void initialize(QApplication* application = nullptr, int pixelSize = Ant::FontSize);
 };

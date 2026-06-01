@@ -9,6 +9,7 @@
 #include <QStyleOption>
 #include <QSvgRenderer>
 #include <QTransform>
+#include <QtMath>
 
 #include "styles/AntPalette.h"
 #include "widgets/AntIcon.h"
@@ -610,6 +611,68 @@ QString renderedResourceIconCacheKey(const QString& iconName,
              colorCacheKey(secondaryColor));
 }
 
+qreal renderedIconDevicePixelRatio(const QPainter* painter)
+{
+    qreal devicePixelRatio = painter && painter->device() ? painter->device()->devicePixelRatioF() : 1.0;
+    if (painter)
+    {
+        const QTransform transform = painter->deviceTransform();
+        const qreal scaleX = qSqrt(transform.m11() * transform.m11() + transform.m21() * transform.m21());
+        const qreal scaleY = qSqrt(transform.m22() * transform.m22() + transform.m12() * transform.m12());
+        devicePixelRatio = qMax(devicePixelRatio, qMax(scaleX, scaleY));
+    }
+    return qMax<qreal>(1.0, devicePixelRatio);
+}
+
+QSize renderedIconPixelSize(const QRectF& iconRect, const QPainter* painter)
+{
+    const qreal devicePixelRatio = renderedIconDevicePixelRatio(painter);
+    return QSize(qMax(1, qRound(iconRect.width() * devicePixelRatio)),
+                 qMax(1, qRound(iconRect.height() * devicePixelRatio)));
+}
+
+bool renderSvgToPixmap(const QString& svg, const QSize& pixelSize, QPixmap* pixmap)
+{
+    if (svg.isEmpty() || pixelSize.isEmpty() || !pixmap)
+    {
+        return false;
+    }
+
+    QSvgRenderer renderer(svg.toUtf8());
+    if (!renderer.isValid())
+    {
+        return false;
+    }
+
+    QPixmap rendered(pixelSize);
+    rendered.fill(Qt::transparent);
+    {
+        QPainter pixmapPainter(&rendered);
+        pixmapPainter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+        renderer.render(&pixmapPainter, QRectF(QPointF(0, 0), QSizeF(pixelSize)));
+    }
+
+    *pixmap = rendered;
+    return true;
+}
+
+bool drawSvgPixmap(const QString& svg, const QRectF& iconRect, QPainter* painter)
+{
+    if (!painter)
+    {
+        return false;
+    }
+
+    QPixmap pixmap;
+    if (!renderSvgToPixmap(svg, renderedIconPixelSize(iconRect, painter), &pixmap))
+    {
+        return false;
+    }
+
+    painter->drawPixmap(iconRect, pixmap, QRectF(pixmap.rect()));
+    return true;
+}
+
 void setIconRenderCacheDiagnostics(const QWidget* widget,
                                    bool hit,
                                    const QString& source,
@@ -638,7 +701,7 @@ bool drawResourceIcon(const QString& iconName,
         return false;
     }
 
-    const qreal devicePixelRatio = painter->device() ? painter->device()->devicePixelRatioF() : 1.0;
+    const qreal devicePixelRatio = renderedIconDevicePixelRatio(painter);
     const QSize pixelSize(qMax(1, qRound(iconRect.width() * devicePixelRatio)),
                           qMax(1, qRound(iconRect.height() * devicePixelRatio)));
     const QString cacheKey = renderedResourceIconCacheKey(iconName, pixelSize, devicePixelRatio, primaryColor, secondaryColor);
@@ -646,22 +709,7 @@ bool drawResourceIcon(const QString& iconName,
     QPixmap cachedPixmap;
     if (QPixmapCache::find(cacheKey, &cachedPixmap))
     {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        QString svg = resourceSvgTemplate(iconName);
-        svg.replace(QStringLiteral("__PRIMARY__"), primaryColor.name(QColor::HexRgb));
-        svg.replace(QStringLiteral("__SECONDARY__"), secondaryColor.name(QColor::HexRgb));
-        QSvgRenderer renderer(svg.toUtf8());
-        if (renderer.isValid())
-        {
-            renderer.render(painter, iconRect);
-        }
-        else
-        {
-            painter->drawPixmap(iconRect, cachedPixmap, QRectF(cachedPixmap.rect()));
-        }
-#else
         painter->drawPixmap(iconRect, cachedPixmap, QRectF(cachedPixmap.rect()));
-#endif
         setIconRenderCacheDiagnostics(widget, true, QStringLiteral("resource"), cacheKey);
         return true;
     }
@@ -675,22 +723,14 @@ bool drawResourceIcon(const QString& iconName,
     svg.replace(QStringLiteral("__PRIMARY__"), primaryColor.name(QColor::HexRgb));
     svg.replace(QStringLiteral("__SECONDARY__"), secondaryColor.name(QColor::HexRgb));
 
-    QSvgRenderer renderer(svg.toUtf8());
-    if (!renderer.isValid())
+    QPixmap pixmap;
+    if (!renderSvgToPixmap(svg, pixelSize, &pixmap))
     {
         return false;
     }
-
-    QPixmap pixmap(pixelSize);
-    pixmap.fill(Qt::transparent);
-    {
-        QPainter pixmapPainter(&pixmap);
-        pixmapPainter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-        renderer.render(&pixmapPainter, QRectF(QPointF(0, 0), QSizeF(pixelSize)));
-    }
     QPixmapCache::insert(cacheKey, pixmap);
 
-    renderer.render(painter, iconRect);
+    painter->drawPixmap(iconRect, pixmap, QRectF(pixmap.rect()));
     setIconRenderCacheDiagnostics(widget, false, QStringLiteral("resource"), cacheKey);
     return true;
 }
@@ -719,13 +759,7 @@ bool drawOfficialOutlinedIcon(Ant::IconType type, const QRectF& iconRect, const 
     }
     svg += QStringLiteral("</svg>");
 
-    QSvgRenderer renderer(svg.toUtf8());
-    if (!renderer.isValid())
-    {
-        return false;
-    }
-    renderer.render(painter, iconRect);
-    return true;
+    return drawSvgPixmap(svg, iconRect, painter);
 }
 
 bool drawOfficialFilledIcon(Ant::IconType type, const QRectF& iconRect, const QColor& color, QPainter* painter)
@@ -752,13 +786,7 @@ bool drawOfficialFilledIcon(Ant::IconType type, const QRectF& iconRect, const QC
     }
     svg += QStringLiteral("</svg>");
 
-    QSvgRenderer renderer(svg.toUtf8());
-    if (!renderer.isValid())
-    {
-        return false;
-    }
-    renderer.render(painter, iconRect);
-    return true;
+    return drawSvgPixmap(svg, iconRect, painter);
 }
 
 bool drawOfficialTwoToneIcon(Ant::IconType type, const QRectF& iconRect, const QColor& primaryColor, const QColor& secondaryColor, QPainter* painter)
@@ -786,13 +814,7 @@ bool drawOfficialTwoToneIcon(Ant::IconType type, const QRectF& iconRect, const Q
     }
     svg += QStringLiteral("</svg>");
 
-    QSvgRenderer renderer(svg.toUtf8());
-    if (!renderer.isValid())
-    {
-        return false;
-    }
-    renderer.render(painter, iconRect);
-    return true;
+    return drawSvgPixmap(svg, iconRect, painter);
 }
 } // namespace
 
@@ -860,7 +882,7 @@ void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const
 
     const auto& token = antTheme->tokens();
     painter->save();
-    painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+    painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
     const QRectF iconRect = widget->rect().adjusted(1.0, 1.0, -1.0, -1.0);
     if (iconRect.width() <= 0 || iconRect.height() <= 0)

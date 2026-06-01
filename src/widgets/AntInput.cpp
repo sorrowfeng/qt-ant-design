@@ -137,6 +137,7 @@ AntInput::AntInput(QWidget* parent)
     m_lineEdit->setFrame(false);
     m_lineEdit->setClearButtonEnabled(false);
     m_lineEdit->setAttribute(Qt::WA_TranslucentBackground, true);
+    m_lineEdit->setAttribute(Qt::WA_NoSystemBackground, true);
     m_lineEdit->setAutoFillBackground(false);
     m_lineEdit->installEventFilter(this);
 
@@ -573,15 +574,17 @@ void AntInput::rebuildLayout()
         delete item;
 
     const Metrics m = metrics();
+    const int contentHeight = qMax(1, m.height - 2 * antTheme->tokens().lineWidth);
     auto setupLabel = [&](QLabel* label) {
         if (!label)
             return;
-        label->setMinimumHeight(m.height);
+        label->setMinimumHeight(contentHeight);
+        label->setMaximumHeight(contentHeight);
         label->setContentsMargins(m.paddingX, 0, m.paddingX, 0);
     };
     setupLabel(m_addonBefore);
     setupLabel(m_addonAfter);
-    m_searchButton->setFixedSize(m.height, m.height);
+    m_searchButton->setFixedSize(m.height, contentHeight);
     updateIconLabel(m_prefixIconLabel, m_prefixIcon);
     updateIconLabel(m_suffixIconLabel, m_suffixIcon);
 
@@ -651,6 +654,7 @@ void AntInput::updateVisualState()
 {
     const auto& token = antTheme->tokens();
     const Metrics m = metrics();
+    const int contentHeight = qMax(1, m.height - 2 * token.lineWidth);
     QFont f = m_lineEdit->font();
     bool changed = false;
     if (f.pixelSize() != m.fontSize)
@@ -659,9 +663,14 @@ void AntInput::updateVisualState()
         m_lineEdit->setFont(f);
         changed = true;
     }
-    if (m_lineEdit->minimumHeight() != m.height)
+    if (m_lineEdit->minimumHeight() != contentHeight)
     {
-        m_lineEdit->setMinimumHeight(m.height);
+        m_lineEdit->setMinimumHeight(contentHeight);
+        changed = true;
+    }
+    if (m_lineEdit->maximumHeight() != contentHeight)
+    {
+        m_lineEdit->setMaximumHeight(contentHeight);
         changed = true;
     }
     if (minimumHeight() != m.height)
@@ -690,6 +699,11 @@ void AntInput::updateVisualState()
     if (!m_lineEdit->testAttribute(Qt::WA_TranslucentBackground))
     {
         m_lineEdit->setAttribute(Qt::WA_TranslucentBackground, true);
+        changed = true;
+    }
+    if (!m_lineEdit->testAttribute(Qt::WA_NoSystemBackground))
+    {
+        m_lineEdit->setAttribute(Qt::WA_NoSystemBackground, true);
         changed = true;
     }
     if (m_lineEdit->autoFillBackground())

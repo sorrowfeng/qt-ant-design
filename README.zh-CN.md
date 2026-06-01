@@ -49,8 +49,9 @@
 - 逐控件可靠性覆盖：[docs/reliability-coverage.md](docs/reliability-coverage.md)
 - 逐控件性能优化进度：[docs/performance-optimization.md](docs/performance-optimization.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
+- 本地中文组件 / API 说明页：[docs/component-api-overview-cn.html](docs/component-api-overview-cn.html)
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
-- 当前 CTest 目标数：`37`；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-30`）
+- 当前 CTest 条目数：`46`；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-30`）；Qt5/Qt6 定向视觉一致性、视觉 atlas 缩放烟测、度量审计、真实 example 页面遍历/截图对比、Windows High DPI 缩放和无 QSS 门禁检查已于 `2026-06-01` 通过
 
 ## 最近 Ant Design 对齐更新
 
@@ -85,7 +86,7 @@
 - `AntList` / `AntListWidget` 补充字符串 add/insert/find/sort、item 数据、current/selection、内部滚动和 `scrollToItem` 等 `QListWidget` 风格接口；`AntTable` 补充 `rows()`、`selectRow()`、`currentRowIndex()` 和行级 tooltip；`AntTree` 继续覆盖 tree 风格辅助接口。
 - `AntMenu` 支持 QWidget `QAction` 的添加、变更、移除和触发流程同步；`AntToolButton` / `AntToolBar` 的继承 QAction 行为已加入测试覆盖。
 - `AntTypography` 默认垂直居中，并提供 alignment、word-wrap、clear 和 `setPixelSize()` 控制；`setEnabled()` / `setDisabled()` 会同步 Typography 的 disabled 视觉与交互状态。
-- `AntDesign::initialize(&app)` 提供统一启动入口，一次性完成 Qt 资源注册、内置字体应用和主题单例初始化，外部项目不再需要分别调用 `Q_INIT_RESOURCE`、`AntFont::applyToApplication` 和 `AntTheme::instance`。
+- `AntDesign::configureHighDpi()` 与 `AntDesign::initialize(&app)` 组成推荐启动入口：Qt5 在 `QApplication` 创建前启用逻辑 High DPI 缩放和 High DPI pixmap，随后统一完成 Qt 资源注册、内置字体应用和主题单例初始化。
 - `AntRibbon` 增加轻量 Ribbon 区域，支持 Page、Group、大/小 QAction、嵌入 Ant/Qt 控件、折叠弹出模式，以及 `AntWindow::setRibbon()` 顶部集成。
 
 ## 安装与集成
@@ -171,7 +172,7 @@ cmake --install build --config Debug
 
 ### 第一个 `AntButton`
 
-创建 `QApplication` 后、创建 Ant 控件前调用一次 `AntDesign::initialize(&app)` 即可。
+创建 `QApplication` 前先调用 `AntDesign::configureHighDpi()`，创建 `QApplication` 后、创建 Ant 控件前再调用一次 `AntDesign::initialize(&app)`。这样 Windows 上 Qt5 / Qt6 在 100%、125%、150% 等缩放比例下都会使用 Qt 逻辑像素布局。
 
 ```cpp
 #include <QApplication>
@@ -183,6 +184,8 @@ cmake --install build --config Debug
 
 int main(int argc, char* argv[])
 {
+    AntDesign::configureHighDpi();
+
     QApplication app(argc, argv);
     AntDesign::initialize(&app);
 

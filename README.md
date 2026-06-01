@@ -49,8 +49,9 @@ The project focuses on:
 - Per-component reliability coverage: [docs/reliability-coverage.md](docs/reliability-coverage.md)
 - Per-component performance optimization progress: [docs/performance-optimization.md](docs/performance-optimization.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
+- Local Chinese component/API reference: [docs/component-api-overview-cn.html](docs/component-api-overview-cn.html)
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
-- Current CTest target count: `37`; latest full component reliability sweep: `37 / 37` passed on `2026-05-30`
+- Current CTest entry count: `46`; latest full component reliability sweep: `37 / 37` passed on `2026-05-30`; targeted Qt5/Qt6 visual parity, visual-atlas scale-factor smoke, metric audit, real example page traversal/comparison, Windows High DPI scaling, and no-QSS guard checks passed on `2026-06-01`
 
 ## Recent Ant Design Parity Updates
 
@@ -85,7 +86,7 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 - `AntList` / `AntListWidget` now cover common QListWidget-style flows: string item add/insert/find/sort, item text/icon/data/check state/flags, current row/item, selection mode, selected items, internal scrolling, `scrollToItem`, and item/current/selection signals. `AntTable` exposes `rows()`, `selectRow()`, `currentRowIndex()`, and row tooltips; `AntTree` exposes matching tree helper APIs.
 - `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
 - `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, clear, and `setPixelSize()` controls; `setEnabled()` and `setDisabled()` stay synchronized with its disabled visual and interaction state.
-- `AntDesign::initialize(&app)` provides one-call startup for Qt resources, bundled fonts, and the theme singleton, so consumer apps no longer need separate `Q_INIT_RESOURCE`, `AntFont::applyToApplication`, and `AntTheme::instance` calls.
+- `AntDesign::configureHighDpi()` plus `AntDesign::initialize(&app)` provide the recommended startup path: Qt5 enables logical High DPI scaling and High DPI pixmaps before `QApplication`, then the library registers resources, bundled fonts, and the theme singleton after the app exists.
 - `AntRibbon` adds a lightweight Ribbon surface with pages, groups, balanced large/small actions, embedded Ant/Qt widgets, animated tab/collapse transitions, collapsed popup mode, and `AntWindow::setRibbon()` integration.
 
 ## Installation & Integration
@@ -171,7 +172,7 @@ cmake --install build --config Debug
 
 ### Your first `AntButton`
 
-Call `AntDesign::initialize(&app)` once after creating `QApplication` and before creating Ant widgets.
+Call `AntDesign::configureHighDpi()` before creating `QApplication`, then call `AntDesign::initialize(&app)` once before creating Ant widgets. This keeps Qt5 and Qt6 layouts in Qt logical pixels on Windows at 100%, 125%, 150%, and other scale factors.
 
 ```cpp
 #include <QApplication>
@@ -183,6 +184,8 @@ Call `AntDesign::initialize(&app)` once after creating `QApplication` and before
 
 int main(int argc, char* argv[])
 {
+    AntDesign::configureHighDpi();
+
     QApplication app(argc, argv);
     AntDesign::initialize(&app);
 

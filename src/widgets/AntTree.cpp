@@ -110,6 +110,10 @@ void AntTree::setTreeData(const QVector<AntTreeNode>& data)
     m_selectedKeys.clear();
     invalidateFlatCache();
     clampScrollY();
+    // clampScrollY() can build the flat cache while m_data still shares storage
+    // with the caller's QVector. Rebuild lazily after any implicit detach has
+    // settled, otherwise cached node pointers can become stale before paint.
+    invalidateFlatCache();
     update();
 }
 
@@ -260,6 +264,7 @@ void AntTree::setCheckedKeys(const QStringList& keys)
         }
     }
     refreshCheckStateUp();
+    invalidateFlatCache();
     update();
     Q_EMIT nodeChecked(checkedKeys());
 }
@@ -292,6 +297,7 @@ void AntTree::setNodeChecked(const QString& key, bool checked)
     node->halfChecked = false;
     refreshCheckStateDown(*node, checked);
     refreshCheckStateUp();
+    invalidateFlatCache();
     update();
     Q_EMIT nodeChecked(checkedKeys());
 }
@@ -361,6 +367,7 @@ void AntTree::mousePressEvent(QMouseEvent* event)
             node->halfChecked = false;
             refreshCheckStateDown(*node, newChecked);
             refreshCheckStateUp();
+            invalidateFlatCache();
             update();
             Q_EMIT nodeChecked(checkedKeys());
             event->accept();

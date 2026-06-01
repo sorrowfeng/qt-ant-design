@@ -100,6 +100,8 @@ static_assert(std::is_same_v<AntTreeWidget, AntTree>);
 
 int main(int argc, char** argv)
 {
+    AntDesign::configureHighDpi();
+
     QApplication app(argc, argv);
     AntDesign::initialize(&app);
 

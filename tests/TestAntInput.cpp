@@ -1,9 +1,12 @@
 #include <QCoreApplication>
+#include <QImage>
 #include <QLayout>
+#include <QPainter>
 #include <QPixmap>
 #include <QSignalSpy>
 #include <QTest>
 
+#include "core/AntTheme.h"
 #include "widgets/AntInput.h"
 
 class TestAntInput : public QObject
@@ -11,8 +14,57 @@ class TestAntInput : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void outlinedFrameStaysVisibleAroundLineEdit();
     void performanceCachesAndScopedUpdates();
 };
+
+namespace
+{
+QImage renderInput(AntInput* input)
+{
+    input->ensurePolished();
+    input->layout()->activate();
+    input->show();
+    input->lineEdit()->setFocus(Qt::OtherFocusReason);
+    QCoreApplication::processEvents();
+
+    QImage image(input->size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    input->render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
+    input->hide();
+    return image;
+}
+
+bool closeToColor(const QColor& color, const QColor& target)
+{
+    return color.alpha() > 80 &&
+           qAbs(color.red() - target.red()) <= 48 &&
+           qAbs(color.green() - target.green()) <= 64 &&
+           qAbs(color.blue() - target.blue()) <= 64;
+}
+
+int countPrimaryPixelsOnRows(const QImage& image, const QList<int>& rows)
+{
+    const QColor primary = antTheme->tokens().colorPrimary;
+    int count = 0;
+    for (const int y : rows)
+    {
+        if (y < 0 || y >= image.height())
+        {
+            continue;
+        }
+        for (int x = 28; x < image.width() - 28; ++x)
+        {
+            if (closeToColor(image.pixelColor(x, y), primary))
+            {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+} // namespace
 
 void TestAntInput::propertiesAndSignals()
 {
@@ -101,6 +153,30 @@ void TestAntInput::propertiesAndSignals()
     QSize hint = input->sizeHint();
     QVERIFY(hint.width() > 0);
     QVERIFY(hint.height() > 0);
+}
+
+void TestAntInput::outlinedFrameStaysVisibleAroundLineEdit()
+{
+    AntInput input;
+    input.setPlaceholderText(QStringLiteral("File name"));
+    input.resize(448, input.sizeHint().height());
+    input.layout()->activate();
+
+    QVERIFY(input.lineEdit()->geometry().top() > input.rect().top());
+    QVERIFY(input.lineEdit()->geometry().bottom() < input.rect().bottom());
+
+    const QImage image = renderInput(&input);
+    QVERIFY(!image.isNull());
+
+    const int topPrimary = countPrimaryPixelsOnRows(image, {0, 1, 2, 3});
+    const int bottomPrimary = countPrimaryPixelsOnRows(image, {image.height() - 4,
+                                                               image.height() - 3,
+                                                               image.height() - 2,
+                                                               image.height() - 1});
+    QVERIFY2(topPrimary > image.width() / 2,
+             qPrintable(QStringLiteral("top input border primary pixels too sparse: %1").arg(topPrimary)));
+    QVERIFY2(bottomPrimary > image.width() / 2,
+             qPrintable(QStringLiteral("bottom input border primary pixels too sparse: %1").arg(bottomPrimary)));
 }
 
 void TestAntInput::performanceCachesAndScopedUpdates()

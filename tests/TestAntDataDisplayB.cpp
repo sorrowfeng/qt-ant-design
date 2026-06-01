@@ -45,6 +45,26 @@ public:
 private:
     Ant::ThemeMode m_originalMode;
 };
+
+class SolidColorTestWidget : public QWidget
+{
+public:
+    explicit SolidColorTestWidget(const QColor& color, QWidget* parent = nullptr)
+        : QWidget(parent)
+        , m_color(color)
+    {
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.fillRect(rect(), m_color);
+    }
+
+private:
+    QColor m_color;
+};
 } // namespace
 
 class TestAntDataDisplayB : public QObject
@@ -502,12 +522,10 @@ void TestAntDataDisplayB::carouselPausesAutoplayAndScopesTransitionWork()
     AntCarousel carousel;
     carousel.resize(260, 160);
     carousel.setInterval(1000);
-    auto* first = new QWidget;
+    auto* first = new SolidColorTestWidget(QColor(QStringLiteral("#1677ff")));
     first->setObjectName(QStringLiteral("first-slide"));
-    first->setStyleSheet(QStringLiteral("background: #1677ff;"));
-    auto* second = new QWidget;
+    auto* second = new SolidColorTestWidget(QColor(QStringLiteral("#52c41a")));
     second->setObjectName(QStringLiteral("second-slide"));
-    second->setStyleSheet(QStringLiteral("background: #52c41a;"));
     carousel.addSlide(first);
     carousel.addSlide(second);
 
@@ -879,8 +897,8 @@ void TestAntDataDisplayB::treeCachesFlattenedVisibleNodes()
     tree.setTreeData(roots);
     QCOMPARE(tree.property("antTreeFlatCacheHit").toBool(), false);
     QCOMPARE(tree.property("antTreeFlatNodeCount").toInt(), 28);
-    const int initialBuilds = tree.property("antTreeFlatCacheBuildCount").toInt();
-    QVERIFY(initialBuilds > 0);
+    const int buildsAfterSetData = tree.property("antTreeFlatCacheBuildCount").toInt();
+    QVERIFY(buildsAfterSetData > 0);
 
     auto renderTree = [&tree]() {
         QImage image(tree.size(), QImage::Format_ARGB32_Premultiplied);
@@ -890,8 +908,24 @@ void TestAntDataDisplayB::treeCachesFlattenedVisibleNodes()
     };
 
     renderTree();
+    QCOMPARE(tree.property("antTreeFlatCacheHit").toBool(), false);
+    QCOMPARE(tree.property("antTreeFlatNodeCount").toInt(), 28);
+    const int initialBuilds = tree.property("antTreeFlatCacheBuildCount").toInt();
+    QVERIFY(initialBuilds > buildsAfterSetData);
+
+    renderTree();
     QCOMPARE(tree.property("antTreeFlatCacheHit").toBool(), true);
     QCOMPARE(tree.property("antTreeFlatCacheBuildCount").toInt(), initialBuilds);
+
+    tree.setCheckedKeys({QStringLiteral("root-1-child-2")});
+    const int buildsBeforeCheckedRender = tree.property("antTreeFlatCacheBuildCount").toInt();
+    renderTree();
+    QCOMPARE(tree.property("antTreeFlatCacheHit").toBool(), false);
+    QVERIFY(tree.property("antTreeFlatCacheBuildCount").toInt() > buildsBeforeCheckedRender);
+    const int checkedBuilds = tree.property("antTreeFlatCacheBuildCount").toInt();
+    renderTree();
+    QCOMPARE(tree.property("antTreeFlatCacheHit").toBool(), true);
+    QCOMPARE(tree.property("antTreeFlatCacheBuildCount").toInt(), checkedBuilds);
 
     QMouseEvent moveToFirstRow(QEvent::MouseMove, QPointF(120, 14), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
     QCoreApplication::sendEvent(&tree, &moveToFirstRow);
@@ -904,7 +938,7 @@ void TestAntDataDisplayB::treeCachesFlattenedVisibleNodes()
     QCOMPARE(tree.property("antTreeFlatCacheHit").toBool(), true);
     QCOMPARE(tree.property("antTreeLastUpdateMode").toString(), QStringLiteral("row"));
     QCOMPARE(tree.property("antTreeLastRowUpdateCount").toInt(), 2);
-    QCOMPARE(tree.property("antTreeFlatCacheBuildCount").toInt(), initialBuilds);
+    QCOMPARE(tree.property("antTreeFlatCacheBuildCount").toInt(), checkedBuilds);
 
     tree.setNodeExpanded(QStringLiteral("root-0"), false);
     const int collapsedBuilds = tree.property("antTreeFlatCacheBuildCount").toInt();

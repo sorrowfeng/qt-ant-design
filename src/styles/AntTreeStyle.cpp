@@ -5,6 +5,7 @@
 #include <QEvent>
 #include <QPainter>
 #include <QStyleOption>
+#include <QtMath>
 
 #include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
@@ -203,7 +204,10 @@ void AntTreeStyle::drawTree(const QStyleOption* option, QPainter* painter, const
             const QRect iconRect(x + 2, y + (RowHeight - IconSize) / 2, IconSize, IconSize);
             if (!node->icon.isNull())
             {
-                const QPixmap pixmap = node->icon.pixmap(IconSize, IconSize);
+                const qreal dpr = painter->device() ? qMax<qreal>(1.0, painter->device()->devicePixelRatioF()) : 1.0;
+                const QSize pixelSize(qMax(1, qCeil(IconSize * dpr)), qMax(1, qCeil(IconSize * dpr)));
+                QPixmap pixmap = node->icon.pixmap(pixelSize);
+                pixmap.setDevicePixelRatio(dpr);
                 painter->drawPixmap(iconRect, pixmap);
             }
             x += IconSize + 4;

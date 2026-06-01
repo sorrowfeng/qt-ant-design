@@ -87,6 +87,32 @@ add_ant_test(TestAntRenderSmoke)
 
 # Automated visual regression coverage
 add_ant_test(TestAntVisualRegression)
+add_ant_inventory_test(TestAntQtVersionVisualParity)
+foreach(ANT_VISUAL_PARITY_SCALE IN ITEMS 1.25 1.5)
+    string(REPLACE "." "_" ANT_VISUAL_PARITY_SCALE_NAME "${ANT_VISUAL_PARITY_SCALE}")
+    add_test(NAME TestAntQtVersionVisualParity_Scale_${ANT_VISUAL_PARITY_SCALE_NAME}
+        COMMAND $<TARGET_FILE:TestAntQtVersionVisualParity>
+    )
+    set_tests_properties(TestAntQtVersionVisualParity_Scale_${ANT_VISUAL_PARITY_SCALE_NAME}
+        PROPERTIES
+            ENVIRONMENT "QT_SCALE_FACTOR=${ANT_VISUAL_PARITY_SCALE};QT_ENABLE_HIGHDPI_SCALING=1"
+            TIMEOUT 45
+    )
+endforeach()
+add_ant_test(TestAntQtVersionMetricAudit)
+
+# Windows / Qt high-DPI logical geometry coverage
+add_executable(TestAntHighDpiScaling TestAntHighDpiScaling.cpp)
+target_link_libraries(TestAntHighDpiScaling PRIVATE qt-ant-design Qt${QT_VERSION_MAJOR}::Test)
+foreach(ANT_HIGH_DPI_SCALE IN ITEMS 1.0 1.25 1.5)
+    string(REPLACE "." "_" ANT_HIGH_DPI_SCALE_NAME "${ANT_HIGH_DPI_SCALE}")
+    add_test(NAME TestAntHighDpiScaling_${ANT_HIGH_DPI_SCALE_NAME}
+        COMMAND $<TARGET_FILE:TestAntHighDpiScaling>
+    )
+    set_tests_properties(TestAntHighDpiScaling_${ANT_HIGH_DPI_SCALE_NAME}
+        PROPERTIES ENVIRONMENT "QT_SCALE_FACTOR=${ANT_HIGH_DPI_SCALE};QT_ENABLE_HIGHDPI_SCALING=1"
+    )
+endforeach()
 
 # Installed package consumer coverage
 add_test(NAME TestAntInstallConsumer
@@ -110,6 +136,13 @@ add_test(NAME TestAntBuildSystem
         -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntBuildSystem.cmake
 )
 
+# No-QSS / no-QStyleSheet styling guard
+add_test(NAME TestAntNoStyleSheetUsage
+    COMMAND ${CMAKE_COMMAND}
+        -DANT_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntNoStyleSheetUsage.cmake
+)
+
 if(TARGET qt-ant-design-example)
     if(WIN32)
         add_test(NAME TestAntExampleGuiSubsystem
@@ -126,6 +159,13 @@ if(TARGET qt-ant-design-example)
             --smoke-exit-ms 800
     )
     set_tests_properties(TestAntExampleCloseStress PROPERTIES TIMEOUT 10)
+
+    add_test(NAME TestAntExamplePageTraversal
+        COMMAND $<TARGET_FILE:qt-ant-design-example>
+            --smoke-traverse-pages
+            --smoke-traverse-step-ms 1
+    )
+    set_tests_properties(TestAntExamplePageTraversal PROPERTIES TIMEOUT 45)
 endif()
 
 # Coverage inventory guard

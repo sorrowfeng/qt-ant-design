@@ -33,11 +33,13 @@ ExampleWindow::ExampleWindow(QWidget* parent)
     buildSidebar();
 
     m_content = new AntWidget(m_central);
+    m_content->setObjectName(QStringLiteral("ExampleContent"));
     auto* contentLayout = new QVBoxLayout(m_content);
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
 
     m_stack = new AntStackedWidget(m_content);
+    m_stack->setObjectName(QStringLiteral("ExamplePageStack"));
     m_stack->setVariant(Ant::Variant::Borderless);
     contentLayout->addWidget(m_stack, 1);
 
@@ -59,6 +61,7 @@ ExampleWindow::ExampleWindow(QWidget* parent)
 void ExampleWindow::buildSidebar()
 {
     m_sidebar = new AntWidget(m_central);
+    m_sidebar->setObjectName(QStringLiteral("ExampleSidebar"));
     m_sidebar->setFixedWidth(220);
 
     auto* sideLayout = new QVBoxLayout(m_sidebar);
@@ -77,6 +80,7 @@ void ExampleWindow::buildSidebar()
     sideLayout->addWidget(brandArea);
 
     m_nav = new AntNav(m_sidebar);
+    m_nav->setObjectName(QStringLiteral("ExampleNavigation"));
     sideLayout->addWidget(m_nav, 1);
 }
 
@@ -89,6 +93,7 @@ void ExampleWindow::buildPages()
     {
         const auto& entry = registry.at(i);
         m_stack->addWidget(example::pages::wrapPage(entry.factory(this)));
+        m_pageNames.append(entry.name);
 
         if (entry.category != currentCategory)
         {
@@ -97,6 +102,36 @@ void ExampleWindow::buildPages()
         }
         m_nav->addItem(entry.name, i);
     }
+}
+
+int ExampleWindow::examplePageCount() const
+{
+    return m_stack ? m_stack->count() : 0;
+}
+
+QString ExampleWindow::examplePageName(int index) const
+{
+    return index >= 0 && index < m_pageNames.size() ? m_pageNames.at(index) : QString();
+}
+
+QWidget* ExampleWindow::examplePageWidget(int index) const
+{
+    return m_stack && index >= 0 && index < m_stack->count() ? m_stack->widget(index) : nullptr;
+}
+
+bool ExampleWindow::setExamplePageIndex(int index)
+{
+    if (!m_stack || !m_nav || index < 0 || index >= m_stack->count())
+    {
+        return false;
+    }
+
+    m_nav->setCurrentIndex(index);
+    if (m_stack->currentIndex() != index)
+    {
+        m_stack->setCurrentIndex(index);
+    }
+    return m_stack->currentIndex() == index;
 }
 
 QSize ExampleWindow::sizeHint() const
