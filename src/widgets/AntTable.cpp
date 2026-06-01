@@ -4,13 +4,13 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QSizePolicy>
-#include <QToolTip>
 #include <QWheelEvent>
 
 #include <algorithm>
 
 #include "../styles/AntTableStyle.h"
 #include "core/AntTheme.h"
+#include "widgets/AntToolTip.h"
 
 namespace
 {
@@ -51,6 +51,18 @@ AntTable::AntTable(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    m_rowToolTipTarget = new QWidget(this);
+    m_rowToolTipTarget->setObjectName(QStringLiteral("AntTableRowToolTipTarget"));
+    m_rowToolTipTarget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    m_rowToolTipTarget->setAttribute(Qt::WA_NoSystemBackground, true);
+    m_rowToolTipTarget->setAutoFillBackground(false);
+    m_rowToolTipTarget->hide();
+
+    m_rowToolTip = new AntToolTip(this);
+    m_rowToolTip->setObjectName(QStringLiteral("AntTableRowToolTip"));
+    m_rowToolTip->setPlacement(Ant::TooltipPlacement::Top);
+    m_rowToolTip->setTarget(m_rowToolTipTarget);
 }
 
 // ─── Column management ───
@@ -465,15 +477,19 @@ bool AntTable::event(QEvent* event)
             const AntTableRow row = rowAt(rowIndex);
             if (!row.tooltip.isEmpty())
             {
-                QToolTip::showText(helpEvent->globalPos(), row.tooltip, this);
+                showRowToolTip(rowIndex, row.tooltip);
                 event->accept();
                 return true;
             }
         }
 
-        QToolTip::hideText();
+        hideRowToolTip();
         event->ignore();
         return true;
+    }
+    if (event->type() == QEvent::Hide || event->type() == QEvent::Resize)
+    {
+        hideRowToolTip();
     }
     return QWidget::event(event);
 }
@@ -598,6 +614,10 @@ void AntTable::mouseMoveEvent(QMouseEvent* event)
         const int previousHoveredRow = m_hoveredRow;
         m_hoveredRow = row;
         updateRows(previousHoveredRow, m_hoveredRow);
+        if (m_toolTipDisplayRow >= 0 && m_toolTipDisplayRow != row)
+        {
+            hideRowToolTip();
+        }
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -610,6 +630,7 @@ void AntTable::leaveEvent(QEvent* event)
         m_hoveredRow = -1;
         updateRow(previousHoveredRow);
     }
+    hideRowToolTip();
     QWidget::leaveEvent(event);
 }
 
@@ -629,6 +650,7 @@ void AntTable::wheelEvent(QWheelEvent* event)
     const int delta = event->angleDelta().y();
     const int scrollStep = m.rowHeight * 3;
     m_scrollY = qBound(0, m_scrollY - (delta > 0 ? scrollStep : -scrollStep), maxScroll);
+    hideRowToolTip();
     update();
     event->accept();
 }
@@ -749,6 +771,42 @@ QRect AntTable::rowUpdateRect(int displayIndex) const
     const int rowTop = m.headerHeight + localIndex * m.rowHeight - m_scrollY;
     const QRect rowRect(0, rowTop, width(), m.rowHeight);
     return rowRect.intersected(tableBodyRect());
+}
+
+void AntTable::showRowToolTip(int displayIndex, const QString& text)
+{
+    if (!m_rowToolTip || !m_rowToolTipTarget)
+    {
+        return;
+    }
+
+    QRect targetRect = rowUpdateRect(displayIndex);
+    if (!targetRect.isValid() || targetRect.isEmpty())
+    {
+        hideRowToolTip();
+        return;
+    }
+
+    targetRect = targetRect.adjusted(8, 0, -8, 0);
+    m_rowToolTipTarget->setGeometry(targetRect);
+    m_rowToolTipTarget->show();
+    m_rowToolTipTarget->raise();
+    m_rowToolTip->setTitle(text);
+    m_rowToolTip->showTooltip();
+    m_toolTipDisplayRow = displayIndex;
+}
+
+void AntTable::hideRowToolTip()
+{
+    if (m_rowToolTip)
+    {
+        m_rowToolTip->hideTooltip();
+    }
+    if (m_rowToolTipTarget)
+    {
+        m_rowToolTipTarget->hide();
+    }
+    m_toolTipDisplayRow = -1;
 }
 
 void AntTable::updateRow(int displayIndex)

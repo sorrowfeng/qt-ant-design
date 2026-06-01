@@ -2,7 +2,6 @@
 
 #include <QFont>
 #include <QPalette>
-#include <QPlainTextEdit>
 #include <QScrollBar>
 #include <QSignalBlocker>
 #include <QTextCharFormat>
@@ -13,6 +12,7 @@
 
 #include <utility>
 
+#include "AntPlainTextEdit.h"
 #include "AntScrollBar.h"
 #include "core/AntTheme.h"
 
@@ -67,7 +67,7 @@ AntLog::AntLog(QWidget* parent)
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    m_view = new QPlainTextEdit(this);
+    m_view = new AntPlainTextEdit(this);
     m_view->setReadOnly(true);
     m_view->setUndoRedoEnabled(false);
     m_view->setFrameShape(QFrame::NoFrame);

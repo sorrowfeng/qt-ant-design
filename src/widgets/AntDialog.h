@@ -2,6 +2,7 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QByteArray>
 #include <QDialog>
 #include <QRect>
 #include <QSize>
@@ -86,6 +87,7 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     void showEvent(QShowEvent* event) override;
+    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override;
 
 private:
     friend class AntDialogStyle;
@@ -96,6 +98,7 @@ private:
     int shadowMargin() const;
     QRect surfaceRect() const;
     void updateChromeMargins();
+    void applyNativeWindowFrame();
     void updateLegacySoftwareShadow();
     void hideLegacySoftwareShadow();
     void handleThemeChanged(Ant::ThemeMode mode);

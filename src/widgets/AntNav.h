@@ -15,7 +15,7 @@
 #include "widgets/AntWidget.h"
 
 class AntNavItem;
-class QScrollArea;
+class AntScrollArea;
 class QVBoxLayout;
 class QWidget;
 
@@ -111,7 +111,7 @@ private:
     void emitCurrentChanged(const QString& previousText, const QVariant& previousData, int previousIndex);
     void syncNavPerfCounters() const;
 
-    QScrollArea* m_scrollArea = nullptr;
+    AntScrollArea* m_scrollArea = nullptr;
     QWidget* m_scrollContent = nullptr;
     QVBoxLayout* m_navLayout = nullptr;
     QVector<NavEntry> m_entries;

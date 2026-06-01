@@ -14,9 +14,10 @@ namespace
 struct ToolBarButtonMetrics
 {
     int height = 32;
-    int paddingX = 10;
-    int iconSize = 16;
-    int radius = 4;
+    int fontSize = 14;
+    int paddingX = 15;
+    int iconSize = 14;
+    int radius = 6;
 };
 
 bool isToolBarButton(const QWidget* widget)
@@ -25,14 +26,34 @@ bool isToolBarButton(const QWidget* widget)
     return button && button->property("antToolBarButton").toBool();
 }
 
-QRect centeredButtonRect(const QRect& rect, const ToolBarButtonMetrics& metrics)
+ToolBarButtonMetrics buttonMetrics()
 {
-    if (rect.height() <= metrics.height)
+    const auto& token = antTheme->tokens();
+    ToolBarButtonMetrics metrics;
+    metrics.height = token.controlHeight;
+    metrics.fontSize = token.fontSize;
+    metrics.paddingX = token.paddingSM + token.lineWidth * 3;
+    metrics.iconSize = 14;
+    metrics.radius = token.borderRadius;
+    return metrics;
+}
+
+int focusPaddingForToolBarButton()
+{
+    const auto& token = antTheme->tokens();
+    return token.lineWidthFocus + 1;
+}
+
+QRect centeredTotalButtonRect(const QRect& rect, const ToolBarButtonMetrics& metrics)
+{
+    const int focusPadding = focusPaddingForToolBarButton();
+    const int totalHeight = metrics.height + focusPadding * 2;
+    if (rect.height() <= totalHeight)
     {
         return rect;
     }
-    const int top = rect.top() + (rect.height() - metrics.height) / 2;
-    return QRect(rect.left(), top, rect.width(), metrics.height);
+    const int top = rect.top() + (rect.height() - totalHeight) / 2;
+    return QRect(rect.left(), top, rect.width(), totalHeight);
 }
 
 QString buttonTextMetricKey(const QToolButton* button, const QFont& font)
@@ -64,6 +85,49 @@ int cachedButtonTextWidth(const QToolButton* button, const QFont& font)
     mutableButton->setProperty("antToolBarButtonTextMetricBuildCount",
                                button->property("antToolBarButtonTextMetricBuildCount").toInt() + 1);
     return width;
+}
+
+QColor loadingColor(const QColor& color)
+{
+    QColor result = color;
+    result.setAlphaF(result.alphaF() * 0.65);
+    return result;
+}
+
+QColor shadowColorForToolBarButton()
+{
+    return antTheme->tokens().colorFillQuaternary;
+}
+
+void drawButtonBottomShadow(QPainter& painter, const QRectF& outer, int radius, const QColor& color)
+{
+    if (color.alpha() == 0)
+    {
+        return;
+    }
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawRoundedRect(outer.adjusted(0, 2, 0, 2), radius, radius);
+    painter.restore();
+}
+
+void drawButtonFocusOutline(QPainter& painter, const QRectF& bodyRect, int radius)
+{
+    const auto& token = antTheme->tokens();
+    const qreal offset = 1.0;
+    const qreal width = token.lineWidthFocus;
+    const qreal expand = offset + width / 2.0;
+    const QRectF focusRect = bodyRect.adjusted(-expand, -expand, expand, expand);
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(token.colorPrimaryBorder, width, Qt::SolidLine, Qt::SquareCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(focusRect, radius + expand, radius + expand);
+    painter.restore();
 }
 } // namespace
 
@@ -118,19 +182,22 @@ QSize AntToolBarStyle::sizeFromContents(ContentsType type, const QStyleOption* o
 {
     if (type == QStyle::CT_ToolButton && isToolBarButton(widget))
     {
-        const auto& token = antTheme->tokens();
+        Q_UNUSED(option)
+        Q_UNUSED(size)
         const auto* button = qobject_cast<const QToolButton*>(widget);
-        ToolBarButtonMetrics metrics;
+        const ToolBarButtonMetrics metrics = buttonMetrics();
+        const int focusPadding = focusPaddingForToolBarButton();
 
         QFont font = button ? button->font() : QFont();
-        font.setPixelSize(token.fontSize);
-        int width = button ? cachedButtonTextWidth(button, font) : size.width();
+        font.setPixelSize(metrics.fontSize);
+        int width = button ? cachedButtonTextWidth(button, font) : 0;
         if (button && !button->icon().isNull())
         {
-            width += metrics.iconSize + 6;
+            width += metrics.iconSize + 8;
         }
         width += metrics.paddingX * 2;
-        return QSize(qMax(width, metrics.height), metrics.height);
+        return QSize(qMax(width, metrics.height) + focusPadding * 2,
+                     metrics.height + focusPadding * 2);
     }
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
@@ -207,47 +274,88 @@ void AntToolBarStyle::drawToolBarButton(const QStyleOptionComplex* option, QPain
     }
 
     const auto& token = antTheme->tokens();
-    const ToolBarButtonMetrics metrics;
-    const QRect outer = centeredButtonRect(toolOption->rect, metrics);
+    const ToolBarButtonMetrics metrics = buttonMetrics();
+    const int focusPadding = focusPaddingForToolBarButton();
+    const QRect total = centeredTotalButtonRect(toolOption->rect, metrics);
+    const QRectF outer = QRectF(total).adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     const bool enabled = toolOption->state.testFlag(QStyle::State_Enabled);
     const bool hovered = enabled && toolOption->state.testFlag(QStyle::State_MouseOver);
     const bool pressed = enabled && (toolOption->state.testFlag(QStyle::State_Sunken) || button->isDown());
+    const bool focused = enabled && toolOption->state.testFlag(QStyle::State_HasFocus);
 
-    QColor bg = QColor(Qt::transparent);
+    QColor bg = token.colorBgContainer;
+    QColor border = token.colorBorder;
     QColor text = enabled ? token.colorText : token.colorTextDisabled;
     if (hovered)
     {
-        bg = token.colorFillTertiary;
+        border = text = token.colorPrimaryHover;
     }
     if (pressed)
     {
-        bg = token.colorFillSecondary;
+        border = text = token.colorPrimaryActive;
+    }
+    if (!enabled)
+    {
+        bg = token.colorBgContainerDisabled;
+        border = token.colorBorderDisabled;
     }
 
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
-    AntStyleBase::drawCrispRoundedRect(painter, outer, Qt::NoPen, bg, metrics.radius, metrics.radius);
+
+    if (enabled && !pressed)
+    {
+        drawButtonBottomShadow(*painter, outer, metrics.radius, shadowColorForToolBarButton());
+    }
+
+    AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
+        QPen(border, token.lineWidth),
+        bg, metrics.radius, metrics.radius);
+
+    if (focused)
+    {
+        drawButtonFocusOutline(*painter, outer, metrics.radius);
+    }
 
     QFont font = button->font();
-    font.setPixelSize(token.fontSize);
+    font.setPixelSize(metrics.fontSize);
     painter->setFont(font);
     painter->setPen(text);
 
+    QRectF textRect = QRect(outer.toRect()).adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
     const QString label = button->text();
-    const int textWidth = cachedButtonTextWidth(button, font);
+    cachedButtonTextWidth(button, font);
     const bool hasIcon = !button->icon().isNull();
-    const int contentWidth = textWidth + (hasIcon ? metrics.iconSize + 6 : 0);
-    int cursorX = outer.left() + qMax(metrics.paddingX, (outer.width() - contentWidth) / 2);
 
     if (hasIcon)
     {
-        const QRect iconRect(cursorX, outer.center().y() - metrics.iconSize / 2, metrics.iconSize, metrics.iconSize);
-        button->icon().paint(painter, iconRect, Qt::AlignCenter, enabled ? QIcon::Normal : QIcon::Disabled);
-        cursorX += metrics.iconSize + 6;
+        QRectF iconRect;
+        if (label.isEmpty())
+        {
+            iconRect = QRectF(textRect.center().x() - metrics.iconSize / 2.0,
+                              textRect.center().y() - metrics.iconSize / 2.0,
+                              metrics.iconSize,
+                              metrics.iconSize);
+        }
+        else
+        {
+            iconRect = QRectF(textRect.left(),
+                              textRect.center().y() - metrics.iconSize / 2.0,
+                              metrics.iconSize,
+                              metrics.iconSize);
+            textRect.adjust(metrics.iconSize + 8, 0, 0, 0);
+        }
+        button->icon().paint(painter,
+                             iconRect.toRect(),
+                             Qt::AlignCenter,
+                             enabled ? QIcon::Normal : QIcon::Disabled,
+                             button->isChecked() ? QIcon::On : QIcon::Off);
     }
 
-    const QRect textRect(cursorX, outer.top(), qMax(0, outer.right() - cursorX - metrics.paddingX + 1), outer.height());
-    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine, label);
+    if (!label.isEmpty())
+    {
+        painter->drawText(textRect, Qt::AlignCenter | Qt::TextSingleLine, label);
+    }
 
     painter->restore();
 }

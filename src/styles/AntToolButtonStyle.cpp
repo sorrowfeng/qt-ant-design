@@ -1,16 +1,16 @@
 #include "AntToolButtonStyle.h"
 
+#include <algorithm>
+#include <QFontMetrics>
 #include <QPainter>
 #include <QStyleOptionComplex>
 #include <QStyleOptionToolButton>
 
 #include "styles/AntIconPainter.h"
-#include "styles/AntPalette.h"
 #include "widgets/AntToolButton.h"
 
 namespace
 {
-
 struct ToolButtonMetrics
 {
     int height = 32;
@@ -19,6 +19,14 @@ struct ToolButtonMetrics
     int radius = 6;
     int iconSize = 14;
     int arrowSize = 10;
+};
+
+struct ToolButtonColors
+{
+    QColor background;
+    QColor border;
+    QColor text;
+    Qt::PenStyle borderStyle = Qt::SolidLine;
 };
 
 ToolButtonMetrics toolMetrics(const AntToolButton* btn)
@@ -30,16 +38,16 @@ ToolButtonMetrics toolMetrics(const AntToolButton* btn)
     case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
-        m.paddingX = token.padding;
+        m.paddingX = token.padding - token.lineWidth;
         m.radius = token.borderRadiusLG;
         m.iconSize = 16;
         break;
     case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSize;
-        m.paddingX = token.paddingXS;
+        m.paddingX = token.paddingXS - token.lineWidth;
         m.radius = token.borderRadiusSM;
-        m.iconSize = 12;
+        m.iconSize = 14;
         break;
     case Ant::Size::Middle:
         m.height = token.controlHeight;
@@ -52,87 +60,186 @@ ToolButtonMetrics toolMetrics(const AntToolButton* btn)
     return m;
 }
 
-QColor semanticColor(const AntToolButton* btn)
+int focusPaddingForToolButton()
+{
+    const auto& token = antTheme->tokens();
+    return token.lineWidthFocus + 1;
+}
+
+QRectF contentRectFor(const ToolButtonMetrics& metrics, const QRect& rect)
+{
+    return rect.adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
+}
+
+QColor semanticColorFor(const AntToolButton* btn)
 {
     return btn && btn->isDanger() ? antTheme->tokens().colorError : antTheme->tokens().colorPrimary;
 }
 
-struct Colors
+QColor loadingColor(const QColor& color)
 {
-    QColor bg;
-    QColor border;
-    QColor text;
-};
+    QColor result = color;
+    result.setAlphaF(result.alphaF() * 0.65);
+    return result;
+}
 
-Colors computeColors(const AntToolButton* btn, bool hovered, bool pressed, bool enabled)
+QColor shadowColorFor(const AntToolButton* btn)
 {
     const auto& token = antTheme->tokens();
-    const QColor accent = semanticColor(btn);
-    Colors c;
-    c.bg = token.colorBgContainer;
-    c.border = token.colorBorder;
-    c.text = token.colorText;
-
+    if (!btn)
+    {
+        return QColor(Qt::transparent);
+    }
     if (btn->buttonType() == Ant::ButtonType::Primary)
     {
-        c.bg = accent;
-        c.border = accent;
+        return btn->isDanger() ? token.colorErrorBg : token.colorPrimaryBg;
+    }
+    if (btn->isDanger())
+    {
+        return token.colorErrorBg;
+    }
+    return token.colorFillQuaternary;
+}
+
+ToolButtonColors computeColors(const AntToolButton* btn, bool hovered, bool pressed, bool enabled)
+{
+    const auto& token = antTheme->tokens();
+    const QColor accent = semanticColorFor(btn);
+    const QColor accentHover = btn && btn->isDanger() ? token.colorErrorHover : token.colorPrimaryHover;
+    const QColor accentActive = btn && btn->isDanger() ? token.colorErrorActive : token.colorPrimaryActive;
+
+    ToolButtonColors c;
+    const bool plainType = btn && (btn->buttonType() == Ant::ButtonType::Text || btn->buttonType() == Ant::ButtonType::Link);
+    c.background = plainType ? QColor(Qt::transparent) : token.colorBgContainer;
+    c.border = plainType ? QColor(Qt::transparent) : token.colorBorder;
+    c.text = token.colorText;
+
+    if (btn && btn->buttonType() == Ant::ButtonType::Primary)
+    {
+        c.background = accent;
+        c.border = QColor(Qt::transparent);
         c.text = token.colorTextLightSolid;
-        if (hovered) c.bg = c.border = antTheme->hoverColor(accent);
-        if (pressed) c.bg = c.border = antTheme->activeColor(accent);
+        if (hovered)
+        {
+            c.background = accentHover;
+        }
+        if (pressed)
+        {
+            c.background = accentActive;
+        }
     }
-    else if (btn->buttonType() == Ant::ButtonType::Default || btn->buttonType() == Ant::ButtonType::Dashed)
+    else if (btn && (btn->buttonType() == Ant::ButtonType::Default || btn->buttonType() == Ant::ButtonType::Dashed))
     {
-        if (btn->isDanger()) c.text = c.border = token.colorError;
-        if (hovered) c.text = c.border = btn->isDanger() ? token.colorErrorHover : token.colorPrimaryHover;
-        if (pressed) c.text = c.border = btn->isDanger() ? token.colorErrorActive : token.colorPrimaryActive;
+        c.borderStyle = btn->buttonType() == Ant::ButtonType::Dashed ? Qt::DashLine : Qt::SolidLine;
+        if (btn->isDanger())
+        {
+            c.text = c.border = token.colorError;
+        }
+        if (hovered)
+        {
+            c.text = c.border = btn->isDanger() ? token.colorErrorHover : token.colorPrimaryHover;
+        }
+        if (pressed)
+        {
+            c.text = c.border = btn->isDanger() ? token.colorErrorActive : token.colorPrimaryActive;
+        }
     }
-    else if (btn->buttonType() == Ant::ButtonType::Text)
+    else if (btn && btn->buttonType() == Ant::ButtonType::Text)
     {
-        c.border = Qt::transparent;
-        if (hovered) c.bg = token.colorFillTertiary;
-        if (pressed) c.bg = token.colorFillQuaternary;
+        c.text = btn->isDanger() ? token.colorError : token.colorText;
+        if (hovered)
+        {
+            c.background = token.colorFillTertiary;
+        }
+        if (pressed)
+        {
+            c.background = token.colorFill;
+        }
     }
-    else if (btn->buttonType() == Ant::ButtonType::Link)
+    else if (btn && btn->buttonType() == Ant::ButtonType::Link)
     {
-        c.border = Qt::transparent;
-        c.bg = Qt::transparent;
         c.text = btn->isDanger() ? token.colorError : token.colorLink;
-        if (hovered) c.text = btn->isDanger() ? token.colorErrorHover : token.colorLinkHover;
-        if (pressed) c.text = btn->isDanger() ? token.colorErrorActive : token.colorLinkActive;
+        if (hovered)
+        {
+            c.text = btn->isDanger() ? token.colorErrorHover : token.colorLinkHover;
+        }
+        if (pressed)
+        {
+            c.text = btn->isDanger() ? token.colorErrorActive : token.colorLinkActive;
+        }
+    }
+
+    if (btn && btn->isLoading())
+    {
+        c.background = loadingColor(c.background);
+        c.border = loadingColor(c.border);
+        c.text = loadingColor(c.text);
     }
 
     if (!enabled)
     {
-        c.bg = (btn->buttonType() == Ant::ButtonType::Text || btn->buttonType() == Ant::ButtonType::Link)
-                   ? QColor(Qt::transparent) : token.colorBgContainerDisabled;
-        c.border = (btn->buttonType() == Ant::ButtonType::Text || btn->buttonType() == Ant::ButtonType::Link)
-                       ? QColor(Qt::transparent) : token.colorBorderDisabled;
+        c.background = plainType ? QColor(Qt::transparent) : token.colorBgContainerDisabled;
+        c.border = plainType ? QColor(Qt::transparent) : token.colorBorderDisabled;
         c.text = token.colorTextDisabled;
     }
     return c;
 }
 
-void drawArrow(QPainter* p, const QRectF& r, const QColor& color, qreal rotation)
+void drawArrow(QPainter* painter, const QRectF& rect, const QColor& color, qreal rotation)
 {
-    p->save();
-    p->translate(r.center());
-    p->rotate(rotation);
-    p->translate(-r.center());
-    AntIconPainter::drawIcon(*p, Ant::IconType::Down, r, color);
-    p->restore();
+    painter->save();
+    painter->translate(rect.center());
+    painter->rotate(rotation);
+    painter->translate(-rect.center());
+    AntIconPainter::drawIcon(*painter, Ant::IconType::Down, rect, color);
+    painter->restore();
 }
 
 void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int angle)
 {
     painter.save();
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setPen(QPen(color, 2, Qt::SolidLine, Qt::RoundCap));
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    const qreal penWidth = qMax<qreal>(1.5, rect.width() * 0.12);
+    const QRectF arcRect = rect.adjusted(penWidth / 2.0, penWidth / 2.0, -penWidth / 2.0, -penWidth / 2.0);
+    painter.translate(arcRect.center());
+    painter.rotate(angle);
+    painter.translate(-arcRect.center());
+    painter.setPen(QPen(color, penWidth, Qt::SolidLine, Qt::RoundCap));
     painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect, angle * 16, 270 * 16);
+    painter.drawArc(arcRect, 90 * 16, -96 * 16);
     painter.restore();
 }
 
+void drawButtonBottomShadow(QPainter& painter, const QRectF& outer, int radius, const QColor& color)
+{
+    if (color.alpha() == 0)
+    {
+        return;
+    }
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawRoundedRect(outer.adjusted(0, 2, 0, 2), radius, radius);
+    painter.restore();
+}
+
+void drawButtonFocusOutline(QPainter& painter, const QRectF& bodyRect, int radius)
+{
+    const auto& token = antTheme->tokens();
+    const qreal offset = 1.0;
+    const qreal width = token.lineWidthFocus;
+    const qreal expand = offset + width / 2.0;
+    const QRectF focusRect = bodyRect.adjusted(-expand, -expand, expand, expand);
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(token.colorPrimaryBorder, width, Qt::SolidLine, Qt::SquareCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(focusRect, radius + expand, radius + expand);
+    painter.restore();
+}
 } // namespace
 
 AntToolButtonStyle::AntToolButtonStyle(QStyle* style)
@@ -181,11 +288,17 @@ QSize AntToolButtonStyle::sizeFromContents(ContentsType type, const QStyleOption
         QFont f = btn->font();
         f.setPixelSize(m.fontSize);
         int width = QFontMetrics(f).horizontalAdvance(btn->text()) + m.paddingX * 2;
-        if (btn->isLoading()) width += m.iconSize + 8;
-        // Space for dropdown arrow
-        if (btn->popupMode() == QToolButton::MenuButtonPopup || btn->menu())
-            width += m.arrowSize + m.paddingX / 2;
-        return QSize(std::max(width, m.height), m.height);
+        if (btn->isLoading() || !btn->icon().isNull())
+        {
+            width += m.iconSize + 8;
+        }
+        if (btn->menu() || btn->popupMode() == QToolButton::MenuButtonPopup)
+        {
+            width += m.arrowSize + 8;
+        }
+
+        const int focusPadding = focusPaddingForToolButton();
+        return QSize(std::max(width, m.height) + focusPadding * 2, m.height + focusPadding * 2);
     }
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
@@ -194,81 +307,98 @@ void AntToolButtonStyle::drawToolButton(const QStyleOptionComplex* option, QPain
                                         const QWidget* widget) const
 {
     const auto* btn = qobject_cast<const AntToolButton*>(widget);
-    if (!btn || !painter) return;
+    const auto* bopt = qstyleoption_cast<const QStyleOptionToolButton*>(option);
+    if (!btn || !bopt || !painter)
+    {
+        return;
+    }
 
     const auto& token = antTheme->tokens();
     const ToolButtonMetrics m = toolMetrics(btn);
-    const auto* bopt = qstyleoption_cast<const QStyleOptionToolButton*>(option);
-    if (!bopt) return;
-
-    const QRectF outer = bopt->rect;
-    const bool hovered = bopt->state.testFlag(QStyle::State_MouseOver);
-    const bool pressed = bopt->state.testFlag(QStyle::State_Sunken);
+    const int focusPadding = focusPaddingForToolButton();
+    const QRectF outer = QRectF(bopt->rect).adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
+    const int radius = m.radius;
     const bool enabled = bopt->state.testFlag(QStyle::State_Enabled);
-    const bool hasMenu = btn->menu() != nullptr;
+    const bool hovered = enabled && bopt->state.testFlag(QStyle::State_MouseOver);
+    const bool pressed = enabled && (bopt->state.testFlag(QStyle::State_Sunken) || btn->isDown());
+    const bool focused = btn->isFocusVisibleState();
     const bool plainType = btn->buttonType() == Ant::ButtonType::Text || btn->buttonType() == Ant::ButtonType::Link;
+    const bool hasMenu = btn->menu() || btn->popupMode() == QToolButton::MenuButtonPopup;
 
-    Colors colors = computeColors(btn, hovered, pressed, enabled);
-    const qreal arrowRot = btn->arrowRotation();
+    const ToolButtonColors colors = computeColors(btn, hovered, pressed, enabled);
 
     painter->save();
-    painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+    painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    // Shadow
-    if (!plainType && enabled && !pressed)
+    if (!plainType && enabled && !pressed && !btn->isLoading())
     {
-        antTheme->drawEffectShadow(painter, outer.toRect(), 4, m.radius,
-                                   btn->buttonType() == Ant::ButtonType::Primary ? 0.45 : 0.25);
+        drawButtonBottomShadow(*painter, outer, radius, shadowColorFor(btn));
     }
 
-    // Background + Border
     AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
-        colors.border.alpha() == 0 ? Qt::NoPen : QPen(colors.border, token.lineWidth),
-        colors.bg, m.radius, m.radius);
+        colors.border.alpha() == 0 ? Qt::NoPen : QPen(colors.border, token.lineWidth, colors.borderStyle),
+        colors.background, radius, radius);
 
-    // Focus ring
-    if (bopt->state.testFlag(QStyle::State_HasFocus) && enabled)
+    if (focused && enabled)
     {
-        const QColor focus = AntPalette::alpha(btn->isDanger() ? token.colorError : token.colorPrimary, 0.18);
-        AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
-            QPen(focus, token.controlOutlineWidth), Qt::NoBrush, m.radius, m.radius);
+        drawButtonFocusOutline(*painter, outer, radius);
     }
 
-    // Icon
-    QRectF contentRect = outer.adjusted(m.paddingX, 0, -m.paddingX, 0);
-    if (!bopt->icon.isNull())
-    {
-        const QRectF iconRect(contentRect.left(), contentRect.center().y() - m.iconSize / 2.0,
-                              m.iconSize, m.iconSize);
-        bopt->icon.paint(painter, iconRect.toRect(), Qt::AlignCenter, QIcon::Normal, enabled ? QIcon::On : QIcon::Off);
-        contentRect.adjust(m.iconSize + 6, 0, 0, 0);
-    }
-
-    // Arrow indicator area
+    QRectF textRect = contentRectFor(m, outer.toRect());
     QRectF arrowRect;
-    if (hasMenu || btn->popupMode() == QToolButton::MenuButtonPopup)
+    if (hasMenu)
     {
-        const qreal arrowW = m.arrowSize + 8;
-        arrowRect = QRectF(contentRect.right() - arrowW, contentRect.center().y() - m.arrowSize / 2.0,
-                           m.arrowSize, m.arrowSize);
-        contentRect.adjust(0, 0, -(arrowW + 2), 0);
+        arrowRect = QRectF(textRect.right() - m.arrowSize,
+                           textRect.center().y() - m.arrowSize / 2.0,
+                           m.arrowSize,
+                           m.arrowSize);
+        textRect.adjust(0, 0, -(m.arrowSize + 8), 0);
     }
 
-    // Text
     painter->setFont(btn->font());
     painter->setPen(colors.text);
     if (btn->isLoading())
     {
-        QRectF spinnerRect(contentRect.left(), contentRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
+        const bool spinnerOnly = btn->text().isEmpty();
+        const QRectF spinnerRect = spinnerOnly
+            ? QRectF(textRect.center().x() - m.iconSize / 2.0, textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize)
+            : QRectF(textRect.left(), textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
         drawSpinner(*painter, spinnerRect, colors.text, btn->spinnerAngle());
-        contentRect.adjust(m.iconSize + 8, 0, 0, 0);
+        if (!spinnerOnly)
+        {
+            textRect.adjust(m.iconSize + 8, 0, 0, 0);
+        }
     }
-    painter->drawText(contentRect, Qt::AlignCenter, btn->text());
-
-    // Arrow
-    if (hasMenu || btn->popupMode() == QToolButton::MenuButtonPopup)
+    else if (!btn->icon().isNull())
     {
-        drawArrow(painter, arrowRect, colors.text, arrowRot);
+        QRectF iconRect;
+        if (btn->text().isEmpty())
+        {
+            iconRect = QRectF(textRect.center().x() - m.iconSize / 2.0,
+                              textRect.center().y() - m.iconSize / 2.0,
+                              m.iconSize,
+                              m.iconSize);
+        }
+        else
+        {
+            iconRect = QRectF(textRect.left(), textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
+            textRect.adjust(m.iconSize + 8, 0, 0, 0);
+        }
+        btn->icon().paint(painter,
+                          iconRect.toRect(),
+                          Qt::AlignCenter,
+                          enabled ? QIcon::Normal : QIcon::Disabled,
+                          btn->isChecked() ? QIcon::On : QIcon::Off);
+    }
+
+    if (!btn->text().isEmpty())
+    {
+        painter->drawText(textRect, Qt::AlignCenter, btn->text());
+    }
+
+    if (hasMenu)
+    {
+        drawArrow(painter, arrowRect, colors.text, btn->arrowRotation());
     }
 
     painter->restore();

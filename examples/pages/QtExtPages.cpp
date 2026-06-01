@@ -1,17 +1,14 @@
 #include "Pages.h"
 
 #include <QAction>
-#include <QComboBox>
 #include <QDir>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QImage>
-#include <QLineEdit>
 #include <QList>
 #include <QMenu>
 #include <QPainter>
 #include <QPushButton>
-#include <QSpinBox>
 #include <QString>
 #include <QStringList>
 #include <QVBoxLayout>
@@ -26,6 +23,7 @@
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntFileDialog.h"
+#include "widgets/AntInput.h"
 #include "widgets/AntInputDialog.h"
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
@@ -1013,16 +1011,18 @@ AntRibbon* createSampleRibbon(QWidget* parent)
     controls->addWidget(applyButton, Ant::RibbonItemSize::Large);
 
     auto* view = ribbon->addPage(QStringLiteral("View"), QStringLiteral("view"));
-    auto* native = view->addGroup(QStringLiteral("Qt Widgets"));
-    auto* combo = new QComboBox();
-    combo->addItems({QStringLiteral("Compact"), QStringLiteral("Comfortable")});
+    auto* native = view->addGroup(QStringLiteral("Ant Inputs"));
+    auto* combo = new AntSelect();
+    combo->addOption(QStringLiteral("Compact"), QStringLiteral("compact"));
+    combo->addOption(QStringLiteral("Comfortable"), QStringLiteral("comfortable"));
+    combo->setCurrentIndex(0);
     native->addWidget(combo, Ant::RibbonItemSize::Small);
 
-    auto* search = new QLineEdit();
+    auto* search = new AntInput();
     search->setPlaceholderText(QStringLiteral("Search"));
     native->addWidget(search, Ant::RibbonItemSize::Small);
 
-    auto* spin = new QSpinBox();
+    auto* spin = new AntInputNumber();
     spin->setRange(1, 12);
     spin->setValue(6);
     native->addWidget(spin, Ant::RibbonItemSize::Small);

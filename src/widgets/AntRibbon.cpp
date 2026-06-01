@@ -18,6 +18,7 @@
 #include <QWidgetAction>
 
 #include "AntScrollBar.h"
+#include "AntToolTip.h"
 #include "core/AntTheme.h"
 
 namespace
@@ -35,6 +36,15 @@ constexpr int kSmallButtonHeight = 34;
 constexpr int kSmallColumnWidth = 156;
 constexpr int kButtonRadius = 6;
 
+QString cleanActionText(QString text)
+{
+    const QChar escapedAmpersand(1);
+    text.replace(QStringLiteral("&&"), QString(escapedAmpersand));
+    text.remove(QLatin1Char('&'));
+    text.replace(QString(escapedAmpersand), QStringLiteral("&"));
+    return text.trimmed();
+}
+
 class AntRibbonToolButton : public QToolButton
 {
 public:
@@ -51,6 +61,19 @@ public:
         setToolButtonStyle(size == Ant::RibbonItemSize::Large ? Qt::ToolButtonTextUnderIcon
                                                               : Qt::ToolButtonTextBesideIcon);
         setIconSize(size == Ant::RibbonItemSize::Large ? QSize(28, 28) : QSize(16, 16));
+        m_toolTip = new AntToolTip(this);
+        m_toolTip->setObjectName(QStringLiteral("AntRibbonActionToolTip"));
+        m_toolTip->setPlacement(Ant::TooltipPlacement::Top);
+        m_toolTip->setTarget(this);
+        if (action)
+        {
+            connect(action, &QAction::changed, this, [this]() {
+                syncToolTip();
+                updateGeometry();
+                update();
+            });
+        }
+        syncToolTip();
         setFixedSize(sizeHint());
     }
 
@@ -139,10 +162,60 @@ protected:
 private:
     QString textForPaint() const
     {
-        return defaultAction() ? defaultAction()->text() : text();
+        return defaultAction() ? cleanActionText(defaultAction()->text()) : cleanActionText(text());
+    }
+
+    QString effectiveToolTipText() const
+    {
+        const QAction* action = defaultAction();
+        if (action)
+        {
+            const QString actionToolTip = action->toolTip().trimmed();
+            if (!actionToolTip.isEmpty())
+            {
+                return actionToolTip;
+            }
+
+            const QString statusTip = action->statusTip().trimmed();
+            if (!statusTip.isEmpty())
+            {
+                return statusTip;
+            }
+
+            const QString actionText = cleanActionText(action->text());
+            if (!actionText.isEmpty())
+            {
+                return actionText;
+            }
+        }
+
+        const QString buttonToolTip = toolTip().trimmed();
+        if (!buttonToolTip.isEmpty())
+        {
+            return buttonToolTip;
+        }
+
+        return cleanActionText(text());
+    }
+
+    void syncToolTip()
+    {
+        if (!m_toolTip)
+        {
+            return;
+        }
+
+        const QString title = effectiveToolTipText();
+        m_toolTip->setTitle(title);
+        setProperty("antRibbonActionToolTipText", title);
+        if (!toolTip().isEmpty())
+        {
+            setToolTip(QString());
+        }
     }
 
     Ant::RibbonItemSize m_size = Ant::RibbonItemSize::Large;
+    AntToolTip* m_toolTip = nullptr;
 };
 
 }

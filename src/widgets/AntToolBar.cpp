@@ -1,5 +1,6 @@
 #include "AntToolBar.h"
 
+#include <QAction>
 #include <QActionEvent>
 #include <QLayout>
 #include <QPalette>
@@ -7,6 +8,7 @@
 #include <QVariant>
 
 #include "../styles/AntToolBarStyle.h"
+#include "AntToolTip.h"
 #include "core/AntTheme.h"
 
 namespace
@@ -14,6 +16,108 @@ namespace
 QString colorKey(const QColor& color)
 {
     return QString::number(color.rgba(), 16);
+}
+
+QString cleanActionText(QString text)
+{
+    const QChar escapedAmpersand(1);
+    text.replace(QStringLiteral("&&"), QString(escapedAmpersand));
+    text.remove(QLatin1Char('&'));
+    text.replace(QString(escapedAmpersand), QStringLiteral("&"));
+    return text.trimmed();
+}
+
+QString actionToolTipText(const QToolButton* button)
+{
+    if (!button)
+    {
+        return {};
+    }
+
+    const QAction* action = button->defaultAction();
+    if (action)
+    {
+        const QString actionToolTip = action->toolTip().trimmed();
+        if (!actionToolTip.isEmpty())
+        {
+            return actionToolTip;
+        }
+
+        const QString statusTip = action->statusTip().trimmed();
+        if (!statusTip.isEmpty())
+        {
+            return statusTip;
+        }
+
+        const QString text = cleanActionText(action->text());
+        if (!text.isEmpty())
+        {
+            return text;
+        }
+    }
+
+    const QString buttonToolTip = button->toolTip().trimmed();
+    if (!buttonToolTip.isEmpty())
+    {
+        return buttonToolTip;
+    }
+
+    return cleanActionText(button->text());
+}
+
+AntToolTip* ensureActionToolTip(QToolButton* button)
+{
+    if (!button)
+    {
+        return nullptr;
+    }
+
+    auto* toolTip = button->findChild<AntToolTip*>(QStringLiteral("AntToolBarActionToolTip"),
+                                                   Qt::FindDirectChildrenOnly);
+    if (!toolTip)
+    {
+        toolTip = new AntToolTip(button);
+        toolTip->setObjectName(QStringLiteral("AntToolBarActionToolTip"));
+        toolTip->setPlacement(Ant::TooltipPlacement::Top);
+        toolTip->setTarget(button);
+    }
+    return toolTip;
+}
+
+void syncActionToolTip(QToolButton* button)
+{
+    AntToolTip* toolTip = ensureActionToolTip(button);
+    if (!button || !toolTip)
+    {
+        return;
+    }
+
+    const QString title = actionToolTipText(button);
+    toolTip->setTitle(title);
+    button->setProperty("antToolBarActionToolTipText", title);
+    if (!button->toolTip().isEmpty())
+    {
+        button->setToolTip(QString());
+    }
+}
+
+void connectActionToolTipSync(QToolButton* button)
+{
+    if (!button || button->property("antToolBarActionToolTipConnection").toBool())
+    {
+        return;
+    }
+
+    QAction* action = button->defaultAction();
+    if (!action)
+    {
+        return;
+    }
+
+    QObject::connect(action, &QAction::changed, button, [button]() {
+        syncActionToolTip(button);
+    });
+    button->setProperty("antToolBarActionToolTipConnection", true);
 }
 } // namespace
 
@@ -182,6 +286,8 @@ void AntToolBar::updateActionButton(QToolButton* button, bool forceGeometry)
         geometryChanged = true;
         visualChanged = true;
     }
+    connectActionToolTipSync(button);
+    syncActionToolTip(button);
 
     ++m_buttonSyncCount;
     if (geometryChanged)

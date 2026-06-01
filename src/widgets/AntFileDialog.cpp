@@ -29,6 +29,7 @@
 #include "AntInput.h"
 #include "AntScrollBar.h"
 #include "AntSelect.h"
+#include "AntToolTip.h"
 #include "AntTypography.h"
 #include "core/AntTheme.h"
 #include "core/AntTypes.h"
@@ -1170,7 +1171,13 @@ void AntFileDialog::buildCommonPlaces(QVBoxLayout* sidebarLayout)
         button->setButtonIconType(place.icon);
         button->setAccessibleName(place.label);
         button->setFixedSize(quickAccessButtonSide, quickAccessButtonSide);
-        button->setToolTip(QStringLiteral("%1\n%2").arg(place.label, QDir::toNativeSeparators(place.path)));
+        const QString toolTipText = QStringLiteral("%1\n%2").arg(place.label, QDir::toNativeSeparators(place.path));
+        button->setProperty("antFileDialogPlaceToolTipText", toolTipText);
+        auto* toolTip = new AntToolTip(placesPanel);
+        toolTip->setObjectName(QStringLiteral("antFileDialogPlaceTooltip"));
+        toolTip->setTitle(toolTipText);
+        toolTip->setPlacement(Ant::TooltipPlacement::Top);
+        toolTip->setTarget(button);
         const int row = placeIndex / quickAccessColumns;
         const int column = placeIndex % quickAccessColumns;
         placesLayout->addWidget(button, row, column, Qt::AlignLeft);

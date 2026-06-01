@@ -1,27 +1,56 @@
 #include "AntToolButton.h"
 
+#include <QAction>
+#include <QActionEvent>
 #include <QEvent>
+#include <QFocusEvent>
 #include <QHideEvent>
+#include <QKeyEvent>
 #include <QMouseEvent>
+#include <QPointer>
 #include <QPropertyAnimation>
 #include <QShowEvent>
+#include <QSizePolicy>
 #include <QStyleOptionToolButton>
 #include <QTimer>
 
 #include "../styles/AntToolButtonStyle.h"
+#include "AntToolTip.h"
 #include "core/AntThemeRefresh_p.h"
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
 
+namespace
+{
+int focusPaddingForToolButton()
+{
+    const auto& token = antTheme->tokens();
+    return token.lineWidthFocus + 1;
+}
+
+QString cleanActionTextForToolButton(QString text)
+{
+    const QChar escapedAmpersand(1);
+    text.replace(QStringLiteral("&&"), QString(escapedAmpersand));
+    text.remove(QLatin1Char('&'));
+    text.replace(QString(escapedAmpersand), QStringLiteral("&"));
+    return text.trimmed();
+}
+} // namespace
+
 AntToolButton::AntToolButton(QWidget* parent)
     : QToolButton(parent)
 {
-    setCursor(Qt::PointingHandCursor);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setAttribute(Qt::WA_Hover, true);
     setPopupMode(QToolButton::InstantPopup);
     setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+
+    m_antToolTip = new AntToolTip(this);
+    m_antToolTip->setObjectName(QStringLiteral("AntToolButtonToolTip"));
+    m_antToolTip->setPlacement(Ant::TooltipPlacement::Top);
+    m_antToolTip->setTarget(this);
 
     auto* style = new AntToolButtonStyle(this->style());
     style->setParent(this);
@@ -33,12 +62,13 @@ AntToolButton::AntToolButton(QWidget* parent)
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         updateGeometryFromState(false);
         AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
+        syncAntToolTip();
         update();
     });
 
     m_spinnerTimer = new QTimer(this);
     connect(m_spinnerTimer, &QTimer::timeout, this, [this]() {
-        m_spinnerAngle = (m_spinnerAngle + 30) % 360;
+        m_spinnerAngle = (m_spinnerAngle + 6) % 360;
         updateSpinnerRegion();
     });
 
@@ -55,7 +85,9 @@ AntToolButton::AntToolButton(QWidget* parent)
         }
     });
 
+    updateCursorState();
     updateGeometryFromState();
+    syncAntToolTip();
     syncToolButtonPerfCounters();
 }
 
@@ -103,6 +135,7 @@ void AntToolButton::setLoading(bool loading)
 {
     if (m_loading == loading) return;
     m_loading = loading;
+    updateCursorState();
     updateSpinnerTimer();
     updateGeometryFromState();
     update();
@@ -124,6 +157,7 @@ QSize AntToolButton::sizeHint() const
     QStyleOptionToolButton option;
     option.initFrom(this);
     option.text = text();
+    option.icon = icon();
     return style()->sizeFromContents(QStyle::CT_ToolButton, &option, QSize(), this);
 }
 
@@ -132,8 +166,56 @@ QSize AntToolButton::minimumSizeHint() const
     return sizeHint();
 }
 
+bool AntToolButton::event(QEvent* event)
+{
+    if (event && event->type() == QEvent::ToolTip)
+    {
+        syncAntToolTip();
+        if (m_antToolTip && !m_antToolTip->title().trimmed().isEmpty())
+        {
+            m_antToolTip->showTooltip();
+            event->accept();
+            return true;
+        }
+        if (m_antToolTip)
+        {
+            m_antToolTip->hideTooltip();
+        }
+        event->ignore();
+        return true;
+    }
+
+    if (event && event->type() == QEvent::ToolTipChange)
+    {
+        const bool handled = QToolButton::event(event);
+        syncAntToolTip();
+        return handled;
+    }
+
+    return QToolButton::event(event);
+}
+
+void AntToolButton::actionEvent(QActionEvent* event)
+{
+    QToolButton::actionEvent(event);
+    if (!event)
+    {
+        return;
+    }
+
+    if (event->type() == QEvent::ActionAdded
+        || event->type() == QEvent::ActionChanged
+        || event->type() == QEvent::ActionRemoved)
+    {
+        syncAntToolTip();
+        updateGeometryFromState();
+        update();
+    }
+}
+
 void AntToolButton::enterEvent(AntEnterEvent* event)
 {
+    syncAntToolTip();
     m_hovered = true;
     update();
     QToolButton::enterEvent(event);
@@ -141,6 +223,10 @@ void AntToolButton::enterEvent(AntEnterEvent* event)
 
 void AntToolButton::leaveEvent(QEvent* event)
 {
+    if (m_antToolTip)
+    {
+        m_antToolTip->hideTooltip();
+    }
     m_hovered = false;
     m_pressed = false;
     update();
@@ -149,8 +235,12 @@ void AntToolButton::leaveEvent(QEvent* event)
 
 void AntToolButton::mousePressEvent(QMouseEvent* event)
 {
-    m_pressed = true;
-    update();
+    if (event && event->button() == Qt::LeftButton && isEnabled() && hitButton(event->pos()))
+    {
+        m_pressed = true;
+        m_focusVisible = false;
+        update();
+    }
     QToolButton::mousePressEvent(event);
 }
 
@@ -159,20 +249,76 @@ void AntToolButton::mouseReleaseEvent(QMouseEvent* event)
     const bool wasPressed = m_pressed;
     m_pressed = false;
     update();
-    if (wasPressed && isEnabled() && !m_loading && rect().contains(event->pos()) && !menu())
-    {
-        const auto& token = antTheme->tokens();
-        QColor tint = m_danger ? token.colorError : token.colorPrimary;
-        const Metrics m = metrics();
-        AntWave::trigger(this, tint, cornerRadius(m));
-    }
+    const bool shouldWave = event && event->button() == Qt::LeftButton
+        && wasPressed && isEnabled() && !m_loading && hitButton(event->pos())
+        && !menu()
+        && m_buttonType != Ant::ButtonType::Text
+        && m_buttonType != Ant::ButtonType::Link;
+    QPointer<AntToolButton> guard(this);
     QToolButton::mouseReleaseEvent(event);
+    if (shouldWave && guard)
+    {
+        QTimer::singleShot(0, guard.data(), [guard]() {
+            if (!guard)
+            {
+                return;
+            }
+            const AntToolButton::Metrics m = guard->metrics();
+            const int focusPadding = focusPaddingForToolButton();
+            const QRect bodyRect = guard->rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
+            AntWave::triggerRect(guard, bodyRect, guard->waveColor(), guard->cornerRadius(m));
+        });
+    }
+}
+
+void AntToolButton::keyPressEvent(QKeyEvent* event)
+{
+    if (event && (event->key() == Qt::Key_Space
+                  || event->key() == Qt::Key_Return
+                  || event->key() == Qt::Key_Enter))
+    {
+        m_focusVisible = true;
+        update();
+    }
+    QToolButton::keyPressEvent(event);
+}
+
+void AntToolButton::focusInEvent(QFocusEvent* event)
+{
+    const Qt::FocusReason reason = event ? event->reason() : Qt::OtherFocusReason;
+    m_focusVisible = reason == Qt::TabFocusReason
+        || reason == Qt::BacktabFocusReason
+        || reason == Qt::ShortcutFocusReason;
+    syncAntToolTip();
+    update();
+    QToolButton::focusInEvent(event);
+}
+
+void AntToolButton::focusOutEvent(QFocusEvent* event)
+{
+    if (m_antToolTip)
+    {
+        m_antToolTip->hideTooltip();
+    }
+    m_focusVisible = false;
+    update();
+    QToolButton::focusOutEvent(event);
 }
 
 void AntToolButton::changeEvent(QEvent* event)
 {
-    if (event->type() == QEvent::EnabledChange || event->type() == QEvent::FontChange)
+    if (event && (event->type() == QEvent::EnabledChange
+                  || event->type() == QEvent::FontChange
+                  || event->type() == QEvent::ToolTipChange))
     {
+        if (event->type() == QEvent::EnabledChange)
+        {
+            updateCursorState();
+        }
+        if (event->type() == QEvent::ToolTipChange)
+        {
+            syncAntToolTip();
+        }
         updateGeometryFromState();
         update();
     }
@@ -182,13 +328,24 @@ void AntToolButton::changeEvent(QEvent* event)
 void AntToolButton::showEvent(QShowEvent* event)
 {
     QToolButton::showEvent(event);
+    syncAntToolTip();
     updateSpinnerTimer();
 }
 
 void AntToolButton::hideEvent(QHideEvent* event)
 {
     QToolButton::hideEvent(event);
+    if (m_antToolTip)
+    {
+        m_antToolTip->hideTooltip();
+    }
     updateSpinnerTimer();
+}
+
+bool AntToolButton::hitButton(const QPoint& pos) const
+{
+    const int focusPadding = focusPaddingForToolButton();
+    return rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding).contains(pos);
 }
 
 AntToolButton::Metrics AntToolButton::metrics() const
@@ -200,16 +357,16 @@ AntToolButton::Metrics AntToolButton::metrics() const
     case Ant::Size::Large:
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
-        m.paddingX = token.padding;
+        m.paddingX = token.padding - token.lineWidth;
         m.radius = token.borderRadiusLG;
         m.iconSize = 16;
         break;
     case Ant::Size::Small:
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSize;
-        m.paddingX = token.paddingXS;
+        m.paddingX = token.paddingXS - token.lineWidth;
         m.radius = token.borderRadiusSM;
-        m.iconSize = 12;
+        m.iconSize = 14;
         break;
     case Ant::Size::Middle:
         m.height = token.controlHeight;
@@ -227,6 +384,47 @@ int AntToolButton::cornerRadius(const Metrics& m) const
     return m.radius;
 }
 
+QRectF AntToolButton::contentRect(const Metrics& metrics) const
+{
+    const int focusPadding = focusPaddingForToolButton();
+    const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
+    return bodyRect.adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
+}
+
+QColor AntToolButton::waveColor() const
+{
+    const auto& token = antTheme->tokens();
+    const bool hovered = m_hovered || underMouse();
+    const QColor accent = m_danger ? token.colorError : token.colorPrimary;
+    const QColor accentHover = m_danger ? token.colorErrorHover : token.colorPrimaryHover;
+
+    if (m_buttonType == Ant::ButtonType::Primary)
+    {
+        return hovered ? accentHover : accent;
+    }
+    if (m_buttonType == Ant::ButtonType::Default || m_buttonType == Ant::ButtonType::Dashed)
+    {
+        if (m_danger)
+        {
+            return hovered ? token.colorErrorHover : token.colorError;
+        }
+        return hovered ? token.colorPrimaryHover : token.colorBorder;
+    }
+
+    return hovered ? accentHover : accent;
+}
+
+void AntToolButton::updateCursorState()
+{
+    if (!isEnabled())
+    {
+        setCursor(Qt::ForbiddenCursor);
+        return;
+    }
+
+    setCursor(m_loading ? Qt::ArrowCursor : Qt::PointingHandCursor);
+}
+
 void AntToolButton::updateGeometryFromState(bool notifyGeometry)
 {
     const Metrics m = metrics();
@@ -236,8 +434,10 @@ void AntToolButton::updateGeometryFromState(bool notifyGeometry)
     {
         setFont(f);
     }
-    setMinimumHeight(m.height);
-    setMaximumHeight(m.height);
+    const int totalHeight = m.height + focusPaddingForToolButton() * 2;
+    setMinimumHeight(totalHeight);
+    setMaximumHeight(totalHeight);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     if (notifyGeometry)
     {
         updateGeometry();
@@ -252,22 +452,26 @@ QRect AntToolButton::spinnerIndicatorRect() const
     }
 
     const Metrics m = metrics();
-    QRectF contentRect = QRectF(rect()).adjusted(m.paddingX, 0, -m.paddingX, 0);
-    if (!icon().isNull())
+    const int focusPadding = focusPaddingForToolButton();
+    const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
+    if (!bodyRect.isValid())
     {
-        contentRect.adjust(m.iconSize + 6, 0, 0, 0);
+        return {};
     }
+
+    QRectF textArea = contentRect(m);
     if (menu() || popupMode() == QToolButton::MenuButtonPopup)
     {
         const qreal arrowW = m.arrowSize + 8;
-        contentRect.adjust(0, 0, -(arrowW + 2), 0);
+        textArea.adjust(0, 0, -(arrowW + 2), 0);
     }
 
-    const QRectF spinnerRect(contentRect.left(),
-                             contentRect.center().y() - m.iconSize / 2.0,
-                             m.iconSize,
-                             m.iconSize);
-    return spinnerRect.toAlignedRect().adjusted(-3, -3, 3, 3).intersected(rect());
+    const QRectF body(bodyRect);
+    const bool spinnerOnly = text().isEmpty();
+    const QRectF spinnerRect = spinnerOnly
+        ? QRectF(body.center().x() - m.iconSize / 2.0, body.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize)
+        : QRectF(textArea.left(), textArea.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
+    return spinnerRect.toAlignedRect().adjusted(-4, -4, 4, 4).intersected(rect());
 }
 
 QRect AntToolButton::arrowIndicatorRect() const
@@ -278,18 +482,13 @@ QRect AntToolButton::arrowIndicatorRect() const
     }
 
     const Metrics m = metrics();
-    QRectF contentRect = QRectF(rect()).adjusted(m.paddingX, 0, -m.paddingX, 0);
-    if (!icon().isNull())
-    {
-        contentRect.adjust(m.iconSize + 6, 0, 0, 0);
-    }
-
+    QRectF content = contentRect(m);
     const qreal arrowW = m.arrowSize + 8;
-    const QRectF arrowRect(contentRect.right() - arrowW,
-                           contentRect.center().y() - m.arrowSize / 2.0,
+    const QRectF arrowRect(content.right() - arrowW,
+                           content.center().y() - m.arrowSize / 2.0,
                            m.arrowSize,
                            m.arrowSize);
-    return arrowRect.toAlignedRect().adjusted(-3, -3, 3, 3).intersected(rect());
+    return arrowRect.toAlignedRect().adjusted(-4, -4, 4, 4).intersected(rect());
 }
 
 void AntToolButton::updateSpinnerRegion()
@@ -323,13 +522,54 @@ void AntToolButton::updateSpinnerTimer()
 
     if (shouldRun)
     {
-        m_spinnerTimer->start(80);
+        m_spinnerTimer->start(16);
     }
     else
     {
         m_spinnerTimer->stop();
     }
     syncToolButtonPerfCounters();
+}
+
+QString AntToolButton::effectiveToolTipText() const
+{
+    const QString ownToolTip = toolTip().trimmed();
+    if (!ownToolTip.isEmpty())
+    {
+        return ownToolTip;
+    }
+
+    const QAction* action = defaultAction();
+    if (!action)
+    {
+        return {};
+    }
+
+    const QString actionToolTip = action->toolTip().trimmed();
+    if (!actionToolTip.isEmpty())
+    {
+        return actionToolTip;
+    }
+
+    const QString statusTip = action->statusTip().trimmed();
+    if (!statusTip.isEmpty())
+    {
+        return statusTip;
+    }
+
+    return cleanActionTextForToolButton(action->text());
+}
+
+void AntToolButton::syncAntToolTip()
+{
+    if (!m_antToolTip)
+    {
+        return;
+    }
+
+    const QString text = effectiveToolTipText();
+    m_antToolTip->setTitle(text);
+    setProperty("antToolButtonToolTipText", text);
 }
 
 void AntToolButton::syncToolButtonPerfCounters() const
@@ -344,4 +584,9 @@ void AntToolButton::syncToolButtonPerfCounters() const
 int AntToolButton::spinnerAngle() const
 {
     return m_spinnerAngle;
+}
+
+bool AntToolButton::isFocusVisibleState() const
+{
+    return m_focusVisible;
 }

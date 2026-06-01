@@ -14,7 +14,6 @@
 #include <QMouseEvent>
 #include <QMoveEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QPixmap>
 #include <QPointer>
 #include <QRegion>
@@ -32,6 +31,7 @@
 #include "../styles/AntWindowStyle.h"
 #include "AntModal.h"
 #include "AntRibbon.h"
+#include "AntWindowFrame.h"
 #include "core/AntTheme.h"
 
 #ifdef Q_OS_WIN
@@ -54,8 +54,6 @@ constexpr int kThemeTransitionFrameIntervalMs = 16;
 constexpr int kThemeTransitionDurationMs = 220;
 constexpr int kThemeTransitionEdgeFeather = 16;
 constexpr auto kLegacySoftwareShadowObjectName = "AntWindowLegacySoftwareShadow";
-constexpr int kLegacySoftwareShadowMargin = 14;
-constexpr int kLegacySoftwareShadowInnerClearance = 0;
 
 int titleBarButtonIndex(AntWindow::TitleBarButton button)
 {
@@ -147,10 +145,6 @@ bool makeAntWindowNativeInputTransparent(QWidget* widget,
     return true;
 }
 
-void makeAntWindowShadowClickThrough(QWidget* widget)
-{
-    makeAntWindowNativeInputTransparent(widget, "antWindowLegacySoftwareShadowClickThrough");
-}
 #endif
 
 class AntWindowThemeTransitionOverlay : public QWidget
@@ -367,113 +361,6 @@ private:
     int m_radius = 0;
 };
 
-class AntWindowLegacySoftwareShadow : public QWidget
-{
-public:
-    explicit AntWindowLegacySoftwareShadow(QWidget* owner)
-        : QWidget(owner, Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint | Qt::WindowDoesNotAcceptFocus)
-    {
-        setObjectName(QString::fromLatin1(kLegacySoftwareShadowObjectName));
-        setAttribute(Qt::WA_TranslucentBackground, true);
-        setAttribute(Qt::WA_NoSystemBackground, true);
-        setAttribute(Qt::WA_TransparentForMouseEvents, true);
-        setAttribute(Qt::WA_ShowWithoutActivating, true);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
-        setWindowFlag(Qt::WindowTransparentForInput, true);
-#endif
-        setFocusPolicy(Qt::NoFocus);
-        setProperty("shadowMargin", kLegacySoftwareShadowMargin);
-        setProperty("shadowInnerClearance", kLegacySoftwareShadowInnerClearance);
-#if defined(Q_OS_WIN)
-        setProperty("antWindowLegacySoftwareShadowClickThrough", false);
-#endif
-    }
-
-    void setCornerRadius(int radius)
-    {
-        m_cornerRadius = qMax(0, radius);
-        update();
-    }
-
-protected:
-#if defined(Q_OS_WIN)
-    void showEvent(QShowEvent* event) override
-    {
-        QWidget::showEvent(event);
-        makeAntWindowShadowClickThrough(this);
-    }
-
-    bool nativeEvent(const QByteArray& eventType, void* message, AntNativeEventResult* result) override
-    {
-        if ((eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") && message)
-        {
-            auto* msg = static_cast<MSG*>(message);
-            if (msg->message == WM_NCHITTEST)
-            {
-                *result = HTTRANSPARENT;
-                setProperty("antWindowLegacySoftwareShadowClickThrough", true);
-                return true;
-            }
-        }
-        return QWidget::nativeEvent(eventType, message, result);
-    }
-#endif
-
-    void paintEvent(QPaintEvent*) override
-    {
-        QPainter painter(this);
-        painter.setCompositionMode(QPainter::CompositionMode_Source);
-        painter.fillRect(rect(), Qt::transparent);
-        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        painter.setRenderHint(QPainter::Antialiasing, true);
-
-        const int shadowWidth = kLegacySoftwareShadowMargin;
-        const QRectF panelRect = QRectF(rect()).adjusted(shadowWidth,
-                                                        shadowWidth,
-                                                        -shadowWidth,
-                                                        -shadowWidth);
-        if (panelRect.isEmpty())
-        {
-            return;
-        }
-
-        QColor shadowBase = antTheme->tokens().colorShadow;
-        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.046 : 0.032;
-        const qreal effectiveSpread = qMax<qreal>(1.0, shadowWidth - kLegacySoftwareShadowInnerClearance);
-        for (int distance = shadowWidth; distance > kLegacySoftwareShadowInnerClearance; --distance)
-        {
-            const qreal t = qBound<qreal>(0.0,
-                                          1.0 - static_cast<qreal>(distance - kLegacySoftwareShadowInnerClearance - 1) / effectiveSpread,
-                                          1.0);
-            const qreal eased = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
-            const qreal opacity = qBound<qreal>(0.0, maxOpacity * eased, 0.22);
-            if (opacity <= 0.0)
-            {
-                continue;
-            }
-
-            QColor shadow = shadowBase;
-            shadow.setAlphaF(opacity);
-
-            const qreal radiusGrowth = static_cast<qreal>(distance) * 0.55;
-            QPainterPath outerPath;
-            const QRectF outer = panelRect.adjusted(-distance, -distance, distance, distance);
-            outerPath.addRoundedRect(outer, m_cornerRadius + radiusGrowth, m_cornerRadius + radiusGrowth);
-
-            QPainterPath innerPath;
-            const int innerDistance = qMax(kLegacySoftwareShadowInnerClearance, distance - 1);
-            const qreal innerRadiusGrowth = static_cast<qreal>(innerDistance) * 0.55;
-            const QRectF inner = panelRect.adjusted(-innerDistance, -innerDistance, innerDistance, innerDistance);
-            innerPath.addRoundedRect(inner, m_cornerRadius + innerRadiusGrowth, m_cornerRadius + innerRadiusGrowth);
-
-            painter.fillPath(outerPath.subtracted(innerPath), shadow);
-        }
-    }
-
-private:
-    int m_cornerRadius = 8;
-};
-
 #ifdef Q_OS_WIN
 using GetDpiForWindowFn = UINT(WINAPI*)(HWND);
 using GetSystemMetricsForDpiFn = int(WINAPI*)(int, UINT);
@@ -490,17 +377,6 @@ struct DwmMargins
 using DwmExtendFrameIntoClientAreaFn = HRESULT(WINAPI*)(HWND, const DwmMargins*);
 using RtlGetVersionFn = LONG(WINAPI*)(OSVERSIONINFOW*);
 
-constexpr DWORD kDwmUseImmersiveDarkMode = 20;
-constexpr DWORD kDwmWindowCornerPreference = 33;
-constexpr DWORD kDwmBorderColor = 34;
-// DWM border-color sentinel meaning "no border color" (DWMWA_COLOR_NONE).
-// Used to suppress the gray Win10 native resize-frame outline that DWM
-// draws around `WS_THICKFRAME` windows when the AntWindow takes the
-// no-translucent-background opaque path.
-constexpr COLORREF kDwmBorderColorNone = 0xFFFFFFFEu;
-constexpr int kDwmCornerDoNotRound = 1;
-constexpr int kDwmCornerRound = 2;
-constexpr int kDwmCornerRoundSmall = 3;
 constexpr int kLegacyRoundedMaskFrameInset = 1;
 constexpr auto kForceLegacyFramePolicyProperty = "antWindowForceLegacyFramePolicy";
 constexpr auto kUsesNativeCaptionFrameProperty = "antWindowUsesNativeCaptionFrame";
@@ -580,8 +456,7 @@ bool supportsNativeCaptionSnapLayouts()
 
 bool usesNativeCaptionFrameForWidget(const QWidget* widget)
 {
-    const bool forceLegacyFrame = widget && widget->property(kForceLegacyFramePolicyProperty).toBool();
-    return supportsNativeCaptionSnapLayouts() && !forceLegacyFrame;
+    return AntWindowFrame::usesNativeCaptionFrameForWidget(widget, kForceLegacyFramePolicyProperty);
 }
 
 DwmMargins shadowPreservingDwmMargins(bool useNativeCaption)
@@ -761,62 +636,6 @@ void queueLegacyDwmFrameRefresh(QWidget* widget, const char* reason)
         const HWND hwnd = reinterpret_cast<HWND>(guard->winId());
         reapplyDwmFrameMargins(guard.data(), hwnd, false, reason);
     });
-}
-
-void triggerFrameChange(HWND hwnd)
-{
-    ::SetWindowPos(hwnd,
-                   nullptr,
-                   0,
-                   0,
-                   0,
-                   0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-}
-
-void ensureNativeWindowStyle(HWND hwnd, bool useNativeCaption)
-{
-    LONG_PTR style = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
-    const LONG_PTR baseStyle = WS_THICKFRAME | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU;
-    LONG_PTR newStyle = style | baseStyle;
-    if (useNativeCaption)
-    {
-        newStyle |= WS_CAPTION;
-    }
-    else
-    {
-        newStyle &= ~WS_CAPTION;
-    }
-    if (newStyle == style)
-    {
-        return;
-    }
-
-    ::SetWindowLongPtrW(hwnd, GWL_STYLE, newStyle);
-    triggerFrameChange(hwnd);
-}
-
-void applyLegacyClassDropShadow(QWidget* widget, HWND hwnd, bool useNativeCaption)
-{
-    if (!widget)
-    {
-        return;
-    }
-
-    if (!hwnd)
-    {
-        widget->setProperty(kLegacyClassDropShadowEnabledProperty, false);
-        return;
-    }
-
-    const LONG_PTR classStyle = ::GetClassLongPtrW(hwnd, GCL_STYLE);
-    const LONG_PTR newClassStyle = useNativeCaption ? classStyle : (classStyle & ~static_cast<LONG_PTR>(CS_DROPSHADOW));
-    if (newClassStyle != classStyle)
-    {
-        ::SetClassLongPtrW(hwnd, GCL_STYLE, newClassStyle);
-    }
-    widget->setProperty(kLegacyClassDropShadowEnabledProperty,
-                        (::GetClassLongPtrW(hwnd, GCL_STYLE) & CS_DROPSHADOW) == CS_DROPSHADOW);
 }
 
 void applyLegacyRoundedMask(QWidget* widget, int radius)
@@ -2685,75 +2504,23 @@ void AntWindow::applyNativeWindowFrame()
         return;
     }
 
-    const bool useNativeCaption = usesNativeCaptionFrameForWidget(this);
-    ensureNativeWindowStyle(hwnd, useNativeCaption);
-    applyLegacyClassDropShadow(this, hwnd, useNativeCaption);
-    applyLegacyRoundedMask(this, m_cornerRadius);
-    setProperty(kUsesNativeCaptionFrameProperty, useNativeCaption);
-
-    DwmSetWindowAttributeFn setWindowAttribute = nullptr;
-    DwmExtendFrameIntoClientAreaFn extendFrame = nullptr;
-    if (!resolveDwmApis(&setWindowAttribute, &extendFrame))
-    {
-        return;
-    }
-
-    if (extendFrame)
-    {
-        applyDwmFrameMargins(this, hwnd, useNativeCaption, extendFrame, "frame");
-    }
-
-    if (!setWindowAttribute)
-    {
-        return;
-    }
-
-    if (useNativeCaption)
-    {
-        const int cornerPreference = [this]() {
-            if (isMaximized() || isFullScreen())
-            {
-                return kDwmCornerDoNotRound;
-            }
-            if (m_cornerRadius <= 0)
-            {
-                return kDwmCornerDoNotRound;
-            }
-            if (m_cornerRadius <= 6)
-            {
-                return kDwmCornerRoundSmall;
-            }
-            return kDwmCornerRound;
-        }();
-        setWindowAttribute(hwnd,
-                           kDwmWindowCornerPreference,
-                           &cornerPreference,
-                           sizeof(cornerPreference));
-    }
-
-    const auto& token = antTheme->tokens();
-    // On the Win10 opaque path the window keeps WS_THICKFRAME without
-    // WS_CAPTION. DWM draws its own border around that frame, and a non-
-    // sentinel color produces a visible gray outline at the four edges
-    // (Windows' default "you can resize me here" cue). We don't want that
-    // chrome around a frameless Ant-styled window, so explicitly pass
-    // DWMWA_COLOR_NONE to suppress the DWM-drawn border. On the Win11
-    // caption path the DWM border is intentional - it forms the rounded
-    // outline that matches the native frame radius - so keep using the
-    // token border color there.
-    if (m_useTranslucentBackground)
-    {
-        const COLORREF borderColor = RGB(token.colorBorder.red(), token.colorBorder.green(), token.colorBorder.blue());
-        setWindowAttribute(hwnd, kDwmBorderColor, &borderColor, sizeof(borderColor));
-    }
-    else
-    {
-        const COLORREF noBorder = kDwmBorderColorNone;
-        setWindowAttribute(hwnd, kDwmBorderColor, &noBorder, sizeof(noBorder));
-    }
-
-    const BOOL darkMode = antTheme->themeMode() == Ant::ThemeMode::Dark;
-    setWindowAttribute(hwnd, kDwmUseImmersiveDarkMode, &darkMode, sizeof(darkMode));
+    AntWindowFrame::NativeFrameOptions frameOptions;
+    frameOptions.forceLegacyFramePolicyProperty = kForceLegacyFramePolicyProperty;
+    frameOptions.usesNativeCaptionFrameProperty = kUsesNativeCaptionFrameProperty;
+    frameOptions.dwmFrameMarginsProperty = kDwmFrameMarginsProperty;
+    frameOptions.dwmFrameApplyCountProperty = kDwmFrameApplyCountProperty;
+    frameOptions.dwmFrameLastReasonProperty = kDwmFrameLastReasonProperty;
+    frameOptions.legacyRoundedMaskAppliedProperty = kLegacyRoundedMaskAppliedProperty;
+    frameOptions.legacyRoundedMaskFrameInsetProperty = kLegacyRoundedMaskFrameInsetProperty;
+    frameOptions.legacyClassDropShadowEnabledProperty = kLegacyClassDropShadowEnabledProperty;
+    frameOptions.cornerRadius = m_cornerRadius;
+    frameOptions.translucentBackground = m_useTranslucentBackground;
+    frameOptions.maximized = isMaximized();
+    frameOptions.fullScreen = isFullScreen();
+    frameOptions.enableNativeCaption = true;
+    frameOptions.enableMinimizeBox = true;
+    frameOptions.enableMaximizeBox = true;
+    AntWindowFrame::applyNativeFrame(this, frameOptions);
 #else
     update();
 #endif
@@ -2769,87 +2536,22 @@ void AntWindow::updateLegacySoftwareShadow()
         && !isFullScreen()
         && !isMinimized();
 
-    setProperty("antWindowLegacySoftwareShadowEnabled", enabled);
-    setProperty("antWindowLegacySoftwareShadowMargin", kLegacySoftwareShadowMargin);
-    setProperty("antWindowLegacySoftwareShadowInnerClearance", kLegacySoftwareShadowInnerClearance);
-
-    if (!enabled)
-    {
-        hideLegacySoftwareShadow();
-        return;
-    }
-
-    if (!m_legacySoftwareShadow)
-    {
-        auto* shadow = new AntWindowLegacySoftwareShadow(this);
-        m_legacySoftwareShadow = shadow;
-        connect(antTheme, &AntTheme::themeChanged, shadow, qOverload<>(&QWidget::update));
-    }
-
-    auto* shadow = static_cast<AntWindowLegacySoftwareShadow*>(m_legacySoftwareShadow);
-    if (shadow)
-    {
-        // On the Win10 opaque path the window itself is drawn with square
-        // corners (see AntWindowStyle::drawWindow), so the shadow must wrap
-        // a square panel too - otherwise the shadow's rounded inner cutout
-        // would leave four visible quarter-circle bites at the corners.
-        shadow->setCornerRadius(m_useTranslucentBackground ? m_cornerRadius : 0);
-    }
-
-    // Pin the shadow HWND to the same QScreen as the host window so its
-    // backing-store DPR tracks the host across monitors with different
-    // scaling. Without this the shadow keeps the DPR of whichever screen it
-    // was created on, which makes the rasterised shadow drift away from the
-    // window outline when crossing scale boundaries.
-    if (QWindow* shadowWindow = m_legacySoftwareShadow->windowHandle())
-    {
-        if (QScreen* hostScreen = windowHandle() ? windowHandle()->screen() : nullptr)
-        {
-            if (shadowWindow->screen() != hostScreen)
-            {
-                shadowWindow->setScreen(hostScreen);
-            }
-        }
-    }
-
-    const QRect shadowGeometry = geometry().adjusted(-kLegacySoftwareShadowMargin,
-                                                     -kLegacySoftwareShadowMargin,
-                                                     kLegacySoftwareShadowMargin,
-                                                     kLegacySoftwareShadowMargin);
-    m_legacySoftwareShadow->setGeometry(shadowGeometry);
-    setProperty("antWindowLegacySoftwareShadowGeometry", shadowGeometry);
-    setProperty("antWindowLegacySoftwareShadowGeometryMode", QStringLiteral("qt-logical"));
-    m_legacySoftwareShadow->setProperty("antWindowLegacySoftwareShadowGeometry", shadowGeometry);
-    m_legacySoftwareShadow->setProperty("antWindowLegacySoftwareShadowGeometryMode", QStringLiteral("qt-logical"));
-    if (!m_legacySoftwareShadow->isVisible())
-    {
-        m_legacySoftwareShadow->show();
-    }
-    m_legacySoftwareShadow->setProperty("antWindowLegacySoftwareShadowDevicePixelRatio",
-                                        m_legacySoftwareShadow->devicePixelRatioF());
-
-    const HWND hwnd = reinterpret_cast<HWND>(winId());
-    const HWND shadowHwnd = reinterpret_cast<HWND>(m_legacySoftwareShadow->winId());
-    if (shadowHwnd && hwnd)
-    {
-        makeAntWindowShadowClickThrough(m_legacySoftwareShadow);
-        // QWidget::geometry() is expressed in Qt logical pixels while
-        // SetWindowPos() consumes native physical pixels on per-monitor-DPI
-        // Windows. Let Qt own the move/size conversion above, and only use the
-        // native call to keep the shadow directly behind the owner without
-        // reintroducing a scale-dependent offset at 125%/150% DPI.
-        ::SetWindowPos(shadowHwnd,
-                       hwnd,
-                       0,
-                       0,
-                       0,
-                       0,
-                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
-    }
-    else
-    {
-        m_legacySoftwareShadow->show();
-    }
+    // On the Win10 opaque path the window itself is drawn with square
+    // corners (see AntWindowStyle::drawWindow), so the shadow must wrap
+    // a square panel too - otherwise the shadow's rounded inner cutout
+    // would leave four visible quarter-circle bites at the corners.
+    AntWindowFrame::updateLegacySoftwareShadow(this,
+                                               m_legacySoftwareShadow,
+                                               QString::fromLatin1(kLegacySoftwareShadowObjectName),
+                                               "antWindowLegacySoftwareShadowEnabled",
+                                               "antWindowLegacySoftwareShadowMargin",
+                                               "antWindowLegacySoftwareShadowInnerClearance",
+                                               "antWindowLegacySoftwareShadowGeometry",
+                                               "antWindowLegacySoftwareShadowGeometryMode",
+                                               "antWindowLegacySoftwareShadowDevicePixelRatio",
+                                               "antWindowLegacySoftwareShadowClickThrough",
+                                               enabled,
+                                               m_useTranslucentBackground ? m_cornerRadius : 0);
 #else
     hideLegacySoftwareShadow();
 #endif
@@ -2857,27 +2559,10 @@ void AntWindow::updateLegacySoftwareShadow()
 
 void AntWindow::hideLegacySoftwareShadow()
 {
-    setProperty("antWindowLegacySoftwareShadowEnabled", false);
-    if (m_legacySoftwareShadow)
-    {
-#ifdef Q_OS_WIN
-        if (const WId shadowId = m_legacySoftwareShadow->internalWinId())
-        {
-            HWND shadowHwnd = reinterpret_cast<HWND>(shadowId);
-            makeAntWindowShadowClickThrough(m_legacySoftwareShadow);
-            ::ShowWindow(shadowHwnd, SW_HIDE);
-            ::SetWindowPos(shadowHwnd,
-                           nullptr,
-                           0,
-                           0,
-                           0,
-                           0,
-                           SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
-                               SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
-        }
-#endif
-        m_legacySoftwareShadow->hide();
-    }
+    AntWindowFrame::hideLegacySoftwareShadow(this,
+                                             m_legacySoftwareShadow,
+                                             "antWindowLegacySoftwareShadowEnabled",
+                                             "antWindowLegacySoftwareShadowClickThrough");
 }
 
 void AntWindow::updateCornerSmoother()

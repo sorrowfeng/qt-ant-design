@@ -8,7 +8,7 @@
 #include <QVector>
 #include <QWidget>
 
-class QPlainTextEdit;
+class AntPlainTextEdit;
 class QTimer;
 
 class QT_ANT_DESIGN_EXPORT AntLog : public QWidget
@@ -59,7 +59,7 @@ private:
     QTextCharFormat formatForLevel(Level level) const;
     void updateDiagnostics(int trimmedCount = 0);
 
-    QPlainTextEdit* m_view = nullptr;
+    AntPlainTextEdit* m_view = nullptr;
     QTimer* m_appendFlushTimer = nullptr;
     QVector<Entry> m_entries;
     QVector<QTextCharFormat> m_levelFormats;

@@ -10,6 +10,7 @@
 
 #include "core/AntTypes.h"
 
+class AntToolTip;
 class QEvent;
 class QMouseEvent;
 class QWheelEvent;
@@ -151,6 +152,8 @@ private:
     int rowAtPos(const QPoint& pos) const;
     QRect tableBodyRect() const;
     QRect rowUpdateRect(int displayIndex) const;
+    void showRowToolTip(int displayIndex, const QString& text);
+    void hideRowToolTip();
     void updateRow(int displayIndex);
     void updateRows(int firstDisplayIndex, int secondDisplayIndex);
     QString columnKeyAtPos(const QPoint& pos) const;
@@ -189,4 +192,7 @@ private:
     int m_hoveredRow = -1;
     QString m_pressedColumn;
     int m_pressedPageButton = -1;
+    QWidget* m_rowToolTipTarget = nullptr;
+    AntToolTip* m_rowToolTip = nullptr;
+    int m_toolTipDisplayRow = -1;
 };

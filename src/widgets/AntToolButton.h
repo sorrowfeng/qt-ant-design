@@ -2,14 +2,22 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QColor>
+#include <QRectF>
 #include <QToolButton>
 
 #include "core/AntTypes.h"
 
 class AntMenu;
+class AntToolTip;
+class QActionEvent;
+class QEvent;
+class QFocusEvent;
 class QHideEvent;
+class QKeyEvent;
 class QPropertyAnimation;
 class QShowEvent;
+class QTimer;
 
 class QT_ANT_DESIGN_EXPORT AntToolButton : public QToolButton
 {
@@ -43,6 +51,7 @@ public:
     QSize minimumSizeHint() const override;
 
     int spinnerAngle() const;
+    bool isFocusVisibleState() const;
 
 Q_SIGNALS:
     void buttonTypeChanged(Ant::ButtonType type);
@@ -52,13 +61,19 @@ Q_SIGNALS:
     void arrowRotationChanged(qreal rotation);
 
 protected:
+    bool event(QEvent* event) override;
+    void actionEvent(QActionEvent* event) override;
     void enterEvent(AntEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void focusInEvent(QFocusEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
     void changeEvent(QEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
+    bool hitButton(const QPoint& pos) const override;
 
 private:
     struct Metrics
@@ -72,6 +87,9 @@ private:
     };
     Metrics metrics() const;
     int cornerRadius(const Metrics& m) const;
+    QRectF contentRect(const Metrics& metrics) const;
+    QColor waveColor() const;
+    void updateCursorState();
     void updateGeometryFromState(bool notifyGeometry = true);
     QRect spinnerIndicatorRect() const;
     QRect arrowIndicatorRect() const;
@@ -79,6 +97,8 @@ private:
     void updateArrowRegion();
     void updateIndicatorRegion(const QRect& rect, int& counter);
     void updateSpinnerTimer();
+    QString effectiveToolTipText() const;
+    void syncAntToolTip();
     void syncToolButtonPerfCounters() const;
 
     Ant::ButtonType m_buttonType = Ant::ButtonType::Default;
@@ -87,10 +107,12 @@ private:
     bool m_loading = false;
     bool m_hovered = false;
     bool m_pressed = false;
+    bool m_focusVisible = false;
     qreal m_arrowRotation = 0.0;
     int m_spinnerAngle = 0;
     QTimer* m_spinnerTimer = nullptr;
     QPropertyAnimation* m_arrowAnimation = nullptr;
+    AntToolTip* m_antToolTip = nullptr;
     int m_spinnerRegionUpdateCount = 0;
     int m_arrowRegionUpdateCount = 0;
 };

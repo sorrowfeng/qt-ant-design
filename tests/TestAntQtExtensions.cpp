@@ -70,6 +70,7 @@
 #include "widgets/AntSwitch.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntModal.h"
+#include "widgets/AntToolTip.h"
 #include "widgets/AntToolButton.h"
 #include "widgets/AntToolBar.h"
 #include "widgets/AntMenu.h"
@@ -81,6 +82,7 @@
 #include "widgets/AntTypography.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntSelect.h"
+#include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntWidget.h"
@@ -1042,7 +1044,7 @@ void TestAntQtExtensions::log()
     auto* w = new AntLog;
     QCOMPARE(w->maxEntries(), 5000);
     QCOMPARE(w->autoScroll(), true);
-    auto* view = w->findChild<QPlainTextEdit*>();
+    auto* view = w->findChild<AntPlainTextEdit*>();
     QVERIFY(view != nullptr);
     QCOMPARE(view->palette().color(QPalette::Base), antTheme->tokens().colorFillQuaternary);
     QCOMPARE(w->property("antLogThemeApplyCount").toInt(), 1);
@@ -1518,6 +1520,12 @@ void TestAntQtExtensions::toolButton()
     QCOMPARE(w->isDanger(), false);
     QCOMPARE(w->isLoading(), false);
     QCOMPARE(w->arrowRotation(), 0.0);
+    auto* buttonToolTip = w->findChild<AntToolTip*>(QStringLiteral("AntToolButtonToolTip"),
+                                                    Qt::FindDirectChildrenOnly);
+    QVERIFY(buttonToolTip != nullptr);
+    w->setToolTip(QStringLiteral("Tool button hint"));
+    QCOMPARE(buttonToolTip->title(), QStringLiteral("Tool button hint"));
+    QCOMPARE(w->property("antToolButtonToolTipText").toString(), QStringLiteral("Tool button hint"));
 
     QSignalSpy typeSpy(w, &AntToolButton::buttonTypeChanged);
     w->setButtonType(Ant::ButtonType::Primary);
@@ -1579,12 +1587,22 @@ void TestAntQtExtensions::toolButton()
 
     auto* w2 = new AntToolButton("Click");
     QCOMPARE(w2->text(), "Click");
+    AntButton referenceButton(QStringLiteral("Click"));
+    QCOMPARE(w2->sizeHint(), referenceButton.sizeHint());
+    w2->setButtonSize(Ant::Size::Small);
+    referenceButton.setButtonSize(Ant::Size::Small);
+    QCOMPARE(w2->sizeHint(), referenceButton.sizeHint());
 
     auto* actionButton = new AntToolButton;
     auto* runAction = new QAction(QStringLiteral("Run"), actionButton);
+    runAction->setToolTip(QStringLiteral("Run action"));
     actionButton->setDefaultAction(runAction);
     QCOMPARE(actionButton->defaultAction(), runAction);
     QCOMPARE(actionButton->text(), QStringLiteral("Run"));
+    auto* actionButtonToolTip = actionButton->findChild<AntToolTip*>(QStringLiteral("AntToolButtonToolTip"),
+                                                                      Qt::FindDirectChildrenOnly);
+    QVERIFY(actionButtonToolTip != nullptr);
+    QCOMPARE(actionButtonToolTip->title(), QStringLiteral("Run action"));
     QSignalSpy runSpy(runAction, &QAction::triggered);
     actionButton->resize(actionButton->sizeHint());
     QTest::mouseClick(actionButton, Qt::LeftButton, Qt::NoModifier, actionButton->rect().center());
@@ -1603,6 +1621,15 @@ void TestAntQtExtensions::toolBar()
     QSignalSpy actionSpy(action, &QAction::triggered);
     QTest::mouseClick(button, Qt::LeftButton, Qt::NoModifier, button->rect().center());
     QCOMPARE(actionSpy.count(), 1);
+    auto* actionToolTip = button->findChild<AntToolTip*>(QStringLiteral("AntToolBarActionToolTip"),
+                                                         Qt::FindDirectChildrenOnly);
+    QVERIFY(actionToolTip != nullptr);
+    QCOMPARE(actionToolTip->title(), QStringLiteral("New"));
+    QVERIFY(button->toolTip().isEmpty());
+    action->setToolTip(QStringLiteral("Create a new file"));
+    QCOMPARE(actionToolTip->title(), QStringLiteral("Create a new file"));
+    QCOMPARE(button->property("antToolBarActionToolTipText").toString(), QStringLiteral("Create a new file"));
+    QVERIFY(button->toolTip().isEmpty());
 
     const int scansAfterFirstAction = w->property("antToolBarButtonScanCount").toInt();
     const int syncsAfterFirstAction = w->property("antToolBarButtonSyncCount").toInt();
@@ -1683,8 +1710,25 @@ void TestAntQtExtensions::ribbon()
     QSignalSpy groupActionSpy(group, &AntRibbonGroup::actionTriggered);
     QSignalSpy ribbonActionSpy(ribbon, &AntRibbon::actionTriggered);
     auto* pasteAction = new QAction(QIcon(), QStringLiteral("Paste"), ribbon);
+    pasteAction->setToolTip(QStringLiteral("Paste from clipboard"));
     group->addLargeAction(pasteAction);
     group->addSmallAction(new QAction(QStringLiteral("Copy"), ribbon));
+    QToolButton* pasteButton = nullptr;
+    const auto ribbonButtons = group->findChildren<QToolButton*>();
+    for (QToolButton* button : ribbonButtons)
+    {
+        if (button->defaultAction() == pasteAction)
+        {
+            pasteButton = button;
+            break;
+        }
+    }
+    QVERIFY(pasteButton != nullptr);
+    auto* ribbonToolTip = pasteButton->findChild<AntToolTip*>(QStringLiteral("AntRibbonActionToolTip"),
+                                                              Qt::FindDirectChildrenOnly);
+    QVERIFY(ribbonToolTip != nullptr);
+    QCOMPARE(ribbonToolTip->title(), QStringLiteral("Paste from clipboard"));
+    QVERIFY(pasteButton->toolTip().isEmpty());
     auto* combo = new QComboBox;
     combo->addItem(QStringLiteral("Mode A"));
     group->addWidget(combo, Ant::RibbonItemSize::Small);
@@ -1942,6 +1986,7 @@ void TestAntQtExtensions::nav()
     ThemeModeRestorerForExtensionTest themeRestorer;
     qRegisterMetaType<QVector<int>>("QVector<int>");
     AntNav nav;
+    QVERIFY(nav.findChild<AntScrollArea*>() != nullptr);
     QSignalSpy currentSpy(&nav, &AntNav::currentIndexChanged);
     QSignalSpy textSpy(&nav, &AntNav::currentTextChanged);
     QSignalSpy dataSpy(&nav, &AntNav::currentDataChanged);
@@ -3895,8 +3940,7 @@ void TestAntQtExtensions::dialog()
     QCOMPARE(dialog.property("antDialogUsesRoundedCorners").toBool(), dialog.usesRoundedCorners());
     QCOMPARE(dialog.property("antDialogEffectiveCornerRadius").toInt(),
              dialog.usesRoundedCorners() ? dialog.cornerRadius() : 0);
-    QCOMPARE(dialog.property("antDialogShadowMargin").toInt(),
-             dialog.usesRoundedCorners() ? 14 : 0);
+    QCOMPARE(dialog.property("antDialogShadowMargin").toInt(), 0);
     QCOMPARE(dialog.titleBarRect().left(), dialog.property("antDialogShadowMargin").toInt());
     QCOMPARE(dialog.titleBarRect().top(), dialog.property("antDialogShadowMargin").toInt());
     QCOMPARE(dialog.titleBarCloseButtonRect().width(), AntDialog::TitleBarButtonWidth);
@@ -3974,32 +4018,20 @@ void TestAntQtExtensions::dialog()
 
     const QImage lightImage = renderForExtensionTest(&dialog);
     QVERIFY(!lightImage.isNull());
-    auto maxAlphaInRect = [](const QImage& image, const QRect& sampleRect) {
-        int maxAlpha = 0;
-        const QRect clipped = sampleRect.intersected(image.rect());
-        for (int y = clipped.top(); y <= clipped.bottom(); ++y)
-        {
-            for (int x = clipped.left(); x <= clipped.right(); ++x)
-            {
-                maxAlpha = qMax(maxAlpha, image.pixelColor(x, y).alpha());
-            }
-        }
-        return maxAlpha;
-    };
     const int shadowMargin = dialog.property("antDialogShadowMargin").toInt();
     const QColor lightCornerColor = lightImage.pixelColor(0, 0);
+    QCOMPARE(shadowMargin, 0);
+#ifdef Q_OS_WIN
+    QCOMPARE(dialog.property("antDialogUsesNativeCaptionFrame").toBool(), dialog.usesRoundedCorners());
+#endif
     if (dialog.usesRoundedCorners())
     {
         QVERIFY2(lightCornerColor.alpha() < 64,
                  qPrintable(QStringLiteral("AntDialog rounded path should leave transparent corner pixels, got %1")
                                 .arg(colorStringForExtensionTest(lightCornerColor))));
-        QCOMPARE(shadowMargin, 14);
-        QVERIFY(maxAlphaInRect(lightImage, QRect(shadowMargin, 0, lightImage.width() - shadowMargin * 2, shadowMargin)) > 0);
-        QVERIFY(maxAlphaInRect(lightImage, QRect(0, shadowMargin, shadowMargin, lightImage.height() - shadowMargin * 2)) > 0);
     }
     else
     {
-        QCOMPARE(shadowMargin, 0);
         QVERIFY2(lightCornerColor.alpha() >= 220,
                  qPrintable(QStringLiteral("AntDialog legacy path should keep opaque square corner pixels, got %1")
                                 .arg(colorStringForExtensionTest(lightCornerColor))));
@@ -4237,8 +4269,7 @@ void TestAntQtExtensions::fileDialog()
     QVERIFY(dialog.findChildren<QFileDialog*>().isEmpty());
     QVERIFY(dialog.testOption(QFileDialog::DontUseNativeDialog));
     QVERIFY(dialog.styleSheet().isEmpty());
-    QCOMPARE(dialog.property("antDialogShadowMargin").toInt(),
-             dialog.usesRoundedCorners() ? 14 : 0);
+    QCOMPARE(dialog.property("antDialogShadowMargin").toInt(), 0);
     const auto textBlocks = dialog.findChildren<AntTypography*>();
     for (AntTypography* textBlock : textBlocks)
     {
@@ -4254,7 +4285,9 @@ void TestAntQtExtensions::fileDialog()
     QVERIFY(placesPanel->sizePolicy().verticalPolicy() == QSizePolicy::Fixed);
     QVERIFY(placesPanel->maximumHeight() <= 32);
     const auto placeButtons = dialog.findChildren<AntButton*>(QStringLiteral("antFileDialogPlaceButton"));
+    const auto placeToolTips = dialog.findChildren<AntToolTip*>(QStringLiteral("antFileDialogPlaceTooltip"));
     QVERIFY(placeButtons.size() >= 3);
+    QCOMPARE(placeToolTips.size(), placeButtons.size());
     AntButton* homePlaceButton = nullptr;
     const QString homePath = QDir(QDir::homePath()).absolutePath();
     for (AntButton* button : placeButtons)
@@ -4267,7 +4300,21 @@ void TestAntQtExtensions::fileDialog()
         QVERIFY(!button->isBlock());
         QCOMPARE(button->width(), button->height());
         QVERIFY(button->height() <= 32);
-        QVERIFY(button->toolTip().contains(placeLabel));
+        const QString toolTipText = button->property("antFileDialogPlaceToolTipText").toString();
+        QVERIFY(toolTipText.contains(placeLabel));
+        QVERIFY(toolTipText.contains(QDir::toNativeSeparators(placePath)));
+        QVERIFY(button->toolTip().isEmpty());
+        AntToolTip* boundToolTip = nullptr;
+        for (AntToolTip* toolTip : placeToolTips)
+        {
+            if (toolTip->target() == button)
+            {
+                boundToolTip = toolTip;
+                break;
+            }
+        }
+        QVERIFY(boundToolTip != nullptr);
+        QCOMPARE(boundToolTip->title(), toolTipText);
         QVERIFY(QFileInfo(placePath).isDir());
         if (QDir(placePath).absolutePath() == homePath)
         {

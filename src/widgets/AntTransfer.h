@@ -7,7 +7,6 @@
 #include <QVector>
 #include <QWidget>
 
-class QListWidget;
 class AntButton;
 class QMouseEvent;
 class QPaintEvent;
@@ -80,15 +79,12 @@ private:
     void setScrollOffset(bool sourcePanel, int offset);
     void togglePanelSelection(bool sourcePanel);
     const QStringList& panelItems(bool sourcePanel) const;
-    void syncListWidget(bool sourcePanel);
     const PanelLayout& panelLayout(bool sourcePanel) const;
     void invalidatePanelLayout(bool sourcePanel) const;
     void invalidatePanelLayouts() const;
     void updateTransferRegion(const QRect& dirty, const QString& mode, bool rowScoped = false, bool panelScoped = false);
     void syncTransferPerfCounters() const;
 
-    QListWidget* m_sourceList = nullptr;
-    QListWidget* m_targetList = nullptr;
     AntButton* m_toTargetBtn = nullptr;
     AntButton* m_toSourceBtn = nullptr;
     QStringList m_sourceItemsData;

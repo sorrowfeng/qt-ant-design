@@ -289,6 +289,10 @@ void TestAntDataEntryB::propertiesAndSignals()
 
     // AntTransfer
     auto* w5 = new AntTransfer;
+    for (QWidget* child : w5->findChildren<QWidget*>())
+    {
+        QVERIFY(QString::fromLatin1(child->metaObject()->className()) != QStringLiteral("QListWidget"));
+    }
     QCOMPARE(w5->sourceItems().isEmpty(), true);
     QCOMPARE(w5->targetItems().isEmpty(), true);
 

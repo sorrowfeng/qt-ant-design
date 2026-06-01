@@ -13,6 +13,7 @@
 #include "widgets/AntList.h"
 #include "widgets/AntListWidget.h"
 #include "widgets/AntTable.h"
+#include "widgets/AntToolTip.h"
 #include "widgets/AntTree.h"
 #include "widgets/AntTimeline.h"
 #include "widgets/AntDescriptions.h"
@@ -139,6 +140,7 @@ void TestAntDataDisplayB::propertiesAndSignals()
     QCOMPARE(tbl->pageSize(), 10);
     QCOMPARE(tbl->rowCount(), 0);
     QCOMPARE(tbl->columnCount(), 0);
+    QVERIFY(tbl->findChild<AntToolTip*>(QStringLiteral("AntTableRowToolTip")) != nullptr);
 
     QSignalSpy tBorderSpy(tbl, &AntTable::borderedChanged);
     tbl->setBordered(false);

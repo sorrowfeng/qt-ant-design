@@ -1,12 +1,8 @@
 #include "AntTransfer.h"
 
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QListWidget>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QResizeEvent>
-#include <QVBoxLayout>
 #include <QWheelEvent>
 
 #include <algorithm>
@@ -32,56 +28,16 @@ AntTransfer::AntTransfer(QWidget* parent)
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAutoFillBackground(false);
 
-    auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-
-    // Source
-    auto* sourceCol = new QVBoxLayout();
-    sourceCol->addWidget(new QLabel(QStringLiteral("Source")));
-    m_sourceList = new QListWidget();
-    m_sourceList->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    m_sourceList->setMinimumSize(180, 260);
-    sourceCol->addWidget(m_sourceList);
-    layout->addLayout(sourceCol);
-
-    // Buttons
-    auto* btnCol = new QVBoxLayout();
-    btnCol->addStretch();
-    m_toTargetBtn = new AntButton();
+    m_toTargetBtn = new AntButton(this);
     m_toTargetBtn->setButtonType(Ant::ButtonType::Default);
     m_toTargetBtn->setButtonIconType(Ant::IconType::Right);
     m_toTargetBtn->setFixedSize(32, 32);
-    btnCol->addWidget(m_toTargetBtn);
-    m_toSourceBtn = new AntButton();
+    m_toSourceBtn = new AntButton(this);
     m_toSourceBtn->setButtonType(Ant::ButtonType::Default);
     m_toSourceBtn->setButtonIconType(Ant::IconType::Left);
     m_toSourceBtn->setFixedSize(32, 32);
-    btnCol->addWidget(m_toSourceBtn);
-    btnCol->addStretch();
-    layout->addLayout(btnCol);
-
-    // Target
-    auto* targetCol = new QVBoxLayout();
-    targetCol->addWidget(new QLabel(QStringLiteral("Target")));
-    m_targetList = new QListWidget();
-    m_targetList->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    m_targetList->setMinimumSize(180, 260);
-    targetCol->addWidget(m_targetList);
-    layout->addLayout(targetCol);
-
-    connect(m_toTargetBtn, &QPushButton::clicked, this, [this]() { doTransfer(true); });
-    connect(m_toSourceBtn, &QPushButton::clicked, this, [this]() { doTransfer(false); });
-
-    connect(m_sourceList, &QListWidget::itemSelectionChanged, this, &AntTransfer::updateButtons);
-    connect(m_targetList, &QListWidget::itemSelectionChanged, this, &AntTransfer::updateButtons);
 
     updateButtons();
-    for (auto* label : findChildren<QLabel*>())
-    {
-        label->hide();
-    }
-    m_sourceList->hide();
-    m_targetList->hide();
     m_toTargetBtn->hide();
     m_toSourceBtn->hide();
     setMinimumSize(minimumSizeHint());
@@ -110,7 +66,7 @@ void AntTransfer::setSourceItems(const QStringList& items)
         return;
     }
     m_sourceItemsData = items;
-    syncListWidget(true);
+    invalidatePanelLayout(true);
     const QStringList selectedSource = m_selectedSourceItems;
     for (const QString& selected : selectedSource)
     {
@@ -132,7 +88,7 @@ void AntTransfer::setTargetItems(const QStringList& items)
         return;
     }
     m_targetItemsData = items;
-    syncListWidget(false);
+    invalidatePanelLayout(false);
     const QStringList selectedTarget = m_selectedTargetItems;
     for (const QString& selected : selectedTarget)
     {
@@ -400,15 +356,15 @@ void AntTransfer::doTransfer(bool toTarget)
     {
         m_sourceItemsData = fromItems;
         m_targetItemsData = toItems;
-        syncListWidget(true);
-        syncListWidget(false);
+        invalidatePanelLayout(true);
+        invalidatePanelLayout(false);
     }
     else
     {
         m_targetItemsData = fromItems;
         m_sourceItemsData = toItems;
-        syncListWidget(false);
-        syncListWidget(true);
+        invalidatePanelLayout(false);
+        invalidatePanelLayout(true);
     }
     setScrollOffset(true, m_sourceScrollOffset);
     setScrollOffset(false, m_targetScrollOffset);
@@ -534,18 +490,6 @@ void AntTransfer::togglePanelSelection(bool sourcePanel)
 const QStringList& AntTransfer::panelItems(bool sourcePanel) const
 {
     return sourcePanel ? m_sourceItemsData : m_targetItemsData;
-}
-
-void AntTransfer::syncListWidget(bool sourcePanel)
-{
-    QListWidget* list = sourcePanel ? m_sourceList : m_targetList;
-    if (!list)
-    {
-        return;
-    }
-    list->clear();
-    list->addItems(panelItems(sourcePanel));
-    invalidatePanelLayout(sourcePanel);
 }
 
 const AntTransfer::PanelLayout& AntTransfer::panelLayout(bool sourcePanel) const

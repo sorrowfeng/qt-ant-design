@@ -88,21 +88,6 @@ void AntDialogStyle::drawDialog(AntDialog* dialog, QPainter* painter) const
         painter->restore();
     }
 
-    if (rounded)
-    {
-        painter->save();
-        painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-        if (dialog->shadowMargin() > 0)
-        {
-            antTheme->drawEffectShadow(painter,
-                                       surface,
-                                       dialog->shadowMargin(),
-                                       radius,
-                                       antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.58 : 0.72);
-        }
-        painter->restore();
-    }
-
     AntWindowChrome::PaintOptions chrome;
     chrome.surfaceRect = surface;
     chrome.titleBarRect = dialog->isTitleBarVisible() ? dialog->titleBarRect() : QRect();
@@ -110,10 +95,10 @@ void AntDialogStyle::drawDialog(AntDialog* dialog, QPainter* painter) const
     chrome.title = dialog->windowTitle();
     chrome.icon = dialog->windowIcon();
     chrome.cornerRadius = radius;
-    chrome.drawSurfaceBorder = true;
-    chrome.surfaceBorderColor = dialog->usesLegacyOpaquePath()
-        ? AntWindowChrome::legacyOutlineColor()
-        : antTheme->tokens().colorBorderSecondary;
+    const bool nativeFrame = dialog->property("antDialogUsesNativeCaptionFrame").toBool();
+    chrome.drawSurfaceBorder = !nativeFrame && !dialog->usesLegacyOpaquePath();
+    chrome.surfaceBorderColor = antTheme->tokens().colorBorderSecondary;
+    chrome.drawLegacyOutline = dialog->usesLegacyOpaquePath();
 
     if (dialog->isTitleBarVisible() && dialog->isCloseButtonVisible())
     {

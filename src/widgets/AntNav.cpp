@@ -4,13 +4,12 @@
 
 #include <QFrame>
 #include <QPalette>
-#include <QScrollArea>
 #include <QVBoxLayout>
 #include <QWidget>
 
 #include "core/AntTheme.h"
 #include "widgets/AntNavItem.h"
-#include "widgets/AntScrollBar.h"
+#include "widgets/AntScrollArea.h"
 #include "widgets/AntTypography.h"
 
 namespace
@@ -56,12 +55,11 @@ AntNav::AntNav(QWidget* parent)
     root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
 
-    m_scrollArea = new QScrollArea(this);
+    m_scrollArea = new AntScrollArea(this);
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    m_scrollArea->setVerticalScrollBar(new AntScrollBar(Qt::Vertical, m_scrollArea));
 
     m_scrollContent = new QWidget();
     m_navLayout = new QVBoxLayout(m_scrollContent);

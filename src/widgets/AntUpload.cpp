@@ -5,7 +5,6 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QEvent>
-#include <QFileDialog>
 #include <QFileInfo>
 #include <QMimeData>
 #include <QMimeDatabase>
@@ -14,6 +13,7 @@
 #include <QResizeEvent>
 #include <QUrl>
 
+#include "AntFileDialog.h"
 #include "core/AntTheme.h"
 #include "styles/AntUploadStyle.h"
 
@@ -698,11 +698,11 @@ void AntUpload::requestUploadFiles()
     const QString filter = dialogNameFilter();
     if (m_multiple)
     {
-        paths = QFileDialog::getOpenFileNames(this, QStringLiteral("Select files"), QString(), filter);
+        paths = AntFileDialog::getOpenFileNames(this, QStringLiteral("Select files"), QString(), filter);
     }
     else
     {
-        const QString path = QFileDialog::getOpenFileName(this, QStringLiteral("Select file"), QString(), filter);
+        const QString path = AntFileDialog::getOpenFileName(this, QStringLiteral("Select file"), QString(), filter);
         if (!path.isEmpty())
         {
             paths.append(path);
