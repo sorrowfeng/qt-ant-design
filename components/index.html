@@ -55,6 +55,52 @@
       overflow-x: auto;
       line-height: 1.65;
     }
+    .usage-panel .code-block {
+      position: relative;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid #e6e8eb;
+      border-radius: 8px;
+      background: #fbfcfe;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+    .usage-panel .code-block::before {
+      content: "C++";
+      position: absolute;
+      top: 9px;
+      right: 12px;
+      z-index: 1;
+      color: rgba(0, 0, 0, 0.45);
+      font-size: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+    .usage-panel .code-block code,
+    .usage-panel code.language-cpp {
+      display: block;
+      margin: 0;
+      padding: 18px 52px 18px 18px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #24292f;
+      font-family: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 12.5px;
+      line-height: 1.75;
+      tab-size: 4;
+      white-space: pre;
+      word-break: normal;
+      overflow-x: auto;
+    }
+    .cpp-token-preprocessor { color: #6f42c1; }
+    .cpp-token-keyword { color: #cf222e; font-weight: 600; }
+    .cpp-token-type { color: #0550ae; }
+    .cpp-token-function { color: #8250df; }
+    .cpp-token-string { color: #0a3069; }
+    .cpp-token-number { color: #0550ae; }
+    .cpp-token-comment { color: #6e7781; font-style: italic; }
+    .cpp-token-operator,
+    .cpp-token-punctuation { color: #57606a; }
     .topbar {
       position: sticky;
       top: 0;
@@ -7526,6 +7572,73 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
         title.hidden = term && !visible;
       });
     }
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    function tokenClassForCpp(token) {
+      const keywords = new Set([
+        'alignas', 'alignof', 'asm', 'auto', 'break', 'case', 'catch', 'class', 'concept',
+        'const', 'constexpr', 'consteval', 'constinit', 'continue', 'decltype', 'default',
+        'delete', 'do', 'else', 'enum', 'explicit', 'export', 'extern', 'final', 'for',
+        'friend', 'if', 'inline', 'mutable', 'namespace', 'new', 'noexcept', 'operator',
+        'override', 'private', 'protected', 'public', 'register', 'requires', 'return',
+        'sizeof', 'static', 'static_assert', 'struct', 'switch', 'template', 'this',
+        'throw', 'try', 'typedef', 'typename', 'using', 'virtual', 'volatile', 'while'
+      ]);
+      const builtinTypes = new Set([
+        'bool', 'char', 'char8_t', 'char16_t', 'char32_t', 'double', 'float', 'int',
+        'long', 'short', 'signed', 'unsigned', 'void', 'wchar_t', 'qreal', 'QString',
+        'QWidget', 'QObject', 'QColor', 'QPixmap', 'QImage', 'QSize', 'QRect', 'QPoint',
+        'QVariant', 'QList', 'QVector', 'QHash', 'QPointer'
+      ]);
+
+      if (/^\s*#/.test(token)) return 'cpp-token-preprocessor';
+      if (/^\/\//.test(token) || /^\/\*/.test(token)) return 'cpp-token-comment';
+      if (/^["']/.test(token)) return 'cpp-token-string';
+      if (/^\d/.test(token)) return 'cpp-token-number';
+      if (/^(::|->|[{}()[\];,.<>*&=+\-/%!|?:~])$/.test(token)) {
+        return /[{}()[\];,.<>]/.test(token) ? 'cpp-token-punctuation' : 'cpp-token-operator';
+      }
+      if (keywords.has(token)) return 'cpp-token-keyword';
+      if (builtinTypes.has(token) || /^Ant[A-Z]\w*$/.test(token) || /^Q[A-Z]\w*$/.test(token)) {
+        return 'cpp-token-type';
+      }
+      return '';
+    }
+    function highlightCpp(source) {
+      const tokenPattern = /^\s*#.*|\/\/.*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b\d+(?:\.\d+)?(?:[uUlLfF]*)\b|\b[A-Za-z_]\w*(?=\s*\()|\b[A-Za-z_]\w*\b|::|->|[{}()[\];,.<>*&=+\-/%!|?:~]/gm;
+      let html = '';
+      let lastIndex = 0;
+      source.replace(tokenPattern, (token, offset) => {
+        html += escapeHtml(source.slice(lastIndex, offset));
+        let tokenClass = tokenClassForCpp(token);
+        if (!tokenClass && /\b[A-Za-z_]\w*$/.test(token)) {
+          const next = source.slice(offset + token.length).match(/^\s*\(/);
+          tokenClass = next ? 'cpp-token-function' : '';
+        }
+        html += tokenClass
+          ? `<span class="${tokenClass}">${escapeHtml(token)}</span>`
+          : escapeHtml(token);
+        lastIndex = offset + token.length;
+        return token;
+      });
+      html += escapeHtml(source.slice(lastIndex));
+      return html;
+    }
+    function highlightUsageCode() {
+      document.querySelectorAll('.usage-panel pre code').forEach(code => {
+        const pre = code.closest('pre');
+        if (pre) pre.classList.add('code-block');
+        code.classList.add('language-cpp');
+        code.innerHTML = highlightCpp(code.textContent);
+      });
+    }
+    highlightUsageCode();
     input.addEventListener('input', applyFilter);
   </script>
 </body>
