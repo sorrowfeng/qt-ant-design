@@ -351,7 +351,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntSwitch`: `checked / loading / small / text`, click wave feedback
 - `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation
 - `AntDatePicker` / `AntTimePicker`: hand-painted popup pickers
-- `AntMessage` / `AntNotification`: global feedback components with elevated surfaces, enter / exit motion, anchor-scoped `AntWindow` following, multi-window stack isolation, Message click-through to covered controls, and Notification loading progress countdown
+- `AntMessage` / `AntNotification`: global feedback components with elevated surfaces, enter / exit motion, anchor-scoped `AntWindow` following, multi-window stack isolation, Message click-through to covered controls, and Notification progress bars for both auto-close countdowns and manually controlled download/task progress
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`: common display components
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`: navigation components; `AntPagination` includes editable quick-jumper paging, and `AntTabs` includes tab-pane layout margin normalization helpers
 - `AntTable`: data table with column sorting, row selection (checkbox / radio), programmatic row selection, row tooltips, pagination, loading state

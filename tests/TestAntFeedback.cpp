@@ -57,6 +57,7 @@ private slots:
     void messageAndNotificationFollowAntWindowAnchor();
     void messageAndNotificationStayScopedToTheirAntWindowAnchors();
     void notificationLoadingProgressAutoCloses();
+    void notificationManualProgressCanBeControlled();
     void popconfirm();
     void popconfirmReusesActionWidgetAndSkipsRebuilds();
     void popover();
@@ -345,6 +346,8 @@ void TestAntFeedback::notification()
     QCOMPARE(w->duration(), 4500);
     QCOMPARE(w->pauseOnHover(), true);
     QCOMPARE(w->showProgress(), false);
+    QCOMPARE(w->progressMode(), AntNotification::ProgressMode::Countdown);
+    QCOMPARE(w->progress(), 0);
     QCOMPARE(w->isClosable(), true);
     QCOMPARE(w->iconVisible(), true);
     QCOMPARE(w->spinnerAngle(), 0);
@@ -384,6 +387,17 @@ void TestAntFeedback::notification()
     w->setShowProgress(true);
     QCOMPARE(w->showProgress(), true);
     QCOMPARE(progressSpy.count(), 1);
+
+    QSignalSpy progressModeSpy(w, &AntNotification::progressModeChanged);
+    w->setProgressMode(AntNotification::ProgressMode::Manual);
+    QCOMPARE(w->progressMode(), AntNotification::ProgressMode::Manual);
+    QCOMPARE(progressModeSpy.count(), 1);
+
+    QSignalSpy manualProgressSpy(w, &AntNotification::progressChanged);
+    w->setProgress(42);
+    QCOMPARE(w->progress(), 42);
+    QCOMPARE(qRound(w->progressRatio() * 100.0), 42);
+    QCOMPARE(manualProgressSpy.count(), 1);
 
     QSignalSpy closeSpy(w, &AntNotification::closableChanged);
     w->setClosable(false);
@@ -633,6 +647,64 @@ void TestAntFeedback::notificationLoadingProgressAutoCloses()
     QVERIFY(notification->progressRatio() <= 1.0);
     QTRY_VERIFY_WITH_TIMEOUT(notification && notification->progressRatio() < 0.98, 350);
     QTRY_VERIFY_WITH_TIMEOUT(notification.isNull(), 1600);
+}
+
+void TestAntFeedback::notificationManualProgressCanBeControlled()
+{
+    AntNotification notification;
+    notification.setTitle(QStringLiteral("Download"));
+    notification.setDescription(QStringLiteral("Preparing file"));
+    notification.setDuration(0);
+    notification.setProgress(25);
+    QCOMPARE(notification.progressMode(), AntNotification::ProgressMode::Manual);
+    QCOMPARE(notification.showProgress(), true);
+    QCOMPARE(notification.progress(), 25);
+    QCOMPARE(qRound(notification.progressRatio() * 100.0), 25);
+
+    notification.resize(notification.sizeHint());
+    notification.grab();
+    const int layoutBuilds = notification.property("antNotificationLayoutBuildCount").toInt();
+    const int progressUpdates = notification.property("antNotificationProgressRegionUpdateCount").toInt();
+
+    QSignalSpy progressSpy(&notification, &AntNotification::progressChanged);
+    notification.setProgress(160);
+    QCOMPARE(notification.progress(), 100);
+    QCOMPARE(qRound(notification.progressRatio() * 100.0), 100);
+    QCOMPARE(progressSpy.count(), 1);
+    QCOMPARE(notification.property("antNotificationLastUpdateMode").toString(), QStringLiteral("manualProgress"));
+    QVERIFY(notification.property("antNotificationProgressRegionUpdateCount").toInt() > progressUpdates);
+
+    notification.grab();
+    QCOMPARE(notification.property("antNotificationLayoutBuildCount").toInt(), layoutBuilds);
+
+    notification.setProgress(-8);
+    QCOMPARE(notification.progress(), 0);
+    QCOMPARE(qRound(notification.progressRatio() * 100.0), 0);
+
+    QWidget anchor;
+    anchor.resize(480, 320);
+    anchor.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&anchor));
+
+    QPointer<AntNotification> download =
+        AntNotification::progress(QStringLiteral("Downloading"),
+                                  QStringLiteral("Downloaded 32 / 100 MB"),
+                                  32,
+                                  &anchor,
+                                  Ant::Placement::TopRight);
+    QVERIFY(download);
+    QTRY_VERIFY_WITH_TIMEOUT(download && download->isVisible(), 300);
+    QCOMPARE(download->notificationType(), Ant::MessageType::Loading);
+    QCOMPARE(download->duration(), 0);
+    QCOMPARE(download->progressMode(), AntNotification::ProgressMode::Manual);
+    QCOMPARE(download->showProgress(), true);
+    QCOMPARE(download->progress(), 32);
+    QCOMPARE(qRound(download->progressRatio() * 100.0), 32);
+
+    download->setProgress(78);
+    QCOMPARE(download->progress(), 78);
+    QCOMPARE(download->property("antNotificationLastUpdateMode").toString(), QStringLiteral("manualProgress"));
+    download->close();
 }
 
 void TestAntFeedback::popconfirm()

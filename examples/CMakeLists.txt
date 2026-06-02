@@ -19,7 +19,15 @@ add_executable(qt-ant-design-example
     pages/FeedbackPagesB.cpp
     pages/OtherPages.cpp
     pages/QtExtPages.cpp
+    qt-ant-design-example.qrc
 )
+
+if(WIN32)
+    target_sources(qt-ant-design-example
+        PRIVATE
+            qt-ant-design-example.rc
+    )
+endif()
 
 target_link_libraries(qt-ant-design-example
     PRIVATE

@@ -238,6 +238,23 @@ AntNotification* AntNotification::error(const QString& title,
     return open(title, description, Ant::MessageType::Error, anchor, durationMs, placement);
 }
 
+AntNotification* AntNotification::progress(const QString& title,
+                                           const QString& description,
+                                           int progress,
+                                           QWidget* anchor,
+                                           Ant::Placement placement)
+{
+    auto* notification = create(title,
+                                description,
+                                Ant::MessageType::Loading,
+                                true,
+                                anchor,
+                                0,
+                                placement);
+    notification->setProgress(progress);
+    return notification;
+}
+
 void AntNotification::closeAll()
 {
     const auto notifications = activeNotifications();
@@ -361,7 +378,7 @@ void AntNotification::setShowProgress(bool show)
     m_showProgress = show;
     invalidateNotificationLayout();
     applyNotificationSizeHint();
-    if (m_showProgress && m_duration > 0 && isVisible())
+    if (m_showProgress && m_progressMode == ProgressMode::Countdown && m_duration > 0 && isVisible())
     {
         m_progressTimer->start(50);
     }
@@ -371,6 +388,55 @@ void AntNotification::setShowProgress(bool show)
     }
     requestNotificationUpdate(rect(), QStringLiteral("progressVisible"));
     Q_EMIT showProgressChanged(m_showProgress);
+}
+
+AntNotification::ProgressMode AntNotification::progressMode() const { return m_progressMode; }
+
+void AntNotification::setProgressMode(ProgressMode mode)
+{
+    if (m_progressMode == mode)
+    {
+        return;
+    }
+
+    m_progressMode = mode;
+    invalidateNotificationLayout();
+    applyNotificationSizeHint();
+    if (m_showProgress && m_progressMode == ProgressMode::Countdown && m_duration > 0 && isVisible())
+    {
+        m_progressTimer->start(50);
+    }
+    else
+    {
+        m_progressTimer->stop();
+    }
+    requestNotificationUpdate(rect(), QStringLiteral("progressMode"));
+    Q_EMIT progressModeChanged(m_progressMode);
+}
+
+int AntNotification::progress() const { return m_progress; }
+
+void AntNotification::setProgress(int progress)
+{
+    progress = std::clamp(progress, 0, 100);
+    const bool valueChanged = m_progress != progress;
+    if (m_progressMode != ProgressMode::Manual)
+    {
+        setProgressMode(ProgressMode::Manual);
+    }
+    if (!m_showProgress)
+    {
+        setShowProgress(true);
+    }
+    if (!valueChanged)
+    {
+        return;
+    }
+
+    m_progress = progress;
+    const QRect progressDirty = notificationLayout().progressTrackRect.toAlignedRect().adjusted(-1, -1, 1, 1);
+    requestNotificationUpdate(progressDirty, QStringLiteral("manualProgress"), true);
+    Q_EMIT progressChanged(m_progress);
 }
 
 bool AntNotification::isClosable() const { return m_closable; }
@@ -718,6 +784,7 @@ const AntNotification::NotificationLayout& AntNotification::notificationLayout()
         && m_layoutCache.closable == m_closable
         && m_layoutCache.iconVisible == m_iconVisible
         && m_layoutCache.showProgress == m_showProgress
+        && m_layoutCache.progressMode == m_progressMode
         && m_layoutCache.duration == m_duration
         && m_layoutCache.accentColor == accent
         && m_layoutCache.radius == token.borderRadiusLG;
@@ -741,6 +808,7 @@ const AntNotification::NotificationLayout& AntNotification::notificationLayout()
     layout.closable = m_closable;
     layout.iconVisible = m_iconVisible;
     layout.showProgress = m_showProgress;
+    layout.progressMode = m_progressMode;
     layout.duration = m_duration;
     layout.radius = token.borderRadiusLG;
     layout.accentColor = accent;
@@ -760,8 +828,9 @@ const AntNotification::NotificationLayout& AntNotification::notificationLayout()
                                                                  m_description);
     const int descHeight = m_description.isEmpty() ? 0 : descBounds.height();
     const int gap = (!m_title.isEmpty() && !m_description.isEmpty()) ? token.marginXS : 0;
+    const bool progressTrackVisible = m_showProgress && (m_progressMode == ProgressMode::Manual || m_duration > 0);
     const int cardHeight =
-        std::max(86, token.padding * 2 + titleHeight + gap + descHeight + (m_showProgress ? 2 : 0));
+        std::max(86, token.padding * 2 + titleHeight + gap + descHeight + (progressTrackVisible ? 2 : 0));
     layout.sizeHint = QSize(NoticeWidth + ShadowInset * 2, cardHeight + ShadowInset * 2);
     layout.minimumSizeHint = QSize(NoticeWidth + ShadowInset * 2, 96);
 
@@ -794,7 +863,7 @@ const AntNotification::NotificationLayout& AntNotification::notificationLayout()
     layout.descriptionRect =
         QRectF(textLeft, descTop, textRight - textLeft, layout.cardRect.bottom() - descTop - token.padding);
 
-    if (m_showProgress && m_duration > 0)
+    if (progressTrackVisible)
     {
         layout.progressTrackRect =
             QRectF(layout.cardRect.left(), layout.cardRect.bottom() - 2, layout.cardRect.width(), 2);
@@ -928,6 +997,11 @@ void AntNotification::drawLoadingIcon(QPainter& painter, const QRectF& rect) con
 
 qreal AntNotification::progressRatio() const
 {
+    if (m_progressMode == ProgressMode::Manual)
+    {
+        return static_cast<qreal>(m_progress) / 100.0;
+    }
+
     if (m_duration <= 0)
     {
         return 0.0;
@@ -947,7 +1021,7 @@ void AntNotification::startCloseTimer()
         m_remainingMs = m_duration;
         m_countdown.restart();
         m_closeTimer->start(m_remainingMs);
-        if (m_showProgress)
+        if (m_showProgress && m_progressMode == ProgressMode::Countdown)
         {
             m_progressTimer->start(50);
         }
@@ -966,7 +1040,7 @@ void AntNotification::pauseCloseTimer()
         m_remainingMs = std::max(0, m_remainingMs - static_cast<int>(m_countdown.elapsed()));
         m_closeTimer->stop();
         m_progressTimer->stop();
-        if (m_showProgress)
+        if (m_showProgress && m_progressMode == ProgressMode::Countdown)
         {
             requestNotificationUpdate(notificationLayout().progressTrackRect.toAlignedRect().adjusted(-1, -1, 1, 1),
                                       QStringLiteral("progress"),
@@ -981,7 +1055,7 @@ void AntNotification::resumeCloseTimer()
     {
         m_countdown.restart();
         m_closeTimer->start(m_remainingMs);
-        if (m_showProgress)
+        if (m_showProgress && m_progressMode == ProgressMode::Countdown)
         {
             m_progressTimer->start(50);
         }

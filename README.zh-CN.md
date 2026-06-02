@@ -350,7 +350,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntSwitch`：`checked / loading / small / text`、点击 Wave 反馈
 - `AntSpin`：`small / middle / large / percent / delay`、更平滑的高频动画
 - `AntDatePicker` / `AntTimePicker`：自绘弹层选择器
-- `AntMessage` / `AntNotification`：带浮层阴影、进入/退出动效、按 `AntWindow` anchor 跟随定位、多窗口反馈栈隔离、Message 点击透传到底层控件，以及 Notification loading 进度倒计时的全局反馈组件
+- `AntMessage` / `AntNotification`：带浮层阴影、进入/退出动效、按 `AntWindow` anchor 跟随定位、多窗口反馈栈隔离、Message 点击透传到底层控件，以及 Notification 自动关闭倒计时和手动下载 / 任务进度条的全局反馈组件
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`：常用展示组件
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`：导航组件；`AntPagination` 支持可输入页码的 quick jumper 跳页，`AntTabs` 提供 Tab 内容页布局 margins 归一化 helper
 - `AntTable`：数据表格，支持列排序、行选择（复选框/单选框）、程序化选中、行 tooltip、分页、加载状态

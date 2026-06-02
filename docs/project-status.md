@@ -74,7 +74,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Optimized `AntDrawer` by caching overlay/panel geometry, skipping redundant theme/header and overlay geometry work, removing an extra open-time panel placement pass, and making overlay paint respect scoped dirty regions.
 - Optimized `AntMessage` by caching message layout and shadow pixmaps, scoping loading-spinner repaint to the icon region, and skipping unchanged stack size/position work during relayout.
 - Optimized `AntModal` by caching dialog geometry, theme/body/footer sync state, and DPR-aware panel shadow pixmaps, while scoping mask animation repaint to the active paint region and preserving the `AntWindow` close-confirmation path.
-- Optimized `AntNotification` by caching notification layout and shadow pixmaps, scoping progress/loading/close-hover repaint to small regions, and skipping unchanged stack size/position work during relayout.
+- Optimized `AntNotification` by caching notification layout and shadow pixmaps, scoping countdown/manual-progress/loading/close-hover repaint to small regions, and skipping unchanged stack size/position work during relayout.
 - Optimized `AntPopconfirm` by reusing the popup action container/buttons across footer text and visibility changes, skipping unchanged content sync, and removing the no-op self-paint filter path.
 - Optimized `AntPopover` by caching popup size hints, bubble/header/body/action rectangles, and arrow geometry on the widget, sharing that cache with the style, skipping repeated target placement work, and avoiding unnecessary hover close-timer churn when already closed.
 - Optimized `AntProgress` by caching line/circle geometry, status colors, status info text, and size hints on the widget, repainting line progress changes and active shine frames only in the affected regions, and pausing active animation while hidden.
@@ -173,7 +173,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added a README component screenshot gallery with light/dark thumbnails for all public components, and refreshed popup/feedback-heavy controls to show representative open or active states instead of only trigger buttons.
 - Fixed the `AntTour` example page so the Step 1 / 2 / 3 buttons launch the corresponding tour step through the new `AntTour::start(index)` path.
 - Fixed `AntResult` dark-mode status icon rendering so the icon is drawn directly with a transparent background instead of rendering an opaque widget tile.
-- Added an `AntNotification` example entry for loading notifications with a bottom countdown progress bar that closes automatically when the duration completes.
+- Added `AntNotification` example entries for loading notifications with a bottom countdown progress bar and for manually controlled download/task progress that can be updated through `setProgress()`.
 - Fixed `AntSteps` icon geometry so the first circular step indicator keeps a small left inset and is no longer clipped by the widget edge.
 - Fixed `AntColorPicker` trigger border geometry so normal gray and focused/active primary borders are drawn fully inside the widget frame instead of being clipped at the edges.
 - Aligned `AntRadio` ButtonStyle click feedback with `AntButton` by using the full edge-expansion Wave duration instead of the short indicator-style wave.
@@ -228,7 +228,7 @@ Follow-up: `AntColorPicker` popup now uses a manual outside-click close path ins
 
 Follow-up: `AntWindow` close confirmation is now opt-in through `setCloseConfirmationEnabled(true)`, and public APIs customize the Modal title, content, exit text, and cancel-exit text. `forceClose()` is available for automation or programmatic shutdown paths that should bypass confirmation. The targeted `window` subtest verifies the default close path skips the Modal, cancel keeps the window open after opt-in, confirm closes it, and custom text is propagated to the Modal.
 
-Follow-up: `AntMessage` and `AntNotification` now suppress popups for hidden anchor windows, relayout only feedback entries that belong to the matching anchor, follow visible `AntWindow` move/resize/state changes, and keep multiple `AntWindow` feedback stacks isolated. Targeted validation covered `messageAndNotificationFollowAntWindowAnchor`, `messageAndNotificationStayScopedToTheirAntWindowAnchors`, Message click-through, and Notification loading countdown, with the example Debug build succeeding on `2026-05-29`.
+Follow-up: `AntMessage` and `AntNotification` now suppress popups for hidden anchor windows, relayout only feedback entries that belong to the matching anchor, follow visible `AntWindow` move/resize/state changes, and keep multiple `AntWindow` feedback stacks isolated. Targeted validation covered `messageAndNotificationFollowAntWindowAnchor`, `messageAndNotificationStayScopedToTheirAntWindowAnchors`, Message click-through, Notification loading countdown, and Notification manual progress, with the example Debug build succeeding on `2026-05-29`.
 
 Follow-up: the performance pass started with `AntIcon`. Built-in enum path generation is now cached, and resource SVG icons are rendered into `QPixmapCache` entries keyed by icon name, color pair, size, and device pixel ratio. Rotation and spin remain painter transforms, so visible animation is preserved while repeated paints avoid qrc file reads and `QSvgRenderer` setup. Targeted validation covered `TestAntIcon` plus `TestAntButton` as a representative icon consumer.
 
@@ -497,7 +497,7 @@ ctest --test-dir build -C Debug -R "TestAnt(Feedback|VisualRegression)$" --outpu
 
 Result: `2 / 2` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-08`.
 
-Latest targeted AntNotification loading-progress example validation:
+Latest targeted AntNotification countdown/manual-progress example validation:
 
 ```powershell
 cmake --build build --config Debug --target TestAntFeedback qt-ant-design-example

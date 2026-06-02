@@ -32,10 +32,19 @@ class QT_ANT_DESIGN_EXPORT AntNotification : public QWidget
     Q_PROPERTY(int duration READ duration WRITE setDuration NOTIFY durationChanged)
     Q_PROPERTY(bool pauseOnHover READ pauseOnHover WRITE setPauseOnHover NOTIFY pauseOnHoverChanged)
     Q_PROPERTY(bool showProgress READ showProgress WRITE setShowProgress NOTIFY showProgressChanged)
+    Q_PROPERTY(ProgressMode progressMode READ progressMode WRITE setProgressMode NOTIFY progressModeChanged)
+    Q_PROPERTY(int progress READ progress WRITE setProgress NOTIFY progressChanged)
     Q_PROPERTY(bool closable READ isClosable WRITE setClosable NOTIFY closableChanged)
     Q_PROPERTY(bool iconVisible READ iconVisible WRITE setIconVisible NOTIFY iconVisibleChanged)
 
 public:
+    enum class ProgressMode
+    {
+        Countdown,
+        Manual,
+    };
+    Q_ENUM(ProgressMode)
+
     explicit AntNotification(QWidget* parent = nullptr);
     ~AntNotification() override;
 
@@ -70,6 +79,11 @@ public:
                                   QWidget* anchor = nullptr,
                                   int durationMs = 4500,
                                   Ant::Placement placement = Ant::Placement::TopRight);
+    static AntNotification* progress(const QString& title,
+                                     const QString& description,
+                                     int progress,
+                                     QWidget* anchor = nullptr,
+                                     Ant::Placement placement = Ant::Placement::TopRight);
     static void closeAll();
 
     QString title() const;
@@ -93,6 +107,12 @@ public:
     bool showProgress() const;
     void setShowProgress(bool show);
 
+    ProgressMode progressMode() const;
+    void setProgressMode(ProgressMode mode);
+
+    int progress() const;
+    void setProgress(int progress);
+
     bool isClosable() const;
     void setClosable(bool closable);
 
@@ -113,6 +133,8 @@ Q_SIGNALS:
     void durationChanged(int durationMs);
     void pauseOnHoverChanged(bool pause);
     void showProgressChanged(bool show);
+    void progressModeChanged(AntNotification::ProgressMode mode);
+    void progressChanged(int progress);
     void closableChanged(bool closable);
     void iconVisibleChanged(bool visible);
     void clicked();
@@ -143,6 +165,7 @@ private:
         bool closable = true;
         bool iconVisible = true;
         bool showProgress = false;
+        ProgressMode progressMode = ProgressMode::Countdown;
         int duration = 0;
         QSize sizeHint;
         QSize minimumSizeHint;
@@ -198,6 +221,8 @@ private:
     int m_remainingMs = 4500;
     bool m_pauseOnHover = true;
     bool m_showProgress = false;
+    ProgressMode m_progressMode = ProgressMode::Countdown;
+    int m_progress = 0;
     bool m_closable = true;
     bool m_iconVisible = true;
     bool m_hovered = false;

@@ -178,7 +178,9 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     painter->drawText(layout.descriptionRect, notification->description(), textOption);
 
     // Progress bar
-    if (showProgress && notification->duration() > 0)
+    if (showProgress &&
+        (notification->progressMode() == AntNotification::ProgressMode::Manual ||
+         notification->duration() > 0))
     {
         const QRectF track = layout.progressTrackRect;
         painter->setPen(Qt::NoPen);

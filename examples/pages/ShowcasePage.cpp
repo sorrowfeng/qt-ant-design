@@ -48,7 +48,7 @@ void applyModalPreviewLayout(AntCard* modal)
 AntCard* makeModalPreview(QWidget* parent)
 {
     auto* modal = new AntCard(parent);
-    modal->setFixedSize(484, 196);
+    modal->setFixedSize(484, 216);
     modal->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     modal->setBordered(true);
     applyModalPreviewLayout(modal);
@@ -76,7 +76,6 @@ AntCard* makeModalPreview(QWidget* parent)
     modal->bodyLayout()->addWidget(body, 1);
 
     auto* footer = new QWidget(modal->bodyWidget());
-    footer->setFixedHeight(32);
     auto* footerLayout = new QHBoxLayout(footer);
     footerLayout->setContentsMargins(0, 0, 0, 0);
     footerLayout->setSpacing(8);
@@ -91,6 +90,7 @@ AntCard* makeModalPreview(QWidget* parent)
     ok->setButtonType(Ant::ButtonType::Primary);
     ok->setFixedWidth(64);
     footerLayout->addWidget(ok);
+    footer->setFixedHeight(qMax(cancel->sizeHint().height(), ok->sizeHint().height()));
     modal->bodyLayout()->addWidget(footer);
 
     return modal;
