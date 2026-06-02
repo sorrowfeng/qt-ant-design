@@ -57,7 +57,7 @@ The project focuses on:
 - Online component/API reference: [www.sorrowfeng.top/qt-ant-design/components](http://www.sorrowfeng.top/qt-ant-design/components/)
 - Local Chinese component/API reference: [docs/component-api-overview-cn.html](docs/component-api-overview-cn.html)
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
-- Current CTest entry count: `46`; latest full component reliability sweep: `37 / 37` passed on `2026-05-30`; targeted Qt5/Qt6 visual parity, visual-atlas scale-factor smoke, metric audit, real example page traversal/comparison, Windows High DPI scaling, and no-QSS guard checks passed on `2026-06-01`
+- Current CTest entry count: `47`; latest full component reliability sweep: `37 / 37` passed on `2026-05-30`; targeted Qt5/Qt6 visual parity, visual-atlas scale-factor smoke, metric audit, real example page traversal/comparison, Windows High DPI scaling, and no-QSS guard checks passed on `2026-06-01`
 
 ## Recent Ant Design Parity Updates
 
@@ -92,7 +92,7 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 - `AntList` / `AntListWidget` now cover common QListWidget-style flows: string item add/insert/find/sort, item text/icon/data/check state/flags, current row/item, selection mode, selected items, internal scrolling, `scrollToItem`, and item/current/selection signals. `AntTable` exposes `rows()`, `selectRow()`, `currentRowIndex()`, and row tooltips; `AntTree` exposes matching tree helper APIs.
 - `AntMenu` now mirrors QWidget `QAction` additions, changes, removals, and trigger flow; `AntToolButton` / `AntToolBar` keep their inherited QAction behavior covered by tests.
 - `AntTypography` defaults to vertical center alignment and exposes alignment, word-wrap, clear, and `setPixelSize()` controls; `setEnabled()` and `setDisabled()` stay synchronized with its disabled visual and interaction state.
-- `AntDesign::configureHighDpi()` plus `AntDesign::initialize(&app)` provide the recommended startup path: Qt5 enables logical High DPI scaling and High DPI pixmaps before `QApplication`, then the library registers resources, bundled fonts, and the theme singleton after the app exists.
+- `AntDesign::configureHighDpi()` plus `AntDesign::initialize(&app)` provide the recommended startup path: Qt5 enables logical High DPI scaling and High DPI pixmaps before `QApplication`, then the library registers resources, bundled fonts, and the theme singleton after the app exists. `initialize()` also calls `configureHighDpi()` automatically when it is invoked before `QApplication`, but it still needs to be called again with the created app for fonts and theme setup.
 - `AntRibbon` adds a lightweight Ribbon surface with pages, groups, balanced large/small actions, embedded Ant/Qt widgets, animated tab/collapse transitions, collapsed popup mode, and `AntWindow::setRibbon()` integration.
 
 ## Installation & Integration
@@ -178,7 +178,7 @@ cmake --install build --config Debug
 
 ### Your first `AntButton`
 
-Call `AntDesign::configureHighDpi()` before creating `QApplication`, then call `AntDesign::initialize(&app)` once before creating Ant widgets. This keeps Qt5 and Qt6 layouts in Qt logical pixels on Windows at 100%, 125%, 150%, and other scale factors.
+Call `AntDesign::configureHighDpi()` before creating `QApplication`, then call `AntDesign::initialize(&app)` once before creating Ant widgets. This keeps Qt5 and Qt6 layouts in Qt logical pixels on Windows at 100%, 125%, 150%, and other scale factors. If `initialize()` is called before `QApplication`, it will configure High DPI automatically and return; call it again after app creation to finish resource, font, and theme initialization.
 
 ```cpp
 #include <QApplication>
@@ -354,7 +354,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntSwitch`: `checked / loading / small / text`, click wave feedback
 - `AntSpin`: `small / middle / large / percent / delay`, smoother high-frequency animation
 - `AntDatePicker` / `AntTimePicker`: hand-painted popup pickers
-- `AntMessage` / `AntNotification`: global feedback components with elevated surfaces, enter / exit motion, anchor-scoped `AntWindow` following, multi-window stack isolation, Message click-through to covered controls, and Notification loading progress countdown
+- `AntMessage` / `AntNotification`: global feedback components with elevated surfaces, enter / exit motion, anchor-scoped `AntWindow` following, multi-window stack isolation, Message click-through to covered controls, and Notification progress bars for both auto-close countdowns and manually controlled download/task progress
 - `AntCard` / `AntTag` / `AntBadge` / `AntAvatar`: common display components
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`: navigation components; `AntPagination` includes editable quick-jumper paging, and `AntTabs` includes tab-pane layout margin normalization helpers
 - `AntTable`: data table with column sorting, row selection (checkbox / radio), programmatic row selection, row tooltips, pagination, loading state

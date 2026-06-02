@@ -191,7 +191,14 @@ void TestAntHighDpiScaling::antWindowKeepsLogicalFrameMetricsAtScale()
 
 int main(int argc, char** argv)
 {
-    AntDesign::configureHighDpi();
+    if (qEnvironmentVariableIntValue("ANT_TEST_INITIALIZE_CONFIGURES_HIGHDPI") > 0)
+    {
+        AntDesign::initialize();
+    }
+    else
+    {
+        AntDesign::configureHighDpi();
+    }
 
     QApplication app(argc, argv);
     AntDesign::initialize(&app);

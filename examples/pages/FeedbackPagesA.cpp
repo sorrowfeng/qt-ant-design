@@ -4,8 +4,10 @@
 #include <QHBoxLayout>
 #include <QList>
 #include <QPair>
+#include <QPointer>
 #include <QString>
 #include <QStringList>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -243,7 +245,9 @@ QWidget* createNotificationPage(QWidget* owner)
         auto* open = new AntButton(QStringLiteral("Open"));
         auto* success = new AntButton(QStringLiteral("Success"));
         auto* loadingProgress = new AntButton(QStringLiteral("Loading Progress"));
+        auto* downloadProgress = new AntButton(QStringLiteral("Download Progress"));
         loadingProgress->setObjectName(QStringLiteral("notificationLoadingProgressButton"));
+        downloadProgress->setObjectName(QStringLiteral("notificationDownloadProgressButton"));
         QObject::connect(open, &AntButton::clicked, owner, [owner]() {
             AntNotification::open(QStringLiteral("Notification Title"),
                                   QStringLiteral("Notification description."),
@@ -262,9 +266,42 @@ QWidget* createNotificationPage(QWidget* owner)
                                                        4500);
             notification->setShowProgress(true);
         });
+        QObject::connect(downloadProgress, &AntButton::clicked, owner, [owner]() {
+            QPointer<AntNotification> notification =
+                AntNotification::progress(QStringLiteral("Downloading update"),
+                                          QStringLiteral("Downloaded 0 / 100 MB"),
+                                          0,
+                                          owner);
+            auto* timer = new QTimer(notification);
+            timer->setInterval(160);
+            timer->setProperty("downloadProgress", 0);
+            QObject::connect(timer, &QTimer::timeout, notification, [notification, timer]() {
+                if (!notification)
+                {
+                    return;
+                }
+
+                const int nextProgress = qMin(100, timer->property("downloadProgress").toInt() + 8);
+                timer->setProperty("downloadProgress", nextProgress);
+                notification->setProgress(nextProgress);
+                notification->setDescription(
+                    QStringLiteral("Downloaded %1 / 100 MB").arg(nextProgress));
+
+                if (nextProgress >= 100)
+                {
+                    timer->stop();
+                    notification->setNotificationType(Ant::MessageType::Success);
+                    notification->setTitle(QStringLiteral("Download complete"));
+                    notification->setDescription(QStringLiteral("The update package is ready to install."));
+                    notification->setDuration(2200);
+                }
+            });
+            timer->start();
+        });
         basicRow->addWidget(open);
         basicRow->addWidget(success);
         basicRow->addWidget(loadingProgress);
+        basicRow->addWidget(downloadProgress);
         basicRow->addStretch();
         cl->addLayout(basicRow);
         layout->addWidget(card);

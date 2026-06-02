@@ -37,6 +37,15 @@ void AntDesign::configureHighDpi()
 
 void AntDesign::initialize(QApplication* application, int pixelSize)
 {
+    if (!QCoreApplication::instance())
+    {
+        configureHighDpi();
+        qCWarning(lcAntDesignStartup)
+            << "AntDesign::initialize() was called before QApplication; High DPI was configured. "
+               "Call AntDesign::initialize(&app) again after QApplication is created to load resources, fonts, and theme.";
+        return;
+    }
+
     Q_INIT_RESOURCE(qt_ant_design);
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)

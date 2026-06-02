@@ -15,7 +15,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Style architecture | `67` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `89 / 89` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
 | Dedicated examples intentionally absent | None |
-| Tests | `46` CTest entries configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-30`; latest Qt6 and Qt5 adaptation-focused CTest sweep passed `9 / 9` entries per build tree on `2026-06-01` |
+| Tests | `47` CTest entries configured; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-30`; latest Qt6 and Qt5 adaptation-focused CTest sweep passed `9 / 9` entries per build tree on `2026-06-01` |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `176` committed PNGs: light/dark screenshots for `88` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Local component/API reference | `docs/component-api-overview-cn.html` generated from public widget headers, with searchable component descriptions and API tables |
@@ -31,7 +31,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added `TestAntExamplePageTraversal`, which starts the real `qt-ant-design-example`, traverses the then-current 88 pages through `ExampleWindow` in light and dark themes, scrolls pages with vertical content to top/bottom, grabs each real window frame, and fails on invalid or blank renders. The targeted traversal passed on both Qt6 and Qt5 on `2026-06-01`; the export/baseline mode also passed a real-example Qt5.15.2-vs-Qt6.9.1 comparison across 352 frames with mean deltas from `0.018` to `0.576`, average mean delta `0.043136`, and maximum `changed32Ratio` `0.0043`.
 - Replaced the remaining stylesheet-backed carousel test fixture with a tiny QPainter-based solid-color widget, and added `TestAntNoStyleSheetUsage` as a CTest guard over `src`, `examples`, `tests`, and `resources`, so production sources, examples, active tests, and committed resources all follow the no-QSS styling rule used for Qt5 visual adaptation.
 - Added a local Chinese component/API reference page at `docs/component-api-overview-cn.html`, generated from `src/widgets/*.h`, `src/core/AntTypes.h`, and `AGENTS.md`, with searchable sections for component descriptions, headers, inheritance, properties, public methods, slots, signals, data structures, aliases, and shared enums.
-- Added the Windows High DPI startup path and regression coverage: `AntDesign::configureHighDpi()` is called before `QApplication` to enable Qt5 logical High DPI scaling / High DPI pixmaps and pass-through scale rounding, the example app uses the new startup order, `TestAntHighDpiScaling_1_0`, `_1_25`, and `_1_5` verify logical grab geometry for representative widgets and `AntWindow`, and `TestAntQtVersionVisualParity_Scale_1_25` / `_1_5` smoke the full 26-scene atlas at fractional scaling. The latest adaptation-focused CTest sweep passed `9 / 9` entries in both Qt6 and Qt5 build trees.
+- Added the Windows High DPI startup path and regression coverage: `AntDesign::configureHighDpi()` is called before `QApplication` to enable Qt5 logical High DPI scaling / High DPI pixmaps and pass-through scale rounding, `AntDesign::initialize()` auto-configures High DPI when invoked before `QApplication`, the example app uses the recommended startup order, `TestAntHighDpiScaling_1_0`, `_1_25`, `_1_5`, and `_InitializeDefault` verify logical grab geometry for representative widgets and `AntWindow`, and `TestAntQtVersionVisualParity_Scale_1_25` / `_1_5` smoke the full 26-scene atlas at fractional scaling. The latest adaptation-focused CTest sweep passed `9 / 9` entries in both Qt6 and Qt5 build trees.
 - Fixed an `AntTree` flat-cache invalidation hazard where `setTreeData()` could leave cached node pointers built while the source `QVector` was still implicitly shared, then checked-state changes could detach storage before paint. `setTreeData()`, `setCheckedKeys()`, `setNodeChecked()`, and checkbox mouse toggles now rebuild the flat cache lazily after mutation.
 - Completed a targeted desktop-widget polish batch: `AntCarousel` now exposes slide click signals, previous/next slots, arrow visibility, and manual-navigation controls; `AntListItem`, `AntNavItem`, and `AntNav` accept `AntIcon` values as well as `QPixmap` / `QImage` media; `AntScrollArea` supports optional mouse-drag scrolling without stealing scrollbar drags; `AntFloatButton` has press/wave feedback with an unclipped internal shadow margin; `AntDialog` / `AntFileDialog` render matching outer shadows; and the example page wrapper keeps scrollbars just inside the `AntWindow` resize band.
 - Added `AntDialog`, `AntStackedWidget`, and `AntFileDialog` as Qt desktop extension ports: `AntDialog` is a frameless `QDialog` replacement with an Ant token title bar that reacts to theme changes, theme-aware child palettes, Ant scroll bars, close-button hover state, and a reusable `contentWidget()` body host; `AntStackedWidget` wraps `QStackedWidget` with an `AntStackedWidgetStyle` frame/background path and Outlined / Filled / Borderless variants, while `AntFileDialog` is a fully custom Ant Design file dialog built on `AntDialog`, common places, a collapsed directory tree, file-list `QFileSystemModel` / `QTreeView` surfaces, Ant inputs/select/buttons, token-painted panels, Ant scroll bars, and a scoped `AntFileDialogStyle` for file-view primitives.
@@ -74,7 +74,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Optimized `AntDrawer` by caching overlay/panel geometry, skipping redundant theme/header and overlay geometry work, removing an extra open-time panel placement pass, and making overlay paint respect scoped dirty regions.
 - Optimized `AntMessage` by caching message layout and shadow pixmaps, scoping loading-spinner repaint to the icon region, and skipping unchanged stack size/position work during relayout.
 - Optimized `AntModal` by caching dialog geometry, theme/body/footer sync state, and DPR-aware panel shadow pixmaps, while scoping mask animation repaint to the active paint region and preserving the `AntWindow` close-confirmation path.
-- Optimized `AntNotification` by caching notification layout and shadow pixmaps, scoping progress/loading/close-hover repaint to small regions, and skipping unchanged stack size/position work during relayout.
+- Optimized `AntNotification` by caching notification layout and shadow pixmaps, scoping countdown/manual-progress/loading/close-hover repaint to small regions, and skipping unchanged stack size/position work during relayout.
 - Optimized `AntPopconfirm` by reusing the popup action container/buttons across footer text and visibility changes, skipping unchanged content sync, and removing the no-op self-paint filter path.
 - Optimized `AntPopover` by caching popup size hints, bubble/header/body/action rectangles, and arrow geometry on the widget, sharing that cache with the style, skipping repeated target placement work, and avoiding unnecessary hover close-timer churn when already closed.
 - Optimized `AntProgress` by caching line/circle geometry, status colors, status info text, and size hints on the widget, repainting line progress changes and active shine frames only in the affected regions, and pausing active animation while hidden.
@@ -173,7 +173,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 - Added a README component screenshot gallery with light/dark thumbnails for all public components, and refreshed popup/feedback-heavy controls to show representative open or active states instead of only trigger buttons.
 - Fixed the `AntTour` example page so the Step 1 / 2 / 3 buttons launch the corresponding tour step through the new `AntTour::start(index)` path.
 - Fixed `AntResult` dark-mode status icon rendering so the icon is drawn directly with a transparent background instead of rendering an opaque widget tile.
-- Added an `AntNotification` example entry for loading notifications with a bottom countdown progress bar that closes automatically when the duration completes.
+- Added `AntNotification` example entries for loading notifications with a bottom countdown progress bar and for manually controlled download/task progress that can be updated through `setProgress()`.
 - Fixed `AntSteps` icon geometry so the first circular step indicator keeps a small left inset and is no longer clipped by the widget edge.
 - Fixed `AntColorPicker` trigger border geometry so normal gray and focused/active primary borders are drawn fully inside the widget frame instead of being clipped at the edges.
 - Aligned `AntRadio` ButtonStyle click feedback with `AntButton` by using the full edge-expansion Wave duration instead of the short indicator-style wave.
@@ -228,7 +228,7 @@ Follow-up: `AntColorPicker` popup now uses a manual outside-click close path ins
 
 Follow-up: `AntWindow` close confirmation is now opt-in through `setCloseConfirmationEnabled(true)`, and public APIs customize the Modal title, content, exit text, and cancel-exit text. `forceClose()` is available for automation or programmatic shutdown paths that should bypass confirmation. The targeted `window` subtest verifies the default close path skips the Modal, cancel keeps the window open after opt-in, confirm closes it, and custom text is propagated to the Modal.
 
-Follow-up: `AntMessage` and `AntNotification` now suppress popups for hidden anchor windows, relayout only feedback entries that belong to the matching anchor, follow visible `AntWindow` move/resize/state changes, and keep multiple `AntWindow` feedback stacks isolated. Targeted validation covered `messageAndNotificationFollowAntWindowAnchor`, `messageAndNotificationStayScopedToTheirAntWindowAnchors`, Message click-through, and Notification loading countdown, with the example Debug build succeeding on `2026-05-29`.
+Follow-up: `AntMessage` and `AntNotification` now suppress popups for hidden anchor windows, relayout only feedback entries that belong to the matching anchor, follow visible `AntWindow` move/resize/state changes, and keep multiple `AntWindow` feedback stacks isolated. Targeted validation covered `messageAndNotificationFollowAntWindowAnchor`, `messageAndNotificationStayScopedToTheirAntWindowAnchors`, Message click-through, Notification loading countdown, and Notification manual progress, with the example Debug build succeeding on `2026-05-29`.
 
 Follow-up: the performance pass started with `AntIcon`. Built-in enum path generation is now cached, and resource SVG icons are rendered into `QPixmapCache` entries keyed by icon name, color pair, size, and device pixel ratio. Rotation and spin remain painter transforms, so visible animation is preserved while repeated paints avoid qrc file reads and `QSvgRenderer` setup. Targeted validation covered `TestAntIcon` plus `TestAntButton` as a representative icon consumer.
 
@@ -329,7 +329,7 @@ cmake --build build --config Debug
 ctest -C Debug --output-on-failure
 ```
 
-Configured tests after alias, build-system, no-QSS guard, example subsystem guards, example page traversal, Qt-version visual parity, two Qt-version visual-atlas scale-factor entries, Qt-version metric audit, and three Windows High DPI scale-factor entries: `46`.
+Configured tests after alias, build-system, no-QSS guard, example subsystem guards, example page traversal, Qt-version visual parity, two Qt-version visual-atlas scale-factor entries, Qt-version metric audit, three Windows High DPI scale-factor entries, and the initialize-default High DPI entry: `47`.
 
 Latest full component reliability validation:
 
@@ -497,7 +497,7 @@ ctest --test-dir build -C Debug -R "TestAnt(Feedback|VisualRegression)$" --outpu
 
 Result: `2 / 2` targeted tests passed, the example Debug build succeeded, and the example smoke launch exited cleanly on `2026-05-08`.
 
-Latest targeted AntNotification loading-progress example validation:
+Latest targeted AntNotification countdown/manual-progress example validation:
 
 ```powershell
 cmake --build build --config Debug --target TestAntFeedback qt-ant-design-example

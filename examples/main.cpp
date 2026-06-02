@@ -8,6 +8,7 @@
 #include <QEvent>
 #include <QEventLoop>
 #include <QFile>
+#include <QIcon>
 #include <QImage>
 #include <QScrollBar>
 #include <QTextStream>
@@ -448,6 +449,7 @@ int main(int argc, char* argv[])
 
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("qt-ant-design-example"));
+    QApplication::setWindowIcon(QIcon(QStringLiteral(":/qt-ant-design-example/logo.png")));
     AntDesign::initialize(&app);
 
     QCommandLineParser parser;

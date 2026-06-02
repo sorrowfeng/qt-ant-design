@@ -181,7 +181,7 @@ rg -n "setStyleSheet\(" src\widgets src\styles src\core
 - 边框优先使用项目已有 crisp helper，例如 `drawCrispRoundedRect()`。
 - 图标优先使用内置 Ant Design SVG 资源或 `AntIcon`，不要新建临时 SVG 字符串。
 - 高 DPI 下 pixmap、阴影、截图 overlay 必须使用 device pixel ratio 安全的尺寸：按 `logicalSize * devicePixelRatioF()` 建立像素缓存，`setDevicePixelRatio()` 后再绘制回 Qt 逻辑坐标。
-- Qt5 / Windows 消费端必须在 `QApplication` 前调用 `AntDesign::configureHighDpi()`；新增 example 或测试入口也必须保持这个启动顺序。
+- Qt5 / Windows 消费端必须在 `QApplication` 前调用 `AntDesign::configureHighDpi()`；`AntDesign::initialize()` 会在无 `QApplication` 实例时自动补一次 High DPI 预配置，但创建 app 后仍需再次调用 `initialize(&app)` 完成资源、字体和主题初始化。新增 example 或测试入口也必须保持这个启动顺序。
 - 文本颜色、禁用态透明度、选中态背景与状态色要同时覆盖亮暗主题。
 - 动效使用 `QPropertyAnimation`、`QVariantAnimation` 或定时器时，应在隐藏、禁用、析构路径停止或断开。
 

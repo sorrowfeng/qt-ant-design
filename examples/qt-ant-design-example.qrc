@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/qt-ant-design-example">
+        <file alias="logo.png">../assets/qt-ant-design-icon.png</file>
+    </qresource>
+</RCC>

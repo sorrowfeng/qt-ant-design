@@ -1,6 +1,7 @@
 #include "ExampleWindow.h"
 
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QScrollArea>
 #include <QString>
 #include <QVBoxLayout>
@@ -10,15 +11,25 @@
 #include "core/AntTypes.h"
 #include "pages/PageCommon.h"
 #include "pages/PageRegistry.h"
+#include "widgets/AntImage.h"
 #include "widgets/AntNav.h"
 #include "widgets/AntStackedWidget.h"
 #include "widgets/AntTypography.h"
 #include "widgets/AntWidget.h"
 
+namespace
+{
+QString exampleLogoResource()
+{
+    return QStringLiteral(":/qt-ant-design-example/logo.png");
+}
+}
+
 ExampleWindow::ExampleWindow(QWidget* parent)
     : AntWindow(parent)
 {
     setWindowTitle(QStringLiteral("Ant Design Qt Widgets"));
+    setWindowIcon(QIcon(exampleLogoResource()));
     setPinButtonVisible(true);
     setThemeButtonVisible(true);
     setMinimizeButtonVisible(true);
@@ -68,14 +79,25 @@ void ExampleWindow::buildSidebar()
     sideLayout->setSpacing(0);
 
     auto* brandArea = new QWidget(m_sidebar);
-    auto* brandLayout = new QVBoxLayout(brandArea);
-    brandLayout->setContentsMargins(20, 16, 20, 16);
-    brandLayout->setSpacing(8);
+    auto* brandLayout = new QHBoxLayout(brandArea);
+    brandLayout->setContentsMargins(8, 12, 8, 12);
+    brandLayout->setSpacing(6);
+
+    auto* logo = new AntImage(brandArea);
+    logo->setObjectName(QStringLiteral("ExampleBrandLogo"));
+    logo->setSrc(exampleLogoResource());
+    logo->setAlt(QStringLiteral("qt-ant-design"));
+    logo->setPreview(false);
+    logo->setImgWidth(24);
+    logo->setImgHeight(24);
+    logo->setFixedSize(24, 24);
+    brandLayout->addWidget(logo);
 
     auto* brand = new AntTypography(QStringLiteral("qt-ant-design"), brandArea);
-    brand->setTitle(true);
-    brand->setTitleLevel(Ant::TypographyTitleLevel::H4);
-    brandLayout->addWidget(brand);
+    brand->setPixelSize(14);
+    brand->setWordWrap(false);
+    brand->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    brandLayout->addWidget(brand, 1);
 
     sideLayout->addWidget(brandArea);
 
