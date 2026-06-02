@@ -4,6 +4,24 @@ All notable changes to `qt-ant-design` are documented here.
 
 The project follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
 
+## [0.1.1] - 2026-06-02
+
+### Added
+
+- Added manually controlled `AntNotification` progress support for download/task scenarios through `ProgressMode::Manual`, `progress`, `setProgress()`, and `progress()` APIs.
+- Added a `Download Progress` notification example that demonstrates updating progress and switching to a success notification when complete.
+- Added project logo resources to the example application sidebar, runtime window icon, and Windows `.exe` icon.
+
+### Changed
+
+- `AntDesign::initialize()` now performs early High DPI pre-configuration when called before `QApplication`, simplifying Qt5 startup setup for consumers.
+- Updated feedback and project-status documentation for Notification countdown/manual progress behavior.
+
+### Fixed
+
+- Fixed Qt5 input-number frame rendering in `AntInputNumber` / `AntInputDialog` integer and double modes.
+- Fixed Showcase modal preview button clipping by sizing the footer from the actual `AntButton` height.
+
 ## [0.1.0] - 2026-06-02
 
 ### Added
