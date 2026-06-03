@@ -4,6 +4,14 @@ All notable changes to `qt-ant-design` are documented here.
 
 The project follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
 
+## [0.1.2] - 2026-06-03
+
+### Fixed
+
+- Fixed Windows example builds with Qt6 / Visual Studio / newer Windows SDKs by removing the manual `/MANIFESTINPUT` linker manifest merge path that could trigger `mt.exe : general error`.
+- Embedded the example Windows compatibility and PerMonitorV2 DPI manifest as an `.rc` `RT_MANIFEST` resource instead, while disabling MSVC auto manifest generation for the example target.
+- Added a build-system guard to prevent `/MANIFESTINPUT` from being reintroduced for the example application.
+
 ## [0.1.1] - 2026-06-02
 
 ### Added
