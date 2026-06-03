@@ -152,7 +152,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
   - Added title-bar pin and light/dark theme buttons with bundled official Ant Design icons, plus public visibility APIs for every title-bar button.
   - Reworked title-bar hover state cleanup so hover colors clear reliably when leaving title/content/native areas.
   - Added a captured-frame `AntWindow` theme transition overlay with a 16 ms timer, 220 ms duration, smootherstep easing, high-DPI-safe captures, and a crossfade path that avoids black-hole artifacts.
-  - Embedded the Windows 10/11 compatibility manifest in the example app so the native Snap Layout flyout can appear on the maximize button.
+  - Embedded the Windows 10/11 compatibility manifest in the example app through the `.rc` RT_MANIFEST resource so the native Snap Layout flyout can appear on the maximize button without relying on `/MANIFESTINPUT` / `mt.exe` manifest merging.
   - Split the Windows native frame policy by OS build: Windows 11 keeps the caption-backed Snap Layout path, while Windows 10 removes `WS_CAPTION`, uses a legacy rounded mask for non-maximized corners, preserves a 1 px DWM extended frame for the outer shadow, and leaves maximized `WM_NCCALCSIZE` rectangles unshrunk so the work area is fully covered.
   - Reworked visible Windows topmost toggles to use native `SetWindowPos(HWND_TOPMOST/HWND_NOTOPMOST)`, preserving the Qt window flags without forcing a hide/show cycle.
 - Expanded Qt-style compatibility for `AntList` / `AntListWidget` to cover common `QListWidget` workflows: string item insertion, lookup/sorting, item data roles, current row/item state, selection state, internal scrolling, `scrollToItem`, and item/current/selection signals.

@@ -5,6 +5,8 @@ endif()
 set(files_to_scan
     "${ANT_SOURCE_DIR}/CMakeLists.txt"
     "${ANT_SOURCE_DIR}/src/CMakeLists.txt"
+    "${ANT_SOURCE_DIR}/examples/CMakeLists.txt"
+    "${ANT_SOURCE_DIR}/examples/qt-ant-design-example.rc"
     "${ANT_SOURCE_DIR}/tests/CMakeLists.txt"
     "${ANT_SOURCE_DIR}/cmake/qt-ant-designConfig.cmake.in"
 )
@@ -17,6 +19,8 @@ endforeach()
 
 file(READ "${ANT_SOURCE_DIR}/CMakeLists.txt" root_cmake)
 file(READ "${ANT_SOURCE_DIR}/src/CMakeLists.txt" src_cmake)
+file(READ "${ANT_SOURCE_DIR}/examples/CMakeLists.txt" examples_cmake)
+file(READ "${ANT_SOURCE_DIR}/examples/qt-ant-design-example.rc" example_rc)
 file(READ "${ANT_SOURCE_DIR}/tests/CMakeLists.txt" tests_cmake)
 file(READ "${ANT_SOURCE_DIR}/cmake/qt-ant-designConfig.cmake.in" package_config)
 
@@ -60,6 +64,14 @@ endif()
 
 if(NOT src_cmake MATCHES "QT_ANT_DESIGN_LIBRARY" OR NOT src_cmake MATCHES "QT_ANT_DESIGN_STATIC_DEFINE")
     message(FATAL_ERROR "Static/shared builds must define the qt-ant-design export macro state")
+endif()
+
+if(examples_cmake MATCHES "MANIFESTINPUT")
+    message(FATAL_ERROR "Example app must not pass /MANIFESTINPUT; embed the manifest as an RC resource to avoid mt.exe merge failures")
+endif()
+
+if(NOT example_rc MATCHES "1[ \t]+24[ \t]+\"qt-ant-design-example\\.exe\\.manifest\"")
+    message(FATAL_ERROR "Example app must embed its Windows manifest as RT_MANIFEST resource id 1")
 endif()
 
 if(NOT EXISTS "${ANT_SOURCE_DIR}/src/core/QtAntDesignExport.h")

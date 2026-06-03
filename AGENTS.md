@@ -111,7 +111,7 @@
 - `AntWindow` 在 Windows 已显示状态下切换置顶/取消置顶时使用 `SetWindowPos(HWND_TOPMOST/HWND_NOTOPMOST)` 原地更新，避免 `setWindowFlag(Qt::WindowStaysOnTopHint)` 触发 hide/show 导致闪烁。
 - 标题栏按钮 hover 状态改为 `AntWindow` 统一维护，content/title/native leave 均会清理旧 hover，避免 hover 或离开主窗口后颜色残留。
 - 主题按钮切换 Light/Dark 时使用全窗口截图 crossfade overlay、captured new-frame 和 smootherstep 动画，避免全量主题刷新期间卡顿、高 DPI 放大、黑色圆洞或生硬的纯色扩散；Win10 / Win11 使用同一套 crossfade 动画。
-- 示例程序嵌入 Windows 10/11 manifest，并在 `ExampleWindow` 中启用全部标题栏按钮，去掉独立 dark 切换按钮。
+- 示例程序通过 `.rc` 的 RT_MANIFEST 资源嵌入 Windows 10/11 manifest，并在 MSVC 链接阶段使用 `/MANIFEST:NO` 避免 `/MANIFESTINPUT` 与 Visual Studio / Qt 自动 manifest 合并触发 `mt.exe` 失败；`ExampleWindow` 中启用全部标题栏按钮，去掉独立 dark 切换按钮。
 - 相关 targeted 验证覆盖 `TestAntQtExtensions|TestAntExampleCloseStress`，包含 Snap hit-test、标题栏 hover 清理、主题切换 crossfade overlay、16ms 动画帧率、220ms 时长、高 DPI 截图比例和无黑洞路径。
 
 ## Qt 官方常用接口兼容批次（2026-05-07）
