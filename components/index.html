@@ -2105,7 +2105,7 @@
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>基础能力和全局体验入口，包含按钮、文字、图标和浮动入口。 五种类型、三种尺寸、三种形状</p>
+          <p>用于触发明确操作，例如提交表单、打开弹层、执行危险动作或承载带图标的工具命令。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntButton.h&quot;
 
@@ -2157,7 +2157,7 @@ connect(widget, &amp;AntButton::buttonTypeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>基础能力和全局体验入口，包含按钮、文字、图标和浮动入口。 圆形/方形、Group/BackTop、Badge，点击反馈和不裁切阴影</p>
+          <p>用于把返回顶部、快捷操作或次级工具固定在界面边缘，适合长页面和桌面工具窗口。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntFloatButton.h&quot;
 
@@ -2209,7 +2209,7 @@ connect(widget, &amp;AntFloatButton::iconChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>基础能力和全局体验入口，包含按钮、文字、图标和浮动入口。 831 个官方 SVG 图标资源、字符串名称 API、Outlined/Filled/TwoTone、旋转、spin</p>
+          <p>用于在按钮、导航、提示和自绘组件中复用 Ant Design 官方图标，并统一 Filled、Outlined、TwoTone 等主题。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntIcon.h&quot;
 
@@ -2261,7 +2261,7 @@ connect(widget, &amp;AntIcon::iconTypeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>基础能力和全局体验入口，包含按钮、文字、图标和浮动入口。 Title(H1-H5)/Text/Paragraph/Link，对齐策略，setPixelSize</p>
+          <p>用于展示标题、段落、链接、强调、复制和省略文本，让普通 QLabel 式文本也能跟随 Ant Design 语义。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTypography.h&quot;
 
@@ -2313,7 +2313,7 @@ connect(widget, &amp;AntTypography::textChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 滚动吸附/解除</p>
+          <p>用于让按钮、目录或操作栏随滚动吸附在可见区域，适合长页面中的固定入口。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntAffix.h&quot;
 
@@ -2365,7 +2365,7 @@ connect(widget, &amp;AntAffix::offsetTopChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 应用包裹器</p>
+          <p>用于作为应用级能力的轻量入口，统一承载全局上下文、主题或后续 App 包裹能力。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntApp.h&quot;
 
@@ -2412,7 +2412,7 @@ auto* widget = new AntApp(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 AntGrid 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于配合 AntRow 构建 24 栅格列，控制列宽、偏移和响应式布局占位。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntGrid.h&quot;
 
@@ -2464,7 +2464,7 @@ connect(widget, &amp;AntCol::spanChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 主题配置</p>
+          <p>用于集中配置主题模式、主色、字号和圆角，让下层控件共享同一套视觉 token。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntConfigProvider.h&quot;
 
@@ -2516,7 +2516,7 @@ connect(widget, &amp;AntConfigProvider::themeModeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 水平/垂直、带标题、虚线</p>
+          <p>用于分隔内容组、表单区块或工具栏区域，也可以通过标题强调分组语义。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntDivider.h&quot;
 
@@ -2568,7 +2568,7 @@ connect(widget, &amp;AntDivider::textChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 弹性布局、gap/wrap/vertical</p>
+          <p>用于快速排列一组控件，控制方向、间距和换行，适合按钮组、表单行和工具区。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntFlex.h&quot;
 
@@ -2620,7 +2620,7 @@ connect(widget, &amp;AntFlex::verticalChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 Header/Footer/Content/Sider，Footer 跟随 layout 背景 token</p>
+          <p>用于搭建 Header、Sider、Content、Footer 组合页面骨架，适合后台和桌面主窗口内容区。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntLayout.h&quot;
 
@@ -2671,7 +2671,7 @@ connect(widget, &amp;AntLayout::hasSiderChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 AntLayout 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于承载 Layout 的主体内容区域，通常与 Header、Sider、Footer 一起组成页面框架。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntLayout.h&quot;
 
@@ -2718,7 +2718,7 @@ auto* widget = new AntLayoutContent(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 AntLayout 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于放置版权、状态说明或底部操作区，是 AntLayout 的页脚子组件。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntLayout.h&quot;
 
@@ -2765,7 +2765,7 @@ auto* widget = new AntLayoutFooter(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 AntLayout 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于放置顶部导航、标题或全局工具，是 AntLayout 的页眉子组件。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntLayout.h&quot;
 
@@ -2812,7 +2812,7 @@ auto* widget = new AntLayoutHeader(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 AntLayout 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于构建可折叠侧边栏，适合放置导航、筛选条件或工具树。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntLayout.h&quot;
 
@@ -2864,7 +2864,7 @@ connect(widget, &amp;AntLayoutSider::collapsedChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 瀑布流、最短列优先</p>
+          <p>用于图片、卡片或动态高度内容的瀑布流展示，让列高度保持更均衡。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntMasonry.h&quot;
 
@@ -2916,7 +2916,7 @@ connect(widget, &amp;AntMasonry::columnsChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 AntGrid 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于配合 AntCol 组织 24 栅格行，控制子列排列和横向布局节奏。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntGrid.h&quot;
 
@@ -2967,7 +2967,7 @@ connect(widget, &amp;AntRow::gutterChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 水平/垂直间距容器</p>
+          <p>用于给一组控件提供统一间距，避免在业务代码里手写零散 margin。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSpace.h&quot;
 
@@ -3019,7 +3019,7 @@ connect(widget, &amp;AntSpace::orientationChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 可拖拽分割面板，暗色示例面板使用主题 tint</p>
+          <p>用于创建可拖拽分隔面板，适合编辑器、文件管理器和左右/上下工作区。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSplitter.h&quot;
 
@@ -3066,7 +3066,7 @@ auto* widget = new AntSplitter(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于组织页面结构、栅格、弹性排列、间距、分割线和应用级包装。 AntSplitter 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于表示 Splitter 的拖拽手柄，通常由 AntSplitter 内部管理。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSplitter.h&quot;
 
@@ -3113,7 +3113,7 @@ auto* widget = new AntSplitterHandle(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于在页面、步骤、菜单和锚点之间切换，强调当前位置和层级。 滚动锚点，active 高亮，暗色示例内容块跟随主题</p>
+          <p>用于长页面目录导航，滚动时高亮当前章节并支持点击快速定位。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntAnchor.h&quot;
 
@@ -3163,7 +3163,7 @@ connect(widget, &amp;AntAnchor::activeIndexChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于在页面、步骤、菜单和锚点之间切换，强调当前位置和层级。 路径项、分隔符、禁用项</p>
+          <p>用于展示当前页面或文件路径层级，帮助用户返回上级或理解位置。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntBreadcrumb.h&quot;
 
@@ -3214,7 +3214,7 @@ connect(widget, &amp;AntBreadcrumb::separatorChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于在页面、步骤、菜单和锚点之间切换，强调当前位置和层级。 hover/click/contextMenu、placement、arrow</p>
+          <p>用于在按钮、文本或自定义控件旁弹出操作菜单，适合收纳次级动作。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntDropdown.h&quot;
 
@@ -3266,7 +3266,7 @@ connect(widget, &amp;AntDropdown::itemLabelsChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于在页面、步骤、菜单和锚点之间切换，强调当前位置和层级。 vertical/horizontal/inline、明暗主题</p>
+          <p>用于构建水平、垂直或内联导航菜单，适合主导航、侧边栏和命令入口。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntMenu.h&quot;
 
@@ -3318,7 +3318,7 @@ connect(widget, &amp;AntMenu::modeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于在页面、步骤、菜单和锚点之间切换，强调当前位置和层级。 simple/showQuickJumper/showSizeChanger，More Options quick jumper 支持输入页码跳转</p>
+          <p>用于分页浏览大量列表或表格数据，支持快速跳页和每页数量切换。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntPagination.h&quot;
 
@@ -3370,7 +3370,7 @@ connect(widget, &amp;AntPagination::currentChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于在页面、步骤、菜单和锚点之间切换，强调当前位置和层级。 水平/垂直、当前步骤、错误态，首个图标边缘不裁切</p>
+          <p>用于展示流程步骤和当前进度，适合向导、安装流程和多阶段表单。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSteps.h&quot;
 
@@ -3422,7 +3422,7 @@ connect(widget, &amp;AntSteps::currentIndexChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>用于在页面、步骤、菜单和锚点之间切换，强调当前位置和层级。 line/card/editable-card，内容页布局 helper</p>
+          <p>用于在同级内容区域之间切换，适合配置页、详情页和多文档界面。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTabs.h&quot;
 
@@ -3474,7 +3474,7 @@ connect(widget, &amp;AntTabs::activeKeyChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 建议弹出、键盘导航</p>
+          <p>用于输入时提供候选建议，适合搜索框、命令输入和可预测文本填写。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntAutoComplete.h&quot;
 
@@ -3526,7 +3526,7 @@ connect(widget, &amp;AntAutoComplete::textChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 多列弹出面板、点击/悬停展开</p>
+          <p>用于选择层级数据，例如地区、分类或多级资源路径。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntCascader.h&quot;
 
@@ -3578,7 +3578,7 @@ connect(widget, &amp;AntCascader::optionsChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 提供 Ant Design 风格的 Qt Widgets 控件能力。</p>
+          <p>用于布尔选择或多选列表项，适合表单开关、权限和批量选择。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntCheckBox.h&quot;
 
@@ -3630,7 +3630,7 @@ connect(widget, &amp;AntCheckBox::checkedChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 inline trigger/showText、HS field、RGB/HSV、预设、static getColor()，触发器边框内收防裁切</p>
+          <p>用于选择和预览颜色，适合主题编辑、标注颜色和可视化配置。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntColorPicker.h&quot;
 
@@ -3682,7 +3682,7 @@ connect(widget, &amp;AntColorPicker::currentColorChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 自绘日期弹层、RangePicker</p>
+          <p>用于选择日期或日期范围，适合筛选、表单和计划类场景。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntDatePicker.h&quot;
 
@@ -3734,7 +3734,7 @@ connect(widget, &amp;AntDatePicker::selectedDateChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 标题、extra、bordered、vertical</p>
+          <p>用于成组展示只读字段，适合详情页、配置摘要和对象属性面板。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntDescriptions.h&quot;
 
@@ -3786,7 +3786,7 @@ connect(widget, &amp;AntDescriptions::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 AntDescriptions 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于定义 Descriptions 中的一项标签和值，通常作为 AntDescriptions 的子项使用。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntDescriptions.h&quot;
 
@@ -3838,7 +3838,7 @@ connect(widget, &amp;AntDescriptionsItem::labelChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 横向/纵向/行内布局、校验提示、Provider、List</p>
+          <p>用于组织输入控件、标签、校验和布局，适合设置页和业务表单。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntForm.h&quot;
 
@@ -3890,7 +3890,7 @@ connect(widget, &amp;AntForm::formLayoutChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 AntForm 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于承载单个表单字段、标签和校验提示，是 AntForm 的字段单元。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntForm.h&quot;
 
@@ -3942,7 +3942,7 @@ connect(widget, &amp;AntFormItem::labelChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 AntForm 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于动态增删一组重复字段，适合联系人、规则列表和多项配置。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntForm.h&quot;
 
@@ -3994,7 +3994,7 @@ connect(widget, &amp;AntFormList::minCountChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 AntForm 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于协调多个表单之间的提交和变化事件，适合复杂页面的表单联动。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntForm.h&quot;
 
@@ -4044,7 +4044,7 @@ connect(widget, &amp;AntFormProvider::formChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 尺寸、状态、Password/Search、addon</p>
+          <p>用于输入单行文本、密码或搜索内容，并支持前后缀、addon 和清空。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntInput.h&quot;
 
@@ -4096,7 +4096,7 @@ connect(widget, &amp;AntInput::textChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 QDoubleSpinBox 风格小数/精度、小步进、前后缀</p>
+          <p>用于输入数值并限制范围、步进和小数精度，替代常见 QSpinBox/QDoubleSpinBox 场景。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntInputNumber.h&quot;
 
@@ -4148,7 +4148,7 @@ connect(widget, &amp;AntInputNumber::inputSizeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 @提及输入，弹出建议</p>
+          <p>用于输入带 @ 提及的文本，适合评论、协作消息和人员选择。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntMentions.h&quot;
 
@@ -4200,7 +4200,7 @@ connect(widget, &amp;AntMentions::textChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 Radio.Group，ButtonStyle 点击边缘 Wave 扩散</p>
+          <p>用于在少量互斥选项中选择一个值，也可使用按钮样式做模式切换。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntRadio.h&quot;
 
@@ -4252,7 +4252,7 @@ connect(widget, &amp;AntRadio::checkedChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 count/value/allowHalf/hover 放大/选中星缩放动效</p>
+          <p>用于收集评分、满意度或等级反馈，支持半星和自定义数量，适合评价类表单。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntRate.h&quot;
 
@@ -4304,7 +4304,7 @@ connect(widget, &amp;AntRate::valueChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 滑动指示器动画、图标/禁用、value/index 选中 API，完整视觉轨道点击命中</p>
+          <p>用于在少量选项中快速切换状态，适合视图模式、筛选维度和紧凑标签。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSegmented.h&quot;
 
@@ -4356,7 +4356,7 @@ connect(widget, &amp;AntSegmented::valueChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 尺寸、状态、变体、可编辑模式、Multiple/Tags，option 管理 API</p>
+          <p>用于从候选项中选择单项、多项或标签值，适合替代 QComboBox 并保留 Ant 样式。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSelect.h&quot;
 
@@ -4408,7 +4408,7 @@ connect(widget, &amp;AntSelect::selectSizeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 Range、marks、拖动浮窗一体化箭头且鼠标透明</p>
+          <p>用于在连续或离散数值范围内拖动选择，适合音量、阈值和区间配置。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSlider.h&quot;
 
@@ -4460,7 +4460,7 @@ connect(widget, &amp;AntSlider::valueChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 提供 Ant Design 风格的 Qt Widgets 控件能力。</p>
+          <p>用于即时切换开关状态，适合启用或停用设置项，强调状态会立即生效。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSwitch.h&quot;
 
@@ -4512,7 +4512,7 @@ connect(widget, &amp;AntSwitch::checkedChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 自绘时间弹层、RangePicker</p>
+          <p>用于选择时间或时间范围，适合计划、提醒和时间筛选。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTimePicker.h&quot;
 
@@ -4564,7 +4564,7 @@ connect(widget, &amp;AntTimePicker::selectedTimeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 穿梭框、双列表</p>
+          <p>用于在两个列表之间移动项目，适合权限分配、成员选择和候选项筛选。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTransfer.h&quot;
 
@@ -4614,7 +4614,7 @@ connect(widget, &amp;AntTransfer::itemsChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 下拉树形结构</p>
+          <p>用于从树形数据中选择值，适合组织结构、目录和分类选择。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTreeSelect.h&quot;
 
@@ -4666,7 +4666,7 @@ connect(widget, &amp;AntTreeSelect::valueChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>收集用户输入，覆盖文本、选择、日期时间、上传、穿梭框等场景。 文本/图片/卡片三种模式、Dragger</p>
+          <p>用于选择、拖拽和展示上传文件，适合文本、图片和卡片式文件列表。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntUpload.h&quot;
 
@@ -4718,7 +4718,7 @@ connect(widget, &amp;AntUpload::acceptChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 文本、图标、图片头像、Group</p>
+          <p>用于展示用户、对象或团队头像，支持文字、图标和图片。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntAvatar.h&quot;
 
@@ -4770,7 +4770,7 @@ connect(widget, &amp;AntAvatar::textChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 AntAvatar 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于压缩展示一组头像，适合成员列表、协作者和参与者概览。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntAvatar.h&quot;
 
@@ -4822,7 +4822,7 @@ connect(widget, &amp;AntAvatarGroup::maxCountChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 count/dot/status/processing/Ribbon</p>
+          <p>用于给图标、头像或文本附加数量、状态点或 Ribbon 标记。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntBadge.h&quot;
 
@@ -4874,7 +4874,7 @@ connect(widget, &amp;AntBadge::countChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 Day/Month/Year 三态，内部 QTableView viewport 跟随主题</p>
+          <p>用于以日历方式浏览日期、月份或年份，适合日程和日期总览。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntCalendar.h&quot;
 
@@ -4926,7 +4926,7 @@ connect(widget, &amp;AntCalendar::clicked, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 封面、extra、action 区、loading、Meta、Grid，主题切换标题 palette</p>
+          <p>用于承载一组相关内容、操作和元信息，是列表、详情和仪表盘中的基础容器。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntCard.h&quot;
 
@@ -4978,7 +4978,7 @@ connect(widget, &amp;AntCard::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 自动播放、圆点指示器、左右箭头、手动切换、点击事件</p>
+          <p>用于轮播展示多页内容、截图或引导图，并支持自动和手动切换。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntCarousel.h&quot;
 
@@ -5030,7 +5030,7 @@ connect(widget, &amp;AntCarousel::currentIndexChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 折叠面板、accordion 模式、动画</p>
+          <p>用于折叠展示可选内容，减少页面占用并保留信息层级。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntCollapse.h&quot;
 
@@ -5082,7 +5082,7 @@ connect(widget, &amp;AntCollapse::accordionChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 AntCollapse 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于定义 Collapse 中的一个折叠面板，通常由 AntCollapse 管理。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntCollapse.h&quot;
 
@@ -5134,7 +5134,7 @@ connect(widget, &amp;AntCollapsePanel::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 默认插画、simple 模式</p>
+          <p>用于在列表、表格或查询结果为空时给出友好的空状态。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntEmpty.h&quot;
 
@@ -5186,7 +5186,7 @@ connect(widget, &amp;AntEmpty::descriptionChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 图片展示、全屏预览、PreviewGroup</p>
+          <p>用于展示图片并支持预览，适合截图、头像和内容图查看。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntImage.h&quot;
 
@@ -5238,7 +5238,7 @@ connect(widget, &amp;AntImage::srcChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 header/footer/bordered/split/size，item 支持 AntIcon 与 QPixmap/QImage 媒体，内部滚动，平衡选中高亮 inset，AntListWidget 覆盖常用 QListWidget-style API</p>
+          <p>用于展示同构条目集合，支持头尾、分割线、滚动和条目媒体。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntList.h&quot;
 
@@ -5290,7 +5290,7 @@ connect(widget, &amp;AntList::borderedChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 AntList 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于定义列表中的单个条目，承载标题、图标、勾选和自定义数据。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntList.h&quot;
 
@@ -5342,7 +5342,7 @@ connect(widget, &amp;AntListItem::textChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 AntList 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于在 ListItem 中组织头像、标题和描述等元信息。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntList.h&quot;
 
@@ -5391,7 +5391,7 @@ widget-&gt;setDescription(QStringLiteral(&quot;示例&quot;));</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 已在反馈类</p>
+          <p>用于在目标控件旁显示补充信息或轻量操作内容，适合不需要打断流程的上下文面板。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntPopover.h&quot;
 
@@ -5443,7 +5443,7 @@ connect(widget, &amp;AntPopover::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 内置 byte-mode + Reed-Solomon QR 生成、默认仓库地址、示例可编辑重生成、状态叠加</p>
+          <p>用于生成和展示二维码，适合链接、设备配对和状态覆盖。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntQRCode.h&quot;
 
@@ -5495,7 +5495,7 @@ connect(widget, &amp;AntQRCode::valueChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 title/value/precision/prefix/suffix/Countdown</p>
+          <p>用于突出展示数值、单位、前后缀或倒计时，适合仪表盘和关键指标区域。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntStatistic.h&quot;
 
@@ -5547,7 +5547,7 @@ connect(widget, &amp;AntStatistic::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 排序、选择、分页、行 tooltip、空态插画</p>
+          <p>用于展示结构化二维数据，支持排序、选择、分页和行级提示。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTable.h&quot;
 
@@ -5599,7 +5599,7 @@ connect(widget, &amp;AntTable::selectionChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 13 色预设、closable/checkable/variant</p>
+          <p>用于标记属性、状态或分类，也可作为可关闭或可勾选标签。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTag.h&quot;
 
@@ -5651,7 +5651,7 @@ connect(widget, &amp;AntTag::textChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 垂直/水平、outlined/filled、颜色</p>
+          <p>用于按时间顺序展示事件进展，适合日志、流程和历史记录。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTimeline.h&quot;
 
@@ -5703,7 +5703,7 @@ connect(widget, &amp;AntTimeline::modeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 已在反馈类</p>
+          <p>用于为控件提供短文本说明，适合图标按钮和截断内容。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntToolTip.h&quot;
 
@@ -5755,7 +5755,7 @@ connect(widget, &amp;AntToolTip::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>展示结构化或非结构化数据，包含列表、表格、树、统计、卡片等。 展开/收起、选择、复选框、连接线</p>
+          <p>用于展示和操作层级数据，支持展开、选择、复选和连接线。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTree.h&quot;
 
@@ -5807,7 +5807,7 @@ connect(widget, &amp;AntTree::selectableChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 type/icon/description/closable/banner</p>
+          <p>用于在页面内展示持久提示、警告或成功信息，可带描述、图标和关闭入口。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntAlert.h&quot;
 
@@ -5859,7 +5859,7 @@ connect(widget, &amp;AntAlert::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 Left/Right/Top/Bottom、动画、遮罩</p>
+          <p>用于从屏幕边缘滑出补充面板，适合详情、筛选和临时编辑。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntDrawer.h&quot;
 
@@ -5911,7 +5911,7 @@ connect(widget, &amp;AntDrawer::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 Qt::ToolTip 浮层消息、6 种 placement，点击关闭时透传到底层控件</p>
+          <p>用于显示轻量全局反馈，例如保存成功、加载中或操作失败。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntMessage.h&quot;
 
@@ -5963,7 +5963,7 @@ connect(widget, &amp;AntMessage::textChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 遮罩层、标题/正文、自定义 footer、命令式 API，柔和外阴影无裁切边界</p>
+          <p>用于需要用户确认或集中处理的对话框，支持遮罩、标题、正文和自定义 footer。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntModal.h&quot;
 
@@ -6015,7 +6015,7 @@ connect(widget, &amp;AntModal::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 多 placement 通知，loading + 进度条倒计时</p>
+          <p>用于展示可停留的全局通知，适合异步任务、下载进度和系统提醒。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntNotification.h&quot;
 
@@ -6067,7 +6067,7 @@ connect(widget, &amp;AntNotification::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 title/description/ok/cancel/placement，箭头与弹层主体一体化绘制</p>
+          <p>用于在危险或不可逆操作前做轻量确认，减少完整弹窗打断。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntPopconfirm.h&quot;
 
@@ -6119,7 +6119,7 @@ connect(widget, &amp;AntPopconfirm::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 line/circle/dashboard</p>
+          <p>用于展示任务完成度，支持线形、圆形和仪表盘形态。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntProgress.h&quot;
 
@@ -6171,7 +6171,7 @@ connect(widget, &amp;AntProgress::percentChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 status/title/subTitle/extra，暗色透明状态图标</p>
+          <p>用于展示操作结果页，例如成功、失败、空权限或 404 式反馈。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntResult.h&quot;
 
@@ -6223,7 +6223,7 @@ connect(widget, &amp;AntResult::statusChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 active shimmer、头像/标题/段落占位、Element 变体</p>
+          <p>用于数据加载期间占位，保持页面结构稳定并降低等待感。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSkeleton.h&quot;
 
@@ -6275,7 +6275,7 @@ connect(widget, &amp;AntSkeleton::activeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 small/middle/large/percent/delay</p>
+          <p>用于局部或全局加载状态提示，可配合延迟、百分比和描述文本。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntSpin.h&quot;
 
@@ -6327,7 +6327,7 @@ connect(widget, &amp;AntSpin::spinningChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 遮罩式分步引导、目标高亮，支持从指定步骤启动</p>
+          <p>用于分步引导用户认识界面功能，突出目标区域并显示说明。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntTour.h&quot;
 
@@ -6377,7 +6377,7 @@ connect(widget, &amp;AntTour::stepChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>表达系统状态、结果、通知、弹层确认和加载过程。 旋转文本平铺、多行、自定义间距，鼠标透明覆盖层</p>
+          <p>用于在页面或区域上叠加水印，适合版权、环境标识和安全提示。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntWatermark.h&quot;
 
@@ -6429,7 +6429,7 @@ connect(widget, &amp;AntWatermark::contentChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 完全自定义 Ant Design 文件对话框，左侧常用位置 + 默认折叠目录树，右侧文件列表使用 QFileSystemModel/QTreeView，配套 Ant 输入/下拉/按钮和 token 绘制面板</p>
+          <p>用于替代原生 QDialog，提供 Ant 风格标题栏、内容宿主、阴影和主题同步。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntDialog.h&quot;
 
@@ -6481,7 +6481,7 @@ connect(widget, &amp;AntDialog::titleBarVisibleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 可停靠面板，Win32 resize；配套 AntDockManager 使用自研 splitter/tab 停靠树，提供中心标签页停靠、可序列化命名布局快照、tab 拖动排序、tab/标题栏右键菜单、程序化浮动和 Dock 特性 API、阈值激活的半透明拖动预览、可开关的中心/边缘停靠小方格、按引导位置确定落位、manager-owned 浮动 Dock 原生窗口、AntWindow-style Windows native frame/DWM 圆角阴影和拖回布局</p>
+          <p>用于管理复杂停靠布局，支持标签化、分割、浮动和布局保存恢复。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntDockManager.h&quot;
 
@@ -6533,7 +6533,7 @@ connect(widget, &amp;AntDockManager::dockWidgetFeatureChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 可停靠面板，Win32 resize；配套 AntDockManager 使用自研 splitter/tab 停靠树，提供中心标签页停靠、可序列化命名布局快照、tab 拖动排序、tab/标题栏右键菜单、程序化浮动和 Dock 特性 API、阈值激活的半透明拖动预览、可开关的中心/边缘停靠小方格、按引导位置确定落位、manager-owned 浮动 Dock 原生窗口、AntWindow-style Windows native frame/DWM 圆角阴影和拖回布局</p>
+          <p>用于构建可停靠面板，可作为 DockManager 的内容单元或浮动窗口。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntDockWidget.h&quot;
 
@@ -6580,7 +6580,7 @@ auto* widget = new AntDockWidget(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 完全自定义 Ant Design 文件对话框，左侧常用位置 + 默认折叠目录树，右侧文件列表使用 QFileSystemModel/QTreeView，配套 Ant 输入/下拉/按钮和 token 绘制面板</p>
+          <p>用于替代 QFileDialog，提供 Ant 风格文件选择、目录树、快速访问和文件列表。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntFileDialog.h&quot;
 
@@ -6629,7 +6629,7 @@ widget-&gt;setDirectory(QStringLiteral(&quot;示例&quot;));</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 QInputDialog 替代控件，复用 AntDialog 标题栏/阴影/主题同步，支持文本、整数、浮点和下拉项输入、按钮文案、NoButtons / PlainText 选项与 changed/selected 信号</p>
+          <p>用于替代 QInputDialog，以 AntDialog 外壳承载文本、整数、浮点和下拉输入。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntInputDialog.h&quot;
 
@@ -6681,7 +6681,7 @@ connect(widget, &amp;AntInputDialog::inputModeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 日志输出控件</p>
+          <p>用于展示分级日志和时间戳，适合调试面板、运行状态和操作记录。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntLog.h&quot;
 
@@ -6733,7 +6733,7 @@ connect(widget, &amp;AntLog::maxEntriesChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 菜单栏</p>
+          <p>用于替代 QMenuBar，让窗口菜单栏保持 Ant token 视觉。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntMenuBar.h&quot;
 
@@ -6780,7 +6780,7 @@ auto* widget = new AntMenuBar(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 侧边栏/选择栏容器，管理分组标题、AntNavItem 图标/媒体、选中状态、当前项信号和 AntScrollBar</p>
+          <p>用于构建侧边导航或选择栏，管理分组、互斥选择、滚动和当前项信号。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntNav.h&quot;
 
@@ -6830,7 +6830,7 @@ connect(widget, &amp;AntNav::currentIndexChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 侧边栏导航项，支持 AntIcon 与 QPixmap/QImage 媒体，active/hover 状态，clicked 信号</p>
+          <p>用于作为 AntNav 的单个导航项，支持图标、图片媒体和选中状态。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntNavItem.h&quot;
 
@@ -6882,7 +6882,7 @@ connect(widget, &amp;AntNavItem::activeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 多行文本编辑器</p>
+          <p>用于多行纯文本编辑，适合日志输入、脚本片段和备注内容。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntPlainTextEdit.h&quot;
 
@@ -6934,7 +6934,7 @@ connect(widget, &amp;AntPlainTextEdit::variantChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 Ribbon 顶部命令区，Page/Group、大/小 action、嵌入 Ant/Qt 控件，支持 Tab 指示条/折叠动画、折叠弹出并可接入 AntWindow</p>
+          <p>用于构建 Office 风格功能区，将页面、分组和动作组织成顶部命令面板。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntRibbon.h&quot;
 
@@ -6986,7 +6986,7 @@ connect(widget, &amp;AntRibbon::currentPageChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 AntRibbon 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于组织 Ribbon 页面中的一组大/小动作或嵌入控件。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntRibbon.h&quot;
 
@@ -7037,7 +7037,7 @@ connect(widget, &amp;AntRibbonGroup::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 AntRibbon 的公开子组件 / 辅助 API 类，通常随父组件组合使用。</p>
+          <p>用于定义 Ribbon 的一个页面，承载多个命令分组。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntRibbon.h&quot;
 
@@ -7089,7 +7089,7 @@ connect(widget, &amp;AntRibbonPage::titleChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 QScrollArea + AntScrollBar + 触摸手势滚动 + 可开关鼠标拖动滚动</p>
+          <p>用于替代 QScrollArea，内置 AntScrollBar、触摸手势和可选鼠标拖动滚动。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntScrollArea.h&quot;
 
@@ -7141,7 +7141,7 @@ connect(widget, &amp;AntScrollArea::autoHideScrollBarChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 8px 细滚动条，自动隐藏，示例 QScrollArea 暗色 surface 跟随主题</p>
+          <p>用于提供 Ant 风格细滚动条，适合嵌入滚动区域和自绘视图。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntScrollBar.h&quot;
 
@@ -7192,7 +7192,7 @@ connect(widget, &amp;AntScrollBar::autoHideChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 QStackedWidget 风格页面栈，Ant token 背景/边框，Outlined/Filled/Borderless 变体</p>
+          <p>用于管理多页面切换，适合设置页、向导和主内容页面栈。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntStackedWidget.h&quot;
 
@@ -7243,7 +7243,7 @@ connect(widget, &amp;AntStackedWidget::variantChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 状态栏</p>
+          <p>用于窗口底部状态展示，承载临时消息、永久项和交互状态。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntStatusBar.h&quot;
 
@@ -7295,7 +7295,7 @@ connect(widget, &amp;AntStatusBar::messageChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 工具栏</p>
+          <p>用于替代 QToolBar，展示一组命令按钮或工具入口。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntToolBar.h&quot;
 
@@ -7342,7 +7342,7 @@ auto* widget = new AntToolBar(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 带下拉菜单的按钮</p>
+          <p>用于替代 QToolButton，适合工具栏按钮、带菜单按钮和图标命令。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntToolButton.h&quot;
 
@@ -7394,7 +7394,7 @@ connect(widget, &amp;AntToolButton::buttonTypeChanged, this, []() {
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 基础 QWidget，自动主题切换</p>
+          <p>用于作为主题感知基础容器，让普通 QWidget 内容跟随 Ant 主题刷新。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntWidget.h&quot;
 
@@ -7441,7 +7441,7 @@ auto* widget = new AntWidget(parent);</code></pre>
         </figure>
         <div class="usage-panel">
           <h4>何时使用</h4>
-          <p>面向 Qt Widgets 桌面应用的窗口、对话框、工具栏、Dock、滚动等扩展。 无边框窗口，自定义标题栏，Win11 Snap/Win10 DWM 阴影与圆角 mask 同步，标题栏按钮 API，主题切换遮罩动画</p>
+          <p>用于替代顶层窗口外壳，提供自定义标题栏、Win11 Snap、DWM 阴影和主题切换。</p>
           <h4>基本用法</h4>
           <pre><code>#include &quot;src/widgets/AntWindow.h&quot;
 
