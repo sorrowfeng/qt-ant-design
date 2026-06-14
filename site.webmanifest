@@ -1,0 +1,23 @@
+{
+  "name": "qt-ant-design",
+  "short_name": "qt-ant-design",
+  "description": "Qt Widgets Ant Design component library for Qt5 and Qt6.",
+  "start_url": "/qt-ant-design/",
+  "scope": "/qt-ant-design/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1677ff",
+  "icons": [
+    {
+      "src": "assets/qt-ant-design-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/qt-ant-design-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
