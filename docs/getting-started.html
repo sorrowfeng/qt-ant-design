@@ -459,13 +459,13 @@ pre code {
             <div class="quick-step"><strong>2. 构建 example</strong><p>先验证示例窗口、图标、弹层和高 DPI 表现是否符合预期。</p></div>
             <div class="quick-step"><strong>3. 接入业务工程</strong><p>使用 <code>AntDesign::initialize(&app)</code> 完成资源、字体和主题初始化。</p></div>
           </div>
-          <pre><code>cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt -DBUILD_SHARED_LIBS=OFF
+          <pre><code class="language-bash">cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt -DBUILD_SHARED_LIBS=OFF
 cmake --build build --config Debug --target qt-ant-design-example</code></pre>
         </section>
         <section id="subdir">
           <h2>作为子目录接入</h2>
           <p>适合和业务工程一起构建，库类型通过标准 <code>BUILD_SHARED_LIBS</code> 控制。</p>
-          <pre><code>add_subdirectory(qt-ant-design)
+          <pre><code class="language-cmake">add_subdirectory(qt-ant-design)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Svg)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Svg)
@@ -478,16 +478,16 @@ target_link_libraries(my-qt-app PRIVATE
         </section>
         <section id="package">
           <h2>安装包接入</h2>
-          <pre><code>cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt
+          <pre><code class="language-bash">cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt
 cmake --build build --config Release --target install</code></pre>
           <p>消费项目中使用 CMake package：</p>
-          <pre><code>find_package(qt-ant-design CONFIG REQUIRED)
+          <pre><code class="language-cmake">find_package(qt-ant-design CONFIG REQUIRED)
 target_link_libraries(my-qt-app PRIVATE qt-ant-design::qt-ant-design)</code></pre>
         </section>
         <section id="startup">
           <h2>启动初始化</h2>
           <p>推荐在创建 <code>QApplication</code> 前配置高 DPI，创建应用后初始化资源、字体和主题。若你希望统一使用 <code>initialize()</code>，也可以在 <code>QApplication</code> 前调用一次无参数 <code>AntDesign::initialize()</code>，它会完成 High DPI 预配置并返回；创建 app 后仍需再次调用 <code>AntDesign::initialize(&app)</code>。</p>
-          <pre><code>int main(int argc, char* argv[])
+          <pre><code class="language-cpp">int main(int argc, char* argv[])
 {
     AntDesign::configureHighDpi();
     QApplication app(argc, argv);
@@ -503,7 +503,7 @@ target_link_libraries(my-qt-app PRIVATE qt-ant-design::qt-ant-design)</code></pr
         </section>
         <section id="example">
           <h2>运行示例</h2>
-          <pre><code>cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt
+          <pre><code class="language-bash">cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt
 cmake --build build --config Debug --target qt-ant-design-example</code></pre>
           <div class="callout">示例程序使用 AntWindow、AntNav 和 AntScrollArea 组织所有组件页面，是检查主题、滚动、缩放比例和 Qt5/Qt6 视觉一致性的主入口。</div>
         </section>
