@@ -136,6 +136,24 @@ h1 {
   gap: 12px;
   margin-top: 34px;
 }
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 22px;
+}
+.hero-badges span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 3px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
 .btn {
   display: inline-flex;
   align-items: center;
@@ -204,24 +222,47 @@ h1 {
 }
 .stat span { color: var(--muted); }
 .feature-grid,
-.doc-grid {
+.doc-grid,
+.path-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 .card,
-.doc-card {
+.doc-card,
+.path-card {
   padding: 22px;
 }
 .card h3,
-.doc-card h3 {
+.doc-card h3,
+.path-card h3 {
   margin: 0 0 8px;
   font-size: 18px;
 }
 .card p,
-.doc-card p {
+.doc-card p,
+.path-card p {
   margin: 0;
   color: var(--text);
+}
+.path-card {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow: var(--shadow);
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.path-card:hover {
+  border-color: #91caff;
+  box-shadow: 0 10px 28px rgba(22, 119, 255, 0.12);
+  transform: translateY(-2px);
+}
+.path-card small {
+  display: inline-flex;
+  margin-bottom: 12px;
+  color: var(--brand);
+  font-weight: 700;
 }
 .showcase-grid {
   display: grid;
@@ -355,6 +396,12 @@ pre code {
   .hero {
     align-items: flex-start;
     flex-direction: column;
+    justify-content: flex-start;
+    min-height: auto;
+  }
+  .hero-copy {
+    flex: 0 1 auto;
+    max-width: none;
   }
   .hero-logo {
     order: -1;
@@ -364,6 +411,7 @@ pre code {
   .stats,
   .feature-grid,
   .doc-grid,
+  .path-grid,
   .component-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -388,6 +436,7 @@ pre code {
   .stats,
   .feature-grid,
   .doc-grid,
+  .path-grid,
   .showcase-grid,
   .component-strip {
     grid-template-columns: 1fr;
@@ -408,6 +457,12 @@ pre code {
         <span class="eyebrow">Qt Widgets x Ant Design</span>
         <h1>qt-ant-design</h1>
         <p>一个面向 Qt5 / Qt6 Widgets 应用的 Ant Design 风格组件库，用 QPainter 与 QProxyStyle 复刻桌面端可用的现代 UI 体验。</p>
+        <div class="hero-badges" aria-label="项目摘要">
+          <span>v0.1.2</span>
+          <span>Qt 5.15.2 / Qt 6</span>
+          <span>89 个公开组件</span>
+          <span>831 个官方图标</span>
+        </div>
         <div class="hero-actions">
           <a class="btn primary" href="components/">查看组件</a>
           <a class="btn" href="docs/getting-started.html">快速开始</a>
@@ -418,10 +473,25 @@ pre code {
     </section>
     <section class="section compact" aria-label="项目状态">
       <div class="stats">
-        <div class="stat"><strong>88</strong><span>公开组件覆盖</span></div>
+        <div class="stat"><strong>89</strong><span>公开组件覆盖</span></div>
         <div class="stat"><strong>70 / 70</strong><span>Ant Design 标准组件</span></div>
-        <div class="stat"><strong>105</strong><span>文档 API 类</span></div>
-        <div class="stat"><strong>57</strong><span>共享枚举</span></div>
+        <div class="stat"><strong>831</strong><span>官方图标内置</span></div>
+        <div class="stat"><strong>47</strong><span>CTest 验证条目</span></div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Start Here</span>
+          <h2>按你的任务进入文档</h2>
+          <p>主页不只做展示，也把常见决策路径摆在第一屏之后：集成、选型、替换 Qt 控件、验证兼容性都能直接进入。</p>
+        </div>
+      </div>
+      <div class="path-grid">
+        <a class="path-card" href="docs/getting-started.html"><small>01</small><h3>接入项目</h3><p>从 CMake、初始化入口、资源注册和示例程序开始，确认 clone 后能稳定构建。</p></a>
+        <a class="path-card" href="components/"><small>02</small><h3>查找控件</h3><p>按分类或 API 名搜索组件，查看截图、基本用法、属性、方法和信号。</p></a>
+        <a class="path-card" href="docs/design.html"><small>03</small><h3>理解架构</h3><p>了解 token、QProxyStyle、主题切换、绘制模式和桌面扩展组件的边界。</p></a>
+        <a class="path-card" href="docs/compatibility.html"><small>04</small><h3>验证质量</h3><p>查看 Qt5 / Qt6、高 DPI、视觉审计、测试覆盖和版本发布策略。</p></a>
       </div>
     </section>
     <section class="section">
@@ -475,11 +545,11 @@ pre code {
         <a class="doc-card" href="docs/getting-started.html"><h3>快速开始</h3><p>CMake 集成、初始化入口、示例程序和安装包使用方式。</p></a>
         <a class="doc-card" href="docs/design.html"><h3>设计与架构</h3><p>主题 token、QProxyStyle 绘制策略、组件分类和桌面扩展原则。</p></a>
         <a class="doc-card" href="docs/compatibility.html"><h3>兼容性与质量</h3><p>Qt5/Qt6、高 DPI、视觉对齐和自动化测试覆盖。</p></a>
-        <a class="doc-card" href="components/"><h3>组件 API</h3><p>105 个 API 类、19 个 Qt 风格别名、57 个共享枚举。</p></a>
+        <a class="doc-card" href="components/"><h3>组件 API</h3><p>89 个公开组件、19 个 Qt 风格别名、831 个官方图标和完整 API 索引。</p></a>
       </div>
-      <p class="lead">站点生成时间：2026-06-01。发布目标：<a href="http://www.sorrowfeng.top/qt-ant-design/">http://www.sorrowfeng.top/qt-ant-design/</a></p>
+      <p class="lead">文档更新时间：2026-06-14。当前发布版本：v0.1.2。发布目标：<a href="http://www.sorrowfeng.top/qt-ant-design/">http://www.sorrowfeng.top/qt-ant-design/</a></p>
     </section>
   </main>
-  <footer class="footer">qt-ant-design · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
+  <footer class="footer">qt-ant-design · v0.1.2 · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
 </body>
 </html>

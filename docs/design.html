@@ -412,12 +412,22 @@ pre code {
     </section>
     <section class="section content-grid">
       <aside class="side">
+        <a href="#snapshot">版本快照</a>
         <a href="#principles">设计原则</a>
         <a href="#paint">绘制架构</a>
         <a href="#categories">组件分类</a>
         <a href="#desktop">桌面扩展</a>
       </aside>
       <article class="article">
+        <section id="snapshot">
+          <h2>版本快照</h2>
+          <div class="feature-grid">
+            <article class="card"><h3>v0.1.2</h3><p>当前发布版本，包含 manifest 修复、高 DPI 初始化优化和 Qt5 / Qt6 视觉一致性改进。</p></article>
+            <article class="card"><h3>89 个公开组件</h3><p>覆盖 Ant Design 标准组件，并补充窗口、对话框、Dock、Ribbon、Nav 等桌面控件。</p></article>
+            <article class="card"><h3>67 个 Style 类</h3><p>主要组件迁移到 QProxyStyle，API 状态和绘制职责分离。</p></article>
+            <article class="card"><h3>47 个 CTest</h3><p>覆盖组件行为、主题切换、Qt5/Qt6 差异、高 DPI 和 example 页面遍历。</p></article>
+          </div>
+        </section>
         <section id="principles">
           <h2>设计原则</h2>
           <p>qt-ant-design 不是简单套皮，而是把 Ant Design 的视觉层级、状态反馈、组件密度和 token 思路转译为 Qt Widgets 可维护的实现。</p>
@@ -452,6 +462,6 @@ pre code {
       </article>
     </section>
   </main>
-  <footer class="footer">qt-ant-design · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
+  <footer class="footer">qt-ant-design · v0.1.2 · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
 </body>
 </html>

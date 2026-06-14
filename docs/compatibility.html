@@ -412,12 +412,22 @@ pre code {
     </section>
     <section class="section content-grid">
       <aside class="side">
+        <a href="#snapshot">质量快照</a>
         <a href="#qt">Qt 版本</a>
         <a href="#dpi">高 DPI</a>
         <a href="#quality">质量门禁</a>
         <a href="#pages">Pages 发布</a>
       </aside>
       <article class="article">
+        <section id="snapshot">
+          <h2>质量快照</h2>
+          <div class="feature-grid">
+            <article class="card"><h3>Qt5 + Qt6</h3><p>CMake 自动识别 Qt5 / Qt6，当前重点验证 Qt 5.15.2 与 Qt 6.x。</p></article>
+            <article class="card"><h3>High DPI</h3><p>覆盖 1.0、1.25、1.5 缩放比例，减少多分辨率下的尺寸和截图漂移。</p></article>
+            <article class="card"><h3>Icon Parity</h3><p>AntIcon 使用统一 SVG 资源和渲染路径，目标是在 Qt5 与 Qt6 下保持同一视觉结果。</p></article>
+            <article class="card"><h3>47 个 CTest</h3><p>包含组件行为、视觉 atlas、度量审计、无 QSS 门禁和 example 页面遍历。</p></article>
+          </div>
+        </section>
         <section id="qt">
           <h2>Qt 版本</h2>
           <p>CMake 配置时使用 <code>find_package(QT NAMES Qt6 Qt5 ...)</code> 自动识别 Qt6 或 Qt5。当前重点验证环境包含 Qt 5.15.2 和 Qt 6.x。</p>
@@ -429,7 +439,7 @@ pre code {
         </section>
         <section id="dpi">
           <h2>高 DPI 与多分辨率</h2>
-          <p><code>AntDesign::configureHighDpi()</code> 在 Qt5 下启用逻辑高 DPI 缩放和高 DPI pixmap，并使用 pass-through scale rounding 策略减少 125%、150% 缩放下的尺寸漂移。</p>
+          <p><code>AntDesign::configureHighDpi()</code> 在 Qt5 下启用逻辑高 DPI 缩放和高 DPI pixmap，并使用 pass-through scale rounding 策略减少 125%、150% 缩放下的尺寸漂移。<code>AntDesign::initialize()</code> 在 <code>QApplication</code> 创建前调用时会自动完成这一步；创建 app 后仍需调用 <code>AntDesign::initialize(&app)</code> 加载资源、字体和主题。</p>
           <div class="callout">示例程序在主屏幕分辨率和缩放比例之外，还通过自动化测试覆盖 1.0、1.25、1.5 等比例的逻辑截图尺寸。</div>
         </section>
         <section id="quality">
@@ -448,6 +458,6 @@ pre code {
       </article>
     </section>
   </main>
-  <footer class="footer">qt-ant-design · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
+  <footer class="footer">qt-ant-design · v0.1.2 · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
 </body>
 </html>

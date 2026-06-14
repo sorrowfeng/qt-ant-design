@@ -253,7 +253,7 @@
     .toolbar {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 10px;
       margin-top: 28px;
       border-top: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
@@ -270,6 +270,48 @@
       background: transparent;
     }
     .search::placeholder { color: rgba(0, 0, 0, 0.28); }
+    .search-icon {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+    }
+    .clear-search {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--subtle);
+      cursor: pointer;
+      font: inherit;
+    }
+    .clear-search:hover {
+      border-color: var(--ant-blue-border);
+      color: var(--ant-blue);
+    }
+    .search-status,
+    .search-empty,
+    .hero-note {
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 13px;
+    }
+    .search-empty {
+      border: 1px dashed var(--ant-blue-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--ant-blue-bg);
+      color: var(--subtle);
+    }
+    .search-empty[hidden],
+    .clear-search[hidden] {
+      display: none;
+    }
     .source-links {
       display: flex;
       gap: 10px;
@@ -351,6 +393,10 @@
       border-color: var(--ant-blue-border);
       box-shadow: var(--shadow);
       transform: translateY(-2px);
+    }
+    .overview-card.active {
+      border-color: var(--ant-blue);
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.08), var(--shadow);
     }
     .overview-card-title {
       height: 56px;
@@ -454,10 +500,12 @@
       padding: 24px;
       border-bottom: 1px solid var(--line);
       background: #fff;
+      min-width: 0;
     }
     .component-preview {
       margin: 0;
       min-height: 220px;
+      min-width: 0;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -537,6 +585,7 @@
       margin: 0 0 8px;
       font-size: 16px;
     }
+    .usage-panel { min-width: 0; }
     .usage-panel p {
       margin: 0 0 18px;
       color: var(--subtle);
@@ -629,8 +678,12 @@
       .sidebar, .toc { display: none; }
       .overview-grid, .meta-grid { grid-template-columns: 1fr; }
       .component-head { display: block; }
+      .component-body { padding: 16px; gap: 16px; }
+      .component-preview { min-height: 170px; }
+      .component-preview img { max-width: 100%; max-height: 150px; }
+      .api-block { padding: 18px 16px 2px; }
       .api-count { margin-top: 12px; }
-      table { display: block; overflow-x: auto; }
+      table { display: block; max-width: 100%; overflow-x: auto; }
       .enum-section li { grid-template-columns: 1fr; }
       .image-lightbox { padding: 64px 16px 24px; }
       .image-lightbox-panel { max-width: calc(100vw - 32px); max-height: calc(100vh - 88px); }
@@ -661,15 +714,20 @@
           左侧按分类导航，正文先浏览组件卡片，再查看每个控件的使用说明、截图、头文件、继承关系、属性、方法、slots、信号和相关数据结构。
         </p>
         <div class="stats-line">
-          <span>105 个公开 API 类</span>
+          <span>89 个公开组件</span>
           <span>19 个 Qt 风格别名</span>
+          <span>831 个官方图标</span>
           <span>3217 个属性 / 方法 / 信号条目</span>
-          <span>57 个共享枚举</span>
+          <span>当前版本 v0.1.2</span>
         </div>
         <div class="toolbar">
           <input class="search" id="search" placeholder="搜索组件、API、分类，例如 AntSelect / valueChanged / 数据录入">
-          <span aria-hidden="true">⌕</span>
+          <button class="clear-search" id="clear-search" type="button" hidden>清除</button>
+          <span class="search-icon" aria-hidden="true">⌕</span>
         </div>
+        <p class="search-status" id="result-count" aria-live="polite">当前显示全部组件和 API 章节。</p>
+        <p class="search-empty" id="search-empty" hidden></p>
+        <p class="hero-note">提示：输入组件名、方法名、信号名或中文分类后，按 Enter 会直接跳到第一个匹配组件；截图可点击放大。</p>
         <div class="source-links">
           <a href="https://ant.design/components/overview-cn/">Ant Design 官方总览</a>
           <a href="../docs/compatibility.html">项目状态</a>
@@ -7620,7 +7678,7 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
           <ul><li><strong>Size</strong><span><code>Large</code>, <code>Middle</code>, <code>Small</code></span></li><li><strong>Variant</strong><span><code>Outlined</code>, <code>Borderless</code>, <code>Filled</code>, <code>Underlined</code></span></li><li><strong>Status</strong><span><code>Normal</code>, <code>Error</code>, <code>Warning</code></span></li><li><strong>Placement</strong><span><code>Top</code>, <code>TopLeft</code>, <code>TopRight</code>, <code>Bottom</code>, <code>BottomLeft</code>, <code>BottomRight</code></span></li><li><strong>Orientation</strong><span><code>Horizontal</code>, <code>Vertical</code></span></li><li><strong>RibbonItemSize</strong><span><code>Large</code>, <code>Small</code></span></li><li><strong>Trigger</strong><span><code>Click</code>, <code>Hover</code></span></li><li><strong>ThemeMode</strong><span><code>Default</code>, <code>Dark</code></span></li><li><strong>ButtonType</strong><span><code>Default</code>, <code>Primary</code>, <code>Dashed</code>, <code>Text</code>, <code>Link</code></span></li><li><strong>ButtonShape</strong><span><code>Default</code>, <code>Circle</code>, <code>Round</code></span></li><li><strong>SelectMode</strong><span><code>Single</code>, <code>Multiple</code>, <code>Tags</code></span></li><li><strong>ProgressType</strong><span><code>Line</code>, <code>Circle</code>, <code>Dashboard</code></span></li><li><strong>ProgressStatus</strong><span><code>Normal</code>, <code>Success</code>, <code>Exception</code>, <code>Active</code></span></li><li><strong>MessageType</strong><span><code>Info</code>, <code>Success</code>, <code>Warning</code>, <code>Error</code>, <code>Loading</code></span></li><li><strong>AlertType</strong><span><code>Success</code>, <code>Info</code>, <code>Warning</code>, <code>Error</code></span></li><li><strong>TooltipPlacement</strong><span><code>Top</code>, <code>TopLeft</code>, <code>TopRight</code>, <code>Bottom</code>, <code>BottomLeft</code>, <code>BottomRight</code>, <code>Left</code>, <code>Right</code></span></li><li><strong>DropdownPlacement</strong><span><code>Bottom</code>, <code>BottomLeft</code>, <code>BottomRight</code>, <code>Top</code>, <code>TopLeft</code>, <code>TopRight</code></span></li><li><strong>DropdownTrigger</strong><span><code>Hover</code>, <code>Click</code>, <code>ContextMenu</code></span></li><li><strong>PopoverTrigger</strong><span><code>Hover</code>, <code>Click</code></span></li><li><strong>MenuMode</strong><span><code>Vertical</code>, <code>Horizontal</code>, <code>Inline</code></span></li><li><strong>MenuTheme</strong><span><code>Light</code>, <code>Dark</code></span></li><li><strong>TabsType</strong><span><code>Line</code>, <code>Card</code>, <code>EditableCard</code></span></li><li><strong>TabsPlacement</strong><span><code>Top</code>, <code>Bottom</code>, <code>Left</code>, <code>Right</code></span></li><li><strong>TagVariant</strong><span><code>Filled</code>, <code>Solid</code>, <code>Outlined</code></span></li><li><strong>BadgeStatus</strong><span><code>None</code>, <code>Success</code>, <code>Processing</code>, <code>Default</code>, <code>Error</code>, <code>Warning</code></span></li><li><strong>BadgeMode</strong><span><code>Default</code>, <code>Dot</code>, <code>Ribbon</code></span></li><li><strong>AvatarShape</strong><span><code>Circle</code>, <code>Square</code></span></li><li><strong>DividerTitlePlacement</strong><span><code>Start</code>, <code>Center</code>, <code>End</code></span></li><li><strong>DividerVariant</strong><span><code>Solid</code>, <code>Dashed</code>, <code>Dotted</code></span></li><li><strong>CardSize</strong><span><code>Default</code>, <code>Small</code></span></li><li><strong>CardVariant</strong><span><code>Outlined</code>, <code>Borderless</code></span></li><li><strong>SkeletonElement</strong><span><code>Default</code>, <code>Button</code>, <code>Avatar</code>, <code>Input</code>, <code>Image</code>, <code>Node</code></span></li><li><strong>FormLayout</strong><span><code>Horizontal</code>, <code>Vertical</code>, <code>Inline</code></span></li><li><strong>FormLabelAlign</strong><span><code>Left</code>, <code>Right</code></span></li><li><strong>StepStatus</strong><span><code>Wait</code>, <code>Process</code>, <code>Finish</code>, <code>Error</code></span></li><li><strong>IconType</strong><span><code>None</code>, <code>Search</code>, <code>Close</code>, <code>Plus</code>, <code>Minus</code>, <code>Check</code>, <code>InfoCircle</code>, <code>ExclamationCircle</code>, <code>CloseCircle</code>, <code>CheckCircle</code>, <code>Loading</code>, <code>Down</code>, <code>Up</code>, <code>Left</code>, <code>Right</code>, <code>Calendar</code>, <code>ClockCircle</code>, <code>User</code>, <code>Home</code>, <code>Star</code>, <code>Setting</code>, <code>Heart</code>, <code>Bell</code>, <code>Mail</code>, <code>Edit</code>, <code>Delete</code>, <code>CloudUpload</code></span></li><li><strong>IconTheme</strong><span><code>Outlined</code>, <code>Filled</code>, <code>TwoTone</code></span></li><li><strong>TimelineMode</strong><span><code>Start</code>, <code>Alternate</code>, <code>End</code></span></li><li><strong>TimelineOrientation</strong><span><code>Vertical</code>, <code>Horizontal</code></span></li><li><strong>TimelineDotVariant</strong><span><code>Outlined</code>, <code>Filled</code></span></li><li><strong>LayoutSiderTheme</strong><span><code>Dark</code>, <code>Light</code></span></li><li><strong>TypographyType</strong><span><code>Default</code>, <code>Secondary</code>, <code>Success</code>, <code>Warning</code>, <code>Danger</code>, <code>LightSolid</code>, <code>Link</code></span></li><li><strong>TypographyTitleLevel</strong><span><code>H1</code>, <code>H2</code>, <code>H3</code>, <code>H4</code>, <code>H5</code></span></li><li><strong>TableSortOrder</strong><span><code>None</code>, <code>Ascending</code>, <code>Descending</code></span></li><li><strong>TableSelectionMode</strong><span><code>None</code>, <code>Checkbox</code>, <code>Radio</code></span></li><li><strong>TableColumnAlign</strong><span><code>Left</code>, <code>Center</code>, <code>Right</code></span></li><li><strong>UploadListType</strong><span><code>Text</code>, <code>Picture</code>, <code>PictureCard</code></span></li><li><strong>UploadFileStatus</strong><span><code>Uploading</code>, <code>Done</code>, <code>Error</code>, <code>Removed</code></span></li><li><strong>DrawerPlacement</strong><span><code>Left</code>, <code>Right</code>, <code>Top</code>, <code>Bottom</code></span></li><li><strong>SegmentedShape</strong><span><code>Default</code>, <code>Round</code></span></li><li><strong>QRCodeErrorLevel</strong><span><code>L</code>, <code>M</code>, <code>Q</code>, <code>H</code></span></li><li><strong>QRCodeStatus</strong><span><code>Active</code>, <code>Expired</code>, <code>Loading</code>, <code>Scanned</code></span></li><li><strong>FloatButtonType</strong><span><code>Default</code>, <code>Primary</code></span></li><li><strong>FloatButtonShape</strong><span><code>Circle</code>, <code>Square</code></span></li><li><strong>FloatButtonPlacement</strong><span><code>BottomRight</code>, <code>BottomLeft</code>, <code>TopRight</code>, <code>TopLeft</code></span></li><li><strong>ColorPickerMode</strong><span><code>RGB</code>, <code>HSV</code>, <code>HEX</code></span></li><li><strong>CalendarMode</strong><span><code>Day</code>, <code>Month</code>, <code>Year</code></span></li></ul>
         </section>
       </section>
-      <p class="footer">生成时间：2026-06-01。源数据：<code>src/widgets/*.h</code>、<code>src/core/AntTypes.h</code>、<code>AGENTS.md</code>。</p>
+      <p class="footer">文档更新时间：2026-06-14。当前发布版本：v0.1.2。源数据：<code>src/widgets/*.h</code>、<code>src/core/AntTypes.h</code>、<code>AGENTS.md</code>。</p>
     </main>
     <aside class="toc">
       <strong>本页目录</strong>
@@ -7631,6 +7689,9 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
   </div>
   <script>
     const input = document.getElementById('search');
+    const resultCount = document.getElementById('result-count');
+    const clearSearch = document.getElementById('clear-search');
+    const searchEmpty = document.getElementById('search-empty');
     const components = Array.from(document.querySelectorAll('.component'));
     const overviewCards = Array.from(document.querySelectorAll('.component-card'));
     const sectionTitles = Array.from(document.querySelectorAll('.section-title'));
@@ -7736,6 +7797,15 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
       return true;
     }
 
+    function firstVisibleSearchTarget() {
+      const firstCard = overviewCards.find(card => !card.hidden);
+      if (firstCard) {
+        const linkedTarget = targetById(linkTargetId(firstCard));
+        if (linkedTarget) return linkedTarget;
+      }
+      return components.find(card => !card.hidden) || null;
+    }
+
     function updateActiveFromScroll() {
       if (suppressScrollSpy) return;
       const marker = window.scrollY + topOffset() + 8;
@@ -7814,6 +7884,26 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
         }
         title.hidden = term && !visible;
       });
+      const visibleOverviewCount = overviewCards.filter(card => !card.hidden).length;
+      const visibleComponentCount = components.filter(card => !card.hidden).length;
+      if (resultCount) {
+        if (!term) {
+          resultCount.textContent = '当前显示全部组件和 API 章节。';
+        } else if (visibleOverviewCount || visibleComponentCount) {
+          resultCount.textContent = `找到 ${visibleOverviewCount} 个组件卡片、${visibleComponentCount} 个 API 章节。按 Enter 跳到第一个匹配项。`;
+        } else {
+          resultCount.textContent = '没有匹配项。请尝试更短的组件名、方法名、信号名或中文分类。';
+        }
+      }
+      if (clearSearch) {
+        clearSearch.hidden = !term;
+      }
+      if (searchEmpty) {
+        searchEmpty.hidden = !term || visibleOverviewCount > 0 || visibleComponentCount > 0;
+        searchEmpty.textContent = searchEmpty.hidden
+          ? ''
+          : `没有找到 “${input.value.trim()}”。可以尝试组件名、中文分类、属性名、方法名或信号名。`;
+      }
       updateActiveFromScroll();
     }
     function escapeHtml(value) {
@@ -7961,6 +8051,22 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
     initImagePreview();
     initAnchorNavigation();
     input.addEventListener('input', applyFilter);
+    input.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      const target = firstVisibleSearchTarget();
+      if (target) {
+        event.preventDefault();
+        scrollToTarget(target);
+      }
+    });
+    if (clearSearch) {
+      clearSearch.addEventListener('click', () => {
+        input.value = '';
+        applyFilter();
+        input.focus({ preventScroll: true });
+      });
+    }
+    applyFilter();
   </script>
 </body>
 </html>

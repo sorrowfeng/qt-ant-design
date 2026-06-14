@@ -319,6 +319,28 @@ h1 {
 .article ol {
   padding-left: 20px;
 }
+.quick-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0 6px;
+}
+.quick-step {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.quick-step strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+.quick-step p {
+  margin: 0;
+  color: var(--muted);
+}
 pre {
   margin: 14px 0;
   overflow: auto;
@@ -389,7 +411,8 @@ pre code {
   .feature-grid,
   .doc-grid,
   .showcase-grid,
-  .component-strip {
+  .component-strip,
+  .quick-steps {
     grid-template-columns: 1fr;
   }
 }
@@ -413,6 +436,7 @@ pre code {
     <section class="section content-grid">
       <aside class="side">
         <a href="#requirements">环境要求</a>
+        <a href="#fast-path">最短路径</a>
         <a href="#subdir">子目录接入</a>
         <a href="#package">安装包接入</a>
         <a href="#startup">启动初始化</a>
@@ -426,6 +450,17 @@ pre code {
             <li>CMake 3.16+，C++17 编译器。</li>
             <li>Windows 下推荐启用高 DPI 感知，项目已提供统一启动入口。</li>
           </ul>
+        </section>
+        <section id="fast-path">
+          <h2>最短路径</h2>
+          <p>首次 clone 后可以先跑通 example，再决定是随业务工程一起构建，还是安装后通过 CMake package 消费。</p>
+          <div class="quick-steps">
+            <div class="quick-step"><strong>1. 配置 Qt 套件</strong><p>把 <code>CMAKE_PREFIX_PATH</code> 指向当前 Qt5 或 Qt6 安装目录。</p></div>
+            <div class="quick-step"><strong>2. 构建 example</strong><p>先验证示例窗口、图标、弹层和高 DPI 表现是否符合预期。</p></div>
+            <div class="quick-step"><strong>3. 接入业务工程</strong><p>使用 <code>AntDesign::initialize(&app)</code> 完成资源、字体和主题初始化。</p></div>
+          </div>
+          <pre><code>cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt -DBUILD_SHARED_LIBS=OFF
+cmake --build build --config Debug --target qt-ant-design-example</code></pre>
         </section>
         <section id="subdir">
           <h2>作为子目录接入</h2>
@@ -451,7 +486,7 @@ target_link_libraries(my-qt-app PRIVATE qt-ant-design::qt-ant-design)</code></pr
         </section>
         <section id="startup">
           <h2>启动初始化</h2>
-          <p>推荐在创建 <code>QApplication</code> 前配置高 DPI，创建应用后初始化资源、字体和主题。</p>
+          <p>推荐在创建 <code>QApplication</code> 前配置高 DPI，创建应用后初始化资源、字体和主题。若你希望统一使用 <code>initialize()</code>，也可以在 <code>QApplication</code> 前调用一次无参数 <code>AntDesign::initialize()</code>，它会完成 High DPI 预配置并返回；创建 app 后仍需再次调用 <code>AntDesign::initialize(&app)</code>。</p>
           <pre><code>int main(int argc, char* argv[])
 {
     AntDesign::configureHighDpi();
@@ -475,6 +510,6 @@ cmake --build build --config Debug --target qt-ant-design-example</code></pre>
       </article>
     </section>
   </main>
-  <footer class="footer">qt-ant-design · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
+  <footer class="footer">qt-ant-design · v0.1.2 · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
 </body>
 </html>
