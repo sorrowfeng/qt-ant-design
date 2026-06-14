@@ -68,12 +68,43 @@
       content: "C++";
       position: absolute;
       top: 9px;
-      right: 12px;
+      right: 74px;
       z-index: 1;
       color: rgba(0, 0, 0, 0.45);
       font-size: 12px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       letter-spacing: 0;
+    }
+    .code-copy {
+      position: absolute;
+      top: 7px;
+      right: 8px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 28px;
+      min-width: 52px;
+      padding: 0 9px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.92);
+      color: rgba(0, 0, 0, 0.65);
+      font: 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      cursor: pointer;
+      transition: color .16s ease, border-color .16s ease, background .16s ease;
+    }
+    .code-copy:hover,
+    .code-copy:focus-visible {
+      color: var(--ant-blue);
+      border-color: var(--ant-blue-border);
+      background: #fff;
+      outline: none;
+    }
+    .code-copy.copied {
+      color: #389e0d;
+      border-color: #b7eb8f;
+      background: #f6ffed;
     }
     .usage-panel .code-block code,
     .usage-panel code.language-cpp {
@@ -260,6 +291,8 @@
       height: 64px;
     }
     .search {
+      flex: 1 1 auto;
+      min-width: 0;
       width: 100%;
       height: 48px;
       border: 0;
@@ -292,6 +325,19 @@
     .clear-search:hover {
       border-color: var(--ant-blue-border);
       color: var(--ant-blue);
+    }
+    .search-shortcut {
+      flex: 0 0 auto;
+      min-width: 52px;
+      text-align: center;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 12px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-weight: 500;
     }
     .search-status,
     .search-empty,
@@ -683,6 +729,10 @@
       .component-preview img { max-width: 100%; max-height: 150px; }
       .api-block { padding: 18px 16px 2px; }
       .api-count { margin-top: 12px; }
+      .search-shortcut { display: none; }
+      .usage-panel .code-block::before { right: 66px; }
+      .usage-panel .code-block code,
+      .usage-panel code.language-cpp { padding-top: 48px; padding-right: 18px; }
       table { display: block; max-width: 100%; overflow-x: auto; }
       .enum-section li { grid-template-columns: 1fr; }
       .image-lightbox { padding: 64px 16px 24px; }
@@ -721,13 +771,14 @@
           <span>当前版本 v0.1.2</span>
         </div>
         <div class="toolbar">
-          <input class="search" id="search" placeholder="搜索组件、API、分类，例如 AntSelect / valueChanged / 数据录入">
+          <input class="search" id="search" aria-label="搜索组件、API 或分类" placeholder="搜索组件、API、分类，例如 AntSelect / valueChanged / 数据录入">
           <button class="clear-search" id="clear-search" type="button" hidden>清除</button>
+          <kbd class="search-shortcut" id="search-shortcut">Ctrl K</kbd>
           <span class="search-icon" aria-hidden="true">⌕</span>
         </div>
         <p class="search-status" id="result-count" aria-live="polite">当前显示全部组件和 API 章节。</p>
         <p class="search-empty" id="search-empty" hidden></p>
-        <p class="hero-note">提示：输入组件名、方法名、信号名或中文分类后，按 Enter 会直接跳到第一个匹配组件；截图可点击放大。</p>
+        <p class="hero-note">提示：按 Ctrl/⌘ + K 可直接搜索；输入组件名、方法名、信号名或中文分类后，按 Enter 会跳到第一个匹配组件；截图可点击放大，代码示例可一键复制。</p>
         <div class="source-links">
           <a href="https://ant.design/components/overview-cn/">Ant Design 官方总览</a>
           <a href="../docs/compatibility.html">项目状态</a>
@@ -7692,6 +7743,7 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
     const resultCount = document.getElementById('result-count');
     const clearSearch = document.getElementById('clear-search');
     const searchEmpty = document.getElementById('search-empty');
+    const searchShortcut = document.getElementById('search-shortcut');
     const components = Array.from(document.querySelectorAll('.component'));
     const overviewCards = Array.from(document.querySelectorAll('.component-card'));
     const sectionTitles = Array.from(document.querySelectorAll('.section-title'));
@@ -7964,12 +8016,57 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
       html += escapeHtml(source.slice(lastIndex));
       return html;
     }
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      textarea.style.left = '-9999px';
+      document.body.append(textarea);
+      textarea.select();
+      const copied = document.execCommand('copy');
+      textarea.remove();
+      if (!copied) {
+        throw new Error('copy failed');
+      }
+    }
+    function markCopied(button, ok) {
+      button.textContent = ok ? '已复制' : '失败';
+      button.classList.toggle('copied', ok);
+      window.clearTimeout(button._copyTimer);
+      button._copyTimer = window.setTimeout(() => {
+        button.textContent = '复制';
+        button.classList.remove('copied');
+      }, 1400);
+    }
     function highlightUsageCode() {
       document.querySelectorAll('.usage-panel pre code').forEach(code => {
         const pre = code.closest('pre');
         if (pre) pre.classList.add('code-block');
+        const rawSource = code.textContent;
         code.classList.add('language-cpp');
-        code.innerHTML = highlightCpp(code.textContent);
+        code.innerHTML = highlightCpp(rawSource);
+        if (pre && !pre.querySelector('.code-copy')) {
+          const copyButton = document.createElement('button');
+          copyButton.type = 'button';
+          copyButton.className = 'code-copy';
+          copyButton.textContent = '复制';
+          copyButton.setAttribute('aria-label', '复制这段 C++ 示例代码');
+          copyButton.addEventListener('click', async () => {
+            try {
+              await copyText(rawSource);
+              markCopied(copyButton, true);
+            } catch (error) {
+              markCopied(copyButton, false);
+            }
+          });
+          pre.append(copyButton);
+        }
       });
     }
     function initImagePreview() {
@@ -8066,6 +8163,18 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
         input.focus({ preventScroll: true });
       });
     }
+    const isApplePlatform = /Mac|iPhone|iPad|iPod/i.test(navigator.platform || '');
+    if (searchShortcut) {
+      searchShortcut.textContent = isApplePlatform ? '⌘ K' : 'Ctrl K';
+    }
+    document.addEventListener('keydown', event => {
+      const key = event.key ? event.key.toLowerCase() : '';
+      const isSearchShortcut = key === 'k' && (event.ctrlKey || event.metaKey);
+      if (!isSearchShortcut) return;
+      event.preventDefault();
+      input.focus({ preventScroll: true });
+      input.select();
+    });
     applyFilter();
   </script>
 </body>
