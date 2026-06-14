@@ -649,6 +649,43 @@
     .meta-grid span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
     .api-block { padding: 22px 24px 4px; }
     .api-block h4 { margin: 0 0 12px; font-size: 18px; }
+    .api-filter {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 24px 0;
+      border-top: 1px solid var(--line);
+      background: linear-gradient(#fff, #fff);
+    }
+    .api-filter span {
+      color: var(--muted);
+      font-size: 13px;
+      margin-right: 2px;
+    }
+    .api-filter button {
+      min-height: 30px;
+      padding: 4px 11px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--subtle);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: color .16s ease, border-color .16s ease, background .16s ease;
+    }
+    .api-filter button:hover,
+    .api-filter button:focus-visible {
+      color: var(--ant-blue);
+      border-color: var(--ant-blue-border);
+      outline: none;
+    }
+    .api-filter button.active {
+      color: var(--ant-blue);
+      border-color: var(--ant-blue-border);
+      background: var(--ant-blue-bg);
+    }
     table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 13px; }
     th, td { border: 1px solid var(--line); padding: 11px 13px; text-align: left; vertical-align: top; line-height: 1.65; }
     th { background: var(--surface-2); color: var(--text); font-weight: 600; }
@@ -729,6 +766,8 @@
       .component-preview img { max-width: 100%; max-height: 150px; }
       .api-block { padding: 18px 16px 2px; }
       .api-count { margin-top: 12px; }
+      .api-filter { padding: 14px 16px 0; }
+      .api-filter span { flex-basis: 100%; }
       .search-shortcut { display: none; }
       .usage-panel .code-block::before { right: 66px; }
       .usage-panel .code-block code,
@@ -8044,6 +8083,84 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
         button.classList.remove('copied');
       }, 1400);
     }
+    function apiBlockKind(block) {
+      const title = (block.querySelector('h4')?.textContent || '').trim().toLowerCase();
+      if (title.includes('属性')) return 'property';
+      if (title.includes('方法')) return 'method';
+      if (title.includes('slot')) return 'slot';
+      if (title.includes('信号')) return 'signal';
+      if (title.includes('数据结构')) return 'struct';
+      return 'other';
+    }
+    function apiBlockCount(block) {
+      const rows = block.querySelectorAll('tbody tr').length;
+      if (rows) return rows;
+      const structs = block.querySelectorAll('details.struct').length;
+      if (structs) return structs;
+      return block.querySelector('.empty') ? 0 : 1;
+    }
+    function initApiFilters() {
+      const labels = {
+        all: '全部',
+        property: '属性',
+        method: '方法',
+        slot: 'Slots',
+        signal: '信号',
+        struct: '结构'
+      };
+      const order = ['property', 'method', 'slot', 'signal', 'struct'];
+
+      components.forEach(component => {
+        const blocks = Array.from(component.querySelectorAll(':scope > .api-block'));
+        if (blocks.length < 2 || component.querySelector(':scope > .api-filter')) return;
+
+        const counts = new Map();
+        blocks.forEach(block => {
+          const kind = apiBlockKind(block);
+          block.dataset.apiKind = kind;
+          counts.set(kind, (counts.get(kind) || 0) + apiBlockCount(block));
+        });
+        const kinds = order.filter(kind => counts.get(kind) > 0);
+        if (kinds.length < 2) return;
+
+        const filter = document.createElement('div');
+        filter.className = 'api-filter';
+        filter.setAttribute('role', 'group');
+        const title = component.querySelector('h3')?.childNodes[0]?.textContent?.trim() || component.id;
+        filter.setAttribute('aria-label', `${title} API 分类筛选`);
+
+        const label = document.createElement('span');
+        label.textContent = 'API 筛选';
+        filter.append(label);
+
+        const buttons = [];
+        const makeButton = (kind, text) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.dataset.apiKind = kind;
+          button.textContent = text;
+          button.setAttribute('aria-pressed', kind === 'all' ? 'true' : 'false');
+          button.classList.toggle('active', kind === 'all');
+          button.addEventListener('click', () => {
+            buttons.forEach(item => {
+              const active = item.dataset.apiKind === kind;
+              item.classList.toggle('active', active);
+              item.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+            blocks.forEach(block => {
+              block.hidden = kind !== 'all' && block.dataset.apiKind !== kind;
+            });
+          });
+          buttons.push(button);
+          filter.append(button);
+        };
+
+        const total = kinds.reduce((sum, kind) => sum + (counts.get(kind) || 0), 0);
+        makeButton('all', `全部 ${total}`);
+        kinds.forEach(kind => makeButton(kind, `${labels[kind]} ${counts.get(kind)}`));
+        blocks[0].before(filter);
+      });
+    }
     function highlightUsageCode() {
       document.querySelectorAll('.usage-panel pre code').forEach(code => {
         const pre = code.closest('pre');
@@ -8147,6 +8264,7 @@ connect(widget, &amp;AntWindow::windowTitleChanged, this, []() {
     highlightUsageCode();
     initImagePreview();
     initAnchorNavigation();
+    initApiFilters();
     input.addEventListener('input', applyFilter);
     input.addEventListener('keydown', event => {
       if (event.key !== 'Enter') return;
