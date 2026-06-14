@@ -52,6 +52,24 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 a:hover { color: var(--brand); }
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  transform: translateY(-140%);
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--brand);
+  box-shadow: var(--shadow);
+  transition: transform .16s ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+  color: #fff;
+  outline: none;
+}
 .site-header {
   position: sticky;
   top: 0;
@@ -433,12 +451,13 @@ pre code {
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
   <header class="site-header">
     <a class="brand" href="../index.html"><img src="../assets/qt-ant-design-icon.png" width="1024" height="1024" alt="qt-ant-design logo" decoding="async"><span>qt-ant-design</span></a>
-    <nav class="nav" aria-label="主导航"><a href="../index.html">首页</a><a href="../components/">组件</a><a class="active" href="../docs/getting-started.html">指南</a><a href="../docs/design.html">设计</a><a href="../docs/compatibility.html">兼容性</a><a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a><a href="https://ant.design/index-cn">Ant Design</a></nav>
+    <nav class="nav" aria-label="主导航"><a href="../index.html">首页</a><a href="../components/">组件</a><a class="active" aria-current="page" href="../docs/getting-started.html">指南</a><a href="../docs/design.html">设计</a><a href="../docs/compatibility.html">兼容性</a><a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a><a href="https://ant.design/index-cn">Ant Design</a></nav>
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <section class="page-hero">
       <div class="section">
         <span class="eyebrow">Guide</span>
