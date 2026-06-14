@@ -374,6 +374,7 @@ h1 {
 }
 pre {
   margin: 14px 0;
+  position: relative;
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -385,9 +386,30 @@ code {
 }
 pre code {
   display: block;
-  padding: 16px;
+  padding: 44px 16px 16px;
   line-height: 1.65;
 }
+.code-copy {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: 1px solid rgba(22, 119, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ant-blue);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 5px 10px;
+}
+.code-copy:hover,
+.code-copy:focus-visible {
+  border-color: var(--ant-blue);
+  outline: none;
+}
+.token-keyword { color: #1677ff; font-weight: 600; }
+.token-string { color: #167a3f; }
+.token-comment { color: rgba(0, 0, 0, 0.42); }
+.token-command { color: #722ed1; font-weight: 600; }
 .callout {
   padding: 16px 18px;
   border: 1px solid #91caff;
@@ -567,5 +589,52 @@ cmake --build build --config Debug --target qt-ant-design-example</code></pre>
     </section>
   </main>
   <footer class="footer">qt-ant-design · v0.1.2 · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
+  <script>
+    const escapeHtml = value => value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    function highlightCode(source, language) {
+      let html = escapeHtml(source);
+      if (language === 'language-bash') {
+        html = html.replace(/\b(cmake)\b/g, '<span class="token-command">$1</span>');
+      } else if (language === 'language-cmake') {
+        html = html.replace(/\b(add_subdirectory|find_package|target_link_libraries|REQUIRED|COMPONENTS|PRIVATE|NAMES)\b/g, '<span class="token-keyword">$1</span>');
+      } else if (language === 'language-cpp') {
+        html = html
+          .replace(/(&quot;[^&]*?&quot;)/g, '<span class="token-string">$1</span>')
+          .replace(/\b(int|auto|new|return)\b/g, '<span class="token-keyword">$1</span>')
+          .replace(/\b(QApplication|AntDesign|AntButton|QStringLiteral)\b/g, '<span class="token-command">$1</span>');
+      }
+      return html.replace(/(^|\n)(\s*#.*)/g, '$1<span class="token-comment">$2</span>');
+    }
+
+    document.querySelectorAll('pre code').forEach(code => {
+      const pre = code.parentElement;
+      const raw = code.textContent;
+      const language = Array.from(code.classList).find(name => name.startsWith('language-')) || '';
+      pre.classList.add('code-ready');
+      code.dataset.rawCode = raw;
+      code.innerHTML = highlightCode(raw, language);
+
+      const button = document.createElement('button');
+      button.className = 'code-copy';
+      button.type = 'button';
+      button.textContent = '复制';
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(code.dataset.rawCode || '');
+          button.textContent = '已复制';
+          window.setTimeout(() => { button.textContent = '复制'; }, 1200);
+        } catch (error) {
+          button.textContent = '复制失败';
+          window.setTimeout(() => { button.textContent = '复制'; }, 1200);
+        }
+      });
+      pre.appendChild(button);
+    });
+  </script>
 </body>
 </html>
