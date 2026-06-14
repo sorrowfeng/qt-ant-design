@@ -410,8 +410,32 @@ pre code {
   }
 }
 @media (max-width: 680px) {
-  .brand span { display: none; }
-  .nav a:not(.active):nth-child(n + 3) { display: none; }
+  .site-header {
+    height: auto;
+    min-height: 64px;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 10px 20px 0;
+  }
+  .brand {
+    min-width: 0;
+    min-height: 44px;
+  }
+  .brand span { display: inline; }
+  .nav {
+    width: calc(100% + 40px);
+    margin: 0 -20px;
+    padding: 0 20px 10px;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
   .hero { padding: 54px 20px 62px; }
   .hero-logo { width: 120px; }
   .hero p { font-size: 16px; }

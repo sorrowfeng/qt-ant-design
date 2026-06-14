@@ -786,9 +786,27 @@
       .component-body { grid-template-columns: 1fr; }
     }
     @media (max-width: 680px) {
-      .topbar { padding: 0 16px; }
-      .brand { min-width: 0; }
-      .topnav { display: none; }
+      .topbar {
+        height: auto;
+        min-height: 64px;
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 10px 16px 0;
+      }
+      .brand { min-width: 0; min-height: 44px; }
+      .topnav {
+        display: flex;
+        width: calc(100% + 32px);
+        margin: 0 -16px;
+        padding: 0 16px 10px;
+        gap: 18px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+      }
+      .topnav::-webkit-scrollbar { display: none; }
+      .topnav a { flex: 0 0 auto; }
+      .topnav a.active::after { bottom: -10px; }
       .layout { padding: 22px 16px 44px; }
       .sidebar, .toc { display: none; }
       .overview-grid, .meta-grid { grid-template-columns: 1fr; }
