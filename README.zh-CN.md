@@ -27,7 +27,7 @@
 
 > 当前实现与视觉审计状态记录在 [docs/project-status.md](docs/project-status.md) 和 [docs/visual-audit.md](docs/visual-audit.md)。
 
-> 当前版本：`0.1.0`。版本管理与发布流程见 [docs/versioning.md](docs/versioning.md)，发布说明见 [CHANGELOG.md](CHANGELOG.md)。
+> 当前版本：`0.1.2`。版本管理与发布流程见 [docs/versioning.md](docs/versioning.md)，发布说明见 [CHANGELOG.md](CHANGELOG.md)。
 
 > 欢迎提交 Issue 和 PR：视觉差异、交互缺失、Qt 集成问题、文档遗漏、组件修复、测试、示例和文档改进都很欢迎。
 
@@ -55,9 +55,9 @@
 - 逐控件性能优化进度：[docs/performance-optimization.md](docs/performance-optimization.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 在线组件 / API 说明页：[www.sorrowfeng.top/qt-ant-design/components](http://www.sorrowfeng.top/qt-ant-design/components/)
-- 本地中文组件 / API 说明页：[docs/component-api-overview-cn.html](docs/component-api-overview-cn.html)
+- 本地中文组件 / API 说明页：运行 `python tools/generate_component_api_overview.py`，然后打开 `build/docs/component-api-overview-cn.html`
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
-- 当前 CTest 条目数：`47`；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-30`）；Qt5/Qt6 定向视觉一致性、视觉 atlas 缩放烟测、度量审计、真实 example 页面遍历/截图对比、Windows High DPI 缩放和无 QSS 门禁检查已于 `2026-06-01` 通过
+- 当前 CTest 条目数：启用 `BUILD_WIDGET_SMOKE_TESTS=ON` 时为 `151`（`47` 个深度/系统条目 + `104` 个逐控件 smoke 条目）；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-30`）；Qt5/Qt6 定向视觉一致性、视觉 atlas 缩放烟测、度量审计、真实 example 页面遍历/截图对比、Windows High DPI 缩放和无 QSS 门禁检查已于 `2026-06-01` 通过
 
 ## 最近 Ant Design 对齐更新
 

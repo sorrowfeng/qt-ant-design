@@ -27,7 +27,7 @@ The project focuses on:
 
 > Current implementation and visual-audit status are tracked in [docs/project-status.md](docs/project-status.md) and [docs/visual-audit.md](docs/visual-audit.md).
 
-> Current version: `0.1.0`. Versioning and release steps are tracked in [docs/versioning.md](docs/versioning.md), and release notes are in [CHANGELOG.md](CHANGELOG.md).
+> Current version: `0.1.2`. Versioning and release steps are tracked in [docs/versioning.md](docs/versioning.md), and release notes are in [CHANGELOG.md](CHANGELOG.md).
 
 > Issues and PRs are welcome: visual mismatches, missing interactions, Qt integration problems, documentation gaps, component fixes, tests, examples, and docs improvements are all appreciated.
 
@@ -55,9 +55,9 @@ The project focuses on:
 - Per-component performance optimization progress: [docs/performance-optimization.md](docs/performance-optimization.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
 - Online component/API reference: [www.sorrowfeng.top/qt-ant-design/components](http://www.sorrowfeng.top/qt-ant-design/components/)
-- Local Chinese component/API reference: [docs/component-api-overview-cn.html](docs/component-api-overview-cn.html)
+- Local Chinese component/API reference: run `python tools/generate_component_api_overview.py`, then open `build/docs/component-api-overview-cn.html`
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
-- Current CTest entry count: `47`; latest full component reliability sweep: `37 / 37` passed on `2026-05-30`; targeted Qt5/Qt6 visual parity, visual-atlas scale-factor smoke, metric audit, real example page traversal/comparison, Windows High DPI scaling, and no-QSS guard checks passed on `2026-06-01`
+- Current CTest entry count: `151` when `BUILD_WIDGET_SMOKE_TESTS=ON` (`47` deep/system entries plus `104` per-widget smoke entries); latest full component reliability sweep: `37 / 37` passed on `2026-05-30`; targeted Qt5/Qt6 visual parity, visual-atlas scale-factor smoke, metric audit, real example page traversal/comparison, Windows High DPI scaling, and no-QSS guard checks passed on `2026-06-01`
 
 ## Recent Ant Design Parity Updates
 

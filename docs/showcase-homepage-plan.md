@@ -6,7 +6,7 @@
 
 - 当前项目总览：`docs/project-status.md`
 - Showcase 审计结论：`docs/visual-audit.md` 的 `Homepage Showcase Audit`
-- 当前参考页面：`docs/ant-design-reference.html`
+- 当前参考来源：官方 Ant Design 页面；需要固定快照时放到 `build/` 临时目录
 - Qt 示例页面：`examples/pages/ShowcasePage.cpp`
 
 已完成事项：

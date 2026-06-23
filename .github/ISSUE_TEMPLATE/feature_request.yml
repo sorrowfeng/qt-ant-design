@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest a component, API, behavior, or documentation improvement.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to build, and what is missing today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the desired API, behavior, or visual result.
+    validations:
+      required: true
+  - type: input
+    id: ant-reference
+    attributes:
+      label: Ant Design reference
+      description: Link to an Ant Design component page or behavior if applicable.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context

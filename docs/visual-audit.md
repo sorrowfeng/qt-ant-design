@@ -1,6 +1,6 @@
 # Visual Audit Checklist
 
-This file tracks the next phase: comparing each Qt widget page against the Ant Design reference page in `docs/ant-design-reference.html`.
+This file tracks the next phase: comparing each Qt widget page against Ant Design reference captures kept under `build/` or freshly captured from the official Ant Design pages.
 
 Current project status is summarized in `docs/project-status.md`. As of `2026-04-30`, comparable Ant Design standard components are marked `Pass`, Qt-only desktop extensions are marked `Local Pass`, and future visual work should be driven by specific mismatches found during review.
 
@@ -14,9 +14,9 @@ Use this loop for one component at a time.
    cmake --build build --config Debug --target TestAntButton qt-ant-design-example -- /m:1
    ```
    Replace `TestAntButton` with the closest test target for the component under review.
-3. Capture the Ant Design reference page with Playwright:
+3. Capture the Ant Design reference page with Playwright. Use a temporary local reference under `build/` if you need repeatable captures:
    ```powershell
-   npx playwright screenshot --wait-for-timeout=4000 --viewport-size "1280,900" "file:///D:/Project/GitProject/qt-ant-design/docs/ant-design-reference.html" build/<component>-reference-full.png
+   npx playwright screenshot --wait-for-timeout=4000 --viewport-size "1280,900" "https://ant.design/components/overview-cn/" build/<component>-reference-full.png
    ```
 4. Capture the matching Qt example page to `build/<component>-qt.png`. Prefer a small temporary capture helper under `build/visual-capture/` so the screenshot contains only the audited page/content. Do not commit the capture helper or PNG outputs.
 5. Create a side-by-side image such as `build/<component>-compare-wide.png` and compare both screenshots at the same scale.

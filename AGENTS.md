@@ -40,7 +40,7 @@
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - README 组件截图画廊：`resources/images/components/` 提交 `176` 张 Light/Dark PNG，覆盖 `88` 个视觉组件条目；`AntDockManager` 通过 DockWidget 示例页展示，弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `831` 个官方 `@ant-design/icons-svg@4.4.2` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：当前 `47` 个 CTest 条目；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-30`），Qt5/Qt6 定向视觉一致性、视觉 atlas 缩放烟测、度量审计、真实 example 页面遍历/截图对比、Windows High DPI 缩放和无 QSS 门禁检查在 `2026-06-01` 通过
+- 测试状态：当前 `47` 个深度/系统 CTest 条目，启用 `BUILD_WIDGET_SMOKE_TESTS=ON` 时另有 `104` 个逐控件 smoke 条目（合计 `151`）；最近一次全控件可靠性巡检在 Debug 下 `37 / 37` 通过（`2026-05-30`），Qt5/Qt6 定向视觉一致性、视觉 atlas 缩放烟测、度量审计、真实 example 页面遍历/截图对比、Windows High DPI 缩放和无 QSS 门禁检查在 `2026-06-01` 通过
 - 逐控件可靠性覆盖矩阵：`docs/reliability-coverage.md`，列出 89 个公开组件的专项行为/API、生命周期、Meta 属性、主题切换和渲染烟测覆盖情况
 
 ## 本轮新增组件（2026-04-25，第 2-4 批）
@@ -398,13 +398,13 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 ## 视觉审查
 
 - 审查入口：`docs/visual-audit.md`
-- 参考页面：`docs/ant-design-reference.html`
+- 参考来源：官方 Ant Design 页面；需要固定快照时放到 `build/` 临时目录
 - 审查顺序：先基础组件（Typography/Icon/Button/Tag/Badge），再输入、弹层反馈、数据展示、导航布局、复杂与 Qt 扩展组件
 - 每个控件需覆盖亮色/暗色、默认/hover/active/focus/disabled、状态色、尺寸、间距、圆角、阴影和弹层行为
 - 视觉对比按单控件闭环推进：先读 Ant Design 源码/token，再编译 Qt 示例，分别截图参考页和 Qt 页，生成 side-by-side 对比图，归因差异，修复控件自身问题，最后更新 `docs/visual-audit.md`
 - 第一轮静态对比完成后，进入二轮状态态审计：为单控件生成 light/dark 状态矩阵，覆盖 hover/active/focus-visible/disabled/loading/status 等真实视觉态，证据记录在 `docs/visual-audit.md` 的 `Second-Pass State Audit`
 - 参考页截图使用 Playwright，例如：
-  - `npx playwright screenshot --wait-for-timeout=4000 --viewport-size "1280,900" "file:///D:/Project/GitProject/qt-ant-design/docs/ant-design-reference.html" build/<component>-reference-full.png`
+  - `npx playwright screenshot --wait-for-timeout=4000 --viewport-size "1280,900" "https://ant.design/components/overview-cn/" build/<component>-reference-full.png`
 - Qt 侧截图优先使用 `build/visual-capture/` 下的临时 helper 输出 `build/<component>-qt.png`；截图 helper、PNG、拼图都属于 `build/` 产物，不提交
 - README 组件截图画廊除外：`resources/images/components/` 下的 Light/Dark PNG 是文档资产，需要提交；弹层/反馈控件应截取打开或激活态，而不是只展示触发按钮
 - Windows 下 Qt `offscreen` 平台可能把文字渲染成方块；遇到时使用原生 Windows 平台截图。
@@ -435,7 +435,7 @@ cmake --install build --config Debug
 项目使用 QTest 与 CTest 脚本进行自动化测试，覆盖所有 89 个公开组件的属性、getter/setter、信号验证、生命周期压力场景和安装消费方验证。
 
 - **测试框架**：Qt Test（QTest + QSignalSpy，跟随自动检测到的 Qt 主版本）
-- **测试数量**：47 个 CTest 条目（36 个 QTest 可执行文件，其中 `TestAntHighDpiScaling` 以 1.0 / 1.25 / 1.5 三档缩放和 initialize 默认预配置注册为 4 个 CTest 条目，`TestAntQtVersionVisualParity` 另以 1.25 / 1.5 两档缩放注册 atlas smoke 条目；另含安装消费方、build-system、无 QSS 门禁、example GUI subsystem、example 压力退出、example 页面遍历和覆盖盘点脚本/可执行测试）
+- **测试数量**：47 个深度/系统 CTest 条目（36 个 QTest 可执行文件，其中 `TestAntHighDpiScaling` 以 1.0 / 1.25 / 1.5 三档缩放和 initialize 默认预配置注册为 4 个 CTest 条目，`TestAntQtVersionVisualParity` 另以 1.25 / 1.5 两档缩放注册 atlas smoke 条目；另含安装消费方、build-system、无 QSS 门禁、example GUI subsystem、example 压力退出、example 页面遍历和覆盖盘点脚本/可执行测试）；启用 `BUILD_WIDGET_SMOKE_TESTS=ON` 时追加 104 个 `WidgetSmoke.<Type>` 逐控件编译/构造/基础渲染条目。
 - **覆盖组件**：89 个公开组件全部覆盖，内部 helper 随宿主组件测试；逐控件覆盖矩阵见 `docs/reliability-coverage.md`
 - **运行方式**：`ctest -C Debug --output-on-failure`
 - **最近全量结果**：`37 / 37` CTest 目标通过（Debug，2026-05-30），覆盖公开组件 API / getter-setter / 信号、Qt 事件级鼠标键盘交互、生命周期、主题切换、渲染烟测、安装消费方和 example 子系统；`2026-06-01` 新增 Qt5/Qt6 视觉一致性、视觉 atlas 缩放烟测、度量审计、Windows High DPI 缩放、无 QSS 门禁和 example 页面遍历目标并通过定向验证，真实 example 全页面 Qt5-vs-Qt6 截图对比通过 352 帧

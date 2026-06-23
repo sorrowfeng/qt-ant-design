@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-msvc:
+    name: Windows ${{ matrix.qt.label }}
+    runs-on: windows-2022
+
+    strategy:
+      fail-fast: false
+      matrix:
+        qt:
+          - label: Qt 5.15.2
+            version: 5.15.2
+            arch: win64_msvc2019_64
+            modules: ""
+          - label: Qt 6.7.3
+            version: 6.7.3
+            arch: win64_msvc2019_64
+            modules: qtsvg
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        if: matrix.qt.modules == ''
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt.version }}
+          arch: ${{ matrix.qt.arch }}
+          cache: true
+
+      - name: Install Qt modules
+        if: matrix.qt.modules != ''
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt.version }}
+          arch: ${{ matrix.qt.arch }}
+          modules: ${{ matrix.qt.modules }}
+          cache: true
+
+      - name: Configure
+        shell: pwsh
+        run: >
+          cmake -S . -B build
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DBUILD_EXAMPLES=ON
+          -DBUILD_TESTS=ON
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\install"
+
+      - name: Build
+        shell: pwsh
+        run: cmake --build build --config Debug --parallel
+
+      - name: Install
+        shell: pwsh
+        run: cmake --install build --config Debug
+
+      - name: Run targeted tests
+        shell: pwsh
+        run: >
+          ctest --test-dir build
+          -C Debug
+          --output-on-failure
+          --timeout 120
+          -E "TestAntVisualRegression|TestAntQtVersionVisualParity.*|TestAntHighDpiScaling.*|TestAntExampleCloseStress|TestAntExamplePageTraversal"
