@@ -52,7 +52,7 @@ The project focuses on:
 
 - Status snapshot: [docs/project-status.md](docs/project-status.md)
 - Per-component reliability coverage: [docs/reliability-coverage.md](docs/reliability-coverage.md)
-- Per-component performance optimization progress: [docs/performance-optimization.md](docs/performance-optimization.md)
+- Historical performance optimization pass record: [docs/archive/performance-optimization-2026-05.md](docs/archive/performance-optimization-2026-05.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
 - Online component/API reference: [www.sorrowfeng.top/qt-ant-design/components](http://www.sorrowfeng.top/qt-ant-design/components/)
 - Local Chinese component/API reference: run `python tools/generate_component_api_overview.py`, then open `build/docs/component-api-overview-cn.html`
@@ -99,7 +99,7 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 
 ### Requirements
 
-- Qt `6.5+`
+- Qt `6.5+` or Qt `5.15.2`
 - CMake `3.16+`
 - C++17
 

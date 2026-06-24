@@ -225,7 +225,7 @@ rg -n "setStyleSheet\(" src\widgets src\styles src\core
 - `docs/project-status.md`
 - `docs/reliability-coverage.md`
 - `docs/visual-audit.md`
-- `docs/issue-log.md`
+- `docs/archive/issue-log.md`（历史问题记录；新增问题优先使用 GitHub Issues）
 - README 组件截图资源
 
 如果只是内部实现迁移，至少更新对应 issue 或状态记录，说明旧实现、迁移方式、验证命令和剩余风险。

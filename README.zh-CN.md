@@ -41,9 +41,9 @@
 
 - 基于 Qt Widgets，轻量、易集成，可作为静态库或动态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
-- 当前已移植 `88` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `18` 个 Qt / 桌面扩展组件）
-- 当前 `66` 个组件使用 `QProxyStyle` 架构绘制
-- 示例程序当前覆盖 `88 / 88` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
+- 当前已移植 `89` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `19` 个 Qt / 桌面扩展组件）
+- 当前 `67` 个组件使用 `QProxyStyle` 架构绘制
+- 示例程序当前覆盖 `89 / 89` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
 - `AntIcon` 已内置 `831` 个来自 `@ant-design/icons-svg@4.4.2` 的官方 SVG 资源
 - 可对比的标准组件已在视觉审计矩阵中标记为 `Pass`，Qt-only 桌面扩展标记为 `Local Pass`
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
@@ -52,7 +52,7 @@
 
 - 状态总览：[docs/project-status.md](docs/project-status.md)
 - 逐控件可靠性覆盖：[docs/reliability-coverage.md](docs/reliability-coverage.md)
-- 逐控件性能优化进度：[docs/performance-optimization.md](docs/performance-optimization.md)
+- 历史性能优化批次记录：[docs/archive/performance-optimization-2026-05.md](docs/archive/performance-optimization-2026-05.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 在线组件 / API 说明页：[www.sorrowfeng.top/qt-ant-design/components](http://www.sorrowfeng.top/qt-ant-design/components/)
 - 本地中文组件 / API 说明页：运行 `python tools/generate_component_api_overview.py`，然后打开 `build/docs/component-api-overview-cn.html`
@@ -99,7 +99,7 @@
 
 ### 环境要求
 
-- Qt `6.5+`
+- Qt `6.5+` 或 Qt `5.15.2`
 - CMake `3.16+`
 - C++17
 
@@ -211,9 +211,9 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现公开组件总数：`88`
+当前已实现公开组件总数：`89`
 
-`src/widgets` 当前包含 `108` 个 `Ant*.h` 头文件：`88` 个公开组件头、`19` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`。
+`src/widgets` 当前包含 `109` 个 `Ant*.h` 头文件：`89` 个公开组件头、`19` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`。
 
 Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
 
@@ -231,7 +231,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 | 反馈 | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | 混合（`QProxyStyle` / 自绘） |
 | 数据展示 | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | 混合（`QProxyStyle` / 自绘） |
 | 布局与其他 | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | 混合（`QProxyStyle` / 自绘 / QObject 工具） |
-| Qt / 桌面扩展 | `AntDialog` `AntDockManager` `AntDockWidget` `AntFileDialog` `AntLog` `AntMenuBar` `AntNav` `AntNavItem` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStackedWidget` `AntStatusBar` `AntToolBar` `AntToolButton` | 混合（`QProxyStyle` / 自绘） |
+| Qt / 桌面扩展 | `AntDialog` `AntInputDialog` `AntDockManager` `AntDockWidget` `AntFileDialog` `AntLog` `AntMenuBar` `AntNav` `AntNavItem` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStackedWidget` `AntStatusBar` `AntToolBar` `AntToolButton` | 混合（`QProxyStyle` / 自绘） |
 
 ### 组件截图
 

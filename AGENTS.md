@@ -24,10 +24,10 @@
 
 ## 项目状态
 
-- 同步日期：`2026-05-30`
-- 当前版本：`0.1.0`（根目录 `VERSION` 为唯一版本源；CMake 生成并安装 `core/QtAntDesignVersion.h`；发布记录见 `CHANGELOG.md`，流程见 `docs/versioning.md`）
+- 同步日期：`2026-06-24`
+- 当前版本：`0.1.2`（根目录 `VERSION` 为唯一版本源；CMake 生成并安装 `core/QtAntDesignVersion.h`；发布记录见 `CHANGELOG.md`，流程见 `docs/versioning.md`）
 - 状态总览：`docs/project-status.md`
-- 项目问题清单（已解决 + 待解决）：`docs/issue-log.md`
+- 历史问题记录：`docs/archive/issue-log.md`；当前新增问题优先使用 GitHub Issues 跟踪
 - 已实现公开组件总数：`89`（`src/widgets` 有 `109` 个 `Ant*.h`，包含 `89` 个公开组件头、`19` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`）
 - Ant Design 标准组件覆盖率：`70 / 70`（100%）
 - 子组件/变体完整度：`15 / 15`（100%）
@@ -438,7 +438,7 @@ cmake --install build --config Debug
 - **测试数量**：47 个深度/系统 CTest 条目（36 个 QTest 可执行文件，其中 `TestAntHighDpiScaling` 以 1.0 / 1.25 / 1.5 三档缩放和 initialize 默认预配置注册为 4 个 CTest 条目，`TestAntQtVersionVisualParity` 另以 1.25 / 1.5 两档缩放注册 atlas smoke 条目；另含安装消费方、build-system、无 QSS 门禁、example GUI subsystem、example 压力退出、example 页面遍历和覆盖盘点脚本/可执行测试）；启用 `BUILD_WIDGET_SMOKE_TESTS=ON` 时追加 104 个 `WidgetSmoke.<Type>` 逐控件编译/构造/基础渲染条目。
 - **覆盖组件**：89 个公开组件全部覆盖，内部 helper 随宿主组件测试；逐控件覆盖矩阵见 `docs/reliability-coverage.md`
 - **运行方式**：`ctest -C Debug --output-on-failure`
-- **最近全量结果**：`37 / 37` CTest 目标通过（Debug，2026-05-30），覆盖公开组件 API / getter-setter / 信号、Qt 事件级鼠标键盘交互、生命周期、主题切换、渲染烟测、安装消费方和 example 子系统；`2026-06-01` 新增 Qt5/Qt6 视觉一致性、视觉 atlas 缩放烟测、度量审计、Windows High DPI 缩放、无 QSS 门禁和 example 页面遍历目标并通过定向验证，真实 example 全页面 Qt5-vs-Qt6 截图对比通过 352 帧
+- **最近验证结果**：`2026-05-30` 深度/系统基线 `37 / 37` CTest 目标通过，覆盖公开组件 API / getter-setter / 信号、Qt 事件级鼠标键盘交互、生命周期、主题切换、渲染烟测、安装消费方和 example 子系统；`2026-06-01` 新增 Qt5/Qt6 视觉一致性、视觉 atlas 缩放烟测、度量审计、Windows High DPI 缩放、无 QSS 门禁和 example 页面遍历目标并通过定向验证，真实 example 全页面 Qt5-vs-Qt6 截图对比通过当时的 352 帧；`2026-06-24` 启用 `BUILD_WIDGET_SMOKE_TESTS=ON` 后，逐控件 `widget-smoke` CTest `104 / 104` 通过，配置总数为 `151`。
 - **原生输入专项**：`TestAntQtExtensions` 的 Win32 `SendInput` 桌面输入路径默认关闭；需要真实桌面输入验证时显式设置 `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`
 
 ### 测试文件结构

@@ -1,7 +1,5 @@
 # Archived: Showcase 首页对标整改计划
 
-> 归档说明：这份文件是 2026-04 Showcase 首页对标的历史整改计划，不再作为当前任务入口。当前状态以 `docs/project-status.md` 和 `docs/visual-audit.md` 为准；归档副本见 `docs/archive/showcase-homepage-plan-2026-04.md`。
-
 ## 状态更新（2026-04-30）
 
 本文件保留为 Showcase 首页对标的历史整改计划。当前计划中的主要收尾项已经完成，并已进入状态文档：

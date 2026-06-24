@@ -1,6 +1,6 @@
 # Archived: AGENTS.md 更新提示词
 
-> 归档说明：这份提示词要求输出完整 `AGENTS.md` 并自动提交推送，已经不适合作为当前维护流程。当前状态更新规则以根目录 `AGENTS.md`、`DEVELOPMENT.md` 和 `docs/project-status.md` 为准；完整归档副本见 `docs/archive/prompts/update-agents.md`。
+> 归档说明：这份提示词要求输出完整 `AGENTS.md` 并自动提交推送，已经不适合作为当前维护流程。当前状态更新规则以根目录 `AGENTS.md`、`DEVELOPMENT.md` 和 `docs/project-status.md` 为准。
 
 请更新 qt-ant-design 项目根目录下的 AGENTS.md 文件，更新完成后提交并推送到远端仓库。
 

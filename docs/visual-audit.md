@@ -93,7 +93,7 @@ This pass followed the user-reported interaction list one item at a time. Each c
 
 ## Homepage Showcase Audit
 
-The official Chinese homepage at `https://ant.design/index-cn` was checked on 2026-04-29. It rendered the Ant Design 6.3.7 homepage showcase, but the page also emitted a React hydration error (`Minified React error #418`) and several `ERR_CONNECTION_CLOSED` resource errors during Playwright capture. The local reference keeps AntD 5.24.7 for component-audit stability and now includes a standalone `Showcase` page that isolates the visible controls from the homepage showcase for repeatable screenshots.
+The official Chinese homepage at `https://ant.design/index-cn` was checked on 2026-04-29. It rendered the Ant Design 6.3.7 homepage showcase, but the page also emitted a React hydration error (`Minified React error #418`) and several `ERR_CONNECTION_CLOSED` resource errors during Playwright capture. When repeatable homepage captures are needed, use a temporary local reference under `build/`; the committed example now includes a standalone `Showcase` page that isolates the visible controls from the homepage showcase for repeatable screenshots.
 
 | Evidence | Path |
 | --- | --- |

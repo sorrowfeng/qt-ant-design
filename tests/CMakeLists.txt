@@ -198,7 +198,7 @@ add_ant_test(TestAntNavigation)
 # Layout (7 widgets)
 add_ant_test(TestAntLayout)
 
-# Qt Extensions (18 widgets)
+# Qt Extensions (19 widgets)
 add_ant_test(TestAntQtExtensions)
 
 # Qt-style widget aliases

@@ -4,7 +4,7 @@ Recorded: `2026-05-29`
 
 This document records the May 2026 performance pass for the then-current `84` public components. It is retained as historical engineering evidence, not as the live component inventory; the current inventory is tracked in `AGENTS.md` and `docs/project-status.md`.
 
-Canonical archive copy: `docs/archive/performance-optimization-2026-05.md`. This source path remains only as a compatibility pointer for older links.
+This archived copy is the canonical home for the May 2026 performance pass.
 
 ## Goals
 
