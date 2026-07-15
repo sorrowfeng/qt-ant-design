@@ -15,6 +15,7 @@ void registerMetaTypes()
         qRegisterMetaType<Size>("Ant::Size");
         qRegisterMetaType<Variant>("Ant::Variant");
         qRegisterMetaType<Status>("Ant::Status");
+        qRegisterMetaType<StatusBarStatus>("Ant::StatusBarStatus");
         qRegisterMetaType<Placement>("Ant::Placement");
         qRegisterMetaType<Orientation>("Ant::Orientation");
         qRegisterMetaType<RibbonItemSize>("Ant::RibbonItemSize");

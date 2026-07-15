@@ -367,7 +367,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntTypography`: theme-aware text component, Title (H1-H5) / Text / Paragraph, with type / decoration / copy / ellipsis / alignment / pixel-size support
 - `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, softened Windows 10 outline/shadow handling, Windows 10/11 DWM border shadow, and a smooth theme transition overlay
 - `AntDrawer`: sliding panel with Left / Right / Top / Bottom placement, animation, and mask
-- `AntStatusBar`: status bar with left / right items, separators, message area, and size grip
+- `AntStatusBar`: status bar with left / right items, separators, message area, size grip, and theme-aware semantic emphasis for the bar, individual items, or messages
 - `AntScrollBar`: custom 8 px slim scrollbar with auto-hide and no arrow buttons
 - `AntSegmented`: segmented control with value and index selection APIs, evenly distributed options, animated indicator, icon / disabled / tooltip support, and reliable full-track click hit testing
 - `AntFloatButton`: floating action button — circle / square, Primary / Default, expandable Group, BackTop, Badge, click feedback, and unclipped elevation shadow

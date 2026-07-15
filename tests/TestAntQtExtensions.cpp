@@ -1447,13 +1447,29 @@ void TestAntQtExtensions::splitter()
 
 void TestAntQtExtensions::statusBar()
 {
+    ThemeModeRestorerForExtensionTest themeRestorer;
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    QCoreApplication::processEvents();
+
     auto* w = new AntStatusBar;
     QCOMPARE(w->message(), QString());
     QCOMPARE(w->hasSizeGrip(), true);
     QCOMPARE(w->itemCount(), 0);
     QCOMPARE(w->permanentItemCount(), 0);
+    QCOMPARE(w->status(), Ant::StatusBarStatus::Default);
+    QCOMPARE(w->messageStatus(), Ant::StatusBarStatus::Inherit);
+
+    QSignalSpy statusSpy(w, &AntStatusBar::statusChanged);
+    w->setStatus(Ant::StatusBarStatus::Info);
+    QCOMPARE(w->status(), Ant::StatusBarStatus::Info);
+    QCOMPARE(statusSpy.count(), 1);
+    w->setStatus(Ant::StatusBarStatus::Info);
+    QCOMPARE(statusSpy.count(), 1);
+    w->setStatus(Ant::StatusBarStatus::Default);
+    QCOMPARE(statusSpy.count(), 2);
 
     QSignalSpy msgSpy(w, &AntStatusBar::messageChanged);
+    QSignalSpy messageStatusSpy(w, &AntStatusBar::messageStatusChanged);
     w->setMessage("Ready");
     QCOMPARE(w->message(), "Ready");
     QCOMPARE(w->currentMessage(), "Ready");
@@ -1465,15 +1481,43 @@ void TestAntQtExtensions::statusBar()
     QCOMPARE(w->currentMessage(), QStringLiteral("Saving"));
     QTRY_COMPARE(w->currentMessage(), QString());
 
+    w->showMessage(QStringLiteral("Build failed"), Ant::StatusBarStatus::Error);
+    QCOMPARE(w->currentMessage(), QStringLiteral("Build failed"));
+    QCOMPARE(w->messageStatus(), Ant::StatusBarStatus::Error);
+    QCOMPARE(messageStatusSpy.count(), 1);
+    w->setMessageStatus(Ant::StatusBarStatus::Error);
+    QCOMPARE(messageStatusSpy.count(), 1);
+    w->clearMessage();
+    w->setMessageStatus(Ant::StatusBarStatus::Inherit);
+    QCOMPARE(messageStatusSpy.count(), 2);
+
     QSignalSpy gripSpy(w, &AntStatusBar::sizeGripChanged);
     w->setSizeGrip(false);
     QCOMPARE(w->hasSizeGrip(), false);
     QCOMPARE(gripSpy.count(), 1);
 
-    w->addItem("Item 1");
-    QCOMPARE(w->itemCount(), 1);
-    w->addPermanentItem("Perm 1");
-    QCOMPARE(w->permanentItemCount(), 1);
+    const int inheritedItem = w->addItem("Item 1");
+    const int successItem = w->addItem(QStringLiteral("Synced"), Ant::StatusBarStatus::Success);
+    const int warningItem = w->addItem(QStringLiteral("3 warnings"), Ant::StatusBarStatus::Warning);
+    QCOMPARE(w->itemCount(), 3);
+    QCOMPARE(w->itemStatus(inheritedItem), Ant::StatusBarStatus::Inherit);
+    QCOMPARE(w->itemStatus(successItem), Ant::StatusBarStatus::Success);
+    QCOMPARE(w->itemStatus(warningItem), Ant::StatusBarStatus::Warning);
+    QCOMPARE(w->itemStatus(-1), Ant::StatusBarStatus::Inherit);
+    QCOMPARE(w->itemStatus(99), Ant::StatusBarStatus::Inherit);
+
+    const int inheritedPermanent = w->addPermanentItem("Perm 1");
+    const int errorPermanent = w->addPermanentItem(
+        QStringLiteral("Build failed"), Ant::StatusBarStatus::Error);
+    QCOMPARE(w->permanentItemCount(), 2);
+    QCOMPARE(w->permanentItemStatus(inheritedPermanent), Ant::StatusBarStatus::Inherit);
+    QCOMPARE(w->permanentItemStatus(errorPermanent), Ant::StatusBarStatus::Error);
+    QCOMPARE(w->permanentItemStatus(-1), Ant::StatusBarStatus::Inherit);
+    QCOMPARE(w->permanentItemStatus(99), Ant::StatusBarStatus::Inherit);
+
+    w->removeItem(successItem);
+    QCOMPARE(w->itemCount(), 2);
+    QCOMPARE(w->itemStatus(1), Ant::StatusBarStatus::Warning);
 
     auto item = w->itemAt(0);
     QCOMPARE(item.text, "Item 1");
@@ -1486,6 +1530,28 @@ void TestAntQtExtensions::statusBar()
     QVERIFY(!initialStatusPaint.isNull());
     const int layoutBuildsAfterPaint = w->property("antStatusBarLayoutBuildCount").toInt();
     QVERIFY(layoutBuildsAfterPaint > 0);
+
+    QSignalSpy itemStatusSpy(w, &AntStatusBar::itemStatusChanged);
+    const int regionsBeforeItemStatus = w->property("antStatusBarRegionUpdateCount").toInt();
+    w->setItemStatus(0, Ant::StatusBarStatus::Info);
+    QCOMPARE(w->itemStatus(0), Ant::StatusBarStatus::Info);
+    QCOMPARE(itemStatusSpy.count(), 1);
+    QVERIFY(w->property("antStatusBarRegionUpdateCount").toInt() > regionsBeforeItemStatus);
+    QCOMPARE(w->property("antStatusBarLayoutBuildCount").toInt(), layoutBuildsAfterPaint);
+    w->setItemStatus(0, Ant::StatusBarStatus::Info);
+    QCOMPARE(itemStatusSpy.count(), 1);
+    w->setItemStatus(99, Ant::StatusBarStatus::Error);
+    QCOMPARE(itemStatusSpy.count(), 1);
+
+    QSignalSpy permanentStatusSpy(w, &AntStatusBar::permanentItemStatusChanged);
+    const int regionsBeforePermanentStatus = w->property("antStatusBarRegionUpdateCount").toInt();
+    w->setPermanentItemStatus(0, Ant::StatusBarStatus::Default);
+    QCOMPARE(w->permanentItemStatus(0), Ant::StatusBarStatus::Default);
+    QCOMPARE(permanentStatusSpy.count(), 1);
+    QVERIFY(w->property("antStatusBarRegionUpdateCount").toInt() > regionsBeforePermanentStatus);
+    QCOMPARE(w->property("antStatusBarLayoutBuildCount").toInt(), layoutBuildsAfterPaint);
+    w->setPermanentItemStatus(99, Ant::StatusBarStatus::Error);
+    QCOMPARE(permanentStatusSpy.count(), 1);
 
     const QPoint itemPoint(14, w->height() / 2);
     QMouseEvent moveToItem(QEvent::MouseMove, itemPoint, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
@@ -1510,6 +1576,46 @@ void TestAntQtExtensions::statusBar()
     const int layoutBuildsBeforeRepeatMessage = w->property("antStatusBarLayoutBuildCount").toInt();
     w->setMessage(QStringLiteral("Updated"));
     QCOMPARE(w->property("antStatusBarLayoutBuildCount").toInt(), layoutBuildsBeforeRepeatMessage);
+
+    const int messageStatusRegions = w->property("antStatusBarMessageRegionUpdateCount").toInt();
+    const int layoutBuildsBeforeMessageStatus = w->property("antStatusBarLayoutBuildCount").toInt();
+    w->setMessageStatus(Ant::StatusBarStatus::Warning);
+    QCOMPARE(w->property("antStatusBarMessageRegionUpdateCount").toInt(), messageStatusRegions + 1);
+    QCOMPARE(w->property("antStatusBarLayoutBuildCount").toInt(), layoutBuildsBeforeMessageStatus);
+
+    AntStatusBar semanticBar;
+    semanticBar.resize(720, semanticBar.sizeHint().height());
+    semanticBar.setSizeGrip(false);
+    semanticBar.setStatus(Ant::StatusBarStatus::Info);
+    semanticBar.addItem(QStringLiteral("Inherited"));
+    semanticBar.addItem(QStringLiteral("Connected"), Ant::StatusBarStatus::Success);
+    semanticBar.addItem(QStringLiteral("Neutral"), Ant::StatusBarStatus::Default);
+    semanticBar.addPermanentItem(QStringLiteral("Build failed"), Ant::StatusBarStatus::Error);
+    semanticBar.showMessage(QStringLiteral("3 warnings require attention"), Ant::StatusBarStatus::Warning);
+    semanticBar.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&semanticBar));
+
+    const QImage lightSemanticPaint = renderForExtensionTest(&semanticBar);
+    QVERIFY(countNearColorForExtensionTest(lightSemanticPaint, antTheme->tokens().colorPrimaryBg, 10) > 100);
+    QVERIFY(countNearColorForExtensionTest(lightSemanticPaint, antTheme->tokens().colorSuccessBg, 10) > 100);
+    QVERIFY(countNearColorForExtensionTest(lightSemanticPaint, antTheme->tokens().colorWarningBg, 10) > 100);
+    QVERIFY(countNearColorForExtensionTest(lightSemanticPaint, antTheme->tokens().colorErrorBg, 10) > 100);
+    QVERIFY(countNearColorForExtensionTest(lightSemanticPaint, antTheme->tokens().colorBgContainer, 10) > 100);
+
+    antTheme->setThemeMode(Ant::ThemeMode::Dark);
+    QCoreApplication::processEvents();
+    const QImage darkSemanticPaint = renderForExtensionTest(&semanticBar);
+    QVERIFY(countNearColorForExtensionTest(darkSemanticPaint, antTheme->tokens().colorPrimaryBg, 10) > 100);
+    QVERIFY(countNearColorForExtensionTest(darkSemanticPaint, antTheme->tokens().colorSuccessBg, 10) > 100);
+    QVERIFY(countNearColorForExtensionTest(darkSemanticPaint, antTheme->tokens().colorWarningBg, 10) > 100);
+    QVERIFY(countNearColorForExtensionTest(darkSemanticPaint, antTheme->tokens().colorErrorBg, 10) > 100);
+    QVERIFY(countNearColorForExtensionTest(darkSemanticPaint, antTheme->tokens().colorBgContainer, 10) > 100);
+
+    semanticBar.setEnabled(false);
+    const QImage disabledSemanticPaint = renderForExtensionTest(&semanticBar);
+    QVERIFY2(colorNearForExtensionTest(disabledSemanticPaint.pixelColor(4, semanticBar.height() / 2),
+                                       antTheme->tokens().colorBgContainerDisabled),
+             "disabled status bars should suppress semantic backgrounds");
 }
 
 void TestAntQtExtensions::toolButton()
@@ -5426,11 +5532,41 @@ void TestAntQtExtensions::windowLegacyFrameDrawsSoftOutline()
     AntWindow window;
     window.setProperty("antWindowForceLegacyFramePolicy", true);
     window.resize(520, 340);
+
+    auto* page = new QWidget;
+    auto* pageLayout = new QVBoxLayout(page);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+    pageLayout->setSpacing(0);
+    pageLayout->addStretch();
+    auto* statusBar = new AntStatusBar(page);
+    statusBar->setMessage(QStringLiteral("Ready"));
+    pageLayout->addWidget(statusBar);
+    window.setCentralWidget(page);
+
     window.show();
     QVERIFY(QTest::qWaitForWindowExposed(&window));
     QTRY_COMPARE(window.property("antWindowUsesNativeCaptionFrame").toBool(), false);
 
-    const QImage image = window.grab().toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    auto pageRectInWindow = [&]() {
+        return page->rect().translated(page->mapTo(&window, QPoint(0, 0)));
+    };
+    auto statusBarRectInWindow = [&]() {
+        return statusBar->rect().translated(statusBar->mapTo(&window, QPoint(0, 0)));
+    };
+
+    // A normal legacy window reserves one logical pixel for its painted
+    // outline. The page itself remains zero-margin, so its status bar still
+    // spans the full available content width without covering the frame.
+    QTRY_COMPARE(pageRectInWindow().left(), 1);
+    QCOMPARE(pageRectInWindow().top(), AntWindow::TitleBarHeight);
+    QCOMPARE(pageRectInWindow().right(), window.width() - 2);
+    QCOMPARE(pageRectInWindow().bottom(), window.height() - 2);
+    QCOMPARE(statusBarRectInWindow().left(), pageRectInWindow().left());
+    QCOMPARE(statusBarRectInWindow().right(), pageRectInWindow().right());
+    QCOMPARE(statusBarRectInWindow().bottom(), pageRectInWindow().bottom());
+
+    const QPixmap grabbedWindow = window.grab();
+    const QImage image = grabbedWindow.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
     QVERIFY(!image.isNull());
 
     auto isSoftNeutralOutlinePixel = [](const QColor& color) {
@@ -5467,6 +5603,38 @@ void TestAntQtExtensions::windowLegacyFrameDrawsSoftOutline()
              "legacy AntWindow should paint a thin soft left outline");
     QVERIFY2(countSoftOutlinePixels(QRect(image.width() - 1, 0, 1, image.height())) >= minVertical,
              "legacy AntWindow should paint a thin soft right outline");
+
+    // The full-height threshold above deliberately tolerates corner
+    // antialiasing, so sample the status-bar band separately. This catches a
+    // child painted flush to the window edge erasing only the bottom portion
+    // of the left/right outline.
+    const qreal grabDpr = qMax<qreal>(1.0, grabbedWindow.devicePixelRatio());
+    const QRect statusRect = statusBarRectInWindow();
+    const int statusTop = qBound(0, qRound(statusRect.top() * grabDpr), image.height() - 1);
+    const int statusBottom = qBound(statusTop,
+                                    qRound((statusRect.bottom() + 1) * grabDpr) - 1,
+                                    image.height() - 1);
+    const int statusBandHeight = statusBottom - statusTop + 1;
+    const int minStatusBandOutline = qRound(statusBandHeight * 0.72);
+    QVERIFY2(countSoftOutlinePixels(QRect(0, statusTop, 1, statusBandHeight)) >= minStatusBandOutline,
+             "legacy AntWindow should keep its left outline beside a bottom AntStatusBar");
+    QVERIFY2(countSoftOutlinePixels(QRect(image.width() - 1, statusTop, 1, statusBandHeight)) >= minStatusBandOutline,
+             "legacy AntWindow should keep its right outline beside a bottom AntStatusBar");
+
+    // Maximized windows do not draw the legacy outline, so content should use
+    // the complete client width/height instead of retaining the 1 px inset.
+    window.showMaximized();
+    QTRY_VERIFY(window.isMaximized());
+    QTRY_COMPARE(pageRectInWindow().left(), 0);
+    QCOMPARE(pageRectInWindow().top(), AntWindow::TitleBarHeight);
+    QCOMPARE(pageRectInWindow().right(), window.width() - 1);
+    QCOMPARE(pageRectInWindow().bottom(), window.height() - 1);
+
+    window.showNormal();
+    QTRY_VERIFY(!window.isMaximized());
+    QTRY_COMPARE(pageRectInWindow().left(), 1);
+    QCOMPARE(pageRectInWindow().right(), window.width() - 2);
+    QCOMPARE(pageRectInWindow().bottom(), window.height() - 2);
 #endif
 }
 

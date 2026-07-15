@@ -171,6 +171,7 @@ private:
     void updateLegacySoftwareShadow();
     void hideLegacySoftwareShadow();
     void updateCornerSmoother();
+    void updateContentFrameInsets();
     void syncTheme();
     void applyContentPalette(QWidget* widget);
 

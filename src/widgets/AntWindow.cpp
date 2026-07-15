@@ -3,6 +3,7 @@
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QCursor>
+#include <QDynamicPropertyChangeEvent>
 #include <QElapsedTimer>
 #include <QEvent>
 #include <QGuiApplication>
@@ -378,6 +379,7 @@ using DwmExtendFrameIntoClientAreaFn = HRESULT(WINAPI*)(HWND, const DwmMargins*)
 using RtlGetVersionFn = LONG(WINAPI*)(OSVERSIONINFOW*);
 
 constexpr int kLegacyRoundedMaskFrameInset = 1;
+constexpr int kLegacyOutlineInset = 1;
 constexpr auto kForceLegacyFramePolicyProperty = "antWindowForceLegacyFramePolicy";
 constexpr auto kUsesNativeCaptionFrameProperty = "antWindowUsesNativeCaptionFrame";
 constexpr auto kDwmFrameMarginsProperty = "antWindowDwmFrameMargins";
@@ -795,6 +797,7 @@ AntWindow::AntWindow(QWidget* parent)
     contentLayout->setContentsMargins(0, TitleBarHeight, 0, 0);
     contentLayout->setSpacing(0);
     QMainWindow::setCentralWidget(m_contentWidget);
+    updateContentFrameInsets();
 
 #ifdef Q_OS_WIN
     if (QCoreApplication* app = QCoreApplication::instance())
@@ -1317,6 +1320,20 @@ bool AntWindow::event(QEvent* event)
         updateCornerSmoother();
         update();
         break;
+#ifdef Q_OS_WIN
+    case QEvent::DynamicPropertyChange:
+    {
+        auto* propertyEvent = static_cast<QDynamicPropertyChangeEvent*>(event);
+        if (propertyEvent->propertyName() == kForceLegacyFramePolicyProperty)
+        {
+            updateContentFrameInsets();
+            applyNativeWindowFrame();
+            updateLegacySoftwareShadow();
+            update();
+        }
+        break;
+    }
+#endif
     default:
         if (antIsDevicePixelRatioChangeEvent(event->type()))
         {
@@ -1479,6 +1496,7 @@ void AntWindow::changeEvent(QEvent* event)
     if (event->type() == QEvent::WindowStateChange)
     {
         m_windowMaximized = QMainWindow::isMaximized();
+        updateContentFrameInsets();
         applyNativeWindowFrame();
         updateLegacySoftwareShadow();
         updateCornerSmoother();
@@ -2595,6 +2613,38 @@ void AntWindow::updateCornerSmoother()
     m_cornerSmoother->setProperty("antWindowCornerSmootherNativeHwnd", hasNativeHwnd);
 #endif
     m_cornerSmoother->raise();
+}
+
+void AntWindow::updateContentFrameInsets()
+{
+    if (!m_contentWidget)
+    {
+        return;
+    }
+
+    auto* contentLayout = qobject_cast<QVBoxLayout*>(m_contentWidget->layout());
+    if (!contentLayout)
+    {
+        return;
+    }
+
+    int frameInset = 0;
+#ifdef Q_OS_WIN
+    const bool forcedLegacyFrame = property(kForceLegacyFramePolicyProperty).toBool();
+    if (!isMaximized() && !isFullScreen() &&
+        (usesLegacyOpaquePath() || forcedLegacyFrame))
+    {
+        frameInset = kLegacyOutlineInset;
+    }
+#endif
+
+    const QMargins margins(frameInset, TitleBarHeight, frameInset, frameInset);
+    if (contentLayout->contentsMargins() == margins)
+    {
+        return;
+    }
+
+    contentLayout->setContentsMargins(margins);
 }
 
 void AntWindow::emitTitleBarButtonVisibleChanged(TitleBarButton button, bool visible)

@@ -37,6 +37,17 @@ enum class Status
 };
 Q_ENUM_NS(Status)
 
+enum class StatusBarStatus
+{
+    Default,
+    Info,
+    Success,
+    Warning,
+    Error,
+    Inherit,
+};
+Q_ENUM_NS(StatusBarStatus)
+
 enum class Placement
 {
     Top,
