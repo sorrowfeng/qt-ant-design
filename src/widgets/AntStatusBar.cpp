@@ -278,6 +278,40 @@ int AntStatusBar::addPermanentItem(const QString& text,
     return static_cast<int>(m_permanentItems.size()) - 1;
 }
 
+bool AntStatusBar::setItem(int index, const AntStatusBarItem& item)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+    if (m_items.at(index) == item)
+    {
+        return true;
+    }
+
+    m_items[index] = item;
+    invalidateLayoutCache();
+    update();
+    return true;
+}
+
+bool AntStatusBar::setPermanentItem(int index, const AntStatusBarItem& item)
+{
+    if (index < 0 || index >= m_permanentItems.size())
+    {
+        return false;
+    }
+    if (m_permanentItems.at(index) == item)
+    {
+        return true;
+    }
+
+    m_permanentItems[index] = item;
+    invalidateLayoutCache();
+    update();
+    return true;
+}
+
 void AntStatusBar::removeItem(int index)
 {
     if (index >= 0 && index < m_items.size())

@@ -1515,6 +1515,26 @@ void TestAntQtExtensions::statusBar()
     QCOMPARE(w->permanentItemStatus(-1), Ant::StatusBarStatus::Inherit);
     QCOMPARE(w->permanentItemStatus(99), Ant::StatusBarStatus::Inherit);
 
+    AntStatusBarItem updatedItem = w->itemAt(successItem);
+    updatedItem.text = QStringLiteral("Updated item");
+    updatedItem.tooltip = QStringLiteral("Updated item tooltip");
+    QVERIFY(w->setItem(successItem, updatedItem));
+    QCOMPARE(w->itemAt(successItem), updatedItem);
+    QCOMPARE(w->itemStatus(successItem), Ant::StatusBarStatus::Success);
+    QVERIFY(w->setItem(successItem, updatedItem));
+    QVERIFY(!w->setItem(-1, updatedItem));
+    QVERIFY(!w->setItem(99, updatedItem));
+
+    AntStatusBarItem updatedPermanent = w->permanentItemAt(errorPermanent);
+    updatedPermanent.text = QStringLiteral("Perm 2");
+    updatedPermanent.tooltip = QStringLiteral("Updated permanent item tooltip");
+    QVERIFY(w->setPermanentItem(errorPermanent, updatedPermanent));
+    QCOMPARE(w->permanentItemAt(errorPermanent), updatedPermanent);
+    QCOMPARE(w->permanentItemStatus(errorPermanent), Ant::StatusBarStatus::Error);
+    QVERIFY(w->setPermanentItem(errorPermanent, updatedPermanent));
+    QVERIFY(!w->setPermanentItem(-1, updatedPermanent));
+    QVERIFY(!w->setPermanentItem(99, updatedPermanent));
+
     w->removeItem(successItem);
     QCOMPARE(w->itemCount(), 2);
     QCOMPARE(w->itemStatus(1), Ant::StatusBarStatus::Warning);

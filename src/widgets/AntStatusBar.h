@@ -76,6 +76,8 @@ public:
                          const QString& icon = QString(),
                          const QString& tooltip = QString(),
                          int stretch = 0);
+    bool setItem(int index, const AntStatusBarItem& item);
+    bool setPermanentItem(int index, const AntStatusBarItem& item);
     void removeItem(int index);
 
     int itemCount() const;
