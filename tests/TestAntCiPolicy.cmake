@@ -72,7 +72,6 @@ foreach(required_pattern IN ITEMS
         "QT_ANT_DESIGN_ENABLE_UNDEFINED_SANITIZER"
         "TestAntInstallConsumer"
         "Run installed example smoke"
-        "archives:[ \\t]+qtbase qtsvg"
         "runs-on: ubuntu-22.04"
         "runs-on: macos-14"
         "BUILD_SHARED_LIBS")

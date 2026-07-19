@@ -373,7 +373,7 @@
 
 - GitHub Actions 固定到完整 commit SHA，权限收紧为 `contents: read`，checkout 禁止持久化凭据，并增加 Dependabot action 更新配置。
 - 显式启用测试时 Qt Test 缺失会在 configure 阶段失败；Windows 部署、安装示例 smoke 和独立安装 consumer 的失败都会传播为作业失败。
-- 当前矩阵覆盖 Windows Qt5/Qt6 static/shared、Linux Qt5 shared 与 Qt6 ASan+UBSan、macOS Qt6 shared。所有非 sanitizer 配置执行安装；sanitizer 配置只构建和测试，刻意跳过安装。
+- 当前矩阵覆盖 Windows Qt5/Qt6 static/shared、Linux Qt5 shared 与 Qt5 ASan+UBSan、macOS Qt6 shared。所有非 sanitizer 配置执行安装；sanitizer 配置只构建和测试，刻意跳过安装。
 - `TestAntCiPolicy` 对 action pinning、权限以及选定的矩阵、sanitizer 和安装策略标记进行静态门禁。
 
 验证证据：`TestAntCiPolicy` 包含在 155 项全量结果中并通过；本轮未触发远程 GitHub Actions，因此仅确认工作流定义与本地门禁，不宣称远程矩阵已通过。
@@ -396,7 +396,7 @@
 
 整改结果：
 
-- CI 已配置 Windows Qt5/Qt6、Linux Qt5/Qt6、macOS Qt6，涵盖 Debug/Release、static/shared，并在 Linux Qt6 Debug 配置 ASan+UBSan；本地 MSVC 配置支持可选 ASan，明确拒绝不受支持的 MSVC UBSan。
+- CI 已配置 Windows Qt5/Qt6、Linux Qt5、macOS Qt6，涵盖 Debug/Release、static/shared，并在 Linux Qt5 Debug 配置 ASan+UBSan；本地 MSVC 配置支持可选 ASan，明确拒绝不受支持的 MSVC UBSan。
 - sanitizer 编译插桩只应用于 `qt-ant-design` 库编译单元；必要链接选项传播给 build-tree consumer，但测试和宿主目标不会自动获得编译插桩。MSVC 仅对库移除 `/RTC`，并在库内禁用 STL string/vector annotations 以兼容未插桩宿主，项目源代码仍由 ASan 插桩。
 - 本地 MSVC ASan 的 9 个关键目标通过：`TestAntTypography`、`TestAntDataEntryA`、`TestAntDataEntryB`、`TestAntDataDisplayA`、`TestAntQRGenerator`、`TestAntFeedback`、`TestAntNavigation`、`TestAntQtExtensions`、`TestAntDockPerspectiveLimits`，总耗时 `31.09s`。
 - 真实 `add_subdirectory()` 父工程在开启 ASan 后成功构建并运行 `AntParentConsumer`。生成工程确认宿主保留 Debug `/RTC` 且无 `/fsanitize`，库 target 使用 `/fsanitize=address`、移除 `/RTC` 并只在库内设置兼容宏。

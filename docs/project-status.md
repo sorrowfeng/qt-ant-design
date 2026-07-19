@@ -17,7 +17,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | Dedicated examples intentionally absent | None |
 | Tests | Current Windows top-level inventory is `155` CTest entries when `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON`: `51` deep/system entries plus `104` per-widget smoke entries. The latest Qt6 Debug full run on 2026-07-16 passed `155 / 155` in `379.87s`; the final Qt5 P1/P2 targeted matrix passed `5 / 5`, and nine key targets linked to the MSVC ASan-instrumented library passed `9 / 9` |
 | Build contract | Qt 6.5.0+ or Qt 5.15.2+ is enforced for source and installed-package consumers; manual CMake supports 3.16+, while `CMakePresets.json` requires 3.21+ |
-| CI definition | Windows Qt5 Debug static plus Qt6 Debug static/Release shared and install smoke/consumer, Linux Qt6 Debug static ASan+UBSan plus Qt5 Release shared, and macOS Qt6 Release shared are configured; this snapshot does not claim the newly expanded remote matrix has run successfully |
+| CI definition | Windows Qt5 Debug static plus Qt6 Debug static/Release shared and install smoke/consumer, Linux Qt5 Debug static ASan+UBSan plus Qt5 Release shared, and macOS Qt6 Release shared are configured; this snapshot does not claim the newly expanded remote matrix has run successfully |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `176` committed PNGs: light/dark screenshots for `88` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Component/API reference | Online site generated into the `gh_page` branch; local HTML can be generated under `build/docs/` from public widget headers |
