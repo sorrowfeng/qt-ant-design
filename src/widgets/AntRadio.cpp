@@ -33,9 +33,6 @@ AntRadio::AntRadio(QWidget* parent)
     radioStyle->setParent(this);
     setStyle(radioStyle);
 
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this]() {
-        update();
-    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         const QSize oldHint = sizeHint();
         invalidateLayoutCache();

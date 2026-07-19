@@ -77,6 +77,44 @@ int AntTheme::smallBorderRadius() const { return tokens().borderRadiusSM; }
 int AntTheme::largeBorderRadius() const { return tokens().borderRadiusLG; }
 int AntTheme::spacingUnit() const { return tokens().sizeUnit; }
 
+void AntTheme::applyConfiguration(Ant::ThemeMode mode,
+                                  const QColor& primaryColor,
+                                  int fontSize,
+                                  int borderRadius)
+{
+    const int normalizedFontSize = qBound(1, fontSize, Ant::MaximumThemeFontSize);
+    const int normalizedBorderRadius = qBound(0, borderRadius, Ant::MaximumThemeBorderRadius);
+    const bool modeChanged = m_themeMode != mode;
+    const bool tokensChanged = m_primaryColorOverride != primaryColor ||
+                               m_fontSizeOverride != normalizedFontSize ||
+                               m_borderRadiusOverride != normalizedBorderRadius;
+    if (!modeChanged && !tokensChanged)
+    {
+        return;
+    }
+
+    Q_EMIT themeAboutToChange();
+    if (modeChanged)
+    {
+        Q_EMIT themeModeAboutToChange(mode);
+    }
+
+    m_primaryColorOverride = primaryColor;
+    m_fontSizeOverride = normalizedFontSize;
+    m_borderRadiusOverride = normalizedBorderRadius;
+    if (tokensChanged)
+    {
+        rebuildTokens();
+    }
+    m_themeMode = mode;
+
+    if (modeChanged)
+    {
+        Q_EMIT themeModeChanged(m_themeMode);
+    }
+    Q_EMIT themeChanged();
+}
+
 QColor AntTheme::hoverColor(const QColor& base) const
 {
     return AntPalette::hoverColor(base, m_themeMode);
@@ -189,15 +227,10 @@ void AntTheme::drawEffectShadow(QPainter* painter, const QRect& rect, int shadow
 
 void AntTheme::setThemeMode(Ant::ThemeMode mode)
 {
-    if (m_themeMode == mode)
-    {
-        return;
-    }
-
-    Q_EMIT themeModeAboutToChange(mode);
-    m_themeMode = mode;
-    Q_EMIT themeModeChanged(m_themeMode);
-    Q_EMIT themeChanged();
+    applyConfiguration(mode,
+                       m_primaryColorOverride,
+                       m_fontSizeOverride,
+                       m_borderRadiusOverride);
 }
 
 void AntTheme::toggleThemeMode()
@@ -308,4 +341,52 @@ AntThemeTokens AntTheme::createTokens(Ant::ThemeMode mode)
     t.colorRateStar = dark ? QColor(212, 177, 6) : QColor(250, 219, 20);
 
     return t;
+}
+
+void AntTheme::applyTokenOverrides(AntThemeTokens& tokens,
+                                   Ant::ThemeMode mode,
+                                   const QColor& primaryColor,
+                                   int fontSize,
+                                   int borderRadius)
+{
+    if (primaryColor.isValid())
+    {
+        tokens.colorPrimary = primaryColor;
+        tokens.colorPrimaryHover = AntPalette::hoverColor(primaryColor, mode);
+        tokens.colorPrimaryActive = AntPalette::activeColor(primaryColor, mode);
+        tokens.colorPrimaryBg = AntPalette::backgroundColor(primaryColor, mode);
+        tokens.colorPrimaryBorder = AntPalette::borderColor(primaryColor, mode);
+        tokens.colorLink = tokens.colorPrimary;
+        tokens.colorLinkHover = tokens.colorPrimaryHover;
+        tokens.colorLinkActive = tokens.colorPrimaryActive;
+        tokens.colorPrimaryLoading = AntPalette::mix(tokens.colorBgBase, tokens.colorPrimary, 0.65);
+        tokens.colorPrimaryLoadingHover = AntPalette::mix(tokens.colorBgBase, tokens.colorPrimaryHover, 0.65);
+        tokens.colorPrimaryLoadingActive = AntPalette::mix(tokens.colorBgBase, tokens.colorPrimaryActive, 0.65);
+    }
+
+    tokens.fontSize = fontSize;
+    tokens.fontSizeSM = qMax(1, fontSize - 2);
+    tokens.fontSizeLG = fontSize + 2;
+    tokens.fontSizeXL = fontSize + 6;
+
+    tokens.borderRadius = borderRadius;
+    tokens.borderRadiusSM = qMax(0, borderRadius - 2);
+    tokens.borderRadiusLG = borderRadius + 2;
+    tokens.borderRadiusXS = qMax(0, borderRadius - 4);
+}
+
+void AntTheme::rebuildTokens()
+{
+    m_lightTokens = createTokens(Ant::ThemeMode::Default);
+    m_darkTokens = createTokens(Ant::ThemeMode::Dark);
+    applyTokenOverrides(m_lightTokens,
+                        Ant::ThemeMode::Default,
+                        m_primaryColorOverride,
+                        m_fontSizeOverride,
+                        m_borderRadiusOverride);
+    applyTokenOverrides(m_darkTokens,
+                        Ant::ThemeMode::Dark,
+                        m_primaryColorOverride,
+                        m_fontSizeOverride,
+                        m_borderRadiusOverride);
 }

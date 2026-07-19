@@ -223,6 +223,7 @@ QSet<QString> atlasDeferredHeaders()
         QStringLiteral("AntAffix"),
         QStringLiteral("AntApp"),
         QStringLiteral("AntConfigProvider"),
+        QStringLiteral("AntWindowFrame"),
     };
 }
 

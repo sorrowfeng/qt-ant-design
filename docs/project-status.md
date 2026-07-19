@@ -1,8 +1,8 @@
 # Project Status
 
-Updated: `2026-06-24`
+Updated: `2026-07-16`
 
-This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, feedback popup anchoring/multi-window scoping, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, README component screenshot gallery, the expanded Qt5/Qt6 visual parity atlas check, the real-example Qt5/Qt6 page traversal comparison, and the Windows High DPI scaling pass.
+This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, feedback popup anchoring/multi-window scoping, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, README component screenshot gallery, the expanded Qt5/Qt6 visual parity atlas check, the real-example Qt5/Qt6 page traversal comparison, the Windows High DPI scaling pass, and the completed 2026-07-16 P0-P2 code-audit remediation pass.
 
 ## Summary
 
@@ -10,19 +10,30 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 | --- | --- |
 | Ant Design standard coverage | `70 / 70` top-level components covered |
 | Public Qt component count | `89` public components |
-| Widget headers | `109` headers in `src/widgets`: `89` public component headers, `19` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup` |
+| Widget headers | `110` headers in `src/widgets`: `89` public component headers, `19` Qt-style alias headers, installed non-component helper `AntWindowFrame`, and internal non-installed popup helper `AntSelectPopup` |
 | Qt / desktop extensions | `19` components |
 | Style architecture | `67` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
 | Example coverage | `89 / 89` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
 | Dedicated examples intentionally absent | None |
-| Tests | `151` CTest entries when `BUILD_WIDGET_SMOKE_TESTS=ON`: `47` deep/system entries plus `104` per-widget smoke entries; latest full component reliability sweep passed `37 / 37` in Debug on `2026-05-30`; latest Qt6 and Qt5 adaptation-focused CTest sweep passed `9 / 9` entries per build tree on `2026-06-01` |
+| Tests | Current Windows top-level inventory is `155` CTest entries when `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON`: `51` deep/system entries plus `104` per-widget smoke entries. The latest Qt6 Debug full run on 2026-07-16 passed `155 / 155` in `379.87s`; the final Qt5 P1/P2 targeted matrix passed `5 / 5`, and nine key targets linked to the MSVC ASan-instrumented library passed `9 / 9` |
+| Build contract | Qt 6.5.0+ or Qt 5.15.2+ is enforced for source and installed-package consumers; manual CMake supports 3.16+, while `CMakePresets.json` requires 3.21+ |
+| CI definition | Windows Qt5 Debug static plus Qt6 Debug static/Release shared and install smoke/consumer, Linux Qt6 Debug static ASan+UBSan plus Qt5 Release shared, and macOS Qt6 Release shared are configured; this snapshot does not claim the newly expanded remote matrix has run successfully |
 | Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
 | README component gallery | `176` committed PNGs: light/dark screenshots for `88` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Component/API reference | Online site generated into the `gh_page` branch; local HTML can be generated under `build/docs/` from public widget headers |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
-| Performance optimization | Historical May 2026 pass record in `docs/archive/performance-optimization-2026-05.md`; current component inventory and coverage are tracked here and in `docs/reliability-coverage.md` |
+| Performance optimization | Historical May 2026 pass record in `docs/archive/performance-optimization-2026-05.md`; current component inventory and coverage are tracked here and in `docs/reliability-coverage.md`; audit remediation is tracked in `docs/code-audit-optimization.md` |
+
+## Current Build and CI Contract
+
+- `QT_ANT_DESIGN_BUILD_EXAMPLES`, `QT_ANT_DESIGN_BUILD_TESTS`, and `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS` are enabled by default only for a top-level build. An `add_subdirectory()` consumer gets only the library unless it explicitly opts in. If a host enables child tests and expects host-root CTest discovery, it must call `enable_testing()` before `add_subdirectory()`; test targets can otherwise build without being guaranteed to appear in top-level `ctest -N`. `BUILD_SHARED_LIBS` remains the standard static/shared switch.
+- `QT_ANT_DESIGN_DEPLOY_EXAMPLE` controls Windows example deployment. `QT_ANT_DESIGN_ENABLE_ADDRESS_SANITIZER` and `QT_ANT_DESIGN_ENABLE_UNDEFINED_SANITIZER` are opt-in; the latter is supported by the GCC/Clang configuration, not MSVC. Sanitizer compilation applies to the library sources; required link options propagate to build-tree consumers, but host/test compilation is not automatically instrumented. On MSVC, `/RTC` is removed only from the library and its STL string/vector annotations are disabled for interoperability with uninstrumented parent targets.
+- The workflow pins third-party actions to full commit SHAs, uses read-only contents permission and non-persistent checkout credentials, installs every non-sanitizer configuration, and runs the Windows installed example and independent consumer. Sanitizer configurations build and test without installing. These are checked-in workflow semantics, not evidence that a GitHub-hosted run has completed.
 
 ## Recent Completed Work
+
+- Completed all 18 items in the `2026-07-16` P0-P2 code-audit remediation. In addition to destruction-aware lifetime/controller/QR/Dock P0 work, P1/P2 adds overflow-safe numeric paths, immutable bounded image snapshots and an Upload LRU, project-scoped CMake integration and minimum Qt enforcement, explicit unsupported legacy restore semantics, System32-only DLL loading and URL policy, pinned/read-only CI, sanitizer/property coverage, an explicit source inventory, a private Dock restorer, and a bounded AntLog cross-thread queue. Legacy-signature snapshots may be imported and stored for identification or migration, but this release explicitly rejects restore with `unsupported-legacy-format` and leaves the runtime layout unchanged.
+- Added `TestAntQRGenerator`, whose decoder is independent of the production encoder and round-trips all 40 V1-V10 / L-M-Q-H maximum-capacity matrices plus UTF-8 content, and `TestAntDockPerspectiveLimits`, which covers state size, depth, global node/Dock-ID counts, identifier/floating-snapshot limits, malformed/trailing streams, structural invariants, legacy failure semantics, and preservation of saved/runtime state after invalid replacement. The current Qt6 Debug run passed `155 / 155` in `379.87s`; Qt5 final targeted coverage passed `5 / 5`; nine key targets passed against the MSVC ASan-instrumented library; and the shared Release installed consumer passed. UBSan was not available in the MSVC validation environment.
 
 - Fixed a Qt5 numeric-editor border regression in `AntInputNumber`, which also affected `AntInputDialog` integer and double input modes. The internal spin-box editor now stays inside the Ant frame, avoids Qt5 native background erasing, and the custom `CC_SpinBox` paint path stops native redraw from adding incomplete bracket-like focus borders. The fix was verified on `2026-06-02` with `TestAntDataEntryA` and `TestAntQtExtensions` in both Qt6 and Qt5 build trees plus a Qt5 example smoke launch.
 - Added `AntInputDialog` as the QInputDialog desktop-extension port. It builds on `AntDialog` for frameless title bar, shadow, child palette, and theme synchronization, and exposes text, integer, double, and item-selection modes, static convenience helpers, configurable button text/options, `UsePlainTextEditForTextInput`, `NoButtons`, and changed/selected signals. The example app now has a dedicated InputDialog page, README light/dark thumbnails were added, and Qt6/Qt5 targeted builds plus behavior/meta/theme/render/object-tree coverage were verified on `2026-06-01`.
@@ -153,7 +164,7 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
   - Reworked title-bar hover state cleanup so hover colors clear reliably when leaving title/content/native areas.
   - Added a captured-frame `AntWindow` theme transition overlay with a 16 ms timer, 220 ms duration, smootherstep easing, high-DPI-safe captures, and a crossfade path that avoids black-hole artifacts.
   - Embedded the Windows 10/11 compatibility manifest in the example app through the `.rc` RT_MANIFEST resource so the native Snap Layout flyout can appear on the maximize button without relying on `/MANIFESTINPUT` / `mt.exe` manifest merging.
-  - Split the Windows native frame policy by OS build: Windows 11 keeps the caption-backed Snap Layout path, while Windows 10 removes `WS_CAPTION`, uses a legacy rounded mask for non-maximized corners, preserves a 1 px DWM extended frame for the outer shadow, and leaves maximized `WM_NCCALCSIZE` rectangles unshrunk so the work area is fully covered.
+  - Historical `2026-05-07` implementation: Windows 11 kept the caption-backed Snap Layout path, while Windows 10 removed `WS_CAPTION` and initially used a rounded-mask/DWM-frame approach. The `2026-05-20` validation documented below superseded the Windows 10 portion with the current fully opaque square-corner path; Windows 11 remains unchanged.
   - Reworked visible Windows topmost toggles to use native `SetWindowPos(HWND_TOPMOST/HWND_NOTOPMOST)`, preserving the Qt window flags without forcing a hide/show cycle.
 - Expanded Qt-style compatibility for `AntList` / `AntListWidget` to cover common `QListWidget` workflows: string item insertion, lookup/sorting, item data roles, current row/item state, selection state, internal scrolling, `scrollToItem`, and item/current/selection signals.
 - Expanded `AntTable` helper coverage with `rows()`, `selectRow()`, `currentRowIndex()`, and row-level tooltip data/display support.
@@ -322,16 +333,22 @@ Inventory:
 
 ## Verification
 
-Last full verification run:
+Latest completed full verification run (`2026-07-16`, after all P1/P2 changes):
 
 ```powershell
-cmake --build build --config Debug
-ctest -C Debug --output-on-failure
+cmake --build build --config Debug --parallel 2
+ctest --test-dir build -C Debug --output-on-failure
 ```
 
-Configured tests after alias, build-system, no-QSS guard, example subsystem guards, example page traversal, Qt-version visual parity, two Qt-version visual-atlas scale-factor entries, Qt-version metric audit, three Windows High DPI scale-factor entries, and the initialize-default High DPI entry: `47` deep/system CTest entries. Enabling `BUILD_WIDGET_SMOKE_TESTS` adds `104` per-widget compile/construct/render smoke entries labeled `widget-smoke`, for `151` total configured CTest entries.
+Current result: `155 / 155` passed in `379.87s`, including `51` deep/system entries, `104` per-widget smoke entries, visual/High-DPI checks, installed consumer execution, example close stress, real example page traversal, System32 loader policy, CI policy, and the real parent-project integration test. `TestAntBuildSystem` accounted for `247.04s` while configuring and building the generated parent project.
 
-Baseline component reliability validation:
+Current source inventory: a Windows top-level build registers `51` deep/system CTest entries. Enabling `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS` adds `104` per-widget compile/construct/render entries labeled `widget-smoke`, for `155` total. Non-Windows configurations omit the Windows-only `TestAntExampleGuiSubsystem` and therefore register one fewer deep/system entry under otherwise equivalent top-level options.
+
+Additional P1/P2 validation: the final Qt5 targeted matrix passed `5 / 5` in `11.97s`; the Release shared install consumer passed `1 / 1` in `7.77s`; nine key tests linked to the MSVC ASan-instrumented library passed `9 / 9` in `31.09s`; and a fresh ASan `add_subdirectory()` parent successfully built and ran `AntParentConsumer`. Local UBSan and the configured remote CI matrix were not run.
+
+Historical P0 result: the earlier `153 / 153` inventory passed in `129.64s`, including the then-configured `49` deep/system entries and `104` per-widget smoke entries. This is retained as a historical checkpoint, not the latest baseline.
+
+Historical component reliability baseline (`2026-05-29`):
 
 ```powershell
 cmake --build build --config Debug
@@ -341,7 +358,7 @@ cmake --build build --config Debug --target qt-ant-design-example
 
 Result: `37 / 37` CTest targets passed and `qt-ant-design-example` Debug build succeeded on `2026-05-29`, including public component API / getter-setter / signal coverage, Qt event-level mouse/keyboard/popup interactions, lifecycle ownership, theme lifecycle, render smoke, visual regression guards, install consumer, build-system, and example subsystem checks. The Qt-version visual parity, Qt-version visual-atlas scale-factor, Qt-version metric audit, Windows High DPI scale-factor, no-QSS guard, and example page traversal targets were added after that full sweep; the combined adaptation-focused run passed `9 / 9` entries in both Qt6 and Qt5 build trees on `2026-06-01`. Win32 `SendInput` desktop-input checks are opt-in via `QT_ANT_DESIGN_ENABLE_NATIVE_INPUT_TESTS=1`.
 
-Latest repository-structure validation:
+Historical repository-structure validation (`2026-06-24`; the command records the top-level compatibility option names used at that time):
 
 ```powershell
 cmake -S . -B build\structure-check -DBUILD_EXAMPLES=ON -DBUILD_TESTS=ON -DBUILD_WIDGET_SMOKE_TESTS=ON
@@ -351,9 +368,9 @@ cmake --build build\structure-check --config Debug --target TestAntWidgetSmoke_A
 ctest --test-dir build\structure-check -C Debug -L widget-smoke --output-on-failure --timeout 60
 ```
 
-Result: the example built and smoke-launched, `TestAntWidgetSmoke_All` built, and `104 / 104` per-widget smoke CTest entries passed on `2026-06-24`. `ctest -N` reported `151` total configured entries with `BUILD_WIDGET_SMOKE_TESTS=ON`.
+Historical result: the example built and smoke-launched, `TestAntWidgetSmoke_All` built, and `104 / 104` per-widget smoke CTest entries passed on `2026-06-24`. At that revision, `ctest -N` reported `151` total configured entries. Later additions raised the current source inventory to `155`; use the `QT_ANT_DESIGN_*` option names shown in the current build contract for new commands.
 
-Latest build-system / install targeted validation:
+Historical build-system / install targeted validation (recorded before the current AUD-009/AUD-010 expansion):
 
 ```powershell
 ctest --test-dir build -C Debug -R "TestAntBuildSystem|TestAntInstallConsumer|TestAntIcon|TestAntAliases" --output-on-failure

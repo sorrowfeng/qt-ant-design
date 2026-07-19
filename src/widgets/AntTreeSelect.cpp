@@ -288,7 +288,7 @@ AntTreeSelect::AntTreeSelect(QWidget* parent)
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     syncTreeSelectPerfCounters();
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

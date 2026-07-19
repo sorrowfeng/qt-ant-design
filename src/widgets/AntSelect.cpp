@@ -183,7 +183,7 @@ AntSelect::AntSelect(QWidget* parent)
         update();
     });
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -435,6 +435,11 @@ QVariant AntSelect::currentValue() const
         return QVariant();
     }
     return m_options.at(m_currentIndex).value;
+}
+
+void AntSelect::setCurrentValue(const QVariant& value)
+{
+    setCurrentIndex(findData(value));
 }
 
 QVariant AntSelect::currentData(int role) const

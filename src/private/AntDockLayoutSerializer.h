@@ -12,6 +12,13 @@ class QWidget;
 
 namespace AntDockInternal
 {
+inline constexpr int DockPerspectiveMaxStateBytes = 1024 * 1024;
+inline constexpr int DockPerspectiveMaxDepth = 64;
+inline constexpr int DockPerspectiveMaxNodes = 4096;
+inline constexpr int DockPerspectiveMaxDockIds = 4096;
+inline constexpr int DockPerspectiveMaxIdentifierCharacters = 1024;
+inline constexpr int DockPerspectiveMaxFloatingSnapshots = 1024;
+
 enum class DockLayoutNodeType : quint8
 {
     Empty = 0,

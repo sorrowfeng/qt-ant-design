@@ -25,7 +25,7 @@ AntSkeleton::AntSkeleton(QWidget* parent)
         requestSkeletonUpdate(shimmerDirtyRect(oldOffset, m_shimmerOffset), QStringLiteral("shimmer"));
     });
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

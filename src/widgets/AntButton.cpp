@@ -33,7 +33,7 @@ AntButton::AntButton(QWidget* parent)
     buttonStyle->setParent(this);
     setStyle(buttonStyle);
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

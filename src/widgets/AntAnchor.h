@@ -48,7 +48,7 @@ private:
     QRect indicatorDirtyRect(const QRectF& previous, const QRectF& current) const;
     void syncAnchorPerfCounters() const;
 
-    QScrollArea* m_scrollArea = nullptr;
+    QPointer<QScrollArea> m_scrollArea;
     QVBoxLayout* m_layout = nullptr;
     QVariantAnimation* m_indicatorAnimation = nullptr;
     QTimer* m_scrollResolveTimer = nullptr;

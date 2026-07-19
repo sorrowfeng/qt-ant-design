@@ -19,6 +19,7 @@
 #include <QMetaType>
 #include <QMouseEvent>
 #include <QPlainTextEdit>
+#include <QPointer>
 #include <QComboBox>
 #include <QPixmap>
 #include <QAction>
@@ -37,6 +38,7 @@
 #include <QInputDialog>
 #include <QTest>
 #include <QTemporaryDir>
+#include <QTextDocument>
 #include <QToolButton>
 #include <QTreeView>
 #include <QVBoxLayout>
@@ -44,7 +46,9 @@
 
 #include <atomic>
 #include <algorithm>
+#include <limits>
 #include <thread>
+#include <type_traits>
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
 #include "styles/AntDialogStyle.h"
@@ -69,7 +73,9 @@
 #include "widgets/AntRibbon.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntButton.h"
+#include "widgets/AntMessage.h"
 #include "widgets/AntModal.h"
+#include "widgets/AntNotification.h"
 #include "widgets/AntToolTip.h"
 #include "widgets/AntToolButton.h"
 #include "widgets/AntToolBar.h"
@@ -81,12 +87,14 @@
 #include "widgets/AntInput.h"
 #include "widgets/AntTypography.h"
 #include "widgets/AntInputNumber.h"
+#include "widgets/AntRadio.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
 #include "widgets/AntWidget.h"
 #include "widgets/AntWindow.h"
+#include "widgets/AntWindowFrame.h"
 #include "widgets/AntColorPicker.h"
 
 #ifdef Q_OS_WIN
@@ -282,7 +290,10 @@ public:
 
     ~ThemeModeRestorerForExtensionTest()
     {
-        antTheme->setThemeMode(m_originalMode);
+        antTheme->applyConfiguration(m_originalMode,
+                                     QColor(),
+                                     Ant::FontSize,
+                                     Ant::BorderRadius);
         QCoreApplication::processEvents();
     }
 
@@ -730,9 +741,11 @@ private slots:
     void configProvider();
     void formItem();
     void form();
+    void formProvider();
     void formIncrementalUpdates();
     void formList();
     void log();
+    void logCrossThread();
     void masonry();
     void plainTextEdit();
     void scrollArea();
@@ -762,6 +775,7 @@ private slots:
     void windowThemeTransitionRevealsNewFrameWithoutBlackHole();
     void windowNativeHitTestSupportsSnapZones();
     void windowDwmFrameMarginsPreserveShadow();
+    void windowFrameShadowHandleSafety();
     void windowLegacyFramePolicyRestoresShadowAfterResize();
     void windowLegacyFrameDrawsSoftOutline();
     void windowMaximizedNcCalcKeepsFullWorkArea();
@@ -772,6 +786,9 @@ private slots:
 void TestAntQtExtensions::app()
 {
     QWidget root;
+    root.resize(640, 480);
+    root.show();
+    QTest::qWait(20);
 
     {
         AntApp app(&root);
@@ -781,30 +798,117 @@ void TestAntQtExtensions::app()
         QCOMPARE(app.property("antAppFeedbackHostResolveCount").toInt(), 1);
         QCOMPARE(AntApp::instance(), &app);
 
-        app.showMessage(QStringLiteral("Cached"), 10);
+        QPointer<AntMessage> shownMessage;
+        connect(&app, &AntApp::messageShown, &app, [&shownMessage](AntMessage* message) {
+            shownMessage = message;
+        });
+        app.showMessage(QStringLiteral("Cached"), 0);
+        QVERIFY(shownMessage);
+        QCOMPARE(app.lastMessage(), shownMessage.data());
+        QCOMPARE(shownMessage->text(), QStringLiteral("Cached"));
+        QCOMPARE(shownMessage->duration(), 0);
+        QCOMPARE(shownMessage->objectName(), QStringLiteral("antAppMessage"));
+        QTRY_VERIFY(shownMessage->isVisible());
         QCOMPARE(app.feedbackHost(), &root);
         QCOMPARE(app.property("antAppFeedbackHostCacheHit").toBool(), true);
         QCOMPARE(app.property("antAppFeedbackHostResolveCount").toInt(), 1);
 
         QWidget nestedRoot(&root);
+        nestedRoot.resize(320, 240);
+        nestedRoot.show();
         {
             AntApp nestedApp(&nestedRoot);
             QCOMPARE(AntApp::instance(), &nestedApp);
             QCOMPARE(nestedApp.feedbackHost(), &nestedRoot);
-            nestedApp.showModal(QStringLiteral("Title"), QStringLiteral("Body"));
+            bool confirmed = false;
+            bool canceled = false;
+            nestedApp.showModal(QStringLiteral("Title"), QStringLiteral("Body"),
+                                [&confirmed]() { confirmed = true; },
+                                [&canceled]() { canceled = true; });
+            QPointer<AntModal> modal = nestedApp.lastModal();
+            QVERIFY(modal);
+            QCOMPARE(modal->title(), QStringLiteral("Title"));
+            QCOMPARE(modal->content(), QStringLiteral("Body"));
+            QVERIFY(modal->isOpen());
+            const auto modalButtons = modal->findChildren<AntButton*>();
+            AntButton* okButton = nullptr;
+            for (AntButton* button : modalButtons)
+            {
+                if (button->text() == QStringLiteral("OK"))
+                {
+                    okButton = button;
+                    break;
+                }
+            }
+            QVERIFY(okButton);
+            okButton->click();
+            QVERIFY(confirmed);
+            QVERIFY(!canceled);
+            QVERIFY(!modal->isOpen());
+
             nestedApp.showNotification(QStringLiteral("Title"), QStringLiteral("Body"));
+            QPointer<AntNotification> notification = nestedApp.lastNotification();
+            QVERIFY(notification);
+            QCOMPARE(notification->title(), QStringLiteral("Title"));
+            QCOMPARE(notification->description(), QStringLiteral("Body"));
+            QCOMPARE(notification->objectName(), QStringLiteral("antAppNotification"));
             QCOMPARE(nestedApp.property("antAppFeedbackHostResolveCount").toInt(), 1);
+            QTRY_VERIFY(notification->isVisible());
+
+            notification->close();
+            QTRY_VERIFY(notification.isNull());
+            QTRY_VERIFY(modal.isNull());
+
+            confirmed = false;
+            nestedApp.showModal(QStringLiteral("Cancel title"),
+                                QStringLiteral("Cancel body"),
+                                [&confirmed]() { confirmed = true; },
+                                [&canceled]() { canceled = true; });
+            QPointer<AntModal> cancelModal = nestedApp.lastModal();
+            QVERIFY(cancelModal);
+            AntButton* cancelButton = nullptr;
+            for (AntButton* button : cancelModal->findChildren<AntButton*>())
+            {
+                if (button->text() == QStringLiteral("Cancel"))
+                {
+                    cancelButton = button;
+                    break;
+                }
+            }
+            QVERIFY(cancelButton);
+            cancelButton->click();
+            QVERIFY(!confirmed);
+            QVERIFY(canceled);
+            QTRY_VERIFY(cancelModal.isNull());
         }
+
+        shownMessage->close();
+        QTRY_VERIFY(shownMessage.isNull());
 
         QCOMPARE(AntApp::instance(), &app);
     }
 
     QCOMPARE(AntApp::instance(), nullptr);
+
+    root.hide();
+    AntApp hiddenApp(&root);
+    QSignalSpy failedSpy(&hiddenApp, &AntApp::feedbackFailed);
+    hiddenApp.showMessage(QStringLiteral("Hidden"), 0);
+    hiddenApp.showModal(QStringLiteral("Hidden"), QStringLiteral("Hidden"));
+    hiddenApp.showNotification(QStringLiteral("Hidden"), QStringLiteral("Hidden"));
+    QCOMPARE(failedSpy.count(), 3);
+    QCOMPARE(failedSpy.at(0).at(0).toString(), QStringLiteral("message"));
+    QCOMPARE(failedSpy.at(1).at(0).toString(), QStringLiteral("modal"));
+    QCOMPARE(failedSpy.at(2).at(0).toString(), QStringLiteral("notification"));
+    QVERIFY(hiddenApp.lastMessage() == nullptr);
+    QVERIFY(hiddenApp.lastModal() == nullptr);
+    QVERIFY(hiddenApp.lastNotification() == nullptr);
 }
 
 void TestAntQtExtensions::configProvider()
 {
     ThemeModeRestorerForExtensionTest themeGuard;
+    antTheme->applyConfiguration(Ant::ThemeMode::Default, QColor(), Ant::FontSize, Ant::BorderRadius);
     AntConfigProvider provider;
 
     QCOMPARE(provider.themeMode(), Ant::ThemeMode::Default);
@@ -814,6 +918,9 @@ void TestAntQtExtensions::configProvider()
 
     QSignalSpy configSpy(&provider, &AntConfigProvider::configChanged);
     QSignalSpy themeSpy(&provider, &AntConfigProvider::themeModeChanged);
+    provider.setThemeMode(Ant::ThemeMode::Default);
+    QCOMPARE(provider.themeMode(), Ant::ThemeMode::Default);
+    QCOMPARE(themeSpy.count(), 0);
     provider.setThemeMode(themeGuard.alternateMode());
     QCOMPARE(provider.themeMode(), themeGuard.alternateMode());
     QCOMPARE(themeSpy.count(), 1);
@@ -844,18 +951,60 @@ void TestAntQtExtensions::configProvider()
     QCOMPARE(configSpy.count(), 1);
     QCOMPARE(provider.revision(), 1);
 
-    provider.setFontSize(17);
+    provider.setFontSize(19);
     provider.setBorderRadius(9);
     QTRY_COMPARE(configSpy.count(), 2);
     QCOMPARE(provider.revision(), 2);
 
+    // First apply with the current mode so this is a token-only update. It
+    // must still traverse the style geometry cache/update path.
+    provider.setThemeMode(Ant::ThemeMode::Default);
+    AntButton configuredButton(QStringLiteral("Configured button"));
+    AntWidget configuredWidget;
+    AntDialog configuredDialog;
+    const QSize defaultButtonHint = configuredButton.sizeHint();
+    const int styleUpdatesBefore = configuredDialog.style()->property("antStyleThemeUpdateCount").toInt();
+    const int widgetThemeChangesBefore = configuredWidget.property("antWidgetThemeChangeCount").toInt();
     QSignalSpy globalThemeSpy(antTheme, &AntTheme::themeChanged);
     provider.apply();
     QCOMPARE(antTheme->themeMode(), provider.themeMode());
     QCOMPARE(globalThemeSpy.count(), 1);
+    QCOMPARE(antTheme->tokens().colorPrimary, QColor(Qt::blue));
+    QCOMPARE(antTheme->tokens().fontSize, 19);
+    QCOMPARE(antTheme->tokens().fontSizeSM, 17);
+    QCOMPARE(antTheme->tokens().fontSizeLG, 21);
+    QCOMPARE(antTheme->tokens().borderRadius, 9);
+    QCOMPARE(antTheme->tokens(Ant::ThemeMode::Dark).colorPrimary, QColor(Qt::blue));
+    QCOMPARE(antTheme->tokens(Ant::ThemeMode::Dark).fontSize, 19);
+    QVERIFY(configuredDialog.style()->property("antStyleThemeUpdateCount").toInt() > styleUpdatesBefore);
+    QVERIFY(configuredButton.property("antThemeRefreshSizeHintBefore").isValid());
+    QVERIFY(configuredButton.sizeHint().width() > defaultButtonHint.width());
+    QVERIFY(configuredWidget.property("antWidgetThemeChangeCount").toInt() > widgetThemeChangesBefore);
+    QCOMPARE(configuredWidget.tokens().fontSize, 19);
 
     provider.apply();
     QCOMPARE(globalThemeSpy.count(), 1);
+
+    provider.setThemeMode(themeGuard.alternateMode());
+    provider.apply();
+    QCOMPARE(globalThemeSpy.count(), 2);
+    QCOMPARE(antTheme->themeMode(), themeGuard.alternateMode());
+    QCOMPARE(antTheme->tokens().colorPrimary, QColor(Qt::blue));
+
+    provider.setThemeMode(Ant::ThemeMode::Default);
+    provider.setFontSize((std::numeric_limits<int>::max)());
+    provider.setBorderRadius((std::numeric_limits<int>::max)());
+    QCOMPARE(provider.fontSize(), Ant::MaximumThemeFontSize);
+    QCOMPARE(provider.borderRadius(), Ant::MaximumThemeBorderRadius);
+    provider.apply();
+    QCOMPARE(antTheme->tokens().fontSize, Ant::MaximumThemeFontSize);
+    QCOMPARE(antTheme->tokens().fontSizeXL, Ant::MaximumThemeFontSize + 6);
+    QCOMPARE(antTheme->tokens().borderRadius, Ant::MaximumThemeBorderRadius);
+    QCOMPARE(antTheme->tokens().borderRadiusLG, Ant::MaximumThemeBorderRadius + 2);
+
+    antTheme->applyConfiguration(Ant::ThemeMode::Default, QColor(), Ant::FontSize, Ant::BorderRadius);
+    QCOMPARE(antTheme->tokens().fontSize, Ant::FontSize);
+    QCOMPARE(antTheme->tokens().borderRadius, Ant::BorderRadius);
 }
 
 void TestAntQtExtensions::formItem()
@@ -897,6 +1046,14 @@ void TestAntQtExtensions::formItem()
     w->setValidateStatus(Ant::Status::Error);
     QCOMPARE(w->validateStatus(), Ant::Status::Error);
     QCOMPARE(statusSpy.count(), 1);
+
+    auto* field = new QLineEdit;
+    w->setFieldName(QStringLiteral("username"));
+    w->setFieldWidget(field);
+    QSignalSpy fieldSpy(w, &AntFormItem::fieldValueChanged);
+    field->setText(QStringLiteral("alice"));
+    QCOMPARE(w->fieldValue(), QVariant(QStringLiteral("alice")));
+    QCOMPARE(fieldSpy.count(), 1);
 }
 
 void TestAntQtExtensions::form()
@@ -949,6 +1106,74 @@ void TestAntQtExtensions::form()
 
     w->clearItems();
     QCOMPARE(w->items().size(), 0);
+}
+
+void TestAntQtExtensions::formProvider()
+{
+    AntFormProvider provider;
+    auto* profileForm = new AntForm;
+    auto* nameField = new QLineEdit;
+    auto* nameItem = profileForm->addItem(QStringLiteral("Name"), nameField, true);
+    nameItem->setFieldName(QStringLiteral("name"));
+    auto* activeField = new AntRadio;
+    activeField->setValue(QStringLiteral("active-option"));
+    auto* activeItem = profileForm->addItem(QStringLiteral("Active"), activeField);
+    activeItem->setFieldName(QStringLiteral("active"));
+    auto* roleField = new AntSelect;
+    roleField->addOption(QStringLiteral("User"), QStringLiteral("user"));
+    roleField->addOption(QStringLiteral("Admin"), QStringLiteral("admin"));
+    auto* roleItem = profileForm->addItem(QStringLiteral("Role"), roleField);
+    roleItem->setFieldName(QStringLiteral("selectedRole"));
+
+    provider.addForm(profileForm, QStringLiteral("profile"));
+    provider.addForm(profileForm, QStringLiteral("ignored-duplicate"));
+    QCOMPARE(provider.forms(), QList<AntForm*>({profileForm}));
+
+    QSignalSpy changedSpy(&provider, &AntFormProvider::formChanged);
+    QSignalSpy finishedSpy(&provider, &AntFormProvider::formFinished);
+    nameField->setText(QStringLiteral("Ada"));
+    QCOMPARE(changedSpy.count(), 1);
+    QCOMPARE(changedSpy.at(0).at(0).toString(), QStringLiteral("profile"));
+    QCOMPARE(changedSpy.at(0).at(1).toString(), QStringLiteral("name"));
+    QCOMPARE(changedSpy.at(0).at(2), QVariant(QStringLiteral("Ada")));
+
+    activeItem->setFieldValue(true);
+    QCOMPARE(changedSpy.count(), 2);
+    QCOMPARE(changedSpy.at(1).at(1).toString(), QStringLiteral("active"));
+    QCOMPARE(changedSpy.at(1).at(2), QVariant(true));
+
+    roleItem->setFieldValue(QStringLiteral("admin"));
+    QCOMPARE(roleField->currentValue(), QVariant(QStringLiteral("admin")));
+    QCOMPARE(changedSpy.count(), 3);
+    QCOMPARE(changedSpy.at(2).at(1).toString(), QStringLiteral("selectedRole"));
+    QCOMPARE(changedSpy.at(2).at(2), QVariant(QStringLiteral("admin")));
+
+    profileForm->notifyFieldChanged(QStringLiteral("role"), QStringLiteral("admin"));
+    QCOMPARE(changedSpy.count(), 4);
+    profileForm->finish();
+    QCOMPARE(finishedSpy.count(), 1);
+    QCOMPARE(finishedSpy.at(0).at(0).toString(), QStringLiteral("profile"));
+    const QVariantMap values = finishedSpy.at(0).at(1).toMap();
+    QCOMPARE(values.value(QStringLiteral("name")), QVariant(QStringLiteral("Ada")));
+    QCOMPARE(values.value(QStringLiteral("active")), QVariant(true));
+    QCOMPARE(values.value(QStringLiteral("selectedRole")), QVariant(QStringLiteral("admin")));
+    QCOMPARE(values.value(QStringLiteral("role")), QVariant(QStringLiteral("admin")));
+
+    const int changesBeforeClear = changedSpy.count();
+    profileForm->clearItems();
+    nameField->setText(QStringLiteral("Grace"));
+    QCOMPARE(changedSpy.count(), changesBeforeClear);
+    QVERIFY(!profileForm->values().contains(QStringLiteral("name")));
+
+    // Explicitly registered duplicate names remain supported for source
+    // compatibility; each form still has independent lifetime tracking.
+    auto* secondForm = new AntForm;
+    provider.addForm(secondForm, QStringLiteral("profile"));
+    QCOMPARE(provider.forms().size(), 2);
+    delete profileForm;
+    QCOMPARE(provider.forms(), QList<AntForm*>({secondForm}));
+    delete secondForm;
+    QVERIFY(provider.forms().isEmpty());
 }
 
 void TestAntQtExtensions::formIncrementalUpdates()
@@ -1100,6 +1325,104 @@ void TestAntQtExtensions::log()
 
     w->clear();
     antTheme->setThemeMode(Ant::ThemeMode::Default);
+}
+
+void TestAntQtExtensions::logCrossThread()
+{
+    auto* logWidget = new AntLog;
+    auto* view = logWidget->findChild<AntPlainTextEdit*>();
+    QVERIFY(view != nullptr);
+
+    std::thread producer([logWidget]() {
+        logWidget->info(QStringLiteral("before-clear-1"));
+        logWidget->warning(QStringLiteral("before-clear-2"));
+        logWidget->clear();
+        logWidget->error(QStringLiteral("after-clear-1"));
+        logWidget->debug(QStringLiteral("after-clear-2"));
+        logWidget->setMaxEntries(16);
+        logWidget->setAutoScroll(false);
+    });
+    producer.join();
+
+    QCOMPARE(logWidget->property("antLogEntryCount").toInt(), 0);
+    QTRY_COMPARE(logWidget->maxEntries(), 16);
+    QTRY_COMPARE(logWidget->autoScroll(), false);
+    QTRY_COMPARE(logWidget->property("antLogEntryCount").toInt(), 2);
+
+    const QString text = view->toPlainText();
+    QVERIFY(!text.contains(QStringLiteral("before-clear-1")));
+    QVERIFY(!text.contains(QStringLiteral("before-clear-2")));
+    const qsizetype firstIndex = text.indexOf(QStringLiteral("after-clear-1"));
+    const qsizetype secondIndex = text.indexOf(QStringLiteral("after-clear-2"));
+    QVERIFY(firstIndex >= 0);
+    QVERIFY(secondIndex > firstIndex);
+    delete logWidget;
+
+    QPointer<AntLog> deletedDuringAppend = new AntLog;
+    auto* appendView = deletedDuringAppend->findChild<AntPlainTextEdit*>();
+    QVERIFY(appendView != nullptr);
+    QObject::connect(appendView->document(), &QTextDocument::contentsChanged,
+                     deletedDuringAppend, [&deletedDuringAppend]() {
+        delete deletedDuringAppend.data();
+    });
+    AntLog* appendRaw = deletedDuringAppend.data();
+    std::thread reentrantAppendProducer([appendRaw]() {
+        appendRaw->info(QStringLiteral("delete-during-document-change"));
+    });
+    reentrantAppendProducer.join();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::MetaCall);
+    QCoreApplication::processEvents();
+    QVERIFY(!deletedDuringAppend.isNull());
+    QVERIFY(appendView->toPlainText().contains(QStringLiteral("delete-during-document-change")));
+    delete deletedDuringAppend.data();
+
+    QPointer<AntLog> deletedDuringClear = new AntLog;
+    deletedDuringClear->info(QStringLiteral("clear-me"));
+    auto* clearView = deletedDuringClear->findChild<AntPlainTextEdit*>();
+    QVERIFY(clearView != nullptr);
+    QObject::connect(clearView->document(), &QTextDocument::contentsChanged,
+                     deletedDuringClear, [&deletedDuringClear]() {
+        delete deletedDuringClear.data();
+    });
+    AntLog* clearRaw = deletedDuringClear.data();
+    std::thread reentrantClearProducer([clearRaw]() { clearRaw->clear(); });
+    reentrantClearProducer.join();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::MetaCall);
+    QCoreApplication::processEvents();
+    QVERIFY(!deletedDuringClear.isNull());
+    QVERIFY(clearView->toPlainText().isEmpty());
+    delete deletedDuringClear.data();
+
+    QPointer<AntLog> doomed = new AntLog;
+    AntLog* doomedRaw = doomed.data();
+    std::thread lateProducer([doomedRaw]() {
+        for (int i = 0; i < 64; ++i)
+        {
+            doomedRaw->info(QStringLiteral("discarded-%1").arg(i));
+        }
+        doomedRaw->clear();
+    });
+    lateProducer.join();
+    delete doomedRaw;
+    QVERIFY(doomed.isNull());
+
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::MetaCall);
+    QCoreApplication::processEvents();
+
+    auto* bounded = new AntLog;
+    bounded->setMaxEntries(2048);
+    std::thread floodProducer([bounded]() {
+        for (int i = 0; i < 5000; ++i)
+        {
+            bounded->info(QStringLiteral("flood-%1").arg(i));
+        }
+    });
+    floodProducer.join();
+    QTRY_VERIFY(bounded->property("antLogDroppedCrossThreadCommandCount").toULongLong() > 0);
+    QTRY_COMPARE(bounded->property("antLogPendingCrossThreadCommandCount").toInt(), 0);
+    QVERIFY(bounded->property("antLogEntryCount").toInt() <= 1024);
+    QVERIFY(bounded->property("antLogCrossThreadDrainCount").toInt() <= 4);
+    delete bounded;
 }
 
 void TestAntQtExtensions::masonry()
@@ -2648,6 +2971,7 @@ void TestAntQtExtensions::dockManager()
                                        inspectorTabPoint,
                                        inspectorTabBar->mapToGlobal(inspectorTabPoint));
         QCoreApplication::sendEvent(inspectorTabBar, &contextEvent);
+        QCoreApplication::processEvents();
         QWidget* popup = nullptr;
         for (QWidget* widget : QApplication::topLevelWidgets())
         {
@@ -3119,6 +3443,7 @@ void TestAntQtExtensions::dockManager()
         floatingMenuPoint,
         floatingTitleBarForMenu->mapToGlobal(floatingMenuPoint));
     QCoreApplication::sendEvent(floatingTitleBarForMenu, &floatingContextEvent);
+    QCoreApplication::processEvents();
     QWidget* floatingPopup = nullptr;
     for (QWidget* widget : QApplication::topLevelWidgets())
     {
@@ -5345,6 +5670,189 @@ void TestAntQtExtensions::windowDwmFrameMarginsPreserveShadow()
     {
         QVERIFY2((nativeStyle & WS_CAPTION) == 0, "Windows 10 must keep the no-caption path to avoid native title buttons");
     }
+#endif
+}
+
+void TestAntQtExtensions::windowFrameShadowHandleSafety()
+{
+    static_assert(!std::is_copy_constructible<AntWindowFrame::LegacySoftwareShadowHandle>::value,
+                  "The opaque shadow handle must not be copyable or aliasable.");
+    static_assert(!std::is_move_constructible<AntWindowFrame::LegacySoftwareShadowHandle>::value,
+                  "Moving a live opaque handle could orphan or alias its registered shadow.");
+    static_assert(std::is_trivially_destructible<AntWindowFrame::LegacySoftwareShadowHandle>::value,
+                  "AntWindow and AntDialog must retain their historical trivial private-slot destruction ABI.");
+    static_assert(sizeof(AntWindowFrame::LegacySoftwareShadowHandle) == sizeof(QWidget*),
+                  "AntWindow and AntDialog must retain their historical private pointer slot size.");
+
+#ifndef Q_OS_WIN
+    QSKIP("Legacy software shadow native events are only available on Windows.");
+#else
+    QWidget owner;
+    owner.setGeometry(240, 180, 360, 240);
+    owner.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&owner));
+
+    AntWindowFrame::LegacySoftwareShadowHandle handle;
+    AntWindowFrame::LegacySoftwareShadowOptions options;
+    options.objectName = QStringLiteral("AntWindowFrameOpaqueShadowTest");
+    options.enabledProperty = QByteArrayLiteral("antWindowFrameOpaqueShadowEnabled");
+    options.marginProperty = QByteArrayLiteral("antWindowFrameOpaqueShadowMargin");
+    options.innerClearanceProperty = QByteArrayLiteral("antWindowFrameOpaqueShadowInnerClearance");
+    options.geometryProperty = QByteArrayLiteral("antWindowFrameOpaqueShadowGeometry");
+    options.geometryModeProperty = QByteArrayLiteral("antWindowFrameOpaqueShadowGeometryMode");
+    options.devicePixelRatioProperty = QByteArrayLiteral("antWindowFrameOpaqueShadowDpr");
+    options.clickThroughProperty = QByteArrayLiteral("antWindowFrameOpaqueShadowClickThrough");
+    options.enabled = true;
+    options.cornerRadius = 8;
+
+    QCOMPARE(static_cast<int>(AntWindowFrame::updateLegacySoftwareShadow(&owner, handle, options)),
+             static_cast<int>(AntWindowFrame::LegacySoftwareShadowResult::Updated));
+    QVERIFY(!handle.isNull());
+    QPointer<QWidget> firstOpaqueShadow(handle.widget());
+    QVERIFY(!firstOpaqueShadow.isNull());
+    QTRY_VERIFY(firstOpaqueShadow->isVisible());
+    QTRY_COMPARE(firstOpaqueShadow->property(options.clickThroughProperty.constData()).toBool(), true);
+
+    delete firstOpaqueShadow.data();
+    QVERIFY(handle.isNull());
+    QCOMPARE(static_cast<int>(AntWindowFrame::updateLegacySoftwareShadow(&owner, handle, options)),
+             static_cast<int>(AntWindowFrame::LegacySoftwareShadowResult::Updated));
+    QVERIFY(!handle.isNull());
+    QVERIFY(handle.widget() != firstOpaqueShadow.data());
+
+    QWidget impostor;
+    QWidget* invalidCompatibilityHandle = &impostor;
+    const auto invalidResult = AntWindowFrame::tryUpdateLegacySoftwareShadow(
+        &owner,
+        invalidCompatibilityHandle,
+        QStringLiteral("RejectedWindowFrameShadow"),
+        "antWindowFrameRejectedEnabled",
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        "antWindowFrameRejectedClickThrough",
+        true,
+        8);
+    QCOMPARE(static_cast<int>(invalidResult),
+             static_cast<int>(AntWindowFrame::LegacySoftwareShadowResult::InvalidShadowWidget));
+    QCOMPARE(invalidCompatibilityHandle, static_cast<QWidget*>(&impostor));
+    QVERIFY(!owner.property("antWindowFrameRejectedEnabled").isValid());
+    QVERIFY(!impostor.property("antWindowFrameRejectedClickThrough").isValid());
+    owner.setProperty("antWindowFrameRejectedHideEnabled", true);
+    QTest::ignoreMessage(QtWarningMsg,
+                         "AntWindowFrame::hideLegacySoftwareShadow rejected an invalid compatibility handle");
+    AntWindowFrame::hideLegacySoftwareShadow(&owner,
+                                             &impostor,
+                                             "antWindowFrameRejectedHideEnabled",
+                                             "antWindowFrameRejectedClickThrough");
+    QCOMPARE(owner.property("antWindowFrameRejectedHideEnabled").toBool(), true);
+
+    QWidget* compatibilityShadow = nullptr;
+    const QByteArray persistentClickThroughName("antWindowFrameTemporaryNameClickThrough");
+    {
+        QByteArray temporaryClickThroughName = persistentClickThroughName;
+        const auto compatibilityResult = AntWindowFrame::tryUpdateLegacySoftwareShadow(
+            &owner,
+            compatibilityShadow,
+            QStringLiteral("AntWindowFrameCompatibilityShadowTest"),
+            "antWindowFrameCompatibilityEnabled",
+            "antWindowFrameCompatibilityMargin",
+            "antWindowFrameCompatibilityInnerClearance",
+            "antWindowFrameCompatibilityGeometry",
+            "antWindowFrameCompatibilityGeometryMode",
+            "antWindowFrameCompatibilityDpr",
+            temporaryClickThroughName.constData(),
+            true,
+            6);
+        QCOMPARE(static_cast<int>(compatibilityResult),
+                 static_cast<int>(AntWindowFrame::LegacySoftwareShadowResult::Updated));
+    }
+
+    QVERIFY(compatibilityShadow != nullptr);
+    QTRY_VERIFY(compatibilityShadow->isVisible());
+    compatibilityShadow->hide();
+    compatibilityShadow->setProperty(persistentClickThroughName.constData(), false);
+    compatibilityShadow->show();
+    QTRY_COMPARE(compatibilityShadow->property(persistentClickThroughName.constData()).toBool(), true);
+
+    const HWND compatibilityHwnd = reinterpret_cast<HWND>(compatibilityShadow->winId());
+    QVERIFY(compatibilityHwnd != nullptr);
+    RECT compatibilityRect{};
+    QVERIFY(::GetWindowRect(compatibilityHwnd, &compatibilityRect));
+    compatibilityShadow->setProperty(persistentClickThroughName.constData(), false);
+    const int hitX = compatibilityRect.left + (compatibilityRect.right - compatibilityRect.left) / 2;
+    const int hitY = compatibilityRect.top + (compatibilityRect.bottom - compatibilityRect.top) / 2;
+    const LRESULT nativeHitResult = ::SendMessageW(compatibilityHwnd,
+                                                   WM_NCHITTEST,
+                                                   0,
+                                                   MAKELPARAM(hitX, hitY));
+    QCOMPARE(nativeHitResult, static_cast<LRESULT>(HTTRANSPARENT));
+    QTRY_COMPARE(compatibilityShadow->property(persistentClickThroughName.constData()).toBool(), true);
+
+    QWidget otherOwner;
+    QWidget* mismatchedHandle = compatibilityShadow;
+    const auto ownerMismatchResult = AntWindowFrame::tryUpdateLegacySoftwareShadow(
+        &otherOwner,
+        mismatchedHandle,
+        QStringLiteral("MismatchedWindowFrameShadow"),
+        "antWindowFrameMismatchEnabled",
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        persistentClickThroughName.constData(),
+        true,
+        8);
+    QCOMPARE(static_cast<int>(ownerMismatchResult),
+             static_cast<int>(AntWindowFrame::LegacySoftwareShadowResult::OwnerMismatch));
+    QCOMPARE(mismatchedHandle, compatibilityShadow);
+    QVERIFY(!otherOwner.property("antWindowFrameMismatchEnabled").isValid());
+
+    QWidget* staleCompatibilityHandle = compatibilityShadow;
+    delete compatibilityShadow;
+    const auto staleHandleResult = AntWindowFrame::tryUpdateLegacySoftwareShadow(
+        &owner,
+        staleCompatibilityHandle,
+        QStringLiteral("StaleWindowFrameShadow"),
+        "antWindowFrameStaleEnabled",
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        persistentClickThroughName.constData(),
+        true,
+        8);
+    QCOMPARE(static_cast<int>(staleHandleResult),
+             static_cast<int>(AntWindowFrame::LegacySoftwareShadowResult::InvalidShadowWidget));
+    QVERIFY(!owner.property("antWindowFrameStaleEnabled").isValid());
+
+    QWidget typedWrongOwner;
+    typedWrongOwner.setProperty("antWindowFrameTypedWrongOwnerEnabled", true);
+    QPointer<QWidget> opaqueShadowBeforeWrongHide(handle.widget());
+    const auto typedWrongOwnerResult = AntWindowFrame::hideLegacySoftwareShadow(
+        &typedWrongOwner,
+        handle,
+        QByteArrayLiteral("antWindowFrameTypedWrongOwnerEnabled"),
+        QByteArrayLiteral("antWindowFrameOpaqueShadowClickThrough"));
+    QCOMPARE(static_cast<int>(typedWrongOwnerResult),
+             static_cast<int>(AntWindowFrame::LegacySoftwareShadowResult::OwnerMismatch));
+    QCOMPARE(typedWrongOwner.property("antWindowFrameTypedWrongOwnerEnabled").toBool(), true);
+    QVERIFY(!opaqueShadowBeforeWrongHide.isNull());
+    QVERIFY(opaqueShadowBeforeWrongHide->isVisible());
+
+    const auto hideResult = AntWindowFrame::hideLegacySoftwareShadow(
+        &owner,
+        handle,
+        QByteArrayLiteral("antWindowFrameOpaqueShadowEnabled"),
+        QByteArrayLiteral("antWindowFrameOpaqueShadowClickThrough"));
+    QCOMPARE(static_cast<int>(hideResult),
+             static_cast<int>(AntWindowFrame::LegacySoftwareShadowResult::Hidden));
+    QCOMPARE(owner.property("antWindowFrameOpaqueShadowEnabled").toBool(), false);
+    QVERIFY(!handle.widget()->isVisible());
 #endif
 }
 

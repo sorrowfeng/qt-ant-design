@@ -5,12 +5,65 @@
 #include <QSplitter>
 #include <QTabWidget>
 
+#include <utility>
+
 #include "widgets/AntDockWidget.h"
 
 namespace
 {
 constexpr const char* kPerspectiveMagic = "AntDockManagerPerspective";
 constexpr quint16 kPerspectiveVersion = 1;
+
+struct DockPerspectiveReadBudget
+{
+    int nodes = 0;
+    int dockIds = 0;
+    QSet<QString> seenDockIds;
+};
+
+bool reserveBudget(int current, int requested, int maximum)
+{
+    return requested >= 0 && current <= maximum && requested <= maximum - current;
+}
+
+bool readBoundedString(QDataStream& stream, QString* value, int maximumCharacters)
+{
+    if (!value || maximumCharacters < 0 || !stream.device()) return false;
+
+    QIODevice* device = stream.device();
+    const qint64 stringStart = device->pos();
+    quint32 byteLength = 0;
+    stream >> byteLength;
+    if (stream.status() != QDataStream::Ok) return false;
+
+    constexpr quint32 kNullStringLength = 0xffffffffu;
+    constexpr quint32 kExtendedStringLength = 0xfffffffeu;
+    if (byteLength == kNullStringLength)
+    {
+        *value = QString();
+        return true;
+    }
+    if (byteLength == kExtendedStringLength || (byteLength % sizeof(quint16)) != 0)
+    {
+        return false;
+    }
+
+    const quint64 maximumBytes = static_cast<quint64>(maximumCharacters) * sizeof(quint16);
+    if (static_cast<quint64>(byteLength) > maximumBytes ||
+        static_cast<quint64>(byteLength) > static_cast<quint64>(device->bytesAvailable()))
+    {
+        return false;
+    }
+    if (byteLength == 0)
+    {
+        *value = QStringLiteral("");
+        return true;
+    }
+    if (!device->seek(stringStart)) return false;
+
+    stream >> *value;
+    return stream.status() == QDataStream::Ok && value->size() <= maximumCharacters;
+}
 
 void writeLayoutNode(QDataStream& stream, const AntDockInternal::DockLayoutNode& node)
 {
@@ -37,9 +90,17 @@ void writeLayoutNode(QDataStream& stream, const AntDockInternal::DockLayoutNode&
     }
 }
 
-bool readLayoutNode(QDataStream& stream, AntDockInternal::DockLayoutNode* node)
+bool readLayoutNode(QDataStream& stream,
+                    AntDockInternal::DockLayoutNode* node,
+                    int depth,
+                    DockPerspectiveReadBudget* budget)
 {
-    if (!node) return false;
+    if (!node || !budget || depth > AntDockInternal::DockPerspectiveMaxDepth ||
+        budget->nodes >= AntDockInternal::DockPerspectiveMaxNodes)
+    {
+        return false;
+    }
+    ++budget->nodes;
 
     quint8 rawType = 0;
     qint32 rawOrientation = 0;
@@ -59,7 +120,7 @@ bool readLayoutNode(QDataStream& stream, AntDockInternal::DockLayoutNode* node)
 
     node->type = static_cast<AntDockInternal::DockLayoutNodeType>(rawType);
     node->orientation = static_cast<Qt::Orientation>(rawOrientation);
-    node->currentIndex = qMax<qint32>(0, rawCurrentIndex);
+    node->currentIndex = rawCurrentIndex;
     node->sizes.clear();
     node->dockIds.clear();
     node->children.clear();
@@ -71,20 +132,31 @@ bool readLayoutNode(QDataStream& stream, AntDockInternal::DockLayoutNode* node)
     {
         qint32 size = 0;
         stream >> size;
-        node->sizes.append(qMax<qint32>(0, size));
+        if (stream.status() != QDataStream::Ok || size < 0) return false;
+        node->sizes.append(size);
     }
 
     qint32 dockCount = 0;
     stream >> dockCount;
-    if (stream.status() != QDataStream::Ok || dockCount < 0 || dockCount > 1024) return false;
+    if (stream.status() != QDataStream::Ok || dockCount < 0 || dockCount > 1024 ||
+        !reserveBudget(budget->dockIds, dockCount, AntDockInternal::DockPerspectiveMaxDockIds))
+    {
+        return false;
+    }
+    budget->dockIds += dockCount;
     for (qint32 i = 0; i < dockCount; ++i)
     {
         QString id;
-        stream >> id;
-        if (!id.isEmpty())
+        if (!readBoundedString(stream, &id, AntDockInternal::DockPerspectiveMaxIdentifierCharacters))
         {
-            node->dockIds.append(id);
+            return false;
         }
+        if (id.isEmpty() || budget->seenDockIds.contains(id))
+        {
+            return false;
+        }
+        budget->seenDockIds.insert(id);
+        node->dockIds.append(id);
     }
 
     qint32 childCount = 0;
@@ -93,23 +165,44 @@ bool readLayoutNode(QDataStream& stream, AntDockInternal::DockLayoutNode* node)
     for (qint32 i = 0; i < childCount; ++i)
     {
         AntDockInternal::DockLayoutNode child;
-        if (!readLayoutNode(stream, &child))
+        if (!readLayoutNode(stream, &child, depth + 1, budget))
         {
             return false;
         }
-        if (child.type != AntDockInternal::DockLayoutNodeType::Empty)
-        {
-            node->children.append(child);
-        }
+        node->children.append(child);
     }
 
-    if (node->type == AntDockInternal::DockLayoutNodeType::Area && node->dockIds.isEmpty())
+    using AntDockInternal::DockLayoutNodeType;
+    switch (node->type)
     {
-        node->type = AntDockInternal::DockLayoutNodeType::Empty;
-    }
-    if (node->type == AntDockInternal::DockLayoutNodeType::Splitter && node->children.isEmpty())
-    {
-        node->type = AntDockInternal::DockLayoutNodeType::Empty;
+    case DockLayoutNodeType::Empty:
+        if (node->currentIndex != 0 || !node->sizes.isEmpty() ||
+            !node->dockIds.isEmpty() || !node->children.isEmpty())
+        {
+            return false;
+        }
+        break;
+    case DockLayoutNodeType::Area:
+        if (node->dockIds.isEmpty() || !node->sizes.isEmpty() || !node->children.isEmpty() ||
+            node->currentIndex < 0 || node->currentIndex >= node->dockIds.size())
+        {
+            return false;
+        }
+        break;
+    case DockLayoutNodeType::Splitter:
+        if (node->currentIndex != 0 || !node->dockIds.isEmpty() || node->children.isEmpty() ||
+            (!node->sizes.isEmpty() && node->sizes.size() != node->children.size()))
+        {
+            return false;
+        }
+        for (const AntDockInternal::DockLayoutNode& child : std::as_const(node->children))
+        {
+            if (child.type == DockLayoutNodeType::Empty)
+            {
+                return false;
+            }
+        }
+        break;
     }
 
     return stream.status() == QDataStream::Ok;
@@ -124,24 +217,40 @@ void writeFloatingSnapshots(QDataStream& stream, const QList<AntDockInternal::Fl
     }
 }
 
-bool readFloatingSnapshots(QDataStream& stream, QList<AntDockInternal::FloatingDockSnapshot>* snapshots)
+bool readFloatingSnapshots(QDataStream& stream,
+                           QList<AntDockInternal::FloatingDockSnapshot>* snapshots,
+                           DockPerspectiveReadBudget* budget)
 {
-    if (!snapshots) return false;
+    if (!snapshots || !budget) return false;
 
     snapshots->clear();
     qint32 count = 0;
     stream >> count;
-    if (stream.status() != QDataStream::Ok || count < 0 || count > 1024) return false;
+    if (stream.status() != QDataStream::Ok || count < 0 ||
+        count > AntDockInternal::DockPerspectiveMaxFloatingSnapshots ||
+        !reserveBudget(budget->dockIds, count, AntDockInternal::DockPerspectiveMaxDockIds))
+    {
+        return false;
+    }
+    budget->dockIds += count;
 
     for (qint32 i = 0; i < count; ++i)
     {
         AntDockInternal::FloatingDockSnapshot snapshot;
-        stream >> snapshot.dockId >> snapshot.geometry >> snapshot.visible;
-        if (stream.status() != QDataStream::Ok) return false;
-        if (!snapshot.dockId.isEmpty())
+        if (!readBoundedString(stream,
+                               &snapshot.dockId,
+                               AntDockInternal::DockPerspectiveMaxIdentifierCharacters))
         {
-            snapshots->append(snapshot);
+            return false;
         }
+        stream >> snapshot.geometry >> snapshot.visible;
+        if (stream.status() != QDataStream::Ok) return false;
+        if (snapshot.dockId.isEmpty() || budget->seenDockIds.contains(snapshot.dockId))
+        {
+            return false;
+        }
+        budget->seenDockIds.insert(snapshot.dockId);
+        snapshots->append(snapshot);
     }
     return true;
 }
@@ -163,13 +272,14 @@ DockLayoutNode captureDockLayoutNode(QWidget* widget)
     {
         node.type = DockLayoutNodeType::Splitter;
         node.orientation = splitter->orientation();
-        node.sizes = splitter->sizes();
+        const QList<int> splitterSizes = splitter->sizes();
         for (int i = 0; i < splitter->count(); ++i)
         {
             DockLayoutNode child = captureDockLayoutNode(splitter->widget(i));
             if (child.type != DockLayoutNodeType::Empty)
             {
                 node.children.append(child);
+                node.sizes.append(i < splitterSizes.size() ? qMax(0, splitterSizes.at(i)) : 0);
             }
         }
         if (node.children.isEmpty())
@@ -243,14 +353,19 @@ bool deserializeDockPerspective(const QByteArray& state,
                                 DockLayoutNode* rootNode,
                                 QList<FloatingDockSnapshot>* floatingSnapshots)
 {
-    if (!rootNode || !floatingSnapshots || state.isEmpty()) return false;
+    if (!rootNode || !floatingSnapshots || state.isEmpty() ||
+        state.size() > DockPerspectiveMaxStateBytes)
+    {
+        return false;
+    }
 
     QDataStream stream(state);
     stream.setVersion(QDataStream::Qt_5_0);
 
     QString magic;
     quint16 version = 0;
-    stream >> magic >> version;
+    if (!readBoundedString(stream, &magic, 64)) return false;
+    stream >> version;
     if (stream.status() != QDataStream::Ok ||
         magic != QString::fromLatin1(kPerspectiveMagic) ||
         version != kPerspectiveVersion)
@@ -258,7 +373,10 @@ bool deserializeDockPerspective(const QByteArray& state,
         return false;
     }
 
-    return readLayoutNode(stream, rootNode) && readFloatingSnapshots(stream, floatingSnapshots);
+    DockPerspectiveReadBudget budget;
+    return readLayoutNode(stream, rootNode, 0, &budget) &&
+        readFloatingSnapshots(stream, floatingSnapshots, &budget) &&
+        stream.status() == QDataStream::Ok && stream.atEnd();
 }
 
 bool isLegacyDockPerspective(const QByteArray& state)

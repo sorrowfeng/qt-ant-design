@@ -15,6 +15,7 @@
 
 #include "AntButton.h"
 #include "core/AntTheme.h"
+#include "private/AntImageDecodeUtils.h"
 
 namespace
 {
@@ -175,12 +176,17 @@ QString AntImage::src() const { return m_src; }
 void AntImage::setSrc(const QString& path)
 {
     if (m_src == path) return;
+    const bool previousLoaded = m_loaded;
+    const QString previousError = m_loadError;
     m_src = path;
-    m_loaded = m_pixmap.load(path);
-    invalidateScaledPixmapCache();
-    updateGeometry();
-    requestImageUpdate(QStringLiteral("src"));
+    decodeCurrentSource();
+    const quint64 generation = m_loadGeneration;
+
+    QPointer<AntImage> self(this);
     Q_EMIT srcChanged(m_src);
+    if (!self)
+        return;
+    self->emitLoadStateChanges(previousLoaded, previousError, generation);
 }
 
 QString AntImage::alt() const { return m_alt; }
@@ -222,6 +228,21 @@ void AntImage::setImgHeight(int h)
     updateGeometry();
     requestImageUpdate(QStringLiteral("height"));
     Q_EMIT imgHeightChanged(m_imgHeight);
+}
+
+bool AntImage::isLoaded() const { return m_loaded; }
+
+QString AntImage::loadError() const { return m_loadError; }
+
+bool AntImage::reload()
+{
+    const bool previousLoaded = m_loaded;
+    const QString previousError = m_loadError;
+    decodeCurrentSource();
+    const bool loaded = m_loaded;
+    const quint64 generation = m_loadGeneration;
+    emitLoadStateChanges(previousLoaded, previousError, generation);
+    return loaded;
 }
 
 QSize AntImage::sizeHint() const
@@ -270,9 +291,20 @@ void AntImage::mousePressEvent(QMouseEvent* e)
 {
     if (e->button() == Qt::LeftButton)
     {
+        QPointer<AntImage> self(this);
         Q_EMIT clicked();
+        if (!self)
+        {
+            return;
+        }
         if (m_preview && m_loaded)
+        {
             showPreviewDialog();
+            if (!self)
+            {
+                return;
+            }
+        }
     }
     QWidget::mousePressEvent(e);
 }
@@ -293,7 +325,15 @@ void AntImage::leaveEvent(QEvent*)
 
 void AntImage::setPreviewGroup(const QList<AntImage*>& group)
 {
-    m_previewGroup = group;
+    m_previewGroup.clear();
+    m_previewGroup.reserve(group.size());
+    for (AntImage* image : group)
+    {
+        if (image)
+        {
+            m_previewGroup.append(QPointer<AntImage>(image));
+        }
+    }
 }
 
 void AntImage::showPreviewDialog()
@@ -315,7 +355,7 @@ void AntImage::showPreviewDialogAt(int index)
     {
         for (int i = 0; i < m_previewGroup.size(); ++i)
         {
-            AntImage* img = m_previewGroup[i];
+            AntImage* img = m_previewGroup[i].data();
             if (img && img->m_loaded)
             {
                 pixmaps.append(img->m_pixmap);
@@ -494,4 +534,55 @@ void AntImage::syncImagePerfCounters() const
     self->setProperty("antImagePreviewOverlayPixmapCacheHitCount", m_previewOverlayPixmapCacheHitCount);
     self->setProperty("antImageRegionUpdateCount", m_regionUpdateCount);
     self->setProperty("antImageLastUpdateMode", m_lastUpdateMode);
+}
+
+bool AntImage::decodeCurrentSource()
+{
+    ++m_loadGeneration;
+    m_pixmap = {};
+    m_loaded = false;
+    m_loadError.clear();
+
+    AntImageDecode::DecodeMetadata metadata;
+    QImage image;
+    if (!m_src.isEmpty())
+    {
+        m_loaded = AntImageDecode::read(m_src, QSize(), &image, &metadata, &m_loadError);
+        if (m_loaded)
+            m_pixmap = QPixmap::fromImage(image);
+    }
+
+    setProperty("antImageLoadError", m_loadError);
+    setProperty("antImageSourceFormat", QString::fromLatin1(metadata.format));
+    setProperty("antImageSourceWidth", metadata.sourceSize.width());
+    setProperty("antImageSourceHeight", metadata.sourceSize.height());
+    setProperty("antImageEncodedBytes", metadata.stamp.encodedBytes);
+    setProperty("antImageEstimatedDecodedBytes", metadata.estimatedDecodedBytes);
+
+    invalidateScaledPixmapCache();
+    updateGeometry();
+    requestImageUpdate(QStringLiteral("src"));
+    return m_loaded;
+}
+
+void AntImage::emitLoadStateChanges(bool previousLoaded, const QString& previousError, quint64 generation)
+{
+    if (generation != m_loadGeneration)
+        return;
+
+    QPointer<AntImage> self(this);
+    if (previousLoaded != m_loaded)
+    {
+        Q_EMIT loadedChanged(m_loaded);
+        if (!self || self->m_loadGeneration != generation)
+            return;
+    }
+    if (previousError != m_loadError)
+    {
+        Q_EMIT loadErrorChanged(m_loadError);
+        if (!self || self->m_loadGeneration != generation)
+            return;
+    }
+    if (!m_src.isEmpty() && !m_loaded)
+        Q_EMIT loadFailed(m_src, m_loadError);
 }

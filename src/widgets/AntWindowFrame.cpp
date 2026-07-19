@@ -1,6 +1,9 @@
 #include "AntWindowFrame.h"
 
+#include "private/AntWindowsSystemLibrary.h"
+
 #include <QByteArray>
+#include <QHash>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPaintEvent>
@@ -69,11 +72,8 @@ int windowsBuildNumber()
 
 bool resolveDwmApis(DwmSetWindowAttributeFn* setWindowAttribute, DwmExtendFrameIntoClientAreaFn* extendFrame)
 {
-    HMODULE dwmapi = ::GetModuleHandleW(L"dwmapi.dll");
-    if (!dwmapi)
-    {
-        dwmapi = ::LoadLibraryW(L"dwmapi.dll");
-    }
+    static HMODULE dwmapi = reinterpret_cast<HMODULE>(
+        AntWindowsSystemLibrary::loadSystem32Library(L"dwmapi.dll"));
     if (!dwmapi)
     {
         return false;
@@ -236,7 +236,7 @@ bool applyDwmFrameMargins(QWidget* widget,
     return true;
 }
 
-bool makeNativeInputTransparent(QWidget* widget, const char* propertyName)
+bool makeNativeInputTransparent(QWidget* widget, const QByteArray& propertyName)
 {
     if (!widget)
     {
@@ -265,20 +265,25 @@ bool makeNativeInputTransparent(QWidget* widget, const char* propertyName)
                            SWP_FRAMECHANGED);
     }
 
-    if (propertyName)
+    if (!propertyName.isEmpty())
     {
-        widget->setProperty(propertyName, true);
+        widget->setProperty(propertyName.constData(), true);
     }
     return true;
 }
 
+class LegacySoftwareShadow;
+QHash<QWidget*, LegacySoftwareShadow*>& legacySoftwareShadowRegistry();
+
 class LegacySoftwareShadow : public QWidget
 {
 public:
-    LegacySoftwareShadow(QWidget* owner, const QString& objectName, const char* clickThroughProperty)
+    LegacySoftwareShadow(QWidget* owner, const QString& objectName, const QByteArray& clickThroughProperty)
         : QWidget(owner, Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint | Qt::WindowDoesNotAcceptFocus),
+          m_owner(owner),
           m_clickThroughProperty(clickThroughProperty)
     {
+        legacySoftwareShadowRegistry().insert(this, this);
         setObjectName(objectName);
         setAttribute(Qt::WA_TranslucentBackground, true);
         setAttribute(Qt::WA_NoSystemBackground, true);
@@ -290,9 +295,28 @@ public:
         setFocusPolicy(Qt::NoFocus);
         setProperty("shadowMargin", AntWindowFrame::LegacySoftwareShadowMargin);
         setProperty("shadowInnerClearance", AntWindowFrame::LegacySoftwareShadowInnerClearance);
-        if (m_clickThroughProperty)
+        if (!m_clickThroughProperty.isEmpty())
         {
-            setProperty(m_clickThroughProperty, false);
+            setProperty(m_clickThroughProperty.constData(), false);
+        }
+    }
+
+    ~LegacySoftwareShadow() override
+    {
+        legacySoftwareShadowRegistry().remove(this);
+    }
+
+    QWidget* owner() const
+    {
+        return m_owner.data();
+    }
+
+    void setClickThroughProperty(const QByteArray& propertyName)
+    {
+        m_clickThroughProperty = propertyName;
+        if (!m_clickThroughProperty.isEmpty())
+        {
+            setProperty(m_clickThroughProperty.constData(), false);
         }
     }
 
@@ -317,9 +341,9 @@ protected:
             if (msg->message == WM_NCHITTEST)
             {
                 *result = HTTRANSPARENT;
-                if (m_clickThroughProperty)
+                if (!m_clickThroughProperty.isEmpty())
                 {
-                    setProperty(m_clickThroughProperty, true);
+                    setProperty(m_clickThroughProperty.constData(), true);
                 }
                 return true;
             }
@@ -383,13 +407,46 @@ protected:
 
 private:
     int m_cornerRadius = 0;
-    const char* m_clickThroughProperty = nullptr;
+    QPointer<QWidget> m_owner;
+    QByteArray m_clickThroughProperty;
 };
+
+QHash<QWidget*, LegacySoftwareShadow*>& legacySoftwareShadowRegistry()
+{
+    // Process-lifetime storage avoids static-destruction-order callbacks from
+    // a top-level shadow that is torn down during QApplication shutdown.
+    static auto* registry = new QHash<QWidget*, LegacySoftwareShadow*>;
+    return *registry;
+}
+
+LegacySoftwareShadow* registeredLegacySoftwareShadow(QWidget* candidate)
+{
+    if (!candidate)
+    {
+        return nullptr;
+    }
+    const auto it = legacySoftwareShadowRegistry().constFind(candidate);
+    return it == legacySoftwareShadowRegistry().constEnd() ? nullptr : it.value();
+}
 #endif
 } // namespace
 
 namespace AntWindowFrame
 {
+bool LegacySoftwareShadowHandle::isNull() const noexcept
+{
+    return widget() == nullptr;
+}
+
+QWidget* LegacySoftwareShadowHandle::widget() const noexcept
+{
+#ifdef Q_OS_WIN
+    return registeredLegacySoftwareShadow(m_widget);
+#else
+    return nullptr;
+#endif
+}
+
 bool legacyFramePolicyEnabled(const QWidget* widget, const char* forcePropertyName)
 {
     if (widget && forcePropertyName && widget->property(forcePropertyName).toBool())
@@ -500,57 +557,90 @@ void applyNativeFrame(QWidget* widget, const NativeFrameOptions& options)
 #endif
 }
 
-void updateLegacySoftwareShadow(QWidget* owner,
-                                QWidget*& shadowWidget,
-                                const QString& objectName,
-                                const char* enabledProperty,
-                                const char* marginProperty,
-                                const char* innerClearanceProperty,
-                                const char* geometryProperty,
-                                const char* geometryModeProperty,
-                                const char* dprProperty,
-                                const char* clickThroughProperty,
-                                bool enabled,
-                                int cornerRadius)
+namespace
 {
+QByteArray copiedPropertyName(const char* propertyName)
+{
+    return propertyName ? QByteArray(propertyName) : QByteArray();
+}
+
+void setNamedProperty(QObject* object, const QByteArray& propertyName, const QVariant& value)
+{
+    if (object && !propertyName.isEmpty())
+    {
+        object->setProperty(propertyName.constData(), value);
+    }
+}
+
 #ifdef Q_OS_WIN
+void hideTypedLegacySoftwareShadow(QWidget* owner,
+                                   LegacySoftwareShadow* shadow,
+                                   const QByteArray& enabledProperty,
+                                   const QByteArray& clickThroughProperty)
+{
+    setNamedProperty(owner, enabledProperty, false);
+    if (!shadow)
+    {
+        return;
+    }
+
+    shadow->setClickThroughProperty(clickThroughProperty);
+    if (const WId shadowId = shadow->internalWinId())
+    {
+        HWND shadowHwnd = reinterpret_cast<HWND>(shadowId);
+        makeNativeInputTransparent(shadow, clickThroughProperty);
+        ::ShowWindow(shadowHwnd, SW_HIDE);
+        ::SetWindowPos(shadowHwnd,
+                       nullptr,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                           SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
+    }
+    shadow->hide();
+}
+
+LegacySoftwareShadowResult updateTypedLegacySoftwareShadow(
+    QWidget* owner,
+    LegacySoftwareShadow*& shadow,
+    const LegacySoftwareShadowOptions& options)
+{
     if (!owner)
     {
-        return;
+        return LegacySoftwareShadowResult::InvalidOwner;
+    }
+    if (shadow && shadow->owner() != owner)
+    {
+        return LegacySoftwareShadowResult::OwnerMismatch;
     }
 
-    if (enabledProperty)
+    setNamedProperty(owner, options.enabledProperty, options.enabled);
+    setNamedProperty(owner, options.marginProperty, LegacySoftwareShadowMargin);
+    setNamedProperty(owner, options.innerClearanceProperty, LegacySoftwareShadowInnerClearance);
+
+    if (!options.enabled)
     {
-        owner->setProperty(enabledProperty, enabled);
-    }
-    if (marginProperty)
-    {
-        owner->setProperty(marginProperty, LegacySoftwareShadowMargin);
-    }
-    if (innerClearanceProperty)
-    {
-        owner->setProperty(innerClearanceProperty, LegacySoftwareShadowInnerClearance);
+        hideTypedLegacySoftwareShadow(owner,
+                                      shadow,
+                                      options.enabledProperty,
+                                      options.clickThroughProperty);
+        return LegacySoftwareShadowResult::Hidden;
     }
 
-    if (!enabled)
+    if (!shadow)
     {
-        hideLegacySoftwareShadow(owner, shadowWidget, enabledProperty, clickThroughProperty);
-        return;
-    }
-
-    if (!shadowWidget)
-    {
-        auto* shadow = new LegacySoftwareShadow(owner, objectName, clickThroughProperty);
-        shadowWidget = shadow;
+        shadow = new LegacySoftwareShadow(owner, options.objectName, options.clickThroughProperty);
         QObject::connect(antTheme, &AntTheme::themeChanged, shadow, qOverload<>(&QWidget::update));
     }
-
-    if (auto* shadow = static_cast<LegacySoftwareShadow*>(shadowWidget))
+    else
     {
-        shadow->setCornerRadius(cornerRadius);
+        shadow->setClickThroughProperty(options.clickThroughProperty);
     }
+    shadow->setCornerRadius(options.cornerRadius);
 
-    if (QWindow* shadowWindow = shadowWidget->windowHandle())
+    if (QWindow* shadowWindow = shadow->windowHandle())
     {
         if (QScreen* hostScreen = owner->windowHandle() ? owner->windowHandle()->screen() : nullptr)
         {
@@ -565,31 +655,22 @@ void updateLegacySoftwareShadow(QWidget* owner,
                                                            -LegacySoftwareShadowMargin,
                                                            LegacySoftwareShadowMargin,
                                                            LegacySoftwareShadowMargin);
-    shadowWidget->setGeometry(shadowGeometry);
-    if (geometryProperty)
+    shadow->setGeometry(shadowGeometry);
+    setNamedProperty(owner, options.geometryProperty, shadowGeometry);
+    setNamedProperty(shadow, options.geometryProperty, shadowGeometry);
+    setNamedProperty(owner, options.geometryModeProperty, QStringLiteral("qt-logical"));
+    setNamedProperty(shadow, options.geometryModeProperty, QStringLiteral("qt-logical"));
+    if (!shadow->isVisible())
     {
-        owner->setProperty(geometryProperty, shadowGeometry);
-        shadowWidget->setProperty(geometryProperty, shadowGeometry);
+        shadow->show();
     }
-    if (geometryModeProperty)
-    {
-        owner->setProperty(geometryModeProperty, QStringLiteral("qt-logical"));
-        shadowWidget->setProperty(geometryModeProperty, QStringLiteral("qt-logical"));
-    }
-    if (!shadowWidget->isVisible())
-    {
-        shadowWidget->show();
-    }
-    if (dprProperty)
-    {
-        shadowWidget->setProperty(dprProperty, shadowWidget->devicePixelRatioF());
-    }
+    setNamedProperty(shadow, options.devicePixelRatioProperty, shadow->devicePixelRatioF());
 
     const HWND hwnd = reinterpret_cast<HWND>(owner->winId());
-    const HWND shadowHwnd = reinterpret_cast<HWND>(shadowWidget->winId());
+    const HWND shadowHwnd = reinterpret_cast<HWND>(shadow->winId());
     if (shadowHwnd && hwnd)
     {
-        makeNativeInputTransparent(shadowWidget, clickThroughProperty);
+        makeNativeInputTransparent(shadow, options.clickThroughProperty);
         ::SetWindowPos(shadowHwnd,
                        hwnd,
                        0,
@@ -600,22 +681,174 @@ void updateLegacySoftwareShadow(QWidget* owner,
     }
     else
     {
-        shadowWidget->show();
+        shadow->show();
     }
-#else
-    Q_UNUSED(owner)
-    Q_UNUSED(shadowWidget)
-    Q_UNUSED(objectName)
-    Q_UNUSED(enabledProperty)
-    Q_UNUSED(marginProperty)
-    Q_UNUSED(innerClearanceProperty)
-    Q_UNUSED(geometryProperty)
-    Q_UNUSED(geometryModeProperty)
-    Q_UNUSED(dprProperty)
-    Q_UNUSED(clickThroughProperty)
-    Q_UNUSED(enabled)
-    Q_UNUSED(cornerRadius)
+    return LegacySoftwareShadowResult::Updated;
+}
 #endif
+} // namespace
+
+LegacySoftwareShadowResult updateLegacySoftwareShadow(
+    QWidget* owner,
+    LegacySoftwareShadowHandle& shadowHandle,
+    const LegacySoftwareShadowOptions& options)
+{
+    if (!owner)
+    {
+        return LegacySoftwareShadowResult::InvalidOwner;
+    }
+#ifdef Q_OS_WIN
+    LegacySoftwareShadow* shadow = nullptr;
+    if (QWidget* existing = shadowHandle.m_widget)
+    {
+        shadow = registeredLegacySoftwareShadow(existing);
+        if (!shadow)
+        {
+            // The caller cannot forge this private slot; a missing registry
+            // entry therefore means the owner or caller already deleted the
+            // shadow.  Clear the stale address and recreate it below.
+            shadowHandle.m_widget = nullptr;
+        }
+    }
+
+    const LegacySoftwareShadowResult result = updateTypedLegacySoftwareShadow(owner, shadow, options);
+    if (result == LegacySoftwareShadowResult::Updated || result == LegacySoftwareShadowResult::Hidden)
+    {
+        shadowHandle.m_widget = shadow;
+    }
+    return result;
+#else
+    setNamedProperty(owner, options.enabledProperty, false);
+    shadowHandle.m_widget = nullptr;
+    return options.enabled ? LegacySoftwareShadowResult::UnsupportedPlatform
+                           : LegacySoftwareShadowResult::Hidden;
+#endif
+}
+
+LegacySoftwareShadowResult hideLegacySoftwareShadow(
+    QWidget* owner,
+    LegacySoftwareShadowHandle& shadowHandle,
+    const QByteArray& enabledProperty,
+    const QByteArray& clickThroughProperty)
+{
+    if (!owner)
+    {
+        return LegacySoftwareShadowResult::InvalidOwner;
+    }
+#ifdef Q_OS_WIN
+    LegacySoftwareShadow* shadow = registeredLegacySoftwareShadow(shadowHandle.m_widget);
+    if (shadowHandle.m_widget && !shadow)
+    {
+        shadowHandle.m_widget = nullptr;
+    }
+    if (shadow && shadow->owner() != owner)
+    {
+        return LegacySoftwareShadowResult::OwnerMismatch;
+    }
+    hideTypedLegacySoftwareShadow(owner, shadow, enabledProperty, clickThroughProperty);
+#else
+    Q_UNUSED(clickThroughProperty)
+    shadowHandle.m_widget = nullptr;
+    setNamedProperty(owner, enabledProperty, false);
+#endif
+    return LegacySoftwareShadowResult::Hidden;
+}
+
+LegacySoftwareShadowResult tryUpdateLegacySoftwareShadow(
+    QWidget* owner,
+    QWidget*& shadowWidget,
+    const QString& objectName,
+    const char* enabledProperty,
+    const char* marginProperty,
+    const char* innerClearanceProperty,
+    const char* geometryProperty,
+    const char* geometryModeProperty,
+    const char* dprProperty,
+    const char* clickThroughProperty,
+    bool enabled,
+    int cornerRadius)
+{
+    if (!owner)
+    {
+        return LegacySoftwareShadowResult::InvalidOwner;
+    }
+
+    LegacySoftwareShadowOptions options;
+    options.objectName = objectName;
+    options.enabledProperty = copiedPropertyName(enabledProperty);
+    options.marginProperty = copiedPropertyName(marginProperty);
+    options.innerClearanceProperty = copiedPropertyName(innerClearanceProperty);
+    options.geometryProperty = copiedPropertyName(geometryProperty);
+    options.geometryModeProperty = copiedPropertyName(geometryModeProperty);
+    options.devicePixelRatioProperty = copiedPropertyName(dprProperty);
+    options.clickThroughProperty = copiedPropertyName(clickThroughProperty);
+    options.enabled = enabled;
+    options.cornerRadius = cornerRadius;
+
+#ifdef Q_OS_WIN
+    LegacySoftwareShadow* shadow = nullptr;
+    if (shadowWidget)
+    {
+        shadow = registeredLegacySoftwareShadow(shadowWidget);
+        if (!shadow)
+        {
+            return LegacySoftwareShadowResult::InvalidShadowWidget;
+        }
+        if (shadow->owner() != owner)
+        {
+            return LegacySoftwareShadowResult::OwnerMismatch;
+        }
+    }
+
+    const LegacySoftwareShadowResult result = updateTypedLegacySoftwareShadow(owner, shadow, options);
+    if (result == LegacySoftwareShadowResult::Updated || result == LegacySoftwareShadowResult::Hidden)
+    {
+        shadowWidget = shadow;
+    }
+    return result;
+#else
+    if (shadowWidget)
+    {
+        return LegacySoftwareShadowResult::InvalidShadowWidget;
+    }
+    setNamedProperty(owner, options.enabledProperty, false);
+    return enabled ? LegacySoftwareShadowResult::UnsupportedPlatform
+                   : LegacySoftwareShadowResult::Hidden;
+#endif
+}
+
+void updateLegacySoftwareShadow(QWidget* owner,
+                                QWidget*& shadowWidget,
+                                const QString& objectName,
+                                const char* enabledProperty,
+                                const char* marginProperty,
+                                const char* innerClearanceProperty,
+                                const char* geometryProperty,
+                                const char* geometryModeProperty,
+                                const char* dprProperty,
+                                const char* clickThroughProperty,
+                                bool enabled,
+                                int cornerRadius)
+{
+    const LegacySoftwareShadowResult result = tryUpdateLegacySoftwareShadow(owner,
+                                                                             shadowWidget,
+                                                                             objectName,
+                                                                             enabledProperty,
+                                                                             marginProperty,
+                                                                             innerClearanceProperty,
+                                                                             geometryProperty,
+                                                                             geometryModeProperty,
+                                                                             dprProperty,
+                                                                             clickThroughProperty,
+                                                                             enabled,
+                                                                             cornerRadius);
+    if (result == LegacySoftwareShadowResult::InvalidOwner ||
+        result == LegacySoftwareShadowResult::InvalidShadowWidget ||
+        result == LegacySoftwareShadowResult::OwnerMismatch)
+    {
+        qWarning("AntWindowFrame::updateLegacySoftwareShadow rejected an invalid compatibility handle (%d)",
+                 static_cast<int>(result));
+    }
 }
 
 void hideLegacySoftwareShadow(QWidget* owner,
@@ -623,33 +856,25 @@ void hideLegacySoftwareShadow(QWidget* owner,
                               const char* enabledProperty,
                               const char* clickThroughProperty)
 {
-    if (owner && enabledProperty)
-    {
-        owner->setProperty(enabledProperty, false);
-    }
+    const QByteArray enabledPropertyCopy = copiedPropertyName(enabledProperty);
+    const QByteArray clickThroughPropertyCopy = copiedPropertyName(clickThroughProperty);
     if (!shadowWidget)
     {
+        setNamedProperty(owner, enabledPropertyCopy, false);
         return;
     }
 
 #ifdef Q_OS_WIN
-    if (const WId shadowId = shadowWidget->internalWinId())
+    auto* shadow = registeredLegacySoftwareShadow(shadowWidget);
+    if (!shadow || shadow->owner() != owner)
     {
-        HWND shadowHwnd = reinterpret_cast<HWND>(shadowId);
-        makeNativeInputTransparent(shadowWidget, clickThroughProperty);
-        ::ShowWindow(shadowHwnd, SW_HIDE);
-        ::SetWindowPos(shadowHwnd,
-                       nullptr,
-                       0,
-                       0,
-                       0,
-                       0,
-                       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
-                           SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
+        qWarning("AntWindowFrame::hideLegacySoftwareShadow rejected an invalid compatibility handle");
+        return;
     }
+    hideTypedLegacySoftwareShadow(owner, shadow, enabledPropertyCopy, clickThroughPropertyCopy);
 #else
-    Q_UNUSED(clickThroughProperty)
+    Q_UNUSED(clickThroughPropertyCopy)
+    qWarning("AntWindowFrame::hideLegacySoftwareShadow rejected an unsupported compatibility handle");
 #endif
-    shadowWidget->hide();
 }
 } // namespace AntWindowFrame

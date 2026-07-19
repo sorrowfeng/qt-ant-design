@@ -1,10 +1,13 @@
 #include <QImage>
 #include <QLabel>
+#include <QClipboard>
 #include <QPainter>
+#include <QPointer>
 #include <QSignalSpy>
 #include <QMouseEvent>
 #include <QTest>
 #include <QVBoxLayout>
+#include "core/AntUrlPolicy.h"
 #include "widgets/AntTypography.h"
 
 namespace
@@ -54,6 +57,8 @@ private slots:
     void wordWrapAdaptsToLayoutWidth();
     void sizePolicyCanBeCustomized();
     void copyInteractionState();
+    void externalLinkPolicy();
+    void synchronousDeletionDuringInteraction();
     void measurementAndCopyRectCaches();
 };
 
@@ -318,6 +323,106 @@ void TestAntTypography::copyInteractionState()
     QCOMPARE(copiedSpy.count(), 1);
     QVERIFY(!w.isCopyPressed());
     QVERIFY(w.isCopied());
+}
+
+void TestAntTypography::externalLinkPolicy()
+{
+    struct PolicyReset
+    {
+        ~PolicyReset() { AntUrlPolicy::reset(); }
+    } reset;
+    Q_UNUSED(reset);
+
+    AntUrlPolicy::reset();
+    QCOMPARE(AntUrlPolicy::allowedSchemes(),
+             QStringList({QStringLiteral("http"), QStringLiteral("https")}));
+    QVERIFY(AntUrlPolicy::isExternalUrlAllowed(QUrl(QStringLiteral("https://example.com/path"))));
+    QVERIFY(!AntUrlPolicy::isExternalUrlAllowed(QUrl::fromLocalFile(QStringLiteral("C:/tmp/file.txt"))));
+    QVERIFY(!AntUrlPolicy::isExternalUrlAllowed(QUrl(QStringLiteral("javascript:alert(1)"))));
+
+    bool approvalCalled = false;
+    AntUrlPolicy::setApprovalCallback([&approvalCalled](const QUrl& url) {
+        approvalCalled = true;
+        return url.scheme() == QStringLiteral("mailto");
+    });
+    QVERIFY(AntUrlPolicy::isExternalUrlAllowed(QUrl(QStringLiteral("mailto:test@example.com"))));
+    QVERIFY(approvalCalled);
+    QVERIFY(!AntUrlPolicy::isExternalUrlAllowed(QUrl(QStringLiteral("custom:blocked"))));
+
+    AntUrlPolicy::setApprovalCallback({});
+    AntTypography link(QStringLiteral("Local file"));
+    link.setType(Ant::TypographyType::Link);
+    link.setHref(QUrl::fromLocalFile(QStringLiteral("C:/tmp/private.txt")).toString());
+    link.resize(160, 32);
+    link.show();
+    QSignalSpy activatedSpy(&link, &AntTypography::linkActivated);
+    QSignalSpy blockedSpy(&link, &AntTypography::linkOpenBlocked);
+    QTest::mouseClick(&link, Qt::LeftButton, Qt::NoModifier, link.rect().center());
+    QCOMPARE(activatedSpy.count(), 1);
+    QCOMPARE(blockedSpy.count(), 1);
+}
+
+void TestAntTypography::synchronousDeletionDuringInteraction()
+{
+    struct PolicyReset
+    {
+        ~PolicyReset() { AntUrlPolicy::reset(); }
+    } reset;
+    Q_UNUSED(reset);
+
+    AntUrlPolicy::reset();
+    bool approvalCalled = false;
+    QPointer<AntTypography> deletedBySignal = new AntTypography(QStringLiteral("Delete on activation"));
+    deletedBySignal->setType(Ant::TypographyType::Link);
+    deletedBySignal->setHref(QStringLiteral("custom:signal-delete"));
+    deletedBySignal->resize(180, 32);
+    QObject::connect(deletedBySignal, &AntTypography::linkActivated, deletedBySignal,
+                     [&deletedBySignal](const QString&) { delete deletedBySignal.data(); });
+    AntUrlPolicy::setApprovalCallback([&approvalCalled](const QUrl&) {
+        approvalCalled = true;
+        return false;
+    });
+    QTest::mouseClick(deletedBySignal.data(), Qt::LeftButton, Qt::NoModifier,
+                      deletedBySignal->rect().center());
+    QVERIFY(deletedBySignal.isNull());
+    QVERIFY(!approvalCalled);
+
+    QPointer<AntTypography> deletedByPolicy = new AntTypography(QStringLiteral("Delete in policy"));
+    deletedByPolicy->setType(Ant::TypographyType::Link);
+    deletedByPolicy->setHref(QStringLiteral("custom:policy-delete"));
+    deletedByPolicy->resize(180, 32);
+    AntUrlPolicy::setApprovalCallback([&deletedByPolicy](const QUrl&) {
+        delete deletedByPolicy.data();
+        return false;
+    });
+    QTest::mouseClick(deletedByPolicy.data(), Qt::LeftButton, Qt::NoModifier,
+                      deletedByPolicy->rect().center());
+    QVERIFY(deletedByPolicy.isNull());
+
+    QApplication::clipboard()->setText(QStringLiteral("clipboard-delete-baseline"));
+    QPointer<AntTypography> deletedByClipboard =
+        new AntTypography(QStringLiteral("clipboard-delete-trigger"));
+    deletedByClipboard->setCopyable(true);
+    deletedByClipboard->resize(deletedByClipboard->sizeHint());
+    QObject::connect(QApplication::clipboard(), &QClipboard::dataChanged,
+                     deletedByClipboard, [&deletedByClipboard]() {
+        delete deletedByClipboard.data();
+    });
+    const QPoint clipboardCopyPoint(qMax(1, deletedByClipboard->width() - 8),
+                                    qMax(1, deletedByClipboard->height() / 2));
+    QTest::mouseClick(deletedByClipboard.data(), Qt::LeftButton, Qt::NoModifier,
+                      clipboardCopyPoint);
+    QTRY_VERIFY(deletedByClipboard.isNull());
+
+    QPointer<AntTypography> deletedByCopy = new AntTypography(QStringLiteral("Delete on copy"));
+    deletedByCopy->setCopyable(true);
+    deletedByCopy->resize(deletedByCopy->sizeHint());
+    QObject::connect(deletedByCopy, &AntTypography::copied, deletedByCopy,
+                     [&deletedByCopy](const QString&) { delete deletedByCopy.data(); });
+    const QPoint copyPoint(qMax(1, deletedByCopy->width() - 8),
+                           qMax(1, deletedByCopy->height() / 2));
+    QTest::mouseClick(deletedByCopy.data(), Qt::LeftButton, Qt::NoModifier, copyPoint);
+    QVERIFY(deletedByCopy.isNull());
 }
 
 void TestAntTypography::measurementAndCopyRectCaches()

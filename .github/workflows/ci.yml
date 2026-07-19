@@ -15,6 +15,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   windows-msvc:
     name: Windows ${{ matrix.qt.label }}
@@ -28,18 +31,30 @@ jobs:
             version: 5.15.2
             arch: win64_msvc2019_64
             modules: ""
+            config: Debug
+            shared: "OFF"
           - label: Qt 6.7.3
             version: 6.7.3
             arch: win64_msvc2019_64
             modules: qtsvg
+            config: Debug
+            shared: "OFF"
+          - label: Qt 6.7.3 shared Release
+            version: 6.7.3
+            arch: win64_msvc2019_64
+            modules: qtsvg
+            config: Release
+            shared: "ON"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Install Qt
         if: matrix.qt.modules == ''
-        uses: jurplel/install-qt-action@v4
+        uses: jurplel/install-qt-action@d325aaf2a8baeeda41ad0b5d39f84a6af9bcf005 # v4
         with:
           version: ${{ matrix.qt.version }}
           arch: ${{ matrix.qt.arch }}
@@ -47,7 +62,7 @@ jobs:
 
       - name: Install Qt modules
         if: matrix.qt.modules != ''
-        uses: jurplel/install-qt-action@v4
+        uses: jurplel/install-qt-action@d325aaf2a8baeeda41ad0b5d39f84a6af9bcf005 # v4
         with:
           version: ${{ matrix.qt.version }}
           arch: ${{ matrix.qt.arch }}
@@ -60,23 +75,135 @@ jobs:
           cmake -S . -B build
           -G "Visual Studio 17 2022"
           -A x64
-          -DBUILD_EXAMPLES=ON
-          -DBUILD_TESTS=ON
+          -DQT_ANT_DESIGN_BUILD_EXAMPLES=ON
+          -DQT_ANT_DESIGN_BUILD_TESTS=ON
+          -DQT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=OFF
+          -DBUILD_SHARED_LIBS=${{ matrix.qt.shared }}
           -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\install"
 
       - name: Build
         shell: pwsh
-        run: cmake --build build --config Debug --parallel
+        run: cmake --build build --config ${{ matrix.qt.config }} --parallel
 
       - name: Install
         shell: pwsh
-        run: cmake --install build --config Debug
+        run: cmake --install build --config ${{ matrix.qt.config }}
+
+      - name: Run installed example smoke
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}\install\bin\qt-ant-design-example.exe" --smoke-exit-ms 800
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify installed consumer
+        shell: pwsh
+        run: ctest --test-dir build -C ${{ matrix.qt.config }} --output-on-failure --timeout 180 -R "^TestAntInstallConsumer$"
 
       - name: Run targeted tests
         shell: pwsh
         run: >
           ctest --test-dir build
-          -C Debug
+          -C ${{ matrix.qt.config }}
           --output-on-failure
           --timeout 120
-          -E "TestAntVisualRegression|TestAntQtVersionVisualParity.*|TestAntHighDpiScaling.*|TestAntExampleCloseStress|TestAntExamplePageTraversal"
+          -E "TestAntInstallConsumer|TestAntVisualRegression|TestAntQtVersionVisualParity.*|TestAntHighDpiScaling.*|TestAntExampleCloseStress|TestAntExamplePageTraversal"
+
+  linux:
+    name: Linux ${{ matrix.qt.label }}
+    runs-on: ubuntu-22.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        qt:
+          - label: Qt 6.7.3 Debug ASan+UBSan
+            version: 6.7.3
+            modules: qtsvg
+            config: Debug
+            shared: "OFF"
+            tests: "ON"
+            asan: "ON"
+            ubsan: "ON"
+          - label: Qt 5.15.2 shared Release
+            version: 5.15.2
+            modules: ""
+            config: Release
+            shared: "ON"
+            tests: "OFF"
+            asan: "OFF"
+            ubsan: "OFF"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@d325aaf2a8baeeda41ad0b5d39f84a6af9bcf005 # v4
+        with:
+          version: ${{ matrix.qt.version }}
+          arch: gcc_64
+          modules: ${{ matrix.qt.modules }}
+          cache: true
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.qt.config }}
+          -DQT_ANT_DESIGN_BUILD_EXAMPLES=OFF
+          -DQT_ANT_DESIGN_BUILD_TESTS=${{ matrix.qt.tests }}
+          -DQT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=OFF
+          -DQT_ANT_DESIGN_ENABLE_ADDRESS_SANITIZER=${{ matrix.qt.asan }}
+          -DQT_ANT_DESIGN_ENABLE_UNDEFINED_SANITIZER=${{ matrix.qt.ubsan }}
+          -DBUILD_SHARED_LIBS=${{ matrix.qt.shared }}
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+
+      - name: Build
+        run: cmake --build build --parallel 2
+
+      - name: Run sanitizer and robustness tests
+        if: matrix.qt.tests == 'ON'
+        env:
+          # Qt/platform plugins retain process-lifetime caches; focus this job on
+          # address/UB violations in project code instead of third-party LSAN noise.
+          ASAN_OPTIONS: halt_on_error=1:abort_on_error=1:detect_leaks=0
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+          QT_QPA_PLATFORM: offscreen
+        run: >
+          ctest --test-dir build --output-on-failure --timeout 180
+          -R "TestAnt(StressLifecycle|DataEntryA|DataEntryB|DataDisplayA|Feedback|Navigation|QRGenerator|DockPerspectiveLimits|Typography|Interactions)"
+
+      - name: Install library
+        if: matrix.qt.asan == 'OFF' && matrix.qt.ubsan == 'OFF'
+        run: cmake --install build
+
+  macos:
+    name: macOS Qt 6 shared Release
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@d325aaf2a8baeeda41ad0b5d39f84a6af9bcf005 # v4
+        with:
+          version: 6.7.3
+          arch: clang_64
+          modules: qtsvg
+          cache: true
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DQT_ANT_DESIGN_BUILD_EXAMPLES=OFF
+          -DQT_ANT_DESIGN_BUILD_TESTS=OFF
+          -DBUILD_SHARED_LIBS=ON
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+
+      - name: Build and install library
+        run: cmake --build build --parallel 2 && cmake --install build

@@ -115,6 +115,7 @@ Q_SIGNALS:
     void alignmentChanged(Qt::Alignment alignment);
     void copied(const QString& text);
     void linkActivated(const QString& href);
+    void linkOpenBlocked(const QString& href);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

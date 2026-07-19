@@ -15,8 +15,8 @@
       "binaryDir": "${sourceDir}/build/qt6-msvc-debug",
       "cacheVariables": {
         "QT_DEFAULT_MAJOR_VERSION": "6",
-        "BUILD_EXAMPLES": "ON",
-        "BUILD_TESTS": "ON",
+        "QT_ANT_DESIGN_BUILD_EXAMPLES": "ON",
+        "QT_ANT_DESIGN_BUILD_TESTS": "ON",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/qt6-msvc-debug"
       }
     },
@@ -30,8 +30,8 @@
       "cacheVariables": {
         "QT_DEFAULT_MAJOR_VERSION": "5",
         "CMAKE_PREFIX_PATH": "$env{QT5_CMAKE_PREFIX_PATH}",
-        "BUILD_EXAMPLES": "ON",
-        "BUILD_TESTS": "ON",
+        "QT_ANT_DESIGN_BUILD_EXAMPLES": "ON",
+        "QT_ANT_DESIGN_BUILD_TESTS": "ON",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/qt5-msvc-debug"
       }
     },
@@ -44,8 +44,8 @@
       "binaryDir": "${sourceDir}/build/qt6-msvc-release",
       "cacheVariables": {
         "QT_DEFAULT_MAJOR_VERSION": "6",
-        "BUILD_EXAMPLES": "ON",
-        "BUILD_TESTS": "ON",
+        "QT_ANT_DESIGN_BUILD_EXAMPLES": "ON",
+        "QT_ANT_DESIGN_BUILD_TESTS": "ON",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/qt6-msvc-release"
       }
     },
@@ -59,8 +59,8 @@
       "cacheVariables": {
         "QT_DEFAULT_MAJOR_VERSION": "6",
         "BUILD_SHARED_LIBS": "ON",
-        "BUILD_EXAMPLES": "ON",
-        "BUILD_TESTS": "ON",
+        "QT_ANT_DESIGN_BUILD_EXAMPLES": "ON",
+        "QT_ANT_DESIGN_BUILD_TESTS": "ON",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/qt6-msvc-shared-release"
       }
     }

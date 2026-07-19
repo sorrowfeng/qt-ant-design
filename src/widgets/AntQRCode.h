@@ -19,6 +19,8 @@ class QT_ANT_DESIGN_EXPORT AntQRCode : public QWidget
     Q_PROPERTY(int iconSize READ iconSize WRITE setIconSize NOTIFY iconSizeChanged)
     Q_PROPERTY(bool bordered READ isBordered WRITE setBordered NOTIFY borderedChanged)
     Q_PROPERTY(Ant::QRCodeStatus status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(bool encodingValid READ isEncodingValid NOTIFY encodingValidChanged)
+    Q_PROPERTY(QString encodingError READ encodingError NOTIFY encodingErrorChanged)
 
 public:
     explicit AntQRCode(QWidget* parent = nullptr);
@@ -41,6 +43,8 @@ public:
     void setBordered(bool bordered);
     Ant::QRCodeStatus status() const;
     void setStatus(Ant::QRCodeStatus status);
+    bool isEncodingValid() const;
+    QString encodingError() const;
 
     void refresh();
     QVector<QVector<bool>> qrMatrix() const;
@@ -58,6 +62,9 @@ Q_SIGNALS:
     void iconSizeChanged(int);
     void borderedChanged(bool);
     void statusChanged(Ant::QRCodeStatus);
+    void encodingValidChanged(bool);
+    void encodingErrorChanged(const QString&);
+    void encodingFailed(const QString&);
     void refreshClicked();
 
 protected:
@@ -77,6 +84,8 @@ private:
     int m_iconSize = 40;
     bool m_bordered = true;
     Ant::QRCodeStatus m_status = Ant::QRCodeStatus::Active;
+    bool m_encodingValid = false;
+    QString m_encodingError;
     QVector<QVector<bool>> m_qrMatrix;
     int m_matrixRevision = 0;
     mutable QPixmap m_cachedQrPixmap;

@@ -4,6 +4,7 @@
 
 #include <QObject>
 #include <QList>
+#include <QPointer>
 
 class QWidget;
 class QDialog;
@@ -22,6 +23,7 @@ class QT_ANT_DESIGN_EXPORT AntTour : public QObject
 
 public:
     explicit AntTour(QObject* parent = nullptr);
+    ~AntTour() override;
 
     void addStep(const AntTourStep& step);
     void start(int index = 0);
@@ -36,7 +38,8 @@ Q_SIGNALS:
 private:
     void showStep(int index);
     void syncTourPerfCounters() const;
-    QDialog* m_overlay = nullptr;
+    QPointer<QDialog> m_overlay;
     QList<AntTourStep> m_steps;
+    QList<QPointer<QWidget>> m_stepTargets;
     int m_current = -1;
 };

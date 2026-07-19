@@ -6,7 +6,9 @@
 #include <QMetaType>
 #include <QPixmap>
 #include <QRect>
+#include <QSet>
 #include <QSize>
+#include <QUrl>
 #include <QVector>
 #include <QWidget>
 
@@ -16,6 +18,7 @@ class QEvent;
 class QMouseEvent;
 class QPaintEvent;
 class QResizeEvent;
+class TestAntDataEntryB;
 
 struct AntUploadFile
 {
@@ -39,6 +42,7 @@ class QT_ANT_DESIGN_EXPORT AntUpload : public QWidget
     Q_PROPERTY(bool disabled READ isDisabled WRITE setDisabled NOTIFY disabledChanged)
     Q_PROPERTY(Ant::UploadListType listType READ listType WRITE setListType NOTIFY listTypeChanged)
     Q_PROPERTY(bool draggerMode READ isDraggerMode WRITE setDraggerMode NOTIFY draggerModeChanged)
+    Q_PROPERTY(int thumbnailCacheBudgetBytes READ thumbnailCacheBudgetBytes WRITE setThumbnailCacheBudgetBytes NOTIFY thumbnailCacheBudgetBytesChanged)
 
 public:
     explicit AntUpload(QWidget* parent = nullptr);
@@ -67,6 +71,16 @@ public:
     void setFileList(const QVector<AntUploadFile>& files);
     QVector<AntUploadFile> fileList() const;
 
+    int thumbnailCacheBudgetBytes() const;
+    void setThumbnailCacheBudgetBytes(int bytes);
+    qint64 thumbnailCacheBytes() const;
+    QString thumbnailError(const QString& path) const;
+    // QFile metadata cannot detect an in-place rewrite that deliberately keeps
+    // both size and timestamp. Call this after such a rewrite to force reload.
+    void invalidateThumbnail(const QString& path) const;
+    void clearThumbnailCache() const;
+    bool requestFilePreview(const QString& uid);
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -81,6 +95,10 @@ Q_SIGNALS:
     void fileRemoved(const QString& uid);
     void fileStatusChanged(const QString& uid, Ant::UploadFileStatus status);
     void uploadRequested();
+    void thumbnailCacheBudgetBytesChanged(int bytes);
+    void thumbnailLoadFailed(const QString& path, const QString& error);
+    void localFilePreviewRequested(const QString& path);
+    void externalPreviewBlocked(const QUrl& url);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -94,6 +112,7 @@ protected:
 
 private:
     friend class AntUploadStyle;
+    friend class TestAntDataEntryB;
 
     struct UploadLayout
     {
@@ -112,6 +131,26 @@ private:
         bool valid = false;
     };
 
+    struct ThumbnailCacheEntry
+    {
+        QString normalizedPath;
+        qint64 sourceBytes = -1;
+        qint64 sourceModifiedMs = 0;
+        QSize physicalSize;
+        qreal devicePixelRatio = 1.0;
+        QPixmap pixmap;
+        qint64 bytes = 0;
+        quint64 lastAccess = 0;
+    };
+
+    struct ThumbnailFailureEntry
+    {
+        QString normalizedPath;
+        qint64 sourceBytes = -1;
+        qint64 sourceModifiedMs = 0;
+        QString error;
+    };
+
     const UploadLayout& uploadLayout() const;
     void invalidateUploadLayout() const;
     QRect triggerRect() const;
@@ -128,8 +167,15 @@ private:
     QString dialogNameFilter() const;
     void requestUploadFiles();
     void addLocalFiles(const QStringList& paths);
-    void openFilePreview(const AntUploadFile& file) const;
-    QPixmap cachedThumbPixmap(const QString& path) const;
+    bool openFilePreview(const AntUploadFile& file);
+    QPixmap cachedThumbPixmap(const QString& path, const QSize& logicalSize, qreal devicePixelRatio) const;
+    void evictThumbnailSource(const QString& path) const;
+    void enforceThumbnailCacheBudget() const;
+    void recordThumbnailFailure(const QString& path,
+                                const QString& normalizedPath,
+                                qint64 sourceBytes,
+                                qint64 sourceModifiedMs,
+                                const QString& error) const;
     void updateUploadRegion(const QRect& dirty,
                             const QString& mode,
                             bool itemScoped = false,
@@ -152,9 +198,17 @@ private:
     mutable UploadLayout m_layoutCache;
     mutable int m_layoutBuildCount = 0;
     mutable int m_layoutCacheHitCount = 0;
-    mutable QHash<QString, QPixmap> m_thumbPixmapCache;
+    int m_thumbnailCacheBudgetBytes = 16 * 1024 * 1024;
+    mutable QHash<QString, ThumbnailCacheEntry> m_thumbPixmapCache;
+    mutable QHash<QString, ThumbnailFailureEntry> m_thumbLoadErrors;
+    mutable QSet<QString> m_pendingThumbnailFailureSignals;
+    mutable qint64 m_thumbnailCacheBytes = 0;
+    mutable quint64 m_thumbnailAccessClock = 0;
     mutable int m_thumbPixmapBuildCount = 0;
     mutable int m_thumbPixmapCacheHitCount = 0;
+    mutable int m_thumbPixmapEvictionCount = 0;
+    mutable int m_thumbPixmapFailureCount = 0;
+    mutable int m_thumbPixmapSourceChangeCount = 0;
     int m_regionUpdateCount = 0;
     int m_itemRegionUpdateCount = 0;
     int m_triggerRegionUpdateCount = 0;

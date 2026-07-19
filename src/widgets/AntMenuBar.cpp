@@ -33,6 +33,10 @@ QMenu* AntMenuBar::addMenu(const QString& title)
 
 void AntMenuBar::actionEvent(QActionEvent* event)
 {
+    if (event->type() == QEvent::ActionRemoved && m_hoveredAction == event->action())
+    {
+        m_hoveredAction.clear();
+    }
     invalidateActionGeometryCache();
     QMenuBar::actionEvent(event);
 }
@@ -49,26 +53,71 @@ void AntMenuBar::changeEvent(QEvent* event)
 
 void AntMenuBar::mouseMoveEvent(QMouseEvent* event)
 {
-    QAction* previousAction = m_hoveredAction;
-    QAction* nextAction = actionAt(event->pos());
+    // Match QMenuBar's touch compatibility path: a synthesized move without a
+    // pressed left button is ignored so that the following synthesized press
+    // does not immediately close a menu that the move just opened.
+    if (!(event->buttons() & Qt::LeftButton) && event->source() != Qt::MouseEventNotSynthesized)
+    {
+        QMenuBar::mouseMoveEvent(event);
+        return;
+    }
+
+    QPointer<AntMenuBar> self(this);
+    QPointer<QAction> previousAction(m_hoveredAction);
+    QPointer<QAction> nextAction(actionAt(event->pos()));
+    QPointer<QAction> baseActionBefore(activeAction());
+    m_hoveredAction = nextAction;
+
+    // QMenuBar activates QAction::Hover from inside its mouse-move
+    // implementation and continues to use the QAction afterwards.  Direct
+    // connections to either QAction::hovered or QMenuBar::hovered are allowed
+    // to delete that action, so defer the action activation until the base
+    // class has finished processing the borrowed pointer.
+    const bool actionSignalsWereBlocked = nextAction ? nextAction->signalsBlocked() : true;
+    if (nextAction)
+    {
+        nextAction->blockSignals(true);
+    }
     QMenuBar::mouseMoveEvent(event);
+    if (nextAction)
+    {
+        nextAction->blockSignals(actionSignalsWereBlocked);
+    }
+    if (!self)
+    {
+        return;
+    }
+    if (nextAction && !actions().contains(nextAction.data()))
+    {
+        nextAction.clear();
+    }
+    const QPointer<QAction> baseActionAfter(activeAction());
+    const bool shouldReplayHover = !actionSignalsWereBlocked
+        && nextAction
+        && nextAction->isEnabled()
+        && baseActionAfter == nextAction
+        && baseActionBefore != baseActionAfter;
+    m_hoveredAction = nextAction;
 
     if (previousAction == nextAction)
     {
         m_lastHoverUpdateWasScoped = false;
         syncMenuBarPerfCounters();
+        if (shouldReplayHover && nextAction && nextAction->isEnabled())
+        {
+            nextAction->hover();
+        }
         return;
     }
 
-    m_hoveredAction = nextAction;
     QRect dirty;
     if (previousAction)
     {
-        dirty = dirty.united(cachedActionGeometry(previousAction));
+        dirty = dirty.united(cachedActionGeometry(previousAction.data()));
     }
     if (nextAction)
     {
-        dirty = dirty.united(cachedActionGeometry(nextAction));
+        dirty = dirty.united(cachedActionGeometry(nextAction.data()));
     }
     if (!dirty.isEmpty())
     {
@@ -80,12 +129,17 @@ void AntMenuBar::mouseMoveEvent(QMouseEvent* event)
         m_lastHoverUpdateWasScoped = false;
     }
     syncMenuBarPerfCounters();
+
+    if (shouldReplayHover && nextAction && nextAction->isEnabled())
+    {
+        nextAction->hover();
+    }
 }
 
 void AntMenuBar::leaveEvent(QEvent* event)
 {
-    QAction* previousAction = m_hoveredAction;
-    m_hoveredAction = nullptr;
+    QAction* previousAction = m_hoveredAction.data();
+    m_hoveredAction.clear();
     m_lastHoverUpdateWasScoped = false;
     if (previousAction)
     {

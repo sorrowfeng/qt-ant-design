@@ -116,6 +116,13 @@ void TestAntSelect::propertiesAndSignals()
     QCOMPARE(combo->itemData(1).toInt(), 100);
     QCOMPARE(combo->optionData(1).toInt(), 100);
 
+    combo->setCurrentValue(100);
+    QCOMPARE(combo->currentIndex(), 1);
+    QCOMPARE(combo->currentValue().toInt(), 100);
+    combo->setCurrentValue(QStringLiteral("missing"));
+    QCOMPARE(combo->currentIndex(), -1);
+    QVERIFY(!combo->currentValue().isValid());
+
     QSignalSpy comboIndexSpy(combo, &AntSelect::currentIndexChanged);
     combo->setCurrentText(QStringLiteral("Three"));
     QCOMPARE(combo->currentIndex(), 3);

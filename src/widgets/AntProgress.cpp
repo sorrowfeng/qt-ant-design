@@ -509,7 +509,9 @@ int AntProgress::percentForValue(int value) const
         return 0;
     }
     value = std::clamp(value, m_minimum, m_maximum);
-    return std::clamp(qRound((value - m_minimum) * 100.0 / (m_maximum - m_minimum)), 0, 100);
+    const qint64 offset = static_cast<qint64>(value) - static_cast<qint64>(m_minimum);
+    const qint64 rangeSpan = static_cast<qint64>(m_maximum) - static_cast<qint64>(m_minimum);
+    return std::clamp(qRound(static_cast<double>(offset) * 100.0 / static_cast<double>(rangeSpan)), 0, 100);
 }
 
 int AntProgress::valueForPercent(int percent) const
@@ -519,7 +521,12 @@ int AntProgress::valueForPercent(int percent) const
     {
         return m_minimum;
     }
-    return std::clamp(m_minimum + qRound((m_maximum - m_minimum) * percent / 100.0), m_minimum, m_maximum);
+    const qint64 rangeSpan = static_cast<qint64>(m_maximum) - static_cast<qint64>(m_minimum);
+    const qint64 offset = qRound64(static_cast<double>(rangeSpan) * percent / 100.0);
+    const qint64 value = static_cast<qint64>(m_minimum) + offset;
+    return static_cast<int>(std::clamp(value,
+                                       static_cast<qint64>(m_minimum),
+                                       static_cast<qint64>(m_maximum)));
 }
 
 void AntProgress::syncPercentFromValue()

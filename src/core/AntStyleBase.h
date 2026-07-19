@@ -62,7 +62,7 @@ protected:
     template <typename WidgetType>
     void connectThemeUpdate()
     {
-        connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
             bool usedGlobalWidgetScan = false;
             const QList<QWidget*> targets = collectThemeTargets<WidgetType>(&usedGlobalWidgetScan);
             for (QWidget* widget : targets)
@@ -71,7 +71,7 @@ protected:
             }
         });
 
-        connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
+        connect(antTheme, &AntTheme::themeChanged, this, [this]() {
             const int updateCount = property("antStyleThemeUpdateCount").toInt() + 1;
             bool usedGlobalWidgetScan = false;
             const QList<QWidget*> targets = collectThemeTargets<WidgetType>(&usedGlobalWidgetScan);

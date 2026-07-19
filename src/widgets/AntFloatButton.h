@@ -2,10 +2,12 @@
 
 #include "core/QtAntDesignExport.h"
 
-#include <QWidget>
+#include <QHash>
+#include <QPoint>
+#include <QPointer>
 #include <QTimer>
 #include <QVector>
-#include <QPoint>
+#include <QWidget>
 
 #include "core/AntTypes.h"
 
@@ -107,6 +109,8 @@ private:
     void updateHoverState(const QPoint& pos);
     void checkBackTopVisibility();
     void animateScrollToTop();
+    void pruneDestroyedChildren();
+    void stopScrollAnimation();
     void syncFloatButtonPerfCounters() const;
 
     // Main props
@@ -120,7 +124,8 @@ private:
     int m_badgeCount = 0;
 
     // Group
-    QVector<AntFloatButton*> m_children;
+    QVector<QPointer<AntFloatButton>> m_children;
+    QHash<AntFloatButton*, QMetaObject::Connection> m_childDestroyedConnections;
     Ant::Trigger m_groupTrigger = Ant::Trigger::Click;
     bool m_open = false;
     QString m_closeIcon;
@@ -129,7 +134,9 @@ private:
     bool m_backTop = false;
     int m_visibilityHeight = 400;
     int m_scrollDuration = 450;
-    QWidget* m_scrollTarget = nullptr;
+    QPointer<QWidget> m_scrollTarget;
+    QMetaObject::Connection m_scrollTargetDestroyedConnection;
+    QPointer<QPropertyAnimation> m_scrollAnimation;
 
     // State
     Ant::FloatButtonPlacement m_placement = Ant::FloatButtonPlacement::BottomRight;

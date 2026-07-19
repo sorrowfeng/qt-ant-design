@@ -1,5 +1,7 @@
 #include "AntDockWidget.h"
 
+#include "private/AntWindowsSystemLibrary.h"
+
 #include <QEvent>
 #include <QHideEvent>
 #include <QHBoxLayout>
@@ -522,11 +524,8 @@ void applyLegacyRoundedMask(QWidget* widget, int radius, bool useNativeCaption)
 
 bool resolveDwmApis(DwmSetWindowAttributeFn* setWindowAttribute, DwmExtendFrameIntoClientAreaFn* extendFrame)
 {
-    HMODULE dwmapi = ::GetModuleHandleW(L"dwmapi.dll");
-    if (!dwmapi)
-    {
-        dwmapi = ::LoadLibraryW(L"dwmapi.dll");
-    }
+    static HMODULE dwmapi = reinterpret_cast<HMODULE>(
+        AntWindowsSystemLibrary::loadSystem32Library(L"dwmapi.dll"));
     if (!dwmapi)
     {
         return false;

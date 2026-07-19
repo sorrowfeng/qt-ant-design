@@ -27,11 +27,13 @@ QString AntQRCode::value() const { return m_value; }
 
 void AntQRCode::setValue(const QString& value)
 {
-    if (m_value == value) return;
+    if (m_value == value && m_encodingValid) return;
+    const bool changed = m_value != value;
     m_value = value;
     regenerateMatrix();
     update();
-    Q_EMIT valueChanged(m_value);
+    if (changed)
+        Q_EMIT valueChanged(m_value);
 }
 
 int AntQRCode::qrSize() const { return m_qrSize; }
@@ -69,11 +71,13 @@ Ant::QRCodeErrorLevel AntQRCode::errorLevel() const { return m_errorLevel; }
 
 void AntQRCode::setErrorLevel(Ant::QRCodeErrorLevel level)
 {
-    if (m_errorLevel == level) return;
+    if (m_errorLevel == level && m_encodingValid) return;
+    const bool changed = m_errorLevel != level;
     m_errorLevel = level;
     regenerateMatrix();
     update();
-    Q_EMIT errorLevelChanged(m_errorLevel);
+    if (changed)
+        Q_EMIT errorLevelChanged(m_errorLevel);
 }
 
 QIcon AntQRCode::icon() const { return m_icon; }
@@ -113,6 +117,10 @@ void AntQRCode::setStatus(Ant::QRCodeStatus status)
     update();
     Q_EMIT statusChanged(m_status);
 }
+
+bool AntQRCode::isEncodingValid() const { return m_encodingValid; }
+
+QString AntQRCode::encodingError() const { return m_encodingError; }
 
 void AntQRCode::refresh()
 {
@@ -206,9 +214,40 @@ void AntQRCode::mousePressEvent(QMouseEvent* event)
 
 void AntQRCode::regenerateMatrix()
 {
-    m_qrMatrix = Ant::AntQRGenerator::generate(m_value, m_errorLevel);
+    const auto result = Ant::AntQRGenerator::tryGenerate(m_value, m_errorLevel);
+    m_qrMatrix = result.matrix;
     ++m_matrixRevision;
     invalidateQrPixmapCache();
+
+    QString error;
+    switch (result.error)
+    {
+    case Ant::AntQRGenerator::GenerationError::None:
+        break;
+    case Ant::AntQRGenerator::GenerationError::EmptyData:
+        break;
+    case Ant::AntQRGenerator::GenerationError::InvalidErrorLevel:
+        error = tr("The QR error-correction level is invalid.");
+        break;
+    case Ant::AntQRGenerator::GenerationError::InvalidVersion:
+        error = tr("The QR version must be automatic or between 1 and 10.");
+        break;
+    case Ant::AntQRGenerator::GenerationError::DataTooLong:
+        error = tr("The QR data exceeds the supported version 1-10 byte-mode capacity.");
+        break;
+    }
+
+    const bool valid = result.succeeded();
+    const bool validChanged = m_encodingValid != valid;
+    const bool errorChanged = m_encodingError != error;
+    m_encodingValid = valid;
+    m_encodingError = error;
+    if (validChanged)
+        Q_EMIT encodingValidChanged(m_encodingValid);
+    if (errorChanged)
+        Q_EMIT encodingErrorChanged(m_encodingError);
+    if (!m_encodingValid && result.error != Ant::AntQRGenerator::GenerationError::EmptyData)
+        Q_EMIT encodingFailed(m_encodingError);
 }
 
 void AntQRCode::invalidateQrPixmapCache()

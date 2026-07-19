@@ -15,6 +15,16 @@ project(qt-ant-design
     LANGUAGES CXX
 )
 
+# PROJECT_IS_TOP_LEVEL was added after the minimum supported CMake release.
+# Preserve identical subproject defaults for manual CMake 3.16-3.20 builds.
+if(NOT DEFINED PROJECT_IS_TOP_LEVEL)
+    if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+        set(PROJECT_IS_TOP_LEVEL ON)
+    else()
+        set(PROJECT_IS_TOP_LEVEL OFF)
+    endif()
+endif()
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
@@ -35,6 +45,23 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Svg)
 
 set(QT_ANT_DESIGN_QT_MAJOR_VERSION ${QT_VERSION_MAJOR})
 set(QT_ANT_DESIGN_QT_PACKAGE Qt${QT_VERSION_MAJOR})
+if(QT_VERSION_MAJOR EQUAL 6)
+    set(QT_ANT_DESIGN_MIN_QT_VERSION 6.5.0)
+elseif(QT_VERSION_MAJOR EQUAL 5)
+    set(QT_ANT_DESIGN_MIN_QT_VERSION 5.15.2)
+else()
+    message(FATAL_ERROR "qt-ant-design supports only Qt 5 and Qt 6")
+endif()
+set(QT_ANT_DESIGN_DETECTED_QT_VERSION "${${QT_ANT_DESIGN_QT_PACKAGE}_VERSION}")
+if(NOT QT_ANT_DESIGN_DETECTED_QT_VERSION)
+    set(QT_ANT_DESIGN_DETECTED_QT_VERSION "${QT_VERSION}")
+endif()
+if(QT_ANT_DESIGN_DETECTED_QT_VERSION VERSION_LESS QT_ANT_DESIGN_MIN_QT_VERSION)
+    message(FATAL_ERROR
+        "qt-ant-design requires ${QT_ANT_DESIGN_QT_PACKAGE} ${QT_ANT_DESIGN_MIN_QT_VERSION} or newer; "
+        "found ${QT_ANT_DESIGN_DETECTED_QT_VERSION}"
+    )
+endif()
 set(QT_ANT_DESIGN_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(QT_ANT_DESIGN_VERSION_HEADER "${QT_ANT_DESIGN_GENERATED_INCLUDE_DIR}/core/QtAntDesignVersion.h")
 
@@ -44,32 +71,62 @@ configure_file(
     @ONLY
 )
 
-message(STATUS "qt-ant-design using ${QT_ANT_DESIGN_QT_PACKAGE}")
+message(STATUS
+    "qt-ant-design using ${QT_ANT_DESIGN_QT_PACKAGE} ${QT_ANT_DESIGN_DETECTED_QT_VERSION} "
+    "(minimum ${QT_ANT_DESIGN_MIN_QT_VERSION})"
+)
 
 # Options
-option(BUILD_EXAMPLES "Build example application" ON)
-option(BUILD_TESTS "Build unit tests (requires Qt Test)" ON)
+set(_qt_ant_design_default_examples ${PROJECT_IS_TOP_LEVEL})
+set(_qt_ant_design_default_tests ${PROJECT_IS_TOP_LEVEL})
+if(PROJECT_IS_TOP_LEVEL AND DEFINED BUILD_EXAMPLES)
+    set(_qt_ant_design_default_examples ${BUILD_EXAMPLES})
+endif()
+if(PROJECT_IS_TOP_LEVEL AND DEFINED BUILD_TESTS)
+    set(_qt_ant_design_default_tests ${BUILD_TESTS})
+endif()
+option(QT_ANT_DESIGN_BUILD_EXAMPLES "Build the qt-ant-design example application" ${_qt_ant_design_default_examples})
+option(QT_ANT_DESIGN_BUILD_TESTS "Build qt-ant-design tests (requires Qt Test)" ${_qt_ant_design_default_tests})
+if(WIN32 AND PROJECT_IS_TOP_LEVEL)
+    set(_qt_ant_design_default_deploy_example ON)
+else()
+    set(_qt_ant_design_default_deploy_example OFF)
+endif()
+option(QT_ANT_DESIGN_DEPLOY_EXAMPLE
+    "Run windeployqt while installing the example application"
+    ${_qt_ant_design_default_deploy_example}
+)
+option(QT_ANT_DESIGN_ENABLE_ADDRESS_SANITIZER
+    "Enable AddressSanitizer for qt-ant-design (link requirements propagate to build-tree consumers)"
+    OFF
+)
+option(QT_ANT_DESIGN_ENABLE_UNDEFINED_SANITIZER
+    "Enable UndefinedBehaviorSanitizer for qt-ant-design (link requirements propagate to build-tree consumers)"
+    OFF
+)
+
+unset(_qt_ant_design_default_examples)
+unset(_qt_ant_design_default_tests)
+unset(_qt_ant_design_default_deploy_example)
 
 # Library
 add_subdirectory(src)
 
 # Examples
-if(BUILD_EXAMPLES)
+if(QT_ANT_DESIGN_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
 # Tests
-if(BUILD_TESTS)
-    find_package(${QT_ANT_DESIGN_QT_PACKAGE} COMPONENTS Test)
-    if(${QT_ANT_DESIGN_QT_PACKAGE}Test_FOUND)
-        enable_testing()
-        add_subdirectory(tests)
-    endif()
+if(QT_ANT_DESIGN_BUILD_TESTS)
+    find_package(${QT_ANT_DESIGN_QT_PACKAGE} REQUIRED COMPONENTS Test)
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
 # Install targets
 set(INSTALL_TARGETS qt-ant-design)
-if(BUILD_EXAMPLES)
+if(QT_ANT_DESIGN_BUILD_EXAMPLES)
     list(APPEND INSTALL_TARGETS qt-ant-design-example)
 endif()
 
@@ -104,21 +161,23 @@ install(FILES
 )
 
 # Windows deployment
-if(BUILD_EXAMPLES AND WIN32)
+if(QT_ANT_DESIGN_BUILD_EXAMPLES AND QT_ANT_DESIGN_DEPLOY_EXAMPLE AND WIN32)
     set(QT_ANT_DESIGN_QT_DIR_VARIABLE "${QT_ANT_DESIGN_QT_PACKAGE}_DIR")
     set(QT_ANT_DESIGN_QT_DIR "${${QT_ANT_DESIGN_QT_DIR_VARIABLE}}")
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${QT_ANT_DESIGN_QT_DIR}/../../../bin")
-    if(WINDEPLOYQT_EXECUTABLE)
-        install(CODE "
-            execute_process(
-                COMMAND \"${WINDEPLOYQT_EXECUTABLE}\" \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/qt-ant-design-example${CMAKE_EXECUTABLE_SUFFIX}\"
-                RESULT_VARIABLE windeployqt_result
-            )
-            if(NOT windeployqt_result EQUAL 0)
-                message(WARNING \"windeployqt failed with exit code \${windeployqt_result}\")
-            endif()
-        ")
-    else()
-        message(WARNING "windeployqt was not found. Installed example may require Qt DLLs in PATH.")
+    if(NOT WINDEPLOYQT_EXECUTABLE)
+        message(FATAL_ERROR
+            "QT_ANT_DESIGN_DEPLOY_EXAMPLE is ON, but windeployqt was not found. "
+            "Set QT_ANT_DESIGN_DEPLOY_EXAMPLE=OFF for a library-only/non-deploying install."
+        )
     endif()
+    install(CODE "
+        execute_process(
+            COMMAND \"${WINDEPLOYQT_EXECUTABLE}\" \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/qt-ant-design-example${CMAKE_EXECUTABLE_SUFFIX}\"
+            RESULT_VARIABLE windeployqt_result
+        )
+        if(NOT windeployqt_result EQUAL 0)
+            message(FATAL_ERROR \"windeployqt failed with exit code \${windeployqt_result}\")
+        endif()
+    ")
 endif()

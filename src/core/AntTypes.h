@@ -538,6 +538,8 @@ constexpr int FontSize = 14;
 constexpr int FontSizeSmall = 12;
 constexpr int FontSizeLarge = 16;
 constexpr int BorderRadius = 6;
+constexpr int MaximumThemeFontSize = 512;
+constexpr int MaximumThemeBorderRadius = 512;
 
 QT_ANT_DESIGN_EXPORT void registerMetaTypes();
 

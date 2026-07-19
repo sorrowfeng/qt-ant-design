@@ -1,5 +1,7 @@
 #include "AntWindow.h"
 
+#include "private/AntWindowsSystemLibrary.h"
+
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QCursor>
@@ -552,11 +554,8 @@ bool isNativeResizeHitTest(WPARAM hitTestCode)
 
 bool resolveDwmApis(DwmSetWindowAttributeFn* setWindowAttribute, DwmExtendFrameIntoClientAreaFn* extendFrame)
 {
-    HMODULE dwmapi = ::GetModuleHandleW(L"dwmapi.dll");
-    if (!dwmapi)
-    {
-        dwmapi = ::LoadLibraryW(L"dwmapi.dll");
-    }
+    static HMODULE dwmapi = reinterpret_cast<HMODULE>(
+        AntWindowsSystemLibrary::loadSystem32Library(L"dwmapi.dll"));
     if (!dwmapi)
     {
         return false;
@@ -1305,7 +1304,9 @@ bool AntWindow::event(QEvent* event)
         // until its own QScreen is updated. Re-parent the shadow to the new
         // screen and reapply the native frame so the rasterised shadow grid
         // and the painted shadow geometry stay aligned with the host window.
-        if (QWindow* shadowWindow = m_legacySoftwareShadow ? m_legacySoftwareShadow->windowHandle() : nullptr)
+        if (QWindow* shadowWindow = m_legacySoftwareShadow.widget()
+                ? m_legacySoftwareShadow.widget()->windowHandle()
+                : nullptr)
         {
             if (QScreen* newScreen = windowHandle() ? windowHandle()->screen() : nullptr)
             {
@@ -1337,7 +1338,9 @@ bool AntWindow::event(QEvent* event)
     default:
         if (antIsDevicePixelRatioChangeEvent(event->type()))
         {
-            if (QWindow* shadowWindow = m_legacySoftwareShadow ? m_legacySoftwareShadow->windowHandle() : nullptr)
+            if (QWindow* shadowWindow = m_legacySoftwareShadow.widget()
+                    ? m_legacySoftwareShadow.widget()->windowHandle()
+                    : nullptr)
             {
                 if (QScreen* newScreen = windowHandle() ? windowHandle()->screen() : nullptr)
                 {
@@ -1543,7 +1546,7 @@ void AntWindow::resizeEvent(QResizeEvent* event)
     }
 #endif
     if (!m_legacyLiveResize &&
-        (m_legacySoftwareShadow || (windowHandle() && windowHandle()->isExposed())))
+        (!m_legacySoftwareShadow.isNull() || (windowHandle() && windowHandle()->isExposed())))
     {
         updateLegacySoftwareShadow();
     }
@@ -1659,8 +1662,8 @@ bool AntWindow::nativeEvent(const QByteArray& eventType, void* message, AntNativ
                 {
                     return;
                 }
-                if (QWindow* shadowWindow = guard->m_legacySoftwareShadow
-                                                ? guard->m_legacySoftwareShadow->windowHandle()
+                if (QWindow* shadowWindow = guard->m_legacySoftwareShadow.widget()
+                                                ? guard->m_legacySoftwareShadow.widget()->windowHandle()
                                                 : nullptr)
                 {
                     if (QScreen* newScreen = guard->windowHandle() ? guard->windowHandle()->screen() : nullptr)
@@ -2558,18 +2561,18 @@ void AntWindow::updateLegacySoftwareShadow()
     // corners (see AntWindowStyle::drawWindow), so the shadow must wrap
     // a square panel too - otherwise the shadow's rounded inner cutout
     // would leave four visible quarter-circle bites at the corners.
-    AntWindowFrame::updateLegacySoftwareShadow(this,
-                                               m_legacySoftwareShadow,
-                                               QString::fromLatin1(kLegacySoftwareShadowObjectName),
-                                               "antWindowLegacySoftwareShadowEnabled",
-                                               "antWindowLegacySoftwareShadowMargin",
-                                               "antWindowLegacySoftwareShadowInnerClearance",
-                                               "antWindowLegacySoftwareShadowGeometry",
-                                               "antWindowLegacySoftwareShadowGeometryMode",
-                                               "antWindowLegacySoftwareShadowDevicePixelRatio",
-                                               "antWindowLegacySoftwareShadowClickThrough",
-                                               enabled,
-                                               m_useTranslucentBackground ? m_cornerRadius : 0);
+    AntWindowFrame::LegacySoftwareShadowOptions shadowOptions;
+    shadowOptions.objectName = QString::fromLatin1(kLegacySoftwareShadowObjectName);
+    shadowOptions.enabledProperty = QByteArrayLiteral("antWindowLegacySoftwareShadowEnabled");
+    shadowOptions.marginProperty = QByteArrayLiteral("antWindowLegacySoftwareShadowMargin");
+    shadowOptions.innerClearanceProperty = QByteArrayLiteral("antWindowLegacySoftwareShadowInnerClearance");
+    shadowOptions.geometryProperty = QByteArrayLiteral("antWindowLegacySoftwareShadowGeometry");
+    shadowOptions.geometryModeProperty = QByteArrayLiteral("antWindowLegacySoftwareShadowGeometryMode");
+    shadowOptions.devicePixelRatioProperty = QByteArrayLiteral("antWindowLegacySoftwareShadowDevicePixelRatio");
+    shadowOptions.clickThroughProperty = QByteArrayLiteral("antWindowLegacySoftwareShadowClickThrough");
+    shadowOptions.enabled = enabled;
+    shadowOptions.cornerRadius = m_useTranslucentBackground ? m_cornerRadius : 0;
+    AntWindowFrame::updateLegacySoftwareShadow(this, m_legacySoftwareShadow, shadowOptions);
 #else
     hideLegacySoftwareShadow();
 #endif
@@ -2579,8 +2582,8 @@ void AntWindow::hideLegacySoftwareShadow()
 {
     AntWindowFrame::hideLegacySoftwareShadow(this,
                                              m_legacySoftwareShadow,
-                                             "antWindowLegacySoftwareShadowEnabled",
-                                             "antWindowLegacySoftwareShadowClickThrough");
+                                             QByteArrayLiteral("antWindowLegacySoftwareShadowEnabled"),
+                                             QByteArrayLiteral("antWindowLegacySoftwareShadowClickThrough"));
 }
 
 void AntWindow::updateCornerSmoother()

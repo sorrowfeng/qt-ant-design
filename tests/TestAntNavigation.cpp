@@ -5,12 +5,16 @@
 #include <QLineEdit>
 #include <QMargins>
 #include <QMouseEvent>
+#include <QPixmap>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QStyle>
 #include <QVBoxLayout>
+
+#include <limits>
+
 #include "core/AntTheme.h"
 #include "widgets/AntBreadcrumb.h"
 #include "widgets/AntDropdown.h"
@@ -54,6 +58,7 @@ private slots:
     void dropdownCachesPopupGeometry();
     void menuCachesLayoutAndScopesRows();
     void paginationQuickJumperEditsCurrentPage();
+    void paginationExtremePageArithmeticIsStable();
     void paginationCachesButtonGeometry();
     void stepsCachesLayoutAndScopesUpdates();
     void tabsCachesLayoutAndScopesUpdates();
@@ -317,6 +322,56 @@ void TestAntNavigation::propertiesAndSignals()
     anchor->addLink("Section 2", 100);
     QSignalSpy activeIdxSpy(anchor, &AntAnchor::activeIndexChanged);
     Q_UNUSED(activeIdxSpy);
+}
+
+void TestAntNavigation::paginationExtremePageArithmeticIsStable()
+{
+    const int maximum = std::numeric_limits<int>::max();
+
+    AntPagination pagination;
+    QSignalSpy totalSpy(&pagination, &AntPagination::totalChanged);
+    QSignalSpy pageSizeSpy(&pagination, &AntPagination::pageSizeChanged);
+    pagination.setTotal(maximum);
+    pagination.setPageSize(1);
+    QCOMPARE(totalSpy.count(), 1);
+    QCOMPARE(pageSizeSpy.count(), 1);
+    QCOMPARE(pagination.total(), maximum);
+    QCOMPARE(pagination.pageSize(), 1);
+    QCOMPARE(pagination.pageCount(), maximum);
+
+    pagination.setCurrent(maximum);
+    QCOMPARE(pagination.current(), maximum);
+    pagination.setShowTotal(true);
+    pagination.resize(pagination.sizeHint());
+    pagination.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pagination));
+
+    QPixmap rendered(pagination.size());
+    rendered.fill(Qt::transparent);
+    pagination.render(&rendered);
+    QVERIFY(!rendered.isNull());
+
+    QSignalSpy currentSpy(&pagination, &AntPagination::currentChanged);
+    QSignalSpy changeSpy(&pagination, &AntPagination::change);
+    QTest::keyClick(&pagination, Qt::Key_Right);
+    QCOMPARE(pagination.current(), maximum);
+    QCOMPARE(currentSpy.count(), 0);
+    QCOMPARE(changeSpy.count(), 0);
+
+    QTest::keyClick(&pagination, Qt::Key_Left);
+    QCOMPARE(pagination.current(), maximum - 1);
+    QTest::keyClick(&pagination, Qt::Key_Right);
+    QCOMPARE(pagination.current(), maximum);
+    QCOMPARE(currentSpy.count(), 2);
+    QCOMPARE(changeSpy.count(), 2);
+    QCOMPARE(changeSpy.last().at(0).toInt(), maximum);
+    QCOMPARE(changeSpy.last().at(1).toInt(), 1);
+
+    AntPagination largePageSize;
+    largePageSize.setTotal(maximum);
+    largePageSize.setPageSize(maximum);
+    QCOMPARE(largePageSize.pageCount(), 1);
+    QCOMPARE(largePageSize.current(), 1);
 }
 
 void TestAntNavigation::dropdownCachesPopupGeometry()

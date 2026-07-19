@@ -30,6 +30,7 @@ void AntConfigProvider::setPrimaryColor(const QColor& color)
 int AntConfigProvider::fontSize() const { return m_fontSize; }
 void AntConfigProvider::setFontSize(int size)
 {
+    size = qBound(1, size, Ant::MaximumThemeFontSize);
     if (m_fontSize == size) return;
     m_fontSize = size;
     Q_EMIT fontSizeChanged(m_fontSize);
@@ -39,6 +40,7 @@ void AntConfigProvider::setFontSize(int size)
 int AntConfigProvider::borderRadius() const { return m_borderRadius; }
 void AntConfigProvider::setBorderRadius(int radius)
 {
+    radius = qBound(0, radius, Ant::MaximumThemeBorderRadius);
     if (m_borderRadius == radius) return;
     m_borderRadius = radius;
     Q_EMIT borderRadiusChanged(m_borderRadius);
@@ -49,10 +51,7 @@ int AntConfigProvider::revision() const { return m_revision; }
 
 void AntConfigProvider::apply()
 {
-    if (antTheme->themeMode() != m_themeMode)
-    {
-        antTheme->setThemeMode(m_themeMode);
-    }
+    antTheme->applyConfiguration(m_themeMode, m_primaryColor, m_fontSize, m_borderRadius);
 }
 
 void AntConfigProvider::scheduleConfigChanged()

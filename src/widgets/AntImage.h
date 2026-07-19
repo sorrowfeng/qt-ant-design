@@ -2,8 +2,9 @@
 
 #include "core/QtAntDesignExport.h"
 
-#include <QWidget>
 #include <QPixmap>
+#include <QPointer>
+#include <QWidget>
 
 class QT_ANT_DESIGN_EXPORT AntImage : public QWidget
 {
@@ -13,6 +14,8 @@ class QT_ANT_DESIGN_EXPORT AntImage : public QWidget
     Q_PROPERTY(bool preview READ preview WRITE setPreview NOTIFY previewChanged)
     Q_PROPERTY(int imgWidth READ imgWidth WRITE setImgWidth NOTIFY imgWidthChanged)
     Q_PROPERTY(int imgHeight READ imgHeight WRITE setImgHeight NOTIFY imgHeightChanged)
+    Q_PROPERTY(bool loaded READ isLoaded NOTIFY loadedChanged)
+    Q_PROPERTY(QString loadError READ loadError NOTIFY loadErrorChanged)
 
 public:
     explicit AntImage(QWidget* parent = nullptr);
@@ -32,6 +35,10 @@ public:
     int imgHeight() const;
     void setImgHeight(int h);
 
+    bool isLoaded() const;
+    QString loadError() const;
+    bool reload();
+
     void setPreviewGroup(const QList<AntImage*>& group);
 
     QSize sizeHint() const override;
@@ -42,6 +49,9 @@ Q_SIGNALS:
     void previewChanged(bool enable);
     void imgWidthChanged(int w);
     void imgHeightChanged(int h);
+    void loadedChanged(bool loaded);
+    void loadErrorChanged(const QString& error);
+    void loadFailed(const QString& path, const QString& error);
     void clicked();
 
 protected:
@@ -83,8 +93,10 @@ private:
     void invalidatePreviewOverlayCache() const;
     void requestImageUpdate(const QString& mode, const QRect& dirty = QRect());
     void syncImagePerfCounters() const;
+    bool decodeCurrentSource();
+    void emitLoadStateChanges(bool previousLoaded, const QString& previousError, quint64 generation);
 
-    QList<AntImage*> m_previewGroup;
+    QList<QPointer<AntImage>> m_previewGroup;
     QString m_src;
     QString m_alt = QStringLiteral("Image");
     bool m_preview = true;
@@ -93,6 +105,8 @@ private:
     bool m_hovered = false;
     QPixmap m_pixmap;
     bool m_loaded = false;
+    QString m_loadError;
+    quint64 m_loadGeneration = 0;
     mutable ScaledPixmapCache m_scaledPixmapCache;
     mutable PreviewOverlayPixmapCache m_previewOverlayPixmapCache;
     mutable int m_scaledPixmapBuildCount = 0;

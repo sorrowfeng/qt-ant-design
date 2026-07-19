@@ -2,13 +2,20 @@
 #include <QTest>
 #include <QCoreApplication>
 #include <QDir>
+#include <QElapsedTimer>
+#include <QFile>
 #include <QFileInfo>
 #include <QFrame>
+#include <QImage>
 #include <QLineEdit>
 #include <QMouseEvent>
+#include <QPointer>
 #include <QWheelEvent>
 #include <QWidget>
+#include <QTemporaryDir>
+#include <QtMath>
 #include "core/AntTheme.h"
+#include "core/AntUrlPolicy.h"
 #include "widgets/AntCascader.h"
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntTimePicker.h"
@@ -30,6 +37,8 @@ private slots:
     void transferCachesVisibleRowsAndScopesUpdates();
     void treeSelectReusesPopupTreeAndCachesRows();
     void uploadCachesLayoutThumbsAndScopesUpdates();
+    void uploadBoundsThumbnailDecodeAndEvictsLru();
+    void uploadPreviewUsesExplicitUrlPolicy();
 };
 
 namespace
@@ -801,6 +810,306 @@ void TestAntDataEntryB::uploadCachesLayoutThumbsAndScopesUpdates()
     const int thumbHitsBefore = pictureUpload.property("antUploadThumbPixmapCacheHitCount").toInt();
     pictureUpload.grab();
     QVERIFY(pictureUpload.property("antUploadThumbPixmapCacheHitCount").toInt() > thumbHitsBefore);
+}
+
+void TestAntDataEntryB::uploadBoundsThumbnailDecodeAndEvictsLru()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+
+    auto writeImage = [&directory](const QString& name, const QSize& size, const QColor& color) {
+        const QString path = directory.filePath(name);
+        QImage image(size, QImage::Format_ARGB32_Premultiplied);
+        image.fill(color);
+        return image.save(path) ? path : QString();
+    };
+    auto uploadFile = [](const QString& uid, const QString& path) {
+        AntUploadFile file;
+        file.uid = uid;
+        file.name = QFileInfo(path).fileName();
+        file.status = Ant::UploadFileStatus::Done;
+        file.percent = 100;
+        file.url = path;
+        file.thumbUrl = path;
+        file.size = QFileInfo(path).size();
+        return file;
+    };
+
+    const QString firstPath = writeImage(QStringLiteral("first.png"), QSize(512, 512), QColor(QStringLiteral("#1677ff")));
+    const QString secondPath = writeImage(QStringLiteral("second.png"), QSize(512, 512), QColor(QStringLiteral("#52c41a")));
+    const QString thirdPath = writeImage(QStringLiteral("third.png"), QSize(512, 512), QColor(QStringLiteral("#faad14")));
+    QVERIFY(!firstPath.isEmpty());
+    QVERIFY(!secondPath.isEmpty());
+    QVERIFY(!thirdPath.isEmpty());
+
+    AntUpload boundedCache;
+    boundedCache.setListType(Ant::UploadListType::Picture);
+    QSignalSpy budgetSpy(&boundedCache, &AntUpload::thumbnailCacheBudgetBytesChanged);
+    const qreal boundedDpr = qBound<qreal>(1.0, boundedCache.devicePixelRatioF(), 4.0);
+    const qint64 physicalThumbEdge = qCeil(40.0 * boundedDpr);
+    const int twoThumbnailBudget = static_cast<int>(physicalThumbEdge * physicalThumbEdge * 4 * 2);
+    boundedCache.setThumbnailCacheBudgetBytes(twoThumbnailBudget);
+    QCOMPARE(boundedCache.thumbnailCacheBudgetBytes(), twoThumbnailBudget);
+    QCOMPARE(budgetSpy.count(), 1);
+    boundedCache.addFile(uploadFile(QStringLiteral("first"), firstPath));
+    boundedCache.addFile(uploadFile(QStringLiteral("second"), secondPath));
+    boundedCache.resize(280, boundedCache.sizeHint().height());
+    boundedCache.grab();
+
+    QVERIFY(boundedCache.property("antUploadThumbPixmapBuildCount").toInt() >= 2);
+    QVERIFY(boundedCache.thumbnailCacheBytes() > 0);
+    QVERIFY(boundedCache.thumbnailCacheBytes() <= boundedCache.thumbnailCacheBudgetBytes());
+    QVERIFY(boundedCache.property("antUploadThumbPixmapCacheEntryCount").toInt() <= 2);
+
+    const int hitsBefore = boundedCache.property("antUploadThumbPixmapCacheHitCount").toInt();
+    boundedCache.grab();
+    QVERIFY(boundedCache.property("antUploadThumbPixmapCacheHitCount").toInt() > hitsBefore);
+
+    boundedCache.addFile(uploadFile(QStringLiteral("third"), thirdPath));
+    boundedCache.resize(280, boundedCache.sizeHint().height());
+    boundedCache.grab();
+    QVERIFY(boundedCache.property("antUploadThumbPixmapBuildCount").toInt() >= 3);
+    QVERIFY(boundedCache.property("antUploadThumbPixmapEvictionCount").toInt() > 0);
+    QVERIFY(boundedCache.property("antUploadThumbPixmapCacheEntryCount").toInt() <= 2);
+    QVERIFY(boundedCache.thumbnailCacheBytes() <= boundedCache.thumbnailCacheBudgetBytes());
+
+    AntUpload lruProof;
+    constexpr int directThumbEdge = 40;
+    lruProof.setThumbnailCacheBudgetBytes(directThumbEdge * directThumbEdge * 4 * 2);
+    const QSize directThumbSize(directThumbEdge, directThumbEdge);
+    QVERIFY(!lruProof.cachedThumbPixmap(firstPath, directThumbSize, 1.0).isNull());
+    QVERIFY(!lruProof.cachedThumbPixmap(secondPath, directThumbSize, 1.0).isNull());
+    QCOMPARE(lruProof.m_thumbPixmapCache.size(), 2);
+
+    const auto containsCachedSource = [&lruProof](const QString& path) {
+        QString normalized = QFileInfo(path).canonicalFilePath();
+        if (normalized.isEmpty())
+            normalized = QFileInfo(path).absoluteFilePath();
+        normalized = QDir::cleanPath(normalized);
+        for (auto it = lruProof.m_thumbPixmapCache.cbegin();
+             it != lruProof.m_thumbPixmapCache.cend(); ++it)
+        {
+            if (it->normalizedPath == normalized)
+                return true;
+        }
+        return false;
+    };
+    QVERIFY(containsCachedSource(firstPath));
+    QVERIFY(containsCachedSource(secondPath));
+
+    const int directHitsBeforeTouch = lruProof.m_thumbPixmapCacheHitCount;
+    QVERIFY(!lruProof.cachedThumbPixmap(firstPath, directThumbSize, 1.0).isNull());
+    QCOMPARE(lruProof.m_thumbPixmapCacheHitCount, directHitsBeforeTouch + 1);
+    QVERIFY(!lruProof.cachedThumbPixmap(thirdPath, directThumbSize, 1.0).isNull());
+    QCOMPARE(lruProof.m_thumbPixmapCache.size(), 2);
+    QVERIFY(containsCachedSource(firstPath));
+    QVERIFY(!containsCachedSource(secondPath));
+    QVERIFY(containsCachedSource(thirdPath));
+
+    AntUpload cacheInvalidation;
+    cacheInvalidation.setListType(Ant::UploadListType::Picture);
+    cacheInvalidation.addFile(uploadFile(QStringLiteral("removable"), firstPath));
+    cacheInvalidation.resize(280, cacheInvalidation.sizeHint().height());
+    cacheInvalidation.grab();
+    QCOMPARE(cacheInvalidation.property("antUploadThumbPixmapCacheEntryCount").toInt(), 1);
+    cacheInvalidation.removeFile(QStringLiteral("removable"));
+    QCOMPARE(cacheInvalidation.thumbnailCacheBytes(), qint64(0));
+    QCOMPARE(cacheInvalidation.property("antUploadThumbPixmapCacheEntryCount").toInt(), 0);
+
+    cacheInvalidation.addFile(uploadFile(QStringLiteral("replaceable"), firstPath));
+    cacheInvalidation.grab();
+    QCOMPARE(cacheInvalidation.property("antUploadThumbPixmapCacheEntryCount").toInt(), 1);
+    cacheInvalidation.setFileList(QVector<AntUploadFile>{uploadFile(QStringLiteral("replacement"), secondPath)});
+    QCOMPARE(cacheInvalidation.thumbnailCacheBytes(), qint64(0));
+    QCOMPARE(cacheInvalidation.property("antUploadThumbPixmapCacheEntryCount").toInt(), 0);
+
+    const QString mutablePath = writeImage(QStringLiteral("mutable.png"), QSize(96, 72), QColor(QStringLiteral("#722ed1")));
+    QVERIFY(!mutablePath.isEmpty());
+    AntUpload sourceChange;
+    sourceChange.setListType(Ant::UploadListType::Picture);
+    sourceChange.addFile(uploadFile(QStringLiteral("mutable"), mutablePath));
+    sourceChange.resize(280, sourceChange.sizeHint().height());
+    sourceChange.grab();
+    const int buildsBeforeSourceChange = sourceChange.property("antUploadThumbPixmapBuildCount").toInt();
+    QCOMPARE(sourceChange.property("antUploadThumbPixmapCacheEntryCount").toInt(), 1);
+
+    QTest::qWait(20);
+    QImage replacement(QSize(31, 27), QImage::Format_ARGB32_Premultiplied);
+    replacement.fill(QColor(QStringLiteral("#eb2f96")));
+    QVERIFY(replacement.save(mutablePath));
+    sourceChange.grab();
+    QVERIFY(sourceChange.property("antUploadThumbPixmapBuildCount").toInt() > buildsBeforeSourceChange);
+    QVERIFY(sourceChange.property("antUploadThumbPixmapSourceChangeCount").toInt() > 0);
+    QVERIFY(sourceChange.thumbnailCacheBytes() <= sourceChange.thumbnailCacheBudgetBytes());
+
+    const QString sameStampPath = writeImage(QStringLiteral("same-stamp.bmp"),
+                                             QSize(48, 48),
+                                             QColor(QStringLiteral("#1677ff")));
+    QVERIFY(!sameStampPath.isEmpty());
+    const QDateTime originalModified = QFileInfo(sameStampPath).lastModified();
+    const qint64 originalBytes = QFileInfo(sameStampPath).size();
+    AntUpload explicitInvalidation;
+    explicitInvalidation.setListType(Ant::UploadListType::Picture);
+    explicitInvalidation.addFile(uploadFile(QStringLiteral("same-stamp"), sameStampPath));
+    explicitInvalidation.resize(280, explicitInvalidation.sizeHint().height());
+    explicitInvalidation.grab();
+    const int buildsBeforeSameStampRewrite =
+        explicitInvalidation.property("antUploadThumbPixmapBuildCount").toInt();
+
+    QImage sameSizeReplacement(QSize(48, 48), QImage::Format_ARGB32_Premultiplied);
+    sameSizeReplacement.fill(QColor(QStringLiteral("#52c41a")));
+    QVERIFY(sameSizeReplacement.save(sameStampPath, "BMP"));
+    QCOMPARE(QFileInfo(sameStampPath).size(), originalBytes);
+    QFile sameStampFile(sameStampPath);
+    QVERIFY(sameStampFile.open(QIODevice::ReadWrite));
+    QVERIFY(sameStampFile.setFileTime(originalModified, QFileDevice::FileModificationTime));
+    sameStampFile.close();
+    QCOMPARE(QFileInfo(sameStampPath).lastModified().toMSecsSinceEpoch(),
+             originalModified.toMSecsSinceEpoch());
+
+    explicitInvalidation.grab();
+    QCOMPARE(explicitInvalidation.property("antUploadThumbPixmapBuildCount").toInt(),
+             buildsBeforeSameStampRewrite);
+    explicitInvalidation.invalidateThumbnail(sameStampPath);
+    QCOMPARE(explicitInvalidation.thumbnailCacheBytes(), qint64(0));
+    explicitInvalidation.grab();
+    QVERIFY(explicitInvalidation.property("antUploadThumbPixmapBuildCount").toInt()
+            > buildsBeforeSameStampRewrite);
+
+    const QString oversizedPath = directory.filePath(QStringLiteral("oversized.ppm"));
+    QFile oversized(oversizedPath);
+    QVERIFY(oversized.open(QIODevice::WriteOnly));
+    QCOMPARE(oversized.write("P6\n40000 40000\n255\n"), qint64(19));
+    oversized.close();
+
+    AntUpload rejected;
+    rejected.setListType(Ant::UploadListType::Picture);
+    rejected.addFile(uploadFile(QStringLiteral("oversized"), oversizedPath));
+    rejected.resize(280, rejected.sizeHint().height());
+    QSignalSpy failureSpy(&rejected, &AntUpload::thumbnailLoadFailed);
+    QElapsedTimer timer;
+    timer.start();
+    rejected.grab();
+    QVERIFY2(timer.elapsed() < 1000, "oversized thumbnail must be rejected from metadata before decoding");
+    QTRY_COMPARE(failureSpy.count(), 1);
+    QVERIFY2(rejected.thumbnailError(oversizedPath).contains(QStringLiteral("dimensions")),
+             qPrintable(rejected.thumbnailError(oversizedPath)));
+    QCOMPARE(rejected.thumbnailCacheBytes(), qint64(0));
+    QCOMPARE(rejected.property("antUploadThumbPixmapCacheEntryCount").toInt(), 0);
+    QCOMPARE(rejected.property("antUploadThumbPixmapFailureCount").toInt(), 1);
+
+    rejected.grab();
+    QCoreApplication::processEvents();
+    QCOMPARE(failureSpy.count(), 1);
+    QCOMPARE(rejected.property("antUploadThumbPixmapFailureCount").toInt(), 1);
+
+    const QString rapidFailurePath = directory.filePath(QStringLiteral("rapid-failure.ppm"));
+    QFile rapidFailureFile(rapidFailurePath);
+    QVERIFY(rapidFailureFile.open(QIODevice::WriteOnly));
+    QCOMPARE(rapidFailureFile.write("P6\n40000 40000\n255\n"), qint64(19));
+    rapidFailureFile.close();
+
+    AntUpload rapidFailure;
+    rapidFailure.setListType(Ant::UploadListType::Picture);
+    rapidFailure.addFile(uploadFile(QStringLiteral("rapid-failure"), rapidFailurePath));
+    rapidFailure.resize(280, rapidFailure.sizeHint().height());
+    QSignalSpy rapidFailureSpy(&rapidFailure, &AntUpload::thumbnailLoadFailed);
+    rapidFailure.grab();
+    QCOMPARE(rapidFailureSpy.count(), 0);
+
+    QVERIFY(rapidFailureFile.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QCOMPARE(rapidFailureFile.write("not-an-image"), qint64(12));
+    rapidFailureFile.close();
+    rapidFailure.invalidateThumbnail(rapidFailurePath);
+    rapidFailure.grab();
+    QCOMPARE(rapidFailureSpy.count(), 0);
+    QTRY_COMPARE(rapidFailureSpy.count(), 1);
+    QCOMPARE(rapidFailureSpy.first().at(1).toString(),
+             rapidFailure.thumbnailError(rapidFailurePath));
+    QCoreApplication::processEvents();
+    QCOMPARE(rapidFailureSpy.count(), 1);
+}
+
+void TestAntDataEntryB::uploadPreviewUsesExplicitUrlPolicy()
+{
+    AntUrlPolicy::reset();
+    struct PolicyReset
+    {
+        ~PolicyReset() { AntUrlPolicy::reset(); }
+    } reset;
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString localPath = directory.filePath(QStringLiteral("preview.txt"));
+    QFile localFile(localPath);
+    QVERIFY(localFile.open(QIODevice::WriteOnly));
+    QCOMPARE(localFile.write("preview"), qint64(7));
+    localFile.close();
+
+    AntUpload upload;
+    AntUploadFile local;
+    local.uid = QStringLiteral("local");
+    local.url = localPath;
+    upload.addFile(local);
+
+    QSignalSpy localSpy(&upload, &AntUpload::localFilePreviewRequested);
+    QSignalSpy blockedSpy(&upload, &AntUpload::externalPreviewBlocked);
+    QVERIFY(upload.requestFilePreview(local.uid));
+    QCOMPARE(localSpy.count(), 1);
+    QCOMPARE(QDir::cleanPath(localSpy.first().at(0).toString()), QDir::cleanPath(localPath));
+    QCOMPARE(blockedSpy.count(), 0);
+
+    AntUploadFile fileUrl;
+    fileUrl.uid = QStringLiteral("file-url");
+    fileUrl.url = QUrl::fromLocalFile(localPath).toString();
+    upload.addFile(fileUrl);
+    QVERIFY(upload.requestFilePreview(fileUrl.uid));
+    QCOMPARE(localSpy.count(), 2);
+    QCOMPARE(blockedSpy.count(), 0);
+
+    AntUploadFile qrc;
+    qrc.uid = QStringLiteral("qrc");
+    qrc.url = QStringLiteral("qrc:/qt-ant-design/images/image-basic.png");
+    upload.addFile(qrc);
+    QVERIFY(upload.requestFilePreview(qrc.uid));
+    QCOMPARE(localSpy.count(), 3);
+    QCOMPARE(localSpy.last().at(0).toString(), QStringLiteral(":/qt-ant-design/images/image-basic.png"));
+
+    AntUploadFile script;
+    script.uid = QStringLiteral("script");
+    script.url = QStringLiteral("javascript:alert(1)");
+    upload.addFile(script);
+    QVERIFY(!upload.requestFilePreview(script.uid));
+    QCOMPARE(blockedSpy.count(), 1);
+    QCOMPARE(blockedSpy.first().at(0).toUrl().scheme(), QStringLiteral("javascript"));
+
+    bool approvalCalled = false;
+    AntUrlPolicy::setApprovalCallback([&approvalCalled](const QUrl&) {
+        approvalCalled = true;
+        return false;
+    });
+    AntUploadFile custom;
+    custom.uid = QStringLiteral("custom");
+    custom.url = QStringLiteral("custom:preview");
+    upload.addFile(custom);
+    QVERIFY(!upload.requestFilePreview(custom.uid));
+    QVERIFY(approvalCalled);
+    QCOMPARE(blockedSpy.count(), 2);
+
+    QVERIFY(!upload.requestFilePreview(QStringLiteral("missing")));
+
+    QPointer<AntUpload> deletedByPolicy = new AntUpload;
+    AntUploadFile deletingFile;
+    deletingFile.uid = QStringLiteral("delete-in-policy");
+    deletingFile.url = QStringLiteral("custom:delete-upload");
+    deletedByPolicy->addFile(deletingFile);
+    AntUrlPolicy::setApprovalCallback([&deletedByPolicy](const QUrl&) {
+        delete deletedByPolicy.data();
+        return false;
+    });
+    AntUpload* deletingRaw = deletedByPolicy.data();
+    QVERIFY(!deletingRaw->requestFilePreview(deletingFile.uid));
+    QVERIFY(deletedByPolicy.isNull());
 }
 
 QTEST_MAIN(TestAntDataEntryB)

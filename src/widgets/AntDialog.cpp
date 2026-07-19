@@ -102,7 +102,9 @@ AntDialog::AntDialog(QWidget* parent, Qt::WindowFlags flags)
     updateChromeMargins();
 
     refreshThemeCache();
-    connect(antTheme, &AntTheme::themeModeChanged, this, &AntDialog::handleThemeChanged);
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        handleThemeChanged(antTheme->themeMode());
+    });
     syncChildControls();
 }
 
@@ -583,18 +585,18 @@ void AntDialog::updateLegacySoftwareShadow()
         && usesLegacyOpaquePath()
         && !isMinimized();
 
-    AntWindowFrame::updateLegacySoftwareShadow(this,
-                                               m_legacySoftwareShadow,
-                                               QString::fromLatin1(kAntDialogLegacySoftwareShadowObjectName),
-                                               "antDialogLegacySoftwareShadowEnabled",
-                                               "antDialogLegacySoftwareShadowMargin",
-                                               "antDialogLegacySoftwareShadowInnerClearance",
-                                               "antDialogLegacySoftwareShadowGeometry",
-                                               "antDialogLegacySoftwareShadowGeometryMode",
-                                               "antDialogLegacySoftwareShadowDevicePixelRatio",
-                                               "antDialogLegacySoftwareShadowClickThrough",
-                                               enabled,
-                                               0);
+    AntWindowFrame::LegacySoftwareShadowOptions shadowOptions;
+    shadowOptions.objectName = QString::fromLatin1(kAntDialogLegacySoftwareShadowObjectName);
+    shadowOptions.enabledProperty = QByteArrayLiteral("antDialogLegacySoftwareShadowEnabled");
+    shadowOptions.marginProperty = QByteArrayLiteral("antDialogLegacySoftwareShadowMargin");
+    shadowOptions.innerClearanceProperty = QByteArrayLiteral("antDialogLegacySoftwareShadowInnerClearance");
+    shadowOptions.geometryProperty = QByteArrayLiteral("antDialogLegacySoftwareShadowGeometry");
+    shadowOptions.geometryModeProperty = QByteArrayLiteral("antDialogLegacySoftwareShadowGeometryMode");
+    shadowOptions.devicePixelRatioProperty = QByteArrayLiteral("antDialogLegacySoftwareShadowDevicePixelRatio");
+    shadowOptions.clickThroughProperty = QByteArrayLiteral("antDialogLegacySoftwareShadowClickThrough");
+    shadowOptions.enabled = enabled;
+    shadowOptions.cornerRadius = 0;
+    AntWindowFrame::updateLegacySoftwareShadow(this, m_legacySoftwareShadow, shadowOptions);
 #else
     hideLegacySoftwareShadow();
 #endif
@@ -604,8 +606,8 @@ void AntDialog::hideLegacySoftwareShadow()
 {
     AntWindowFrame::hideLegacySoftwareShadow(this,
                                              m_legacySoftwareShadow,
-                                             "antDialogLegacySoftwareShadowEnabled",
-                                             "antDialogLegacySoftwareShadowClickThrough");
+                                             QByteArrayLiteral("antDialogLegacySoftwareShadowEnabled"),
+                                             QByteArrayLiteral("antDialogLegacySoftwareShadowClickThrough"));
 }
 
 void AntDialog::handleThemeChanged(Ant::ThemeMode mode)

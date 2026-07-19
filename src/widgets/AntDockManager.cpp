@@ -32,13 +32,13 @@
 #include <QWindow>
 
 #include <algorithm>
-#include <functional>
 
 #include "AntDockWidget.h"
 #include "AntMenu.h"
 #include "core/AntTheme.h"
 #include "styles/AntDockStyle.h"
 #include "../private/AntDockLayoutSerializer.h"
+#include "../private/AntDockPerspectiveRestorer.h"
 
 #if defined(Q_OS_WIN)
 #include <windows.h>
@@ -735,10 +735,13 @@ private:
 } // namespace
 
 using AntDockInternal::DockLayoutNode;
-using AntDockInternal::DockLayoutNodeType;
+using AntDockInternal::DockLayoutRestoreCallbacks;
+using AntDockInternal::DockPerspectiveRestorer;
+using AntDockInternal::DockPerspectiveMaxStateBytes;
+using AntDockInternal::DockPerspectiveRestorePlan;
 using AntDockInternal::FloatingDockSnapshot;
+using AntDockInternal::FloatingDockRestoreInstruction;
 using AntDockInternal::captureDockLayoutNode;
-using AntDockInternal::collectDockIds;
 using AntDockInternal::deserializeDockPerspective;
 using AntDockInternal::dockPersistentId;
 using AntDockInternal::isLegacyDockPerspective;
@@ -1789,6 +1792,7 @@ AntDockManager::~AntDockManager()
         disconnect(dock, nullptr, this, nullptr);
     }
     m_docks.clear();
+    clearDockEventFilterTracking();
 }
 
 void AntDockManager::addDockWidget(Qt::DockWidgetArea area, AntDockWidget* dockWidget)
@@ -2143,7 +2147,13 @@ bool AntDockManager::savePerspective(const QString& name)
     }
 
     const QByteArray state = serializeDockPerspective(rootNode, floatingSnapshots);
-    if (state.isEmpty()) return false;
+    DockLayoutNode verifiedRootNode;
+    QList<FloatingDockSnapshot> verifiedFloatingSnapshots;
+    if (state.isEmpty() ||
+        !deserializeDockPerspective(state, &verifiedRootNode, &verifiedFloatingSnapshots))
+    {
+        return false;
+    }
 
     m_perspectives.insert(key, state);
     Q_EMIT perspectiveSaved(key);
@@ -2154,55 +2164,15 @@ bool AntDockManager::restorePerspective(const QString& name)
 {
     const QString key = name.trimmed();
     const QByteArray state = m_perspectives.value(key);
-    if (state.isEmpty()) return false;
-
-    if (isLegacyDockPerspective(state))
-    {
-        updatePlaceholderState();
-        Q_EMIT perspectiveRestored(key);
-        return true;
-    }
-
-    DockLayoutNode rootNode;
-    QList<FloatingDockSnapshot> floatingSnapshots;
-    if (!deserializeDockPerspective(state, &rootNode, &floatingSnapshots))
-    {
+    const auto failRestore = [this, &key](const QString& reason) {
+        setProperty("antDockLastPerspectiveRestoreError", reason);
+        Q_EMIT perspectiveRestoreFailed(key, reason);
         return false;
-    }
-
-    QHash<QString, AntDockWidget*> docksById;
-    for (AntDockWidget* dock : dockWidgets())
+    };
+    const DockPerspectiveRestorePlan plan = DockPerspectiveRestorer::plan(state, dockWidgets());
+    if (!plan.isValid())
     {
-        const QString id = dockPersistentId(dock);
-        if (!id.isEmpty() && !docksById.contains(id))
-        {
-            docksById.insert(id, dock);
-        }
-    }
-
-    QSet<QString> embeddedDockIds;
-    collectDockIds(rootNode, &embeddedDockIds);
-    QSet<QString> stateDockIds = embeddedDockIds;
-    for (const FloatingDockSnapshot& snapshot : floatingSnapshots)
-    {
-        if (!snapshot.dockId.isEmpty())
-        {
-            stateDockIds.insert(snapshot.dockId);
-        }
-    }
-
-    bool hasMatchedDock = stateDockIds.isEmpty();
-    for (const QString& id : stateDockIds)
-    {
-        if (docksById.contains(id))
-        {
-            hasMatchedDock = true;
-            break;
-        }
-    }
-    if (!hasMatchedDock)
-    {
-        return false;
+        return failRestore(plan.errorReason);
     }
 
     QElapsedTimer restoreTimer;
@@ -2240,7 +2210,7 @@ bool AntDockManager::restorePerspective(const QString& name)
                 : QRect(dock->mapToGlobal(QPoint(0, 0)), dock->size().expandedTo(QSize(240, 140))));
 
         const QString id = dockPersistentId(dock);
-        const bool willStayEmbedded = !id.isEmpty() && embeddedDockIds.contains(id);
+        const bool willStayEmbedded = !id.isEmpty() && plan.embeddedDockIds.contains(id);
         if (DockArea* area = areaForDock(dock))
         {
             area->removeDock(dock, false, !willStayEmbedded);
@@ -2266,122 +2236,58 @@ bool AntDockManager::restorePerspective(const QString& name)
         oldRoot->deleteLater();
     }
 
-    QSet<QString> placedDockIds;
-    int restoredAreaCount = 0;
-    std::function<QWidget*(const DockLayoutNode&)> buildNode = [&](const DockLayoutNode& node) -> QWidget* {
-        switch (node.type)
-        {
-        case DockLayoutNodeType::Area:
-        {
-            DockArea* area = createDockArea();
-            ++restoredAreaCount;
-            for (const QString& id : node.dockIds)
-            {
-                AntDockWidget* dock = docksById.value(id, nullptr);
-                if (!dock || placedDockIds.contains(id)) continue;
-
-                clearFloatingDockOwner(dock);
-                dock->setWindowOpacity(1.0);
-                area->addDock(dock, false);
-                m_dockAreas.insert(dock, area);
-                placedDockIds.insert(id);
-            }
-
-            if (area->count() == 0)
-            {
-                area->deleteLater();
-                return nullptr;
-            }
-
-            area->setCurrentIndex(qBound(0, node.currentIndex, area->count() - 1));
-            return area;
-        }
-        case DockLayoutNodeType::Splitter:
-        {
-            auto* splitter = new QSplitter(node.orientation, this);
-            splitter->setObjectName(QStringLiteral("AntDockSplitter"));
-            installDockStyle(splitter);
-            splitter->setChildrenCollapsible(false);
-            splitter->setHandleWidth(4);
-
-            for (const DockLayoutNode& child : node.children)
-            {
-                QWidget* childWidget = buildNode(child);
-                if (childWidget)
-                {
-                    splitter->addWidget(childWidget);
-                }
-            }
-
-            if (splitter->count() == 0)
-            {
-                splitter->deleteLater();
-                return nullptr;
-            }
-            if (splitter->count() == 1)
-            {
-                QWidget* onlyChild = splitter->widget(0);
-                onlyChild->setParent(nullptr);
-                splitter->deleteLater();
-                return onlyChild;
-            }
-
-            if (node.sizes.size() == splitter->count())
-            {
-                splitter->setSizes(node.sizes);
-            }
-            return splitter;
-        }
-        case DockLayoutNodeType::Empty:
-        default:
-            return nullptr;
-        }
+    DockLayoutRestoreCallbacks callbacks;
+    callbacks.splitterParent = this;
+    callbacks.createArea = [this]() -> QWidget* {
+        return createDockArea();
+    };
+    callbacks.addDockToArea = [this](QWidget* areaWidget, AntDockWidget* dock) {
+        auto* area = static_cast<DockArea*>(areaWidget);
+        clearFloatingDockOwner(dock);
+        dock->setWindowOpacity(1.0);
+        area->addDock(dock, false);
+        m_dockAreas.insert(dock, area);
+    };
+    callbacks.areaDockCount = [](QWidget* areaWidget) {
+        return static_cast<DockArea*>(areaWidget)->count();
+    };
+    callbacks.setAreaCurrentIndex = [](QWidget* areaWidget, int currentIndex) {
+        static_cast<DockArea*>(areaWidget)->setCurrentIndex(currentIndex);
+    };
+    callbacks.configureSplitter = [](QSplitter* splitter) {
+        splitter->setObjectName(QStringLiteral("AntDockSplitter"));
+        installDockStyle(splitter);
+        splitter->setChildrenCollapsible(false);
+        splitter->setHandleWidth(4);
     };
 
-    QWidget* restoredRoot = buildNode(rootNode);
-    setRootDockWidget(restoredRoot);
+    const auto layoutResult =
+        DockPerspectiveRestorer::restoreLayoutTree(plan.rootNode, plan.docksById, callbacks);
+    setRootDockWidget(layoutResult.rootWidget);
 
-    for (const FloatingDockSnapshot& snapshot : floatingSnapshots)
+    const QList<FloatingDockRestoreInstruction> floatingInstructions =
+        DockPerspectiveRestorer::planFloatingDocks(plan,
+                                                   layoutResult.placedDockIds,
+                                                   dockWidgets(),
+                                                   fallbackFloatingGeometry,
+                                                   fallbackVisible);
+    for (const FloatingDockRestoreInstruction& instruction : floatingInstructions)
     {
-        AntDockWidget* dock = docksById.value(snapshot.dockId, nullptr);
-        if (!dock || placedDockIds.contains(snapshot.dockId)) continue;
-
-        QRect geometry = snapshot.geometry;
-        if (geometry.isEmpty())
+        floatDockWidget(instruction.dock, instruction.geometry);
+        if (!instruction.visible)
         {
-            geometry = fallbackFloatingGeometry.value(dock, QRect(pos(), dock->size().expandedTo(QSize(240, 140))));
-        }
-        floatDockWidget(dock, geometry);
-        if (!snapshot.visible)
-        {
-            dock->hide();
-        }
-        placedDockIds.insert(snapshot.dockId);
-    }
-
-    for (AntDockWidget* dock : dockWidgets())
-    {
-        if (!dock) continue;
-        const QString id = dockPersistentId(dock);
-        if (id.isEmpty() || placedDockIds.contains(id)) continue;
-
-        QRect geometry = fallbackFloatingGeometry.value(
-            dock,
-            QRect(mapToGlobal(QPoint(24, 24)), dock->size().expandedTo(QSize(240, 140))));
-        floatDockWidget(dock, geometry);
-        if (!fallbackVisible.value(dock, true))
-        {
-            dock->hide();
+            instruction.dock->hide();
         }
     }
 
     updateTheme();
-    setProperty("antDockLastRestoreAreaCount", restoredAreaCount);
+    setProperty("antDockLastRestoreAreaCount", layoutResult.restoredAreaCount);
     m_restoringPerspective = previousRestoringPerspective;
     updatePlaceholderState();
     updateBlocker.restore();
     refreshDockLayoutNow();
     setProperty("antDockLastRestoreElapsedMs", static_cast<int>(restoreTimer.elapsed()));
+    setProperty("antDockLastPerspectiveRestoreError", QVariant());
     Q_EMIT dockLayoutChanged();
     Q_EMIT perspectiveRestored(key);
     return true;
@@ -2422,7 +2328,20 @@ QByteArray AntDockManager::perspectiveState(const QString& name) const
 bool AntDockManager::setPerspectiveState(const QString& name, const QByteArray& state)
 {
     const QString key = name.trimmed();
-    if (key.isEmpty() || state.isEmpty()) return false;
+    if (key.isEmpty() || state.isEmpty() || state.size() > DockPerspectiveMaxStateBytes)
+    {
+        return false;
+    }
+
+    if (!isLegacyDockPerspective(state))
+    {
+        DockLayoutNode rootNode;
+        QList<FloatingDockSnapshot> floatingSnapshots;
+        if (!deserializeDockPerspective(state, &rootNode, &floatingSnapshots))
+        {
+            return false;
+        }
+    }
 
     m_perspectives.insert(key, state);
     Q_EMIT perspectiveSaved(key);
@@ -2546,7 +2465,7 @@ bool AntDockManager::eventFilter(QObject* watched, QEvent* event)
                     area->setCurrentIndex(tab);
                     if (auto* dock = qobject_cast<AntDockWidget*>(area->widget(tab)))
                     {
-                        showDockContextMenu(dock, context->globalPos());
+                        queueDockContextMenu(dock, context->globalPos());
                         return true;
                     }
                 }
@@ -2584,9 +2503,15 @@ bool AntDockManager::eventFilter(QObject* watched, QEvent* event)
             }
         }
 
-        if (watched == dock->titleBarWidget())
+        if (watched != static_cast<QObject*>(dock))
         {
+            QPointer<AntDockManager> managerGuard(this);
+            QPointer<AntDockWidget> dockGuard(dock);
             handleDockTitleMouseEvent(dock, event);
+            if (!managerGuard || !dockGuard)
+            {
+                return true;
+            }
         }
 
         if (event->type() == QEvent::Show || event->type() == QEvent::Hide ||
@@ -3040,32 +2965,45 @@ void AntDockManager::collapseSplitter(QWidget* splitterWidget)
 
 AntDockWidget* AntDockManager::dockForWatchedObject(QObject* watched) const
 {
-    if (auto* dock = qobject_cast<AntDockWidget*>(watched))
+    const auto it = m_dockEventFilterOwners.constFind(watched);
+    if (it == m_dockEventFilterOwners.constEnd())
     {
-        return m_docks.contains(dock) ? dock : nullptr;
+        return nullptr;
     }
 
-    for (AntDockWidget* dock : m_docks)
-    {
-        if (dock && dock->titleBarWidget() == watched)
-        {
-            return dock;
-        }
-    }
-    return nullptr;
+    AntDockWidget* dock = it.value().data();
+    return dock && m_docks.contains(dock) ? dock : nullptr;
 }
 
 void AntDockManager::installDockEventFilters(AntDockWidget* dockWidget)
 {
     if (!dockWidget) return;
 
-    dockWidget->removeEventFilter(this);
-    dockWidget->installEventFilter(this);
+    const auto trackWatchedObject = [this, dockWidget](QObject* watched) {
+        if (!watched)
+        {
+            return;
+        }
+
+        const bool firstRegistration = !m_dockEventFilterDestroyedConnections.contains(watched);
+        m_dockEventFilterOwners.insert(watched, QPointer<AntDockWidget>(dockWidget));
+        watched->removeEventFilter(this);
+        watched->installEventFilter(this);
+        if (firstRegistration)
+        {
+            const QMetaObject::Connection connection = connect(watched, &QObject::destroyed, this, [this, watched]() {
+                m_dockEventFilterOwners.remove(watched);
+                m_dockEventFilterDestroyedConnections.remove(watched);
+            });
+            m_dockEventFilterDestroyedConnections.insert(watched, connection);
+        }
+    };
+
+    trackWatchedObject(dockWidget);
 
     if (QWidget* titleBar = dockWidget->titleBarWidget())
     {
-        titleBar->removeEventFilter(this);
-        titleBar->installEventFilter(this);
+        trackWatchedObject(titleBar);
     }
 }
 
@@ -3073,11 +3011,47 @@ void AntDockManager::removeDockEventFilters(AntDockWidget* dockWidget)
 {
     if (!dockWidget) return;
 
-    dockWidget->removeEventFilter(this);
-    if (QWidget* titleBar = dockWidget->titleBarWidget())
+    for (auto it = m_dockEventFilterOwners.begin(); it != m_dockEventFilterOwners.end();)
     {
-        titleBar->removeEventFilter(this);
+        if (it.value().data() == dockWidget)
+        {
+            QObject* watched = it.key();
+            if (watched)
+            {
+                watched->removeEventFilter(this);
+            }
+            const QMetaObject::Connection destroyedConnection =
+                m_dockEventFilterDestroyedConnections.take(watched);
+            if (destroyedConnection)
+            {
+                disconnect(destroyedConnection);
+            }
+            it = m_dockEventFilterOwners.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
     }
+}
+
+void AntDockManager::clearDockEventFilterTracking()
+{
+    for (QObject* watched : m_dockEventFilterOwners.keys())
+    {
+        if (watched)
+        {
+            watched->removeEventFilter(this);
+        }
+    }
+    for (auto it = m_dockEventFilterDestroyedConnections.constBegin();
+         it != m_dockEventFilterDestroyedConnections.constEnd();
+         ++it)
+    {
+        disconnect(it.value());
+    }
+    m_dockEventFilterDestroyedConnections.clear();
+    m_dockEventFilterOwners.clear();
 }
 
 void AntDockManager::handleDockTitleMouseEvent(AntDockWidget* dockWidget, QEvent* event)
@@ -3129,7 +3103,7 @@ void AntDockManager::handleDockTitleMouseEvent(AntDockWidget* dockWidget, QEvent
     case QEvent::ContextMenu:
     {
         auto* context = static_cast<QContextMenuEvent*>(event);
-        showDockContextMenu(dockWidget, context->globalPos());
+        queueDockContextMenu(dockWidget, context->globalPos());
         break;
     }
     case QEvent::Close:
@@ -3202,7 +3176,7 @@ void AntDockManager::startDockDragTracking(AntDockWidget* dockWidget, const QPoi
         return;
     }
 
-    if (m_draggingDockTitle && m_draggedDock && m_draggedDock != dockWidget)
+    if (m_draggingDockTitle)
     {
         stopDockDragTracking();
     }
@@ -3211,6 +3185,12 @@ void AntDockManager::startDockDragTracking(AntDockWidget* dockWidget, const QPoi
     m_dockDragActivated = false;
     setProperty("antDockDragActivated", false);
     m_draggedDock = dockWidget;
+    m_draggedDockDestroyedConnection = connect(dockWidget, &QObject::destroyed, this, [this]() {
+        m_draggedDock.clear();
+        m_draggedDockOpacityEffect.clear();
+        m_draggedDockOpacityChanged = false;
+        stopDockDragTracking();
+    });
     m_dragStartGlobal = globalPos;
     m_lastDropGuideGlobal = QPoint();
     m_hasLastDropGuideGlobal = false;
@@ -3316,16 +3296,25 @@ void AntDockManager::stopDockDragTracking(bool keepDropPreview)
 {
     setDraggedDockTranslucent(false);
 
-    if (m_appEventFilterInstalled && qApp)
+    if (m_draggedDockDestroyedConnection)
     {
-        qApp->removeEventFilter(this);
+        disconnect(m_draggedDockDestroyedConnection);
+        m_draggedDockDestroyedConnection = QMetaObject::Connection();
+    }
+
+    if (m_appEventFilterInstalled)
+    {
+        if (qApp)
+        {
+            qApp->removeEventFilter(this);
+        }
         m_appEventFilterInstalled = false;
     }
 
     m_draggingDockTitle = false;
     m_dockDragActivated = false;
     setProperty("antDockDragActivated", false);
-    m_draggedDock = nullptr;
+    m_draggedDock.clear();
     m_lastDropGuideGlobal = QPoint();
     m_hasLastDropGuideGlobal = false;
     m_tabReorderArea = nullptr;
@@ -3459,11 +3448,31 @@ void AntDockManager::setDockWidgetFeatureEnabled(AntDockWidget* dockWidget,
     dockWidget->setFeatures(features);
 }
 
+void AntDockManager::queueDockContextMenu(AntDockWidget* dockWidget, const QPoint& globalPos)
+{
+    if (!dockWidget || !m_docks.contains(dockWidget)) return;
+
+    QPointer<AntDockManager> manager(this);
+    QPointer<AntDockWidget> dock(dockWidget);
+    QTimer::singleShot(0, this, [manager, dock, globalPos]() {
+        if (manager && dock && manager->m_docks.contains(dock.data()))
+        {
+            manager->showDockContextMenu(dock.data(), globalPos);
+        }
+    });
+}
+
 void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint& globalPos)
 {
     if (!dockWidget || !m_docks.contains(dockWidget)) return;
 
+    QPointer<AntDockManager> manager(this);
+    QPointer<AntDockWidget> dock(dockWidget);
     Q_EMIT dockWidgetContextMenuRequested(dockWidget, globalPos);
+    if (!manager || !dock || !manager->m_docks.contains(dock.data()))
+    {
+        return;
+    }
 
     auto* popup = new AntDockContextMenuPopup(this);
     AntMenu* menu = popup->menu();
@@ -3473,8 +3482,6 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
         return;
     }
 
-    QPointer<AntDockManager> manager(this);
-    QPointer<AntDockWidget> dock(dockWidget);
     const bool floating = isDockWidgetFloating(dockWidget);
     const bool floatable = isDockWidgetFloatable(dockWidget);
     const bool movable = isDockWidgetMovable(dockWidget);
@@ -3486,12 +3493,12 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
     {
         otherDocks = area->dockWidgets();
     }
-    QList<AntDockWidget*> closableOtherDocks;
+    QList<QPointer<AntDockWidget>> closableOtherDocks;
     for (AntDockWidget* other : otherDocks)
     {
         if (other && other != dockWidget && isDockWidgetClosable(other))
         {
-            closableOtherDocks.append(other);
+            closableOtherDocks.append(QPointer<AntDockWidget>(other));
         }
     }
 
@@ -3619,8 +3626,9 @@ void AntDockManager::showDockContextMenu(AntDockWidget* dockWidget, const QPoint
 
         if (key == QStringLiteral("close-others"))
         {
-            for (AntDockWidget* other : closableOtherDocks)
+            for (const QPointer<AntDockWidget>& otherGuard : closableOtherDocks)
             {
+                AntDockWidget* other = otherGuard.data();
                 if (!other || other == dock)
                 {
                     continue;
@@ -3670,6 +3678,7 @@ void AntDockManager::setDraggedDockTranslucent(bool translucent)
 {
     if (!m_draggedDock)
     {
+        m_draggedDockOpacityEffect.clear();
         m_draggedDockOpacityChanged = false;
         return;
     }
@@ -3699,8 +3708,8 @@ void AntDockManager::setDraggedDockTranslucent(bool translucent)
     else if (m_draggedDockOpacityChanged)
     {
         m_draggedDock->setWindowOpacity(m_draggedDockPreviousOpacity);
-        QGraphicsOpacityEffect* effect = m_draggedDockOpacityEffect;
-        m_draggedDockOpacityEffect = nullptr;
+        QGraphicsOpacityEffect* effect = m_draggedDockOpacityEffect.data();
+        m_draggedDockOpacityEffect.clear();
         if (effect && m_draggedDock->graphicsEffect() == effect)
         {
             m_draggedDock->setGraphicsEffect(nullptr);

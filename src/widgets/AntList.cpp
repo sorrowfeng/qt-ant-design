@@ -417,7 +417,7 @@ private:
 AntListItemMeta::AntListItemMeta(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -575,7 +575,7 @@ void AntListItemMeta::syncAvatarGeometry()
 AntListItem::AntListItem(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

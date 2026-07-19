@@ -36,7 +36,7 @@ AntCascader::AntCascader(QWidget* parent)
     m_arrowAnimation->setDuration(160);
     m_arrowAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

@@ -184,7 +184,7 @@ AntMentions::AntMentions(QWidget* parent)
     m_filterTimer->setInterval(0);
     connect(m_filterTimer, &QTimer::timeout, this, &AntMentions::refreshSuggestions);
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

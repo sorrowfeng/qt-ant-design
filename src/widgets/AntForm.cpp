@@ -4,6 +4,8 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMetaMethod>
+#include <QMetaProperty>
 #include <QPainter>
 #include <QPushButton>
 #include <utility>
@@ -21,18 +23,74 @@ AntFormProvider::AntFormProvider(QWidget* parent)
 {
 }
 
+AntFormProvider::~AntFormProvider()
+{
+    for (const auto& entry : std::as_const(m_forms))
+    {
+        disconnect(entry.fieldConnection);
+        disconnect(entry.finishConnection);
+        disconnect(entry.destroyedConnection);
+    }
+    m_forms.clear();
+}
+
 void AntFormProvider::addForm(AntForm* form, const QString& name)
 {
     if (!form)
+    {
         return;
+    }
+    removeDestroyedForms();
     for (const auto& entry : m_forms)
     {
         if (entry.form == form)
+        {
             return;
+        }
     }
+
     FormEntry entry;
     entry.form = form;
-    entry.name = name.isEmpty() ? QString::number(m_forms.size()) : name;
+    entry.name = name.trimmed();
+    if (entry.name.isEmpty())
+    {
+        entry.name = form->objectName().trimmed();
+    }
+    if (entry.name.isEmpty())
+    {
+        int candidate = 0;
+        while (true)
+        {
+            const QString generated = QString::number(candidate++);
+            bool used = false;
+            for (const auto& existing : std::as_const(m_forms))
+            {
+                if (existing.name == generated)
+                {
+                    used = true;
+                    break;
+                }
+            }
+            if (!used)
+            {
+                entry.name = generated;
+                break;
+            }
+        }
+    }
+
+    const QString registeredName = entry.name;
+    entry.fieldConnection = connect(form, &AntForm::fieldChanged, this,
+                                    [this, registeredName](const QString& fieldName, const QVariant& value) {
+        Q_EMIT formChanged(registeredName, fieldName, value);
+    });
+    entry.finishConnection = connect(form, &AntForm::finished, this,
+                                     [this, registeredName](const QVariantMap& values) {
+        Q_EMIT formFinished(registeredName, values);
+    });
+    entry.destroyedConnection = connect(form, &QObject::destroyed, this, [this](QObject* destroyedForm) {
+        removeDestroyedForms(destroyedForm);
+    });
     m_forms.append(entry);
 }
 
@@ -42,6 +100,9 @@ void AntFormProvider::removeForm(AntForm* form)
     {
         if (m_forms[i].form == form)
         {
+            disconnect(m_forms[i].fieldConnection);
+            disconnect(m_forms[i].finishConnection);
+            disconnect(m_forms[i].destroyedConnection);
             m_forms.removeAt(i);
             return;
         }
@@ -52,8 +113,28 @@ QList<AntForm*> AntFormProvider::forms() const
 {
     QList<AntForm*> result;
     for (const auto& entry : m_forms)
-        result.append(entry.form);
+    {
+        if (entry.form)
+        {
+            result.append(entry.form.data());
+        }
+    }
     return result;
+}
+
+void AntFormProvider::removeDestroyedForms(QObject* destroyedForm)
+{
+    for (int i = m_forms.size() - 1; i >= 0; --i)
+    {
+        if (m_forms[i].form && m_forms[i].form.data() != destroyedForm)
+        {
+            continue;
+        }
+        disconnect(m_forms[i].fieldConnection);
+        disconnect(m_forms[i].finishConnection);
+        disconnect(m_forms[i].destroyedConnection);
+        m_forms.removeAt(i);
+    }
 }
 
 // ── AntFormItem ──
@@ -130,6 +211,52 @@ void AntFormItem::setExtra(const QString& text)
     Q_EMIT extraChanged(m_extra);
 }
 
+QString AntFormItem::fieldName() const { return m_fieldName; }
+
+void AntFormItem::setFieldName(const QString& name)
+{
+    const QString normalized = name.trimmed();
+    if (m_fieldName == normalized)
+    {
+        return;
+    }
+    m_fieldName = normalized;
+    Q_EMIT fieldNameChanged(m_fieldName);
+}
+
+QVariant AntFormItem::fieldValue() const
+{
+    if (!m_fieldWidget || m_fieldValueProperty.isEmpty())
+    {
+        return QVariant();
+    }
+    return m_fieldWidget->property(m_fieldValueProperty.constData());
+}
+
+void AntFormItem::setFieldValue(const QVariant& value)
+{
+    if (!m_fieldWidget || m_fieldValueProperty.isEmpty() || fieldValue() == value)
+    {
+        return;
+    }
+
+    const QMetaObject* meta = m_fieldWidget->metaObject();
+    const int propertyIndex = meta->indexOfProperty(m_fieldValueProperty.constData());
+    if (propertyIndex < 0)
+    {
+        return;
+    }
+    const QMetaProperty property = meta->property(propertyIndex);
+    if (!property.isWritable() || !property.write(m_fieldWidget.data(), value))
+    {
+        return;
+    }
+    if (!property.hasNotifySignal())
+    {
+        handleFieldWidgetValueChanged();
+    }
+}
+
 bool AntFormItem::isRequired() const { return m_required; }
 
 void AntFormItem::setRequired(bool required)
@@ -184,6 +311,13 @@ void AntFormItem::setFieldWidget(QWidget* widget)
         return;
     }
 
+    if (m_fieldValueConnection)
+    {
+        disconnect(m_fieldValueConnection);
+        m_fieldValueConnection = QMetaObject::Connection();
+    }
+    m_fieldValueProperty.clear();
+
     if (m_fieldWidget)
     {
         m_fieldWidget->setParent(nullptr);
@@ -195,8 +329,58 @@ void AntFormItem::setFieldWidget(QWidget* widget)
         m_fieldWidget->setParent(m_fieldColumn);
     }
 
+    bindFieldWidgetValue();
+
     rebuildLayout();
     updateTheme();
+    Q_EMIT fieldValueChanged(fieldValue());
+}
+
+void AntFormItem::handleFieldWidgetValueChanged()
+{
+    Q_EMIT fieldValueChanged(fieldValue());
+}
+
+void AntFormItem::bindFieldWidgetValue()
+{
+    if (!m_fieldWidget)
+    {
+        return;
+    }
+
+    // Prefer semantic value properties, then common text/selection inputs.
+    static constexpr const char* candidates[] = {
+        "checked", "value", "text", "currentValue", "currentText",
+        "currentIndex", "date", "time", "color"
+    };
+    const QMetaObject* fieldMeta = m_fieldWidget->metaObject();
+    for (const char* candidate : candidates)
+    {
+        const int propertyIndex = fieldMeta->indexOfProperty(candidate);
+        if (propertyIndex < 0)
+        {
+            continue;
+        }
+        const QMetaProperty property = fieldMeta->property(propertyIndex);
+        if (!property.isReadable())
+        {
+            continue;
+        }
+
+        m_fieldValueProperty = candidate;
+        if (property.hasNotifySignal())
+        {
+            const int slotIndex = metaObject()->indexOfSlot("handleFieldWidgetValueChanged()");
+            if (slotIndex >= 0)
+            {
+                m_fieldValueConnection = QObject::connect(m_fieldWidget.data(),
+                                                          property.notifySignal(),
+                                                          this,
+                                                          metaObject()->method(slotIndex));
+            }
+        }
+        return;
+    }
 }
 
 void AntFormItem::applyFormSettings(Ant::FormLayout layoutMode,
@@ -527,7 +711,16 @@ void AntForm::setItemSpacing(int spacing)
 
 QList<AntFormItem*> AntForm::items() const
 {
-    return m_items;
+    QList<AntFormItem*> result;
+    result.reserve(m_items.size());
+    for (const auto& item : m_items)
+    {
+        if (item)
+        {
+            result.append(item.data());
+        }
+    }
+    return result;
 }
 
 void AntForm::addItem(AntFormItem* item)
@@ -538,6 +731,7 @@ void AntForm::addItem(AntFormItem* item)
     }
     item->setParent(this);
     m_items.append(item);
+    connectItem(item);
     if (m_layout)
     {
         if (m_formLayout == Ant::FormLayout::Inline && m_layout->count() > 0)
@@ -560,6 +754,7 @@ AntFormItem* AntForm::addItem(const QString& label, QWidget* fieldWidget, bool r
 {
     auto* item = new AntFormItem(this);
     item->setLabel(label);
+    item->setFieldName(label);
     item->setRequired(required);
     item->setFieldWidget(fieldWidget);
     addItem(item);
@@ -572,6 +767,7 @@ void AntForm::clearItems()
     {
         if (item)
         {
+            disconnect(item, nullptr, this, nullptr);
             if (m_layout)
             {
                 m_layout->removeWidget(item);
@@ -582,6 +778,65 @@ void AntForm::clearItems()
     m_items.clear();
     syncFormPerfCounters();
     updateGeometry();
+}
+
+QVariant AntForm::fieldValue(const QString& fieldName) const
+{
+    const QString normalized = fieldName.trimmed();
+    if (m_customFieldValues.contains(normalized))
+    {
+        return m_customFieldValues.value(normalized);
+    }
+    for (const auto& item : m_items)
+    {
+        if (item && effectiveFieldName(item.data()) == normalized)
+        {
+            return item->fieldValue();
+        }
+    }
+    return QVariant();
+}
+
+QVariantMap AntForm::values() const
+{
+    QVariantMap result;
+    for (const auto& item : m_items)
+    {
+        if (!item)
+        {
+            continue;
+        }
+        const QString name = effectiveFieldName(item.data());
+        if (!name.isEmpty())
+        {
+            result.insert(name, item->fieldValue());
+        }
+    }
+    for (auto it = m_customFieldValues.constBegin(); it != m_customFieldValues.constEnd(); ++it)
+    {
+        result.insert(it.key(), it.value());
+    }
+    return result;
+}
+
+void AntForm::notifyFieldChanged(const QString& fieldName, const QVariant& value)
+{
+    const QString normalized = fieldName.trimmed();
+    if (normalized.isEmpty())
+    {
+        return;
+    }
+    if (m_customFieldValues.value(normalized) == value && m_customFieldValues.contains(normalized))
+    {
+        return;
+    }
+    m_customFieldValues.insert(normalized, value);
+    Q_EMIT fieldChanged(normalized, value);
+}
+
+void AntForm::finish()
+{
+    Q_EMIT finished(values());
 }
 
 void AntForm::changeEvent(QEvent* event)
@@ -650,6 +905,57 @@ void AntForm::syncFormPerfCounters() const
     const_cast<AntForm*>(this)->setProperty("antFormLayoutRebuildCount", m_layoutRebuildCount);
     const_cast<AntForm*>(this)->setProperty("antFormItemSettingsApplyCount", m_itemSettingsApplyCount);
     const_cast<AntForm*>(this)->setProperty("antFormSpacingUpdateCount", m_spacingUpdateCount);
+}
+
+void AntForm::connectItem(AntFormItem* item)
+{
+    connect(item, &AntFormItem::fieldValueChanged, this, [this, item](const QVariant& value) {
+        const QString name = effectiveFieldName(item);
+        if (name.isEmpty())
+        {
+            return;
+        }
+        m_customFieldValues.remove(name);
+        Q_EMIT fieldChanged(name, value);
+    });
+    connect(item, &QObject::destroyed, this, [this](QObject* destroyedItem) {
+        removeDestroyedItems(destroyedItem);
+    });
+}
+
+QString AntForm::effectiveFieldName(const AntFormItem* item) const
+{
+    if (!item)
+    {
+        return QString();
+    }
+    return item->fieldName().isEmpty() ? item->label().trimmed() : item->fieldName();
+}
+
+void AntForm::removeDestroyedItems(QObject* destroyedItem)
+{
+    for (int i = m_items.size() - 1; i >= 0; --i)
+    {
+        if (!m_items[i] || m_items[i].data() == destroyedItem)
+        {
+            m_items.removeAt(i);
+        }
+    }
+    syncFormPerfCounters();
+}
+
+AntForm::~AntForm()
+{
+    // QObject destroys child items after derived members have already been
+    // torn down. Disconnect callbacks that access m_items before that phase.
+    for (const auto& item : std::as_const(m_items))
+    {
+        if (item)
+        {
+            disconnect(item.data(), nullptr, this, nullptr);
+        }
+    }
+    m_items.clear();
 }
 
 // ── Custom button classes for AntFormList ──
@@ -757,7 +1063,7 @@ AntFormList::AntFormList(QWidget* parent)
     m_layout->addWidget(m_addButton);
     updateAddButton();
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

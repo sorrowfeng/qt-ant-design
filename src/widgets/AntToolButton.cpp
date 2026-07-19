@@ -56,7 +56,7 @@ AntToolButton::AntToolButton(QWidget* parent)
     style->setParent(this);
     setStyle(style);
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -437,7 +437,6 @@ void AntToolButton::updateGeometryFromState(bool notifyGeometry)
     const int totalHeight = m.height + focusPaddingForToolButton() * 2;
     setMinimumHeight(totalHeight);
     setMaximumHeight(totalHeight);
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     if (notifyGeometry)
     {
         updateGeometry();

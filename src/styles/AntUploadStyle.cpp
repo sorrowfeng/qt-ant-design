@@ -304,7 +304,9 @@ void AntUploadStyle::drawPictureFileItem(QPainter* painter, const QRect& itemRec
     if (!file.thumbUrl.isEmpty())
     {
         const auto* upload = qobject_cast<const AntUpload*>(widget);
-        const QPixmap pixmap = upload ? upload->cachedThumbPixmap(file.thumbUrl) : QPixmap(file.thumbUrl);
+        const QPixmap pixmap = upload
+            ? upload->cachedThumbPixmap(file.thumbUrl, thumbRect.size(), upload->devicePixelRatioF())
+            : QPixmap();
         if (!pixmap.isNull())
         {
             painter->drawPixmap(thumbRect, pixmap);
@@ -352,7 +354,9 @@ void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRec
     if (!file.thumbUrl.isEmpty())
     {
         const auto* upload = qobject_cast<const AntUpload*>(widget);
-        const QPixmap pixmap = upload ? upload->cachedThumbPixmap(file.thumbUrl) : QPixmap(file.thumbUrl);
+        const QPixmap pixmap = upload
+            ? upload->cachedThumbPixmap(file.thumbUrl, cardRect.size(), upload->devicePixelRatioF())
+            : QPixmap();
         if (!pixmap.isNull())
         {
             painter->save();

@@ -43,6 +43,7 @@ class QT_ANT_DESIGN_EXPORT AntSelect : public QWidget
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
+    Q_PROPERTY(QVariant currentValue READ currentValue WRITE setCurrentValue NOTIFY currentValueChanged)
     Q_PROPERTY(int maxVisibleItems READ maxVisibleItems WRITE setMaxVisibleItems NOTIFY maxVisibleItemsChanged)
     Q_PROPERTY(Ant::SelectMode selectMode READ selectMode WRITE setSelectMode NOTIFY selectModeChanged)
     Q_PROPERTY(int maxTagCount READ maxTagCount WRITE setMaxTagCount NOTIFY maxTagCountChanged)
@@ -82,6 +83,7 @@ public:
 
     QString currentText() const;
     QVariant currentValue() const;
+    void setCurrentValue(const QVariant& value);
     QVariant currentData(int role = Qt::UserRole) const;
 
     int count() const;

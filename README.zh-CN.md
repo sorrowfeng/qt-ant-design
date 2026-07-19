@@ -52,12 +52,26 @@
 
 - 状态总览：[docs/project-status.md](docs/project-status.md)
 - 逐控件可靠性覆盖：[docs/reliability-coverage.md](docs/reliability-coverage.md)
+- 代码审计整改清单：[docs/code-audit-optimization.md](docs/code-audit-optimization.md)
 - 历史性能优化批次记录：[docs/archive/performance-optimization-2026-05.md](docs/archive/performance-optimization-2026-05.md)
 - 视觉审计矩阵：[docs/visual-audit.md](docs/visual-audit.md)
 - 在线组件 / API 说明页：[www.sorrowfeng.top/qt-ant-design/components](http://www.sorrowfeng.top/qt-ant-design/components/)
 - 本地中文组件 / API 说明页：运行 `python tools/generate_component_api_overview.py`，然后打开 `build/docs/component-api-overview-cn.html`
 - 官方图标清单：[docs/ant-design-icons.md](docs/ant-design-icons.md)
-- 当前 CTest 条目数：启用 `BUILD_WIDGET_SMOKE_TESTS=ON` 时为 `151`（`47` 个深度/系统条目 + `104` 个逐控件 smoke 条目）；最近一次全控件可靠性巡检：`37 / 37` 通过（`2026-05-30`）；Qt5/Qt6 定向视觉一致性、视觉 atlas 缩放烟测、度量审计、真实 example 页面遍历/截图对比、Windows High DPI 缩放和无 QSS 门禁检查已于 `2026-06-01` 通过
+- 当前 Windows 顶层默认配置的 CTest 清单：启用 `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON` 时共 `155` 项（`51` 个深度/系统条目 + `104` 个逐控件 smoke 条目）。`2026-07-16` 最新 Qt6 Debug 全量 `155 / 155` 通过，总耗时 `379.87s`；最终 Qt5 P1/P2 定向矩阵 `5 / 5` 通过，链接到 MSVC ASan 插桩库的 9 个关键目标 `9 / 9` 通过。UBSan 在本地环境不可用，Windows/MSVC ASan 仍保留已记录的运行库 interception 检测盲区。
+- 仓库中的 CI 工作流当前定义了 Windows Qt 5.15.2 Debug static、Qt 6.7.3 Debug static、Qt 6.7.3 Release shared；Linux Qt 6.7.3 Debug static + ASan/UBSan、Qt 5.15.2 Release shared；以及 macOS Qt 6.7.3 Release shared 库级构建。非 sanitizer 配置执行安装，sanitizer 配置只构建和测试、刻意跳过安装。以上是已配置的 CI 作业，不代表新远程矩阵已经运行通过。
+
+## 最近代码审计整改
+
+`2026-07-16` 的 P0-P2 批次完成全部 18 项清单，并把审计结果落实为明确的运行时契约和回归覆盖：
+
+- 外部借用的 `QObject` / `QWidget` 引用使用可感知销毁的跟踪方式，所有 watcher event filter 都会在 owner 析构前解除。
+- `AntApp` 通过 `showMessage()`、`showModal()`、`showNotification()` 创建真实 Message、Modal、Notification；`lastMessage()`、`lastModal()`、`lastNotification()` 返回当前对象，`*Shown` 与 `feedbackFailed` 信号让成功和失败可观测。host 隐藏或尺寸为零时会明确失败。
+- `AntConfigProvider::apply()` 原子发布主题模式、主色、基础字号和基础圆角四类 token；通用 `themeAboutToChange` / `themeChanged` 信号同时覆盖模式变化与仅 token 变化。
+- `AntFormItem` 支持命名字段绑定，`AntForm` 提供 `fieldChanged`、`values()` 和 `finished`，`AntFormProvider` 转发带表单名的字段变化与完成快照，并安全移除已销毁表单。
+- 内置 QR 生成器明确限定为 UTF-8 byte mode V1-V10，按版本和纠错等级精确检查容量，并显式报告编码失败。`TestAntQRGenerator` 使用独立解码逻辑对 V1-V10 / L-M-Q-H 的全部最大容量组合及 UTF-8 内容做 round-trip。
+- 当前格式的 Dock perspective 在写入或恢复前限制总状态大小、嵌套深度、节点、标识符、Dock ID、浮窗快照和结构不变量；无效替换会被原子拒绝。legacy 签名快照可导入并存储，供识别或迁移使用，但当前版本不恢复：`restorePerspective()` 返回 `false`，发出 `perspectiveRestoreFailed(..., "unsupported-legacy-format")`，并保持现有布局不变。
+- P1/P2 还完成 Slider/Progress/Pagination 极值安全运算、不可变有界图片快照与 Upload LRU、项目命名 CMake 集成与最低 Qt 门禁、仅 System32 DLL 加载和宿主可配置 URL 策略、固定 SHA/只读 CI、sanitizer 与固定种子 property 回归、显式源清单、私有 Dock restorer，以及 AntLog 有界跨线程命令队列。
 
 ## 最近 Ant Design 对齐更新
 
@@ -75,7 +89,7 @@
 
 - 无边框窗口支持 Windows 11 Snap：四边/四角缩放、标题栏拖拽、最大化按钮 Snap Layout hover、边缘吸附和最大化后拖拽还原。
 - Windows 下接入 DWM 圆角、边框/阴影，并提供 `cornerRadius` API；平台相关实现均通过 Qt/Win32 宏隔离。
-- Windows 10 走无 native caption 的窗口样式，并使用 legacy rounded mask 与透明软件阴影宿主窗口，避免最大化/还原后露出原生标题栏按钮，同时让普通窗口在缩放前后都保持从窗口边缘直接外扩、轻量、更接近 Win11 且圆角更干净的四周阴影。
+- Windows 10 走无 native caption 的 legacy opaque 直角路径，并配合透明软件阴影宿主窗口；该路径明确不启用透明圆角或 rounded mask，既避免最大化/还原后露出原生标题栏按钮，也规避旧圆角合成路径出现过的黑屏与抖动。Windows 11 继续使用 DWM 圆角与 Snap 路径。
 - Windows 已显示窗口切换置顶/取消置顶时改用 native `SetWindowPos` 原地更新，避免 Qt flags 重建窗口造成可见闪烁。
 - 标题栏新增置顶和亮暗主题切换按钮，使用内置官方 Ant Design 图标；所有标题栏按钮均可通过公开 API 控制显示或隐藏。
 - 内置主题按钮使用全窗口截图 crossfade overlay，让 Light/Dark 全局切换更连续。
@@ -103,6 +117,8 @@
 - CMake `3.16+`
 - C++17
 
+源码配置和安装后的 CMake package 都会按检测到的 Qt 主版本强制上述最低版本。手工执行 `cmake -S/-B` 支持 CMake 3.16+；仓库中的 `CMakePresets.json` 使用 preset schema v3，因此需要 CMake 3.21+。
+
 ### 方式一：作为子目录接入 CMake 项目
 
 ```bash
@@ -125,6 +141,8 @@ add_subdirectory(third_party/qt-ant-design)
 add_executable(my-qt-app main.cpp)
 target_link_libraries(my-qt-app PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets qt-ant-design)
 ```
+
+作为子项目接入时默认只启用库目标；示例、测试和逐控件 smoke 需要分别通过项目命名选项 `QT_ANT_DESIGN_BUILD_EXAMPLES`、`QT_ANT_DESIGN_BUILD_TESTS`、`QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS` 显式开启，不会改写宿主工程的通用构建选项。宿主若开启子项目测试，并希望从宿主构建根目录通过 `ctest` 发现这些测试，必须在 `add_subdirectory()` 前调用 `enable_testing()`；否则测试目标仍可构建，但不保证顶层 CTest 会遍历子目录。静态/动态库仍使用标准 `BUILD_SHARED_LIBS` 控制。
 
 ### 方式二：安装并使用 CMake package
 
@@ -213,7 +231,7 @@ int main(int argc, char* argv[])
 
 当前已实现公开组件总数：`89`
 
-`src/widgets` 当前包含 `109` 个 `Ant*.h` 头文件：`89` 个公开组件头、`19` 个 Qt 风格别名头，以及内部非安装弹层 helper `AntSelectPopup`。
+`src/widgets` 当前包含 `110` 个 `Ant*.h` 头文件：`89` 个公开组件头、`19` 个 Qt 风格别名头、安装的非组件窗口帧 helper `AntWindowFrame`，以及内部非安装弹层 helper `AntSelectPopup`。
 
 Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
 
@@ -334,7 +352,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntInput`：尺寸、状态、`addonBefore / addonAfter / allowClear / password`
 - `AntInputNumber`：尺寸、状态、变体、前后缀、QDoubleSpinBox 风格小数/精度、小步进、显隐控制按钮
 - `AntDescriptions`：标题、extra、列数、bordered、vertical、自定义值控件
-- `AntForm`：`AntForm / AntFormItem`、横向/纵向/行内布局、标签对齐、必填标记、说明和校验提示
+- `AntForm`：`AntForm / AntFormItem`、横向/纵向/行内布局、标签对齐、必填标记、说明和校验提示、命名字段绑定、值快照与完成上报，以及 `AntFormProvider` 字段/完成转发
 - `AntEmpty`：默认插画、`simple` 模式、描述文案、自定义插画尺寸和 extra action
 - `AntDropdown`：`hover / click / contextMenu` 触发、placement、箭头、自动翻转
 - `AntSteps`：水平/垂直布局、当前步骤、错误态、点击切换、标题/说明/副标题
@@ -358,27 +376,27 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`：导航组件；`AntPagination` 支持可输入页码的 quick jumper 跳页，`AntTabs` 提供 Tab 内容页布局 margins 归一化 helper
 - `AntTable`：数据表格，支持列排序、行选择（复选框/单选框）、程序化选中、行 tooltip、分页、加载状态
 - `AntTree`：树形控件，支持展开/收起、节点选择、复选框、连接线
-- `AntUpload`：文件上传，支持文本列表/图片列表/图片卡片三种模式
+- `AntUpload`：文件上传，支持文本列表/图片列表/图片卡片三种模式；缩略图执行元数据预算检查并使用按字节限制的 LRU，本地预览只向宿主发出请求，外部预览统一遵循 `AntUrlPolicy`
 - `AntCascader`：级联选择器，多列弹出面板，支持点击/悬停展开
 - `AntTreeSelect`：树形选择器，下拉框内展示树形结构
 - `AntRate`：评分组件，`count / value / allowHalf / allowClear / disabled / size`，hover 放大和选中星缩放动效，键盘左右箭头操作
 - `AntWidget`：基础 QWidget 子类，自动处理主题切换
-- `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略/对齐策略/像素字号
-- `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，Windows 10 柔和边线/阴影处理，Windows 10/11 DWM 边框阴影，以及平滑主题切换遮罩动画
+- `AntTypography`：主题感知文本组件，Title(H1-H5)/Text/Paragraph，支持类型/装饰/复制/省略/对齐策略/像素字号；外部链接默认只允许 `http`/`https`，宿主可通过 `AntUrlPolicy` 配置 scheme allowlist 或审批回调
+- `AntWindow`：无边框窗口，自定义标题栏，置顶/主题/最小化/最大化/关闭按钮，Windows 11 Snap 支持，Windows 10 opaque 直角 legacy frame + 软件阴影宿主，Windows DWM 集成，以及平滑主题切换遮罩动画
 - `AntDrawer`：滑动面板，支持 Left/Right/Top/Bottom 四个方向、动画、遮罩层
 - `AntStatusBar`：状态栏，左右项、分隔符、消息区、size grip
 - `AntScrollBar`：自定义滚动条，8px 细滚动条、自动隐藏、无箭头按钮
 - `AntSegmented`：分段控制器，选项块均衡分布，滑动指示器动画，支持图标/禁用/提示，并补齐完整视觉轨道点击命中
 - `AntFloatButton`：浮动操作按钮，圆形/方形，Primary/Default，Group 展开/收起，BackTop 返回顶部，Badge，点击反馈和不裁切阴影
 - `AntWatermark`：鼠标透明的水印叠加层，旋转文本平铺，多行内容，自定义字体/颜色/间距/偏移/角度
-- `AntQRCode`：二维码展示，内置 byte-mode + Reed-Solomon QR 生成器（无外部依赖），默认内容指向仓库地址，示例支持编辑内容后重新生成，状态叠加层（过期/加载/已扫描），图标，无边框
+- `AntQRCode`：二维码展示，内置 UTF-8 byte mode V1-V10 + Reed-Solomon QR 生成器（无外部依赖），精确容量校验，通过 `encodingValid` / `encodingError` / `encodingFailed` 显式报告失败，默认内容指向仓库地址，示例支持编辑内容后重新生成、状态叠加层（过期/加载/已扫描）、图标和无边框模式
 - `AntAffix`：固钉工具，QObject 辅助类，监听滚动容器，自动吸附/解除，占位保持布局
 - `AntAutoComplete`：自动完成输入，弹出建议列表，键盘导航
 - `AntCalendar`：日历面板，Day/Month/Year 三态切换，日期选择
 - `AntCarousel`：轮播图，自动播放，圆点指示器，左右箭头，previous / next 槽，slideClicked 信号，滑动切换动效，点击翻页
 - `AntCollapse`：折叠面板/手风琴，InOutCubic 展开动画，accordion 互斥模式
 - `AntColorPicker`：内联颜色触发器，可显示文本，弹窗内提供 HS field + value slider + RGB/HSV 输入、预设/自定义颜色
-- `AntImage`：图片展示，placeholder fallback，点击全屏预览
+- `AntImage`：图片展示，placeholder fallback，使用受预算约束的 `QImageReader` 元数据/解码检查并公开加载状态与错误，支持点击全屏预览
 - `AntTransfer`：穿梭框，双列表滚动、顶部全选、批量转移
 - `AntTour`：遮罩式分步引导，目标高亮，支持指定步骤启动，Prev/Next/Finish
 - `AntMentions`：@提及输入，输入 @ 弹出建议
@@ -387,12 +405,12 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntMasonry`：瀑布流布局，最短列优先
 - `AntSplitter`：可拖拽分割面板，主题色手柄
 - `AntAnchor`：滚动锚点导航，active 链接高亮
-- `AntApp`：应用包裹器，message/modal/notification 上下文
-- `AntConfigProvider`：主题/主色/字号/圆角全局配置
+- `AntApp`：应用反馈上下文，提供真实 `showMessage` / `showModal` / `showNotification` 入口、`last*` 句柄、shown 信号，以及 host 不可用时的显式失败
+- `AntConfigProvider`：暂存主题模式/主色/字号/圆角，并通过 `apply()` 原子发布四类 token
 - `AntToolButton`：QToolButton + QProxyStyle，dropdown 箭头动画
 - `AntMenuBar`：QMenuBar 主题化
 - `AntToolBar`：QToolBar 主题化，浮动阴影
-- `AntDockWidget` / `AntDockManager`：主题化停靠面板，自定义标题栏，使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，支持中心标签页停靠、可序列化保存/恢复 splitter、tab 和浮窗状态的命名布局快照、tab 拖动排序、tab/标题栏右键菜单、浮动和 Dock 特性的程序化 API、可通过 `setDropGuideEnabled()` 开关的中心/边缘停靠小方格、按引导位置确定落位、超过拖动阈值后才激活的半透明拖动预览、由 manager 归属的浮动 Dock 原生窗口、AntWindow 风格 Windows native frame / DWM 圆角阴影、双击最大化/还原，以及从浮窗拖回布局
+- `AntDockWidget` / `AntDockManager`：主题化停靠面板，自定义标题栏，使用自研 splitter/tab 停靠树而非 Qt 原生 dock layout，支持中心标签页停靠、可序列化保存/恢复 splitter、tab 和浮窗状态的命名布局快照、当前格式解析预算与无效替换原子拒绝、tab 拖动排序、tab/标题栏右键菜单、浮动和 Dock 特性的程序化 API、可通过 `setDropGuideEnabled()` 开关的中心/边缘停靠小方格、按引导位置确定落位、超过拖动阈值后才激活的半透明拖动预览、由 manager 归属的浮动 Dock 原生窗口、AntWindow 风格 Windows native frame / DWM 圆角阴影、双击最大化/还原，以及从浮窗拖回布局。legacy 签名快照可导入并存储以供识别或迁移，但恢复请求会明确失败且不改变当前布局。
 - `AntDialog`：无边框 QDialog 替代控件，提供 Ant token 标题栏、主题感知子控件 palette、AntScrollBar、关闭按钮 hover 状态和可复用的 `contentWidget()` 内容宿主
 - `AntScrollArea`：QScrollArea + AntScrollBar + 触摸手势滚动 + 不抢滚动条拖拽的可开关鼠标拖动滚动
 - `AntStackedWidget`：兼容 QStackedWidget 的页面栈，使用 Ant token 绘制背景/边框，并支持 Outlined / Filled / Borderless 变体
@@ -446,7 +464,7 @@ card->bodyLayout()->addWidget(new AntTypography("Card content"));
 AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 ```
 
-对于基于 `QProxyStyle` 的组件，`AntStyleBase::connectThemeUpdate<T>()` 现在只刷新该 Style 实例拥有的控件或其局部 parent 子树；只有无法解析本地目标时才兜底扫描全局 widgets。Style 路径会在主题模式真正变化前缓存尺寸 hint，随后执行 `polish / onThemeUpdate / update`；只有主题相关尺寸指标确实变化时才调用 `updateGeometry()`。`AntWindow` 内置主题按钮会用全窗口截图 crossfade overlay 包裹这次重绘，让 Light/Dark 全局切换更连续。
+对于基于 `QProxyStyle` 的组件，`AntStyleBase::connectThemeUpdate<T>()` 现在只刷新该 Style 实例拥有的控件或其局部 parent 子树；只有无法解析本地目标时才兜底扫描全局 widgets。Style 路径监听通用 `themeAboutToChange` / `themeChanged` 信号，因此模式变化和仅 token 变化的 `AntConfigProvider::apply()` 都会先缓存旧尺寸 hint，再执行 `polish / onThemeUpdate / update`；只有主题相关尺寸指标确实变化时才调用 `updateGeometry()`。`AntWindow` 内置主题按钮会用全窗口截图 crossfade overlay 包裹这次重绘，让 Light/Dark 全局切换更连续。
 
 ## 开发指南与贡献
 

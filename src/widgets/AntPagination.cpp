@@ -16,6 +16,16 @@
 #include "core/AntTheme.h"
 #include "core/AntThemeRefresh_p.h"
 
+namespace
+{
+int clampToPublicInt(qint64 value)
+{
+    return static_cast<int>(std::clamp(value,
+                                       static_cast<qint64>(std::numeric_limits<int>::min()),
+                                       static_cast<qint64>(std::numeric_limits<int>::max())));
+}
+} // namespace
+
 AntPagination::AntPagination(QWidget* parent)
     : QWidget(parent)
 {
@@ -23,7 +33,7 @@ AntPagination::AntPagination(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     ensureQuickJumperEdit();
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -187,7 +197,10 @@ void AntPagination::setPaginationSize(Ant::Size size)
 
 int AntPagination::pageCount() const
 {
-    return std::max(1, static_cast<int>(std::ceil(static_cast<double>(m_total) / static_cast<double>(m_pageSize))));
+    const qint64 total = m_total;
+    const qint64 pageSize = m_pageSize;
+    const qint64 count = (total + pageSize - 1) / pageSize;
+    return static_cast<int>(std::max<qint64>(1, count));
 }
 
 QSize AntPagination::sizeHint() const
@@ -254,13 +267,13 @@ void AntPagination::keyPressEvent(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Left)
     {
-        setCurrent(m_current - 1);
+        setCurrent(clampToPublicInt(static_cast<qint64>(m_current) - 1));
         event->accept();
         return;
     }
     if (event->key() == Qt::Key_Right)
     {
-        setCurrent(m_current + 1);
+        setCurrent(clampToPublicInt(static_cast<qint64>(m_current) + 1));
         event->accept();
         return;
     }
@@ -319,7 +332,7 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
         append(ItemKind::Text, 0, totalText, false, false, QFontMetrics(f).horizontalAdvance(totalText) + token.paddingSM);
     }
 
-    append(ItemKind::Prev, m_current - 1, QString(), m_current > 1);
+    append(ItemKind::Prev, clampToPublicInt(static_cast<qint64>(m_current) - 1), QString(), m_current > 1);
     if (m_simple)
     {
         QFont f = font();
@@ -339,11 +352,14 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
         };
 
         appendPage(1);
-        const int left = std::max(2, m_current - sibling);
-        const int right = std::min(count - 1, m_current + sibling);
+        const int left = static_cast<int>(std::max<qint64>(2, static_cast<qint64>(m_current) - sibling));
+        const int right = static_cast<int>(std::min<qint64>(static_cast<qint64>(count) - 1,
+                                                           static_cast<qint64>(m_current) + sibling));
         if (left > 2)
         {
-            append(ItemKind::JumpPrev, std::max(1, m_current - 5), QString());
+            append(ItemKind::JumpPrev,
+                   static_cast<int>(std::max<qint64>(1, static_cast<qint64>(m_current) - 5)),
+                   QString());
         }
         for (int page = left; page <= right; ++page)
         {
@@ -351,14 +367,19 @@ QVector<AntPagination::PageItem> AntPagination::pageItems() const
         }
         if (right < count - 1)
         {
-            append(ItemKind::JumpNext, std::min(count, m_current + 5), QString());
+            append(ItemKind::JumpNext,
+                   static_cast<int>(std::min<qint64>(count, static_cast<qint64>(m_current) + 5)),
+                   QString());
         }
         if (count > 1)
         {
             appendPage(count);
         }
     }
-    append(ItemKind::Next, m_current + 1, QString(), m_current < pageCount());
+    append(ItemKind::Next,
+           clampToPublicInt(static_cast<qint64>(m_current) + 1),
+           QString(),
+           m_current < pageCount());
 
     if (m_showSizeChanger)
     {

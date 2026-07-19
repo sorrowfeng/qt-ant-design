@@ -1,6 +1,14 @@
 set(CMAKE_AUTOMOC ON)
 
-option(BUILD_WIDGET_SMOKE_TESTS "Build one target per public Ant widget smoke test" ON)
+set(_qt_ant_design_default_widget_smoke ${PROJECT_IS_TOP_LEVEL})
+if(PROJECT_IS_TOP_LEVEL AND DEFINED BUILD_WIDGET_SMOKE_TESTS)
+    set(_qt_ant_design_default_widget_smoke ${BUILD_WIDGET_SMOKE_TESTS})
+endif()
+option(QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS
+    "Build one target per public Ant widget smoke test"
+    ${_qt_ant_design_default_widget_smoke}
+)
+unset(_qt_ant_design_default_widget_smoke)
 
 function(add_ant_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
@@ -11,7 +19,7 @@ endfunction()
 function(add_ant_inventory_test TEST_NAME)
     add_ant_test(${TEST_NAME})
     target_compile_definitions(${TEST_NAME} PRIVATE
-        ANT_WIDGETS_DIR="${CMAKE_SOURCE_DIR}/src/widgets"
+        ANT_WIDGETS_DIR="${PROJECT_SOURCE_DIR}/src/widgets"
         ANT_TESTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
     )
 endfunction()
@@ -37,7 +45,7 @@ function(add_ant_widget_smoke_test TEST_TYPE TEST_HEADER TEST_CONSTRUCT)
     set_property(GLOBAL APPEND PROPERTY ANT_WIDGET_SMOKE_TARGETS "${TEST_TARGET}")
 endfunction()
 
-if(BUILD_WIDGET_SMOKE_TESTS)
+if(QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS)
     set(ANT_WIDGET_SMOKE_TESTS
         "AntAffix|AntAffix.h|new AntAffix()"
         "AntAlert|AntAlert.h|new AntAlert()"
@@ -186,6 +194,7 @@ add_ant_test(TestAntDataDisplayA)
 
 # Data Display B (10 widgets)
 add_ant_test(TestAntDataDisplayB)
+add_ant_test(TestAntQRGenerator)
 add_ant_test(TestAntTag)
 
 # Feedback (13 widgets)
@@ -200,6 +209,8 @@ add_ant_test(TestAntLayout)
 
 # Qt Extensions (19 widgets)
 add_ant_test(TestAntQtExtensions)
+add_ant_test(TestAntDockPerspectiveLimits)
+set_tests_properties(TestAntDockPerspectiveLimits PROPERTIES TIMEOUT 10)
 
 # Qt-style widget aliases
 add_ant_test(TestAntAliases)
@@ -247,6 +258,7 @@ foreach(ANT_VISUAL_PARITY_SCALE IN ITEMS 1.25 1.5)
     )
 endforeach()
 add_ant_test(TestAntQtVersionMetricAudit)
+add_ant_test(TestAntWindowsSystemLibrary)
 
 # Windows / Qt high-DPI logical geometry coverage
 add_executable(TestAntHighDpiScaling TestAntHighDpiScaling.cpp)
@@ -275,6 +287,7 @@ add_test(NAME TestAntInstallConsumer
         -DANT_CONFIG=$<CONFIG>
         -DANT_QT_PACKAGE=${QT_ANT_DESIGN_QT_PACKAGE}
         -DANT_QT_PACKAGE_DIR=${${QT_ANT_DESIGN_QT_PACKAGE}_DIR}
+        -DANT_EXPECTED_VERSION=${PROJECT_VERSION}
         -DANT_CMAKE_GENERATOR=${CMAKE_GENERATOR}
         -DANT_CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
         -DANT_CMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
@@ -285,14 +298,29 @@ add_test(NAME TestAntInstallConsumer
 # Build-system option coverage
 add_test(NAME TestAntBuildSystem
     COMMAND ${CMAKE_COMMAND}
-        -DANT_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -DANT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -DANT_TEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+        -DANT_QT_PACKAGE=${QT_ANT_DESIGN_QT_PACKAGE}
+        -DANT_QT_PACKAGE_DIR=${${QT_ANT_DESIGN_QT_PACKAGE}_DIR}
+        -DANT_CMAKE_GENERATOR=${CMAKE_GENERATOR}
+        -DANT_CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+        -DANT_CMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+        -DANT_CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+        -DANT_CONFIG=$<CONFIG>
         -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntBuildSystem.cmake
+)
+set_tests_properties(TestAntBuildSystem PROPERTIES TIMEOUT 900)
+
+add_test(NAME TestAntCiPolicy
+    COMMAND ${CMAKE_COMMAND}
+        -DANT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntCiPolicy.cmake
 )
 
 # No-QSS / no-QStyleSheet styling guard
 add_test(NAME TestAntNoStyleSheetUsage
     COMMAND ${CMAKE_COMMAND}
-        -DANT_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -DANT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntNoStyleSheetUsage.cmake
 )
 

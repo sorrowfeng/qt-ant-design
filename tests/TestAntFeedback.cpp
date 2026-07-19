@@ -4,7 +4,11 @@
 #include <QMoveEvent>
 #include <QSignalSpy>
 #include <QPointer>
+#include <QPixmap>
 #include <QTest>
+
+#include <limits>
+
 #include "core/AntTheme.h"
 #include "widgets/AntAlert.h"
 #include "widgets/AntButton.h"
@@ -63,6 +67,7 @@ private slots:
     void popover();
     void popoverCachesLayoutAndSkipsPlacementWork();
     void progress();
+    void progressExtremeIntegerRangeIsStable();
     void progressCachesGeometryAndScopesUpdates();
     void result();
     void resultCachesLayoutIconAndExtraGeometry();
@@ -968,6 +973,55 @@ void TestAntFeedback::progress()
     w->setCircleSize(160);
     QCOMPARE(w->circleSize(), 160);
     QCOMPARE(circleSpy.count(), 1);
+}
+
+void TestAntFeedback::progressExtremeIntegerRangeIsStable()
+{
+    const int minimum = std::numeric_limits<int>::min();
+    const int maximum = std::numeric_limits<int>::max();
+
+    AntProgress progress;
+    QSignalSpy rangeSpy(&progress, &AntProgress::rangeChanged);
+    progress.setRange(minimum, maximum);
+    QCOMPARE(rangeSpy.count(), 1);
+    QCOMPARE(progress.minimum(), minimum);
+    QCOMPARE(progress.maximum(), maximum);
+    QCOMPARE(progress.value(), 0);
+    QCOMPARE(progress.percent(), 50);
+
+    QSignalSpy valueSpy(&progress, &AntProgress::valueChanged);
+    QSignalSpy percentSpy(&progress, &AntProgress::percentChanged);
+    progress.setValue(maximum);
+    QCOMPARE(progress.value(), maximum);
+    QCOMPARE(progress.percent(), 100);
+
+    progress.setPercent(50);
+    QCOMPARE(progress.value(), 0);
+    QCOMPARE(progress.percent(), 50);
+
+    progress.setPercent(maximum);
+    QCOMPARE(progress.value(), maximum);
+    QCOMPARE(progress.percent(), 100);
+
+    progress.setPercent(minimum);
+    QCOMPARE(progress.value(), minimum);
+    QCOMPARE(progress.percent(), 0);
+    QCOMPARE(valueSpy.count(), 4);
+    QCOMPARE(percentSpy.count(), 4);
+
+    progress.setPercent(50);
+    progress.resize(260, progress.sizeHint().height());
+    QPixmap lineImage(progress.size());
+    lineImage.fill(Qt::transparent);
+    progress.render(&lineImage);
+    QVERIFY(!lineImage.isNull());
+
+    progress.setProgressType(Ant::ProgressType::Circle);
+    progress.resize(progress.sizeHint());
+    QPixmap circleImage(progress.size());
+    circleImage.fill(Qt::transparent);
+    progress.render(&circleImage);
+    QVERIFY(!circleImage.isNull());
 }
 
 void TestAntFeedback::progressCachesGeometryAndScopesUpdates()

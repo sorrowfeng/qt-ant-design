@@ -2,14 +2,18 @@
 
 #include <QFont>
 #include <QPalette>
+#include <QMutexLocker>
+#include <QPointer>
 #include <QScrollBar>
 #include <QSignalBlocker>
 #include <QTextCharFormat>
 #include <QTextCursor>
+#include <QThread>
 #include <QTime>
 #include <QTimer>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <utility>
 
 #include "AntPlainTextEdit.h"
@@ -20,6 +24,8 @@ namespace
 {
 constexpr int kLevelCount = 5;
 constexpr int kAppendFlushThreshold = 128;
+constexpr int kMaxPendingCrossThreadCommands = 1024;
+constexpr int kPendingCommandDrainBatchSize = 256;
 
 QColor levelColor(AntLog::Level level)
 {
@@ -99,6 +105,15 @@ AntLog::AntLog(QWidget* parent)
 int AntLog::maxEntries() const { return m_maxEntries; }
 void AntLog::setMaxEntries(int n)
 {
+    if (!isOwnerThread())
+    {
+        PendingCommand command;
+        command.type = PendingCommandType::SetMaxEntries;
+        command.integerValue = n;
+        enqueuePendingCommand(command);
+        return;
+    }
+
     n = qMax(1, n);
     if (m_maxEntries == n) return;
     flushPendingAppendViewUpdates();
@@ -114,28 +129,169 @@ void AntLog::setMaxEntries(int n)
 bool AntLog::autoScroll() const { return m_autoScroll; }
 void AntLog::setAutoScroll(bool enabled)
 {
+    if (!isOwnerThread())
+    {
+        PendingCommand command;
+        command.type = PendingCommandType::SetAutoScroll;
+        command.boolValue = enabled;
+        enqueuePendingCommand(command);
+        return;
+    }
+
     if (m_autoScroll == enabled) return;
     m_autoScroll = enabled;
     Q_EMIT autoScrollChanged(m_autoScroll);
 }
 
-void AntLog::debug(const QString& message)   { appendEntry(Debug, message); }
-void AntLog::info(const QString& message)    { appendEntry(Info, message); }
-void AntLog::success(const QString& message) { appendEntry(Success, message); }
-void AntLog::warning(const QString& message) { appendEntry(Warning, message); }
-void AntLog::error(const QString& message)   { appendEntry(Error, message); }
+void AntLog::debug(const QString& message)   { log(Debug, message); }
+void AntLog::info(const QString& message)    { log(Info, message); }
+void AntLog::success(const QString& message) { log(Success, message); }
+void AntLog::warning(const QString& message) { log(Warning, message); }
+void AntLog::error(const QString& message)   { log(Error, message); }
 
 void AntLog::log(Level level, const QString& message)
 {
+    if (!isOwnerThread())
+    {
+        PendingCommand command;
+        command.type = PendingCommandType::Append;
+        command.level = level;
+        command.message = message;
+        enqueuePendingCommand(command);
+        return;
+    }
+
     appendEntry(level, message);
 }
 
 void AntLog::clear()
 {
+    if (!isOwnerThread())
+    {
+        PendingCommand command;
+        command.type = PendingCommandType::Clear;
+        enqueuePendingCommand(command);
+        return;
+    }
+
+    QPointer<AntLog> guard(this);
     flushPendingAppendViewUpdates();
+    if (!guard)
+    {
+        return;
+    }
     m_entries.clear();
-    m_view->clear();
+    {
+        QSignalBlocker viewBlocker(m_view);
+        QSignalBlocker documentBlocker(m_view->document());
+        m_view->clear();
+    }
+    if (!guard)
+    {
+        return;
+    }
     updateDiagnostics();
+}
+
+bool AntLog::isOwnerThread() const
+{
+    return QThread::currentThread() == thread();
+}
+
+void AntLog::enqueuePendingCommand(const PendingCommand& command)
+{
+    bool scheduleDrain = false;
+    {
+        QMutexLocker locker(&m_pendingCommandMutex);
+        if (m_pendingCommands.size() >= kMaxPendingCrossThreadCommands)
+        {
+            if (command.type == PendingCommandType::Append)
+            {
+                ++m_droppedCrossThreadCommandCount;
+                return;
+            }
+
+            auto removable = std::find_if(m_pendingCommands.begin(), m_pendingCommands.end(),
+                                          [](const PendingCommand& pending) {
+                return pending.type == PendingCommandType::Append;
+            });
+            if (removable != m_pendingCommands.end())
+            {
+                m_pendingCommands.erase(removable);
+            }
+            else
+            {
+                m_pendingCommands.removeFirst();
+            }
+            ++m_droppedCrossThreadCommandCount;
+        }
+
+        m_pendingCommands.append(command);
+        if (!m_pendingCommandDrainScheduled)
+        {
+            m_pendingCommandDrainScheduled = true;
+            scheduleDrain = true;
+        }
+    }
+
+    if (scheduleDrain &&
+        !QMetaObject::invokeMethod(this, [this]() { drainPendingCommands(); }, Qt::QueuedConnection))
+    {
+        QMutexLocker locker(&m_pendingCommandMutex);
+        m_pendingCommandDrainScheduled = false;
+    }
+}
+
+void AntLog::drainPendingCommands()
+{
+    QVector<PendingCommand> commands;
+    bool scheduleNextDrain = false;
+    {
+        QMutexLocker locker(&m_pendingCommandMutex);
+        const int commandCount = qMin(kPendingCommandDrainBatchSize, m_pendingCommands.size());
+        commands.reserve(commandCount);
+        for (int index = 0; index < commandCount; ++index)
+        {
+            commands.append(std::move(m_pendingCommands[index]));
+        }
+        m_pendingCommands.erase(m_pendingCommands.begin(),
+                                m_pendingCommands.begin() + commandCount);
+        scheduleNextDrain = !m_pendingCommands.isEmpty();
+        m_pendingCommandDrainScheduled = scheduleNextDrain;
+    }
+
+    ++m_crossThreadDrainCount;
+    QPointer<AntLog> guard(this);
+    for (const PendingCommand& command : std::as_const(commands))
+    {
+        switch (command.type)
+        {
+        case PendingCommandType::Append:
+            appendEntry(command.level, command.message);
+            break;
+        case PendingCommandType::Clear:
+            clear();
+            break;
+        case PendingCommandType::SetMaxEntries:
+            setMaxEntries(command.integerValue);
+            break;
+        case PendingCommandType::SetAutoScroll:
+            setAutoScroll(command.boolValue);
+            break;
+        }
+        if (!guard)
+        {
+            return;
+        }
+    }
+
+    updateDiagnostics();
+    if (scheduleNextDrain &&
+        !QMetaObject::invokeMethod(this, [this]() { drainPendingCommands(); }, Qt::QueuedConnection))
+    {
+        QMutexLocker locker(&m_pendingCommandMutex);
+        m_pendingCommandDrainScheduled = false;
+    }
 }
 
 void AntLog::appendEntry(Level level, const QString& message)
@@ -147,7 +303,10 @@ void AntLog::appendEntry(Level level, const QString& message)
     m_entries.append(entry);
     const int sizeBeforeTrim = m_entries.size();
     trimEntries();
-    insertEntry(entry);
+    if (!insertEntry(entry))
+    {
+        return;
+    }
     const int trimmedCount = sizeBeforeTrim - m_entries.size();
     scheduleAppendFlush(trimmedCount);
     updateDiagnostics(trimmedCount);
@@ -265,15 +424,23 @@ void AntLog::rebuildDocument()
     updateDiagnostics();
 }
 
-void AntLog::insertEntry(const Entry& entry)
+bool AntLog::insertEntry(const Entry& entry)
 {
     const QString line = QStringLiteral("[%1] [%2] %3").arg(entry.timestamp, levelTag(entry.level), entry.message);
 
+    QPointer<AntLog> guard(this);
+    QSignalBlocker viewBlocker(m_view);
+    QSignalBlocker documentBlocker(m_view->document());
     QTextCursor cursor(m_view->document());
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(line + QStringLiteral("\n"), formatForLevel(entry.level));
+    if (!guard)
+    {
+        return false;
+    }
     ++m_appendInsertCount;
     setProperty("antLogUsesDocumentCursor", true);
+    return guard;
 }
 
 void AntLog::scheduleAppendFlush(int trimmedCount)
@@ -364,6 +531,13 @@ QTextCharFormat AntLog::formatForLevel(Level level) const
 
 void AntLog::updateDiagnostics(int trimmedCount)
 {
+    int pendingCommandCount = 0;
+    quint64 droppedCommandCount = 0;
+    {
+        QMutexLocker locker(&m_pendingCommandMutex);
+        pendingCommandCount = m_pendingCommands.size();
+        droppedCommandCount = m_droppedCrossThreadCommandCount;
+    }
     setProperty("antLogEntryCount", m_entries.size());
     setProperty("antLogDocumentBlockCount", m_view ? m_view->document()->blockCount() : 0);
     setProperty("antLogLastTrimmedCount", qMax(0, trimmedCount));
@@ -372,4 +546,8 @@ void AntLog::updateDiagnostics(int trimmedCount)
     setProperty("antLogPendingAppendCount", m_pendingAppendCount);
     setProperty("antLogAppendBatchStartCount", m_appendBatchStartCount);
     setProperty("antLogAppendFlushCount", m_appendFlushCount);
+    setProperty("antLogPendingCrossThreadCommandCount", pendingCommandCount);
+    setProperty("antLogDroppedCrossThreadCommandCount",
+                QVariant::fromValue<qulonglong>(droppedCommandCount));
+    setProperty("antLogCrossThreadDrainCount", m_crossThreadDrainCount);
 }

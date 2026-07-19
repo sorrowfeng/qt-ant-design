@@ -52,12 +52,26 @@ The project focuses on:
 
 - Status snapshot: [docs/project-status.md](docs/project-status.md)
 - Per-component reliability coverage: [docs/reliability-coverage.md](docs/reliability-coverage.md)
+- Code-audit remediation checklist: [docs/code-audit-optimization.md](docs/code-audit-optimization.md)
 - Historical performance optimization pass record: [docs/archive/performance-optimization-2026-05.md](docs/archive/performance-optimization-2026-05.md)
 - Visual audit matrix: [docs/visual-audit.md](docs/visual-audit.md)
 - Online component/API reference: [www.sorrowfeng.top/qt-ant-design/components](http://www.sorrowfeng.top/qt-ant-design/components/)
 - Local Chinese component/API reference: run `python tools/generate_component_api_overview.py`, then open `build/docs/component-api-overview-cn.html`
 - Official icon inventory: [docs/ant-design-icons.md](docs/ant-design-icons.md)
-- Current CTest entry count: `151` when `BUILD_WIDGET_SMOKE_TESTS=ON` (`47` deep/system entries plus `104` per-widget smoke entries); latest full component reliability sweep: `37 / 37` passed on `2026-05-30`; targeted Qt5/Qt6 visual parity, visual-atlas scale-factor smoke, metric audit, real example page traversal/comparison, Windows High DPI scaling, and no-QSS guard checks passed on `2026-06-01`
+- Current Windows top-level CTest inventory: `155` entries when `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON` (`51` deep/system entries plus `104` per-widget smoke entries). The latest Qt6 Debug full run on `2026-07-16` passed `155 / 155` in `379.87s`; the final Qt5 P1/P2 targeted matrix passed `5 / 5`, and nine key targets linked to the MSVC ASan-instrumented library passed `9 / 9`. UBSan was unavailable locally, and the Windows/MSVC ASan run retains a documented runtime-interception blind spot.
+- The checked-in CI workflow currently defines Windows Qt 5.15.2 Debug static, Qt 6.7.3 Debug static, and Qt 6.7.3 Release shared jobs; Linux Qt 6.7.3 Debug static with ASan+UBSan plus Qt 5.15.2 Release shared; and a macOS Qt 6.7.3 Release shared library build. Non-sanitizer configurations install their output; sanitizer configurations build and test without installing. These are configured CI jobs, not evidence that the remote matrix has completed successfully.
+
+## Recent Code-Audit Remediation
+
+The `2026-07-16` P0-P2 pass completed all 18 tracked remediation items and converted the audit findings into explicit runtime contracts and regression coverage:
+
+- Borrowed external `QObject` / `QWidget` references use destruction-aware tracking, and watcher event filters are detached before owner teardown.
+- `AntApp` creates real Message, Modal, and Notification instances through `showMessage()`, `showModal()`, and `showNotification()`. `lastMessage()`, `lastModal()`, and `lastNotification()` expose the active object; `*Shown` and `feedbackFailed` signals make success and failure observable. Hidden or zero-size hosts fail explicitly.
+- `AntConfigProvider::apply()` atomically publishes theme mode, primary color, base font size, and base border radius. Generic `themeAboutToChange` / `themeChanged` signals cover token-only updates as well as mode changes.
+- `AntFormItem` binds named field values, `AntForm` exposes `fieldChanged`, `values()`, and `finished`, and `AntFormProvider` forwards named form changes and completion snapshots while safely removing destroyed forms.
+- The embedded QR generator has an explicit UTF-8 byte-mode V1-V10 contract, exact per-version/error-level capacity checks, and observable encoding failure. `TestAntQRGenerator` independently decodes generated matrices and round-trips every maximum-capacity V1-V10 / L-M-Q-H case plus UTF-8 content.
+- Current-format Dock perspectives enforce state-size, nesting-depth, node, identifier, dock-ID, floating-snapshot, and structural invariants before insertion or restore. Invalid replacements are rejected atomically. Legacy-signature snapshots may be imported and stored for identification or migration, but this release does not restore them: `restorePerspective()` returns `false`, emits `perspectiveRestoreFailed(..., "unsupported-legacy-format")`, and leaves the runtime layout unchanged.
+- P1/P2 remediation adds overflow-safe Slider/Progress/Pagination arithmetic, immutable bounded image snapshots and an Upload LRU, project-scoped CMake integration and minimum Qt enforcement, System32-only DLL loading and a host-configurable URL policy, pinned/read-only CI, sanitizer and fixed-seed property coverage, an explicit source inventory, a private Dock restorer, and a bounded cross-thread AntLog command queue.
 
 ## Recent Ant Design Parity Updates
 
@@ -75,7 +89,7 @@ The 2026-05-07 `AntWindow` pass improved native desktop behavior and title-bar p
 
 - Windows 11 Snap support for frameless windows: resize edges/corners, draggable title bar, maximize-button Snap Layout hover, edge snapping, and drag-to-restore.
 - DWM-backed rounded corners, border/shadow integration, and a `cornerRadius` API for Windows builds while keeping platform-specific code behind Qt/Win32 guards.
-- Windows 10 uses a no-caption native frame path plus a legacy rounded mask and a transparent software shadow host, so maximized/restored windows do not expose native title buttons and normal windows keep a lightweight Win11-like four-sided outer shadow that starts at the window edge with cleaner rounded corners before and after resize.
+- Windows 10 uses the legacy opaque, square-corner, no-caption frame path plus a transparent software shadow host. It deliberately avoids translucent rounded corners and rounded masks, preventing native title buttons from reappearing after maximize/restore and avoiding the composition failures seen with the older rounded path. Windows 11 keeps the rounded DWM/Snap path.
 - Topmost toggles on visible Windows windows now use native `SetWindowPos` in place, avoiding the hide/show cycle that caused a visible flash.
 - Title-bar pin and light/dark theme buttons use bundled official Ant Design icons, and every title-bar button can be shown or hidden through public APIs.
 - The built-in theme button uses a captured-frame crossfade overlay so full-window light/dark switching feels continuous.
@@ -103,6 +117,8 @@ The 2026-05-07 API pass improves use with Qt object trees and familiar Qt widget
 - CMake `3.16+`
 - C++17
 
+Source configuration and the installed CMake package both enforce the Qt minimum for the detected major version. Manual `cmake -S/-B` workflows support CMake 3.16+, while the checked-in `CMakePresets.json` uses preset schema v3 and requires CMake 3.21+.
+
 ### Option 1: Add as a CMake subdirectory
 
 ```bash
@@ -125,6 +141,8 @@ add_subdirectory(third_party/qt-ant-design)
 add_executable(my-qt-app main.cpp)
 target_link_libraries(my-qt-app PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets qt-ant-design)
 ```
+
+When added as a subproject, the library is the only target enabled by default. Opt in with the project-scoped options `QT_ANT_DESIGN_BUILD_EXAMPLES`, `QT_ANT_DESIGN_BUILD_TESTS`, and `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS`; these options avoid changing a parent project's generic build settings. If the host enables child tests and expects them to appear in `ctest` from the host build root, the host must call `enable_testing()` before `add_subdirectory()`; otherwise test targets can still build, but top-level CTest discovery is not guaranteed. `BUILD_SHARED_LIBS` remains the standard switch for static versus shared libraries.
 
 ### Option 2: Install and use the CMake package
 
@@ -213,7 +231,7 @@ int main(int argc, char* argv[])
 
 Total public components implemented: `89`
 
-`src/widgets` currently contains `109` `Ant*.h` headers: `89` public component headers, `19` Qt-style alias headers, and the internal non-installed popup helper `AntSelectPopup`.
+`src/widgets` currently contains `110` `Ant*.h` headers: `89` public component headers, `19` Qt-style alias headers, the installed non-component window-frame helper `AntWindowFrame`, and the internal non-installed popup helper `AntSelectPopup`.
 
 Ant Design standard components are counted by the top-level directories under [`ant-design/ant-design`](https://github.com/ant-design/ant-design)'s `components/` directory, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
 
@@ -335,7 +353,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntInput`: sizes, states, `addonBefore / addonAfter / allowClear / password`
 - `AntInputNumber`: sizes, states, variants, prefix/suffix, QDoubleSpinBox-style decimals/precision, fine-grained step, optional control buttons
 - `AntDescriptions`: title, extra, columns, bordered, vertical, custom value widgets
-- `AntForm`: `AntForm / AntFormItem`, horizontal / vertical / inline layouts, label alignment, required marker, help and validation hints
+- `AntForm`: `AntForm / AntFormItem`, horizontal / vertical / inline layouts, label alignment, required marker, help and validation hints, named field binding, value snapshots, completion, and `AntFormProvider` change/completion forwarding
 - `AntEmpty`: default illustration, `simple` mode, description text, custom illustration size and extra action
 - `AntDropdown`: `hover / click / contextMenu` triggers, placement, arrow, auto flip
 - `AntSteps`: horizontal / vertical layout, current step, error state, click to switch, title / description / subtitle
@@ -359,27 +377,27 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntMenu` / `AntTabs` / `AntBreadcrumb` / `AntPagination`: navigation components; `AntPagination` includes editable quick-jumper paging, and `AntTabs` includes tab-pane layout margin normalization helpers
 - `AntTable`: data table with column sorting, row selection (checkbox / radio), programmatic row selection, row tooltips, pagination, loading state
 - `AntTree`: tree control with expand / collapse, node selection, checkboxes, connector lines
-- `AntUpload`: file upload supporting text list, picture list, and picture card modes
+- `AntUpload`: file upload supporting text list, picture list, and picture card modes; thumbnails use bounded metadata checks and a byte-budgeted LRU, local preview requests are emitted to the host, and external previews follow `AntUrlPolicy`
 - `AntCascader`: cascading selector with multi-column popup, click / hover expansion
 - `AntTreeSelect`: tree selector that renders a tree inside a dropdown
 - `AntRate`: rating component with `count / value / allowHalf / allowClear / disabled / size`, hover scaling, selected-star scale pulse, left / right keyboard control
 - `AntWidget`: base QWidget subclass that handles theme switching automatically
-- `AntTypography`: theme-aware text component, Title (H1-H5) / Text / Paragraph, with type / decoration / copy / ellipsis / alignment / pixel-size support
-- `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, softened Windows 10 outline/shadow handling, Windows 10/11 DWM border shadow, and a smooth theme transition overlay
+- `AntTypography`: theme-aware text component, Title (H1-H5) / Text / Paragraph, with type / decoration / copy / ellipsis / alignment / pixel-size support; external links default to `http`/`https`, with an application-configurable scheme allowlist or approval callback through `AntUrlPolicy`
+- `AntWindow`: frameless window with custom title bar, pin / theme / minimize / maximize / close buttons, Windows 11 Snap support, an opaque square-corner Windows 10 legacy frame with a software shadow host, Windows DWM integration, and a smooth theme transition overlay
 - `AntDrawer`: sliding panel with Left / Right / Top / Bottom placement, animation, and mask
 - `AntStatusBar`: status bar with left / right items, separators, message area, size grip, and theme-aware semantic emphasis for the bar, individual items, or messages
 - `AntScrollBar`: custom 8 px slim scrollbar with auto-hide and no arrow buttons
 - `AntSegmented`: segmented control with value and index selection APIs, evenly distributed options, animated indicator, icon / disabled / tooltip support, and reliable full-track click hit testing
 - `AntFloatButton`: floating action button — circle / square, Primary / Default, expandable Group, BackTop, Badge, click feedback, and unclipped elevation shadow
 - `AntWatermark`: mouse-transparent watermark overlay with rotated tiled text, multi-line content, and customizable font / color / spacing / offset / angle
-- `AntQRCode`: QR code display with embedded byte-mode + Reed-Solomon generator (no external dependency), default repository URL payload, editable regenerate example, status overlays (expired / loading / scanned), icon, no border
+- `AntQRCode`: QR code display with an embedded UTF-8 byte-mode V1-V10 + Reed-Solomon generator (no external dependency), exact capacity validation, `encodingValid` / `encodingError` / `encodingFailed` failure reporting, default repository URL payload, editable regenerate example, status overlays (expired / loading / scanned), icon, and no-border mode
 - `AntAffix`: pin helper — a QObject utility that watches the scroll container and auto-pins / un-pins while preserving layout
 - `AntAutoComplete`: autocomplete input with popup suggestions and keyboard navigation
 - `AntCalendar`: calendar panel with Day / Month / Year mode switching and date selection
 - `AntCarousel`: carousel with autoplay, dot indicators, arrow buttons, previous / next slots, slide-click signals, animated slide transitions, and click-to-page
 - `AntCollapse`: collapse panel / accordion with InOutCubic expand animation and accordion exclusivity
 - `AntColorPicker`: inline color trigger with optional text, plus popup HS field + value slider + RGB / HSV inputs, preset and custom colors
-- `AntImage`: image display with placeholder fallback and click-to-fullscreen preview
+- `AntImage`: image display with placeholder fallback, bounded `QImageReader` metadata/decode checks, explicit load state/errors, and click-to-fullscreen preview
 - `AntTransfer`: transfer component with two scrollable lists, header select-all, and batch movement
 - `AntTour`: masked step-by-step guide with target highlighting, direct step launch, and Prev / Next / Finish
 - `AntMentions`: `@` mentions input that pops suggestions on `@`
@@ -388,12 +406,12 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntMasonry`: masonry layout (shortest-column-first)
 - `AntSplitter`: draggable splitter with theme-colored handle
 - `AntAnchor`: scroll anchor navigation with active link highlighting
-- `AntApp`: application wrapper providing message / modal / notification context
-- `AntConfigProvider`: global configuration for theme / primary color / font size / border radius
+- `AntApp`: application feedback context with real `showMessage` / `showModal` / `showNotification` entry points, `last*` handles, shown signals, and explicit failure for an unavailable host
+- `AntConfigProvider`: stages theme mode / primary color / font size / border radius and publishes the four token families atomically through `apply()`
 - `AntToolButton`: QToolButton + QProxyStyle with dropdown arrow animation
 - `AntMenuBar`: themed QMenuBar
 - `AntToolBar`: themed QToolBar with floating shadow
-- `AntDockWidget` / `AntDockManager`: themed dock panels with custom title bars, a custom splitter/tab dock tree, center tab placement, serialized splitter/tab/floating layout perspectives, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, toggleable center / edge drop guide squares (`setDropGuideEnabled()`), deterministic guided drop placement that does not rely on Qt's native dock layout, threshold-activated translucent drag previews, manager-owned floating dock windows with AntWindow-style Windows native frame / DWM rounded corners and shadow handling, double-click maximize / restore, and drag-back-to-layout support
+- `AntDockWidget` / `AntDockManager`: themed dock panels with custom title bars, a custom splitter/tab dock tree, center tab placement, serialized splitter/tab/floating layout perspectives, current-format parser budgets and atomic rejection of invalid replacement snapshots, draggable tab reordering, tab/title context menus, programmatic floating and dock feature APIs, toggleable center / edge drop guide squares (`setDropGuideEnabled()`), deterministic guided drop placement that does not rely on Qt's native dock layout, threshold-activated translucent drag previews, manager-owned floating dock windows with AntWindow-style Windows native frame / DWM rounded corners and shadow handling, double-click maximize / restore, and drag-back-to-layout support. Legacy-signature snapshots can be imported and stored for identification or migration, but restoring them explicitly fails without changing the current layout.
 - `AntDialog`: frameless QDialog replacement with an Ant token title bar, theme-aware child palettes, Ant scroll bars, close-button hover state, and a `contentWidget()` host for reusable dialog bodies
 - `AntInputDialog`: QInputDialog replacement built on `AntDialog`, covering text, integer, double, and item selection modes with Ant inputs, configurable buttons/options, and changed/selected signals
 - `AntScrollArea`: QScrollArea + AntScrollBar + touch gesture scrolling + optional mouse-drag scrolling that does not steal scrollbar drags
@@ -448,7 +466,7 @@ card->bodyLayout()->addWidget(new AntTypography("Card content"));
 AntTheme::instance()->setThemeMode(Ant::ThemeMode::Dark);
 ```
 
-For `QProxyStyle`-based components, `AntStyleBase::connectThemeUpdate<T>()` now refreshes only widgets owned by the style instance or its local parent subtree, falling back to a global widget scan only when no local target can be resolved. The style path caches size hints before the theme mode changes, then runs `polish / onThemeUpdate / update`; `updateGeometry()` is issued only when themed metrics actually changed. `AntWindow`'s built-in theme button wraps the repaint in a captured-frame crossfade overlay so full-window light/dark switches stay visually continuous.
+For `QProxyStyle`-based components, `AntStyleBase::connectThemeUpdate<T>()` now refreshes only widgets owned by the style instance or its local parent subtree, falling back to a global widget scan only when no local target can be resolved. The style path listens to generic `themeAboutToChange` / `themeChanged` signals, so both mode changes and token-only `AntConfigProvider::apply()` calls cache old size hints and then run `polish / onThemeUpdate / update`; `updateGeometry()` is issued only when themed metrics actually changed. `AntWindow`'s built-in theme button wraps the repaint in a captured-frame crossfade overlay so full-window light/dark switches stay visually continuous.
 
 ## Development Guide & Contributing
 
