@@ -124,6 +124,9 @@ jobs:
         qt:
           - label: Qt 6.8.3 Debug ASan+UBSan
             version: 6.8.3
+            # The Linux repository currently omits its qt_base aggregate
+            # package metadata; request the two archives this project uses.
+            archives: qtbase qtsvg
             config: Debug
             shared: "OFF"
             tests: "ON"
@@ -131,6 +134,7 @@ jobs:
             ubsan: "ON"
           - label: Qt 5.15.2 shared Release
             version: 5.15.2
+            archives: ""
             config: Release
             shared: "ON"
             tests: "OFF"
@@ -148,6 +152,7 @@ jobs:
         with:
           version: ${{ matrix.qt.version }}
           arch: gcc_64
+          archives: ${{ matrix.qt.archives }}
           cache: true
 
       - name: Configure
