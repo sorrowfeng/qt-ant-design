@@ -30,21 +30,23 @@ jobs:
           - label: Qt 5.15.2
             version: 5.15.2
             arch: win64_msvc2019_64
-            modules: ""
             config: Debug
             shared: "OFF"
+            unit_tests: "ON"
           - label: Qt 6.7.3
             version: 6.7.3
             arch: win64_msvc2019_64
-            modules: qtsvg
             config: Debug
             shared: "OFF"
+            unit_tests: "ON"
           - label: Qt 6.7.3 shared Release
             version: 6.7.3
             arch: win64_msvc2019_64
-            modules: qtsvg
             config: Release
+            # Static jobs own internal/unit coverage; this job validates the DLL
+            # boundary through the installed example and consumer below.
             shared: "ON"
+            unit_tests: "OFF"
 
     steps:
       - name: Checkout
@@ -53,20 +55,10 @@ jobs:
           persist-credentials: false
 
       - name: Install Qt
-        if: matrix.qt.modules == ''
         uses: jurplel/install-qt-action@d325aaf2a8baeeda41ad0b5d39f84a6af9bcf005 # v4
         with:
           version: ${{ matrix.qt.version }}
           arch: ${{ matrix.qt.arch }}
-          cache: true
-
-      - name: Install Qt modules
-        if: matrix.qt.modules != ''
-        uses: jurplel/install-qt-action@d325aaf2a8baeeda41ad0b5d39f84a6af9bcf005 # v4
-        with:
-          version: ${{ matrix.qt.version }}
-          arch: ${{ matrix.qt.arch }}
-          modules: ${{ matrix.qt.modules }}
           cache: true
 
       - name: Configure
@@ -81,9 +73,19 @@ jobs:
           -DBUILD_SHARED_LIBS=${{ matrix.qt.shared }}
           -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\install"
 
-      - name: Build
+      - name: Build library, example, and unit tests
+        if: matrix.qt.unit_tests == 'ON'
         shell: pwsh
         run: cmake --build build --config ${{ matrix.qt.config }} --parallel
+
+      - name: Build shared library and example
+        if: matrix.qt.unit_tests == 'OFF'
+        shell: pwsh
+        run: >
+          cmake --build build
+          --config ${{ matrix.qt.config }}
+          --target qt-ant-design qt-ant-design-example
+          --parallel
 
       - name: Install
         shell: pwsh
@@ -100,6 +102,7 @@ jobs:
         run: ctest --test-dir build -C ${{ matrix.qt.config }} --output-on-failure --timeout 180 -R "^TestAntInstallConsumer$"
 
       - name: Run targeted tests
+        if: matrix.qt.unit_tests == 'ON'
         shell: pwsh
         run: >
           ctest --test-dir build
@@ -118,7 +121,6 @@ jobs:
         qt:
           - label: Qt 6.7.3 Debug ASan+UBSan
             version: 6.7.3
-            modules: qtsvg
             config: Debug
             shared: "OFF"
             tests: "ON"
@@ -126,7 +128,6 @@ jobs:
             ubsan: "ON"
           - label: Qt 5.15.2 shared Release
             version: 5.15.2
-            modules: ""
             config: Release
             shared: "ON"
             tests: "OFF"
@@ -144,7 +145,6 @@ jobs:
         with:
           version: ${{ matrix.qt.version }}
           arch: gcc_64
-          modules: ${{ matrix.qt.modules }}
           cache: true
 
       - name: Configure
@@ -193,7 +193,6 @@ jobs:
         with:
           version: 6.7.3
           arch: clang_64
-          modules: qtsvg
           cache: true
 
       - name: Configure

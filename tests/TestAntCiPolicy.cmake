@@ -30,6 +30,27 @@ if(NOT workflow MATCHES "-E [^\n]*TestAntInstallConsumer")
     message(FATAL_ERROR "Windows targeted test pass must not rerun the installed-consumer test")
 endif()
 
+if(workflow MATCHES "modules:[ \t]+qtsvg"
+        OR workflow MATCHES "modules:[ \t]+\"qtsvg\""
+        OR workflow MATCHES "modules:[ \t]+'qtsvg'")
+    message(FATAL_ERROR
+        "Qt Svg is included in the selected desktop archives and must not be requested as an add-on module"
+    )
+endif()
+
+if(NOT workflow MATCHES "shared:[ \t]+\"ON\"[\r\n]+[ \t]+unit_tests:[ \t]+\"OFF\"")
+    message(FATAL_ERROR "Windows shared builds must declare that unit-test executables are not part of the build")
+endif()
+if(NOT workflow MATCHES "--target qt-ant-design qt-ant-design-example")
+    message(FATAL_ERROR "Windows shared builds must limit the build to the DLL and installed example")
+endif()
+if(NOT workflow MATCHES "if:[ \t]+matrix\.qt\.unit_tests == 'OFF'")
+    message(FATAL_ERROR "Windows shared-only build steps must be gated away from static configurations")
+endif()
+if(NOT workflow MATCHES "if:[ \t]+matrix\.qt\.unit_tests == 'ON'")
+    message(FATAL_ERROR "Windows unit-test execution must be gated to static test configurations")
+endif()
+
 foreach(required_pattern IN ITEMS
         "permissions:"
         "contents:[ \\t]+read"
