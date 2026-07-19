@@ -46,6 +46,7 @@
 
 #include <atomic>
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <thread>
 #include <type_traits>

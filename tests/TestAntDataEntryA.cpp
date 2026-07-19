@@ -10,6 +10,7 @@
 #include <QPalette>
 #include <QVariantAnimation>
 
+#include <cmath>
 #include <limits>
 
 #include "core/AntTheme.h"
