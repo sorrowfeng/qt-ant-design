@@ -205,7 +205,11 @@ private:
     DockDropPreviewWindow* m_dropPreviewWindow = nullptr;
     QSet<AntDockWidget*> m_docks;
     QHash<AntDockWidget*, DockArea*> m_dockAreas;
-    QHash<QObject*, QPointer<AntDockWidget>> m_dockEventFilterOwners;
+    // Keep the guard at QObject level: on Qt 5 a typed QPointer can remain
+    // non-null while AntDockWidget is already running a QWidget base
+    // destructor, where reading QPointer<AntDockWidget>::data() is an invalid
+    // downcast. Normal event handling resolves the live type with qobject_cast.
+    QHash<QObject*, QPointer<QObject>> m_dockEventFilterOwners;
     QHash<QObject*, QMetaObject::Connection> m_dockEventFilterDestroyedConnections;
     QHash<QString, QByteArray> m_perspectives;
     bool m_placeholderVisible = true;

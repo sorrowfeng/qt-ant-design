@@ -174,9 +174,8 @@ jobs:
           # address/UB violations in project code instead of third-party LSAN noise.
           ASAN_OPTIONS: halt_on_error=1:abort_on_error=1:detect_leaks=0
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-          QT_QPA_PLATFORM: offscreen
         run: >
-          ctest --test-dir build --output-on-failure --timeout 180
+          xvfb-run -a ctest --test-dir build --output-on-failure --timeout 180
           -R "TestAnt(StressLifecycle|DataEntryA|DataEntryB|DataDisplayA|DataDisplayB|Feedback|Navigation|QRGenerator|DockPerspectiveLimits|QtExtensions|Typography|Interactions)"
 
       - name: Install library

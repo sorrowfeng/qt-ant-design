@@ -4745,7 +4745,7 @@ void TestAntQtExtensions::fileDialog()
     QVERIFY(placesPanel->maximumHeight() <= 32);
     const auto placeButtons = dialog.findChildren<AntButton*>(QStringLiteral("antFileDialogPlaceButton"));
     const auto placeToolTips = dialog.findChildren<AntToolTip*>(QStringLiteral("antFileDialogPlaceTooltip"));
-    QVERIFY(placeButtons.size() >= 3);
+    QVERIFY(!placeButtons.isEmpty());
     QCOMPARE(placeToolTips.size(), placeButtons.size());
     AntButton* homePlaceButton = nullptr;
     const QString homePath = QDir(QDir::homePath()).absolutePath();

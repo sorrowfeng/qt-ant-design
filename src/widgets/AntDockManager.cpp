@@ -628,6 +628,13 @@ protected:
 
         if (event->type() == QEvent::WindowDeactivate)
         {
+            // Some platforms activate a tool window even with WA_ShowWithoutActivating,
+            // which deactivates the owner while this popup is becoming active.  That is
+            // not an application deactivation and must not immediately dismiss the menu.
+            if (QApplication::activeWindow() == this)
+            {
+                return QFrame::eventFilter(watched, event);
+            }
             close();
         }
 
@@ -2971,7 +2978,7 @@ AntDockWidget* AntDockManager::dockForWatchedObject(QObject* watched) const
         return nullptr;
     }
 
-    AntDockWidget* dock = it.value().data();
+    AntDockWidget* dock = qobject_cast<AntDockWidget*>(it.value().data());
     return dock && m_docks.contains(dock) ? dock : nullptr;
 }
 
@@ -2986,7 +2993,7 @@ void AntDockManager::installDockEventFilters(AntDockWidget* dockWidget)
         }
 
         const bool firstRegistration = !m_dockEventFilterDestroyedConnections.contains(watched);
-        m_dockEventFilterOwners.insert(watched, QPointer<AntDockWidget>(dockWidget));
+        m_dockEventFilterOwners.insert(watched, QPointer<QObject>(dockWidget));
         watched->removeEventFilter(this);
         watched->installEventFilter(this);
         if (firstRegistration)
@@ -3013,7 +3020,7 @@ void AntDockManager::removeDockEventFilters(AntDockWidget* dockWidget)
 
     for (auto it = m_dockEventFilterOwners.begin(); it != m_dockEventFilterOwners.end();)
     {
-        if (it.value().data() == dockWidget)
+        if (it.value().data() == static_cast<QObject*>(dockWidget))
         {
             QObject* watched = it.key();
             if (watched)
