@@ -51,6 +51,18 @@ if(NOT workflow MATCHES "if:[ \t]+matrix\.qt\.unit_tests == 'ON'")
     message(FATAL_ERROR "Windows unit-test execution must be gated to static test configurations")
 endif()
 
+foreach(required_test_routing IN ITEMS
+        "TestAnt(DataEntryB|DataDisplayB|QtExtensions)"
+        "DataDisplayA|DataDisplayB|Feedback"
+        "DockPerspectiveLimits|QtExtensions|Typography")
+    string(FIND "${workflow}" "${required_test_routing}" routing_index)
+    if(routing_index EQUAL -1)
+        message(FATAL_ERROR
+            "Hosted Windows GUI exclusions must remain covered by the Linux sanitizer job: ${required_test_routing}"
+        )
+    endif()
+endforeach()
+
 foreach(required_pattern IN ITEMS
         "permissions:"
         "contents:[ \\t]+read"
