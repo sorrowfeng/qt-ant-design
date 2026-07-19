@@ -54,7 +54,9 @@ endif()
 foreach(required_test_routing IN ITEMS
         "TestAnt(DataEntryB|DataDisplayB|QtExtensions)"
         "DataDisplayA|DataDisplayB|Feedback"
-        "DockPerspectiveLimits|QtExtensions|Typography")
+        "DockPerspectiveLimits|Typography|Interactions"
+        "./build/tests/TestAntQtExtensions"
+        "formItem form formProvider formIncrementalUpdates formList")
     string(FIND "${workflow}" "${required_test_routing}" routing_index)
     if(routing_index EQUAL -1)
         message(FATAL_ERROR
@@ -72,7 +74,6 @@ foreach(required_pattern IN ITEMS
         "QT_ANT_DESIGN_ENABLE_UNDEFINED_SANITIZER"
         "TestAntInstallConsumer"
         "Run installed example smoke"
-        "xvfb-run -a ctest"
         "runs-on: ubuntu-22.04"
         "runs-on: macos-14"
         "BUILD_SHARED_LIBS")

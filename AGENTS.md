@@ -428,7 +428,7 @@ bool AntXxxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 ## 构建与安装
 
 - 手工 `cmake -S/-B` 构建支持 CMake 3.16+；`CMakePresets.json` 使用 schema v3，需要 CMake 3.21+。
-- 当前 CI 定义的矩阵为：Windows Qt 5.15.2 Debug static、Qt 6.7.3 Debug static、Qt 6.7.3 Release shared；Linux Qt 5.15.2 Debug static + ASan/UBSan、Qt 5.15.2 Release shared；macOS Qt 6.7.3 Release shared。所有非 sanitizer 配置执行安装；sanitizer 配置只构建和测试、刻意跳过安装。Windows hosted runner 的非交互会话会无诊断终止聚合 GUI 套件 `TestAntDataEntryB`、`TestAntDataDisplayB`、`TestAntQtExtensions`，因此远端 Windows 作业排除这三项，其跨平台路径由 Linux sanitizer 作业覆盖，完整套件仍保留在本地 Windows 验证中。Windows 作业还执行安装示例 smoke 与独立 installed consumer。该描述表示工作流已配置，不代表尚未实际触发的新远程矩阵已通过。
+- 当前 CI 定义的矩阵为：Windows Qt 5.15.2 Debug static、Qt 6.7.3 Debug static、Qt 6.7.3 Release shared；Linux Qt 5.15.2 Debug static + ASan/UBSan、Qt 5.15.2 Release shared；macOS Qt 6.7.3 Release shared。所有非 sanitizer 配置执行安装；sanitizer 配置只构建和测试、刻意跳过安装。Windows hosted runner 的非交互会话会无诊断终止聚合 GUI 套件 `TestAntDataEntryB`、`TestAntDataDisplayB`、`TestAntQtExtensions`，因此远端 Windows 作业排除这三项；Linux sanitizer 完整执行前两套，并执行 `TestAntQtExtensions` 中适合 headless 的 Form/生命周期切片，完整套件仍保留在本地 Windows 验证中。Windows 作业还执行安装示例 smoke 与独立 installed consumer。该描述表示工作流已配置，不代表尚未实际触发的新远程矩阵已通过。
 
 ```powershell
 cmake -S . -B build -DCMAKE_INSTALL_PREFIX=D:/Project/GitProject/qt-ant-design/install
