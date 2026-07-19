@@ -784,22 +784,21 @@ void TestAntDataEntryB::uploadCachesLayoutThumbsAndScopesUpdates()
     QVERIFY(upload.property("antUploadProgressRegionUpdateCount").toInt() > progressUpdatesBefore);
     QCOMPARE(upload.property("antUploadLastUpdateMode").toString(), QStringLiteral("status"));
 
-    QFileInfo thumbInfo(QDir::current().absoluteFilePath(QStringLiteral("resources/images/image-basic.png")));
-    if (!thumbInfo.exists())
-    {
-        thumbInfo.setFile(QDir(QCoreApplication::applicationDirPath())
-                              .absoluteFilePath(QStringLiteral("../../../resources/images/image-basic.png")));
-    }
-    QVERIFY(thumbInfo.exists());
+    QTemporaryDir thumbnailDirectory;
+    QVERIFY(thumbnailDirectory.isValid());
+    const QString thumbnailPath = thumbnailDirectory.filePath(QStringLiteral("thumbnail.png"));
+    QImage thumbnail(QSize(96, 72), QImage::Format_ARGB32_Premultiplied);
+    thumbnail.fill(QColor(QStringLiteral("#1677ff")));
+    QVERIFY(thumbnail.save(thumbnailPath));
 
     AntUpload pictureUpload;
     pictureUpload.setListType(Ant::UploadListType::Picture);
     AntUploadFile imageFile;
     imageFile.uid = QStringLiteral("image");
-    imageFile.name = QStringLiteral("image-basic.png");
+    imageFile.name = QStringLiteral("thumbnail.png");
     imageFile.status = Ant::UploadFileStatus::Done;
     imageFile.percent = 100;
-    imageFile.thumbUrl = thumbInfo.absoluteFilePath();
+    imageFile.thumbUrl = thumbnailPath;
     pictureUpload.addFile(imageFile);
     pictureUpload.resize(280, pictureUpload.sizeHint().height());
     pictureUpload.show();

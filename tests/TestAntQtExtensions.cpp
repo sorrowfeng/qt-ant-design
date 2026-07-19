@@ -1175,6 +1175,13 @@ void TestAntQtExtensions::formProvider()
     QCOMPARE(provider.forms(), QList<AntForm*>({secondForm}));
     delete secondForm;
     QVERIFY(provider.forms().isEmpty());
+
+    AntForm itemLifetimeForm;
+    auto* destroyedItem = new AntFormItem;
+    itemLifetimeForm.addItem(destroyedItem);
+    QCOMPARE(itemLifetimeForm.items(), QList<AntFormItem*>({destroyedItem}));
+    delete destroyedItem;
+    QVERIFY(itemLifetimeForm.items().isEmpty());
 }
 
 void TestAntQtExtensions::formIncrementalUpdates()

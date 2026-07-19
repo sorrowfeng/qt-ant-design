@@ -124,7 +124,10 @@ private:
     int m_badgeCount = 0;
 
     // Group
-    QVector<QPointer<AntFloatButton>> m_children;
+    // Keep the weak guard QObject-typed: during Qt 5's destroyed() emission the
+    // QWidget-derived object is already destructed, so a typed QPointer downcast
+    // is invalid even though the QObject base is still alive.
+    QVector<QPointer<QObject>> m_children;
     QHash<AntFloatButton*, QMetaObject::Connection> m_childDestroyedConnections;
     Ant::Trigger m_groupTrigger = Ant::Trigger::Click;
     bool m_open = false;

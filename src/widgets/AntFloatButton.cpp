@@ -118,8 +118,8 @@ void AntFloatButton::setBadgeCount(int count)
 void AntFloatButton::addChild(AntFloatButton* child)
 {
     pruneDestroyedChildren();
-    if (!child || m_children.contains(QPointer<AntFloatButton>(child))) return;
-    m_children.append(QPointer<AntFloatButton>(child));
+    if (!child || m_children.contains(QPointer<QObject>(child))) return;
+    m_children.append(QPointer<QObject>(child));
     m_childDestroyedConnections.insert(child, connect(child, &QObject::destroyed, this, [this, child]() {
         m_childDestroyedConnections.remove(child);
         for (int i = m_children.size() - 1; i >= 0; --i)
@@ -179,11 +179,11 @@ QVector<AntFloatButton*> AntFloatButton::childButtons() const
 {
     QVector<AntFloatButton*> children;
     children.reserve(m_children.size());
-    for (const QPointer<AntFloatButton>& child : m_children)
+    for (const QPointer<QObject>& child : m_children)
     {
-        if (child)
+        if (AntFloatButton* button = qobject_cast<AntFloatButton*>(child.data()))
         {
-            children.append(child.data());
+            children.append(button);
         }
     }
     return children;
@@ -455,7 +455,7 @@ bool AntFloatButton::eventFilter(QObject* watched, QEvent* event)
     {
         pruneDestroyedChildren();
         bool clickOnChild = false;
-        for (const QPointer<AntFloatButton>& child : m_children)
+        for (const QPointer<QObject>& child : m_children)
         {
             if (watched == child.data())
             {
@@ -513,7 +513,7 @@ void AntFloatButton::layoutChildren()
 
     for (int i = m_children.size() - 1; i >= 0; --i)
     {
-        AntFloatButton* child = m_children[i].data();
+        AntFloatButton* child = qobject_cast<AntFloatButton*>(m_children[i].data());
         if (!child)
         {
             continue;

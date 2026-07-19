@@ -114,9 +114,9 @@ QList<AntForm*> AntFormProvider::forms() const
     QList<AntForm*> result;
     for (const auto& entry : m_forms)
     {
-        if (entry.form)
+        if (auto* form = qobject_cast<AntForm*>(entry.form.data()))
         {
-            result.append(entry.form.data());
+            result.append(form);
         }
     }
     return result;
@@ -715,9 +715,9 @@ QList<AntFormItem*> AntForm::items() const
     result.reserve(m_items.size());
     for (const auto& item : m_items)
     {
-        if (item)
+        if (auto* formItem = qobject_cast<AntFormItem*>(item.data()))
         {
-            result.append(item.data());
+            result.append(formItem);
         }
     }
     return result;
@@ -763,9 +763,9 @@ AntFormItem* AntForm::addItem(const QString& label, QWidget* fieldWidget, bool r
 
 void AntForm::clearItems()
 {
-    for (AntFormItem* item : std::as_const(m_items))
+    for (const auto& guardedItem : std::as_const(m_items))
     {
-        if (item)
+        if (auto* item = qobject_cast<AntFormItem*>(guardedItem.data()))
         {
             disconnect(item, nullptr, this, nullptr);
             if (m_layout)
@@ -789,9 +789,10 @@ QVariant AntForm::fieldValue(const QString& fieldName) const
     }
     for (const auto& item : m_items)
     {
-        if (item && effectiveFieldName(item.data()) == normalized)
+        auto* formItem = qobject_cast<AntFormItem*>(item.data());
+        if (formItem && effectiveFieldName(formItem) == normalized)
         {
-            return item->fieldValue();
+            return formItem->fieldValue();
         }
     }
     return QVariant();
@@ -802,14 +803,15 @@ QVariantMap AntForm::values() const
     QVariantMap result;
     for (const auto& item : m_items)
     {
-        if (!item)
+        auto* formItem = qobject_cast<AntFormItem*>(item.data());
+        if (!formItem)
         {
             continue;
         }
-        const QString name = effectiveFieldName(item.data());
+        const QString name = effectiveFieldName(formItem);
         if (!name.isEmpty())
         {
-            result.insert(name, item->fieldValue());
+            result.insert(name, formItem->fieldValue());
         }
     }
     for (auto it = m_customFieldValues.constBegin(); it != m_customFieldValues.constEnd(); ++it)
@@ -843,9 +845,9 @@ void AntForm::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange)
     {
-        for (AntFormItem* item : std::as_const(m_items))
+        for (const auto& guardedItem : std::as_const(m_items))
         {
-            if (item)
+            if (auto* item = qobject_cast<AntFormItem*>(guardedItem.data()))
             {
                 item->setEnabled(isEnabled());
             }
@@ -870,8 +872,9 @@ void AntForm::rebuildLayout()
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(m_itemSpacing);
 
-    for (AntFormItem* item : std::as_const(m_items))
+    for (const auto& guardedItem : std::as_const(m_items))
     {
+        auto* item = qobject_cast<AntFormItem*>(guardedItem.data());
         if (!item)
         {
             continue;
@@ -889,9 +892,9 @@ void AntForm::rebuildLayout()
 void AntForm::applyItemSettings()
 {
     ++m_itemSettingsApplyCount;
-    for (AntFormItem* item : std::as_const(m_items))
+    for (const auto& guardedItem : std::as_const(m_items))
     {
-        if (item)
+        if (auto* item = qobject_cast<AntFormItem*>(guardedItem.data()))
         {
             item->applyFormSettings(m_formLayout, m_labelAlign, m_colon, m_requiredMark, m_labelWidth);
             item->setEnabled(isEnabled());

@@ -135,7 +135,8 @@ Q_SIGNALS:
 private:
     struct FormEntry
     {
-        QPointer<AntForm> form;
+        // QObject avoids a typed QPointer downcast while Qt5 emits destroyed().
+        QPointer<QObject> form;
         QString name;
         QMetaObject::Connection fieldConnection;
         QMetaObject::Connection finishConnection;
@@ -219,7 +220,8 @@ private:
     int m_labelWidth = 96;
     int m_itemSpacing = 16;
     QBoxLayout* m_layout = nullptr;
-    QList<QPointer<AntFormItem>> m_items;
+    // QObject avoids a typed QPointer downcast while Qt5 emits destroyed().
+    QList<QPointer<QObject>> m_items;
     QVariantMap m_customFieldValues;
     int m_layoutRebuildCount = 0;
     int m_itemSettingsApplyCount = 0;
