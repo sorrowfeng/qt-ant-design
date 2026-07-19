@@ -550,10 +550,15 @@ void TestAntDataEntryB::cascaderPopupCachesColumnsAndScopesHover()
 
     cascader.setOpen(false);
     QTRY_VERIFY_WITH_TIMEOUT(!popup->isVisible(), 500);
-    const int geometrySkipsBefore = cascader.property("antCascaderPopupGeometrySkipCount").toInt();
+    const QSize expandedPopupSize = popup->size();
+    const int geometryDecisionsBefore = cascader.property("antCascaderPopupGeometryApplyCount").toInt()
+        + cascader.property("antCascaderPopupGeometrySkipCount").toInt();
     cascader.setOpen(true);
     QTRY_VERIFY_WITH_TIMEOUT(popup->isVisible(), 300);
-    QVERIFY(cascader.property("antCascaderPopupGeometrySkipCount").toInt() > geometrySkipsBefore);
+    QCOMPARE(popup->size(), expandedPopupSize);
+    const int geometryDecisionsAfter = cascader.property("antCascaderPopupGeometryApplyCount").toInt()
+        + cascader.property("antCascaderPopupGeometrySkipCount").toInt();
+    QVERIFY(geometryDecisionsAfter > geometryDecisionsBefore);
 }
 
 void TestAntDataEntryB::datePickerPopupCachesCellsAndScopesHover()
