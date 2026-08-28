@@ -60,9 +60,9 @@ AntToolButton::AntToolButton(QWidget* parent)
         update();
     });
 
-    m_spinnerTimer = new QTimer(this);
-    connect(m_spinnerTimer, &QTimer::timeout, this, [this]() {
-        m_spinnerAngle = (m_spinnerAngle + 6) % 360;
+    m_spinner.setInterval(16);
+    m_spinner.setStep(6);
+    connect(&m_spinner, &AntSpinner::ticked, this, [this]() {
         updateSpinnerRegion();
     });
 
@@ -507,20 +507,7 @@ void AntToolButton::updateIndicatorRegion(const QRect& rect, int& counter)
 void AntToolButton::updateSpinnerTimer()
 {
     const bool shouldRun = m_loading && isVisible();
-    if (m_spinnerTimer->isActive() == shouldRun)
-    {
-        syncToolButtonPerfCounters();
-        return;
-    }
-
-    if (shouldRun)
-    {
-        m_spinnerTimer->start(16);
-    }
-    else
-    {
-        m_spinnerTimer->stop();
-    }
+    m_spinner.setRunning(shouldRun);
     syncToolButtonPerfCounters();
 }
 
@@ -570,13 +557,12 @@ void AntToolButton::syncToolButtonPerfCounters() const
     auto* self = const_cast<AntToolButton*>(this);
     self->setProperty("antToolButtonSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
     self->setProperty("antToolButtonArrowRegionUpdateCount", m_arrowRegionUpdateCount);
-    self->setProperty("antToolButtonSpinnerTimerActive",
-                      m_spinnerTimer && m_spinnerTimer->isActive());
+    self->setProperty("antToolButtonSpinnerTimerActive", m_spinner.isRunning());
 }
 
 int AntToolButton::spinnerAngle() const
 {
-    return m_spinnerAngle;
+    return m_spinner.angle();
 }
 
 bool AntToolButton::isFocusVisibleState() const

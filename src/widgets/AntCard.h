@@ -5,9 +5,9 @@
 #include <QFrame>
 #include <QRect>
 #include <QRectF>
-#include <QTimer>
 #include <QVector>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class QHBoxLayout;
@@ -98,7 +98,6 @@ private:
     void rebuildChrome();
     void updateTheme();
     void updateLoadingTimer();
-    void drawSpinner(QPainter& painter, const QRectF& rect) const;
     const CardPaintCache& cardPaintCache(const QRect& widgetRect) const;
     void invalidateCardPaintCache() const;
     QRect spinnerDirtyRect() const;
@@ -128,9 +127,8 @@ private:
     bool m_hoverable = false;
     bool m_loading = false;
     bool m_hovered = false;
-    int m_spinnerAngle = 0;
     Ant::CardSize m_cardSize = Ant::CardSize::Default;
-    QTimer m_spinnerTimer;
+    AntSpinner m_spinner;
     mutable CardPaintCache m_paintCache;
     mutable int m_paintCacheBuildCount = 0;
     mutable int m_paintCacheHitCount = 0;

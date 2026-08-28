@@ -7,6 +7,8 @@
 #include "styles/AntPalette.h"
 #include "widgets/AntSwitch.h"
 
+#include "core/AntSpinner.h"
+
 namespace
 {
 QColor trackColorFor(const AntSwitch* sw)
@@ -33,15 +35,6 @@ QColor trackColorFor(const AntSwitch* sw)
     }
 
     return color;
-}
-
-void drawSwitchSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int angle)
-{
-    painter.save();
-    painter.setPen(QPen(color, 1.6, Qt::SolidLine, Qt::RoundCap));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect, angle * 16, 270 * 16);
-    painter.restore();
 }
 }
 
@@ -173,7 +166,7 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
     if (sw->isLoading())
     {
         const QColor spinnerColor = sw->isChecked() ? token.colorPrimary : token.colorTextTertiary;
-        drawSwitchSpinner(*painter, handle.adjusted(4, 4, -4, -4), spinnerColor, sw->loadingAngle());
+        AntSpinner::drawArc(painter, handle.adjusted(4, 4, -4, -4), spinnerColor, sw->loadingAngle());
     }
 
     if (focused && enabled && !sw->isLoading())

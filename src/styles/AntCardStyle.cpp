@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "core/AntSpinner.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntCard.h"
 
@@ -116,9 +117,8 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
         mask.setAlphaF(0.72);
         AntStyleBase::drawCrispRoundedRect(painter, cardRect, Qt::NoPen, mask, radius, radius);
 
-        painter->setPen(QPen(token.colorPrimary, 3, Qt::SolidLine, Qt::RoundCap));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawArc(cache.spinnerRect, card->m_spinnerAngle * 16, 280 * 16);
+        AntSpinner::drawArc(painter, cache.spinnerRect, token.colorPrimary,
+                            card->m_spinner.angle(), 280, 3.0);
     }
 
     painter->restore();

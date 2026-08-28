@@ -8,6 +8,7 @@
 #include <QSize>
 #include <QWidget>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class QEvent;
@@ -18,7 +19,6 @@ class QMouseEvent;
 class QPainter;
 class QResizeEvent;
 class QShowEvent;
-class QTimer;
 class AntSwitchStyle;
 
 class QT_ANT_DESIGN_EXPORT AntSwitch : public QWidget
@@ -134,10 +134,9 @@ private:
     QString m_uncheckedText;
     qreal m_handleProgress = 0.0;
     qreal m_handleStretch = 0.0;
-    int m_loadingAngle = 0;
+    AntSpinner m_loadingSpinner;
     QPropertyAnimation* m_progressAnimation = nullptr;
     QPropertyAnimation* m_stretchAnimation = nullptr;
-    QTimer* m_loadingTimer = nullptr;
     mutable LayoutCache m_layoutCache;
     mutable int m_layoutBuildCount = 0;
     mutable int m_metricsResolveCount = 0;

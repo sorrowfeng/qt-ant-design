@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "core/AntSpinner.h"
 #include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSelect.h"
@@ -266,12 +267,9 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
 
     if (select->isLoading())
     {
-        painter->setPen(QPen(disabled ? token.colorTextDisabled : token.colorTextTertiary,
-                             1.6,
-                             Qt::SolidLine,
-                             Qt::RoundCap));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawArc(clearRect.adjusted(2, 2, -2, -2), select->loadingAngle() * 16, 270 * 16);
+        const QColor spinnerColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
+        AntSpinner::drawArc(painter, clearRect.adjusted(2, 2, -2, -2), spinnerColor,
+                            select->loadingAngle());
     }
     else if (select->canClear())
     {

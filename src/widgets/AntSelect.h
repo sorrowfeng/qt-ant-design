@@ -9,6 +9,7 @@
 #include <QVariant>
 #include <QWidget>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class AntSelectOptionWidget;
@@ -22,7 +23,6 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 class QPropertyAnimation;
-class QTimer;
 class QVBoxLayout;
 
 struct AntSelectOption
@@ -231,7 +231,6 @@ private:
     bool m_hovered = false;
     bool m_pressed = false;
     bool m_open = false;
-    int m_loadingAngle = 0;
     qreal m_arrowRotation = 0.0;
     QFrame* m_popup = nullptr;
     QVBoxLayout* m_popupLayout = nullptr;
@@ -239,7 +238,7 @@ private:
     QList<int> m_visiblePopupIndices;
     QRect m_lastPopupGeometry;
     QPropertyAnimation* m_arrowAnimation = nullptr;
-    QTimer* m_loadingTimer = nullptr;
+    AntSpinner m_loadingSpinner;
     QLineEdit* m_editField = nullptr;
     mutable MetricsCache m_metricsCache;
     mutable int m_metricsResolveCount = 0;

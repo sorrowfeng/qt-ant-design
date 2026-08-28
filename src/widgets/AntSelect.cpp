@@ -177,9 +177,7 @@ AntSelect::AntSelect(QWidget* parent)
     m_arrowAnimation->setDuration(160);
     m_arrowAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
-    m_loadingTimer = new QTimer(this);
-    connect(m_loadingTimer, &QTimer::timeout, this, [this]() {
-        m_loadingAngle = (m_loadingAngle + 30) % 360;
+    connect(&m_loadingSpinner, &AntSpinner::ticked, this, [this]() {
         update();
     });
 
@@ -340,7 +338,7 @@ void AntSelect::setLoading(bool loading)
         return;
     }
     m_loading = loading;
-    m_loading ? m_loadingTimer->start(80) : m_loadingTimer->stop();
+    m_loadingSpinner.setRunning(m_loading);
     update();
     Q_EMIT loadingChanged(m_loading);
 }
@@ -746,7 +744,7 @@ bool AntSelect::isHoveredState() const { return m_hovered; }
 
 bool AntSelect::isPressedState() const { return m_pressed; }
 
-int AntSelect::loadingAngle() const { return m_loadingAngle; }
+int AntSelect::loadingAngle() const { return m_loadingSpinner.angle(); }
 
 QSize AntSelect::sizeHint() const
 {

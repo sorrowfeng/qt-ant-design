@@ -6,6 +6,7 @@
 #include <QRectF>
 #include <QToolButton>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class AntMenu;
@@ -17,7 +18,6 @@ class QHideEvent;
 class QKeyEvent;
 class QPropertyAnimation;
 class QShowEvent;
-class QTimer;
 
 class QT_ANT_DESIGN_EXPORT AntToolButton : public QToolButton
 {
@@ -109,8 +109,7 @@ private:
     bool m_pressed = false;
     bool m_focusVisible = false;
     qreal m_arrowRotation = 0.0;
-    int m_spinnerAngle = 0;
-    QTimer* m_spinnerTimer = nullptr;
+    AntSpinner m_spinner;
     QPropertyAnimation* m_arrowAnimation = nullptr;
     AntToolTip* m_antToolTip = nullptr;
     int m_spinnerRegionUpdateCount = 0;

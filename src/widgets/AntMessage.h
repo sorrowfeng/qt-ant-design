@@ -10,6 +10,7 @@
 #include <QRectF>
 #include <QWidget>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class QEnterEvent;
@@ -125,11 +126,10 @@ private:
     int m_duration = 3000;
     bool m_pauseOnHover = true;
     bool m_hovered = false;
-    int m_loadingAngle = 0;
     QPointer<QWidget> m_anchor;
     QPointer<QWidget> m_anchorWindow;
     QTimer* m_closeTimer = nullptr;
-    QTimer* m_loadingTimer = nullptr;
+    AntSpinner m_loadingSpinner;
     mutable MessageLayout m_layoutCache;
     mutable QPixmap m_shadowPixmapCache;
     mutable QString m_shadowPixmapCacheKey;

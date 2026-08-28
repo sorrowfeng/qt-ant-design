@@ -4,6 +4,7 @@ set(QT_ANT_DESIGN_HEADERS
     core/AntFont.h
     core/AntPopupMotion.h
     core/AntQRGenerator.h
+    core/AntSpinner.h
     core/AntStyleBase.h
     core/AntTheme.h
     core/AntThemeRefresh_p.h
@@ -215,6 +216,7 @@ set(QT_ANT_DESIGN_SOURCES
     core/AntFont.cpp
     core/AntPopupMotion.cpp
     core/AntQRGenerator.cpp
+    core/AntSpinner.cpp
     core/AntStyleBase.cpp
     core/AntTheme.cpp
     core/AntTypes.cpp

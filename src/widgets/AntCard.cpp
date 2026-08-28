@@ -71,11 +71,10 @@ AntCard::AntCard(QWidget* parent)
     m_rootLayout->addWidget(m_body, 1);
     m_rootLayout->addWidget(m_actions);
 
-    connect(&m_spinnerTimer, &QTimer::timeout, this, [this]() {
-        m_spinnerAngle = (m_spinnerAngle + 30) % 360;
+    connect(&m_spinner, &AntSpinner::ticked, this, [this]() {
         requestCardUpdate(spinnerDirtyRect(), QStringLiteral("spinner"), true);
     });
-    m_spinnerTimer.setTimerType(Qt::PreciseTimer);
+    m_spinner.setPrecise(true);
     connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
@@ -379,7 +378,7 @@ void AntCard::showEvent(QShowEvent* event)
 
 void AntCard::hideEvent(QHideEvent* event)
 {
-    m_spinnerTimer.stop();
+    m_spinner.stop();
     syncCardPerfCounters();
     QFrame::hideEvent(event);
 }
@@ -476,14 +475,7 @@ void AntCard::updateTheme()
 void AntCard::updateLoadingTimer()
 {
     const bool shouldRun = m_loading && isVisible() && isEnabled();
-    if (shouldRun && !m_spinnerTimer.isActive())
-    {
-        m_spinnerTimer.start(80);
-    }
-    else if (!shouldRun && m_spinnerTimer.isActive())
-    {
-        m_spinnerTimer.stop();
-    }
+    m_spinner.setRunning(shouldRun);
     syncCardPerfCounters();
 }
 
@@ -576,14 +568,5 @@ void AntCard::syncCardPerfCounters() const
     self->setProperty("antCardRegionUpdateCount", m_regionUpdateCount);
     self->setProperty("antCardSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
     self->setProperty("antCardLastUpdateMode", m_lastUpdateMode);
-    self->setProperty("antCardSpinnerTimerActive", m_spinnerTimer.isActive());
-}
-
-void AntCard::drawSpinner(QPainter& painter, const QRectF& rect) const
-{
-    painter.save();
-    painter.setPen(QPen(antTheme->tokens().colorPrimary, 3, Qt::SolidLine, Qt::RoundCap));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect, m_spinnerAngle * 16, 280 * 16);
-    painter.restore();
+    self->setProperty("antCardSpinnerTimerActive", m_spinner.isRunning());
 }

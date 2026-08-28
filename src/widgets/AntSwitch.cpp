@@ -34,9 +34,7 @@ AntSwitch::AntSwitch(QWidget* parent)
     m_stretchAnimation->setDuration(120);
     m_stretchAnimation->setEasingCurve(QEasingCurve::InOutSine);
 
-    m_loadingTimer = new QTimer(this);
-    connect(m_loadingTimer, &QTimer::timeout, this, [this]() {
-        m_loadingAngle = (m_loadingAngle + 30) % 360;
+    connect(&m_loadingSpinner, &AntSpinner::ticked, this, [this]() {
         ++m_loadingRegionUpdateCount;
         updateSwitchRegion(switchLoadingDirtyRect(), QStringLiteral("loading"));
     });
@@ -171,7 +169,7 @@ bool AntSwitch::isHoveredState() const { return m_hovered; }
 
 bool AntSwitch::isPressedState() const { return m_pressed; }
 
-int AntSwitch::loadingAngle() const { return m_loadingAngle; }
+int AntSwitch::loadingAngle() const { return m_loadingSpinner.angle(); }
 
 QSize AntSwitch::sizeHint() const
 {
@@ -454,15 +452,8 @@ void AntSwitch::invalidateLayoutCache() const
 void AntSwitch::updateLoadingTimerState()
 {
     const bool shouldRun = m_loading && isVisible();
-    if (shouldRun && !m_loadingTimer->isActive())
-    {
-        m_loadingTimer->start(80);
-    }
-    else if (!shouldRun && m_loadingTimer->isActive())
-    {
-        m_loadingTimer->stop();
-    }
-    setProperty("antSwitchLoadingTimerActive", m_loadingTimer->isActive());
+    m_loadingSpinner.setRunning(shouldRun);
+    setProperty("antSwitchLoadingTimerActive", m_loadingSpinner.isRunning());
 }
 
 void AntSwitch::syncSwitchPerfCounters() const
@@ -474,7 +465,7 @@ void AntSwitch::syncSwitchPerfCounters() const
     self->setProperty("antSwitchRegionUpdateCount", m_regionUpdateCount);
     self->setProperty("antSwitchHandleRegionUpdateCount", m_handleRegionUpdateCount);
     self->setProperty("antSwitchLoadingRegionUpdateCount", m_loadingRegionUpdateCount);
-    self->setProperty("antSwitchLoadingTimerActive", m_loadingTimer ? m_loadingTimer->isActive() : false);
+    self->setProperty("antSwitchLoadingTimerActive", m_loadingSpinner.isRunning());
 }
 
 void AntSwitch::animateToChecked(bool checked)

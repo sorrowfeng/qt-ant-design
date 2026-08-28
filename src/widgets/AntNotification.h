@@ -11,6 +11,7 @@
 #include <QRectF>
 #include <QWidget>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class QEnterEvent;
@@ -227,12 +228,11 @@ private:
     bool m_iconVisible = true;
     bool m_hovered = false;
     bool m_closeHovered = false;
-    int m_spinnerAngle = 0;
     QPointer<QWidget> m_anchor;
     QPointer<QWidget> m_anchorWindow;
     QTimer* m_closeTimer = nullptr;
     QTimer* m_progressTimer = nullptr;
-    QTimer* m_spinnerTimer = nullptr;
+    AntSpinner m_spinner;
     QElapsedTimer m_countdown;
     mutable NotificationLayout m_layoutCache;
     mutable QPixmap m_shadowPixmapCache;

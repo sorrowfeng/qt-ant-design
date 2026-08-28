@@ -32,8 +32,9 @@ AntButton::AntButton(QWidget* parent)
         AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
-    connect(&m_spinnerTimer, &QTimer::timeout, this, [this]() {
-        m_spinnerAngle = (m_spinnerAngle + 6) % 360;
+    m_spinner.setInterval(16);
+    m_spinner.setStep(6);
+    connect(&m_spinner, &AntSpinner::ticked, this, [this]() {
         updateSpinnerRegion();
     });
 
@@ -419,20 +420,7 @@ void AntButton::updateSpinnerRegion()
 void AntButton::updateSpinnerTimer()
 {
     const bool shouldRun = m_loading && isVisible();
-    if (m_spinnerTimer.isActive() == shouldRun)
-    {
-        syncButtonPerfCounters();
-        return;
-    }
-
-    if (shouldRun)
-    {
-        m_spinnerTimer.start(16);
-    }
-    else
-    {
-        m_spinnerTimer.stop();
-    }
+    m_spinner.setRunning(shouldRun);
     syncButtonPerfCounters();
 }
 
@@ -440,12 +428,12 @@ void AntButton::syncButtonPerfCounters() const
 {
     auto* self = const_cast<AntButton*>(this);
     self->setProperty("antButtonSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
-    self->setProperty("antButtonSpinnerTimerActive", m_spinnerTimer.isActive());
+    self->setProperty("antButtonSpinnerTimerActive", m_spinner.isRunning());
 }
 
 int AntButton::spinnerAngle() const
 {
-    return m_spinnerAngle;
+    return m_spinner.angle();
 }
 
 bool AntButton::isFocusVisibleState() const

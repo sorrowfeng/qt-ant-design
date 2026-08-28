@@ -3,8 +3,8 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QPushButton>
-#include <QTimer>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class QHideEvent;
@@ -108,8 +108,7 @@ private:
     bool m_hovered = false;
     bool m_pressed = false;
     bool m_focusVisible = false;
-    int m_spinnerAngle = 0;
-    QTimer m_spinnerTimer;
+    AntSpinner m_spinner;
     Ant::IconType m_buttonIconType = Ant::IconType::None;
     QColor m_buttonIconColor;
     int m_spinnerRegionUpdateCount = 0;

@@ -397,9 +397,9 @@ AntIcon::AntIcon(QWidget* parent)
     installAntStyle<AntIconStyle>(this);
     setAttribute(Qt::WA_TransparentForMouseEvents);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    m_spinTimer.setInterval(16);
-    connect(&m_spinTimer, &QTimer::timeout, this, [this]() {
-        m_spinAngle = (m_spinAngle + 6) % 360;
+    m_spinner.setInterval(16);
+    m_spinner.setStep(6);
+    connect(&m_spinner, &AntSpinner::ticked, this, [this]() {
         update();
     });
 }
@@ -597,7 +597,7 @@ QPainterPath AntIcon::customPrimaryPath() const { return m_customPrimaryPath; }
 
 QPainterPath AntIcon::customSecondaryPath() const { return m_customSecondaryPath; }
 
-int AntIcon::spinAngle() const { return m_spinAngle; }
+int AntIcon::spinAngle() const { return m_spinner.angle(); }
 
 QSize AntIcon::sizeHint() const
 {
@@ -961,20 +961,10 @@ QColor AntIcon::effectiveSecondaryColor() const
 
 void AntIcon::updateTimerState()
 {
-    if (m_spin && isVisible())
+    m_spinner.setRunning(m_spin && isVisible());
+    if (!m_spin)
     {
-        if (!m_spinTimer.isActive())
-        {
-            m_spinTimer.start();
-        }
-    }
-    else
-    {
-        m_spinTimer.stop();
-        if (!m_spin)
-        {
-            m_spinAngle = 0;
-        }
+        m_spinner.setAngle(0);
     }
 }
 
