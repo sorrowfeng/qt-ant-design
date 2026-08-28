@@ -19,6 +19,7 @@ private slots:
     void badgeModeValues();
     void skeletonElementValues();
     void messagePlacementValues();
+    void resultStatusValues();
     void typographyTypeValues();
     void enumRegistration();
 };
@@ -120,6 +121,14 @@ void TestAntTypes::messagePlacementValues()
     QCOMPARE(static_cast<int>(Ant::Placement::Right), 7);
 }
 
+void TestAntTypes::resultStatusValues()
+{
+    QCOMPARE(static_cast<int>(Ant::ResultStatus::Success), 0);
+    QCOMPARE(static_cast<int>(Ant::ResultStatus::Info), 1);
+    QCOMPARE(static_cast<int>(Ant::ResultStatus::Warning), 2);
+    QCOMPARE(static_cast<int>(Ant::ResultStatus::Error), 3);
+}
+
 void TestAntTypes::typographyTypeValues()
 {
     QCOMPARE(static_cast<int>(Ant::TypographyType::Default), 0);
@@ -160,6 +169,10 @@ void TestAntTypes::enumRegistration()
     QCOMPARE(me.keyCount(), 8);
     QCOMPARE(me.keyToValue("Left"), static_cast<int>(Ant::Placement::Left));
     QCOMPARE(me.keyToValue("Right"), static_cast<int>(Ant::Placement::Right));
+
+    me = QMetaEnum::fromType<Ant::ResultStatus>();
+    QVERIFY(me.isValid());
+    QCOMPARE(me.keyCount(), 4);
 
     me = QMetaEnum::fromType<Ant::StatusBarStatus>();
     QVERIFY(me.isValid());

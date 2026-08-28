@@ -1077,14 +1077,14 @@ void TestAntFeedback::progressCachesGeometryAndScopesUpdates()
 void TestAntFeedback::result()
 {
     auto* w = new AntResult;
-    QCOMPARE(w->status(), Ant::AlertType::Info);
+    QCOMPARE(w->status(), Ant::ResultStatus::Info);
     QCOMPARE(w->title(), QString());
     QCOMPARE(w->subTitle(), QString());
     QCOMPARE(w->isIconVisible(), true);
 
     QSignalSpy statusSpy(w, &AntResult::statusChanged);
-    w->setStatus(Ant::AlertType::Success);
-    QCOMPARE(w->status(), Ant::AlertType::Success);
+    w->setStatus(Ant::ResultStatus::Success);
+    QCOMPARE(w->status(), Ant::ResultStatus::Success);
     QCOMPARE(statusSpy.count(), 1);
 
     QSignalSpy titleSpy(w, &AntResult::titleChanged);
@@ -1109,7 +1109,7 @@ void TestAntFeedback::result()
 void TestAntFeedback::resultCachesLayoutIconAndExtraGeometry()
 {
     AntResult result;
-    result.setStatus(Ant::AlertType::Success);
+    result.setStatus(Ant::ResultStatus::Success);
     result.setTitle(QStringLiteral("Cached result"));
     result.setSubTitle(QStringLiteral("Repeated paints should reuse result text layout and the status icon pixmap."));
     result.resize(360, 220);
@@ -1131,7 +1131,7 @@ void TestAntFeedback::resultCachesLayoutIconAndExtraGeometry()
     QVERIFY(result.property("antResultIconPixmapCacheHitCount").toInt() > iconHits);
 
     const int iconBuildsBeforeStatus = result.property("antResultIconPixmapBuildCount").toInt();
-    result.setStatus(Ant::AlertType::Error);
+    result.setStatus(Ant::ResultStatus::Error);
     QCOMPARE(result.property("antResultLastUpdateMode").toString(), QStringLiteral("status"));
     result.grab();
     QVERIFY(result.property("antResultIconPixmapBuildCount").toInt() > iconBuildsBeforeStatus);

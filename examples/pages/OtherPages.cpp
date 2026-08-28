@@ -197,7 +197,7 @@ QWidget* createResultPage(QWidget* /*owner*/)
         cl->setAlignment(Qt::AlignTop);
 
         auto* success = new AntResult(page);
-        success->setStatus(Ant::AlertType::Success);
+        success->setStatus(Ant::ResultStatus::Success);
         success->setTitle(QStringLiteral("Successfully"));
         success->setSubTitle(QStringLiteral("Operation completed."));
         auto* successBtn = new AntButton(QStringLiteral("Go Home"), success);
@@ -214,7 +214,7 @@ QWidget* createResultPage(QWidget* /*owner*/)
         cl->setAlignment(Qt::AlignTop);
 
         auto* error = new AntResult(page);
-        error->setStatus(Ant::AlertType::Error);
+        error->setStatus(Ant::ResultStatus::Error);
         error->setTitle(QStringLiteral("Submission Failed"));
         error->setSubTitle(QStringLiteral("Please check and modify."));
 

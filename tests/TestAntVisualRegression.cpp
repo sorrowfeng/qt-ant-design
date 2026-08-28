@@ -613,7 +613,7 @@ void TestAntVisualRegression::resultStatusIconKeepsTransparentBackground()
     antTheme->setThemeMode(Ant::ThemeMode::Dark);
 
     AntResult result(QStringLiteral("Done"));
-    result.setStatus(Ant::AlertType::Success);
+    result.setStatus(Ant::ResultStatus::Success);
     result.setSubTitle(QStringLiteral("The status icon should not paint an opaque tile."));
     const QImage image = renderWidget(&result, QSize(320, 220));
     const QRect iconRect((image.width() - 72) / 2, 32, 72, 72);

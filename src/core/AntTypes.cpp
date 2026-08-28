@@ -28,6 +28,7 @@ void registerMetaTypes()
         qRegisterMetaType<ProgressStatus>("Ant::ProgressStatus");
         qRegisterMetaType<MessageType>("Ant::MessageType");
         qRegisterMetaType<AlertType>("Ant::AlertType");
+        qRegisterMetaType<ResultStatus>("Ant::ResultStatus");
         qRegisterMetaType<TooltipPlacement>("Ant::Placement");
         qRegisterMetaType<DropdownPlacement>("Ant::Placement");
         qRegisterMetaType<DropdownTrigger>("Ant::DropdownTrigger");

@@ -158,6 +158,18 @@ enum class AlertType
 };
 Q_ENUM_NS(AlertType)
 
+// Result status shares the same four semantic states as AlertType but is a
+// distinct concept (what a Result page communicates), so it gets its own
+// well-named type instead of reusing the alert-oriented one.
+enum class ResultStatus
+{
+    Success,
+    Info,
+    Warning,
+    Error,
+};
+Q_ENUM_NS(ResultStatus)
+
 // Legacy alias - prefer Ant::Placement.
 using TooltipPlacement = Placement;
 
