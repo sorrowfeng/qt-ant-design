@@ -3,6 +3,7 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QFont>
+#include <QMetaType>
 #include <QVector>
 #include <QWidget>
 
@@ -13,6 +14,15 @@ class QResizeEvent;
 
 struct AntBreadcrumbItem
 {
+    Q_GADGET
+    Q_PROPERTY(QString title MEMBER title)
+    Q_PROPERTY(QString href MEMBER href)
+    Q_PROPERTY(QString iconText MEMBER iconText)
+    Q_PROPERTY(bool disabled MEMBER disabled)
+    Q_PROPERTY(bool separatorOnly MEMBER separatorOnly)
+    Q_PROPERTY(QString separator MEMBER separator)
+
+public:
     QString title;
     QString href;
     QString iconText;
@@ -20,6 +30,7 @@ struct AntBreadcrumbItem
     bool separatorOnly = false;
     QString separator;
 };
+Q_DECLARE_METATYPE(AntBreadcrumbItem)
 
 class QT_ANT_DESIGN_EXPORT AntBreadcrumb : public QWidget
 {

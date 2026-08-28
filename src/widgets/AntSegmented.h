@@ -3,6 +3,7 @@
 #include "core/QtAntDesignExport.h"
 
 #include <QFont>
+#include <QMetaType>
 #include <QRect>
 #include <QRectF>
 #include <QSize>
@@ -18,12 +19,21 @@ class QEvent;
 
 struct AntSegmentedOption
 {
+    Q_GADGET
+    Q_PROPERTY(QString value MEMBER value)
+    Q_PROPERTY(QString label MEMBER label)
+    Q_PROPERTY(QString icon MEMBER icon)
+    Q_PROPERTY(bool disabled MEMBER disabled)
+    Q_PROPERTY(QString tooltip MEMBER tooltip)
+
+public:
     QString value;
     QString label;
     QString icon;
     bool disabled = false;
     QString tooltip;
 };
+Q_DECLARE_METATYPE(AntSegmentedOption)
 
 class QT_ANT_DESIGN_EXPORT AntSegmented : public QWidget
 {
