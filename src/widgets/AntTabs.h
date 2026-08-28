@@ -33,6 +33,7 @@ class QT_ANT_DESIGN_EXPORT AntTabs : public QWidget
     Q_OBJECT
     Q_PROPERTY(QString activeKey READ activeKey WRITE setActiveKey NOTIFY activeKeyChanged)
     Q_PROPERTY(Ant::TabsType tabsType READ tabsType WRITE setTabsType NOTIFY tabsTypeChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size tabsSize READ tabsSize WRITE setTabsSize NOTIFY tabsSizeChanged)
     Q_PROPERTY(Ant::TabsPlacement tabPlacement READ tabPlacement WRITE setTabPlacement NOTIFY tabPlacementChanged)
     Q_PROPERTY(bool centered READ isCentered WRITE setCentered NOTIFY centeredChanged)
@@ -50,8 +51,11 @@ public:
     Ant::TabsType tabsType() const;
     void setTabsType(Ant::TabsType type);
 
-    Ant::Size tabsSize() const;
-    void setTabsSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size tabsSize() const { return size(); }
+    void setTabsSize(Ant::Size size) { setSize(size); }
 
     Ant::TabsPlacement tabPlacement() const;
     void setTabPlacement(Ant::TabsPlacement placement);
@@ -89,6 +93,7 @@ public:
 Q_SIGNALS:
     void activeKeyChanged(const QString& key);
     void tabsTypeChanged(Ant::TabsType type);
+    void sizeChanged(Ant::Size size);
     void tabsSizeChanged(Ant::Size size);
     void tabPlacementChanged(Ant::TabsPlacement placement);
     void centeredChanged(bool centered);
@@ -154,7 +159,7 @@ private:
     QPropertyAnimation* m_indicatorAnimation = nullptr;
     QString m_activeKey;
     Ant::TabsType m_tabsType = Ant::TabsType::Line;
-    Ant::Size m_tabsSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     Ant::TabsPlacement m_tabPlacement = Ant::TabsPlacement::Top;
     bool m_centered = false;
     bool m_animated = true;

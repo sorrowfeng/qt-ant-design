@@ -222,23 +222,24 @@ void AntRate::updateDisabledVisual()
     updateValueRegion(0.0, static_cast<double>(m_count));
 }
 
-Ant::Size AntRate::rateSize() const
+Ant::Size AntRate::size() const
 {
-    return m_rateSize;
+    return m_size;
 }
 
-void AntRate::setRateSize(Ant::Size size)
+void AntRate::setSize(Ant::Size size)
 {
-    if (m_rateSize == size)
+    if (m_size == size)
     {
         return;
     }
 
-    m_rateSize = size;
+    m_size = size;
     invalidateLayoutCache();
     updateGeometry();
     update();
-    Q_EMIT rateSizeChanged(m_rateSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT rateSizeChanged(m_size);
 }
 
 double AntRate::hoverValue() const
@@ -402,19 +403,19 @@ void AntRate::resizeEvent(QResizeEvent* event)
 const AntRate::LayoutCache& AntRate::layoutCache() const
 {
     if (m_layoutCache.valid
-        && m_layoutCache.widgetSize == size()
-        && m_layoutCache.rateSize == m_rateSize
+        && m_layoutCache.widgetSize == QWidget::size()
+        && m_layoutCache.rateSize == m_size
         && m_layoutCache.count == m_count
-        && m_layoutCache.starSize == starSizeFor(m_rateSize)
+        && m_layoutCache.starSize == starSizeFor(m_size)
         && m_layoutCache.margin == antTheme->tokens().marginXS)
     {
         return m_layoutCache;
     }
 
-    m_layoutCache.widgetSize = size();
-    m_layoutCache.rateSize = m_rateSize;
+    m_layoutCache.widgetSize = QWidget::size();
+    m_layoutCache.rateSize = m_size;
     m_layoutCache.count = m_count;
-    m_layoutCache.starSize = starSizeFor(m_rateSize);
+    m_layoutCache.starSize = starSizeFor(m_size);
     m_layoutCache.margin = antTheme->tokens().marginXS;
     m_layoutCache.totalWidth = m_count * m_layoutCache.starSize + (m_count - 1) * m_layoutCache.margin;
     m_layoutCache.sizeHint = QSize(m_layoutCache.totalWidth + kSelectionPadding * 2,

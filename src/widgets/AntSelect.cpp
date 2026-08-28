@@ -231,20 +231,21 @@ AntSelect::~AntSelect()
     }
 }
 
-Ant::Size AntSelect::selectSize() const { return m_selectSize; }
+Ant::Size AntSelect::size() const { return m_size; }
 
-void AntSelect::setSelectSize(Ant::Size size)
+void AntSelect::setSize(Ant::Size size)
 {
-    if (m_selectSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_selectSize = size;
+    m_size = size;
     invalidateMetricsCache();
     rebuildPopup();
     updateGeometry();
     update();
-    Q_EMIT selectSizeChanged(m_selectSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT selectSizeChanged(m_size);
 }
 
 Ant::Status AntSelect::status() const { return m_status; }
@@ -919,13 +920,13 @@ AntSelect::Metrics AntSelect::metrics() const
     m.arrowWidth = token.fontSize + token.paddingXS * 2;
     m.optionHeight = token.controlHeight;
 
-    if (m_selectSize == Ant::Size::Large)
+    if (m_size == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         m.optionHeight = token.controlHeightLG;
     }
-    else if (m_selectSize == Ant::Size::Small)
+    else if (m_size == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;

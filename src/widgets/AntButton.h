@@ -14,6 +14,7 @@ class QT_ANT_DESIGN_EXPORT AntButton : public QPushButton
 {
     Q_OBJECT
     Q_PROPERTY(Ant::ButtonType buttonType READ buttonType WRITE setButtonType NOTIFY buttonTypeChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size buttonSize READ buttonSize WRITE setButtonSize NOTIFY buttonSizeChanged)
     Q_PROPERTY(Ant::ButtonShape buttonShape READ buttonShape WRITE setButtonShape NOTIFY buttonShapeChanged)
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
@@ -29,8 +30,11 @@ public:
 
     Ant::ButtonType buttonType() const;
     void setButtonType(Ant::ButtonType type);
-    Ant::Size buttonSize() const;
-    void setButtonSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size buttonSize() const { return size(); }
+    void setButtonSize(Ant::Size size) { setSize(size); }
     Ant::ButtonShape buttonShape() const;
     void setButtonShape(Ant::ButtonShape shape);
 
@@ -55,6 +59,7 @@ public:
 
 Q_SIGNALS:
     void buttonTypeChanged(Ant::ButtonType type);
+    void sizeChanged(Ant::Size size);
     void buttonSizeChanged(Ant::Size size);
     void buttonShapeChanged(Ant::ButtonShape shape);
     void loadingChanged(bool loading);
@@ -99,7 +104,7 @@ private:
     void syncButtonPerfCounters() const;
 
     Ant::ButtonType m_buttonType = Ant::ButtonType::Default;
-    Ant::Size m_buttonSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     Ant::ButtonShape m_buttonShape = Ant::ButtonShape::Default;
     bool m_loading = false;
     bool m_danger = false;

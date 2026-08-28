@@ -28,7 +28,7 @@ QImage renderInput(AntInput* input)
     input->lineEdit()->setFocus(Qt::OtherFocusReason);
     QCoreApplication::processEvents();
 
-    QImage image(input->size(), QImage::Format_ARGB32_Premultiplied);
+    QImage image(input->QWidget::size(), QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter(&image);
     input->render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);

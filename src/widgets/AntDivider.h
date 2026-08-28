@@ -23,6 +23,7 @@ class QT_ANT_DESIGN_EXPORT AntDivider : public QWidget
     Q_PROPERTY(Ant::Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
     Q_PROPERTY(Ant::DividerTitlePlacement titlePlacement READ titlePlacement WRITE setTitlePlacement NOTIFY titlePlacementChanged)
     Q_PROPERTY(Ant::DividerVariant variant READ variant WRITE setVariant NOTIFY variantChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size dividerSize READ dividerSize WRITE setDividerSize NOTIFY dividerSizeChanged)
 
 public:
@@ -44,8 +45,11 @@ public:
     Ant::DividerVariant variant() const;
     void setVariant(Ant::DividerVariant variant);
 
-    Ant::Size dividerSize() const;
-    void setDividerSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size dividerSize() const { return size(); }
+    void setDividerSize(Ant::Size size) { setSize(size); }
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -56,6 +60,7 @@ Q_SIGNALS:
     void orientationChanged(Ant::Orientation orientation);
     void titlePlacementChanged(Ant::DividerTitlePlacement placement);
     void variantChanged(Ant::DividerVariant variant);
+    void sizeChanged(Ant::Size size);
     void dividerSizeChanged(Ant::Size size);
 
 protected:
@@ -106,6 +111,6 @@ private:
     Ant::Orientation m_orientation = Ant::Orientation::Horizontal;
     Ant::DividerTitlePlacement m_titlePlacement = Ant::DividerTitlePlacement::Center;
     Ant::DividerVariant m_variant = Ant::DividerVariant::Solid;
-    Ant::Size m_dividerSize = Ant::Size::Large;
+    Ant::Size m_size = Ant::Size::Large;
     mutable PaintCache m_paintCache;
 };

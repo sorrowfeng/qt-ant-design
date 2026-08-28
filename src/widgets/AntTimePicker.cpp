@@ -355,14 +355,14 @@ private:
 
     const PopupLayoutCache& layoutCache() const
     {
-        if (m_layoutCache.valid && m_layoutCache.widgetSize == size())
+        if (m_layoutCache.valid && m_layoutCache.widgetSize == QWidget::size())
         {
             ++m_layoutCacheHitCount;
             syncPopupPerfCounters();
             return m_layoutCache;
         }
 
-        m_layoutCache.widgetSize = size();
+        m_layoutCache.widgetSize = QWidget::size();
         m_layoutCache.panelRect = rect().adjusted(kTimePickerPopupShadowMargin,
                                                   kTimePickerPopupTopMargin,
                                                   -kTimePickerPopupShadowMargin,
@@ -708,18 +708,19 @@ void AntTimePicker::setPlaceholderText(const QString& text)
     Q_EMIT placeholderTextChanged(m_placeholderText);
 }
 
-Ant::Size AntTimePicker::pickerSize() const { return m_pickerSize; }
+Ant::Size AntTimePicker::size() const { return m_size; }
 
-void AntTimePicker::setPickerSize(Ant::Size size)
+void AntTimePicker::setSize(Ant::Size size)
 {
-    if (m_pickerSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_pickerSize = size;
+    m_size = size;
     updateGeometry();
     update();
-    Q_EMIT pickerSizeChanged(m_pickerSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT pickerSizeChanged(m_size);
 }
 
 Ant::Status AntTimePicker::status() const { return m_status; }
@@ -986,12 +987,12 @@ AntTimePicker::Metrics AntTimePicker::metrics() const
     m.radius = token.borderRadius;
     m.paddingX = token.paddingSM - token.lineWidth;
     m.iconWidth = token.fontSize + token.paddingXS * 2;
-    if (m_pickerSize == Ant::Size::Large)
+    if (m_size == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
     }
-    else if (m_pickerSize == Ant::Size::Small)
+    else if (m_size == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;

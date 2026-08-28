@@ -25,6 +25,7 @@ class QT_ANT_DESIGN_EXPORT AntDatePicker : public QWidget
     Q_PROPERTY(QDate maximumDate READ maximumDate WRITE setMaximumDate NOTIFY maximumDateChanged)
     Q_PROPERTY(QString displayFormat READ displayFormat WRITE setDisplayFormat NOTIFY displayFormatChanged)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText NOTIFY placeholderTextChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size pickerSize READ pickerSize WRITE setPickerSize NOTIFY pickerSizeChanged)
     Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
@@ -55,8 +56,11 @@ public:
     QString placeholderText() const;
     void setPlaceholderText(const QString& text);
 
-    Ant::Size pickerSize() const;
-    void setPickerSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size pickerSize() const { return size(); }
+    void setPickerSize(Ant::Size size) { setSize(size); }
 
     Ant::Status status() const;
     void setStatus(Ant::Status status);
@@ -94,6 +98,7 @@ Q_SIGNALS:
     void dateStringChanged(const QString& text);
     void displayFormatChanged(const QString& format);
     void placeholderTextChanged(const QString& text);
+    void sizeChanged(Ant::Size size);
     void pickerSizeChanged(Ant::Size size);
     void statusChanged(Ant::Status status);
     void variantChanged(Ant::Variant variant);
@@ -148,7 +153,7 @@ private:
     QDate m_maximumDate = QDate(9999, 12, 31);
     QString m_displayFormat = QStringLiteral("yyyy-MM-dd");
     QString m_placeholderText = QStringLiteral("Select date");
-    Ant::Size m_pickerSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     Ant::Status m_status = Ant::Status::Normal;
     Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_allowClear = true;

@@ -31,6 +31,7 @@ class QT_ANT_DESIGN_EXPORT AntSegmented : public QWidget
     Q_PROPERTY(QString value READ value WRITE setValue NOTIFY valueChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(bool block READ isBlock WRITE setBlock NOTIFY blockChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size segmentedSize READ segmentedSize WRITE setSegmentedSize NOTIFY segmentedSizeChanged)
     Q_PROPERTY(bool vertical READ isVertical WRITE setVertical NOTIFY verticalChanged)
     Q_PROPERTY(Ant::SegmentedShape shape READ shape WRITE setShape NOTIFY shapeChanged)
@@ -47,8 +48,11 @@ public:
     void setCurrentIndex(int index);
     bool isBlock() const;
     void setBlock(bool block);
-    Ant::Size segmentedSize() const;
-    void setSegmentedSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size segmentedSize() const { return size(); }
+    void setSegmentedSize(Ant::Size size) { setSize(size); }
     bool isVertical() const;
     void setVertical(bool vertical);
     Ant::SegmentedShape shape() const;
@@ -68,6 +72,7 @@ Q_SIGNALS:
     void valueChanged(const QString& value);
     void currentIndexChanged(int index);
     void blockChanged(bool block);
+    void sizeChanged(Ant::Size size);
     void segmentedSizeChanged(Ant::Size size);
     void verticalChanged(bool vertical);
     void shapeChanged(Ant::SegmentedShape shape);

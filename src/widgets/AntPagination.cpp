@@ -190,18 +190,19 @@ void AntPagination::setShowSizeChanger(bool show)
     Q_EMIT showSizeChangerChanged(m_showSizeChanger);
 }
 
-Ant::Size AntPagination::paginationSize() const { return m_paginationSize; }
+Ant::Size AntPagination::size() const { return m_size; }
 
-void AntPagination::setPaginationSize(Ant::Size size)
+void AntPagination::setSize(Ant::Size size)
 {
-    if (m_paginationSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_paginationSize = size;
+    m_size = size;
     updatePaginationGeometry();
     update();
-    Q_EMIT paginationSizeChanged(m_paginationSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT paginationSizeChanged(m_size);
 }
 
 int AntPagination::pageCount() const
@@ -432,7 +433,7 @@ int AntPagination::itemAt(const QPoint& pos) const
 int AntPagination::itemSize() const
 {
     const auto& token = antTheme->tokens();
-    switch (m_paginationSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         return token.controlHeightLG;
@@ -446,12 +447,12 @@ int AntPagination::itemSize() const
 
 int AntPagination::itemSpacing() const
 {
-    return m_paginationSize == Ant::Size::Small ? antTheme->tokens().paddingXXS : antTheme->tokens().marginXS;
+    return m_size == Ant::Size::Small ? antTheme->tokens().paddingXXS : antTheme->tokens().marginXS;
 }
 
 int AntPagination::fontSize() const
 {
-    return m_paginationSize == Ant::Size::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSize;
+    return m_size == Ant::Size::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSize;
 }
 
 QColor AntPagination::itemTextColor(const PageItem& item, bool hovered) const

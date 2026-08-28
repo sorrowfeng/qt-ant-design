@@ -123,20 +123,21 @@ void AntTabs::setTabsType(Ant::TabsType type)
     Q_EMIT tabsTypeChanged(m_tabsType);
 }
 
-Ant::Size AntTabs::tabsSize() const { return m_tabsSize; }
+Ant::Size AntTabs::size() const { return m_size; }
 
-void AntTabs::setTabsSize(Ant::Size size)
+void AntTabs::setSize(Ant::Size size)
 {
-    if (m_tabsSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_tabsSize = size;
+    m_size = size;
     invalidateTabLayoutCache();
     updateStackGeometry();
     syncIndicatorRect();
     update();
-    Q_EMIT tabsSizeChanged(m_tabsSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT tabsSizeChanged(m_size);
 }
 
 Ant::TabsPlacement AntTabs::tabPlacement() const { return m_tabPlacement; }
@@ -666,7 +667,7 @@ QRect AntTabs::pageRect() const
 QVector<AntTabs::TabLayoutItem> AntTabs::tabLayouts() const
 {
     const auto& token = antTheme->tokens();
-    const QSize cacheSize = size();
+    const QSize cacheSize = QWidget::size();
     if (m_tabLayoutCacheValid &&
         m_tabLayoutCacheRevision == m_tabLayoutRevision &&
         m_tabLayoutCacheSize == cacheSize)
@@ -834,7 +835,7 @@ int AntTabs::tabBarExtent() const
     const auto& token = antTheme->tokens();
     if (m_tabsType == Ant::TabsType::Card || m_tabsType == Ant::TabsType::EditableCard)
     {
-        switch (m_tabsSize)
+        switch (m_size)
         {
         case Ant::Size::Large:
             return token.controlHeightLG + 8;
@@ -845,7 +846,7 @@ int AntTabs::tabBarExtent() const
             return token.controlHeightLG;
         }
     }
-    switch (m_tabsSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         return 56;
@@ -860,7 +861,7 @@ int AntTabs::tabBarExtent() const
 int AntTabs::tabPaddingX() const
 {
     const auto& token = antTheme->tokens();
-    switch (m_tabsSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         return token.paddingLG;
@@ -875,7 +876,7 @@ int AntTabs::tabPaddingX() const
 int AntTabs::tabFontSize() const
 {
     const auto& token = antTheme->tokens();
-    switch (m_tabsSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         return token.fontSizeLG;

@@ -24,13 +24,13 @@ QImage renderBadge(AntBadge& badge, bool hovered = false)
 {
     badge.ensurePolished();
     badge.resize(badge.sizeHint());
-    QImage image(badge.size(), QImage::Format_ARGB32_Premultiplied);
+    QImage image(badge.QWidget::size(), QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter(&image);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
     QStyleOption option;
     option.initFrom(&badge);
-    option.rect = QRect(QPoint(0, 0), badge.size());
+    option.rect = QRect(QPoint(0, 0), badge.QWidget::size());
     if (hovered)
     {
         option.state |= QStyle::State_MouseOver;

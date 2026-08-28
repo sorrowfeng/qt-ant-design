@@ -153,25 +153,26 @@ AntInputNumber::AntInputNumber(QWidget* parent)
     syncInputNumberPerfCounters();
 }
 
-Ant::Size AntInputNumber::inputSize() const
+Ant::Size AntInputNumber::size() const
 {
-    return m_inputSize;
+    return m_size;
 }
 
-void AntInputNumber::setInputSize(Ant::Size size)
+void AntInputNumber::setSize(Ant::Size size)
 {
-    if (m_inputSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_inputSize = size;
+    m_size = size;
     invalidateMetricsCache();
     updateEditStyle();
     invalidateGeometryCache();
     updateControlsOverlayGeometry();
     updateGeometry();
     update();
-    Q_EMIT inputSizeChanged(m_inputSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT inputSizeChanged(m_size);
 }
 
 Ant::Status AntInputNumber::status() const
@@ -546,7 +547,7 @@ AntInputNumber::Metrics AntInputNumber::metrics() const
 
     const auto& token = antTheme->tokens();
     Metrics m;
-    switch (m_inputSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         m.height = token.controlHeightLG;

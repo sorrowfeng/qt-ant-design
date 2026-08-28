@@ -483,7 +483,7 @@ void TestAntVisualRegression::inputNumberHandlersStayVisible()
     page.setFocus(Qt::OtherFocusReason);
     QCoreApplication::processEvents();
     const QImage runtimeDarkImage = renderCurrentWidget(&page);
-    const QRect inputRect(containedInput->mapTo(&page, QPoint(0, 0)), containedInput->size());
+    const QRect inputRect(containedInput->mapTo(&page, QPoint(0, 0)), containedInput->QWidget::size());
     assertNearColorPixels(runtimeDarkImage.copy(inputRect), antTheme->tokens().colorText, 18,
                           "dark input number value after runtime theme switch", 36);
     page.hide();

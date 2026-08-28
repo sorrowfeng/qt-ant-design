@@ -23,6 +23,7 @@ class QT_ANT_DESIGN_EXPORT AntSpin : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool spinning READ isSpinning WRITE setSpinning NOTIFY spinningChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size spinSize READ spinSize WRITE setSpinSize NOTIFY spinSizeChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
     Q_PROPERTY(int delay READ delay WRITE setDelay NOTIFY delayChanged)
@@ -34,8 +35,11 @@ public:
     bool isSpinning() const;
     void setSpinning(bool spinning);
 
-    Ant::Size spinSize() const;
-    void setSpinSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size spinSize() const { return size(); }
+    void setSpinSize(Ant::Size size) { setSize(size); }
 
     QString description() const;
     void setDescription(const QString& description);
@@ -53,6 +57,7 @@ public:
 
 Q_SIGNALS:
     void spinningChanged(bool spinning);
+    void sizeChanged(Ant::Size size);
     void spinSizeChanged(Ant::Size size);
     void descriptionChanged(const QString& description);
     void delayChanged(int delayMs);
@@ -114,7 +119,7 @@ private:
 
     bool m_spinning = true;
     bool m_effectiveSpinning = true;
-    Ant::Size m_spinSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     QString m_description;
     int m_delay = 0;
     int m_percent = -1;

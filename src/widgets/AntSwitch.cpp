@@ -72,19 +72,20 @@ void AntSwitch::setChecked(bool checked)
     Q_EMIT toggled(m_checked);
 }
 
-Ant::Size AntSwitch::switchSize() const { return m_switchSize; }
+Ant::Size AntSwitch::size() const { return m_size; }
 
-void AntSwitch::setSwitchSize(Ant::Size size)
+void AntSwitch::setSize(Ant::Size size)
 {
-    if (m_switchSize == size)
+    if (m_size == size)
     {
         return;
     }
 
-    m_switchSize = size;
+    m_size = size;
     updateGeometryFromState();
     updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("size"));
-    Q_EMIT switchSizeChanged(m_switchSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT switchSizeChanged(m_size);
 }
 
 bool AntSwitch::isLoading() const { return m_loading; }
@@ -300,7 +301,7 @@ AntSwitch::Metrics AntSwitch::metrics() const
     const int controlHeight = token.controlHeight > 0 ? token.controlHeight : Ant::ControlHeight;
     const qreal lineHeight = token.lineHeight > 0.0 ? token.lineHeight : 1.5715;
     const qreal height = fontSize * lineHeight;
-    if (m_switchSize == Ant::Size::Small)
+    if (m_size == Ant::Size::Small)
     {
         m.trackHeight = controlHeight / 2;
         m.trackPadding = 2;
@@ -349,9 +350,9 @@ const AntSwitch::LayoutCache& AntSwitch::layoutCache() const
     };
 
     if (m_layoutCache.valid
-        && m_layoutCache.widgetSize == size()
+        && m_layoutCache.widgetSize == QWidget::size()
         && sameMetrics(m_layoutCache.metrics, currentMetrics)
-        && m_layoutCache.switchSize == m_switchSize
+        && m_layoutCache.switchSize == m_size
         && m_layoutCache.checkedText == m_checkedText
         && m_layoutCache.uncheckedText == m_uncheckedText
         && std::abs(m_layoutCache.handleProgress - m_handleProgress) < 0.0001
@@ -360,9 +361,9 @@ const AntSwitch::LayoutCache& AntSwitch::layoutCache() const
         return m_layoutCache;
     }
 
-    m_layoutCache.widgetSize = size();
+    m_layoutCache.widgetSize = QWidget::size();
     m_layoutCache.metrics = currentMetrics;
-    m_layoutCache.switchSize = m_switchSize;
+    m_layoutCache.switchSize = m_size;
     m_layoutCache.checkedText = m_checkedText;
     m_layoutCache.uncheckedText = m_uncheckedText;
     m_layoutCache.handleProgress = m_handleProgress;

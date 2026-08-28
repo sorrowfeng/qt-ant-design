@@ -25,6 +25,7 @@ class QT_ANT_DESIGN_EXPORT AntSwitch : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool checked READ isChecked WRITE setChecked NOTIFY checkedChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size switchSize READ switchSize WRITE setSwitchSize NOTIFY switchSizeChanged)
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
     Q_PROPERTY(QString checkedText READ checkedText WRITE setCheckedText NOTIFY checkedTextChanged)
@@ -39,8 +40,11 @@ public:
     bool isChecked() const;
     void setChecked(bool checked);
 
-    Ant::Size switchSize() const;
-    void setSwitchSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size switchSize() const { return size(); }
+    void setSwitchSize(Ant::Size size) { setSize(size); }
 
     bool isLoading() const;
     void setLoading(bool loading);
@@ -67,6 +71,7 @@ Q_SIGNALS:
     void checkedChanged(bool checked);
     void toggled(bool checked);
     void clicked(bool checked);
+    void sizeChanged(Ant::Size size);
     void switchSizeChanged(Ant::Size size);
     void loadingChanged(bool loading);
     void checkedTextChanged(const QString& text);
@@ -129,7 +134,7 @@ private:
     bool m_loading = false;
     bool m_hovered = false;
     bool m_pressed = false;
-    Ant::Size m_switchSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     QString m_checkedText;
     QString m_uncheckedText;
     qreal m_handleProgress = 0.0;

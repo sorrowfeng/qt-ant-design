@@ -35,6 +35,7 @@ struct AntSelectOption
 class QT_ANT_DESIGN_EXPORT AntSelect : public QWidget
 {
     Q_OBJECT
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size selectSize READ selectSize WRITE setSelectSize NOTIFY selectSizeChanged)
     Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
@@ -53,8 +54,11 @@ public:
     explicit AntSelect(QWidget* parent = nullptr);
     ~AntSelect() override;
 
-    Ant::Size selectSize() const;
-    void setSelectSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size selectSize() const { return size(); }
+    void setSelectSize(Ant::Size size) { setSize(size); }
 
     Ant::Status status() const;
     void setStatus(Ant::Status status);
@@ -139,6 +143,7 @@ public:
     QSize minimumSizeHint() const override;
 
 Q_SIGNALS:
+    void sizeChanged(Ant::Size size);
     void selectSizeChanged(Ant::Size size);
     void statusChanged(Ant::Status status);
     void variantChanged(Ant::Variant variant);
@@ -221,7 +226,7 @@ private:
     Ant::SelectMode m_selectMode = Ant::SelectMode::Single;
     QList<int> m_selectedIndices;
     int m_maxTagCount = 0; // 0 = show all
-    Ant::Size m_selectSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     Ant::Status m_status = Ant::Status::Normal;
     Ant::Variant m_variant = Ant::Variant::Outlined;
     QString m_placeholderText;

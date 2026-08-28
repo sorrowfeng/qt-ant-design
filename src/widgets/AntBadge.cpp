@@ -219,21 +219,22 @@ void AntBadge::setOffset(const QPoint& offset)
     Q_EMIT offsetChanged(m_offset);
 }
 
-Ant::Size AntBadge::badgeSize() const { return m_badgeSize; }
+Ant::Size AntBadge::size() const { return m_size; }
 
-void AntBadge::setBadgeSize(Ant::Size size)
+void AntBadge::setSize(Ant::Size size)
 {
-    if (m_badgeSize == size)
+    if (m_size == size)
     {
         return;
     }
     const QRect oldDirty = badgeVisualDirtyRect();
-    m_badgeSize = size;
+    m_size = size;
     invalidateBadgePaintCache();
     updateGeometry();
     updateContentGeometry();
     requestBadgeUpdate(oldDirty.united(badgeVisualDirtyRect()), QStringLiteral("size"), true);
-    Q_EMIT badgeSizeChanged(m_badgeSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT badgeSizeChanged(m_size);
 }
 
 Ant::BadgeStatus AntBadge::status() const { return m_status; }
@@ -472,7 +473,7 @@ void AntBadge::hideEvent(QHideEvent* event)
 
 int AntBadge::indicatorHeight() const
 {
-    return m_badgeSize == Ant::Size::Small ? antTheme->tokens().fontSize : 20;
+    return m_size == Ant::Size::Small ? antTheme->tokens().fontSize : 20;
 }
 
 int AntBadge::dotSize() const
@@ -493,7 +494,7 @@ int AntBadge::indicatorWidth() const
     }
     const int h = indicatorHeight();
     QFont f = font();
-    f.setPixelSize(m_badgeSize == Ant::Size::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSizeSM);
+    f.setPixelSize(m_size == Ant::Size::Small ? antTheme->tokens().fontSizeSM : antTheme->tokens().fontSizeSM);
     const int textWidth = QFontMetrics(f).horizontalAdvance(displayText());
     return std::max(h, textWidth + antTheme->tokens().paddingXS * 2);
 }
@@ -672,7 +673,7 @@ const AntBadge::BadgePaintCache& AntBadge::badgePaintCache(const QRect& widgetRe
         m_paintCache.widgetRect == widgetRect &&
         m_paintCache.contentSize == contentSize &&
         m_paintCache.font == font() &&
-        m_paintCache.badgeSize == m_badgeSize &&
+        m_paintCache.badgeSize == m_size &&
         m_paintCache.status == m_status &&
         m_paintCache.badgeMode == m_badgeMode &&
         m_paintCache.dot == m_dot &&
@@ -697,7 +698,7 @@ const AntBadge::BadgePaintCache& AntBadge::badgePaintCache(const QRect& widgetRe
     cache.widgetRect = widgetRect;
     cache.contentSize = contentSize;
     cache.font = font();
-    cache.badgeSize = m_badgeSize;
+    cache.badgeSize = m_size;
     cache.status = m_status;
     cache.badgeMode = m_badgeMode;
     cache.dot = m_dot;

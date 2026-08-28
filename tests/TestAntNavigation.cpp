@@ -346,7 +346,7 @@ void TestAntNavigation::paginationExtremePageArithmeticIsStable()
     pagination.show();
     QVERIFY(QTest::qWaitForWindowExposed(&pagination));
 
-    QPixmap rendered(pagination.size());
+    QPixmap rendered(pagination.QWidget::size());
     rendered.fill(Qt::transparent);
     pagination.render(&rendered);
     QVERIFY(!rendered.isNull());

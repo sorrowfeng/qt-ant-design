@@ -17,6 +17,7 @@ class QLabel;
 class QT_ANT_DESIGN_EXPORT AntInput : public QWidget
 {
     Q_OBJECT
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size inputSize READ inputSize WRITE setInputSize NOTIFY inputSizeChanged)
     Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
@@ -58,8 +59,11 @@ public:
     void undo();
     void redo();
 
-    Ant::Size inputSize() const;
-    void setInputSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size inputSize() const { return size(); }
+    void setInputSize(Ant::Size size) { setSize(size); }
     Ant::Status status() const;
     void setStatus(Ant::Status status);
     Ant::Variant variant() const;
@@ -94,6 +98,7 @@ public:
 Q_SIGNALS:
     void textChanged(const QString& text);
     void searchTriggered(const QString& text);
+    void sizeChanged(Ant::Size size);
     void inputSizeChanged(Ant::Size size);
     void statusChanged(Ant::Status status);
     void variantChanged(Ant::Variant variant);
@@ -146,7 +151,7 @@ private:
     QToolButton* m_clearButton = nullptr;
     QToolButton* m_passwordButton = nullptr;
 
-    Ant::Size m_inputSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     Ant::Status m_status = Ant::Status::Normal;
     Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_allowClear = false;

@@ -216,7 +216,7 @@ private:
 
         const QDate panelMonth(m_owner->m_panelDate.year(), m_owner->m_panelDate.month(), 1);
         if (m_dayCacheValid &&
-            m_dayCacheSize == size() &&
+            m_dayCacheSize == QWidget::size() &&
             m_dayCachePanelMonth == panelMonth &&
             m_dayCacheMinimumDate == m_owner->m_minimumDate &&
             m_dayCacheMaximumDate == m_owner->m_maximumDate)
@@ -245,7 +245,7 @@ private:
             };
         }
 
-        m_dayCacheSize = size();
+        m_dayCacheSize = QWidget::size();
         m_dayCachePanelMonth = panelMonth;
         m_dayCacheMinimumDate = m_owner->m_minimumDate;
         m_dayCacheMaximumDate = m_owner->m_maximumDate;
@@ -626,18 +626,19 @@ void AntDatePicker::setPlaceholderText(const QString& text)
     Q_EMIT placeholderTextChanged(m_placeholderText);
 }
 
-Ant::Size AntDatePicker::pickerSize() const { return m_pickerSize; }
+Ant::Size AntDatePicker::size() const { return m_size; }
 
-void AntDatePicker::setPickerSize(Ant::Size size)
+void AntDatePicker::setSize(Ant::Size size)
 {
-    if (m_pickerSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_pickerSize = size;
+    m_size = size;
     updateGeometry();
     update();
-    Q_EMIT pickerSizeChanged(m_pickerSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT pickerSizeChanged(m_size);
 }
 
 Ant::Status AntDatePicker::status() const { return m_status; }
@@ -728,11 +729,11 @@ QSize AntDatePicker::sizeHint() const
     {
         return QSize(288, metrics().height);
     }
-    if (m_pickerSize == Ant::Size::Large)
+    if (m_size == Ant::Size::Large)
     {
         return QSize(164, metrics().height);
     }
-    if (m_pickerSize == Ant::Size::Small)
+    if (m_size == Ant::Size::Small)
     {
         return QSize(140, metrics().height);
     }
@@ -851,12 +852,12 @@ AntDatePicker::Metrics AntDatePicker::metrics() const
     m.radius = token.borderRadius;
     m.paddingX = token.paddingSM - token.lineWidth;
     m.iconWidth = token.fontSize + token.paddingXS * 2;
-    if (m_pickerSize == Ant::Size::Large)
+    if (m_size == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
     }
-    else if (m_pickerSize == Ant::Size::Small)
+    else if (m_size == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;

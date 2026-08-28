@@ -22,6 +22,7 @@ class QT_ANT_DESIGN_EXPORT AntRate : public QWidget
     Q_PROPERTY(bool allowHalf READ allowHalf WRITE setAllowHalf NOTIFY allowHalfChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
     Q_PROPERTY(bool disabled READ isDisabled WRITE setDisabled NOTIFY disabledChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size rateSize READ rateSize WRITE setRateSize NOTIFY rateSizeChanged)
 
 public:
@@ -42,8 +43,11 @@ public:
     bool isDisabled() const;
     void setDisabled(bool disabled);
 
-    Ant::Size rateSize() const;
-    void setRateSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size rateSize() const { return size(); }
+    void setRateSize(Ant::Size size) { setSize(size); }
 
     double hoverValue() const;
     bool isHoveredState() const;
@@ -57,6 +61,7 @@ Q_SIGNALS:
     void allowHalfChanged(bool allow);
     void allowClearChanged(bool allow);
     void disabledChanged(bool disabled);
+    void sizeChanged(Ant::Size size);
     void rateSizeChanged(Ant::Size size);
     void hoverChanged(double value);
 
@@ -114,7 +119,7 @@ private:
     bool m_hovered = false;
     bool m_pressed = false;
     bool m_focused = false;
-    Ant::Size m_rateSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     int m_selectionAnimationIndex = -1;
     qreal m_selectionScale = 1.0;
     QVariantAnimation* m_selectionAnimation = nullptr;

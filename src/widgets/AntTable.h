@@ -42,6 +42,7 @@ class QT_ANT_DESIGN_EXPORT AntTable : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool bordered READ isBordered WRITE setBordered NOTIFY borderedChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size tableSize READ tableSize WRITE setTableSize NOTIFY tableSizeChanged)
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
     Q_PROPERTY(Ant::TableSelectionMode rowSelection READ rowSelection WRITE setRowSelection NOTIFY rowSelectionChanged)
@@ -75,8 +76,11 @@ public:
     bool isBordered() const;
     void setBordered(bool bordered);
 
-    Ant::Size tableSize() const;
-    void setTableSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size tableSize() const { return size(); }
+    void setTableSize(Ant::Size size) { setSize(size); }
 
     bool isLoading() const;
     void setLoading(bool loading);
@@ -117,6 +121,7 @@ Q_SIGNALS:
     void pageChanged(int page);
     void pageSizeChanged(int size);
     void borderedChanged(bool bordered);
+    void sizeChanged(Ant::Size size);
     void tableSizeChanged(Ant::Size size);
     void loadingChanged(bool loading);
     void rowSelectionChanged(Ant::TableSelectionMode mode);
@@ -177,7 +182,7 @@ private:
     QVector<int> m_displayOrder;
 
     bool m_bordered = true;
-    Ant::Size m_tableSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     bool m_loading = false;
     Ant::TableSelectionMode m_rowSelection = Ant::TableSelectionMode::None;
 

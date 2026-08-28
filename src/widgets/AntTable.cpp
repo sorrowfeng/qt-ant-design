@@ -271,19 +271,20 @@ void AntTable::setBordered(bool bordered)
     Q_EMIT borderedChanged(m_bordered);
 }
 
-Ant::Size AntTable::tableSize() const { return m_tableSize; }
+Ant::Size AntTable::size() const { return m_size; }
 
-void AntTable::setTableSize(Ant::Size size)
+void AntTable::setSize(Ant::Size size)
 {
-    if (m_tableSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_tableSize = size;
+    m_size = size;
     m_scrollY = 0;
     updateGeometry();
     update();
-    Q_EMIT tableSizeChanged(m_tableSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT tableSizeChanged(m_size);
 }
 
 bool AntTable::isLoading() const { return m_loading; }
@@ -661,7 +662,7 @@ AntTable::TableMetrics AntTable::metrics() const
 {
     TableMetrics m;
     const auto& token = antTheme->tokens();
-    switch (m_tableSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         m.headerHeight = 64;

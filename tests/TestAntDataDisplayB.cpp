@@ -1009,7 +1009,7 @@ void TestAntDataDisplayB::treeCachesFlattenedVisibleNodes()
     QVERIFY(buildsAfterSetData > 0);
 
     auto renderTree = [&tree]() {
-        QImage image(tree.size(), QImage::Format_ARGB32_Premultiplied);
+        QImage image(tree.QWidget::size(), QImage::Format_ARGB32_Premultiplied);
         image.fill(Qt::transparent);
         QPainter painter(&image);
         tree.render(&painter);

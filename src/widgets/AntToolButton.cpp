@@ -102,15 +102,16 @@ void AntToolButton::setButtonType(Ant::ButtonType type)
     Q_EMIT buttonTypeChanged(m_buttonType);
 }
 
-Ant::Size AntToolButton::buttonSize() const { return m_buttonSize; }
+Ant::Size AntToolButton::size() const { return m_size; }
 
-void AntToolButton::setButtonSize(Ant::Size size)
+void AntToolButton::setSize(Ant::Size size)
 {
-    if (m_buttonSize == size) return;
-    m_buttonSize = size;
+    if (m_size == size) return;
+    m_size = size;
     updateGeometryFromState();
     update();
-    Q_EMIT buttonSizeChanged(m_buttonSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT buttonSizeChanged(m_size);
 }
 
 bool AntToolButton::isDanger() const { return m_danger; }
@@ -346,7 +347,7 @@ AntToolButton::Metrics AntToolButton::metrics() const
 {
     const auto& token = antTheme->tokens();
     Metrics m;
-    switch (m_buttonSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         m.height = token.controlHeightLG;
