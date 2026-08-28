@@ -101,9 +101,9 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
                                   0,
                                   layout.lineFilledRect.left() + progress->m_activeOffset,
                                   0);
-            shine.setColorAt(0.0, QColor(255, 255, 255, 0));
-            shine.setColorAt(0.5, QColor(255, 255, 255, 110));
-            shine.setColorAt(1.0, QColor(255, 255, 255, 0));
+            shine.setColorAt(0.0, AntPalette::alpha(Qt::white, 0.0f));
+            shine.setColorAt(0.5, AntPalette::alpha(Qt::white, 110.0f / 255.0f));
+            shine.setColorAt(1.0, AntPalette::alpha(Qt::white, 0.0f));
             AntStyleBase::drawCrispRoundedRect(painter, layout.lineFilledRect.toRect(),
                 Qt::NoPen, shine, radius, radius);
         }

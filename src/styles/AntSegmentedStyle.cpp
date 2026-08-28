@@ -6,6 +6,7 @@
 
 #include <cmath>
 
+#include "styles/AntPalette.h"
 #include "widgets/AntSegmented.h"
 
 namespace
@@ -14,11 +15,12 @@ void drawSegmentedThumbShadow(QPainter* painter, const QRectF& rect, qreal radiu
 {
     painter->save();
     painter->setPen(Qt::NoPen);
-    painter->setBrush(QColor(0, 0, 0, 8));
+    // Floating thumb shadow stays black in both themes (same as antd).
+    painter->setBrush(AntPalette::alpha(Qt::black, 0.03f));
     painter->drawRoundedRect(rect.translated(0, 1), radius, radius);
-    painter->setBrush(QColor(0, 0, 0, 5));
+    painter->setBrush(AntPalette::alpha(Qt::black, 0.02f));
     painter->drawRoundedRect(rect.adjusted(-1, 0, 1, 2), radius, radius);
-    painter->setBrush(QColor(0, 0, 0, 5));
+    painter->setBrush(AntPalette::alpha(Qt::black, 0.02f));
     painter->drawRoundedRect(rect.translated(0, 2), radius, radius);
     painter->restore();
 }
@@ -26,7 +28,9 @@ void drawSegmentedThumbShadow(QPainter* painter, const QRectF& rect, qreal radiu
 QColor itemOverlayColor(const AntThemeTokens& token, bool pressed)
 {
     const bool dark = token.colorBgBase.lightness() < 32;
-    QColor color = dark ? QColor(255, 255, 255) : QColor(0, 0, 0);
+    // Derive the overlay tint from colorText so it follows the active theme:
+    // dark text on light surfaces, light text on dark surfaces.
+    QColor color = token.colorText;
     color.setAlphaF(pressed ? (dark ? 0.18 : 0.15) : (dark ? 0.12 : 0.06));
     return color;
 }

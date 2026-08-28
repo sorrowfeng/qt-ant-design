@@ -153,7 +153,7 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
         Qt::NoPen, token.colorTextLightSolid, handle.height() / 2.0, handle.height() / 2.0);
 
     AntStyleBase::drawCrispRoundedRect(painter, handle.toRect(),
-        QPen(QColor(0, 35, 11, 50), 1), Qt::NoBrush,
+        QPen(AntPalette::alpha(token.colorShadow, 0.2), 1), Qt::NoBrush,
         handle.height() / 2.0, handle.height() / 2.0);
 
     if (sw->isLoading())

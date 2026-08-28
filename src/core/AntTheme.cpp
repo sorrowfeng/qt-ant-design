@@ -340,6 +340,12 @@ AntThemeTokens AntTheme::createTokens(Ant::ThemeMode mode)
     t.colorShadow = tokenShadow(mode);
     t.colorRateStar = dark ? QColor(212, 177, 6) : QColor(250, 219, 20);
 
+    // Dark menu background: MenuTheme::Dark renders dark regardless of the
+    // global theme mode, so the same value applies to both token sets.
+    t.colorBgMenuDark = QColor(0, 21, 41);
+    // Typography <mark> highlight: antd gold-2 in light, dark-gold in dark.
+    t.colorMarkBg = dark ? QColor("#211B14") : QColor("#fff1b8");
+
     return t;
 }
 

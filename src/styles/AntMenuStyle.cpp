@@ -63,7 +63,7 @@ void AntMenuStyle::drawMenu(const QStyleOption* option, QPainter* painter, const
     const Ant::MenuTheme menuTheme = menu->menuTheme();
 
     // Background
-    const QColor bgColor = (menuTheme == Ant::MenuTheme::Dark) ? QColor(0, 21, 41) : token.colorBgContainer;
+    const QColor bgColor = (menuTheme == Ant::MenuTheme::Dark) ? token.colorBgMenuDark : token.colorBgContainer;
     painter->fillRect(option->rect, bgColor);
 
     // Border line

@@ -60,6 +60,10 @@ struct AntThemeTokens
     QColor colorSplit;
     QColor colorShadow;
     QColor colorRateStar;
+    // Always-dark menu surface (MenuTheme::Dark is mode-independent).
+    QColor colorBgMenuDark;
+    // Typography <mark> highlight background (antd gold-2 in light, dark-gold in dark).
+    QColor colorMarkBg;
 
     int fontSize = Ant::FontSize;
     int fontSizeSM = Ant::FontSizeSmall;

@@ -60,7 +60,7 @@ QColor textColorForType(const AntTypography* typo, const QStyleOption* option)
 
 QColor markBackgroundColor()
 {
-    return QColor("#fff1b8");
+    return antTheme->tokens().colorMarkBg;
 }
 
 void drawCopyIcon(QPainter* painter, const QRect& rect, const QColor& color)
@@ -276,7 +276,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
         painter->drawRect(markRect);
 
         painter->setFont(font);
-        painter->setPen(QColor("#000000"));
+        painter->setPen(token.colorText);
         painter->drawText(textRect, align | Qt::TextWordWrap, text);
     }
     // Paragraph or ellipsis modes: word wrap
