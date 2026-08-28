@@ -28,6 +28,15 @@ public:
     static void drawCrispRoundedRect(QPainter* painter, const QRect& rect,
         const QPen& pen, const QBrush& brush, qreal rx, qreal ry);
 
+    // Draw the focus outline glow shared by input-family widgets (Input,
+    // InputNumber, Select, Cascader, DatePicker, TimePicker, TreeSelect,
+    // AutoComplete). The glow is a soft rounded outline drawn 1px outside the
+    // frame, following the Ant Design "focus outline" convention:
+    //   frameRect.adjusted(-1, -1, 1, 1) + pen(glowColor, outlineWidth) + radius + 1
+    // glowColor must already carry its desired alpha (e.g. alpha(border, 0.16)).
+    static void drawInputFocusGlow(QPainter* painter, const QRectF& frameRect,
+        qreal radius, const QColor& glowColor, qreal outlineWidth);
+
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;
 

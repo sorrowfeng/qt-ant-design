@@ -80,9 +80,8 @@ void AntAutoCompleteStyle::drawFrame(const QStyleOption* option, QPainter* paint
 
     if (focused && enabled)
     {
-        const QColor focus = AntPalette::alpha(token.colorPrimary, 0.18);
-        AntStyleBase::drawCrispRoundedRect(painter, r.adjusted(1, 1, -1, -1).toRect(),
-            QPen(focus, token.controlOutlineWidth), Qt::NoBrush, token.borderRadius, token.borderRadius);
+        AntStyleBase::drawInputFocusGlow(painter, r, token.borderRadius,
+            AntPalette::alpha(border, 0.16), token.controlOutlineWidth);
     }
 
     painter->restore();

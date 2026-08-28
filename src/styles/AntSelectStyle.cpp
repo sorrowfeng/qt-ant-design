@@ -197,9 +197,8 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
         && select->variant() != Ant::Variant::Borderless
         && select->variant() != Ant::Variant::Underlined)
     {
-        const QColor outline = AntPalette::alpha(borderColor, 0.16);
-        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
-            QPen(outline, token.controlOutlineWidth), Qt::NoBrush, metrics.radius + 1, metrics.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, metrics.radius,
+            AntPalette::alpha(borderColor, 0.16), token.controlOutlineWidth);
     }
 
     if (select->variant() != Ant::Variant::Borderless

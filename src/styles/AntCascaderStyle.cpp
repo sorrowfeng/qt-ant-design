@@ -214,9 +214,8 @@ void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painte
         && cascader->variant() != Ant::Variant::Borderless
         && cascader->variant() != Ant::Variant::Underlined)
     {
-        const QColor outline = AntPalette::alpha(bColor, 0.16);
-        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
-            QPen(outline, token.controlOutlineWidth), Qt::NoBrush, metrics.radius + 1, metrics.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, metrics.radius,
+            AntPalette::alpha(bColor, 0.16), token.controlOutlineWidth);
     }
 
     if (cascader->variant() != Ant::Variant::Borderless

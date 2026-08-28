@@ -321,8 +321,8 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
         && input->variant() != Ant::Variant::Borderless
         && input->variant() != Ant::Variant::Underlined)
     {
-        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
-            QPen(AntPalette::alpha(borderColor, 0.16), token.controlOutlineWidth), Qt::NoBrush, metrics.radius + 1, metrics.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, metrics.radius,
+            AntPalette::alpha(borderColor, 0.16), token.controlOutlineWidth);
     }
 
     if (input->variant() != Ant::Variant::Borderless

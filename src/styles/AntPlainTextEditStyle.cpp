@@ -127,9 +127,8 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
     // Focus glow
     if (focused && enabled && variant != Ant::Variant::Borderless)
     {
-        const QColor focus = AntPalette::alpha(token.colorPrimary, 0.18);
-        AntStyleBase::drawCrispRoundedRect(painter, r.toRect(),
-            QPen(focus, m.focusWidth), Qt::NoBrush, m.radius, m.radius);
+        AntStyleBase::drawInputFocusGlow(painter, r, m.radius,
+            AntPalette::alpha(token.colorPrimary, 0.16), m.focusWidth);
     }
 
     // Placeholder

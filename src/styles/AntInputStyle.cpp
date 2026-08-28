@@ -162,8 +162,7 @@ void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter
         }
         else
         {
-            AntStyleBase::drawCrispRoundedRect(painter, frame.adjusted(-1, -1, 1, 1).toRect(),
-                QPen(focus, token.controlOutlineWidth), Qt::NoBrush, m.radius + 1, m.radius + 1);
+            AntStyleBase::drawInputFocusGlow(painter, frame, m.radius, focus, token.controlOutlineWidth);
         }
     }
 

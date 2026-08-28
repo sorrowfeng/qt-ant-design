@@ -6,6 +6,7 @@
 #include <QStyleOption>
 
 #include "styles/AntIconPainter.h"
+#include "styles/AntPalette.h"
 #include "widgets/AntTreeSelect.h"
 
 AntTreeSelectStyle::AntTreeSelectStyle(QStyle* style)
@@ -109,10 +110,8 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
     if (focused && !disabled && select->variant() != Ant::Variant::Borderless
         && select->variant() != Ant::Variant::Underlined)
     {
-        const QColor outline = token.colorPrimaryBorder;
-        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(),
-            QPen(outline, token.controlOutlineWidth), Qt::NoBrush,
-            m.radius + 1, m.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, m.radius,
+            AntPalette::alpha(borderColor, 0.16), token.controlOutlineWidth);
     }
 
     if (select->variant() != Ant::Variant::Borderless

@@ -188,9 +188,8 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
         picker->variant() != Ant::Variant::Borderless &&
         picker->variant() != Ant::Variant::Underlined)
     {
-        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
-            QPen(AntPalette::alpha(timePickerBorderColor(picker), 0.16), token.controlOutlineWidth),
-            Qt::NoBrush, m.radius + 1, m.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, m.radius,
+            AntPalette::alpha(timePickerBorderColor(picker), 0.16), token.controlOutlineWidth);
     }
 
     // Border and background

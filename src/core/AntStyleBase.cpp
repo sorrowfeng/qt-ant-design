@@ -76,6 +76,17 @@ void AntStyleBase::drawCrispRoundedRect(QPainter* painter, const QRect& rect,
         painter->drawRoundedRect(QRectF(rect), rx, ry);
 }
 
+void AntStyleBase::drawInputFocusGlow(QPainter* painter, const QRectF& frameRect,
+    qreal radius, const QColor& glowColor, qreal outlineWidth)
+{
+    if (!painter || outlineWidth <= 0 || frameRect.isEmpty())
+    {
+        return;
+    }
+    drawCrispRoundedRect(painter, frameRect.adjusted(-1, -1, 1, 1).toRect(),
+        QPen(glowColor, outlineWidth), Qt::NoBrush, radius + 1, radius + 1);
+}
+
 bool AntStyleBase::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::Paint)
