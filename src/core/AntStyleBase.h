@@ -64,6 +64,17 @@ public:
     static void drawSpinner(QPainter* painter, const QRectF& rect,
         const QColor& color, int angle, int spanAngle = 96, qreal penWidth = -1);
 
+    // Draw the Ant Design empty-state illustration, shared by AntEmptyStyle
+    // and AntTableStyle (empty table state). The illustration is drawn in its
+    // intrinsic 184x152 (default) or 128x80 (simple) coordinate system: the
+    // painter is translated to targetRect.topLeft() and scaled so the artwork
+    // fills targetRect exactly. Colors derive from the current theme tokens
+    // (dark mode adjusts opacities automatically).
+    // extraLine additionally draws the third text line used by the Table
+    // empty-state variant.
+    static void drawEmptyIllustration(QPainter* painter, const QRectF& targetRect,
+        bool simple, bool extraLine = false);
+
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;
 

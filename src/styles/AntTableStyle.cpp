@@ -7,7 +7,6 @@
 
 #include "core/AntStyleBase.h"
 #include "styles/AntIconPainter.h"
-#include "styles/AntPalette.h"
 #include "widgets/AntTable.h"
 
 AntTableStyle::AntTableStyle(QStyle* style)
@@ -485,38 +484,13 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
     // Empty state
     if (table->rowCount() == 0 && !table->isLoading())
     {
-        const bool isDark = antTheme->themeMode() == Ant::ThemeMode::Dark;
-        const QColor primary = AntPalette::alpha(token.colorTextTertiary, isDark ? 0.5 : 0.32);
-        const QColor fill = AntPalette::alpha(token.colorFillQuaternary, isDark ? 0.78 : 1.0);
-        const QColor line = AntPalette::alpha(token.colorTextTertiary, isDark ? 0.68 : 0.45);
-
         const int imgW = 96;
         const int imgH = 60;
         const int centerX = bodyRect.center().x();
         const int centerY = bodyRect.center().y() - 14;
         const QRectF imgRect(centerX - imgW / 2.0, centerY - imgH / 2.0, imgW, imgH);
 
-        painter->save();
-        painter->translate(imgRect.topLeft());
-        painter->scale(imgW / 128.0, imgH / 80.0);
-
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(AntPalette::alpha(token.colorPrimary, 0.08));
-        painter->drawEllipse(QRectF(16, 58, 96, 14));
-
-        AntStyleBase::drawCrispRoundedRect(painter, QRect(34, 10, 60, 46), Qt::NoPen, fill, 10, 10);
-        AntStyleBase::drawCrispRoundedRect(painter, QRect(42, 18, 44, 30), Qt::NoPen,
-            AntPalette::alpha(token.colorBgContainer, 0.88), 6, 6);
-
-        painter->setPen(QPen(primary, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        painter->drawArc(QRectF(10, 20, 26, 26), 35 * 16, 260 * 16);
-        painter->drawArc(QRectF(92, 18, 22, 22), 220 * 16, 220 * 16);
-
-        painter->setPen(QPen(line, 2.2, Qt::SolidLine, Qt::RoundCap));
-        painter->drawLine(QPointF(49, 27), QPointF(79, 27));
-        painter->drawLine(QPointF(49, 34), QPointF(73, 34));
-        painter->drawLine(QPointF(49, 41), QPointF(67, 41));
-        painter->restore();
+        AntStyleBase::drawEmptyIllustration(painter, imgRect, true, true);
 
         QFont descFont = painter->font();
         descFont.setPixelSize(token.fontSize);
