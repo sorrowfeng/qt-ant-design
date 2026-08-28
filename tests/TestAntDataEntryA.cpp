@@ -174,9 +174,11 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(w2->autoExclusive(), true);
 
     QSignalSpy checkedSpy(w2, &AntRadio::checkedChanged);
+    QSignalSpy legacyToggledSpy(w2, &AntRadio::toggled); // Deprecated - kept for compatibility
     w2->setChecked(true);
     QCOMPARE(w2->isChecked(), true);
     QCOMPARE(checkedSpy.count(), 1);
+    QCOMPARE(legacyToggledSpy.count(), 1); // deprecated alias still fires alongside checkedChanged
 
     QSignalSpy textSpy(w2, &AntRadio::textChanged);
     w2->setText("Option A");

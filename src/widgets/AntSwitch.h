@@ -68,9 +68,12 @@ public:
     QSize minimumSizeHint() const override;
 
 Q_SIGNALS:
+    // Canonical state-change signal - prefer this over the legacy alias below.
     void checkedChanged(bool checked);
-    void toggled(bool checked);
+    // User-gesture event (fires on click/keyboard activation, not on programmatic set).
     void clicked(bool checked);
+    // Deprecated - use checkedChanged() instead.
+    void toggled(bool checked);
     void sizeChanged(Ant::Size size);
     void switchSizeChanged(Ant::Size size);
     void loadingChanged(bool loading);

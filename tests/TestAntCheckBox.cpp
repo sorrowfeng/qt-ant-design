@@ -42,9 +42,12 @@ void TestAntCheckBox::propertiesAndSignals()
     QCOMPARE(cb->text(), "Option A");
     QCOMPARE(textSpy.count(), 1);
 
-    QSignalSpy toggledSpy(cb, &AntCheckBox::toggled);
+    QSignalSpy checkedSpy2(cb, &AntCheckBox::checkedChanged);
+    QSignalSpy legacyToggledSpy(cb, &AntCheckBox::toggled); // Deprecated - kept for compatibility
     cb->setChecked(false);
-    QCOMPARE(toggledSpy.count(), 1);
+    QCOMPARE(cb->isChecked(), false);
+    QCOMPARE(checkedSpy2.count(), 1);
+    QCOMPARE(legacyToggledSpy.count(), 1); // deprecated alias still fires alongside checkedChanged
 
     cb->setTristate(false);
     QCOMPARE(cb->isTristate(), false);
@@ -52,6 +55,15 @@ void TestAntCheckBox::propertiesAndSignals()
     QCOMPARE(cb->isChecked(), true);
     cb->click();
     QCOMPARE(cb->isChecked(), false);
+
+    // checkStateChanged is the canonical typed signal; stateChanged(int) is kept as a
+    // deprecated compatibility alias and must fire alongside it.
+    QSignalSpy checkStateSpy(cb, &AntCheckBox::checkStateChanged);
+    QSignalSpy legacyStateSpy(cb, &AntCheckBox::stateChanged); // Deprecated - kept for compatibility
+    cb->setCheckState(Qt::Checked);
+    QCOMPARE(cb->checkState(), Qt::Checked);
+    QCOMPARE(checkStateSpy.count(), 1);
+    QCOMPARE(legacyStateSpy.count(), 1); // deprecated alias still fires alongside checkStateChanged
 
     QSize hint = cb->sizeHint();
     QVERIFY(hint.width() > 0);

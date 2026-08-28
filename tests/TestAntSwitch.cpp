@@ -23,9 +23,11 @@ void TestAntSwitch::propertiesAndSignals()
     QCOMPARE(sw->uncheckedText(), QString());
 
     QSignalSpy checkedSpy(sw, &AntSwitch::checkedChanged);
+    QSignalSpy legacyToggledSpy(sw, &AntSwitch::toggled); // Deprecated - kept for compatibility
     sw->setChecked(true);
     QCOMPARE(sw->isChecked(), true);
     QCOMPARE(checkedSpy.count(), 1);
+    QCOMPARE(legacyToggledSpy.count(), 1); // deprecated alias still fires alongside checkedChanged
 
     QSignalSpy sizeSpy(sw, &AntSwitch::switchSizeChanged);
     sw->setSwitchSize(Ant::Size::Small);

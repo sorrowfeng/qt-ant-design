@@ -405,8 +405,8 @@ QWidget* createCarouselPage(QWidget* /*owner*/)
 
         QObject::connect(previous, &AntButton::clicked, carousel, &AntCarousel::previous);
         QObject::connect(next, &AntButton::clicked, carousel, &AntCarousel::next);
-        QObject::connect(manualSwitch, &AntSwitch::toggled, carousel, &AntCarousel::setManualNavigationEnabled);
-        QObject::connect(arrowsSwitch, &AntSwitch::toggled, carousel, &AntCarousel::setShowArrows);
+        QObject::connect(manualSwitch, &AntSwitch::checkedChanged, carousel, &AntCarousel::setManualNavigationEnabled);
+        QObject::connect(arrowsSwitch, &AntSwitch::checkedChanged, carousel, &AntCarousel::setShowArrows);
         QObject::connect(carousel, &AntCarousel::currentIndexChanged, detail, [detail](int index) {
             detail->setText(QStringLiteral("Slide %1 selected").arg(index + 1));
         });
