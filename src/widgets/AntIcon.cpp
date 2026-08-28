@@ -961,7 +961,7 @@ QColor AntIcon::effectiveSecondaryColor() const
 
 void AntIcon::updateTimerState()
 {
-    if (m_spin)
+    if (m_spin && isVisible())
     {
         if (!m_spinTimer.isActive())
         {
@@ -971,6 +971,21 @@ void AntIcon::updateTimerState()
     else
     {
         m_spinTimer.stop();
-        m_spinAngle = 0;
+        if (!m_spin)
+        {
+            m_spinAngle = 0;
+        }
     }
+}
+
+void AntIcon::showEvent(QShowEvent* event)
+{
+    updateTimerState();
+    QWidget::showEvent(event);
+}
+
+void AntIcon::hideEvent(QHideEvent* event)
+{
+    updateTimerState();
+    QWidget::hideEvent(event);
 }
