@@ -120,7 +120,7 @@ void sendMouseClick(QWidget* target, const QPoint& globalPos, Qt::KeyboardModifi
 void drawMessageShadow(QPainter& painter, const QRectF& bubble, qreal radius)
 {
     painter.save();
-    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    const bool dark = antTheme->isDarkMode();
     constexpr int ShadowLayers = 14;
     const qreal maxAlpha = dark ? 0.040 : 0.024;
     for (int i = ShadowLayers; i >= 1; --i)

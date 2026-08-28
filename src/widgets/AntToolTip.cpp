@@ -455,7 +455,7 @@ QColor AntToolTip::bubbleColor() const
     {
         return m_color;
     }
-    return antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626");
+    return antTheme->isDarkMode() ? QColor("#424242") : QColor("#262626");
 }
 
 QColor AntToolTip::textColor() const

@@ -27,7 +27,10 @@ void drawSegmentedThumbShadow(QPainter* painter, const QRectF& rect, qreal radiu
 
 QColor itemOverlayColor(const AntThemeTokens& token, bool pressed)
 {
-    const bool dark = token.colorBgBase.lightness() < 32;
+    // Overlay alpha is tuned per theme; the tint itself derives from
+    // token.colorText (see below), so misjudging the mode only shifts
+    // strength, never the black/white polarity.
+    const bool dark = antTheme->isDarkMode();
     // Derive the overlay tint from colorText so it follows the active theme:
     // dark text on light surfaces, light text on dark surfaces.
     QColor color = token.colorText;

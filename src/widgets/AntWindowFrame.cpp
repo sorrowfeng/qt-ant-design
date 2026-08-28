@@ -370,7 +370,7 @@ protected:
         }
 
         QColor shadowBase = antTheme->tokens().colorShadow;
-        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.046 : 0.032;
+        const qreal maxOpacity = antTheme->isDarkMode() ? 0.046 : 0.032;
         const qreal effectiveSpread =
             qMax<qreal>(1.0, shadowWidth - AntWindowFrame::LegacySoftwareShadowInnerClearance);
         for (int distance = shadowWidth; distance > AntWindowFrame::LegacySoftwareShadowInnerClearance; --distance)
@@ -546,7 +546,7 @@ void applyNativeFrame(QWidget* widget, const NativeFrameOptions& options)
         setWindowAttribute(hwnd, kDwmBorderColor, &noBorder, sizeof(noBorder));
     }
 
-    const BOOL darkMode = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    const BOOL darkMode = antTheme->isDarkMode();
     setWindowAttribute(hwnd, kDwmUseImmersiveDarkMode, &darkMode, sizeof(darkMode));
 #else
     if (widget)

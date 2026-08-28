@@ -179,7 +179,7 @@ void AntStyleBase::drawEmptyIllustration(QPainter* painter, const QRectF& target
     }
 
     const auto& token = antTheme->tokens();
-    const bool isDark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    const bool isDark = antTheme->isDarkMode();
     const QColor primary = AntPalette::alpha(token.colorTextTertiary, isDark ? 0.5 : 0.32);
     const QColor fill = AntPalette::alpha(token.colorFillQuaternary, isDark ? 0.78 : 1.0);
     const QColor line = AntPalette::alpha(token.colorTextTertiary, isDark ? 0.68 : 0.45);

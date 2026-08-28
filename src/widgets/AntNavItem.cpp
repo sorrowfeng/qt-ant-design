@@ -439,7 +439,7 @@ void AntNavItem::ensurePaintCache() const
     }
 
     const auto& token = antTheme->tokens();
-    const bool isDark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    const bool isDark = antTheme->isDarkMode();
     QColor bg(Qt::transparent);
     if (m_active)
     {

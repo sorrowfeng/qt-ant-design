@@ -187,7 +187,7 @@ protected:
                                             -kSubMenuPopupShadowMargin,
                                             -kSubMenuPopupShadowMargin);
         antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.72);
-        const QColor border = antTheme->themeMode() == Ant::ThemeMode::Dark
+        const QColor border = antTheme->isDarkMode()
                                   ? AntPalette::alpha(token.colorTextLightSolid, 0.18)
                                   : token.colorBorder;
         painter.setPen(QPen(border, token.lineWidth));

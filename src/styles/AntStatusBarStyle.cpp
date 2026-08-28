@@ -136,7 +136,7 @@ StatusBarColors statusColors(Ant::StatusBarStatus status,
                 token.colorFillTertiary};
     }
 
-    const qreal hoverMix = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.18 : 0.10;
+    const qreal hoverMix = antTheme->isDarkMode() ? 0.18 : 0.10;
     return {background,
             token.colorText,
             accent,

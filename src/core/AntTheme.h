@@ -108,6 +108,9 @@ public:
     static AntTheme* instance();
 
     Ant::ThemeMode themeMode() const;
+    // Single source of truth for "is the global theme dark". All styles and
+    // widgets must use this instead of re-comparing themeMode() inline.
+    bool isDarkMode() const { return m_themeMode == Ant::ThemeMode::Dark; }
     const AntThemeTokens& tokens() const;
     const AntThemeTokens& tokens(Ant::ThemeMode mode) const;
 

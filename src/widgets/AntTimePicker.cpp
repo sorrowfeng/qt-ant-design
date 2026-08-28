@@ -312,7 +312,7 @@ private:
                 if (selected)
                 {
                     painter.setPen(Qt::NoPen);
-                    painter.setBrush(AntPalette::alpha(token.colorPrimary, antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.26 : 0.12));
+                    painter.setBrush(AntPalette::alpha(token.colorPrimary, antTheme->isDarkMode() ? 0.26 : 0.12));
                     painter.drawRoundedRect(rowRect, token.borderRadiusSM, token.borderRadiusSM);
                 }
                 else if (hovered)

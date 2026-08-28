@@ -88,7 +88,7 @@ void drawShadowLayer(QPainter& painter, const QRectF& card, int blur, qreal yOff
 
 void drawNotificationShadow(QPainter& painter, const QRectF& card, qreal radius)
 {
-    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    const bool dark = antTheme->isDarkMode();
     drawShadowLayer(painter, card, 12, 4, dark ? 0.048 : 0.026, radius);
     drawShadowLayer(painter, card, 5, 1, dark ? 0.022 : 0.012, radius);
 }

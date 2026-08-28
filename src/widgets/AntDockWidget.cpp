@@ -301,7 +301,7 @@ protected:
         }
 
         QColor shadowBase = antTheme->tokens().colorShadow;
-        const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.046 : 0.032;
+        const qreal maxOpacity = antTheme->isDarkMode() ? 0.046 : 0.032;
         for (int distance = kNativeFrameShadowMargin; distance > 0; --distance)
         {
             const qreal t = qBound<qreal>(
@@ -1179,7 +1179,7 @@ void AntDockWidget::updateTheme()
         content->setPalette(contentPalette);
         content->setAutoFillBackground(true);
     }
-    setProperty("antDockDarkSurfaceApplied", antTheme->themeMode() == Ant::ThemeMode::Dark);
+    setProperty("antDockDarkSurfaceApplied", antTheme->isDarkMode());
 }
 
 void AntDockWidget::updateFloatingFrame()
@@ -1313,7 +1313,7 @@ void AntDockWidget::paintEvent(QPaintEvent* event)
 
     const int cornerRadius = floatingCornerRadius();
     const auto& token = antTheme->tokens();
-    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    const bool dark = antTheme->isDarkMode();
     QColor fill = token.colorBgElevated;
     QColor border = dark ? token.colorBorder : token.colorBorderSecondary;
     border.setAlphaF(dark ? 0.82 : 0.72);
@@ -1510,7 +1510,7 @@ void AntDockWidget::applyNativeWindowFrame()
     const COLORREF borderColor = RGB(token.colorBorder.red(), token.colorBorder.green(), token.colorBorder.blue());
     setWindowAttribute(hwnd, kDwmBorderColor, &borderColor, sizeof(borderColor));
 
-    const BOOL darkMode = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    const BOOL darkMode = antTheme->isDarkMode();
     setWindowAttribute(hwnd, kDwmUseImmersiveDarkMode, &darkMode, sizeof(darkMode));
 }
 

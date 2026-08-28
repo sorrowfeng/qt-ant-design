@@ -104,7 +104,7 @@ void AntSelectOptionWidget::paintEvent(QPaintEvent* event)
 
     if (multiMode && selected)
     {
-        const QColor checkColor = antTheme->themeMode() == Ant::ThemeMode::Dark
+        const QColor checkColor = antTheme->isDarkMode()
             ? token.colorPrimaryHover
             : token.colorPrimary;
         QPen checkPen(disabled ? token.colorTextDisabled : checkColor, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);

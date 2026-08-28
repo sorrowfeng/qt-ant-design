@@ -85,7 +85,7 @@ protected:
         path.quadTo(bubble.left(), bubble.top(), bubble.left() + radius, bubble.top());
         path.closeSubpath();
 
-        QColor bg = antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626");
+        QColor bg = antTheme->isDarkMode() ? QColor("#424242") : QColor("#262626");
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
         painter.setPen(Qt::NoPen);

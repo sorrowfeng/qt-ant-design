@@ -501,7 +501,7 @@ void drawDockContextMenuShadow(QPainter* painter, const QRect& panel, int radius
     const auto& token = antTheme->tokens();
     const QRectF sourceRect(panel);
     const QColor shadowBase = token.colorShadow;
-    const qreal maxOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.14 : 0.10;
+    const qreal maxOpacity = antTheme->isDarkMode() ? 0.14 : 0.10;
 
     for (int step = kDockContextMenuShadowSpread; step > 0; --step)
     {
@@ -653,7 +653,7 @@ protected:
                                             -kDockContextMenuShadowMargin,
                                             -kDockContextMenuShadowMargin);
         drawDockContextMenuShadow(&painter, panel, token.borderRadiusLG);
-        const QColor border = antTheme->themeMode() == Ant::ThemeMode::Dark
+        const QColor border = antTheme->isDarkMode()
                                   ? translucent(token.colorTextLightSolid, 0.18)
                                   : token.colorBorder;
         painter.setPen(QPen(border, token.lineWidth));
@@ -697,7 +697,7 @@ private:
         {
             return;
         }
-        m_menu->setMenuTheme(antTheme->themeMode() == Ant::ThemeMode::Dark
+        m_menu->setMenuTheme(antTheme->isDarkMode()
                                  ? Ant::MenuTheme::Dark
                                  : Ant::MenuTheme::Light);
     }
@@ -828,7 +828,7 @@ protected:
 
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-        QColor fill = translucent(token.colorPrimaryBg, antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.32 : 0.78);
+        QColor fill = translucent(token.colorPrimaryBg, antTheme->isDarkMode() ? 0.32 : 0.78);
         painter.setBrush(fill);
         painter.setPen(QPen(token.colorPrimaryBorder, 1, Qt::DashLine));
         painter.drawRoundedRect(r, token.borderRadius, token.borderRadius);
@@ -882,7 +882,7 @@ public:
         {
             tabBar()->setPalette(pal);
         }
-        setProperty("antDockAreaDarkSurfaceApplied", antTheme->themeMode() == Ant::ThemeMode::Dark);
+        setProperty("antDockAreaDarkSurfaceApplied", antTheme->isDarkMode());
         update();
     }
 
@@ -1130,7 +1130,7 @@ protected:
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
         QColor scrim = token.colorBgLayout;
-        scrim.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.20 : 0.10);
+        scrim.setAlphaF(antTheme->isDarkMode() ? 0.20 : 0.10);
         painter.fillRect(rect(), scrim);
 
         const auto zones = guideRects();
@@ -1145,14 +1145,14 @@ protected:
         {
             QRect panel = clusterRect.adjusted(-9, -9, 9, 9);
             QColor panelShadow = token.colorShadow;
-            panelShadow.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.28 : 0.16);
+            panelShadow.setAlphaF(antTheme->isDarkMode() ? 0.28 : 0.16);
             painter.setPen(Qt::NoPen);
             painter.setBrush(panelShadow);
             painter.drawRoundedRect(QRectF(panel).translated(0, 4),
                                     token.borderRadiusLG + 2, token.borderRadiusLG + 2);
 
             QColor panelFill = token.colorBgElevated;
-            panelFill.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.76 : 0.88);
+            panelFill.setAlphaF(antTheme->isDarkMode() ? 0.76 : 0.88);
             QColor panelBorder = token.colorBorderSecondary;
             panelBorder.setAlphaF(0.64);
             painter.setPen(QPen(panelBorder, 1));
@@ -1232,15 +1232,15 @@ private:
         const QRectF box = QRectF(zone.rect).adjusted(0.5, 0.5, -0.5, -0.5);
 
         QColor shadow = token.colorShadow;
-        shadow.setAlphaF(active ? (antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.32 : 0.18) : 0.12);
+        shadow.setAlphaF(active ? (antTheme->isDarkMode() ? 0.32 : 0.18) : 0.12);
         painter->setPen(Qt::NoPen);
         painter->setBrush(shadow);
         painter->drawRoundedRect(box.translated(0, zone.edge ? 3 : 2),
                                  token.borderRadiusSM + 2, token.borderRadiusSM + 2);
 
         QColor fill = active ? token.colorPrimaryBg : token.colorBgElevated;
-        fill.setAlphaF(active ? (antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.92 : 0.98)
-                              : (antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.88 : 0.94));
+        fill.setAlphaF(active ? (antTheme->isDarkMode() ? 0.92 : 0.98)
+                              : (antTheme->isDarkMode() ? 0.88 : 0.94));
 
         QColor border = active ? token.colorPrimary : token.colorPrimaryBorder;
         border.setAlphaF(active ? 1.0 : (zone.edge ? 0.82 : 0.68));
@@ -1648,7 +1648,7 @@ protected:
                                 token.borderRadiusLG, token.borderRadiusLG);
 
         QColor fill = token.colorPrimary;
-        fill.setAlphaF(antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.26 : 0.16);
+        fill.setAlphaF(antTheme->isDarkMode() ? 0.26 : 0.16);
         QColor stroke = token.colorPrimary;
         stroke.setAlphaF(0.92);
         painter.setPen(QPen(stroke, 2));
