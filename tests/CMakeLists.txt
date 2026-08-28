@@ -41,7 +41,10 @@ function(add_ant_widget_smoke_test TEST_TYPE TEST_HEADER TEST_CONSTRUCT)
     add_executable(${TEST_TARGET} ${TEST_SOURCE})
     target_link_libraries(${TEST_TARGET} PRIVATE qt-ant-design Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME "WidgetSmoke.${TEST_TYPE}" COMMAND ${TEST_TARGET} -o -,txt)
-    set_tests_properties("WidgetSmoke.${TEST_TYPE}" PROPERTIES LABELS "widget-smoke;${TEST_TYPE}")
+    # Smoke targets are pure construct+render: a 30s cap catches hangs from
+    # event loops, popups, or async model population without false positives.
+    set_tests_properties("WidgetSmoke.${TEST_TYPE}"
+        PROPERTIES LABELS "widget-smoke;${TEST_TYPE}" TIMEOUT 30)
     set_property(GLOBAL APPEND PROPERTY ANT_WIDGET_SMOKE_TARGETS "${TEST_TARGET}")
 endfunction()
 
@@ -230,6 +233,9 @@ add_ant_test(TestAntMetaProperties)
 # Complex interaction coverage
 add_ant_test(TestAntInteractions)
 add_ant_test(TestAntAdvancedInteractions)
+
+# Deep behavioral coverage for historically smoke-only widgets
+add_ant_test(TestAntDeepCoverage)
 
 # Motion and animation coverage
 add_ant_test(TestAntMotion)
