@@ -13,15 +13,6 @@
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
 
-namespace
-{
-int focusPaddingFor()
-{
-    const auto& token = antTheme->tokens();
-    return token.lineWidthFocus + 1;
-}
-} // namespace
-
 AntButton::AntButton(QWidget* parent)
     : QPushButton(parent)
 {
@@ -232,7 +223,7 @@ void AntButton::focusOutEvent(QFocusEvent* event)
 
 bool AntButton::hitButton(const QPoint& pos) const
 {
-    const int focusPadding = focusPaddingFor();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     return rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding).contains(pos);
 }
 
@@ -255,7 +246,7 @@ void AntButton::mouseReleaseEvent(QMouseEvent* event)
                 return;
             }
             const AntButton::Metrics m = guard->metrics();
-            const int focusPadding = focusPaddingFor();
+            const int focusPadding = AntStyleBase::focusPaddingFor();
             const QRect bodyRect = guard->rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
             AntWave::triggerRect(guard, bodyRect, guard->waveColor(), guard->cornerRadius(m));
         });
@@ -328,7 +319,7 @@ int AntButton::cornerRadius(const Metrics& metrics) const
 
 QRectF AntButton::contentRect(const Metrics& metrics) const
 {
-    const int focusPadding = focusPaddingFor();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     if (m_buttonShape == Ant::ButtonShape::Circle)
         return bodyRect;
@@ -378,7 +369,7 @@ void AntButton::updateGeometryFromState(bool notifyGeometry)
     {
         setFont(f);
     }
-    const int totalHeight = m.height + focusPaddingFor() * 2;
+    const int totalHeight = m.height + AntStyleBase::focusPaddingFor() * 2;
     setMinimumHeight(totalHeight);
     setMaximumHeight(totalHeight);
     setSizePolicy(m_block ? QSizePolicy::Expanding : QSizePolicy::Minimum, QSizePolicy::Fixed);
@@ -396,7 +387,7 @@ QRect AntButton::spinnerIndicatorRect() const
     }
 
     const Metrics m = metrics();
-    const int focusPadding = focusPaddingFor();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     if (!bodyRect.isValid())
     {

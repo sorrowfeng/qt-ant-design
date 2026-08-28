@@ -37,6 +37,33 @@ public:
     static void drawInputFocusGlow(QPainter* painter, const QRectF& frameRect,
         qreal radius, const QColor& glowColor, qreal outlineWidth);
 
+    // ---- Button-family shared drawing helpers ----
+    // Used by AntButtonStyle / AntToolButtonStyle / AntToolBarStyle to avoid
+    // three copies of the same shadow / focus outline / spinner code.
+
+    // Padding reserved around a button for its focus outline
+    // (lineWidthFocus + 1). Used for size hints and hit-testing.
+    static int focusPaddingFor();
+
+    // Draw the soft bottom shadow under a button body (Ant Design elevation).
+    // No-op when color is transparent.
+    static void drawButtonBottomShadow(QPainter* painter, const QRectF& outer,
+        int radius, const QColor& color);
+
+    // Draw the focus outline around a button body: a rounded ring 1px outside
+    // the body using token.colorPrimaryBorder at lineWidthFocus width.
+    static void drawButtonFocusOutline(QPainter* painter, const QRectF& bodyRect,
+        int radius);
+
+    // Draw a loading spinner arc. The arc starts at the top when angle == 0
+    // and its start point rotates clockwise as angle increases.
+    //   spanAngle - arc length in degrees, drawn clockwise (Ant Design loader
+    //               shows ~30%, i.e. 96 degrees); default 96
+    //   penWidth  - stroke width; when <= 0 it derives from rect width
+    //               (max(1.5, rect.width() * 0.12))
+    static void drawSpinner(QPainter* painter, const QRectF& rect,
+        const QColor& color, int angle, int spanAngle = 96, qreal penWidth = -1);
+
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;
 

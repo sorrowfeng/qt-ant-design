@@ -87,6 +87,70 @@ void AntStyleBase::drawInputFocusGlow(QPainter* painter, const QRectF& frameRect
         QPen(glowColor, outlineWidth), Qt::NoBrush, radius + 1, radius + 1);
 }
 
+int AntStyleBase::focusPaddingFor()
+{
+    return antTheme->tokens().lineWidthFocus + 1;
+}
+
+void AntStyleBase::drawButtonBottomShadow(QPainter* painter, const QRectF& outer,
+    int radius, const QColor& color)
+{
+    if (!painter || color.alpha() == 0)
+    {
+        return;
+    }
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(color);
+    painter->drawRoundedRect(outer.adjusted(0, 2, 0, 2), radius, radius);
+    painter->restore();
+}
+
+void AntStyleBase::drawButtonFocusOutline(QPainter* painter, const QRectF& bodyRect,
+    int radius)
+{
+    const auto& token = antTheme->tokens();
+    const qreal offset = 1.0;
+    const qreal width = token.lineWidthFocus;
+    const qreal expand = offset + width / 2.0;
+    const QRectF focusRect = bodyRect.adjusted(-expand, -expand, expand, expand);
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setPen(QPen(token.colorPrimaryBorder, width, Qt::SolidLine, Qt::SquareCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(focusRect, radius + expand, radius + expand);
+    painter->restore();
+}
+
+void AntStyleBase::drawSpinner(QPainter* painter, const QRectF& rect,
+    const QColor& color, int angle, int spanAngle, qreal penWidth)
+{
+    if (!painter || rect.isEmpty())
+    {
+        return;
+    }
+    if (penWidth <= 0)
+    {
+        penWidth = qMax<qreal>(1.5, rect.width() * 0.12);
+    }
+    const QRectF arcRect = rect.adjusted(penWidth / 2.0, penWidth / 2.0,
+        -penWidth / 2.0, -penWidth / 2.0);
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->translate(arcRect.center());
+    painter->rotate(angle);
+    painter->translate(-arcRect.center());
+    painter->setPen(QPen(color, penWidth, Qt::SolidLine, Qt::RoundCap));
+    painter->setBrush(Qt::NoBrush);
+    // Start at 12 o'clock (90deg) when angle == 0, sweep clockwise.
+    painter->drawArc(arcRect, 90 * 16, -spanAngle * 16);
+    painter->restore();
+}
+
 bool AntStyleBase::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::Paint)

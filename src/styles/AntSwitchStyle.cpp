@@ -35,7 +35,7 @@ QColor trackColorFor(const AntSwitch* sw)
     return color;
 }
 
-void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int angle)
+void drawSwitchSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int angle)
 {
     painter.save();
     painter.setPen(QPen(color, 1.6, Qt::SolidLine, Qt::RoundCap));
@@ -173,7 +173,7 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
     if (sw->isLoading())
     {
         const QColor spinnerColor = sw->isChecked() ? token.colorPrimary : token.colorTextTertiary;
-        drawSpinner(*painter, handle.adjusted(4, 4, -4, -4), spinnerColor, sw->loadingAngle());
+        drawSwitchSpinner(*painter, handle.adjusted(4, 4, -4, -4), spinnerColor, sw->loadingAngle());
     }
 
     if (focused && enabled && !sw->isLoading())

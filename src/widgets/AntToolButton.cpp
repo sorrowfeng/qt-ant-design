@@ -22,12 +22,6 @@
 
 namespace
 {
-int focusPaddingForToolButton()
-{
-    const auto& token = antTheme->tokens();
-    return token.lineWidthFocus + 1;
-}
-
 QString cleanActionTextForToolButton(QString text)
 {
     const QChar escapedAmpersand(1);
@@ -264,7 +258,7 @@ void AntToolButton::mouseReleaseEvent(QMouseEvent* event)
                 return;
             }
             const AntToolButton::Metrics m = guard->metrics();
-            const int focusPadding = focusPaddingForToolButton();
+            const int focusPadding = AntStyleBase::focusPaddingFor();
             const QRect bodyRect = guard->rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
             AntWave::triggerRect(guard, bodyRect, guard->waveColor(), guard->cornerRadius(m));
         });
@@ -344,7 +338,7 @@ void AntToolButton::hideEvent(QHideEvent* event)
 
 bool AntToolButton::hitButton(const QPoint& pos) const
 {
-    const int focusPadding = focusPaddingForToolButton();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     return rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding).contains(pos);
 }
 
@@ -386,7 +380,7 @@ int AntToolButton::cornerRadius(const Metrics& m) const
 
 QRectF AntToolButton::contentRect(const Metrics& metrics) const
 {
-    const int focusPadding = focusPaddingForToolButton();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     return bodyRect.adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
 }
@@ -434,7 +428,7 @@ void AntToolButton::updateGeometryFromState(bool notifyGeometry)
     {
         setFont(f);
     }
-    const int totalHeight = m.height + focusPaddingForToolButton() * 2;
+    const int totalHeight = m.height + AntStyleBase::focusPaddingFor() * 2;
     setMinimumHeight(totalHeight);
     setMaximumHeight(totalHeight);
     if (notifyGeometry)
@@ -451,7 +445,7 @@ QRect AntToolButton::spinnerIndicatorRect() const
     }
 
     const Metrics m = metrics();
-    const int focusPadding = focusPaddingForToolButton();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     if (!bodyRect.isValid())
     {
