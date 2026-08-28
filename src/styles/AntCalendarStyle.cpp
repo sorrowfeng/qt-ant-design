@@ -68,7 +68,7 @@ void AntCalendarStyle::drawFrame(const QStyleOption* option, QPainter* painter) 
 
     AntStyleBase::drawCrispRoundedRect(painter, option->rect,
         QPen(token.colorBorderSecondary, token.lineWidth),
-        token.colorBgElevated, 8, 8);
+        token.colorBgElevated, token.borderRadiusLG, token.borderRadiusLG);
 
     painter->restore();
 }

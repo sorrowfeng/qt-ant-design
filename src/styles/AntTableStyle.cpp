@@ -557,12 +557,12 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
 
             if (isCurrent)
             {
-                AntStyleBase::drawCrispRoundedRect(painter, btnRect, Qt::NoPen, token.colorPrimary, 4, 4);
+                AntStyleBase::drawCrispRoundedRect(painter, btnRect, Qt::NoPen, token.colorPrimary, token.borderRadiusSM, token.borderRadiusSM);
             }
             else
             {
                 AntStyleBase::drawCrispRoundedRect(painter, btnRect,
-                    QPen(token.colorBorderSecondary, token.lineWidth), Qt::NoBrush, 4, 4);
+                    QPen(token.colorBorderSecondary, token.lineWidth), Qt::NoBrush, token.borderRadiusSM, token.borderRadiusSM);
             }
 
             const QFont btnFont = AntStyleBase::withPixelSize(painter->font(), m.fontSizeSM, isCurrent ? QFont::DemiBold : QFont::Normal);

@@ -91,7 +91,7 @@ void AntMenuBarStyle::drawControl(ControlElement element, const QStyleOption* op
         {
             QColor bg = active ? token.colorFillTertiary : token.colorFillQuaternary;
             AntStyleBase::drawCrispRoundedRect(painter, r.toRect().adjusted(4, 3, -4, -3),
-                Qt::NoPen, bg, 4, 4);
+                Qt::NoPen, bg, token.borderRadiusSM, token.borderRadiusSM);
         }
 
         // Text

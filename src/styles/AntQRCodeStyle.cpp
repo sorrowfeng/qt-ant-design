@@ -31,7 +31,7 @@ void drawQRIcon(QPainter* painter, const AntQRCode* qr, const QRect& contentRect
     const int halfBg = iconSize / 2 + 4;
     const QRect bgRect(center.x() - halfBg, center.y() - halfBg, halfBg * 2, halfBg * 2);
 
-    AntStyleBase::drawCrispRoundedRect(painter, bgRect, Qt::NoPen, token.colorBgContainer, 4, 4);
+    AntStyleBase::drawCrispRoundedRect(painter, bgRect, Qt::NoPen, token.colorBgContainer, token.borderRadiusSM, token.borderRadiusSM);
 
     const QRect iconRect(center.x() - iconSize / 2, center.y() - iconSize / 2, iconSize, iconSize);
     icon.paint(painter, iconRect, Qt::AlignCenter);
@@ -65,7 +65,7 @@ void drawQRStatusOverlay(QPainter* painter, const AntQRCode* qr)
         QPoint center = r.center().toPoint();
         QRectF refreshBtn(center.x() - 28, center.y() + 4, 56, 28);
         AntStyleBase::drawCrispRoundedRect(painter, refreshBtn.toRect(),
-            QPen(token.colorPrimary, 1), Qt::NoBrush, 4, 4);
+            QPen(token.colorPrimary, 1), Qt::NoBrush, token.borderRadiusSM, token.borderRadiusSM);
         painter->setPen(token.colorPrimary);
         painter->setFont(AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM));
         painter->drawText(refreshBtn, Qt::AlignCenter, QStringLiteral("Refresh"));
@@ -189,7 +189,7 @@ void AntQRCodeStyle::drawQRCode(const QStyleOption* option, QPainter* painter, c
         // Placeholder: dashed border
         QPen dashPen(token.colorBorder, 1, Qt::DashLine);
         AntStyleBase::drawCrispRoundedRect(painter, r.adjusted(4, 4, -4, -4).toRect(),
-            dashPen, Qt::NoBrush, 8, 8);
+            dashPen, Qt::NoBrush, token.borderRadiusLG, token.borderRadiusLG);
         painter->restore();
         return;
     }
@@ -208,7 +208,7 @@ void AntQRCodeStyle::drawQRCode(const QStyleOption* option, QPainter* painter, c
     if (qr->isBordered())
     {
         AntStyleBase::drawCrispRoundedRect(painter, r.adjusted(0.5, 0.5, -0.5, -0.5).toRect(),
-            QPen(token.colorBorder, 1), Qt::NoBrush, 4, 4);
+            QPen(token.colorBorder, 1), Qt::NoBrush, token.borderRadiusSM, token.borderRadiusSM);
     }
 
     // Status overlay

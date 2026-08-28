@@ -196,9 +196,9 @@ void AntStyleBase::drawEmptyIllustration(QPainter* painter, const QRectF& target
         painter->setBrush(AntPalette::alpha(token.colorPrimary, 0.12));
         painter->drawEllipse(QRectF(16, 58, 96, 14));
 
-        AntStyleBase::drawCrispRoundedRect(painter, QRect(34, 10, 60, 46), Qt::NoPen, fill, 10, 10);
+        AntStyleBase::drawCrispRoundedRect(painter, QRect(34, 10, 60, 46), Qt::NoPen, fill, token.borderRadiusLG + 2, token.borderRadiusLG + 2);
         AntStyleBase::drawCrispRoundedRect(painter, QRect(42, 18, 44, 30), Qt::NoPen,
-            AntPalette::alpha(token.colorBgContainer, 0.88), 6, 6);
+            AntPalette::alpha(token.colorBgContainer, 0.88), token.borderRadius, token.borderRadius);
 
         painter->setPen(QPen(primary, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         painter->drawArc(QRectF(10, 20, 26, 26), 35 * 16, 260 * 16);

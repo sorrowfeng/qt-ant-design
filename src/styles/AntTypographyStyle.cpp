@@ -255,7 +255,8 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
 
         painter->setPen(QPen(AntPalette::alpha(QColor(100, 100, 100), 0.2), token.lineWidth));
         painter->setBrush(AntPalette::alpha(QColor(150, 150, 150), 0.1));
-        painter->drawRoundedRect(QRectF(codeRect).adjusted(0.5, 0.5, -0.5, -0.5), 3, 3);
+        painter->drawRoundedRect(QRectF(codeRect).adjusted(0.5, 0.5, -0.5, -0.5),
+            token.borderRadiusXS + 1, token.borderRadiusXS + 1);
 
         painter->setFont(font);
         painter->setPen(color);
