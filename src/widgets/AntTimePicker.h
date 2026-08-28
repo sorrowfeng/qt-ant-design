@@ -20,6 +20,7 @@ class QT_ANT_DESIGN_EXPORT AntTimePicker : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QTime time READ time WRITE setTime NOTIFY timeChanged)
+    // Deprecated - use AntTimePicker::time instead.
     Q_PROPERTY(QTime selectedTime READ selectedTime WRITE setSelectedTime NOTIFY selectedTimeChanged)
     Q_PROPERTY(QTime minimumTime READ minimumTime WRITE setMinimumTime NOTIFY minimumTimeChanged)
     Q_PROPERTY(QTime maximumTime READ maximumTime WRITE setMaximumTime NOTIFY maximumTimeChanged)
@@ -40,10 +41,11 @@ public:
     explicit AntTimePicker(QWidget* parent = nullptr);
     ~AntTimePicker() override;
 
-    QTime selectedTime() const;
-    void setSelectedTime(const QTime& time);
     QTime time() const;
     void setTime(const QTime& time);
+    // Deprecated - prefer time()/setTime().
+    QTime selectedTime() const;
+    void setSelectedTime(const QTime& time);
     QTime minimumTime() const;
     void setMinimumTime(const QTime& time);
     QTime maximumTime() const;

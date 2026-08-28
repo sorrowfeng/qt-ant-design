@@ -44,6 +44,8 @@ class QT_ANT_DESIGN_EXPORT AntSelect : public QWidget
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
+    Q_PROPERTY(QVariant value READ value WRITE setValue NOTIFY valueChanged)
+    // Deprecated - use AntSelect::value instead.
     Q_PROPERTY(QVariant currentValue READ currentValue WRITE setCurrentValue NOTIFY currentValueChanged)
     Q_PROPERTY(int maxVisibleItems READ maxVisibleItems WRITE setMaxVisibleItems NOTIFY maxVisibleItemsChanged)
     Q_PROPERTY(Ant::SelectMode selectMode READ selectMode WRITE setSelectMode NOTIFY selectModeChanged)
@@ -86,6 +88,18 @@ public:
     void setCurrentText(const QString& text);
 
     QString currentText() const;
+    // Canonical value API - the selected option's data (QVariant).
+    QVariant value() const { return currentValue(); }
+    void setValue(const QVariant& value)
+    {
+        if (currentValue() == value)
+        {
+            return;
+        }
+        setCurrentValue(value);
+        Q_EMIT valueChanged(currentValue());
+    }
+    // Deprecated - prefer value()/setValue().
     QVariant currentValue() const;
     void setCurrentValue(const QVariant& value);
     QVariant currentData(int role = Qt::UserRole) const;
@@ -154,6 +168,8 @@ Q_SIGNALS:
     void openChanged(bool open);
     void currentIndexChanged(int index);
     void currentTextChanged(const QString& text);
+    void valueChanged(const QVariant& value);
+    // Deprecated - use valueChanged instead.
     void currentValueChanged(const QVariant& value);
     void optionSelected(int index, const QVariant& value);
     void activated(int index);

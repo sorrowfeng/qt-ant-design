@@ -20,6 +20,7 @@ class QT_ANT_DESIGN_EXPORT AntDatePicker : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QDate date READ date WRITE setDate NOTIFY dateChanged)
+    // Deprecated - use AntDatePicker::date instead.
     Q_PROPERTY(QDate selectedDate READ selectedDate WRITE setSelectedDate NOTIFY selectedDateChanged)
     Q_PROPERTY(QDate minimumDate READ minimumDate WRITE setMinimumDate NOTIFY minimumDateChanged)
     Q_PROPERTY(QDate maximumDate READ maximumDate WRITE setMaximumDate NOTIFY maximumDateChanged)
@@ -36,10 +37,11 @@ public:
     explicit AntDatePicker(QWidget* parent = nullptr);
     ~AntDatePicker() override;
 
-    QDate selectedDate() const;
-    void setSelectedDate(const QDate& date);
     QDate date() const;
     void setDate(const QDate& date);
+    // Deprecated - prefer date()/setDate().
+    QDate selectedDate() const;
+    void setSelectedDate(const QDate& date);
     QDate minimumDate() const;
     void setMinimumDate(const QDate& date);
     QDate maximumDate() const;

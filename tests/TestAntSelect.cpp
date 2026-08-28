@@ -44,6 +44,18 @@ void TestAntSelect::propertiesAndSignals()
     QCOMPARE(sel->currentValue().toString(), "banana");
     QCOMPARE(indexSpy.count(), 1);
 
+    // Canonical value API mirrors currentValue and emits its own signal.
+    QCOMPARE(sel->value().toString(), "banana");
+    QSignalSpy valueSpy(sel, &AntSelect::valueChanged);
+    sel->setValue("cherry");
+    QCOMPARE(sel->value().toString(), "cherry");
+    QCOMPARE(sel->currentValue().toString(), "cherry");
+    QCOMPARE(sel->currentIndex(), 2);
+    QCOMPARE(valueSpy.count(), 1);
+    sel->setValue("cherry");
+    QCOMPARE(valueSpy.count(), 1);
+    sel->setCurrentIndex(1);
+
     // Multiple mode
     QSignalSpy modeSpy(sel, &AntSelect::selectModeChanged);
     sel->setSelectMode(Ant::SelectMode::Multiple);
