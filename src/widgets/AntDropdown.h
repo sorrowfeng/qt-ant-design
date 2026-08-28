@@ -18,7 +18,7 @@ class QT_ANT_DESIGN_EXPORT AntDropdown : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QStringList itemLabels READ itemLabels WRITE setItemLabels NOTIFY itemLabelsChanged)
-    Q_PROPERTY(Ant::DropdownPlacement placement READ placement WRITE setPlacement NOTIFY placementChanged)
+    Q_PROPERTY(Ant::Placement placement READ placement WRITE setPlacement NOTIFY placementChanged)
     Q_PROPERTY(Ant::DropdownTrigger trigger READ trigger WRITE setTrigger NOTIFY triggerChanged)
     Q_PROPERTY(bool arrowVisible READ arrowVisible WRITE setArrowVisible NOTIFY arrowVisibleChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
@@ -30,9 +30,9 @@ public:
     QStringList itemLabels() const;
     void setItemLabels(const QStringList& labels);
 
-    Ant::DropdownPlacement placement() const;
-    void setPlacement(Ant::DropdownPlacement placement);
-    Ant::DropdownPlacement renderPlacement() const;
+    Ant::Placement placement() const;
+    void setPlacement(Ant::Placement placement);
+    Ant::Placement renderPlacement() const;
 
     Ant::DropdownTrigger trigger() const;
     void setTrigger(Ant::DropdownTrigger trigger);
@@ -53,7 +53,7 @@ public:
 
 Q_SIGNALS:
     void itemLabelsChanged(const QStringList& labels);
-    void placementChanged(Ant::DropdownPlacement placement);
+    void placementChanged(Ant::Placement placement);
     void triggerChanged(Ant::DropdownTrigger trigger);
     void arrowVisibleChanged(bool visible);
     void openChanged(bool open);
@@ -65,8 +65,8 @@ protected:
 private:
     class PopupFrame;
 
-    QRect popupGeometry(const QRect& targetRect, const QSize& popupSize, Ant::DropdownPlacement placement) const;
-    Ant::DropdownPlacement resolvedPlacement(const QRect& targetRect, const QSize& popupSize, const QRect& screenRect) const;
+    QRect popupGeometry(const QRect& targetRect, const QSize& popupSize, Ant::Placement placement) const;
+    Ant::Placement resolvedPlacement(const QRect& targetRect, const QSize& popupSize, const QRect& screenRect) const;
     int popupContentWidth() const;
     QMargins popupContentMargins() const;
     void invalidatePopupCaches();
@@ -81,8 +81,8 @@ private:
     void setOpenInternal(bool open, bool hoverDriven);
 
     QStringList m_itemLabels;
-    Ant::DropdownPlacement m_placement = Ant::DropdownPlacement::BottomLeft;
-    Ant::DropdownPlacement m_renderPlacement = Ant::DropdownPlacement::BottomLeft;
+    Ant::Placement m_placement = Ant::Placement::BottomLeft;
+    Ant::Placement m_renderPlacement = Ant::Placement::BottomLeft;
     Ant::DropdownTrigger m_trigger = Ant::DropdownTrigger::Hover;
     bool m_arrowVisible = false;
     bool m_open = false;
@@ -98,7 +98,7 @@ private:
     bool m_popupSizeDirty = true;
     bool m_popupGeometryCacheValid = false;
     QRect m_lastPopupGeometry;
-    Ant::DropdownPlacement m_lastGeometryPlacement = Ant::DropdownPlacement::BottomLeft;
+    Ant::Placement m_lastGeometryPlacement = Ant::Placement::BottomLeft;
 
     mutable bool m_contentWidthCacheValid = false;
     mutable QStringList m_contentWidthCacheLabels;

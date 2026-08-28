@@ -89,16 +89,16 @@ void TestAntNavigation::propertiesAndSignals()
 
     // AntDropdown
     auto* dd = new AntDropdown;
-    QCOMPARE(dd->placement(), Ant::DropdownPlacement::BottomLeft);
-    QCOMPARE(dd->renderPlacement(), Ant::DropdownPlacement::BottomLeft);
+    QCOMPARE(dd->placement(), Ant::Placement::BottomLeft);
+    QCOMPARE(dd->renderPlacement(), Ant::Placement::BottomLeft);
     QCOMPARE(dd->trigger(), Ant::DropdownTrigger::Hover);
     QCOMPARE(dd->arrowVisible(), false);
     QCOMPARE(dd->isOpen(), false);
 
     QSignalSpy placeSpy(dd, &AntDropdown::placementChanged);
-    dd->setPlacement(Ant::DropdownPlacement::BottomRight);
-    QCOMPARE(dd->placement(), Ant::DropdownPlacement::BottomRight);
-    QCOMPARE(dd->renderPlacement(), Ant::DropdownPlacement::BottomRight);
+    dd->setPlacement(Ant::Placement::BottomRight);
+    QCOMPARE(dd->placement(), Ant::Placement::BottomRight);
+    QCOMPARE(dd->renderPlacement(), Ant::Placement::BottomRight);
     QCOMPARE(placeSpy.count(), 1);
 
     QSignalSpy trigSpy(dd, &AntDropdown::triggerChanged);

@@ -29,21 +29,21 @@ QRect availableScreenGeometryFor(const QWidget* widget)
     return QRect(0, 0, 1280, 720);
 }
 
-bool isTopPlacement(Ant::TooltipPlacement placement)
+bool isTopPlacement(Ant::Placement placement)
 {
-    return placement == Ant::TooltipPlacement::Top
-        || placement == Ant::TooltipPlacement::TopLeft
-        || placement == Ant::TooltipPlacement::TopRight;
+    return placement == Ant::Placement::Top
+        || placement == Ant::Placement::TopLeft
+        || placement == Ant::Placement::TopRight;
 }
 
-bool isBottomPlacement(Ant::TooltipPlacement placement)
+bool isBottomPlacement(Ant::Placement placement)
 {
-    return placement == Ant::TooltipPlacement::Bottom
-        || placement == Ant::TooltipPlacement::BottomLeft
-        || placement == Ant::TooltipPlacement::BottomRight;
+    return placement == Ant::Placement::Bottom
+        || placement == Ant::Placement::BottomLeft
+        || placement == Ant::Placement::BottomRight;
 }
 
-QPolygonF arrowPolygonFor(const QRect& bubble, int arrowSize, Ant::TooltipPlacement placement, bool arrowVisible)
+QPolygonF arrowPolygonFor(const QRect& bubble, int arrowSize, Ant::Placement placement, bool arrowVisible)
 {
     if (!arrowVisible)
     {
@@ -53,42 +53,42 @@ QPolygonF arrowPolygonFor(const QRect& bubble, int arrowSize, Ant::TooltipPlacem
     constexpr qreal joinOverlap = 1.0;
     switch (placement)
     {
-    case Ant::TooltipPlacement::Top:
+    case Ant::Placement::Top:
         return QPolygonF()
             << QPointF(bubble.center().x() - arrowSize, bubble.bottom() - joinOverlap)
             << QPointF(bubble.center().x() + arrowSize, bubble.bottom() - joinOverlap)
             << QPointF(bubble.center().x(), bubble.bottom() + arrowSize);
-    case Ant::TooltipPlacement::TopLeft:
+    case Ant::Placement::TopLeft:
         return QPolygonF()
             << QPointF(bubble.left() + 24 - arrowSize, bubble.bottom() - joinOverlap)
             << QPointF(bubble.left() + 24 + arrowSize, bubble.bottom() - joinOverlap)
             << QPointF(bubble.left() + 24, bubble.bottom() + arrowSize);
-    case Ant::TooltipPlacement::TopRight:
+    case Ant::Placement::TopRight:
         return QPolygonF()
             << QPointF(bubble.right() - 24 - arrowSize, bubble.bottom() - joinOverlap)
             << QPointF(bubble.right() - 24 + arrowSize, bubble.bottom() - joinOverlap)
             << QPointF(bubble.right() - 24, bubble.bottom() + arrowSize);
-    case Ant::TooltipPlacement::Bottom:
+    case Ant::Placement::Bottom:
         return QPolygonF()
             << QPointF(bubble.center().x() - arrowSize, bubble.top() + joinOverlap)
             << QPointF(bubble.center().x() + arrowSize, bubble.top() + joinOverlap)
             << QPointF(bubble.center().x(), bubble.top() - arrowSize);
-    case Ant::TooltipPlacement::BottomLeft:
+    case Ant::Placement::BottomLeft:
         return QPolygonF()
             << QPointF(bubble.left() + 24 - arrowSize, bubble.top() + joinOverlap)
             << QPointF(bubble.left() + 24 + arrowSize, bubble.top() + joinOverlap)
             << QPointF(bubble.left() + 24, bubble.top() - arrowSize);
-    case Ant::TooltipPlacement::BottomRight:
+    case Ant::Placement::BottomRight:
         return QPolygonF()
             << QPointF(bubble.right() - 24 - arrowSize, bubble.top() + joinOverlap)
             << QPointF(bubble.right() - 24 + arrowSize, bubble.top() + joinOverlap)
             << QPointF(bubble.right() - 24, bubble.top() - arrowSize);
-    case Ant::TooltipPlacement::Left:
+    case Ant::Placement::Left:
         return QPolygonF()
             << QPointF(bubble.right() - joinOverlap, bubble.center().y() - arrowSize)
             << QPointF(bubble.right() - joinOverlap, bubble.center().y() + arrowSize)
             << QPointF(bubble.right() + arrowSize, bubble.center().y());
-    case Ant::TooltipPlacement::Right:
+    case Ant::Placement::Right:
     default:
         return QPolygonF()
             << QPointF(bubble.left() + joinOverlap, bubble.center().y() - arrowSize)
@@ -178,11 +178,11 @@ void AntPopover::setContent(const QString& content)
     Q_EMIT contentChanged(m_content);
 }
 
-Ant::TooltipPlacement AntPopover::placement() const { return m_placement; }
+Ant::Placement AntPopover::placement() const { return m_placement; }
 
-Ant::TooltipPlacement AntPopover::renderPlacement() const { return m_renderPlacement; }
+Ant::Placement AntPopover::renderPlacement() const { return m_renderPlacement; }
 
-void AntPopover::setPlacement(Ant::TooltipPlacement placement)
+void AntPopover::setPlacement(Ant::Placement placement)
 {
     if (m_placement == placement)
     {
@@ -466,7 +466,7 @@ const AntPopover::PopoverLayoutCache& AntPopover::popoverLayout() const
         bodyHeight +
         actionHeight;
     const bool sideArrow = m_arrowVisible &&
-        (m_renderPlacement == Ant::TooltipPlacement::Left || m_renderPlacement == Ant::TooltipPlacement::Right);
+        (m_renderPlacement == Ant::Placement::Left || m_renderPlacement == Ant::Placement::Right);
     const bool verticalArrow = m_arrowVisible && !sideArrow;
     const int width = bubbleWidth + m.shadowMargin * 2 + (sideArrow ? arrow : 0);
     const int height = bubbleHeight + m.shadowMargin * 2 + (verticalArrow ? arrow : 0);
@@ -485,7 +485,7 @@ const AntPopover::PopoverLayoutCache& AntPopover::popoverLayout() const
     {
         cache.bubbleRect = rect().adjusted(m.shadowMargin, m.shadowMargin + m.arrowSize, -m.shadowMargin, -m.shadowMargin);
     }
-    else if (m_renderPlacement == Ant::TooltipPlacement::Left)
+    else if (m_renderPlacement == Ant::Placement::Left)
     {
         cache.bubbleRect = rect().adjusted(m.shadowMargin, m.shadowMargin, -(m.shadowMargin + m.arrowSize), -m.shadowMargin);
     }
@@ -615,7 +615,7 @@ void AntPopover::updatePosition()
     const QRect targetRect(m_target->mapToGlobal(QPoint(0, 0)), m_target->size());
     const QRect screenRect = availableScreenGeometryFor(m_target);
     QSize popupSize = sizeHint();
-    Ant::TooltipPlacement placement = m_cachedResolvedPlacement;
+    Ant::Placement placement = m_cachedResolvedPlacement;
     if (m_positionCacheValid &&
         m_cachedTargetRect == targetRect &&
         m_cachedScreenRect == screenRect &&
@@ -713,53 +713,53 @@ bool AntPopover::isHoveringInteractiveArea() const
     return isVisible() && geometry().contains(globalPos);
 }
 
-Ant::TooltipPlacement AntPopover::resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& popupSize) const
+Ant::Placement AntPopover::resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& popupSize) const
 {
     if (isTopPlacement(m_placement) && targetRect.top() - popupSize.height() - metrics().gap < screenRect.top())
     {
-        return m_placement == Ant::TooltipPlacement::TopLeft ? Ant::TooltipPlacement::BottomLeft :
-               m_placement == Ant::TooltipPlacement::TopRight ? Ant::TooltipPlacement::BottomRight :
-                                                                Ant::TooltipPlacement::Bottom;
+        return m_placement == Ant::Placement::TopLeft ? Ant::Placement::BottomLeft :
+               m_placement == Ant::Placement::TopRight ? Ant::Placement::BottomRight :
+                                                                Ant::Placement::Bottom;
     }
     if (isBottomPlacement(m_placement) && targetRect.bottom() + popupSize.height() + metrics().gap > screenRect.bottom())
     {
-        return m_placement == Ant::TooltipPlacement::BottomLeft ? Ant::TooltipPlacement::TopLeft :
-               m_placement == Ant::TooltipPlacement::BottomRight ? Ant::TooltipPlacement::TopRight :
-                                                                   Ant::TooltipPlacement::Top;
+        return m_placement == Ant::Placement::BottomLeft ? Ant::Placement::TopLeft :
+               m_placement == Ant::Placement::BottomRight ? Ant::Placement::TopRight :
+                                                                   Ant::Placement::Top;
     }
-    if (m_placement == Ant::TooltipPlacement::Left &&
+    if (m_placement == Ant::Placement::Left &&
         targetRect.left() - popupSize.width() - metrics().gap < screenRect.left())
     {
-        return Ant::TooltipPlacement::Right;
+        return Ant::Placement::Right;
     }
-    if (m_placement == Ant::TooltipPlacement::Right &&
+    if (m_placement == Ant::Placement::Right &&
         targetRect.right() + popupSize.width() + metrics().gap > screenRect.right())
     {
-        return Ant::TooltipPlacement::Left;
+        return Ant::Placement::Left;
     }
     return m_placement;
 }
 
-QPoint AntPopover::popupTopLeft(const QRect& targetRect, const QSize& popupSize, Ant::TooltipPlacement placement) const
+QPoint AntPopover::popupTopLeft(const QRect& targetRect, const QSize& popupSize, Ant::Placement placement) const
 {
     const int gap = metrics().gap;
     switch (placement)
     {
-    case Ant::TooltipPlacement::Top:
+    case Ant::Placement::Top:
         return {targetRect.center().x() - popupSize.width() / 2, targetRect.top() - popupSize.height() - gap};
-    case Ant::TooltipPlacement::TopLeft:
+    case Ant::Placement::TopLeft:
         return {targetRect.left(), targetRect.top() - popupSize.height() - gap};
-    case Ant::TooltipPlacement::TopRight:
+    case Ant::Placement::TopRight:
         return {targetRect.right() - popupSize.width(), targetRect.top() - popupSize.height() - gap};
-    case Ant::TooltipPlacement::Bottom:
+    case Ant::Placement::Bottom:
         return {targetRect.center().x() - popupSize.width() / 2, targetRect.bottom() + gap};
-    case Ant::TooltipPlacement::BottomLeft:
+    case Ant::Placement::BottomLeft:
         return {targetRect.left(), targetRect.bottom() + gap};
-    case Ant::TooltipPlacement::BottomRight:
+    case Ant::Placement::BottomRight:
         return {targetRect.right() - popupSize.width(), targetRect.bottom() + gap};
-    case Ant::TooltipPlacement::Left:
+    case Ant::Placement::Left:
         return {targetRect.left() - popupSize.width() - gap, targetRect.center().y() - popupSize.height() / 2};
-    case Ant::TooltipPlacement::Right:
+    case Ant::Placement::Right:
     default:
         return {targetRect.right() + gap, targetRect.center().y() - popupSize.height() / 2};
     }

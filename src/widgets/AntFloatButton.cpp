@@ -290,10 +290,17 @@ void AntFloatButton::setScrollTarget(QWidget* target)
     }
 }
 
-Ant::FloatButtonPlacement AntFloatButton::placement() const { return m_placement; }
+Ant::Placement AntFloatButton::placement() const { return m_placement; }
 
-void AntFloatButton::setPlacement(Ant::FloatButtonPlacement placement)
+void AntFloatButton::setPlacement(Ant::Placement placement)
 {
+    // Placement is the shared 8-value superset; float button only supports
+    // the four corner values. Ignore out-of-domain values.
+    if (placement != Ant::Placement::BottomRight && placement != Ant::Placement::BottomLeft
+        && placement != Ant::Placement::TopRight && placement != Ant::Placement::TopLeft)
+    {
+        return;
+    }
     if (m_placement == placement) return;
     m_placement = placement;
     m_positionTimer->start();
@@ -477,10 +484,10 @@ void AntFloatButton::updatePosition()
     if (!p) return;
 
     const int margin = antTheme->tokens().margin;
-    const int x = (m_placement == Ant::FloatButtonPlacement::BottomRight || m_placement == Ant::FloatButtonPlacement::TopRight)
+    const int x = (m_placement == Ant::Placement::BottomRight || m_placement == Ant::Placement::TopRight)
                       ? p->width() - width() - margin + ShadowMargin
                       : margin - ShadowMargin;
-    const int y = (m_placement == Ant::FloatButtonPlacement::BottomRight || m_placement == Ant::FloatButtonPlacement::BottomLeft)
+    const int y = (m_placement == Ant::Placement::BottomRight || m_placement == Ant::Placement::BottomLeft)
                       ? p->height() - height() - margin + ShadowMargin
                       : margin - ShadowMargin;
 

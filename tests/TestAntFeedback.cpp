@@ -176,7 +176,7 @@ void TestAntFeedback::drawer()
 {
     auto* w = new AntDrawer;
     QCOMPARE(w->title(), QString());
-    QCOMPARE(w->placement(), Ant::DrawerPlacement::Right);
+    QCOMPARE(w->placement(), Ant::Placement::Right);
     QCOMPARE(w->drawerWidth(), 378);
     QCOMPARE(w->drawerHeight(), 378);
     QCOMPARE(w->isClosable(), true);
@@ -189,8 +189,8 @@ void TestAntFeedback::drawer()
     QCOMPARE(titleSpy.count(), 1);
 
     QSignalSpy placeSpy(w, &AntDrawer::placementChanged);
-    w->setPlacement(Ant::DrawerPlacement::Left);
-    QCOMPARE(w->placement(), Ant::DrawerPlacement::Left);
+    w->setPlacement(Ant::Placement::Left);
+    QCOMPARE(w->placement(), Ant::Placement::Left);
     QCOMPARE(placeSpy.count(), 1);
 
     QSignalSpy wSpy(w, &AntDrawer::drawerWidthChanged);
@@ -380,6 +380,13 @@ void TestAntFeedback::notification()
 
     QSignalSpy placeSpy(w, &AntNotification::placementChanged);
     w->setPlacement(Ant::Placement::BottomLeft);
+    QCOMPARE(w->placement(), Ant::Placement::BottomLeft);
+    QCOMPARE(placeSpy.count(), 1);
+
+    // M2: notification does not support the left/right slide-in values.
+    w->setPlacement(Ant::Placement::Left);
+    QCOMPARE(w->placement(), Ant::Placement::BottomLeft);
+    w->setPlacement(Ant::Placement::Right);
     QCOMPARE(w->placement(), Ant::Placement::BottomLeft);
     QCOMPARE(placeSpy.count(), 1);
 
@@ -818,8 +825,8 @@ void TestAntFeedback::popover()
     QCOMPARE(w->title(), QString());
     QCOMPARE(w->titleIconType(), Ant::IconType::None);
     QCOMPARE(w->content(), QString());
-    QCOMPARE(w->placement(), Ant::TooltipPlacement::Top);
-    QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Top);
+    QCOMPARE(w->placement(), Ant::Placement::Top);
+    QCOMPARE(w->renderPlacement(), Ant::Placement::Top);
     QCOMPARE(w->trigger(), Ant::PopoverTrigger::Hover);
     QCOMPARE(w->arrowVisible(), true);
     QCOMPARE(w->isOpen(), false);
@@ -838,9 +845,9 @@ void TestAntFeedback::popover()
     QCOMPARE(contentSpy.count(), 1);
 
     QSignalSpy placeSpy(w, &AntPopover::placementChanged);
-    w->setPlacement(Ant::TooltipPlacement::Bottom);
-    QCOMPARE(w->placement(), Ant::TooltipPlacement::Bottom);
-    QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Bottom);
+    w->setPlacement(Ant::Placement::Bottom);
+    QCOMPARE(w->placement(), Ant::Placement::Bottom);
+    QCOMPARE(w->renderPlacement(), Ant::Placement::Bottom);
     QCOMPARE(placeSpy.count(), 1);
 
     QSignalSpy trigSpy(w, &AntPopover::triggerChanged);
@@ -874,7 +881,7 @@ void TestAntFeedback::popoverCachesLayoutAndSkipsPlacementWork()
     AntPopover popover;
     popover.setTarget(&target);
     popover.setTrigger(Ant::PopoverTrigger::Click);
-    popover.setPlacement(Ant::TooltipPlacement::Bottom);
+    popover.setPlacement(Ant::Placement::Bottom);
     popover.setTitle(QStringLiteral("Cached popover"));
     popover.setTitleIconType(Ant::IconType::InfoCircle);
     popover.setContent(QStringLiteral("Repeated paints and target events should reuse popup geometry."));
@@ -1346,8 +1353,8 @@ void TestAntFeedback::tooltip()
 {
     auto* w = new AntToolTip;
     QCOMPARE(w->title(), QString());
-    QCOMPARE(w->placement(), Ant::TooltipPlacement::Top);
-    QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Top);
+    QCOMPARE(w->placement(), Ant::Placement::Top);
+    QCOMPARE(w->renderPlacement(), Ant::Placement::Top);
     QCOMPARE(w->arrowVisible(), true);
     QCOMPARE(w->openDelay(), 120);
 
@@ -1357,9 +1364,9 @@ void TestAntFeedback::tooltip()
     QCOMPARE(titleSpy.count(), 1);
 
     QSignalSpy placeSpy(w, &AntToolTip::placementChanged);
-    w->setPlacement(Ant::TooltipPlacement::Bottom);
-    QCOMPARE(w->placement(), Ant::TooltipPlacement::Bottom);
-    QCOMPARE(w->renderPlacement(), Ant::TooltipPlacement::Bottom);
+    w->setPlacement(Ant::Placement::Bottom);
+    QCOMPARE(w->placement(), Ant::Placement::Bottom);
+    QCOMPARE(w->renderPlacement(), Ant::Placement::Bottom);
     QCOMPARE(placeSpy.count(), 1);
 
     QSignalSpy colorSpy(w, &AntToolTip::colorChanged);

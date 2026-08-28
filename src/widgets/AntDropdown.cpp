@@ -67,17 +67,17 @@ protected:
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-        const Ant::DropdownPlacement placement = m_owner->m_renderPlacement;
+        const Ant::Placement placement = m_owner->m_renderPlacement;
         QRect body = rect().adjusted(kDropdownPopupShadowMargin,
-                                     m_owner->m_arrowVisible && placement != Ant::DropdownPlacement::Top &&
-                                           placement != Ant::DropdownPlacement::TopLeft &&
-                                           placement != Ant::DropdownPlacement::TopRight
+                                     m_owner->m_arrowVisible && placement != Ant::Placement::Top &&
+                                           placement != Ant::Placement::TopLeft &&
+                                           placement != Ant::Placement::TopRight
                                          ? kDropdownPopupShadowMargin + kDropdownPopupArrowReserve
                                          : kDropdownPopupShadowMargin,
                                      -kDropdownPopupShadowMargin,
-                                     m_owner->m_arrowVisible && (placement == Ant::DropdownPlacement::Top ||
-                                                                 placement == Ant::DropdownPlacement::TopLeft ||
-                                                                 placement == Ant::DropdownPlacement::TopRight)
+                                     m_owner->m_arrowVisible && (placement == Ant::Placement::Top ||
+                                                                 placement == Ant::Placement::TopLeft ||
+                                                                 placement == Ant::Placement::TopRight)
                                          ? -(kDropdownPopupShadowMargin + kDropdownPopupArrowReserve)
                                          : -kDropdownPopupShadowMargin);
 
@@ -89,17 +89,17 @@ protected:
         if (m_owner->m_arrowVisible)
         {
             QPolygonF arrow;
-            const qreal centerX = placement == Ant::DropdownPlacement::BottomRight ||
-                                          placement == Ant::DropdownPlacement::TopRight
+            const qreal centerX = placement == Ant::Placement::BottomRight ||
+                                          placement == Ant::Placement::TopRight
                                       ? body.right() - 24
-                                      : (placement == Ant::DropdownPlacement::BottomLeft ||
-                                                 placement == Ant::DropdownPlacement::TopLeft
+                                      : (placement == Ant::Placement::BottomLeft ||
+                                                 placement == Ant::Placement::TopLeft
                                              ? body.left() + 24
                                              : body.center().x());
 
-            if (placement == Ant::DropdownPlacement::Top ||
-                placement == Ant::DropdownPlacement::TopLeft ||
-                placement == Ant::DropdownPlacement::TopRight)
+            if (placement == Ant::Placement::Top ||
+                placement == Ant::Placement::TopLeft ||
+                placement == Ant::Placement::TopRight)
             {
                 arrow << QPointF(centerX - 8, body.bottom())
                       << QPointF(centerX + 8, body.bottom())
@@ -262,18 +262,24 @@ void AntDropdown::setItemLabels(const QStringList& labels)
     Q_EMIT itemLabelsChanged(m_itemLabels);
 }
 
-Ant::DropdownPlacement AntDropdown::placement() const
+Ant::Placement AntDropdown::placement() const
 {
     return m_placement;
 }
 
-Ant::DropdownPlacement AntDropdown::renderPlacement() const
+Ant::Placement AntDropdown::renderPlacement() const
 {
     return m_renderPlacement;
 }
 
-void AntDropdown::setPlacement(Ant::DropdownPlacement placement)
+void AntDropdown::setPlacement(Ant::Placement placement)
 {
+    // Placement is the shared 8-value superset; dropdown only supports the
+    // six top/bottom anchored values. Ignore out-of-domain values.
+    if (placement == Ant::Placement::Left || placement == Ant::Placement::Right)
+    {
+        return;
+    }
     if (m_placement == placement)
     {
         return;
@@ -489,39 +495,39 @@ bool AntDropdown::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
-QRect AntDropdown::popupGeometry(const QRect& targetRect, const QSize& popupSize, Ant::DropdownPlacement placement) const
+QRect AntDropdown::popupGeometry(const QRect& targetRect, const QSize& popupSize, Ant::Placement placement) const
 {
     // PopupFrame keeps a transparent shadow margin. A negative window gap
     // gives the painted panel the AntD-like 4px visual distance from target.
     const int gap = 4 - kDropdownPopupShadowMargin;
     switch (placement)
     {
-    case Ant::DropdownPlacement::Top:
+    case Ant::Placement::Top:
         return QRect(targetRect.center().x() - popupSize.width() / 2,
                      targetRect.top() - popupSize.height() - gap,
                      popupSize.width(),
                      popupSize.height());
-    case Ant::DropdownPlacement::TopLeft:
+    case Ant::Placement::TopLeft:
         return QRect(targetRect.left(),
                      targetRect.top() - popupSize.height() - gap,
                      popupSize.width(),
                      popupSize.height());
-    case Ant::DropdownPlacement::TopRight:
+    case Ant::Placement::TopRight:
         return QRect(targetRect.right() - popupSize.width(),
                      targetRect.top() - popupSize.height() - gap,
                      popupSize.width(),
                      popupSize.height());
-    case Ant::DropdownPlacement::Bottom:
+    case Ant::Placement::Bottom:
         return QRect(targetRect.center().x() - popupSize.width() / 2,
                      targetRect.bottom() + gap,
                      popupSize.width(),
                      popupSize.height());
-    case Ant::DropdownPlacement::BottomRight:
+    case Ant::Placement::BottomRight:
         return QRect(targetRect.right() - popupSize.width(),
                      targetRect.bottom() + gap,
                      popupSize.width(),
                      popupSize.height());
-    case Ant::DropdownPlacement::BottomLeft:
+    case Ant::Placement::BottomLeft:
     default:
         return QRect(targetRect.left(),
                      targetRect.bottom() + gap,
@@ -530,30 +536,30 @@ QRect AntDropdown::popupGeometry(const QRect& targetRect, const QSize& popupSize
     }
 }
 
-Ant::DropdownPlacement AntDropdown::resolvedPlacement(const QRect& targetRect,
+Ant::Placement AntDropdown::resolvedPlacement(const QRect& targetRect,
                                                       const QSize& popupSize,
                                                       const QRect& screenRect) const
 {
-    const bool wantsTop = m_placement == Ant::DropdownPlacement::Top ||
-                          m_placement == Ant::DropdownPlacement::TopLeft ||
-                          m_placement == Ant::DropdownPlacement::TopRight;
+    const bool wantsTop = m_placement == Ant::Placement::Top ||
+                          m_placement == Ant::Placement::TopLeft ||
+                          m_placement == Ant::Placement::TopRight;
     if (wantsTop && targetRect.top() - popupSize.height() + 4 < screenRect.top())
     {
-        if (m_placement == Ant::DropdownPlacement::TopLeft)
-            return Ant::DropdownPlacement::BottomLeft;
-        if (m_placement == Ant::DropdownPlacement::TopRight)
-            return Ant::DropdownPlacement::BottomRight;
-        return Ant::DropdownPlacement::Bottom;
+        if (m_placement == Ant::Placement::TopLeft)
+            return Ant::Placement::BottomLeft;
+        if (m_placement == Ant::Placement::TopRight)
+            return Ant::Placement::BottomRight;
+        return Ant::Placement::Bottom;
     }
 
     const bool wantsBottom = !wantsTop;
     if (wantsBottom && targetRect.bottom() + popupSize.height() - 4 > screenRect.bottom())
     {
-        if (m_placement == Ant::DropdownPlacement::BottomLeft)
-            return Ant::DropdownPlacement::TopLeft;
-        if (m_placement == Ant::DropdownPlacement::BottomRight)
-            return Ant::DropdownPlacement::TopRight;
-        return Ant::DropdownPlacement::Top;
+        if (m_placement == Ant::Placement::BottomLeft)
+            return Ant::Placement::TopLeft;
+        if (m_placement == Ant::Placement::BottomRight)
+            return Ant::Placement::TopRight;
+        return Ant::Placement::Top;
     }
     return m_placement;
 }
@@ -595,9 +601,9 @@ int AntDropdown::popupContentWidth() const
 
 QMargins AntDropdown::popupContentMargins() const
 {
-    const bool topPlacement = m_placement == Ant::DropdownPlacement::Top ||
-                              m_placement == Ant::DropdownPlacement::TopLeft ||
-                              m_placement == Ant::DropdownPlacement::TopRight;
+    const bool topPlacement = m_placement == Ant::Placement::Top ||
+                              m_placement == Ant::Placement::TopLeft ||
+                              m_placement == Ant::Placement::TopRight;
     const int topMargin = m_arrowVisible && !topPlacement
                               ? kDropdownPopupShadowMargin + kDropdownPopupArrowReserve
                               : kDropdownPopupShadowMargin;
@@ -668,7 +674,7 @@ void AntDropdown::updatePopupGeometry(const QPoint& contextPos)
         targetRect = QRect(contextPos, QSize(1, 1));
     }
     const QRect screenRect = availableScreenGeometryFor(m_target);
-    const Ant::DropdownPlacement placement = resolvedPlacement(targetRect, popupSize, screenRect);
+    const Ant::Placement placement = resolvedPlacement(targetRect, popupSize, screenRect);
     m_renderPlacement = placement;
     QRect geometry = popupGeometry(targetRect, popupSize, placement);
     geometry.moveLeft(qBound(screenRect.left() + 4, geometry.left(), screenRect.right() - geometry.width() - 4));

@@ -25,6 +25,7 @@ class TestAntInteractions : public QObject
 
 private slots:
     void dropdownClickTargetAndMenuItem();
+    void dropdownRejectsOutOfDomainPlacement();
     void menuSubmenuPopupItemSelection();
     void selectKeyboardNavigationSkipsDisabledOptions();
     void cascaderPopupColumnSelection();
@@ -135,6 +136,22 @@ void TestAntInteractions::dropdownClickTargetAndMenuItem()
     QCOMPARE(itemSpy.count(), 1);
     QCOMPARE(itemSpy.takeFirst().at(0).toString(), QStringLiteral("download"));
     QCOMPARE(dropdown.isOpen(), false);
+}
+
+void TestAntInteractions::dropdownRejectsOutOfDomainPlacement()
+{
+    AntDropdown dropdown;
+    QCOMPARE(dropdown.placement(), Ant::Placement::BottomLeft);
+
+    // M2: the shared 8-value placement superset is guarded per-widget;
+    // dropdown only supports the six top/bottom anchored values.
+    dropdown.setPlacement(Ant::Placement::Left);
+    QCOMPARE(dropdown.placement(), Ant::Placement::BottomLeft);
+    dropdown.setPlacement(Ant::Placement::Right);
+    QCOMPARE(dropdown.placement(), Ant::Placement::BottomLeft);
+
+    dropdown.setPlacement(Ant::Placement::TopRight);
+    QCOMPARE(dropdown.placement(), Ant::Placement::TopRight);
 }
 
 void TestAntInteractions::menuSubmenuPopupItemSelection()

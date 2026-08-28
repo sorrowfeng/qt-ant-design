@@ -43,7 +43,7 @@ AntToolButton::AntToolButton(QWidget* parent)
 
     m_antToolTip = new AntToolTip(this);
     m_antToolTip->setObjectName(QStringLiteral("AntToolButtonToolTip"));
-    m_antToolTip->setPlacement(Ant::TooltipPlacement::Top);
+    m_antToolTip->setPlacement(Ant::Placement::Top);
     m_antToolTip->setTarget(this);
 
     auto* style = new AntToolButtonStyle(this->style());

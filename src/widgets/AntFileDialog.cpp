@@ -1176,7 +1176,7 @@ void AntFileDialog::buildCommonPlaces(QVBoxLayout* sidebarLayout)
         auto* toolTip = new AntToolTip(placesPanel);
         toolTip->setObjectName(QStringLiteral("antFileDialogPlaceTooltip"));
         toolTip->setTitle(toolTipText);
-        toolTip->setPlacement(Ant::TooltipPlacement::Top);
+        toolTip->setPlacement(Ant::Placement::Top);
         toolTip->setTarget(button);
         const int row = placeIndex / quickAccessColumns;
         const int column = placeIndex % quickAccessColumns;

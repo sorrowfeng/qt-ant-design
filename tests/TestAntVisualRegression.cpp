@@ -735,7 +735,7 @@ void TestAntVisualRegression::popconfirmArrowSurfaceHasNoInternalSeam()
     popover.setTitle(QStringLiteral("Delete the task?"));
     popover.setTitleIconType(Ant::IconType::ExclamationCircle);
     popover.setContent(QStringLiteral("This action cannot be undone."));
-    popover.setPlacement(Ant::TooltipPlacement::Bottom);
+    popover.setPlacement(Ant::Placement::Bottom);
     popover.setArrowVisible(true);
 
     const QImage image = renderWidget(&popover, QSize(280, 132));
@@ -1172,7 +1172,7 @@ void TestAntVisualRegression::complexPopupSurfacesStayElevated()
     popover.setTitle(QStringLiteral("Popover Title"));
     popover.setTitleIconType(Ant::IconType::InfoCircle);
     popover.setContent(QStringLiteral("Elevated popover body"));
-    popover.setPlacement(Ant::TooltipPlacement::Bottom);
+    popover.setPlacement(Ant::Placement::Bottom);
     popover.setArrowVisible(true);
     const QImage popoverImage = renderWidget(&popover, QSize(280, 132));
     assertNearColorPixels(popoverImage, token.colorBgElevated, 19000, "popover elevated surface", 12);
@@ -1198,7 +1198,7 @@ void TestAntVisualRegression::complexPopupSurfacesStayElevated()
     AntDrawer drawer(&drawerHost);
     drawer.setTitle(QStringLiteral("Drawer Title"));
     drawer.setDrawerWidth(260);
-    drawer.setPlacement(Ant::DrawerPlacement::Right);
+    drawer.setPlacement(Ant::Placement::Right);
     drawer.setBodyWidget(new QLabel(QStringLiteral("Drawer body")));
     drawer.setOpen(true);
     QTest::qWait(240);

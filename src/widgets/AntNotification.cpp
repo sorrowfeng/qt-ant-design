@@ -321,6 +321,13 @@ Ant::Placement AntNotification::placement() const { return m_placement; }
 
 void AntNotification::setPlacement(Ant::Placement placement)
 {
+    // Placement is the shared 8-value superset; notification only supports
+    // the six top/bottom anchored values (the left/right slide-ins are not
+    // part of the notification domain). Ignore out-of-domain values.
+    if (placement == Ant::Placement::Left || placement == Ant::Placement::Right)
+    {
+        return;
+    }
     if (m_placement == placement)
     {
         return;

@@ -28,28 +28,28 @@ void drawPanelShadow(QPainter* painter, const QStyleOption* option, const AntDra
     QLinearGradient gradient;
     switch (drawer->placement())
     {
-    case Ant::DrawerPlacement::Right:
+    case Ant::Placement::Right:
         shadowRect = QRect(panel.left() - ShadowSize, panel.top(), ShadowSize, panel.height());
         gradient = QLinearGradient(shadowRect.topLeft(), shadowRect.topRight());
         gradient.setColorAt(0.0, farEdge);
         gradient.setColorAt(0.55, midEdge);
         gradient.setColorAt(1.0, nearEdge);
         break;
-    case Ant::DrawerPlacement::Left:
+    case Ant::Placement::Left:
         shadowRect = QRect(panel.right() + 1, panel.top(), ShadowSize, panel.height());
         gradient = QLinearGradient(shadowRect.topRight(), shadowRect.topLeft());
         gradient.setColorAt(0.0, farEdge);
         gradient.setColorAt(0.55, midEdge);
         gradient.setColorAt(1.0, nearEdge);
         break;
-    case Ant::DrawerPlacement::Bottom:
+    case Ant::Placement::Bottom:
         shadowRect = QRect(panel.left(), panel.top() - ShadowSize, panel.width(), ShadowSize);
         gradient = QLinearGradient(shadowRect.topLeft(), shadowRect.bottomLeft());
         gradient.setColorAt(0.0, farEdge);
         gradient.setColorAt(0.55, midEdge);
         gradient.setColorAt(1.0, nearEdge);
         break;
-    case Ant::DrawerPlacement::Top:
+    case Ant::Placement::Top:
         shadowRect = QRect(panel.left(), panel.bottom() + 1, panel.width(), ShadowSize);
         gradient = QLinearGradient(shadowRect.bottomLeft(), shadowRect.topLeft());
         gradient.setColorAt(0.0, farEdge);

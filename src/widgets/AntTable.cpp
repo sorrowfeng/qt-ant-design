@@ -61,7 +61,7 @@ AntTable::AntTable(QWidget* parent)
 
     m_rowToolTip = new AntToolTip(this);
     m_rowToolTip->setObjectName(QStringLiteral("AntTableRowToolTip"));
-    m_rowToolTip->setPlacement(Ant::TooltipPlacement::Top);
+    m_rowToolTip->setPlacement(Ant::Placement::Top);
     m_rowToolTip->setTarget(m_rowToolTipTarget);
 }
 

@@ -161,7 +161,7 @@ QWidget* createFloatButtonPage(QWidget* /*owner*/)
 
     auto* fab1 = new AntFloatButton(page);
     fab1->setIcon(QStringLiteral("home"));
-    fab1->setPlacement(Ant::FloatButtonPlacement::BottomRight);
+    fab1->setPlacement(Ant::Placement::BottomRight);
     fab1->show();
     fab1->raise();
 

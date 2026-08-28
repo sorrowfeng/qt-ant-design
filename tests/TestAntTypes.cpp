@@ -116,6 +116,8 @@ void TestAntTypes::messagePlacementValues()
     QCOMPARE(static_cast<int>(Ant::Placement::Bottom), 3);
     QCOMPARE(static_cast<int>(Ant::Placement::BottomLeft), 4);
     QCOMPARE(static_cast<int>(Ant::Placement::BottomRight), 5);
+    QCOMPARE(static_cast<int>(Ant::Placement::Left), 6);
+    QCOMPARE(static_cast<int>(Ant::Placement::Right), 7);
 }
 
 void TestAntTypes::typographyTypeValues()
@@ -155,7 +157,9 @@ void TestAntTypes::enumRegistration()
 
     me = QMetaEnum::fromType<Ant::Placement>();
     QVERIFY(me.isValid());
-    QCOMPARE(me.keyCount(), 6);
+    QCOMPARE(me.keyCount(), 8);
+    QCOMPARE(me.keyToValue("Left"), static_cast<int>(Ant::Placement::Left));
+    QCOMPARE(me.keyToValue("Right"), static_cast<int>(Ant::Placement::Right));
 
     me = QMetaEnum::fromType<Ant::StatusBarStatus>();
     QVERIFY(me.isValid());

@@ -28,8 +28,8 @@ void registerMetaTypes()
         qRegisterMetaType<ProgressStatus>("Ant::ProgressStatus");
         qRegisterMetaType<MessageType>("Ant::MessageType");
         qRegisterMetaType<AlertType>("Ant::AlertType");
-        qRegisterMetaType<TooltipPlacement>("Ant::TooltipPlacement");
-        qRegisterMetaType<DropdownPlacement>("Ant::DropdownPlacement");
+        qRegisterMetaType<TooltipPlacement>("Ant::Placement");
+        qRegisterMetaType<DropdownPlacement>("Ant::Placement");
         qRegisterMetaType<DropdownTrigger>("Ant::DropdownTrigger");
         qRegisterMetaType<PopoverTrigger>("Ant::PopoverTrigger");
         qRegisterMetaType<MenuMode>("Ant::MenuMode");
@@ -61,13 +61,13 @@ void registerMetaTypes()
         qRegisterMetaType<TableColumnAlign>("Ant::TableColumnAlign");
         qRegisterMetaType<UploadListType>("Ant::UploadListType");
         qRegisterMetaType<UploadFileStatus>("Ant::UploadFileStatus");
-        qRegisterMetaType<DrawerPlacement>("Ant::DrawerPlacement");
+        qRegisterMetaType<DrawerPlacement>("Ant::Placement");
         qRegisterMetaType<SegmentedShape>("Ant::SegmentedShape");
         qRegisterMetaType<QRCodeErrorLevel>("Ant::QRCodeErrorLevel");
         qRegisterMetaType<QRCodeStatus>("Ant::QRCodeStatus");
         qRegisterMetaType<FloatButtonType>("Ant::FloatButtonType");
         qRegisterMetaType<FloatButtonShape>("Ant::FloatButtonShape");
-        qRegisterMetaType<FloatButtonPlacement>("Ant::FloatButtonPlacement");
+        qRegisterMetaType<FloatButtonPlacement>("Ant::Placement");
         qRegisterMetaType<ColorPickerMode>("Ant::ColorPickerMode");
         qRegisterMetaType<CalendarMode>("Ant::CalendarMode");
         return true;

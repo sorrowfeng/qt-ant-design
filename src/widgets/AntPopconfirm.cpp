@@ -127,12 +127,12 @@ void AntPopconfirm::changeEvent(QEvent* event)
     QWidget::changeEvent(event);
 }
 
-Ant::TooltipPlacement AntPopconfirm::placement() const
+Ant::Placement AntPopconfirm::placement() const
 {
     return m_popover->placement();
 }
 
-void AntPopconfirm::setPlacement(Ant::TooltipPlacement placement)
+void AntPopconfirm::setPlacement(Ant::Placement placement)
 {
     if (m_popover->placement() == placement)
     {
