@@ -100,6 +100,15 @@ bool AntPagination::isDisabled() const { return m_disabled; }
 
 void AntPagination::setDisabled(bool disabled)
 {
+    if (isEnabled() != !disabled)
+    {
+        QWidget::setEnabled(!disabled);
+    }
+    syncDisabledState(disabled);
+}
+
+void AntPagination::syncDisabledState(bool disabled)
+{
     if (m_disabled == disabled)
     {
         return;
@@ -288,7 +297,11 @@ void AntPagination::resizeEvent(QResizeEvent* event)
 
 void AntPagination::changeEvent(QEvent* event)
 {
-    if (event && (event->type() == QEvent::FontChange ||
+    if (event && event->type() == QEvent::EnabledChange)
+    {
+        syncDisabledState(!isEnabled());
+    }
+    else if (event && (event->type() == QEvent::FontChange ||
                   event->type() == QEvent::ApplicationFontChange ||
                   event->type() == QEvent::StyleChange ||
                   event->type() == QEvent::LayoutDirectionChange))

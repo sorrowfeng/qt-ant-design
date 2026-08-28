@@ -109,6 +109,7 @@ protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dragLeaveEvent(QDragLeaveEvent* event) override;
     void dropEvent(QDropEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private:
     friend class AntUploadStyle;
@@ -153,6 +154,7 @@ private:
 
     const UploadLayout& uploadLayout() const;
     void invalidateUploadLayout() const;
+    void syncDisabledState(bool disabled);
     QRect triggerRect() const;
     QRect fileItemRect(int index) const;
     QRect fileItemRemoveButtonRect(int index) const;

@@ -110,6 +110,15 @@ bool AntUpload::isDisabled() const { return m_disabled; }
 
 void AntUpload::setDisabled(bool disabled)
 {
+    if (isEnabled() != !disabled)
+    {
+        QWidget::setEnabled(!disabled);
+    }
+    syncDisabledState(disabled);
+}
+
+void AntUpload::syncDisabledState(bool disabled)
+{
     if (m_disabled == disabled)
     {
         return;
@@ -496,6 +505,15 @@ void AntUpload::resizeEvent(QResizeEvent* event)
 {
     invalidateUploadLayout();
     QWidget::resizeEvent(event);
+}
+
+void AntUpload::changeEvent(QEvent* event)
+{
+    if (event && event->type() == QEvent::EnabledChange)
+    {
+        syncDisabledState(!isEnabled());
+    }
+    QWidget::changeEvent(event);
 }
 
 const AntUpload::UploadLayout& AntUpload::uploadLayout() const

@@ -63,9 +63,13 @@ Q_SIGNALS:
     void cancelRequested();
     void openChanged(bool open);
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 private:
     void rebuildActionWidget();
     void syncPopoverContent();
+    void syncDisabledState(bool disabled);
     void syncPopconfirmPerfCounters() const;
 
     AntPopover* m_popover = nullptr;

@@ -197,15 +197,29 @@ bool AntRate::isDisabled() const
 
 void AntRate::setDisabled(bool disabled)
 {
+    if (isEnabled() != !disabled)
+    {
+        QWidget::setEnabled(!disabled);
+    }
+    syncDisabledState(disabled);
+}
+
+void AntRate::syncDisabledState(bool disabled)
+{
     if (m_disabled == disabled)
     {
+        updateDisabledVisual();
         return;
     }
-
     m_disabled = disabled;
-    setCursor(m_disabled ? Qt::ArrowCursor : Qt::PointingHandCursor);
-    updateValueRegion(0.0, static_cast<double>(m_count));
+    updateDisabledVisual();
     Q_EMIT disabledChanged(m_disabled);
+}
+
+void AntRate::updateDisabledVisual()
+{
+    setCursor(m_disabled || !isEnabled() ? Qt::ArrowCursor : Qt::PointingHandCursor);
+    updateValueRegion(0.0, static_cast<double>(m_count));
 }
 
 Ant::Size AntRate::rateSize() const
@@ -374,8 +388,7 @@ void AntRate::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange)
     {
-        setCursor(isEnabled() && !m_disabled ? Qt::PointingHandCursor : Qt::ArrowCursor);
-        updateValueRegion(0.0, static_cast<double>(m_count));
+        syncDisabledState(!isEnabled());
     }
     QWidget::changeEvent(event);
 }

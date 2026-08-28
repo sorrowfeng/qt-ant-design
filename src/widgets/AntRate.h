@@ -99,6 +99,8 @@ private:
     void updateFocusRegion();
     void invalidateLayoutCache() const;
     void syncRatePerfCounters() const;
+    void syncDisabledState(bool disabled);
+    void updateDisabledVisual();
     double starValueAt(const QPoint& pos) const;
     void updateHoverValue(const QPoint& pos);
     void startSelectionAnimation(double selectedValue);

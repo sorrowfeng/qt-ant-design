@@ -129,6 +129,7 @@ private:
     QRect itemDirtyRect(int itemIndex) const;
     void updateItemStateRegion(int oldIndex, int newIndex);
     void syncPaginationPerfCounters() const;
+    void syncDisabledState(bool disabled);
     void ensureQuickJumperEdit();
     QRect quickJumperInputRect() const;
     void syncQuickJumperEdit();
