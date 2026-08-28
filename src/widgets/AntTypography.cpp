@@ -145,7 +145,12 @@ bool AntTypography::wordWrap() const { return m_paragraph; }
 
 void AntTypography::setWordWrap(bool wordWrap)
 {
+    if (m_paragraph == wordWrap)
+    {
+        return;
+    }
     setParagraph(wordWrap);
+    Q_EMIT wordWrapChanged(wordWrap);
 }
 
 bool AntTypography::isDisabled() const { return m_disabled; }

@@ -272,7 +272,12 @@ bool AntSlider::invertedAppearance() const { return m_reverse; }
 
 void AntSlider::setInvertedAppearance(bool inverted)
 {
+    if (m_reverse == inverted)
+    {
+        return;
+    }
     setReverse(inverted);
+    Q_EMIT invertedAppearanceChanged(inverted);
 }
 
 bool AntSlider::hasTracking() const { return m_tracking; }

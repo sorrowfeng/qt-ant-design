@@ -26,7 +26,7 @@ class QT_ANT_DESIGN_EXPORT AntProgress : public QWidget
     Q_PROPERTY(Ant::ProgressType progressType READ progressType WRITE setProgressType NOTIFY progressTypeChanged)
     Q_PROPERTY(Ant::ProgressStatus status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(bool showInfo READ showInfo WRITE setShowInfo NOTIFY showInfoChanged)
-    Q_PROPERTY(bool textVisible READ textVisible WRITE setTextVisible NOTIFY showInfoChanged)
+    Q_PROPERTY(bool textVisible READ textVisible WRITE setTextVisible NOTIFY textVisibleChanged)
     Q_PROPERTY(int strokeWidth READ strokeWidth WRITE setStrokeWidth NOTIFY strokeWidthChanged)
     Q_PROPERTY(int circleSize READ circleSize WRITE setCircleSize NOTIFY circleSizeChanged)
 
@@ -71,6 +71,7 @@ Q_SIGNALS:
     void progressTypeChanged(Ant::ProgressType type);
     void statusChanged(Ant::ProgressStatus status);
     void showInfoChanged(bool showInfo);
+    void textVisibleChanged(bool visible);
     void strokeWidthChanged(int width);
     void circleSizeChanged(int size);
 

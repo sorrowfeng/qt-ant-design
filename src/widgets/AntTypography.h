@@ -21,7 +21,7 @@ class QT_ANT_DESIGN_EXPORT AntTypography : public QWidget
     Q_PROPERTY(Ant::TypographyTitleLevel titleLevel READ titleLevel WRITE setTitleLevel NOTIFY titleLevelChanged)
     Q_PROPERTY(bool title READ isTitle WRITE setTitle NOTIFY titleChanged)
     Q_PROPERTY(bool paragraph READ isParagraph WRITE setParagraph NOTIFY paragraphChanged)
-    Q_PROPERTY(bool wordWrap READ wordWrap WRITE setWordWrap NOTIFY paragraphChanged)
+    Q_PROPERTY(bool wordWrap READ wordWrap WRITE setWordWrap NOTIFY wordWrapChanged)
     Q_PROPERTY(bool disabled READ isDisabled WRITE setDisabled NOTIFY disabledChanged)
     Q_PROPERTY(bool strong READ isStrong WRITE setStrong NOTIFY strongChanged)
     Q_PROPERTY(bool underline READ isUnderline WRITE setUnderline NOTIFY underlineChanged)
@@ -101,6 +101,7 @@ Q_SIGNALS:
     void titleChanged(bool title);
     void titleLevelChanged(Ant::TypographyTitleLevel level);
     void paragraphChanged(bool paragraph);
+    void wordWrapChanged(bool wordWrap);
     void disabledChanged(bool disabled);
     void strongChanged(bool strong);
     void underlineChanged(bool underline);

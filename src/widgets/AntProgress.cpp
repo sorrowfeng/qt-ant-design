@@ -178,7 +178,12 @@ bool AntProgress::textVisible() const { return m_showInfo; }
 
 void AntProgress::setTextVisible(bool visible)
 {
+    if (m_showInfo == visible)
+    {
+        return;
+    }
     setShowInfo(visible);
+    Q_EMIT textVisibleChanged(visible);
 }
 
 int AntProgress::strokeWidth() const { return m_strokeWidth; }
