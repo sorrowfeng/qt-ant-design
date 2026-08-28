@@ -80,19 +80,12 @@ AntSegmentedStyle::AntSegmentedStyle(QStyle* style)
 void AntSegmentedStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSegmented*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntSegmented>(widget);
 }
 
 void AntSegmentedStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSegmented*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSegmented>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -111,19 +104,21 @@ QSize AntSegmentedStyle::sizeFromContents(ContentsType type, const QStyleOption*
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntSegmentedStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntSegmentedStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* seg = qobject_cast<AntSegmented*>(watched);
-    if (seg && event->type() == QEvent::Paint)
+    auto* seg = qobject_cast<AntSegmented*>(widget);
+    if (!seg)
     {
-        QStyleOption option;
-        option.initFrom(seg);
-        option.rect = seg->rect();
-        QPainter painter(seg);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, seg);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(seg);
+    option.rect = seg->rect();
+    QPainter painter(seg);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, seg);
+
+    return true;
 }
 
 void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

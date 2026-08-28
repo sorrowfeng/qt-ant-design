@@ -32,18 +32,12 @@ AntProgressStyle::AntProgressStyle(QStyle* style)
 void AntProgressStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntProgress*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntProgress>(widget);
 }
 
 void AntProgressStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntProgress*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntProgress>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -62,19 +56,21 @@ QSize AntProgressStyle::sizeFromContents(ContentsType type, const QStyleOption* 
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntProgressStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntProgressStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* progress = qobject_cast<AntProgress*>(watched);
-    if (progress && event->type() == QEvent::Paint)
+    auto* progress = qobject_cast<AntProgress*>(widget);
+    if (!progress)
     {
-        QStyleOption option;
-        option.initFrom(progress);
-        option.rect = progress->rect();
-        QPainter painter(progress);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, progress);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(progress);
+    option.rect = progress->rect();
+    QPainter painter(progress);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, progress);
+
+    return true;
 }
 
 void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

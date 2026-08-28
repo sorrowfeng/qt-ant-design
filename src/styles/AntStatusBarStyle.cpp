@@ -17,18 +17,12 @@ AntStatusBarStyle::AntStatusBarStyle(QStyle* style)
 void AntStatusBarStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntStatusBar*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntStatusBar>(widget);
 }
 
 void AntStatusBarStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntStatusBar*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntStatusBar>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -47,19 +41,21 @@ QSize AntStatusBarStyle::sizeFromContents(ContentsType type, const QStyleOption*
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntStatusBarStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntStatusBarStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* statusBar = qobject_cast<AntStatusBar*>(watched);
-    if (statusBar && event->type() == QEvent::Paint)
+    auto* statusBar = qobject_cast<AntStatusBar*>(widget);
+    if (!statusBar)
     {
-        QStyleOption option;
-        option.initFrom(statusBar);
-        option.rect = statusBar->rect();
-        QPainter painter(statusBar);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, statusBar);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(statusBar);
+    option.rect = statusBar->rect();
+    QPainter painter(statusBar);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, statusBar);
+
+    return true;
 }
 
 void AntStatusBarStyle::onThemeUpdate(QWidget* widget)

@@ -14,18 +14,12 @@ AntDescriptionsStyle::AntDescriptionsStyle(QStyle* style)
 void AntDescriptionsStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntDescriptions*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntDescriptions>(widget);
 }
 
 void AntDescriptionsStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntDescriptions*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntDescriptions>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -44,19 +38,21 @@ QSize AntDescriptionsStyle::sizeFromContents(ContentsType type, const QStyleOpti
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntDescriptionsStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntDescriptionsStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* descriptions = qobject_cast<AntDescriptions*>(watched);
-    if (descriptions && event->type() == QEvent::Paint)
+    auto* descriptions = qobject_cast<AntDescriptions*>(widget);
+    if (!descriptions)
     {
-        QStyleOption option;
-        option.initFrom(descriptions);
-        option.rect = descriptions->rect();
-        QPainter painter(descriptions);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, descriptions);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(descriptions);
+    option.rect = descriptions->rect();
+    QPainter painter(descriptions);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, descriptions);
+
+    return true;
 }
 
 void AntDescriptionsStyle::drawDescriptions(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

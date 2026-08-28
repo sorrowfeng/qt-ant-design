@@ -14,18 +14,12 @@ AntWatermarkStyle::AntWatermarkStyle(QStyle* style)
 void AntWatermarkStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntWatermark*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntWatermark>(widget);
 }
 
 void AntWatermarkStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntWatermark*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntWatermark>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -44,19 +38,21 @@ QSize AntWatermarkStyle::sizeFromContents(ContentsType type, const QStyleOption*
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntWatermarkStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntWatermarkStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* wm = qobject_cast<AntWatermark*>(watched);
-    if (wm && event->type() == QEvent::Paint)
+    auto* wm = qobject_cast<AntWatermark*>(widget);
+    if (!wm)
     {
-        QStyleOption option;
-        option.initFrom(wm);
-        option.rect = wm->rect();
-        QPainter painter(wm);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, wm);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(wm);
+    option.rect = wm->rect();
+    QPainter painter(wm);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, wm);
+
+    return true;
 }
 
 void AntWatermarkStyle::drawWatermark(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

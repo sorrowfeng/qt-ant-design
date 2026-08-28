@@ -15,18 +15,12 @@ AntAlertStyle::AntAlertStyle(QStyle* style)
 void AntAlertStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntAlert*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntAlert>(widget);
 }
 
 void AntAlertStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntAlert*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntAlert>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -45,25 +39,21 @@ QSize AntAlertStyle::sizeFromContents(ContentsType type, const QStyleOption* opt
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntAlertStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntAlertStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* alert = qobject_cast<AntAlert*>(watched);
+    auto* alert = qobject_cast<AntAlert*>(widget);
     if (!alert)
     {
-        return QProxyStyle::eventFilter(watched, event);
+        return false;
     }
 
-    if (event->type() == QEvent::Paint)
-    {
-        QStyleOption option;
-        option.initFrom(alert);
-        option.rect = alert->rect();
-        QPainter painter(alert);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, alert);
-        return true;
-    }
+    QStyleOption option;
+    option.initFrom(alert);
+    option.rect = alert->rect();
+    QPainter painter(alert);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, alert);
 
-    return QProxyStyle::eventFilter(watched, event);
+    return true;
 }
 
 void AntAlertStyle::drawAlert(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

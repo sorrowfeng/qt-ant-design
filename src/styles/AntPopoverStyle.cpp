@@ -92,18 +92,12 @@ AntPopoverStyle::AntPopoverStyle(QStyle* style)
 void AntPopoverStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntPopover*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntPopover>(widget);
 }
 
 void AntPopoverStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntPopover*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntPopover>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -122,19 +116,21 @@ QSize AntPopoverStyle::sizeFromContents(ContentsType type, const QStyleOption* o
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntPopoverStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntPopoverStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* popover = qobject_cast<AntPopover*>(watched);
-    if (popover && event->type() == QEvent::Paint)
+    auto* popover = qobject_cast<AntPopover*>(widget);
+    if (!popover)
     {
-        QStyleOption option;
-        option.initFrom(popover);
-        option.rect = popover->rect();
-        QPainter painter(popover);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, popover);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(popover);
+    option.rect = popover->rect();
+    QPainter painter(popover);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, popover);
+
+    return true;
 }
 
 void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

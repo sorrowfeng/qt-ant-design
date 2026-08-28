@@ -133,19 +133,12 @@ AntCascaderStyle::AntCascaderStyle(QStyle* style)
 void AntCascaderStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntCascader*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntCascader>(widget);
 }
 
 void AntCascaderStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntCascader*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntCascader>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -160,33 +153,34 @@ void AntCascaderStyle::drawPrimitive(PrimitiveElement element, const QStyleOptio
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntCascaderStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntCascaderStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* cascader = qobject_cast<AntCascader*>(watched);
-    if (cascader && event->type() == QEvent::Paint)
+    auto* cascader = qobject_cast<AntCascader*>(widget);
+    if (!cascader)
     {
-        QStyleOption option;
-        option.initFrom(cascader);
-        option.rect = cascader->rect();
-        if (cascader->isHoveredState())
-        {
-            option.state |= QStyle::State_MouseOver;
-        }
-        if (cascader->isPressedState())
-        {
-            option.state |= QStyle::State_Sunken;
-        }
-        if (cascader->isOpen())
-        {
-            option.state |= QStyle::State_On;
-        }
-
-        QPainter painter(cascader);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, cascader);
-        return true;
+        return false;
     }
 
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOption option;
+    option.initFrom(cascader);
+    option.rect = cascader->rect();
+    if (cascader->isHoveredState())
+    {
+        option.state |= QStyle::State_MouseOver;
+    }
+    if (cascader->isPressedState())
+    {
+        option.state |= QStyle::State_Sunken;
+    }
+    if (cascader->isOpen())
+    {
+        option.state |= QStyle::State_On;
+    }
+
+    QPainter painter(cascader);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, cascader);
+
+    return true;
 }
 
 void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

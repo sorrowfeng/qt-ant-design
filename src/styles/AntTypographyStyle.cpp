@@ -162,8 +162,7 @@ void AntTypographyStyle::polish(QWidget* widget)
     AntStyleBase::polish(widget);
     if (auto* typo = qobject_cast<AntTypography*>(widget))
     {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
+        installPaintFilter<AntTypography>(widget);
         widget->setMouseTracking(true);
         widget->setCursor(typo->isDisabled()
                               ? Qt::ForbiddenCursor
@@ -175,10 +174,7 @@ void AntTypographyStyle::polish(QWidget* widget)
 
 void AntTypographyStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTypography*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTypography>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -197,19 +193,21 @@ QSize AntTypographyStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTypographyStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTypographyStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* typo = qobject_cast<AntTypography*>(watched);
-    if (typo && event->type() == QEvent::Paint)
+    auto* typo = qobject_cast<AntTypography*>(widget);
+    if (!typo)
     {
-        QStyleOption option;
-        option.initFrom(typo);
-        option.rect = typo->rect();
-        QPainter painter(typo);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, typo);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(typo);
+    option.rect = typo->rect();
+    QPainter painter(typo);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, typo);
+
+    return true;
 }
 
 void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

@@ -18,18 +18,12 @@ AntTableStyle::AntTableStyle(QStyle* style)
 void AntTableStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntTable*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntTable>(widget);
 }
 
 void AntTableStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTable*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTable>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -48,19 +42,21 @@ QSize AntTableStyle::sizeFromContents(ContentsType type, const QStyleOption* opt
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTableStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTableStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* table = qobject_cast<AntTable*>(watched);
-    if (table && event->type() == QEvent::Paint)
+    auto* table = qobject_cast<AntTable*>(widget);
+    if (!table)
     {
-        QStyleOption option;
-        option.initFrom(table);
-        option.rect = table->rect();
-        QPainter painter(table);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, table);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(table);
+    option.rect = table->rect();
+    QPainter painter(table);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, table);
+
+    return true;
 }
 
 namespace

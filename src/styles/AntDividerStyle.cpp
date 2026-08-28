@@ -15,18 +15,12 @@ AntDividerStyle::AntDividerStyle(QStyle* style)
 void AntDividerStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntDivider*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntDivider>(widget);
 }
 
 void AntDividerStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntDivider*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntDivider>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -45,19 +39,21 @@ QSize AntDividerStyle::sizeFromContents(ContentsType type, const QStyleOption* o
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntDividerStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntDividerStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* divider = qobject_cast<AntDivider*>(watched);
-    if (divider && event->type() == QEvent::Paint)
+    auto* divider = qobject_cast<AntDivider*>(widget);
+    if (!divider)
     {
-        QStyleOption option;
-        option.initFrom(divider);
-        option.rect = divider->rect();
-        QPainter painter(divider);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, divider);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(divider);
+    option.rect = divider->rect();
+    QPainter painter(divider);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, divider);
+
+    return true;
 }
 
 void AntDividerStyle::drawDivider(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

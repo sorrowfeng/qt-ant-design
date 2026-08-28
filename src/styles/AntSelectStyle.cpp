@@ -116,19 +116,12 @@ AntSelectStyle::AntSelectStyle(QStyle* style)
 void AntSelectStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSelect*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntSelect>(widget);
 }
 
 void AntSelectStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSelect*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSelect>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -143,33 +136,34 @@ void AntSelectStyle::drawPrimitive(PrimitiveElement element, const QStyleOption*
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntSelectStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntSelectStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* select = qobject_cast<AntSelect*>(watched);
-    if (select && event->type() == QEvent::Paint)
+    auto* select = qobject_cast<AntSelect*>(widget);
+    if (!select)
     {
-        QStyleOption option;
-        option.initFrom(select);
-        option.rect = select->rect();
-        if (select->isHoveredState())
-        {
-            option.state |= QStyle::State_MouseOver;
-        }
-        if (select->isPressedState())
-        {
-            option.state |= QStyle::State_Sunken;
-        }
-        if (select->isOpen())
-        {
-            option.state |= QStyle::State_On;
-        }
-
-        QPainter painter(select);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, select);
         return false;
     }
 
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOption option;
+    option.initFrom(select);
+    option.rect = select->rect();
+    if (select->isHoveredState())
+    {
+        option.state |= QStyle::State_MouseOver;
+    }
+    if (select->isPressedState())
+    {
+        option.state |= QStyle::State_Sunken;
+    }
+    if (select->isOpen())
+    {
+        option.state |= QStyle::State_On;
+    }
+
+    QPainter painter(select);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, select);
+
+    return false;
 }
 
 void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

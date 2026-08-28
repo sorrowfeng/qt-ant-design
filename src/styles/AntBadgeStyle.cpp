@@ -17,19 +17,12 @@ AntBadgeStyle::AntBadgeStyle(QStyle* style)
 void AntBadgeStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntBadge*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntBadge>(widget);
 }
 
 void AntBadgeStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntBadge*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntBadge>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -54,23 +47,24 @@ QSize AntBadgeStyle::sizeFromContents(ContentsType type,
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntBadgeStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntBadgeStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* badge = qobject_cast<AntBadge*>(watched);
-    if (badge && event->type() == QEvent::Paint && !badge->contentWidget())
+    // AntBadge paints through an overlay child so the indicator stays above
+    // opaque content widgets; the owner widget keeps the paint filter only
+    // when it has no content widget to draw for.
+    auto* badge = qobject_cast<AntBadge*>(widget);
+    if (!badge || badge->contentWidget())
     {
-        QStyleOption option;
-        option.initFrom(badge);
-        option.rect = badge->rect();
-        QPainter painter(badge);
-        drawBadge(&option, &painter, badge);
-        return true;
+        return false;
     }
 
-    // AntBadge paints through an overlay child so the indicator stays above
-    // opaque content widgets. The owner widget keeps this filter only for
-    // hover delivery and style consistency.
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOption option;
+    option.initFrom(badge);
+    option.rect = badge->rect();
+    QPainter painter(badge);
+    drawBadge(&option, &painter, badge);
+
+    return true;
 }
 
 void AntBadgeStyle::drawBadge(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

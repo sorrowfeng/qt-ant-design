@@ -22,13 +22,13 @@ void AntAutoCompleteStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
     if (qobject_cast<AntAutoComplete*>(widget))
-        widget->installEventFilter(this);
+        installPaintFilter<AntAutoComplete>(widget);
 }
 
 void AntAutoCompleteStyle::unpolish(QWidget* widget)
 {
     if (qobject_cast<AntAutoComplete*>(widget))
-        widget->removeEventFilter(this);
+        removePaintFilter<AntAutoComplete>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -43,19 +43,21 @@ void AntAutoCompleteStyle::drawPrimitive(PrimitiveElement element, const QStyleO
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntAutoCompleteStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntAutoCompleteStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* ac = qobject_cast<AntAutoComplete*>(watched);
-    if (ac && event->type() == QEvent::Paint)
+    auto* ac = qobject_cast<AntAutoComplete*>(widget);
+    if (!ac)
     {
-        QStyleOption option;
-        option.initFrom(ac);
-        option.rect = ac->rect();
-        QPainter painter(ac);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, ac);
         return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(ac);
+    option.rect = ac->rect();
+    QPainter painter(ac);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, ac);
+
+    return false;
 }
 
 void AntAutoCompleteStyle::drawFrame(const QStyleOption* option, QPainter* painter,

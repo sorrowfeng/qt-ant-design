@@ -84,19 +84,12 @@ AntInputStyle::AntInputStyle(QStyle* style)
 void AntInputStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntInput*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntInput>(widget);
 }
 
 void AntInputStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntInput*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntInput>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -121,18 +114,20 @@ QSize AntInputStyle::sizeFromContents(ContentsType type, const QStyleOption* opt
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntInputStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntInputStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* input = qobject_cast<AntInput*>(watched);
-    if (input && event->type() == QEvent::Paint)
+    auto* input = qobject_cast<AntInput*>(widget);
+    if (!input)
     {
-        QStyleOption option;
-        option.initFrom(input);
-        QPainter painter(input);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, input);
         return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(input);
+    QPainter painter(input);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, input);
+
+    return false;
 }
 
 void AntInputStyle::drawInputFrame(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

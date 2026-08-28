@@ -44,18 +44,12 @@ AntMessageStyle::AntMessageStyle(QStyle* style)
 void AntMessageStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntMessage*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntMessage>(widget);
 }
 
 void AntMessageStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntMessage*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntMessage>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -74,19 +68,21 @@ QSize AntMessageStyle::sizeFromContents(ContentsType type, const QStyleOption* o
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntMessageStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntMessageStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* message = qobject_cast<AntMessage*>(watched);
-    if (message && event->type() == QEvent::Paint)
+    auto* message = qobject_cast<AntMessage*>(widget);
+    if (!message)
     {
-        QStyleOption option;
-        option.initFrom(message);
-        option.rect = message->rect();
-        QPainter painter(message);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, message);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(message);
+    option.rect = message->rect();
+    QPainter painter(message);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, message);
+
+    return true;
 }
 
 void AntMessageStyle::drawMessage(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

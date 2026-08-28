@@ -46,19 +46,12 @@ AntSwitchStyle::AntSwitchStyle(QStyle* style)
 void AntSwitchStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSwitch*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntSwitch>(widget);
 }
 
 void AntSwitchStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSwitch*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSwitch>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -73,37 +66,38 @@ void AntSwitchStyle::drawPrimitive(PrimitiveElement element, const QStyleOption*
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntSwitchStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntSwitchStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* sw = qobject_cast<AntSwitch*>(watched);
-    if (sw && event->type() == QEvent::Paint)
+    auto* sw = qobject_cast<AntSwitch*>(widget);
+    if (!sw)
     {
-        QStyleOption option;
-        option.initFrom(sw);
-        option.rect = sw->rect();
-        if (sw->isChecked())
-        {
-            option.state |= QStyle::State_On;
-        }
-        else
-        {
-            option.state |= QStyle::State_Off;
-        }
-        if (sw->isHoveredState())
-        {
-            option.state |= QStyle::State_MouseOver;
-        }
-        if (sw->isPressedState())
-        {
-            option.state |= QStyle::State_Sunken;
-        }
-
-        QPainter painter(sw);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, sw);
         return false;
     }
 
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOption option;
+    option.initFrom(sw);
+    option.rect = sw->rect();
+    if (sw->isChecked())
+    {
+        option.state |= QStyle::State_On;
+    }
+    else
+    {
+        option.state |= QStyle::State_Off;
+    }
+    if (sw->isHoveredState())
+    {
+        option.state |= QStyle::State_MouseOver;
+    }
+    if (sw->isPressedState())
+    {
+        option.state |= QStyle::State_Sunken;
+    }
+
+    QPainter painter(sw);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, sw);
+
+    return false;
 }
 
 void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

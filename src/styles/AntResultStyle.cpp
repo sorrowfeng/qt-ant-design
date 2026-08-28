@@ -14,19 +14,12 @@ AntResultStyle::AntResultStyle(QStyle* style)
 void AntResultStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntResult*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntResult>(widget);
 }
 
 void AntResultStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntResult*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntResult>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -45,19 +38,21 @@ QSize AntResultStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntResultStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntResultStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* result = qobject_cast<AntResult*>(watched);
-    if (result && event->type() == QEvent::Paint)
+    auto* result = qobject_cast<AntResult*>(widget);
+    if (!result)
     {
-        QStyleOption option;
-        option.initFrom(result);
-        option.rect = result->rect();
-        QPainter painter(result);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, result);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(result);
+    option.rect = result->rect();
+    QPainter painter(result);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, result);
+
+    return true;
 }
 
 void AntResultStyle::drawResult(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

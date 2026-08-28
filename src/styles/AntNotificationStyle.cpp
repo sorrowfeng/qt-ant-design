@@ -46,18 +46,12 @@ AntNotificationStyle::AntNotificationStyle(QStyle* style)
 void AntNotificationStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntNotification*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntNotification>(widget);
 }
 
 void AntNotificationStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntNotification*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntNotification>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -76,25 +70,21 @@ QSize AntNotificationStyle::sizeFromContents(ContentsType type, const QStyleOpti
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntNotificationStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntNotificationStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* notification = qobject_cast<AntNotification*>(watched);
+    auto* notification = qobject_cast<AntNotification*>(widget);
     if (!notification)
     {
-        return QProxyStyle::eventFilter(watched, event);
+        return false;
     }
 
-    if (event->type() == QEvent::Paint)
-    {
-        auto* paintEvent = static_cast<QPaintEvent*>(event);
-        QStyleOption option;
-        option.initFrom(notification);
-        option.rect = paintEvent->rect();
-        QPainter painter(notification);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, notification);
-        return true;
-    }
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOption option;
+    option.initFrom(notification);
+    option.rect = event->rect();
+    QPainter painter(notification);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, notification);
+
+    return true;
 }
 
 void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

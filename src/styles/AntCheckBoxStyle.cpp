@@ -21,19 +21,12 @@ AntCheckBoxStyle::AntCheckBoxStyle(QStyle* style)
 void AntCheckBoxStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntCheckBox*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntCheckBox>(widget);
 }
 
 void AntCheckBoxStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntCheckBox*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntCheckBox>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -118,39 +111,41 @@ int AntCheckBoxStyle::pixelMetric(PixelMetric metric, const QStyleOption* option
     return QProxyStyle::pixelMetric(metric, option, widget);
 }
 
-bool AntCheckBoxStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntCheckBoxStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* checkbox = qobject_cast<AntCheckBox*>(watched);
-    if (checkbox && event->type() == QEvent::Paint)
+    auto* checkbox = qobject_cast<AntCheckBox*>(widget);
+    if (!checkbox)
     {
-        QStyleOptionButton option;
-        option.initFrom(checkbox);
-        option.rect = checkbox->rect();
-        option.text = checkbox->text();
-        if (checkbox->isChecked())
-        {
-            option.state |= QStyle::State_On;
-        }
-        else
-        {
-            option.state |= QStyle::State_Off;
-        }
-        if (checkbox->isIndeterminate())
-        {
-            option.state |= QStyle::State_NoChange;
-        }
-        if (checkbox->isHoveredState())
-        {
-            option.state |= QStyle::State_MouseOver;
-        }
-        if (checkbox->isPressedState())
-        {
-            option.state |= QStyle::State_Sunken;
-        }
-
-        QPainter painter(checkbox);
-        drawControl(QStyle::CE_CheckBox, &option, &painter, checkbox);
         return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOptionButton option;
+    option.initFrom(checkbox);
+    option.rect = checkbox->rect();
+    option.text = checkbox->text();
+    if (checkbox->isChecked())
+    {
+        option.state |= QStyle::State_On;
+    }
+    else
+    {
+        option.state |= QStyle::State_Off;
+    }
+    if (checkbox->isIndeterminate())
+    {
+        option.state |= QStyle::State_NoChange;
+    }
+    if (checkbox->isHoveredState())
+    {
+        option.state |= QStyle::State_MouseOver;
+    }
+    if (checkbox->isPressedState())
+    {
+        option.state |= QStyle::State_Sunken;
+    }
+
+    QPainter painter(checkbox);
+    drawControl(QStyle::CE_CheckBox, &option, &painter, checkbox);
+
+    return false;
 }

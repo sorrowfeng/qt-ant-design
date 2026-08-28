@@ -130,19 +130,12 @@ AntQRCodeStyle::AntQRCodeStyle(QStyle* style)
 void AntQRCodeStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntQRCode*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntQRCode>(widget);
 }
 
 void AntQRCodeStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntQRCode*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntQRCode>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -161,19 +154,21 @@ QSize AntQRCodeStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntQRCodeStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntQRCodeStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* qr = qobject_cast<AntQRCode*>(watched);
-    if (qr && event->type() == QEvent::Paint)
+    auto* qr = qobject_cast<AntQRCode*>(widget);
+    if (!qr)
     {
-        QStyleOption option;
-        option.initFrom(qr);
-        option.rect = qr->rect();
-        QPainter painter(qr);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, qr);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(qr);
+    option.rect = qr->rect();
+    QPainter painter(qr);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, qr);
+
+    return true;
 }
 
 void AntQRCodeStyle::drawQRCode(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

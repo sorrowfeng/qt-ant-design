@@ -15,7 +15,7 @@ public:
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;
     void drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget = nullptr) const override;
-    bool eventFilter(QObject* watched, QEvent* event) override;
+    bool drawWidget(QWidget* widget, QPaintEvent* event) override;
 
 private:
     void drawCascader(const QStyleOption* option, QPainter* painter, const QWidget* widget) const;

@@ -14,18 +14,12 @@ AntToolTipStyle::AntToolTipStyle(QStyle* style)
 void AntToolTipStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntToolTip*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntToolTip>(widget);
 }
 
 void AntToolTipStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntToolTip*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntToolTip>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -44,19 +38,21 @@ QSize AntToolTipStyle::sizeFromContents(ContentsType type, const QStyleOption* o
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntToolTipStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntToolTipStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* tooltip = qobject_cast<AntToolTip*>(watched);
-    if (tooltip && event->type() == QEvent::Paint)
+    auto* tooltip = qobject_cast<AntToolTip*>(widget);
+    if (!tooltip)
     {
-        QStyleOption option;
-        option.initFrom(tooltip);
-        option.rect = tooltip->rect();
-        QPainter painter(tooltip);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, tooltip);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(tooltip);
+    option.rect = tooltip->rect();
+    QPainter painter(tooltip);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, tooltip);
+
+    return true;
 }
 
 void AntToolTipStyle::drawTooltip(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

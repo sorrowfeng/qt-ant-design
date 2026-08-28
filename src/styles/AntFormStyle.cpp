@@ -36,21 +36,6 @@ QSize AntFormStyle::sizeFromContents(ContentsType type, const QStyleOption* opti
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntFormStyle::eventFilter(QObject* watched, QEvent* event)
-{
-    auto* form = qobject_cast<AntForm*>(watched);
-    if (form && event->type() == QEvent::Paint)
-    {
-        QStyleOption option;
-        option.initFrom(form);
-        option.rect = form->rect();
-        QPainter painter(form);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, form);
-        return true;
-    }
-    return QProxyStyle::eventFilter(watched, event);
-}
-
 void AntFormStyle::drawForm(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
     const auto* form = qobject_cast<const AntForm*>(widget);

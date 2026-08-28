@@ -16,19 +16,12 @@ AntTagStyle::AntTagStyle(QStyle* style)
 void AntTagStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntTag*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntTag>(widget);
 }
 
 void AntTagStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTag*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTag>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -47,19 +40,21 @@ QSize AntTagStyle::sizeFromContents(ContentsType type, const QStyleOption* optio
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTagStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTagStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* tag = qobject_cast<AntTag*>(watched);
-    if (tag && event->type() == QEvent::Paint)
+    auto* tag = qobject_cast<AntTag*>(widget);
+    if (!tag)
     {
-        QStyleOption option;
-        option.initFrom(tag);
-        option.rect = tag->rect();
-        QPainter painter(tag);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, tag);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(tag);
+    option.rect = tag->rect();
+    QPainter painter(tag);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, tag);
+
+    return true;
 }
 
 void AntTagStyle::onThemeUpdate(QWidget* widget)

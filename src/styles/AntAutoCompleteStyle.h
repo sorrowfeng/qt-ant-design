@@ -15,7 +15,7 @@ public:
                        QPainter* painter, const QWidget* widget) const override;
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;
-    bool eventFilter(QObject* watched, QEvent* event) override;
+    bool drawWidget(QWidget* widget, QPaintEvent* event) override;
 
 protected:
     void onThemeUpdate(QWidget* w) override;

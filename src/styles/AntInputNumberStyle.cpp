@@ -159,19 +159,12 @@ AntInputNumberStyle::AntInputNumberStyle(QStyle* style)
 void AntInputNumberStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntInputNumber*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntInputNumber>(widget);
 }
 
 void AntInputNumberStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntInputNumber*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntInputNumber>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -248,48 +241,49 @@ QSize AntInputNumberStyle::sizeFromContents(ContentsType type,
     return QProxyStyle::sizeFromContents(type, option, contentsSize, widget);
 }
 
-bool AntInputNumberStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntInputNumberStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* input = qobject_cast<AntInputNumber*>(watched);
-    if (input && event->type() == QEvent::Paint)
+    auto* input = qobject_cast<AntInputNumber*>(widget);
+    if (!input)
     {
-        QStyleOptionSpinBox option;
-        option.initFrom(input);
-        option.rect = input->rect();
-        option.subControls = SC_SpinBoxFrame | SC_SpinBoxEditField;
-        if (input->controlsVisible())
-        {
-            option.subControls |= SC_SpinBoxUp | SC_SpinBoxDown;
-        }
-        if (input->isHoveredState())
-        {
-            option.state |= State_MouseOver;
-        }
-        if (focusedFor(input))
-        {
-            option.state |= State_HasFocus;
-        }
-        option.activeSubControls = input->activeSubControl();
-        if (input->isStepPressed())
-        {
-            option.state |= State_Sunken;
-        }
-        option.stepEnabled = QAbstractSpinBox::StepNone;
-        if (input->stepEnabledFlags().testFlag(QAbstractSpinBox::StepUpEnabled))
-        {
-            option.stepEnabled |= QAbstractSpinBox::StepUpEnabled;
-        }
-        if (input->stepEnabledFlags().testFlag(QAbstractSpinBox::StepDownEnabled))
-        {
-            option.stepEnabled |= QAbstractSpinBox::StepDownEnabled;
-        }
-
-        QPainter painter(input);
-        drawComplexControl(CC_SpinBox, &option, &painter, input);
-        return true;
+        return false;
     }
 
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOptionSpinBox option;
+    option.initFrom(input);
+    option.rect = input->rect();
+    option.subControls = SC_SpinBoxFrame | SC_SpinBoxEditField;
+    if (input->controlsVisible())
+    {
+        option.subControls |= SC_SpinBoxUp | SC_SpinBoxDown;
+    }
+    if (input->isHoveredState())
+    {
+        option.state |= State_MouseOver;
+    }
+    if (focusedFor(input))
+    {
+        option.state |= State_HasFocus;
+    }
+    option.activeSubControls = input->activeSubControl();
+    if (input->isStepPressed())
+    {
+        option.state |= State_Sunken;
+    }
+    option.stepEnabled = QAbstractSpinBox::StepNone;
+    if (input->stepEnabledFlags().testFlag(QAbstractSpinBox::StepUpEnabled))
+    {
+        option.stepEnabled |= QAbstractSpinBox::StepUpEnabled;
+    }
+    if (input->stepEnabledFlags().testFlag(QAbstractSpinBox::StepDownEnabled))
+    {
+        option.stepEnabled |= QAbstractSpinBox::StepDownEnabled;
+    }
+
+    QPainter painter(input);
+    drawComplexControl(CC_SpinBox, &option, &painter, input);
+
+    return true;
 }
 
 void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainter* painter, const QWidget* widget) const

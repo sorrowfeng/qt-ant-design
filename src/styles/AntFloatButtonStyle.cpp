@@ -99,19 +99,12 @@ AntFloatButtonStyle::AntFloatButtonStyle(QStyle* style)
 void AntFloatButtonStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntFloatButton*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntFloatButton>(widget);
 }
 
 void AntFloatButtonStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntFloatButton*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntFloatButton>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -130,19 +123,21 @@ QSize AntFloatButtonStyle::sizeFromContents(ContentsType type, const QStyleOptio
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntFloatButtonStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntFloatButtonStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* fb = qobject_cast<AntFloatButton*>(watched);
-    if (fb && event->type() == QEvent::Paint)
+    auto* fb = qobject_cast<AntFloatButton*>(widget);
+    if (!fb)
     {
-        QStyleOption option;
-        option.initFrom(fb);
-        option.rect = fb->rect();
-        QPainter painter(fb);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, fb);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(fb);
+    option.rect = fb->rect();
+    QPainter painter(fb);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, fb);
+
+    return true;
 }
 
 void AntFloatButtonStyle::drawFloatButton(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

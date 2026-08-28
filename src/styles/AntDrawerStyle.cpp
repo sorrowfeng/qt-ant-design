@@ -78,18 +78,12 @@ AntDrawerStyle::AntDrawerStyle(QStyle* style)
 void AntDrawerStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntDrawer*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntDrawer>(widget);
 }
 
 void AntDrawerStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntDrawer*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntDrawer>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -108,20 +102,21 @@ QSize AntDrawerStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntDrawerStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntDrawerStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* drawer = qobject_cast<AntDrawer*>(watched);
-    if (drawer && event->type() == QEvent::Paint)
+    auto* drawer = qobject_cast<AntDrawer*>(widget);
+    if (!drawer)
     {
-        auto* paintEvent = static_cast<QPaintEvent*>(event);
-        QStyleOption option;
-        option.initFrom(drawer);
-        option.rect = paintEvent->rect();
-        QPainter painter(drawer);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, drawer);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(drawer);
+    option.rect = event->rect();
+    QPainter painter(drawer);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, drawer);
+
+    return true;
 }
 
 void AntDrawerStyle::drawDrawer(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

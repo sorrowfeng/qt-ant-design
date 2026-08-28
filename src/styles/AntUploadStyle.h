@@ -18,7 +18,7 @@ public:
     void unpolish(QWidget* widget) override;
     void drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget = nullptr) const override;
     QSize sizeFromContents(ContentsType type, const QStyleOption* option, const QSize& size, const QWidget* widget = nullptr) const override;
-    bool eventFilter(QObject* watched, QEvent* event) override;
+    bool drawWidget(QWidget* widget, QPaintEvent* event) override;
 
 private:
     void drawUpload(const QStyleOption* option, QPainter* painter, const QWidget* widget) const;

@@ -20,13 +20,13 @@ void AntCalendarStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
     if (qobject_cast<AntCalendar*>(widget))
-        widget->installEventFilter(this);
+        installPaintFilter<AntCalendar>(widget);
 }
 
 void AntCalendarStyle::unpolish(QWidget* widget)
 {
     if (qobject_cast<AntCalendar*>(widget))
-        widget->removeEventFilter(this);
+        removePaintFilter<AntCalendar>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -41,19 +41,21 @@ void AntCalendarStyle::drawPrimitive(PrimitiveElement element, const QStyleOptio
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntCalendarStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntCalendarStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* cal = qobject_cast<AntCalendar*>(watched);
-    if (cal && event->type() == QEvent::Paint)
+    auto* cal = qobject_cast<AntCalendar*>(widget);
+    if (!cal)
     {
-        QStyleOption option;
-        option.initFrom(cal);
-        option.rect = cal->rect();
-        QPainter painter(cal);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, cal);
         return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(cal);
+    option.rect = cal->rect();
+    QPainter painter(cal);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, cal);
+
+    return false;
 }
 
 void AntCalendarStyle::drawFrame(const QStyleOption* option, QPainter* painter) const

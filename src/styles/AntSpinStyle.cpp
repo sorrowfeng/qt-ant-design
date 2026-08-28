@@ -21,18 +21,12 @@ AntSpinStyle::AntSpinStyle(QStyle* style)
 void AntSpinStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSpin*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntSpin>(widget);
 }
 
 void AntSpinStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSpin*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSpin>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -47,20 +41,21 @@ void AntSpinStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* o
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntSpinStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntSpinStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* spin = qobject_cast<AntSpin*>(watched);
-    if (spin && event->type() == QEvent::Paint)
+    auto* spin = qobject_cast<AntSpin*>(widget);
+    if (!spin)
     {
-        QStyleOption option;
-        option.initFrom(spin);
-        option.rect = spin->rect();
-        QPainter painter(spin);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, spin);
-        return true;
+        return false;
     }
 
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOption option;
+    option.initFrom(spin);
+    option.rect = spin->rect();
+    QPainter painter(spin);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, spin);
+
+    return true;
 }
 
 void AntSpinStyle::drawSpin(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

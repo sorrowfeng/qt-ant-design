@@ -15,18 +15,12 @@ AntSpaceStyle::AntSpaceStyle(QStyle* style)
 void AntSpaceStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSpace*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntSpace>(widget);
 }
 
 void AntSpaceStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSpace*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSpace>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -45,19 +39,21 @@ QSize AntSpaceStyle::sizeFromContents(ContentsType type, const QStyleOption* opt
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntSpaceStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntSpaceStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* space = qobject_cast<AntSpace*>(watched);
-    if (space && event->type() == QEvent::Paint)
+    auto* space = qobject_cast<AntSpace*>(widget);
+    if (!space)
     {
-        QStyleOption option;
-        option.initFrom(space);
-        option.rect = space->rect();
-        QPainter painter(space);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, space);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(space);
+    option.rect = space->rect();
+    QPainter painter(space);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, space);
+
+    return true;
 }
 
 void AntSpaceStyle::drawSpace(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

@@ -18,18 +18,12 @@ AntTreeSelectStyle::AntTreeSelectStyle(QStyle* style)
 void AntTreeSelectStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntTreeSelect*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntTreeSelect>(widget);
 }
 
 void AntTreeSelectStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTreeSelect*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTreeSelect>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -48,19 +42,21 @@ QSize AntTreeSelectStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTreeSelectStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTreeSelectStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* treeSelect = qobject_cast<AntTreeSelect*>(watched);
-    if (treeSelect && event->type() == QEvent::Paint)
+    auto* treeSelect = qobject_cast<AntTreeSelect*>(widget);
+    if (!treeSelect)
     {
-        QStyleOption option;
-        option.initFrom(treeSelect);
-        option.rect = treeSelect->rect();
-        QPainter painter(treeSelect);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, treeSelect);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(treeSelect);
+    option.rect = treeSelect->rect();
+    QPainter painter(treeSelect);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, treeSelect);
+
+    return true;
 }
 
 namespace

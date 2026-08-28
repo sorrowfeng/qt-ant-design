@@ -17,18 +17,12 @@ AntBreadcrumbStyle::AntBreadcrumbStyle(QStyle* style)
 void AntBreadcrumbStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntBreadcrumb*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntBreadcrumb>(widget);
 }
 
 void AntBreadcrumbStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntBreadcrumb*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntBreadcrumb>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -47,19 +41,21 @@ QSize AntBreadcrumbStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntBreadcrumbStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntBreadcrumbStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* breadcrumb = qobject_cast<AntBreadcrumb*>(watched);
-    if (breadcrumb && event->type() == QEvent::Paint)
+    auto* breadcrumb = qobject_cast<AntBreadcrumb*>(widget);
+    if (!breadcrumb)
     {
-        QStyleOption option;
-        option.initFrom(breadcrumb);
-        option.rect = breadcrumb->rect();
-        QPainter painter(breadcrumb);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, breadcrumb);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(breadcrumb);
+    option.rect = breadcrumb->rect();
+    QPainter painter(breadcrumb);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, breadcrumb);
+
+    return true;
 }
 
 void AntBreadcrumbStyle::drawBreadcrumb(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

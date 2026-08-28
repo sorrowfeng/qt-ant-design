@@ -32,19 +32,12 @@ AntTreeStyle::AntTreeStyle(QStyle* style)
 void AntTreeStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntTree*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntTree>(widget);
 }
 
 void AntTreeStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTree*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTree>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -58,19 +51,21 @@ void AntTreeStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* o
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntTreeStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTreeStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* tree = qobject_cast<AntTree*>(watched);
-    if (tree && event->type() == QEvent::Paint)
+    auto* tree = qobject_cast<AntTree*>(widget);
+    if (!tree)
     {
-        QStyleOption option;
-        option.initFrom(tree);
-        option.rect = tree->rect();
-        QPainter painter(tree);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, tree);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(tree);
+    option.rect = tree->rect();
+    QPainter painter(tree);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, tree);
+
+    return true;
 }
 
 void AntTreeStyle::drawTree(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

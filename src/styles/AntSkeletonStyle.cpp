@@ -16,19 +16,12 @@ AntSkeletonStyle::AntSkeletonStyle(QStyle* style)
 void AntSkeletonStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSkeleton*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntSkeleton>(widget);
 }
 
 void AntSkeletonStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSkeleton*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSkeleton>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -47,19 +40,21 @@ QSize AntSkeletonStyle::sizeFromContents(ContentsType type, const QStyleOption* 
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntSkeletonStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntSkeletonStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* skeleton = qobject_cast<AntSkeleton*>(watched);
-    if (skeleton && event->type() == QEvent::Paint)
+    auto* skeleton = qobject_cast<AntSkeleton*>(widget);
+    if (!skeleton)
     {
-        QStyleOption option;
-        option.initFrom(skeleton);
-        option.rect = skeleton->rect();
-        QPainter painter(skeleton);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, skeleton);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(skeleton);
+    option.rect = skeleton->rect();
+    QPainter painter(skeleton);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, skeleton);
+
+    return true;
 }
 
 void AntSkeletonStyle::drawSkeleton(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

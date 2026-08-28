@@ -16,18 +16,12 @@ AntStepsStyle::AntStepsStyle(QStyle* style)
 void AntStepsStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSteps*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntSteps>(widget);
 }
 
 void AntStepsStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSteps*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSteps>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -46,19 +40,21 @@ QSize AntStepsStyle::sizeFromContents(ContentsType type, const QStyleOption* opt
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntStepsStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntStepsStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* steps = qobject_cast<AntSteps*>(watched);
-    if (steps && event->type() == QEvent::Paint)
+    auto* steps = qobject_cast<AntSteps*>(widget);
+    if (!steps)
     {
-        QStyleOption option;
-        option.initFrom(steps);
-        option.rect = steps->rect();
-        QPainter painter(steps);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, steps);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(steps);
+    option.rect = steps->rect();
+    QPainter painter(steps);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, steps);
+
+    return true;
 }
 
 void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

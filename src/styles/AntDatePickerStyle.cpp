@@ -17,19 +17,12 @@ AntDatePickerStyle::AntDatePickerStyle(QStyle* style)
 void AntDatePickerStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntDatePicker*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntDatePicker>(widget);
 }
 
 void AntDatePickerStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntDatePicker*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntDatePicker>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -48,19 +41,21 @@ QSize AntDatePickerStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntDatePickerStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntDatePickerStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* picker = qobject_cast<AntDatePicker*>(watched);
-    if (picker && event->type() == QEvent::Paint)
+    auto* picker = qobject_cast<AntDatePicker*>(widget);
+    if (!picker)
     {
-        QStyleOption option;
-        option.initFrom(picker);
-        option.rect = picker->rect();
-        QPainter painter(picker);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, picker);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(picker);
+    option.rect = picker->rect();
+    QPainter painter(picker);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, picker);
+
+    return true;
 }
 
 void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

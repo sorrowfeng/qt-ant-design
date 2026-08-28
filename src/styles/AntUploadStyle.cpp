@@ -38,19 +38,12 @@ AntUploadStyle::AntUploadStyle(QStyle* style)
 void AntUploadStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntUpload*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntUpload>(widget);
 }
 
 void AntUploadStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntUpload*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntUpload>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -69,19 +62,21 @@ QSize AntUploadStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntUploadStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntUploadStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* upload = qobject_cast<AntUpload*>(watched);
-    if (upload && event->type() == QEvent::Paint)
+    auto* upload = qobject_cast<AntUpload*>(widget);
+    if (!upload)
     {
-        QStyleOption option;
-        option.initFrom(upload);
-        option.rect = upload->rect();
-        QPainter painter(upload);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, upload);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(upload);
+    option.rect = upload->rect();
+    QPainter painter(upload);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, upload);
+
+    return true;
 }
 
 void AntUploadStyle::drawUpload(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

@@ -68,19 +68,12 @@ AntStatisticStyle::AntStatisticStyle(QStyle* style)
 void AntStatisticStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntStatistic*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntStatistic>(widget);
 }
 
 void AntStatisticStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntStatistic*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntStatistic>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -99,19 +92,21 @@ QSize AntStatisticStyle::sizeFromContents(ContentsType type, const QStyleOption*
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntStatisticStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntStatisticStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* stat = qobject_cast<AntStatistic*>(watched);
-    if (stat && event->type() == QEvent::Paint)
+    auto* stat = qobject_cast<AntStatistic*>(widget);
+    if (!stat)
     {
-        QStyleOption option;
-        option.initFrom(stat);
-        option.rect = stat->rect();
-        QPainter painter(stat);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, stat);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(stat);
+    option.rect = stat->rect();
+    QPainter painter(stat);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, stat);
+
+    return true;
 }
 
 void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

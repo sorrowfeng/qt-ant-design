@@ -1655,18 +1655,12 @@ AntIconStyle::AntIconStyle(QStyle* style)
 void AntIconStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntIcon*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntIcon>(widget);
 }
 
 void AntIconStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntIcon*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntIcon>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -1685,19 +1679,21 @@ QSize AntIconStyle::sizeFromContents(ContentsType type, const QStyleOption* opti
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntIconStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntIconStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* icon = qobject_cast<AntIcon*>(watched);
-    if (icon && event->type() == QEvent::Paint)
+    auto* icon = qobject_cast<AntIcon*>(widget);
+    if (!icon)
     {
-        QStyleOption option;
-        option.initFrom(icon);
-        option.rect = icon->rect();
-        QPainter painter(icon);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, icon);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(icon);
+    option.rect = icon->rect();
+    QPainter painter(icon);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, icon);
+
+    return true;
 }
 
 void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

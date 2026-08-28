@@ -17,19 +17,12 @@ AntTimePickerStyle::AntTimePickerStyle(QStyle* style)
 void AntTimePickerStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntTimePicker*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntTimePicker>(widget);
 }
 
 void AntTimePickerStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTimePicker*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTimePicker>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -48,19 +41,21 @@ QSize AntTimePickerStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTimePickerStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTimePickerStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* picker = qobject_cast<AntTimePicker*>(watched);
-    if (picker && event->type() == QEvent::Paint)
+    auto* picker = qobject_cast<AntTimePicker*>(widget);
+    if (!picker)
     {
-        QStyleOption option;
-        option.initFrom(picker);
-        option.rect = picker->rect();
-        QPainter painter(picker);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, picker);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(picker);
+    option.rect = picker->rect();
+    QPainter painter(picker);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, picker);
+
+    return true;
 }
 
 namespace
