@@ -20,6 +20,7 @@ class QT_ANT_DESIGN_EXPORT AntInput : public QWidget
     Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size inputSize READ inputSize WRITE setInputSize NOTIFY inputSizeChanged)
     Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
     Q_PROPERTY(bool passwordMode READ isPasswordMode WRITE setPasswordMode NOTIFY passwordModeChanged)
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
@@ -68,6 +69,7 @@ public:
     void setStatus(Ant::Status status);
     Ant::Variant variant() const;
     void setVariant(Ant::Variant variant);
+    // Deprecated - use setStatus(Ant::Status) instead.
     void setError(bool error);
 
     bool allowClear() const;
