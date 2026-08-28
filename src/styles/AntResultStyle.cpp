@@ -74,18 +74,14 @@ void AntResultStyle::drawResult(const QStyleOption* option, QPainter* painter, c
         painter->drawPixmap(layout.iconRect, result->statusIconPixmap(result->devicePixelRatioF()));
     }
 
-    QFont titleFont = widgetFont;
-    titleFont.setPixelSize(layout.metrics.titleFontSize);
-    titleFont.setWeight(QFont::DemiBold);
+    const QFont titleFont = AntStyleBase::withPixelSize(widgetFont, layout.metrics.titleFontSize, QFont::DemiBold);
     painter->setFont(titleFont);
     painter->setPen(layout.titleColor);
     painter->drawText(layout.titleRect, Qt::AlignCenter | Qt::TextWordWrap, layout.title);
 
     if (!layout.subTitle.isEmpty())
     {
-        QFont subFont = widgetFont;
-        subFont.setPixelSize(layout.metrics.subTitleFontSize);
-        subFont.setWeight(QFont::Normal);
+        const QFont subFont = AntStyleBase::withPixelSize(widgetFont, layout.metrics.subTitleFontSize, QFont::Normal);
         painter->setFont(subFont);
         painter->setPen(layout.subTitleColor);
         painter->drawText(layout.subTitleRect, Qt::AlignCenter | Qt::TextWordWrap, layout.subTitle);

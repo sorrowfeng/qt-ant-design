@@ -50,8 +50,7 @@ void drawQRStatusOverlay(QPainter* painter, const AntQRCode* qr)
     overlay.setAlphaF(0.85);
     painter->fillRect(r, overlay);
 
-    QFont f = painter->font();
-    f.setPixelSize(token.fontSize);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
     painter->setFont(f);
 
     switch (status)
@@ -68,8 +67,7 @@ void drawQRStatusOverlay(QPainter* painter, const AntQRCode* qr)
         AntStyleBase::drawCrispRoundedRect(painter, refreshBtn.toRect(),
             QPen(token.colorPrimary, 1), Qt::NoBrush, 4, 4);
         painter->setPen(token.colorPrimary);
-        f.setPixelSize(token.fontSizeSM);
-        painter->setFont(f);
+        painter->setFont(AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM));
         painter->drawText(refreshBtn, Qt::AlignCenter, QStringLiteral("Refresh"));
         break;
     }
@@ -109,7 +107,6 @@ void drawQRStatusOverlay(QPainter* painter, const AntQRCode* qr)
         painter->drawPath(path);
 
         painter->setPen(token.colorTextSecondary);
-        f.setPixelSize(token.fontSize);
         painter->setFont(f);
         painter->drawText(r.adjusted(0, 24, 0, 24), Qt::AlignCenter, QStringLiteral("Scanned"));
         break;

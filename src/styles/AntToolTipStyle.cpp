@@ -79,8 +79,7 @@ void AntToolTipStyle::drawTooltip(const QStyleOption* option, QPainter* painter,
     }
 
     painter->setPen(layout.textColor);
-    QFont textFont = painter->font();
-    textFont.setPixelSize(layout.tokenFontSizeSM);
+    const QFont textFont = AntStyleBase::withPixelSize(painter->font(), layout.tokenFontSizeSM);
     painter->setFont(textFont);
     painter->drawText(layout.textRect, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextWordWrap, layout.title);
 

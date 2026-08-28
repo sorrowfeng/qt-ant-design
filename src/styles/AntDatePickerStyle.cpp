@@ -108,8 +108,7 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
     }
 
     // Text
-    QFont f = painter->font();
-    f.setPixelSize(m.fontSize);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), m.fontSize);
     painter->setFont(f);
 
     const QRectF textArea = control.adjusted(m.paddingX, 0, -(m.iconWidth + m.paddingX), 0);

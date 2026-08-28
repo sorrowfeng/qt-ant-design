@@ -57,6 +57,21 @@ AntStyleBase::AntStyleBase(QStyle* style)
 {
 }
 
+QFont AntStyleBase::withPixelSize(const QFont& base, int pixelSize)
+{
+    QFont font = base;
+    font.setPixelSize(pixelSize);
+    return font;
+}
+
+QFont AntStyleBase::withPixelSize(const QFont& base, int pixelSize, QFont::Weight weight)
+{
+    QFont font = base;
+    font.setPixelSize(pixelSize);
+    font.setWeight(weight);
+    return font;
+}
+
 void AntStyleBase::polish(QWidget* widget)
 {
     QProxyStyle::polish(widget);

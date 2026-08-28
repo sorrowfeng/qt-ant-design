@@ -233,8 +233,7 @@ QSize AntToolButtonStyle::sizeFromContents(ContentsType type, const QStyleOption
     if (type == QStyle::CT_ToolButton && btn)
     {
         const ToolButtonMetrics m = toolMetrics(btn);
-        QFont f = btn->font();
-        f.setPixelSize(m.fontSize);
+        const QFont f = AntStyleBase::withPixelSize(btn->font(), m.fontSize);
         int width = QFontMetrics(f).horizontalAdvance(btn->text()) + m.paddingX * 2;
         if (btn->isLoading() || !btn->icon().isNull())
         {

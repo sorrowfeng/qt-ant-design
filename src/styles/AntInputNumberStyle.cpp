@@ -145,8 +145,7 @@ int addonAfterWidthFor(const AntInputNumber* input, const InputNumberMetrics& me
     {
         return 0;
     }
-    QFont font = input->font();
-    font.setPixelSize(metrics.fontSize);
+    const QFont font = AntStyleBase::withPixelSize(input->font(), metrics.fontSize);
     return QFontMetrics(font).horizontalAdvance(input->addonAfterText()) + metrics.paddingX * 2;
 }
 }
@@ -390,8 +389,7 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
         painter->setPen(QPen(disabled ? token.colorBorderDisabled : token.colorSplit, token.lineWidth));
         painter->drawLine(QPointF(addonRect.left(), control.top()), QPointF(addonRect.left(), control.bottom()));
 
-        QFont addonFont = painter->font();
-        addonFont.setPixelSize(metrics.fontSize);
+        const QFont addonFont = AntStyleBase::withPixelSize(painter->font(), metrics.fontSize);
         painter->setFont(addonFont);
         painter->setPen(disabled ? token.colorTextDisabled : token.colorText);
         painter->drawText(addonRect, Qt::AlignCenter, input->addonAfterText());

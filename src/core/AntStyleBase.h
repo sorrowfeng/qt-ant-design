@@ -4,6 +4,7 @@
 
 #include <QApplication>
 #include <QBrush>
+#include <QFont>
 #include <QList>
 #include <QPen>
 #include <QPointer>
@@ -74,6 +75,18 @@ public:
     // empty-state variant.
     static void drawEmptyIllustration(QPainter* painter, const QRectF& targetRect,
         bool simple, bool extraLine = false);
+
+    // ---- Font helpers ----
+    // Resolve a base font at the given pixel size, preserving the base font's
+    // family / weight / style. Replaces the repeated
+    //   QFont f = widget/painter->font(); f.setPixelSize(n);
+    // idiom across style classes. The family chain comes from the AntFont
+    // application font (AntFont::applyToApplication), so per-widget overrides
+    // (e.g. a user-assigned monospace font) are preserved.
+    static QFont withPixelSize(const QFont& base, int pixelSize);
+
+    // Convenience overload that also forces a weight (e.g. DemiBold titles).
+    static QFont withPixelSize(const QFont& base, int pixelSize, QFont::Weight weight);
 
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;

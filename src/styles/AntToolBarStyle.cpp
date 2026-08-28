@@ -151,8 +151,7 @@ QSize AntToolBarStyle::sizeFromContents(ContentsType type, const QStyleOption* o
         const ToolBarButtonMetrics metrics = buttonMetrics();
         const int focusPadding = AntStyleBase::focusPaddingFor();
 
-        QFont font = button ? button->font() : QFont();
-        font.setPixelSize(metrics.fontSize);
+        const QFont font = AntStyleBase::withPixelSize(button ? button->font() : QFont(), metrics.fontSize);
         int width = button ? cachedButtonTextWidth(button, font) : 0;
         if (button && !button->icon().isNull())
         {
@@ -280,8 +279,7 @@ void AntToolBarStyle::drawToolBarButton(const QStyleOptionComplex* option, QPain
         AntStyleBase::drawButtonFocusOutline(painter, outer, metrics.radius);
     }
 
-    QFont font = button->font();
-    font.setPixelSize(metrics.fontSize);
+    const QFont font = AntStyleBase::withPixelSize(button->font(), metrics.fontSize);
     painter->setFont(font);
     painter->setPen(text);
 

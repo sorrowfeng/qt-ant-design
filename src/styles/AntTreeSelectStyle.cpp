@@ -136,8 +136,7 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
         textColor = token.colorTextDisabled;
     }
 
-    QFont font = painter->font();
-    font.setPixelSize(m.fontSize);
+    const QFont font = AntStyleBase::withPixelSize(painter->font(), m.fontSize);
     painter->setFont(font);
     painter->setPen(textColor);
 
@@ -152,8 +151,7 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
         int tagGap = 4;
         int y = textRect.center().y() - tagH / 2;
 
-        QFont tagFont;
-        tagFont.setPixelSize(12);
+        const QFont tagFont = AntStyleBase::withPixelSize(QFont(), 12);
         QFontMetrics fm(tagFont);
 
         for (int i = 0; i < titles.size(); ++i)

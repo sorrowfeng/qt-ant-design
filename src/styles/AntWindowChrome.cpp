@@ -183,9 +183,7 @@ void drawChrome(QPainter* painter, const PaintOptions& options)
                 }
             }
 
-            QFont titleFont = options.widget ? options.widget->font() : painter->font();
-            titleFont.setPixelSize(token.fontSizeLG);
-            titleFont.setWeight(QFont::DemiBold);
+            const QFont titleFont = AntStyleBase::withPixelSize(options.widget ? options.widget->font() : painter->font(), token.fontSizeLG, QFont::DemiBold);
             painter->setFont(titleFont);
             painter->setPen(token.colorText);
 

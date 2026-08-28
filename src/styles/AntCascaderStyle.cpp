@@ -238,8 +238,7 @@ void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painte
         textColor = token.colorTextDisabled;
     }
 
-    QFont font = painter->font();
-    font.setPixelSize(metrics.fontSize);
+    const QFont font = AntStyleBase::withPixelSize(painter->font(), metrics.fontSize);
     painter->setFont(font);
     painter->setPen(textColor);
     const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);

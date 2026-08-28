@@ -209,14 +209,10 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    QFont titleFont = painter->font();
-    titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(QFont::Normal);
+    const QFont titleFont = AntStyleBase::withPixelSize(painter->font(), m.titleFontSize, QFont::Normal);
     const QFontMetrics titleFm(titleFont);
 
-    QFont contentFont = painter->font();
-    contentFont.setPixelSize(m.contentFontSize);
-    contentFont.setWeight(QFont::Normal);
+    const QFont contentFont = AntStyleBase::withPixelSize(painter->font(), m.contentFontSize, QFont::Normal);
     const QFontMetrics contentFm(contentFont);
 
     const bool colorCacheHit = !timeline->m_dotColorCacheDirty

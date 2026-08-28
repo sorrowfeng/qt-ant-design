@@ -135,8 +135,7 @@ void AntSliderStyle::drawSlider(const QStyleOption* option, QPainter* painter, c
     }
     if (!cache.markLayouts.isEmpty())
     {
-        QFont markFont = painter->font();
-        markFont.setPixelSize(token.fontSizeSM);
+        const QFont markFont = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM);
         painter->setFont(markFont);
         for (const auto& mark : cache.markLayouts)
         {

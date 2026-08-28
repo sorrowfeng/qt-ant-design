@@ -88,9 +88,7 @@ void AntSpinStyle::drawSpin(const QStyleOption* option, QPainter* painter, const
 
         if (spin->spinSize() != Ant::Size::Small)
         {
-            QFont font = painter->font();
-            font.setPixelSize(layout.percentFontSize);
-            font.setWeight(QFont::DemiBold);
+            const QFont font = AntStyleBase::withPixelSize(painter->font(), layout.percentFontSize, QFont::DemiBold);
             painter->setFont(font);
             painter->setPen(layout.textColor);
             painter->drawText(layout.indicatorRect, Qt::AlignCenter, layout.percentText);
@@ -113,8 +111,7 @@ void AntSpinStyle::drawSpin(const QStyleOption* option, QPainter* painter, const
 
     if (!spin->description().isEmpty())
     {
-        QFont font = painter->font();
-        font.setPixelSize(layout.metrics.fontSize);
+        const QFont font = AntStyleBase::withPixelSize(painter->font(), layout.metrics.fontSize);
         painter->setFont(font);
         painter->setPen(layout.textColor);
         painter->drawText(layout.textRect, Qt::AlignHCenter | Qt::AlignTop, layout.description);

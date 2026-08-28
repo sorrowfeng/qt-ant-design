@@ -98,9 +98,7 @@ void AntAlertStyle::drawAlert(const QStyleOption* option, QPainter* painter, con
     }
 
     // Title
-    QFont titleFont = painter->font();
-    titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(layout.hasDescription ? QFont::DemiBold : QFont::Normal);
+    const QFont titleFont = AntStyleBase::withPixelSize(painter->font(), m.titleFontSize, layout.hasDescription ? QFont::DemiBold : QFont::Normal);
     painter->setFont(titleFont);
     painter->setPen(alert->titleColor());
 
@@ -111,9 +109,7 @@ void AntAlertStyle::drawAlert(const QStyleOption* option, QPainter* painter, con
     // Description
     if (layout.hasDescription)
     {
-        QFont descFont = painter->font();
-        descFont.setPixelSize(m.descFontSize);
-        descFont.setWeight(QFont::Normal);
+        const QFont descFont = AntStyleBase::withPixelSize(painter->font(), m.descFontSize, QFont::Normal);
         painter->setFont(descFont);
         painter->setPen(alert->descriptionColor());
         painter->drawText(layout.descriptionRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, alert->description());

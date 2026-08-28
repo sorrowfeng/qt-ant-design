@@ -72,8 +72,7 @@ void AntBreadcrumbStyle::drawBreadcrumb(const QStyleOption* option, QPainter* pa
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    QFont textFont = painter->font();
-    textFont.setPixelSize(token.fontSize);
+    const QFont textFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
     painter->setFont(textFont);
 
     const int count = breadcrumb->count();

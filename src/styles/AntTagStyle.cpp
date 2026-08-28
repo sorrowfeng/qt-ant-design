@@ -173,8 +173,7 @@ void AntTagStyle::drawTag(const QStyleOption* option, QPainter* painter, const Q
     AntStyleBase::drawCrispRoundedRect(painter, pill.toRect(), QPen(border, token.lineWidth), bg,
         token.borderRadiusSM, token.borderRadiusSM);
 
-    QFont f = painter->font();
-    f.setPixelSize(token.fontSizeSM);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM);
     painter->setFont(f);
     painter->setPen(textCol);
 

@@ -148,18 +148,14 @@ void AntNotificationStyle::drawNotification(const QStyleOption* option, QPainter
     // Title
     if (!notification->title().isEmpty())
     {
-        QFont titleFont = painter->font();
-        titleFont.setPixelSize(token.fontSizeLG);
-        titleFont.setWeight(QFont::DemiBold);
+        const QFont titleFont = AntStyleBase::withPixelSize(painter->font(), token.fontSizeLG, QFont::DemiBold);
         painter->setFont(titleFont);
         painter->setPen(token.colorText);
         painter->drawText(layout.titleRect, Qt::AlignLeft | Qt::AlignVCenter, notification->title());
     }
 
     // Description
-    QFont descFont = painter->font();
-    descFont.setPixelSize(token.fontSize);
-    descFont.setWeight(QFont::Normal);
+    const QFont descFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize, QFont::Normal);
     painter->setFont(descFont);
     painter->setPen(token.colorTextSecondary);
     QTextOption textOption;

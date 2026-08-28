@@ -124,9 +124,7 @@ void AntMessageStyle::drawMessage(const QStyleOption* option, QPainter* painter,
     }
 
     // Text
-    QFont textFont = painter->font();
-    textFont.setPixelSize(token.fontSize);
-    textFont.setWeight(QFont::Normal);
+    const QFont textFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize, QFont::Normal);
     painter->setFont(textFont);
     painter->setPen(token.colorText);
     painter->drawText(layout.textRect, Qt::AlignVCenter | Qt::AlignLeft, message->text());

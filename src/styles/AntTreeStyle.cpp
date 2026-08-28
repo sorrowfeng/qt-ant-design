@@ -213,8 +213,7 @@ void AntTreeStyle::drawTree(const QStyleOption* option, QPainter* painter, const
         }
 
         // Title
-        QFont textFont = painter->font();
-        textFont.setPixelSize(token.fontSize);
+        const QFont textFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
         painter->setFont(textFont);
         painter->setPen(node->disabled ? token.colorTextDisabled : token.colorText);
         const QRect textRect(x, y, viewWidth - x, RowHeight);

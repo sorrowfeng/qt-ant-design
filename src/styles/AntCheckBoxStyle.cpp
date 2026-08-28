@@ -80,8 +80,7 @@ void AntCheckBoxStyle::drawControl(ControlElement element, const QStyleOption* o
 
         if (!checkbox->text().isEmpty())
         {
-            QFont f = painter->font();
-            f.setPixelSize(token.fontSize);
+            const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
             painter->setFont(f);
             painter->setPen(enabled ? token.colorText : token.colorTextDisabled);
             painter->drawText(layout.textRect, Qt::AlignLeft | Qt::AlignVCenter, checkbox->text());

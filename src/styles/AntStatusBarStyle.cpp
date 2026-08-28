@@ -173,8 +173,7 @@ void AntStatusBarStyle::drawStatusBar(const QStyleOption* option, QPainter* pain
                       enabled ? barColors.background : token.colorBgContainerDisabled);
 
     // Font for items
-    QFont itemFont = painter->font();
-    itemFont.setPixelSize(token.fontSizeSM);
+    const QFont itemFont = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM);
     painter->setFont(itemFont);
     QFontMetrics fm(itemFont);
 

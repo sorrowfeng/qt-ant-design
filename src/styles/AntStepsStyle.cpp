@@ -82,12 +82,8 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         const QColor color = steps->statusColor(status);
         const AntStepItem step = steps->stepAt(i);
         const bool disabled = step.disabled;
-        QFont titleFontForItem = painter->font();
-        titleFontForItem.setPixelSize(m.titleFontSize);
-        titleFontForItem.setWeight(status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
-        QFont descFontForItem = painter->font();
-        descFontForItem.setPixelSize(m.descFontSize);
-        descFontForItem.setWeight(QFont::Normal);
+        const QFont titleFontForItem = AntStyleBase::withPixelSize(painter->font(), m.titleFontSize, status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
+        const QFont descFontForItem = AntStyleBase::withPixelSize(painter->font(), m.descFontSize, QFont::Normal);
 
         // Tail line
         if (i < layouts.size() - 1)
@@ -160,9 +156,7 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         }
         else
         {
-            QFont iconFont = painter->font();
-            iconFont.setPixelSize(14);
-            iconFont.setWeight(QFont::DemiBold);
+            const QFont iconFont = AntStyleBase::withPixelSize(painter->font(), 14, QFont::DemiBold);
             painter->setFont(iconFont);
             painter->setPen(numberColor);
             painter->drawText(circle, Qt::AlignCenter, steps->iconText(status, i));

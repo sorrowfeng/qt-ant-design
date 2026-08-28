@@ -148,8 +148,7 @@ QSize AntButtonStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     if (type == QStyle::CT_PushButton && button)
     {
         const ButtonMetrics m = metricsFor(button);
-        QFont f = button->font();
-        f.setPixelSize(m.fontSize);
+        const QFont f = AntStyleBase::withPixelSize(button->font(), m.fontSize);
         int width = QFontMetrics(f).horizontalAdvance(button->text()) + m.paddingX * 2;
         if (button->isLoading() || button->buttonIconType() != Ant::IconType::None)
         {

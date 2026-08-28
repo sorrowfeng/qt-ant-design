@@ -69,8 +69,7 @@ void AntPaginationStyle::drawPagination(const QStyleOption* option, QPainter* pa
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    QFont f = painter->font();
-    f.setPixelSize(pagination->fontSize());
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), pagination->fontSize());
     painter->setFont(f);
 
     const auto items = pagination->pageItems();

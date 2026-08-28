@@ -212,8 +212,7 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
     }
 
     // Text
-    QFont f = painter->font();
-    f.setPixelSize(m.fontSize);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), m.fontSize);
     painter->setFont(f);
 
     if (picker->isRangeMode())

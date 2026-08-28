@@ -174,18 +174,14 @@ void AntPopoverStyle::drawPopover(const QStyleOption* option, QPainter* painter,
             drawTitleIcon(*painter, iconRect, popover->titleIconType());
             titleRect.adjust(26, 0, 0, 0);
         }
-        QFont titleFont = painter->font();
-        titleFont.setPixelSize(token.fontSize);
-        titleFont.setWeight(QFont::DemiBold);
+        const QFont titleFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize, QFont::DemiBold);
         painter->setFont(titleFont);
         painter->setPen(token.colorText);
         painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, popover->title());
     }
 
     // Body
-    QFont bodyFont = painter->font();
-    bodyFont.setPixelSize(token.fontSize);
-    bodyFont.setWeight(QFont::Normal);
+    const QFont bodyFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize, QFont::Normal);
     painter->setFont(bodyFont);
     painter->setPen(token.colorText);
     painter->drawText(layout.bodyRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, popover->content());

@@ -116,9 +116,7 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
             }
             else
             {
-                QFont f = painter->font();
-                f.setPixelSize(token.fontSizeSM);
-                f.setWeight(QFont::Normal);
+                const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM, QFont::Normal);
                 painter->setFont(f);
                 painter->setPen(layout.infoColor);
                 painter->drawText(layout.lineInfoRect, Qt::AlignCenter, layout.infoText);
@@ -140,9 +138,7 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
             }
             else
             {
-                QFont f = painter->font();
-                f.setPixelSize(layout.circleInfoFontSize);
-                f.setWeight(QFont::DemiBold);
+                const QFont f = AntStyleBase::withPixelSize(painter->font(), layout.circleInfoFontSize, QFont::DemiBold);
                 painter->setFont(f);
                 painter->setPen(token.colorText);
                 painter->drawText(option->rect, Qt::AlignCenter, layout.infoText);

@@ -295,9 +295,7 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
     }
 
     // Column headers
-    QFont headerFont = painter->font();
-    headerFont.setPixelSize(m.fontSize);
-    headerFont.setWeight(QFont::DemiBold);
+    const QFont headerFont = AntStyleBase::withPixelSize(painter->font(), m.fontSize, QFont::DemiBold);
     painter->setFont(headerFont);
     const QFontMetrics headerFm(headerFont);
 
@@ -450,9 +448,7 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
 
         // Data cells
         int cellX = selW;
-        QFont cellFont = painter->font();
-        cellFont.setPixelSize(m.fontSize);
-        cellFont.setWeight(QFont::Normal);
+        const QFont cellFont = AntStyleBase::withPixelSize(painter->font(), m.fontSize, QFont::Normal);
         painter->setFont(cellFont);
 
         for (const auto& col : columns)
@@ -488,8 +484,7 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
 
         AntStyleBase::drawEmptyIllustration(painter, imgRect, true, true);
 
-        QFont descFont = painter->font();
-        descFont.setPixelSize(token.fontSize);
+        const QFont descFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
         painter->setFont(descFont);
         painter->setPen(token.colorTextSecondary);
         const QRect descRect(0, centerY + imgH / 2 + 8, option->rect.width(), token.fontSize + 8);
@@ -532,9 +527,7 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
         painter->drawLine(paginationRect.topLeft(), paginationRect.topRight());
 
         // "Showing X-Y of Z" text
-        QFont pageFont = painter->font();
-        pageFont.setPixelSize(m.fontSizeSM);
-        pageFont.setWeight(QFont::Normal);
+        const QFont pageFont = AntStyleBase::withPixelSize(painter->font(), m.fontSizeSM, QFont::Normal);
         painter->setFont(pageFont);
 
         const int startRow = start + 1;
@@ -572,9 +565,7 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
                     QPen(token.colorBorderSecondary, token.lineWidth), Qt::NoBrush, 4, 4);
             }
 
-            QFont btnFont = painter->font();
-            btnFont.setPixelSize(m.fontSizeSM);
-            btnFont.setWeight(isCurrent ? QFont::DemiBold : QFont::Normal);
+            const QFont btnFont = AntStyleBase::withPixelSize(painter->font(), m.fontSizeSM, isCurrent ? QFont::DemiBold : QFont::Normal);
             painter->setFont(btnFont);
             painter->setPen(isCurrent ? token.colorTextLightSolid : token.colorText);
             painter->drawText(btnRect, Qt::AlignCenter, QString::number(p));

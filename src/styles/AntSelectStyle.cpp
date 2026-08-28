@@ -25,8 +25,7 @@ QList<TagLayout> layoutTags(const AntSelect* select, const QRectF& textArea, int
 {
     QList<TagLayout> tags;
     const auto& token = antTheme->tokens();
-    QFont f;
-    f.setPixelSize(fontSize);
+    const QFont f = AntStyleBase::withPixelSize(QFont(), fontSize);
     const QFontMetrics fm(f);
 
     const QList<int> indices = select->selectedIndices();
@@ -87,9 +86,7 @@ void drawTag(QPainter* painter, const QRectF& rect, const QString& text, int fon
     AntStyleBase::drawCrispRoundedRect(painter, rect.toRect(), Qt::NoPen,
         tagBg, token.borderRadiusSM, token.borderRadiusSM);
 
-    QFont f = painter->font();
-    f.setPixelSize(fontSize);
-    f.setWeight(QFont::Normal);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), fontSize, QFont::Normal);
     painter->setFont(f);
     painter->setPen(tagText);
     const QRectF textRect = rect.adjusted(6, 0, closable ? -18 : -6, 0);
@@ -233,8 +230,7 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
     else if (multiMode && select->selectedIndices().isEmpty())
     {
         // Placeholder text for empty multi-mode
-        QFont font = painter->font();
-        font.setPixelSize(metrics.fontSize);
+        const QFont font = AntStyleBase::withPixelSize(painter->font(), metrics.fontSize);
         painter->setFont(font);
         painter->setPen(disabled ? token.colorTextDisabled : token.colorTextPlaceholder);
         const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);
@@ -251,8 +247,7 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
             textColor = token.colorTextDisabled;
         }
 
-        QFont font = painter->font();
-        font.setPixelSize(metrics.fontSize);
+        const QFont font = AntStyleBase::withPixelSize(painter->font(), metrics.fontSize);
         painter->setFont(font);
         painter->setPen(textColor);
         const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);

@@ -50,8 +50,7 @@ void drawFloatButtonIcon(QPainter* painter, const QRectF& buttonRect, const QStr
         return;
     }
 
-    QFont f = painter->font();
-    f.setPixelSize(18);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), 18);
     painter->setFont(f);
     painter->drawText(buttonRect, Qt::AlignCenter, icon.left(2));
 }
@@ -70,9 +69,7 @@ void drawBadgeIndicator(QPainter* painter, const AntFloatButton* fb, const QRect
     else if (fb->badgeCount() > 0)
     {
         const QString text = fb->badgeCount() > 99 ? QStringLiteral("99+") : QString::number(fb->badgeCount());
-        QFont f = painter->font();
-        f.setPixelSize(10);
-        f.setWeight(QFont::Bold);
+        const QFont f = AntStyleBase::withPixelSize(painter->font(), 10, QFont::Bold);
         QFontMetrics fm(f);
         const int textW = fm.horizontalAdvance(text);
         const int badgeW = qMax(16, textW + 8);
@@ -213,8 +210,7 @@ void AntFloatButtonStyle::drawMainButton(const QStyleOption* option, QPainter* p
     // Content text (square shape)
     if (!fb->content().isEmpty())
     {
-        QFont f = painter->font();
-        f.setPixelSize(token.fontSizeSM);
+        const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM);
         painter->setFont(f);
         const int iconW = icon.isEmpty() ? 0 : 22;
         QRectF textRect = r.adjusted(iconW, 0, -token.paddingXS, 0);

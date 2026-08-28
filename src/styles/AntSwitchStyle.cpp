@@ -138,8 +138,7 @@ void AntSwitchStyle::drawSwitch(const QStyleOption* option, QPainter* painter, c
             textRect.setLeft(handle.right() + 2);
         }
 
-        QFont font = sw->font();
-        font.setPixelSize(metrics.fontSize);
+        const QFont font = AntStyleBase::withPixelSize(sw->font(), metrics.fontSize);
         painter->setFont(font);
         QColor textColor = token.colorTextLightSolid;
         if (!enabled || sw->isLoading())

@@ -107,8 +107,7 @@ void AntBadgeStyle::drawBadge(const QStyleOption* option, QPainter* painter, con
 
         if (!metrics.text.isEmpty())
         {
-            QFont f = painter->font();
-            f.setPixelSize(token.fontSize);
+            const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
             painter->setFont(f);
             painter->setPen(enabled ? token.colorText : token.colorTextDisabled);
             painter->drawText(metrics.statusTextRect, Qt::AlignLeft | Qt::AlignVCenter, metrics.text);
@@ -125,9 +124,7 @@ void AntBadgeStyle::drawBadge(const QStyleOption* option, QPainter* painter, con
         painter->setBrush(metrics.ribbonFoldColor);
         painter->drawPath(metrics.ribbonFoldPath);
 
-        QFont f = painter->font();
-        f.setPixelSize(token.fontSizeSM);
-        f.setWeight(QFont::DemiBold);
+        const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM, QFont::DemiBold);
         painter->setFont(f);
         painter->setPen(token.colorTextLightSolid);
         painter->drawText(metrics.ribbonTextRect, Qt::AlignCenter, metrics.ribbonText);
@@ -155,9 +152,7 @@ void AntBadgeStyle::drawBadge(const QStyleOption* option, QPainter* painter, con
                                            r.height() / 2.0,
                                            r.height() / 2.0);
 
-        QFont f = painter->font();
-        f.setPixelSize(token.fontSizeSM);
-        f.setWeight(QFont::Normal);
+        const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM, QFont::Normal);
         painter->setFont(f);
         painter->setPen(token.colorTextLightSolid);
         painter->drawText(r.adjusted(token.paddingXXS, 0, -token.paddingXXS, 0),

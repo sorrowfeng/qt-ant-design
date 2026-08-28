@@ -125,9 +125,7 @@ void AntEmptyStyle::drawEmpty(const QStyleOption* option, QPainter* painter, con
         painter->drawPixmap(r.topLeft(), pixmap);
     }
 
-    QFont descFont = painter->font();
-    descFont.setPixelSize(token.fontSize);
-    descFont.setWeight(QFont::Normal);
+    const QFont descFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize, QFont::Normal);
     painter->setFont(descFont);
     painter->setPen(token.colorTextTertiary);
     painter->drawText(cache.descriptionRect, Qt::AlignCenter | Qt::TextWordWrap, empty->description());
