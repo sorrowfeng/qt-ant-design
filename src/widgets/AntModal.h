@@ -150,8 +150,10 @@ private:
     bool m_maskClosable = true;
     bool m_centered = true;
     int m_dialogWidth = 520;
-    QString m_okText = QStringLiteral("OK");
-    QString m_cancelText = QStringLiteral("Cancel");
+    QString m_okText;
+    QString m_cancelText;
+    bool m_okTextCustomized = false;
+    bool m_cancelTextCustomized = false;
     bool m_showCancel = true;
     Ant::IconType m_commandIconType = Ant::IconType::None;
     QPointer<QWidget> m_hostWidget;

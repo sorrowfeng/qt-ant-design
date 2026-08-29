@@ -6,6 +6,8 @@
 #include <QClipboard>
 #include <QEvent>
 #include <QFontMetrics>
+#include <QKeyEvent>
+#include <QLineEdit>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPointer>
@@ -276,6 +278,64 @@ void AntTypography::setCopyable(bool copyable)
     Q_EMIT copyableChanged(m_copyable);
 }
 
+bool AntTypography::isEditable() const { return m_editable; }
+
+void AntTypography::setEditable(bool editable)
+{
+    if (m_editable == editable)
+    {
+        return;
+    }
+    m_editable = editable;
+    if (!m_editable)
+    {
+        finishEditing(false);
+    }
+    updateInteractionCursor();
+    update();
+    Q_EMIT editableChanged(m_editable);
+}
+
+bool AntTypography::isEditing() const { return m_editor && m_editor->isVisibleTo(const_cast<AntTypography*>(this)); }
+
+void AntTypography::startEditing()
+{
+    if (!m_editable || isEditing() || m_text.isEmpty())
+    {
+        return;
+    }
+    if (!m_editor)
+    {
+        m_editor = new QLineEdit(this);
+        m_editor->setFrame(false);
+        m_editor->setAttribute(Qt::WA_TranslucentBackground);
+        connect(m_editor, &QLineEdit::returnPressed, this, [this]() { finishEditing(true); });
+    }
+    m_editor->setText(m_text);
+    m_editor->setFont(createFont());
+    m_editor->setGeometry(rect().adjusted(0, 0, 0, 0));
+    m_editor->selectAll();
+    m_editor->show();
+    m_editor->setFocus(Qt::MouseFocusReason);
+    m_editor->installEventFilter(this);
+}
+
+void AntTypography::finishEditing(bool commit)
+{
+    if (!isEditing())
+    {
+        return;
+    }
+    const QString newText = m_editor->text();
+    m_editor->hide();
+    m_editor->removeEventFilter(this);
+    if (commit && newText != m_text)
+    {
+        setText(newText);
+        Q_EMIT edited(m_text);
+    }
+}
+
 bool AntTypography::isEllipsis() const { return m_ellipsis; }
 
 void AntTypography::setEllipsis(bool ellipsis)
@@ -490,6 +550,38 @@ void AntTypography::updateSizePolicy()
 void AntTypography::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event)
+}
+
+void AntTypography::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    if (m_editable && event->button() == Qt::LeftButton)
+    {
+        startEditing();
+        event->accept();
+        return;
+    }
+    QWidget::mouseDoubleClickEvent(event);
+}
+
+bool AntTypography::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_editor && m_editor)
+    {
+        if (event->type() == QEvent::KeyPress)
+        {
+            auto* keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_Escape)
+            {
+                finishEditing(false);
+                return true;
+            }
+        }
+        else if (event->type() == QEvent::FocusOut)
+        {
+            finishEditing(true);
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void AntTypography::mousePressEvent(QMouseEvent* event)

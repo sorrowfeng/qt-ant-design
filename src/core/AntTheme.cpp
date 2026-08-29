@@ -80,14 +80,16 @@ int AntTheme::spacingUnit() const { return tokens().sizeUnit; }
 void AntTheme::applyConfiguration(Ant::ThemeMode mode,
                                   const QColor& primaryColor,
                                   int fontSize,
-                                  int borderRadius)
+                                  int borderRadius,
+                                  Ant::ThemeDensity density)
 {
     const int normalizedFontSize = qBound(1, fontSize, Ant::MaximumThemeFontSize);
     const int normalizedBorderRadius = qBound(0, borderRadius, Ant::MaximumThemeBorderRadius);
     const bool modeChanged = m_themeMode != mode;
     const bool tokensChanged = m_primaryColorOverride != primaryColor ||
                                m_fontSizeOverride != normalizedFontSize ||
-                               m_borderRadiusOverride != normalizedBorderRadius;
+                               m_borderRadiusOverride != normalizedBorderRadius ||
+                               m_densityOverride != density;
     if (!modeChanged && !tokensChanged)
     {
         return;
@@ -102,6 +104,7 @@ void AntTheme::applyConfiguration(Ant::ThemeMode mode,
     m_primaryColorOverride = primaryColor;
     m_fontSizeOverride = normalizedFontSize;
     m_borderRadiusOverride = normalizedBorderRadius;
+    m_densityOverride = density;
     if (tokensChanged)
     {
         rebuildTokens();
@@ -113,6 +116,67 @@ void AntTheme::applyConfiguration(Ant::ThemeMode mode,
         Q_EMIT themeModeChanged(m_themeMode);
     }
     Q_EMIT themeChanged();
+}
+
+void AntTheme::setComponentToken(const QString& component, const QString& token, const QVariant& value)
+{
+    if (component.isEmpty() || token.isEmpty())
+    {
+        return;
+    }
+    const QString key = component + QLatin1Char('.') + token;
+    const QVariant existing = m_componentTokens.value(key);
+    if (existing.isValid() && existing == value)
+    {
+        return;
+    }
+    Q_EMIT themeAboutToChange();
+    m_componentTokens.insert(key, value);
+    Q_EMIT themeChanged();
+}
+
+QVariant AntTheme::componentToken(const QString& component, const QString& token) const
+{
+    return m_componentTokens.value(component + QLatin1Char('.') + token);
+}
+
+void AntTheme::clearComponentTokens(const QString& component)
+{
+    if (component.isEmpty())
+    {
+        if (m_componentTokens.isEmpty())
+        {
+            return;
+        }
+        Q_EMIT themeAboutToChange();
+        m_componentTokens.clear();
+        Q_EMIT themeChanged();
+        return;
+    }
+    const QString prefix = component + QLatin1Char('.');
+    bool removed = false;
+    for (auto it = m_componentTokens.begin(); it != m_componentTokens.end();)
+    {
+        if (it.key().startsWith(prefix))
+        {
+            it = m_componentTokens.erase(it);
+            removed = true;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    if (removed)
+    {
+        Q_EMIT themeAboutToChange();
+        Q_EMIT themeChanged();
+    }
+}
+
+QStringList AntTheme::componentTokenKeys() const
+{
+    return m_componentTokens.keys();
 }
 
 QColor AntTheme::hoverColor(const QColor& base) const
@@ -353,7 +417,8 @@ void AntTheme::applyTokenOverrides(AntThemeTokens& tokens,
                                    Ant::ThemeMode mode,
                                    const QColor& primaryColor,
                                    int fontSize,
-                                   int borderRadius)
+                                   int borderRadius,
+                                   Ant::ThemeDensity density)
 {
     if (primaryColor.isValid())
     {
@@ -379,6 +444,26 @@ void AntTheme::applyTokenOverrides(AntThemeTokens& tokens,
     tokens.borderRadiusSM = qMax(0, borderRadius - 2);
     tokens.borderRadiusLG = borderRadius + 2;
     tokens.borderRadiusXS = qMax(0, borderRadius - 4);
+
+    if (density == Ant::ThemeDensity::Compact)
+    {
+        // 对应上游 compactAlgorithm：控件高度 -4，间距系 token 收缩到 75%。
+        tokens.controlHeight = qMax(20, tokens.controlHeight - 4);
+        tokens.controlHeightSM = qMax(16, tokens.controlHeightSM - 4);
+        tokens.controlHeightLG = qMax(24, tokens.controlHeightLG - 4);
+
+        auto scale = [](int v) { return qMax(2, qRound(v * 0.75)); };
+        tokens.paddingXS = scale(tokens.paddingXS);
+        tokens.paddingSM = scale(tokens.paddingSM);
+        tokens.padding = scale(tokens.padding);
+        tokens.paddingMD = scale(tokens.paddingMD);
+        tokens.paddingLG = scale(tokens.paddingLG);
+        tokens.paddingXL = scale(tokens.paddingXL);
+        tokens.marginXS = scale(tokens.marginXS);
+        tokens.marginSM = scale(tokens.marginSM);
+        tokens.margin = scale(tokens.margin);
+        tokens.marginLG = scale(tokens.marginLG);
+    }
 }
 
 void AntTheme::rebuildTokens()
@@ -389,10 +474,12 @@ void AntTheme::rebuildTokens()
                         Ant::ThemeMode::Default,
                         m_primaryColorOverride,
                         m_fontSizeOverride,
-                        m_borderRadiusOverride);
+                        m_borderRadiusOverride,
+                        m_densityOverride);
     applyTokenOverrides(m_darkTokens,
                         Ant::ThemeMode::Dark,
                         m_primaryColorOverride,
                         m_fontSizeOverride,
-                        m_borderRadiusOverride);
+                        m_borderRadiusOverride,
+                        m_densityOverride);
 }

@@ -1006,6 +1006,50 @@ void TestAntQtExtensions::configProvider()
     antTheme->applyConfiguration(Ant::ThemeMode::Default, QColor(), Ant::FontSize, Ant::BorderRadius);
     QCOMPARE(antTheme->tokens().fontSize, Ant::FontSize);
     QCOMPARE(antTheme->tokens().borderRadius, Ant::BorderRadius);
+
+    // density：compact 收紧控件高度与间距 token
+    QCOMPARE(provider.density(), Ant::ThemeDensity::Default);
+    QSignalSpy densitySpy(&provider, &AntConfigProvider::densityChanged);
+    provider.setDensity(Ant::ThemeDensity::Compact);
+    QCOMPARE(provider.density(), Ant::ThemeDensity::Compact);
+    QCOMPARE(densitySpy.count(), 1);
+    const int defaultControlHeight = antTheme->tokens().controlHeight;
+    provider.apply();
+    QCOMPARE(antTheme->density(), Ant::ThemeDensity::Compact);
+    QCOMPARE(antTheme->tokens().controlHeight, defaultControlHeight - 4);
+    QCOMPARE(antTheme->tokens().padding, qMax(2, qRound(16 * 0.75)));
+    QCOMPARE(antTheme->tokens(Ant::ThemeMode::Dark).controlHeight, defaultControlHeight - 4);
+    provider.setDensity(Ant::ThemeDensity::Default);
+    provider.apply();
+    QCOMPARE(antTheme->tokens().controlHeight, defaultControlHeight);
+
+    // direction：apply() 写入 QApplication 布局方向
+    QCOMPARE(provider.direction(), Qt::LeftToRight);
+    QSignalSpy directionSpy(&provider, &AntConfigProvider::directionChanged);
+    provider.setDirection(Qt::RightToLeft);
+    QCOMPARE(provider.direction(), Qt::RightToLeft);
+    QCOMPARE(directionSpy.count(), 1);
+    provider.apply();
+    QCOMPARE(QApplication::layoutDirection(), Qt::RightToLeft);
+    provider.setDirection(Qt::LeftToRight);
+    provider.apply();
+    QCOMPARE(QApplication::layoutDirection(), Qt::LeftToRight);
+
+    // 组件级 token 覆盖：设置/读取/清除并触发主题生命周期信号
+    QSignalSpy aboutSpy(antTheme, &AntTheme::themeAboutToChange);
+    QSignalSpy changedSpy(antTheme, &AntTheme::themeChanged);
+    antTheme->setComponentToken(QStringLiteral("Button"), QStringLiteral("borderRadius"), 2);
+    QCOMPARE(antTheme->componentToken(QStringLiteral("Button"), QStringLiteral("borderRadius")).toInt(), 2);
+    QVERIFY(antTheme->componentTokenKeys().contains(QStringLiteral("Button.borderRadius")));
+    QCOMPARE(aboutSpy.count(), 1);
+    QCOMPARE(changedSpy.count(), 1);
+    antTheme->setComponentToken(QStringLiteral("Button"), QStringLiteral("borderRadius"), 2);
+    QCOMPARE(changedSpy.count(), 1);
+    antTheme->clearComponentTokens(QStringLiteral("Button"));
+    QVERIFY(!antTheme->componentToken(QStringLiteral("Button"), QStringLiteral("borderRadius")).isValid());
+    QCOMPARE(changedSpy.count(), 2);
+    antTheme->clearComponentTokens();
+    QCOMPARE(changedSpy.count(), 2);
 }
 
 void TestAntQtExtensions::formItem()

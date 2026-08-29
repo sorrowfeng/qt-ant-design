@@ -36,6 +36,7 @@
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDescriptions.h"
 #include "widgets/AntDialog.h"
+#include "widgets/AntBorderBeam.h"
 #include "widgets/AntDivider.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
@@ -54,6 +55,7 @@
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntLayout.h"
 #include "widgets/AntList.h"
+#include "widgets/AntListy.h"
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
 #include "widgets/AntMentions.h"
@@ -149,7 +151,8 @@ QList<ObjectCase> objectCases()
         {"AntDescriptionsItem", [](QWidget* parent) { return new AntDescriptionsItem(parent); }},
         {"AntDescriptions", [](QWidget* parent) { return new AntDescriptions(parent); }},
         {"AntDialog", [](QWidget* parent) { return new AntDialog(parent); }},
-        {"AntDivider", [](QWidget* parent) { return new AntDivider(parent); }},
+                {"AntDivider", [](QWidget* parent) { return new AntDivider(parent); }},
+        {"AntBorderBeam", [](QWidget* parent) { return new AntBorderBeam(parent); }},
         {"AntDockManager", [](QWidget* parent) { return new AntDockManager(parent); }},
         {"AntDockWidget", [](QWidget* parent) { return new AntDockWidget(parent); }},
         {"AntDrawer", [](QWidget* parent) { return new AntDrawer(parent); }},
@@ -181,6 +184,7 @@ QList<ObjectCase> objectCases()
         {"AntListItemMeta", [](QWidget* parent) { return new AntListItemMeta(parent); }},
         {"AntListItem", [](QWidget* parent) { return new AntListItem(parent); }},
         {"AntList", [](QWidget* parent) { return new AntList(parent); }},
+        {"AntListy", [](QWidget* parent) { return new AntListy(parent); }},
         {"AntLog", [](QWidget* parent) { return new AntLog(parent); }},
         {"AntMasonry", [](QWidget* parent) { return new AntMasonry(parent); }},
         {"AntMentions", [](QWidget* parent) { return new AntMentions(parent); }},

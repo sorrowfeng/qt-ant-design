@@ -2,6 +2,7 @@
 
 #include "core/AntTheme.h"
 
+#include <QApplication>
 #include <QTimer>
 
 AntConfigProvider::AntConfigProvider(QObject* parent)
@@ -49,9 +50,31 @@ void AntConfigProvider::setBorderRadius(int radius)
 
 int AntConfigProvider::revision() const { return m_revision; }
 
+Ant::ThemeDensity AntConfigProvider::density() const { return m_density; }
+void AntConfigProvider::setDensity(Ant::ThemeDensity density)
+{
+    if (m_density == density) return;
+    m_density = density;
+    Q_EMIT densityChanged(m_density);
+    scheduleConfigChanged();
+}
+
+Qt::LayoutDirection AntConfigProvider::direction() const { return m_direction; }
+void AntConfigProvider::setDirection(Qt::LayoutDirection direction)
+{
+    if (m_direction == direction) return;
+    m_direction = direction;
+    Q_EMIT directionChanged(m_direction);
+    scheduleConfigChanged();
+}
+
 void AntConfigProvider::apply()
 {
-    antTheme->applyConfiguration(m_themeMode, m_primaryColor, m_fontSize, m_borderRadius);
+    antTheme->applyConfiguration(m_themeMode, m_primaryColor, m_fontSize, m_borderRadius, m_density);
+    if (QApplication* app = qobject_cast<QApplication*>(QCoreApplication::instance()))
+    {
+        app->setLayoutDirection(m_direction);
+    }
 }
 
 void AntConfigProvider::scheduleConfigChanged()

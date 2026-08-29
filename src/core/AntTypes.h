@@ -96,6 +96,22 @@ enum class ThemeMode
 };
 Q_ENUM_NS(ThemeMode)
 
+// 主题密度（对应上游 theme algorithm 的 defaultAlgorithm / compactAlgorithm）。
+enum class ThemeDensity
+{
+    Default,
+    Compact,
+};
+Q_ENUM_NS(ThemeDensity)
+
+// 内建文案语言（对应上游 LocaleProvider 的 locale 包）。
+enum class LocaleLanguage
+{
+    English,
+    ChineseSimplified,
+};
+Q_ENUM_NS(LocaleLanguage)
+
 enum class ButtonType
 {
     Default,
@@ -105,6 +121,14 @@ enum class ButtonType
     Link,
 };
 Q_ENUM_NS(ButtonType)
+
+// 图标相对文本的位置（对应上游 iconPlacement="start|end"）。
+enum class IconPlacement
+{
+    Start,
+    End,
+};
+Q_ENUM_NS(IconPlacement)
 
 enum class ButtonShape
 {

@@ -12,6 +12,7 @@
 
 class QEvent;
 class QMouseEvent;
+class QLineEdit;
 
 class QT_ANT_DESIGN_EXPORT AntTypography : public QWidget
 {
@@ -30,6 +31,7 @@ class QT_ANT_DESIGN_EXPORT AntTypography : public QWidget
     Q_PROPERTY(bool mark READ isMark WRITE setMark NOTIFY markChanged)
     Q_PROPERTY(bool italic READ isItalic WRITE setItalic NOTIFY italicChanged)
     Q_PROPERTY(bool copyable READ isCopyable WRITE setCopyable NOTIFY copyableChanged)
+    Q_PROPERTY(bool editable READ isEditable WRITE setEditable NOTIFY editableChanged)
     Q_PROPERTY(bool ellipsis READ isEllipsis WRITE setEllipsis NOTIFY ellipsisChanged)
     Q_PROPERTY(int ellipsisRows READ ellipsisRows WRITE setEllipsisRows NOTIFY ellipsisRowsChanged)
     Q_PROPERTY(QString href READ href WRITE setHref NOTIFY hrefChanged)
@@ -73,6 +75,12 @@ public:
 
     bool isCopyable() const;
     void setCopyable(bool copyable);
+    // 对应上游 Typography editable：双击进入行内编辑，Enter/失焦提交，Esc 取消。
+    bool isEditable() const;
+    void setEditable(bool editable);
+    bool isEditing() const;
+    void startEditing();
+    void finishEditing(bool commit);
     bool isEllipsis() const;
     void setEllipsis(bool ellipsis);
     int ellipsisRows() const;
@@ -110,6 +118,8 @@ Q_SIGNALS:
     void markChanged(bool mark);
     void italicChanged(bool italic);
     void copyableChanged(bool copyable);
+    void editableChanged(bool editable);
+    void edited(const QString& text);
     void ellipsisChanged(bool ellipsis);
     void ellipsisRowsChanged(int rows);
     void hrefChanged(const QString& href);
@@ -121,11 +131,13 @@ Q_SIGNALS:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void changeEvent(QEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     friend class AntTypographyStyle;
@@ -156,6 +168,7 @@ private:
     bool m_mark = false;
     bool m_italic = false;
     bool m_copyable = false;
+    bool m_editable = false;
     bool m_ellipsis = false;
     int m_ellipsisRows = 1;
     int m_pixelSize = -1;
@@ -165,6 +178,7 @@ private:
     bool m_copied = false;
     bool m_pressed = false;
     QString m_href;
+    QPointer<QLineEdit> m_editor;
 
     mutable bool m_measuredSizeCacheValid = false;
     mutable int m_measuredSizeCacheWidth = 0;

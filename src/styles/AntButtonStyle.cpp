@@ -54,6 +54,12 @@ ButtonMetrics metricsFor(const AntButton* button)
         m.iconSize = 14;
         break;
     }
+    // 组件级 token 覆盖（theme.components.Button.borderRadius）
+    const QVariant radiusOverride = antTheme->componentToken(QStringLiteral("Button"), QStringLiteral("borderRadius"));
+    if (radiusOverride.isValid())
+    {
+        m.radius = qMax(0, radiusOverride.toInt());
+    }
     return m;
 }
 
@@ -313,7 +319,8 @@ void AntButtonStyle::drawButton(const QStyleOption* option, QPainter* painter, c
     else if (button->buttonIconType() != Ant::IconType::None)
     {
         QRectF iconRect;
-        const bool trailingIcon = button->buttonIconType() == Ant::IconType::Down && !button->text().isEmpty();
+        const bool trailingIcon = (button->iconPlacement() == Ant::IconPlacement::End ||
+                                   button->buttonIconType() == Ant::IconType::Down) && !button->text().isEmpty();
         if (button->text().isEmpty())
         {
             iconRect = QRectF(outer.center().x() - m.iconSize / 2.0, outer.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);

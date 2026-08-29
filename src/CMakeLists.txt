@@ -2,6 +2,7 @@ set(QT_ANT_DESIGN_HEADERS
     core/AntCompat.h
     core/AntDesign.h
     core/AntFont.h
+    core/AntLocale.h
     core/AntPopupMotion.h
     core/AntQRGenerator.h
     core/AntSpinner.h
@@ -20,6 +21,7 @@ set(QT_ANT_DESIGN_HEADERS
     styles/AntAutoCompleteStyle.h
     styles/AntAvatarStyle.h
     styles/AntBadgeStyle.h
+    styles/AntBorderBeamStyle.h
     styles/AntBreadcrumbStyle.h
     styles/AntButtonStyle.h
     styles/AntCalendarStyle.h
@@ -94,6 +96,7 @@ set(QT_ANT_DESIGN_HEADERS
     widgets/AntAutoComplete.h
     widgets/AntAvatar.h
     widgets/AntBadge.h
+    widgets/AntBorderBeam.h
     widgets/AntBreadcrumb.h
     widgets/AntButton.h
     widgets/AntCalendar.h
@@ -133,6 +136,7 @@ set(QT_ANT_DESIGN_HEADERS
     widgets/AntList.h
     widgets/AntListView.h
     widgets/AntListWidget.h
+    widgets/AntListy.h
     widgets/AntLog.h
     widgets/AntMainWindow.h
     widgets/AntMasonry.h
@@ -214,6 +218,7 @@ endif()
 set(QT_ANT_DESIGN_SOURCES
     core/AntDesign.cpp
     core/AntFont.cpp
+    core/AntLocale.cpp
     core/AntPopupMotion.cpp
     core/AntQRGenerator.cpp
     core/AntSpinner.cpp
@@ -229,6 +234,7 @@ set(QT_ANT_DESIGN_SOURCES
     styles/AntAutoCompleteStyle.cpp
     styles/AntAvatarStyle.cpp
     styles/AntBadgeStyle.cpp
+    styles/AntBorderBeamStyle.cpp
     styles/AntBreadcrumbStyle.cpp
     styles/AntButtonStyle.cpp
     styles/AntCalendarStyle.cpp
@@ -301,6 +307,7 @@ set(QT_ANT_DESIGN_SOURCES
     widgets/AntAutoComplete.cpp
     widgets/AntAvatar.cpp
     widgets/AntBadge.cpp
+    widgets/AntBorderBeam.cpp
     widgets/AntBreadcrumb.cpp
     widgets/AntButton.cpp
     widgets/AntCalendar.cpp
@@ -332,6 +339,7 @@ set(QT_ANT_DESIGN_SOURCES
     widgets/AntInputNumber.cpp
     widgets/AntLayout.cpp
     widgets/AntList.cpp
+    widgets/AntListy.cpp
     widgets/AntLog.cpp
     widgets/AntMasonry.cpp
     widgets/AntMentions.cpp

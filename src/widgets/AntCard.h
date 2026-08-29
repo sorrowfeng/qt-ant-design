@@ -25,6 +25,7 @@ class QT_ANT_DESIGN_EXPORT AntCard : public QFrame
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
     Q_PROPERTY(QString extra READ extra WRITE setExtra NOTIFY extraChanged)
     Q_PROPERTY(bool bordered READ isBordered WRITE setBordered NOTIFY borderedChanged)
+    Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
     Q_PROPERTY(bool hoverable READ isHoverable WRITE setHoverable NOTIFY hoverableChanged)
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
     Q_PROPERTY(Ant::CardSize cardSize READ cardSize WRITE setCardSize NOTIFY cardSizeChanged)
@@ -39,6 +40,10 @@ public:
     void setExtra(const QString& extra);
     bool isBordered() const;
     void setBordered(bool bordered);
+    // 对应上游 v6 的 variant 语义：Outlined（带边框）/ Borderless（无边框）。
+    // bordered 属性保留为兼容别名。
+    Ant::Variant variant() const;
+    void setVariant(Ant::Variant variant);
     bool isHoverable() const;
     void setHoverable(bool hoverable);
     bool isLoading() const;
@@ -66,6 +71,7 @@ Q_SIGNALS:
     void titleChanged(const QString& title);
     void extraChanged(const QString& extra);
     void borderedChanged(bool bordered);
+    void variantChanged(Ant::Variant variant);
     void hoverableChanged(bool hoverable);
     void loadingChanged(bool loading);
     void cardSizeChanged(Ant::CardSize size);

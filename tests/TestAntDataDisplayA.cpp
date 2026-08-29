@@ -132,6 +132,15 @@ void TestAntDataDisplayA::propertiesAndSignals()
     QCOMPARE(c->isBordered(), false);
     QCOMPARE(borderSpy.count(), 1);
 
+    // variant 别名（上游 v6）：Borderless 等价于 bordered=false
+    QCOMPARE(c->variant(), Ant::Variant::Borderless);
+    QSignalSpy variantSpy(c, &AntCard::variantChanged);
+    c->setVariant(Ant::Variant::Outlined);
+    QCOMPARE(c->variant(), Ant::Variant::Outlined);
+    QCOMPARE(c->isBordered(), true);
+    QCOMPARE(variantSpy.count(), 1);
+    QCOMPARE(borderSpy.count(), 2);
+
     QSignalSpy hoverSpy(c, &AntCard::hoverableChanged);
     c->setHoverable(true);
     QCOMPARE(c->isHoverable(), true);

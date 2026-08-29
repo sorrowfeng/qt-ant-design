@@ -134,6 +134,23 @@ void AntCard::setBordered(bool bordered)
     Q_EMIT borderedChanged(m_bordered);
 }
 
+Ant::Variant AntCard::variant() const
+{
+    return m_bordered ? Ant::Variant::Outlined : Ant::Variant::Borderless;
+}
+
+void AntCard::setVariant(Ant::Variant variant)
+{
+    const bool bordered = variant != Ant::Variant::Borderless;
+    if (m_bordered == bordered)
+        return;
+    m_bordered = bordered;
+    invalidateCardPaintCache();
+    requestCardUpdate(rect(), QStringLiteral("variant"));
+    Q_EMIT variantChanged(variant);
+    Q_EMIT borderedChanged(m_bordered);
+}
+
 bool AntCard::isHoverable() const { return m_hoverable; }
 
 void AntCard::setHoverable(bool hoverable)

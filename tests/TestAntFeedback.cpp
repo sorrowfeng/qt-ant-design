@@ -9,11 +9,13 @@
 
 #include <limits>
 
+#include "core/AntLocale.h"
 #include "core/AntTheme.h"
 #include "widgets/AntAlert.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntDrawer.h"
 #include "widgets/AntMessage.h"
+#include "widgets/AntModal.h"
 #include "widgets/AntNotification.h"
 #include "widgets/AntPopconfirm.h"
 #include "widgets/AntPopover.h"
@@ -79,6 +81,7 @@ private slots:
     void tooltipCachesLayoutAndSkipsPlacementWork();
     void tour();
     void tourCachesTargetAndTooltipGeometry();
+    void localeBuiltInTextsFollowLanguage();
 };
 
 void TestAntFeedback::alert()
@@ -1508,6 +1511,43 @@ void TestAntFeedback::tourCachesTargetAndTooltipGeometry()
     QCOMPARE(tour->property("antTourCurrentIndex").toInt(), 1);
 
     tour->close();
+}
+
+void TestAntFeedback::localeBuiltInTextsFollowLanguage()
+{
+    const Ant::LocaleLanguage original = antLocale->language();
+    antLocale->setLanguage(Ant::LocaleLanguage::English);
+
+    QCOMPARE(antLocale->text(QStringLiteral("Modal.okText")), QStringLiteral("OK"));
+    QCOMPARE(antLocale->text(QStringLiteral("Popconfirm.cancelText")), QStringLiteral("Cancel"));
+    QVERIFY(!antLocale->keys().isEmpty());
+
+    QSignalSpy languageSpy(antLocale, &AntLocale::languageChanged);
+    antLocale->setLanguage(Ant::LocaleLanguage::ChineseSimplified);
+    QCOMPARE(antLocale->language(), Ant::LocaleLanguage::ChineseSimplified);
+    QCOMPARE(languageSpy.count(), 1);
+    QCOMPARE(antLocale->text(QStringLiteral("Modal.okText")), QStringLiteral("确定"));
+    QCOMPARE(antLocale->text(QStringLiteral("Modal.cancelText")), QStringLiteral("取消"));
+
+    // 新实例的默认文案跟随当前语言
+    AntModal modal;
+    QCOMPARE(modal.okText(), QStringLiteral("确定"));
+    QCOMPARE(modal.cancelText(), QStringLiteral("取消"));
+    AntPopconfirm popconfirm;
+    QCOMPARE(popconfirm.okText(), QStringLiteral("确定"));
+
+    // 已存在且未被用户覆盖的实例跟随语言切换
+    antLocale->setLanguage(Ant::LocaleLanguage::English);
+    QCOMPARE(modal.okText(), QStringLiteral("OK"));
+    QCOMPARE(popconfirm.cancelText(), QStringLiteral("Cancel"));
+
+    // 用户显式覆盖后不跟随
+    modal.setOkText(QStringLiteral("Custom"));
+    antLocale->setLanguage(Ant::LocaleLanguage::ChineseSimplified);
+    QCOMPARE(modal.okText(), QStringLiteral("Custom"));
+    QCOMPARE(modal.cancelText(), QStringLiteral("取消"));
+
+    antLocale->setLanguage(original);
 }
 
 QTEST_MAIN(TestAntFeedback)

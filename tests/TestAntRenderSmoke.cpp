@@ -50,6 +50,7 @@
 #include "widgets/AntDatePicker.h"
 #include "widgets/AntDescriptions.h"
 #include "widgets/AntDialog.h"
+#include "widgets/AntBorderBeam.h"
 #include "widgets/AntDivider.h"
 #include "widgets/AntDockManager.h"
 #include "widgets/AntDockWidget.h"
@@ -68,6 +69,7 @@
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntLayout.h"
 #include "widgets/AntList.h"
+#include "widgets/AntListy.h"
 #include "widgets/AntLog.h"
 #include "widgets/AntMasonry.h"
 #include "widgets/AntMentions.h"
@@ -301,7 +303,8 @@ QList<RenderCase> renderCases()
              layout->setContentsMargins(20, 16, 20, 16);
              layout->addWidget(new AntTypography(QStringLiteral("Dialog body"), dialog->contentWidget()));
          }, QSize(320, 180)},
-        {"AntDivider", [](QWidget* p) { return new AntDivider(QStringLiteral("OR"), p); }, nullptr},
+                {"AntDivider", [](QWidget* p) { return new AntDivider(QStringLiteral("OR"), p); }, nullptr},
+        {"AntBorderBeam", [](QWidget* p) { return new AntBorderBeam(p); }, nullptr},
         {"AntDockManager", [](QWidget* p) { return new AntDockManager(p); }, [](QWidget* w) {
              auto* manager = qobject_cast<AntDockManager*>(w);
              auto* left = new AntDockWidget(QStringLiteral("Explorer"));
@@ -393,6 +396,9 @@ QList<RenderCase> renderCases()
              auto* item = new AntListItem;
              item->setContentWidget(new QLabel(QStringLiteral("List item")));
              list->addItem(item);
+         }, QSize(300, 120)},
+        {"AntListy", [](QWidget* p) { return new AntListy(p); }, [](QWidget* w) {
+             qobject_cast<AntListy*>(w)->addItem(QStringLiteral("Listy item"));
          }, QSize(300, 120)},
         {"AntLog", [](QWidget* p) { return new AntLog(p); }, [](QWidget* w) {
              qobject_cast<AntLog*>(w)->info(QStringLiteral("Render smoke"));

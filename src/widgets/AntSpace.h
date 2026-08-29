@@ -18,6 +18,7 @@ class QT_ANT_DESIGN_EXPORT AntSpace : public QWidget
     Q_PROPERTY(Ant::Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
     Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(bool wrap READ isWrap WRITE setWrap NOTIFY wrapChanged)
+    Q_PROPERTY(bool compact READ isCompact WRITE setCompact NOTIFY compactChanged)
 
 public:
     explicit AntSpace(QWidget* parent = nullptr);
@@ -33,6 +34,11 @@ public:
 
     bool isWrap() const;
     void setWrap(bool wrap);
+
+    // Space.Compact：紧凑模式强制间距为 0，用于拼接按钮/输入框等组合控件
+    //（对应上游 Button.Group 废弃后的替代形态）。
+    bool isCompact() const;
+    void setCompact(bool compact);
 
     Qt::Alignment alignment() const;
     void setAlignment(Qt::Alignment alignment);
@@ -54,6 +60,7 @@ Q_SIGNALS:
     void orientationChanged(Ant::Orientation orientation);
     void sizeChanged(Ant::Size size);
     void wrapChanged(bool wrap);
+    void compactChanged(bool compact);
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -75,6 +82,7 @@ private:
     Ant::Size m_size = Ant::Size::Small;
     int m_customSpacing = -1;
     bool m_wrap = false;
+    bool m_compact = false;
     Qt::Alignment m_alignment = Qt::Alignment();
     QVector<QPointer<QWidget>> m_items;
     QPointer<QWidget> m_separator;

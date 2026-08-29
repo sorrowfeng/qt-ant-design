@@ -55,6 +55,12 @@ void TestAntButton::propertiesAndSignals()
     QCOMPARE(btn->isBlock(), true);
     QCOMPARE(blockSpy.count(), 1);
 
+    QCOMPARE(btn->iconPlacement(), Ant::IconPlacement::Start);
+    QSignalSpy placementSpy(btn, &AntButton::iconPlacementChanged);
+    btn->setIconPlacement(Ant::IconPlacement::End);
+    QCOMPARE(btn->iconPlacement(), Ant::IconPlacement::End);
+    QCOMPARE(placementSpy.count(), 1);
+
     QSignalSpy loadingSpy(btn, &AntButton::loadingChanged);
     btn->setLoading(true);
     QCOMPARE(btn->isLoading(), true);
