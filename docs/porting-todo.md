@@ -2,7 +2,7 @@
 
 > 生成日期：2026-08-29（dev 分支）
 > 上游基线：`antd@6.6.2`、`@ant-design/icons@6.3.2`、`@ant-design/icons-svg@4.5.0`
-> 当前仓库：`v0.1.2`，89 个公开组件（70/70 Ant Design v5 标准组件），内置 `@ant-design/icons-svg@4.4.2` 共 831 个 SVG
+> 当前仓库：`v0.1.2`，91 个公开组件（70/70 Ant Design 标准组件 + v6 新增 `AntBorderBeam`/`AntListy`），内置 `@ant-design/icons-svg@4.5.0` 共 848 个 SVG
 > 参考来源：<https://github.com/ant-design/ant-design>（master）、<https://github.com/ant-design/ant-design-icons>、<https://ant.design/docs/react/migration-v6-cn>
 
 ## 一、新增组件（上游有、本仓库没有）

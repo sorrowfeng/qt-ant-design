@@ -42,7 +42,7 @@
 - 视觉审计状态：可对比的 Ant Design 标准组件均记录为 `Pass`，Qt-only 扩展记录为 `Local Pass`，详情见 `docs/visual-audit.md`
 - README 组件截图画廊：`resources/images/components/` 提交 `176` 张 Light/Dark PNG，覆盖 `88` 个视觉组件条目；`AntDockManager` 通过 DockWidget 示例页展示，弹层/反馈类控件截图使用代表性的打开或激活状态
 - Icon 状态：内置 `848` 个官方 `@ant-design/icons-svg@4.5.0` SVG 资源，清单见 `docs/ant-design-icons.md`
-- 测试状态：当前 Windows 顶层默认配置注册 `51` 个深度/系统 CTest 条目，启用 `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON` 时另有 `104` 个逐控件 smoke 条目（合计 `155`）；`2026-07-16` 最新 Qt6 Debug 全量 `155 / 155` 通过，总耗时 `379.87s`。最终 Qt5 P1/P2 定向矩阵 `5 / 5` 通过，链接到 MSVC ASan 插桩库的 9 个关键目标 `9 / 9` 通过；本地尚未覆盖 UBSan
+- 测试状态：当前 Windows 顶层默认配置注册 `52` 个深度/系统 CTest 条目，启用 `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON` 时另有 `106` 个逐控件 smoke 条目（合计 `158`；`2026-08-29` 新增 `AntBorderBeam`/`AntListy` 后 smoke +2、深度 +1）；`2026-07-16` 最新 Qt6 Debug 全量 `155 / 155` 通过，总耗时 `379.87s`。最终 Qt5 P1/P2 定向矩阵 `5 / 5` 通过，链接到 MSVC ASan 插桩库的 9 个关键目标 `9 / 9` 通过；本地尚未覆盖 UBSan
 - 逐控件可靠性覆盖矩阵：`docs/reliability-coverage.md`，列出 91 个公开组件的专项行为/API、生命周期、Meta 属性、主题切换和渲染烟测覆盖情况
 
 ## P0-P2 代码审计整改（2026-07-16）

@@ -22,6 +22,7 @@ private slots:
     void publicWidgetHeadersAreInBehaviorReliabilityTests();
     void qtCasingWidgetHeadersUseCanonicalNames();
     void qtCasingAliasesDoNotKeepLegacyTypeNames();
+    void smokeEntryCountMatchesDocumentation();
 };
 
 namespace
@@ -172,6 +173,38 @@ void TestAntCoverageInventory::qtCasingAliasesDoNotKeepLegacyTypeNames()
                      qPrintable(QStringLiteral("%1 must not keep legacy type alias %2").arg(it.key(), legacyName)));
         }
     }
+}
+
+void TestAntCoverageInventory::smokeEntryCountMatchesDocumentation()
+{
+    // Count the entries in the CMake smoke list.
+    const QString cmakeText = readTextFile(QStringLiteral(ANT_TESTS_DIR) + QLatin1Char('/') + QStringLiteral("CMakeLists.txt"));
+    QVERIFY2(!cmakeText.isEmpty(), "Could not read tests/CMakeLists.txt");
+
+    const QRegularExpression listPattern(QStringLiteral("set\\(ANT_WIDGET_SMOKE_TESTS([\\s\\S]*?)^\\s*\\)"),
+                                        QRegularExpression::MultilineOption);
+    const QRegularExpressionMatch listMatch = listPattern.match(cmakeText);
+    QVERIFY2(listMatch.hasMatch(), "ANT_WIDGET_SMOKE_TESTS block not found in tests/CMakeLists.txt");
+
+    QStringList entries;
+    const QRegularExpression entryPattern(QStringLiteral("^[ \t]*\"(Ant[^\"]+)\\|"),
+                                         QRegularExpression::MultilineOption);
+    QRegularExpressionMatchIterator entryIt = entryPattern.globalMatch(listMatch.captured(1));
+    while (entryIt.hasNext())
+    {
+        entries.append(entryIt.next().captured(1));
+    }
+    QVERIFY2(!entries.isEmpty(), "No smoke entries parsed from tests/CMakeLists.txt");
+
+    // The documentation must declare the same count so numbers cannot drift.
+    const QDir projectRoot(QDir(QStringLiteral(ANT_WIDGETS_DIR)).absoluteFilePath(QStringLiteral("../..")));
+    const QString docText = readTextFile(projectRoot.absoluteFilePath(QStringLiteral("docs/reliability-coverage.md")));
+    QVERIFY2(!docText.isEmpty(), "Could not read docs/reliability-coverage.md");
+
+    const QRegularExpression docPattern(QStringLiteral("generates `([0-9]+)` `WidgetSmoke\\.<Type>` entries"));
+    const QRegularExpressionMatch docMatch = docPattern.match(docText);
+    QVERIFY2(docMatch.hasMatch(), "docs/reliability-coverage.md does not declare the smoke entry count");
+    QCOMPARE(docMatch.captured(1).toInt(), entries.size());
 }
 
 QTEST_MAIN(TestAntCoverageInventory)
