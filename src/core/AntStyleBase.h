@@ -88,6 +88,17 @@ public:
     // Convenience overload that also forces a weight (e.g. DemiBold titles).
     static QFont withPixelSize(const QFont& base, int pixelSize, QFont::Weight weight);
 
+    // ---- Input-family variant background ----
+    // Resolve the background color for the input family (Input, Select,
+    // Cascader, DatePicker, TimePicker) by variant + interaction state. This
+    // collapses four near-identical widget-side backgroundColor() copies and
+    // keeps the antd "filled reveals container on focus" rule in one place.
+    //   focusRevealsContainer - when true, focus/open reveals colorBgContainer
+    //     (DatePicker/TimePicker); when false, hover toggles between
+    //     colorFillTertiary and colorFillQuaternary (Select/Cascader).
+    static QColor variantBackgroundColor(const AntThemeTokens& token, Ant::Variant variant,
+        bool enabled, bool hovered, bool focusedOrOpen, bool focusRevealsContainer);
+
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;
 

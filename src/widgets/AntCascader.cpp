@@ -463,20 +463,8 @@ QColor AntCascader::borderColor() const
 
 QColor AntCascader::backgroundColor() const
 {
-    const auto& token = antTheme->tokens();
-    if (!isEnabled())
-    {
-        return token.colorBgContainerDisabled;
-    }
-    if (m_variant == Ant::Variant::Filled)
-    {
-        return m_hovered ? token.colorFillTertiary : token.colorFillQuaternary;
-    }
-    if (m_variant == Ant::Variant::Borderless || m_variant == Ant::Variant::Underlined)
-    {
-        return QColor(0, 0, 0, 0);
-    }
-    return token.colorBgContainer;
+    return AntStyleBase::variantBackgroundColor(
+        antTheme->tokens(), m_variant, isEnabled(), m_hovered, false, false);
 }
 
 bool AntCascader::canClear() const

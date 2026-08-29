@@ -1043,22 +1043,8 @@ QColor AntTimePicker::borderColor() const
 
 QColor AntTimePicker::backgroundColor() const
 {
-    const auto& token = antTheme->tokens();
-    if (!isEnabled())
-    {
-        return token.colorBgContainerDisabled;
-    }
-    if (m_variant == Ant::Variant::Filled)
-    {
-        return (hasFocus() || m_open)
-            ? token.colorBgContainer
-            : (m_hovered ? token.colorFillSecondary : token.colorFillTertiary);
-    }
-    if (m_variant == Ant::Variant::Borderless || m_variant == Ant::Variant::Underlined)
-    {
-        return QColor(0, 0, 0, 0);
-    }
-    return token.colorBgContainer;
+    return AntStyleBase::variantBackgroundColor(
+        antTheme->tokens(), m_variant, isEnabled(), m_hovered, hasFocus() || m_open, true);
 }
 
 bool AntTimePicker::canClear() const

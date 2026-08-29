@@ -246,9 +246,7 @@ public:
         setAttribute(Qt::WA_NoSystemBackground, true);
         setAttribute(Qt::WA_TransparentForMouseEvents, true);
         setAttribute(Qt::WA_ShowWithoutActivating, true);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
         setWindowFlag(Qt::WindowTransparentForInput, true);
-#endif
         setFocusPolicy(Qt::NoFocus);
         setProperty("shadowMargin", kNativeFrameShadowMargin);
         setProperty(kDockLegacyShadowClickThroughProperty, false);

@@ -981,20 +981,8 @@ QColor AntSelect::borderColor() const
 
 QColor AntSelect::backgroundColor() const
 {
-    const auto& token = antTheme->tokens();
-    if (!isEnabled())
-    {
-        return token.colorBgContainerDisabled;
-    }
-    if (m_variant == Ant::Variant::Filled)
-    {
-        return m_hovered ? token.colorFillTertiary : token.colorFillQuaternary;
-    }
-    if (m_variant == Ant::Variant::Borderless || m_variant == Ant::Variant::Underlined)
-    {
-        return QColor(0, 0, 0, 0);
-    }
-    return token.colorBgContainer;
+    return AntStyleBase::variantBackgroundColor(
+        antTheme->tokens(), m_variant, isEnabled(), m_hovered, false, false);
 }
 
 void AntSelect::updateEditFieldPalette()
@@ -1012,9 +1000,7 @@ void AntSelect::updateEditFieldPalette()
     palette.setColor(QPalette::WindowText, isEnabled() ? token.colorText : token.colorTextDisabled);
     palette.setColor(QPalette::Highlight, token.colorPrimary);
     palette.setColor(QPalette::HighlightedText, token.colorTextLightSolid);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     palette.setColor(QPalette::PlaceholderText, isEnabled() ? token.colorTextPlaceholder : token.colorTextDisabled);
-#endif
     if (m_editField->palette() != palette)
     {
         m_editField->setPalette(palette);

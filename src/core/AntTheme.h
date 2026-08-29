@@ -65,6 +65,12 @@ struct AntThemeTokens
     QColor colorRateStar;
     // Always-dark menu surface (MenuTheme::Dark is mode-independent).
     QColor colorBgMenuDark;
+    // Hovered item background on the always-dark menu surface.
+    QColor colorBgMenuDarkItemHover;
+    // Standard scrim for tour/modal-style masks (antd colorBgMask, ~45%).
+    QColor colorBgMask;
+    // Heavier scrim for full-screen image preview backdrops (~75%).
+    QColor colorBgMaskHeavy;
     // Typography <mark> highlight background (antd gold-2 in light, dark-gold in dark).
     QColor colorMarkBg;
 

@@ -407,6 +407,10 @@ AntThemeTokens AntTheme::createTokens(Ant::ThemeMode mode)
     // Dark menu background: MenuTheme::Dark renders dark regardless of the
     // global theme mode, so the same value applies to both token sets.
     t.colorBgMenuDark = QColor(0, 21, 41);
+    t.colorBgMenuDarkItemHover = QColor(17, 34, 51);
+    // Scrim masks are identical in light and dark modes (antd colorBgMask).
+    t.colorBgMask = QColor(0, 0, 0, 115);
+    t.colorBgMaskHeavy = QColor(0, 0, 0, 190);
     // Typography <mark> highlight: antd gold-2 in light, dark-gold in dark.
     t.colorMarkBg = dark ? QColor("#211B14") : QColor("#fff1b8");
 

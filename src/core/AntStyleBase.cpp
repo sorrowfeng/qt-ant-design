@@ -72,6 +72,34 @@ QFont AntStyleBase::withPixelSize(const QFont& base, int pixelSize, QFont::Weigh
     return font;
 }
 
+QColor AntStyleBase::variantBackgroundColor(const AntThemeTokens& token, Ant::Variant variant,
+    bool enabled, bool hovered, bool focusedOrOpen, bool focusRevealsContainer)
+{
+    if (!enabled)
+    {
+        return token.colorBgContainerDisabled;
+    }
+    if (variant == Ant::Variant::Filled)
+    {
+        if (focusRevealsContainer && focusedOrOpen)
+        {
+            return token.colorBgContainer;
+        }
+        if (focusRevealsContainer)
+        {
+            // DatePicker/TimePicker filled: secondary on hover, tertiary idle.
+            return hovered ? token.colorFillSecondary : token.colorFillTertiary;
+        }
+        // Select/Cascader filled: tertiary on hover, quaternary idle.
+        return hovered ? token.colorFillTertiary : token.colorFillQuaternary;
+    }
+    if (variant == Ant::Variant::Borderless || variant == Ant::Variant::Underlined)
+    {
+        return Qt::transparent;
+    }
+    return token.colorBgContainer;
+}
+
 void AntStyleBase::polish(QWidget* widget)
 {
     QProxyStyle::polish(widget);

@@ -350,9 +350,7 @@ void AntMentions::applyLineEditTheme()
     QPalette palette = m_lineEdit->palette();
     palette.setColor(QPalette::Base, Qt::transparent);
     palette.setColor(QPalette::Text, token.colorText);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     palette.setColor(QPalette::PlaceholderText, token.colorTextPlaceholder);
-#endif
     if (m_lineEdit->palette() != palette)
     {
         m_lineEdit->setPalette(palette);

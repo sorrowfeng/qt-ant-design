@@ -274,7 +274,7 @@ protected:
         const auto& token = antTheme->tokens();
         QPainter p(this);
         p.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-        p.fillRect(rect(), QColor(0, 0, 0, 115));
+        p.fillRect(rect(), token.colorBgMask);
 
         if (target && target->isVisible() && !spotlightRect.isEmpty())
         {

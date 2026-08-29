@@ -127,7 +127,7 @@ protected:
         const auto& token = antTheme->tokens();
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
-        p.fillRect(rect(), QColor(0, 0, 0, 190));
+        p.fillRect(rect(), token.colorBgMaskHeavy);
         p.setPen(QPen(token.colorBorderSecondary, 1));
         p.setBrush(token.colorBgElevated);
         p.drawRoundedRect(rect().adjusted(8, 8, -8, -8), 8, 8);
@@ -445,7 +445,7 @@ QPixmap AntImage::cachedPreviewOverlayPixmap(qreal devicePixelRatio, const QSize
     const auto& token = antTheme->tokens();
     const qreal dpr = qMax<qreal>(1.0, devicePixelRatio);
     const QSize logicalSize(qMax(1, targetSize.width()), qMax(1, targetSize.height()));
-    const QColor overlayColor(0, 0, 0, 115);
+    const QColor overlayColor = token.colorBgMask;
     QFont overlayFont = font();
     overlayFont.setPixelSize(token.fontSize);
     const QString fontKey = overlayFont.key();
