@@ -258,6 +258,73 @@ int AntNav::count() const
     return m_entries.size();
 }
 
+QString AntNav::filterText() const
+{
+    return m_filterText;
+}
+
+void AntNav::setFilterText(const QString& text)
+{
+    const QString normalized = text.trimmed();
+    if (normalized == m_filterText)
+    {
+        return;
+    }
+    m_filterText = normalized;
+
+    const QString needle = normalized.toLower();
+    const bool filtering = !needle.isEmpty();
+
+    // Walk the layout in order. Category headers (AntTypography) and items
+    // (AntNavItem) are interleaved; a header stays visible only when at least
+    // one of its following items survives the filter. The trailing stretch is
+    // always the last entry and is left alone.
+    int visibleItemsSinceHeader = -1; // -1 = no header seen yet
+    QWidget* lastHeader = nullptr;
+
+    const int layoutCount = m_navLayout->count();
+    for (int i = 0; i < layoutCount; ++i)
+    {
+        QLayoutItem* layoutItem = m_navLayout->itemAt(i);
+        QWidget* widget = layoutItem ? layoutItem->widget() : nullptr;
+        if (!widget)
+        {
+            continue; // stretch or spacer
+        }
+
+        auto* navItem = qobject_cast<AntNavItem*>(widget);
+        if (navItem)
+        {
+            const bool matches = !filtering || navItem->text().toLower().contains(needle);
+            navItem->setVisible(matches);
+            if (visibleItemsSinceHeader < 0)
+            {
+                // Items without a preceding header are always shown/kept.
+                continue;
+            }
+            if (matches)
+            {
+                ++visibleItemsSinceHeader;
+            }
+            continue;
+        }
+
+        // Anything that is not an AntNavItem is treated as a category header.
+        // Finalize the previous header's visibility before tracking this one.
+        if (lastHeader)
+        {
+            lastHeader->setVisible(!filtering || visibleItemsSinceHeader > 0);
+        }
+        lastHeader = widget;
+        visibleItemsSinceHeader = 0;
+    }
+
+    if (lastHeader)
+    {
+        lastHeader->setVisible(!filtering || visibleItemsSinceHeader > 0);
+    }
+}
+
 AntNavItem* AntNav::item(int index) const
 {
     if (index < 0 || index >= m_entries.size())

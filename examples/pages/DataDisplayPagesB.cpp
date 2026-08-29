@@ -205,16 +205,25 @@ QWidget* createTablePage(QWidget* /*owner*/)
     layout->setContentsMargins(32, 24, 32, 24);
     layout->setSpacing(16);
 
-    QVector<AntTableRow> rows;
-    rows.push_back({{{QStringLiteral("name"), QStringLiteral("John")},
-                     {QStringLiteral("age"), 28},
-                     {QStringLiteral("address"), QStringLiteral("New York")}}});
-    rows.push_back({{{QStringLiteral("name"), QStringLiteral("Jane")},
-                     {QStringLiteral("age"), 32},
-                     {QStringLiteral("address"), QStringLiteral("London")}}});
-    rows.push_back({{{QStringLiteral("name"), QStringLiteral("Joe")},
-                     {QStringLiteral("age"), 24},
-                     {QStringLiteral("address"), QStringLiteral("Sydney")}}});
+    auto makeRows = [](int count) {
+        static const char* const kNames[] = {
+            "John", "Jane", "Joe", "Jill", "Jack", "Jenny", "Jim", "Julia",
+            "Jacob", "Jasmine", "Jerry", "Joyce", "Jared", "Jade", "Jonas",
+        };
+        static const char* const kCities[] = {
+            "New York", "London", "Sydney", "Tokyo", "Paris", "Berlin",
+            "Toronto", "Seoul", "Shanghai", "Singapore", "Dubai", "Rome",
+            "Madrid", "Vienna", "Oslo",
+        };
+        QVector<AntTableRow> rows;
+        for (int i = 0; i < count; ++i)
+        {
+            rows.push_back({{{QStringLiteral("name"), QString::fromLatin1(kNames[i % 15])},
+                             {QStringLiteral("age"), 20 + (i % 30)},
+                             {QStringLiteral("address"), QString::fromLatin1(kCities[i % 15])}}});
+        }
+        return rows;
+    };
 
     {
         auto* card = new AntCard(QStringLiteral("Basic"));
@@ -227,7 +236,48 @@ QWidget* createTablePage(QWidget* /*owner*/)
         ageColumn.sorter = true;
         table->addColumn(ageColumn);
         table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 320});
-        table->setRows(rows);
+        table->setRows(makeRows(3));
+        cl->addWidget(table);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("Row selection"));
+        auto* cl = card->bodyLayout();
+
+        auto* table = new AntTable(page);
+        table->setRowSelection(Ant::TableSelectionMode::Checkbox);
+        table->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 240});
+        table->addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 200});
+        table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 280});
+        table->setRows(makeRows(5));
+
+        auto* hint = new AntTypography(QStringLiteral("Selected: none"), page);
+        hint->setType(Ant::TypographyType::Secondary);
+        QObject::connect(table, &AntTable::selectionChanged, hint,
+                         [hint](const QStringList& keys) {
+                             hint->setText(QStringLiteral("Selected: %1")
+                                               .arg(keys.isEmpty()
+                                                        ? QStringLiteral("none")
+                                                        : keys.join(QStringLiteral(", "))));
+                         });
+        cl->addWidget(table);
+        cl->addSpacing(8);
+        cl->addWidget(hint);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("Pagination & border"));
+        auto* cl = card->bodyLayout();
+
+        auto* table = new AntTable(page);
+        table->setBordered(true);
+        table->setPageSize(5);
+        table->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 240});
+        table->addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 200});
+        table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 280});
+        table->setRows(makeRows(15));
         cl->addWidget(table);
         layout->addWidget(card);
     }

@@ -12,6 +12,7 @@
 #include "pages/PageCommon.h"
 #include "pages/PageRegistry.h"
 #include "widgets/AntImage.h"
+#include "widgets/AntInput.h"
 #include "widgets/AntNav.h"
 #include "widgets/AntStackedWidget.h"
 #include "widgets/AntTypography.h"
@@ -100,6 +101,17 @@ void ExampleWindow::buildSidebar()
     brandLayout->addWidget(brand, 1);
 
     sideLayout->addWidget(brandArea);
+
+    auto* search = new AntInput(m_sidebar);
+    search->setObjectName(QStringLiteral("ExampleNavSearch"));
+    search->setPlaceholderText(QStringLiteral("Search components"));
+    search->setSearchMode(true);
+    search->setAllowClear(true);
+    search->setContentsMargins(12, 0, 12, 0);
+    QObject::connect(search, &AntInput::textChanged, this, [this](const QString& text) {
+        m_nav->setFilterText(text);
+    });
+    sideLayout->addWidget(search);
 
     m_nav = new AntNav(m_sidebar);
     m_nav->setObjectName(QStringLiteral("ExampleNavigation"));

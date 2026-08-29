@@ -23,6 +23,7 @@
 #include "widgets/AntInput.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntMentions.h"
+#include "widgets/AntMessage.h"
 #include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntSwitch.h"
@@ -238,7 +239,7 @@ QWidget* createDatePickerPage(QWidget* /*owner*/)
     return page;
 }
 
-QWidget* createFormPage(QWidget* /*owner*/)
+QWidget* createFormPage(QWidget* owner)
 {
     auto* page = new QWidget();
     auto* layout = new QVBoxLayout(page);
@@ -276,6 +277,19 @@ QWidget* createFormPage(QWidget* /*owner*/)
     submit->setFixedWidth(submit->sizeHint().width());
     auto* submitItem = form->addItem(QStringLiteral(" "), submit);
     submitItem->setColon(false);
+
+    QObject::connect(submit, &AntButton::clicked, owner, [form, owner]() {
+        const QVariantMap values = form->values();
+        QStringList parts;
+        for (auto it = values.cbegin(); it != values.cend(); ++it)
+        {
+            parts << QStringLiteral("%1=%2").arg(it.key(), it.value().toString());
+        }
+        AntMessage::success(QStringLiteral("Submitted: %1")
+                                .arg(parts.isEmpty() ? QStringLiteral("(empty)")
+                                                     : parts.join(QStringLiteral(", "))),
+                            owner);
+    });
 
     cl->addWidget(form, 0, Qt::AlignLeft);
     layout->addWidget(card);

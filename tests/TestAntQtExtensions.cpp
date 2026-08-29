@@ -2613,6 +2613,29 @@ void TestAntQtExtensions::nav()
     nav.setCurrentIndex(1);
     QCOMPARE(nav.property("antNavSelectionApplyCount").toInt(), selectionApplies);
 
+    // Filter visibility: matching items stay visible, non-matching items and
+    // the category headers that become empty are hidden, indices/selection are
+    // preserved, and an empty filter restores everything. Use isHidden() (not
+    // isVisible()) so parent-window visibility does not mask the explicit
+    // setVisible(false) the filter applies. Note item(2) was renamed to
+    // "Preferences" earlier in this test.
+    QCOMPARE(nav.filterText(), QString());
+    nav.setFilterText(QStringLiteral("Overview"));
+    QVERIFY(!nav.item(0)->isHidden());
+    QVERIFY(nav.item(1)->isHidden());
+    QVERIFY(nav.item(2)->isHidden());
+    QCOMPARE(nav.currentIndex(), 1);
+    QCOMPARE(nav.count(), 3);
+    nav.setFilterText(QStringLiteral("preferences"));
+    QVERIFY(nav.item(0)->isHidden());
+    QVERIFY(nav.item(1)->isHidden());
+    QVERIFY(!nav.item(2)->isHidden());
+    nav.setFilterText(QString());
+    QVERIFY(!nav.item(0)->isHidden());
+    QVERIFY(!nav.item(1)->isHidden());
+    QVERIFY(!nav.item(2)->isHidden());
+    QCOMPARE(nav.filterText(), QString());
+
     nav.removeItem(1);
     QCOMPARE(nav.count(), 2);
     QCOMPARE(nav.currentIndex(), 1);
