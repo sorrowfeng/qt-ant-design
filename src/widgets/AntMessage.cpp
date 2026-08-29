@@ -314,7 +314,7 @@ void AntMessage::paintEvent(QPaintEvent* event)
 
 bool AntMessage::eventFilter(QObject* watched, QEvent* event)
 {
-    if ((watched == m_anchor.data() || watched == m_anchorWindow.data()) && event)
+    if ((watched == m_anchorWatch.anchor() || watched == m_anchorWatch.anchorWindow()) && event)
     {
         switch (event->type())
         {
@@ -371,7 +371,7 @@ void AntMessage::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        sendMouseClick(widgetBelowMessageAt(m_anchor.data(), this, antEventGlobalPosition(event)),
+        sendMouseClick(widgetBelowMessageAt(m_anchorWatch.anchor(), this, antEventGlobalPosition(event)),
                        antEventGlobalPosition(event),
                        event->modifiers());
         AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
@@ -417,7 +417,7 @@ void AntMessage::relayoutMessages(QWidget* anchor)
             {
                 continue;
             }
-            if (message->m_anchor.data() != anchor)
+            if (message->m_anchorWatch.anchor() != anchor)
             {
                 continue;
             }
@@ -502,52 +502,22 @@ void AntMessage::relayoutMessages(QWidget* anchor)
 
 void AntMessage::installAnchorWatcher(QWidget* anchor)
 {
-    uninstallAnchorWatcher();
-    m_anchor = anchor;
-    if (!anchor)
-    {
-        return;
-    }
-
-    anchor->installEventFilter(this);
-    connect(anchor, &QObject::destroyed, this, [this]() {
-        if (m_anchorWindow && m_anchorWindow.data() != m_anchor.data())
-        {
-            m_anchorWindow->removeEventFilter(this);
-        }
-        m_anchor.clear();
-        m_anchorWindow.clear();
+    m_anchorWatch.set(anchor, this, [this]() {
         if (!AntPopupMotion::isClosing(this))
         {
             AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
         }
     });
-
-    QWidget* window = anchor->window();
-    if (window && window != anchor)
-    {
-        m_anchorWindow = window;
-        window->installEventFilter(this);
-    }
 }
 
 void AntMessage::uninstallAnchorWatcher()
 {
-    if (m_anchor)
-    {
-        m_anchor->removeEventFilter(this);
-    }
-    if (m_anchorWindow)
-    {
-        m_anchorWindow->removeEventFilter(this);
-    }
-    m_anchor.clear();
-    m_anchorWindow.clear();
+    m_anchorWatch.clear();
 }
 
 bool AntMessage::anchorReady() const
 {
-    return anchorCanHostMessage(m_anchor.data());
+    return anchorCanHostMessage(m_anchorWatch.anchor());
 }
 
 void AntMessage::handleAnchorChanged(QEvent::Type type)
@@ -566,7 +536,7 @@ void AntMessage::handleAnchorChanged(QEvent::Type type)
         return;
     }
 
-    relayoutMessages(m_anchor.data());
+    relayoutMessages(m_anchorWatch.anchor());
 }
 
 const AntMessage::MessageLayout& AntMessage::messageLayout() const

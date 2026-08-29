@@ -333,7 +333,7 @@ void AntNotification::setPlacement(Ant::Placement placement)
         return;
     }
     m_placement = placement;
-    relayoutNotifications(m_anchor.data());
+    relayoutNotifications(m_anchorWatch.anchor());
     Q_EMIT placementChanged(m_placement);
 }
 
@@ -494,7 +494,7 @@ void AntNotification::paintEvent(QPaintEvent* event)
 
 bool AntNotification::eventFilter(QObject* watched, QEvent* event)
 {
-    if ((watched == m_anchor.data() || watched == m_anchorWindow.data()) && event)
+    if ((watched == m_anchorWatch.anchor() || watched == m_anchorWatch.anchorWindow()) && event)
     {
         switch (event->type())
         {
@@ -623,7 +623,7 @@ void AntNotification::relayoutNotifications(QWidget* anchor)
             {
                 continue;
             }
-            if (notification->m_anchor.data() != anchor)
+            if (notification->m_anchorWatch.anchor() != anchor)
             {
                 continue;
             }
@@ -679,52 +679,22 @@ void AntNotification::relayoutNotifications(QWidget* anchor)
 
 void AntNotification::installAnchorWatcher(QWidget* anchor)
 {
-    uninstallAnchorWatcher();
-    m_anchor = anchor;
-    if (!anchor)
-    {
-        return;
-    }
-
-    anchor->installEventFilter(this);
-    connect(anchor, &QObject::destroyed, this, [this]() {
-        if (m_anchorWindow && m_anchorWindow.data() != m_anchor.data())
-        {
-            m_anchorWindow->removeEventFilter(this);
-        }
-        m_anchor.clear();
-        m_anchorWindow.clear();
+    m_anchorWatch.set(anchor, this, [this]() {
         if (!AntPopupMotion::isClosing(this))
         {
             AntPopupMotion::close(this, notificationMotionPlacement(m_placement), NotificationMotionDistance);
         }
     });
-
-    QWidget* window = anchor->window();
-    if (window && window != anchor)
-    {
-        m_anchorWindow = window;
-        window->installEventFilter(this);
-    }
 }
 
 void AntNotification::uninstallAnchorWatcher()
 {
-    if (m_anchor)
-    {
-        m_anchor->removeEventFilter(this);
-    }
-    if (m_anchorWindow)
-    {
-        m_anchorWindow->removeEventFilter(this);
-    }
-    m_anchor.clear();
-    m_anchorWindow.clear();
+    m_anchorWatch.clear();
 }
 
 bool AntNotification::anchorReady() const
 {
-    return anchorCanHostNotification(m_anchor.data());
+    return anchorCanHostNotification(m_anchorWatch.anchor());
 }
 
 void AntNotification::handleAnchorChanged(QEvent::Type type)
@@ -743,7 +713,7 @@ void AntNotification::handleAnchorChanged(QEvent::Type type)
         return;
     }
 
-    relayoutNotifications(m_anchor.data());
+    relayoutNotifications(m_anchorWatch.anchor());
 }
 
 QRectF AntNotification::noticeRect() const

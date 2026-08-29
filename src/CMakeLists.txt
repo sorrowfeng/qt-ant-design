@@ -1,4 +1,5 @@
 set(QT_ANT_DESIGN_HEADERS
+    core/AntAnchorWatch.h
     core/AntCompat.h
     core/AntDesign.h
     core/AntFont.h
