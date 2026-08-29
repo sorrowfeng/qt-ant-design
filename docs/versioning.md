@@ -13,7 +13,7 @@
 
 static_assert(QT_ANT_DESIGN_VERSION_MAJOR == 0);
 static_assert(QT_ANT_DESIGN_VERSION_MINOR == 1);
-static_assert(QT_ANT_DESIGN_VERSION_PATCH == 2);
+static_assert(QT_ANT_DESIGN_VERSION_PATCH == 3);
 ```
 
 ## Release Checklist
@@ -28,6 +28,6 @@ static_assert(QT_ANT_DESIGN_VERSION_PATCH == 2);
 
 ## Current Release
 
-- Current version: `0.1.2`
-- Tag: `v0.1.2`
+- Current version: `0.1.3`
+- Tag: `v0.1.3`
 
