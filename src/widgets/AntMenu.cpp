@@ -187,7 +187,7 @@ protected:
                                             -kSubMenuPopupShadowMargin,
                                             -kSubMenuPopupShadowMargin);
         antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.72);
-        const QColor border = antTheme->themeMode() == Ant::ThemeMode::Dark
+        const QColor border = antTheme->isDarkMode()
                                   ? AntPalette::alpha(token.colorTextLightSolid, 0.18)
                                   : token.colorBorder;
         painter.setPen(QPen(border, token.lineWidth));
@@ -238,7 +238,7 @@ AntMenu::AntMenu(QWidget* parent)
     m_subMenuCloseTimer = new QTimer(this);
     m_subMenuCloseTimer->setSingleShot(true);
     connect(m_subMenuCloseTimer, &QTimer::timeout, this, &AntMenu::hideSubMenuPopup);
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

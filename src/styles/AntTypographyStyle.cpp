@@ -60,7 +60,7 @@ QColor textColorForType(const AntTypography* typo, const QStyleOption* option)
 
 QColor markBackgroundColor()
 {
-    return QColor("#fff1b8");
+    return antTheme->tokens().colorMarkBg;
 }
 
 void drawCopyIcon(QPainter* painter, const QRect& rect, const QColor& color)
@@ -162,8 +162,7 @@ void AntTypographyStyle::polish(QWidget* widget)
     AntStyleBase::polish(widget);
     if (auto* typo = qobject_cast<AntTypography*>(widget))
     {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
+        installPaintFilter<AntTypography>(widget);
         widget->setMouseTracking(true);
         widget->setCursor(typo->isDisabled()
                               ? Qt::ForbiddenCursor
@@ -175,10 +174,7 @@ void AntTypographyStyle::polish(QWidget* widget)
 
 void AntTypographyStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTypography*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTypography>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -197,19 +193,21 @@ QSize AntTypographyStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTypographyStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTypographyStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* typo = qobject_cast<AntTypography*>(watched);
-    if (typo && event->type() == QEvent::Paint)
+    auto* typo = qobject_cast<AntTypography*>(widget);
+    if (!typo)
     {
-        QStyleOption option;
-        option.initFrom(typo);
-        option.rect = typo->rect();
-        QPainter painter(typo);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, typo);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(typo);
+    option.rect = typo->rect();
+    QPainter painter(typo);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, typo);
+
+    return true;
 }
 
 void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -257,7 +255,8 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
 
         painter->setPen(QPen(AntPalette::alpha(QColor(100, 100, 100), 0.2), token.lineWidth));
         painter->setBrush(AntPalette::alpha(QColor(150, 150, 150), 0.1));
-        painter->drawRoundedRect(QRectF(codeRect).adjusted(0.5, 0.5, -0.5, -0.5), 3, 3);
+        painter->drawRoundedRect(QRectF(codeRect).adjusted(0.5, 0.5, -0.5, -0.5),
+            token.borderRadiusXS + 1, token.borderRadiusXS + 1);
 
         painter->setFont(font);
         painter->setPen(color);
@@ -278,7 +277,7 @@ void AntTypographyStyle::drawTypography(const QStyleOption* option, QPainter* pa
         painter->drawRect(markRect);
 
         painter->setFont(font);
-        painter->setPen(QColor("#000000"));
+        painter->setPen(token.colorText);
         painter->drawText(textRect, align | Qt::TextWordWrap, text);
     }
     // Paragraph or ellipsis modes: word wrap

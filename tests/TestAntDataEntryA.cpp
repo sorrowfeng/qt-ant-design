@@ -9,6 +9,10 @@
 #include <QPainter>
 #include <QPalette>
 #include <QVariantAnimation>
+
+#include <cmath>
+#include <limits>
+
 #include "core/AntTheme.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntRadio.h"
@@ -31,6 +35,7 @@ private slots:
     void rateCachesStarLayoutAndScopesUpdates();
     void segmentedCachesLayoutAndScopesUpdates();
     void sliderCachesGeometryAndScopesUpdates();
+    void sliderExtremeIntegerRangeIsStable();
     void sliderMarksReserveLabelHeight();
     void sliderBubbleFloatsAboveMarkedHandle();
     void sliderBubbleArrowJoinsSurface();
@@ -169,9 +174,11 @@ void TestAntDataEntryA::propertiesAndSignals()
     QCOMPARE(w2->autoExclusive(), true);
 
     QSignalSpy checkedSpy(w2, &AntRadio::checkedChanged);
+    QSignalSpy legacyToggledSpy(w2, &AntRadio::toggled); // Deprecated - kept for compatibility
     w2->setChecked(true);
     QCOMPARE(w2->isChecked(), true);
     QCOMPARE(checkedSpy.count(), 1);
+    QCOMPARE(legacyToggledSpy.count(), 1); // deprecated alias still fires alongside checkedChanged
 
     QSignalSpy textSpy(w2, &AntRadio::textChanged);
     w2->setText("Option A");
@@ -380,6 +387,73 @@ void TestAntDataEntryA::propertiesAndSignals()
 
     w6->clearSuggestions();
     QCOMPARE(w6->suggestionCount(), 0);
+}
+
+void TestAntDataEntryA::sliderExtremeIntegerRangeIsStable()
+{
+    const int minimum = std::numeric_limits<int>::min();
+    const int maximum = std::numeric_limits<int>::max();
+
+    AntSlider slider;
+    slider.resize(320, slider.sizeHint().height());
+    slider.setRange(minimum, maximum);
+    slider.setDots(true);
+    slider.setValue(0);
+    QCOMPARE(slider.minimum(), minimum);
+    QCOMPARE(slider.maximum(), maximum);
+    QCOMPARE(slider.value(), 0);
+
+    slider.setRangeMode(true);
+    slider.setRangeValues(minimum, maximum);
+    QCOMPARE(slider.rangeStart(), minimum);
+    QCOMPARE(slider.rangeEnd(), maximum);
+    QVERIFY(!renderWidgetImage(slider).isNull());
+    slider.setRangeMode(false);
+
+    slider.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&slider));
+
+    slider.setSingleStep(maximum);
+    slider.setValue(minimum);
+    QSignalSpy valueSpy(&slider, &AntSlider::valueChanged);
+    QSignalSpy movedSpy(&slider, &AntSlider::sliderMoved);
+    QSignalSpy completeSpy(&slider, &AntSlider::changeComplete);
+
+    QTest::keyClick(&slider, Qt::Key_Right);
+    QCOMPARE(slider.value(), -1);
+    QTest::keyClick(&slider, Qt::Key_Right);
+    QCOMPARE(slider.value(), maximum - 1);
+    QTest::keyClick(&slider, Qt::Key_Right);
+    QCOMPARE(slider.value(), maximum - 1);
+    QCOMPARE(valueSpy.count(), 2);
+    QCOMPARE(movedSpy.count(), 2);
+    QCOMPARE(completeSpy.count(), 3);
+
+    slider.setPageStep(maximum);
+    slider.setValue(minimum);
+    valueSpy.clear();
+    movedSpy.clear();
+    completeSpy.clear();
+    QTest::keyClick(&slider, Qt::Key_PageUp);
+    QCOMPARE(slider.value(), -1);
+    QCOMPARE(valueSpy.count(), 1);
+    QCOMPARE(movedSpy.count(), 1);
+    QCOMPARE(completeSpy.count(), 1);
+
+    slider.setSingleStep(1);
+    slider.setValue(0);
+    valueSpy.clear();
+    movedSpy.clear();
+    completeSpy.clear();
+    QTest::mouseClick(&slider,
+                      Qt::LeftButton,
+                      Qt::NoModifier,
+                      QPoint(slider.width() - 1, slider.height() / 2));
+    QCOMPARE(slider.value(), maximum);
+    QCOMPARE(valueSpy.count(), 1);
+    QCOMPARE(movedSpy.count(), 1);
+    QCOMPARE(completeSpy.count(), 1);
+    QVERIFY(!renderWidgetImage(slider).isNull());
 }
 
 void TestAntDataEntryA::inputNumberDefaultsToIntegerAndEnablesDecimals()

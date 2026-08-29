@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: http://www.sorrowfeng.top/qt-ant-design/
+    about: Read the online documentation and component API reference.
+  - name: Releases
+    url: https://github.com/sorrowfeng/qt-ant-design/releases
+    about: Check the latest published versions and release notes.

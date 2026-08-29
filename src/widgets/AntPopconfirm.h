@@ -19,7 +19,7 @@ class QT_ANT_DESIGN_EXPORT AntPopconfirm : public QWidget
     Q_PROPERTY(QString cancelText READ cancelText WRITE setCancelText NOTIFY cancelTextChanged)
     Q_PROPERTY(bool showCancel READ showCancel WRITE setShowCancel NOTIFY showCancelChanged)
     Q_PROPERTY(bool disabled READ isDisabled WRITE setDisabled NOTIFY disabledChanged)
-    Q_PROPERTY(Ant::TooltipPlacement placement READ placement WRITE setPlacement NOTIFY placementChanged)
+    Q_PROPERTY(Ant::Placement placement READ placement WRITE setPlacement NOTIFY placementChanged)
 
 public:
     explicit AntPopconfirm(QWidget* parent = nullptr);
@@ -42,8 +42,8 @@ public:
     bool isDisabled() const;
     void setDisabled(bool disabled);
 
-    Ant::TooltipPlacement placement() const;
-    void setPlacement(Ant::TooltipPlacement placement);
+    Ant::Placement placement() const;
+    void setPlacement(Ant::Placement placement);
 
     QWidget* target() const;
     void setTarget(QWidget* target);
@@ -58,14 +58,18 @@ Q_SIGNALS:
     void cancelTextChanged(const QString& text);
     void showCancelChanged(bool show);
     void disabledChanged(bool disabled);
-    void placementChanged(Ant::TooltipPlacement placement);
+    void placementChanged(Ant::Placement placement);
     void confirmRequested();
     void cancelRequested();
     void openChanged(bool open);
 
+protected:
+    void changeEvent(QEvent* event) override;
+
 private:
     void rebuildActionWidget();
     void syncPopoverContent();
+    void syncDisabledState(bool disabled);
     void syncPopconfirmPerfCounters() const;
 
     AntPopover* m_popover = nullptr;

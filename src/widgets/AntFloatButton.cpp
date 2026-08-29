@@ -117,8 +117,30 @@ void AntFloatButton::setBadgeCount(int count)
 
 void AntFloatButton::addChild(AntFloatButton* child)
 {
-    if (!child || m_children.contains(child)) return;
-    m_children.append(child);
+    pruneDestroyedChildren();
+    if (!child || m_children.contains(QPointer<QObject>(child))) return;
+    m_children.append(QPointer<QObject>(child));
+    m_childDestroyedConnections.insert(child, connect(child, &QObject::destroyed, this, [this, child]() {
+        m_childDestroyedConnections.remove(child);
+        for (int i = m_children.size() - 1; i >= 0; --i)
+        {
+            if (!m_children[i] || m_children[i].data() == child)
+            {
+                m_children.removeAt(i);
+            }
+        }
+        m_childLayoutDirty = true;
+        if (m_children.isEmpty() && m_open)
+        {
+            m_open = false;
+            update();
+            Q_EMIT openChanged(false);
+        }
+        else if (m_open)
+        {
+            layoutChildren();
+        }
+    }));
     child->setParent(parentWidget() ? parentWidget() : this);
     child->hide();
     child->installEventFilter(this);
@@ -133,7 +155,18 @@ void AntFloatButton::removeChild(AntFloatButton* child)
 {
     if (!child) return;
     child->removeEventFilter(this);
-    m_children.removeOne(child);
+    const auto connection = m_childDestroyedConnections.take(child);
+    if (connection)
+    {
+        disconnect(connection);
+    }
+    for (int i = m_children.size() - 1; i >= 0; --i)
+    {
+        if (!m_children[i] || m_children[i].data() == child)
+        {
+            m_children.removeAt(i);
+        }
+    }
     child->hide();
     m_childLayoutDirty = true;
     if (m_open)
@@ -142,7 +175,19 @@ void AntFloatButton::removeChild(AntFloatButton* child)
     }
 }
 
-QVector<AntFloatButton*> AntFloatButton::childButtons() const { return m_children; }
+QVector<AntFloatButton*> AntFloatButton::childButtons() const
+{
+    QVector<AntFloatButton*> children;
+    children.reserve(m_children.size());
+    for (const QPointer<QObject>& child : m_children)
+    {
+        if (AntFloatButton* button = qobject_cast<AntFloatButton*>(child.data()))
+        {
+            children.append(button);
+        }
+    }
+    return children;
+}
 
 Ant::Trigger AntFloatButton::groupTrigger() const { return m_groupTrigger; }
 
@@ -215,11 +260,17 @@ void AntFloatButton::setScrollDuration(int duration)
     m_scrollDuration = duration;
 }
 
-QWidget* AntFloatButton::scrollTarget() const { return m_scrollTarget; }
+QWidget* AntFloatButton::scrollTarget() const { return m_scrollTarget.data(); }
 
 void AntFloatButton::setScrollTarget(QWidget* target)
 {
     if (m_scrollTarget == target) return;
+    stopScrollAnimation();
+    if (m_scrollTargetDestroyedConnection)
+    {
+        disconnect(m_scrollTargetDestroyedConnection);
+        m_scrollTargetDestroyedConnection = QMetaObject::Connection();
+    }
     if (m_scrollTarget)
     {
         m_scrollTarget->removeEventFilter(this);
@@ -228,13 +279,28 @@ void AntFloatButton::setScrollTarget(QWidget* target)
     if (m_scrollTarget)
     {
         m_scrollTarget->installEventFilter(this);
+        m_scrollTargetDestroyedConnection = connect(target, &QObject::destroyed, this, [this]() {
+            m_scrollTarget.clear();
+            stopScrollAnimation();
+            if (m_backTop)
+            {
+                hide();
+            }
+        });
     }
 }
 
-Ant::FloatButtonPlacement AntFloatButton::placement() const { return m_placement; }
+Ant::Placement AntFloatButton::placement() const { return m_placement; }
 
-void AntFloatButton::setPlacement(Ant::FloatButtonPlacement placement)
+void AntFloatButton::setPlacement(Ant::Placement placement)
 {
+    // Placement is the shared 8-value superset; float button only supports
+    // the four corner values. Ignore out-of-domain values.
+    if (placement != Ant::Placement::BottomRight && placement != Ant::Placement::BottomLeft
+        && placement != Ant::Placement::TopRight && placement != Ant::Placement::TopLeft)
+    {
+        return;
+    }
     if (m_placement == placement) return;
     m_placement = placement;
     m_positionTimer->start();
@@ -277,6 +343,7 @@ void AntFloatButton::mousePressEvent(QMouseEvent* event)
 
 void AntFloatButton::mouseReleaseEvent(QMouseEvent* event)
 {
+    pruneDestroyedChildren();
     if (event->button() == Qt::LeftButton && m_pressed)
     {
         const bool clickedInside = buttonRect().contains(event->pos());
@@ -298,15 +365,29 @@ void AntFloatButton::mouseReleaseEvent(QMouseEvent* event)
 
         if (m_backTop)
         {
+            QPointer<AntFloatButton> self(this);
             animateScrollToTop();
+            if (!self)
+            {
+                return;
+            }
             Q_EMIT backTopClicked();
+            if (!self)
+            {
+                return;
+            }
             Q_EMIT clicked();
             return;
         }
 
         if (!m_children.isEmpty())
         {
+            QPointer<AntFloatButton> self(this);
             setOpen(!m_open);
+            if (!self)
+            {
+                return;
+            }
         }
 
         Q_EMIT clicked();
@@ -324,6 +405,7 @@ void AntFloatButton::mouseMoveEvent(QMouseEvent* event)
 
 void AntFloatButton::enterEvent(AntEnterEvent* event)
 {
+    pruneDestroyedChildren();
     updateHoverState(mapFromGlobal(QCursor::pos()));
     if (!m_children.isEmpty() && m_groupTrigger == Ant::Trigger::Hover)
     {
@@ -378,10 +460,11 @@ bool AntFloatButton::eventFilter(QObject* watched, QEvent* event)
     // Close group on click outside
     if (m_open && event->type() == QEvent::MouseButtonPress && watched != this)
     {
+        pruneDestroyedChildren();
         bool clickOnChild = false;
-        for (auto* child : m_children)
+        for (const QPointer<QObject>& child : m_children)
         {
-            if (watched == child)
+            if (watched == child.data())
             {
                 clickOnChild = true;
                 break;
@@ -401,10 +484,10 @@ void AntFloatButton::updatePosition()
     if (!p) return;
 
     const int margin = antTheme->tokens().margin;
-    const int x = (m_placement == Ant::FloatButtonPlacement::BottomRight || m_placement == Ant::FloatButtonPlacement::TopRight)
+    const int x = (m_placement == Ant::Placement::BottomRight || m_placement == Ant::Placement::TopRight)
                       ? p->width() - width() - margin + ShadowMargin
                       : margin - ShadowMargin;
-    const int y = (m_placement == Ant::FloatButtonPlacement::BottomRight || m_placement == Ant::FloatButtonPlacement::BottomLeft)
+    const int y = (m_placement == Ant::Placement::BottomRight || m_placement == Ant::Placement::BottomLeft)
                       ? p->height() - height() - margin + ShadowMargin
                       : margin - ShadowMargin;
 
@@ -430,13 +513,18 @@ void AntFloatButton::updatePosition()
 
 void AntFloatButton::layoutChildren()
 {
+    pruneDestroyedChildren();
     const int spacing = 12;
     int yOffset = 0;
     bool changed = false;
 
     for (int i = m_children.size() - 1; i >= 0; --i)
     {
-        auto* child = m_children[i];
+        AntFloatButton* child = qobject_cast<AntFloatButton*>(m_children[i].data());
+        if (!child)
+        {
+            continue;
+        }
         if (m_open)
         {
             const QSize childSize = child->sizeHint();
@@ -577,7 +665,7 @@ void AntFloatButton::checkBackTopVisibility()
 {
     if (!m_backTop || !m_scrollTarget) return;
 
-    QScrollArea* area = qobject_cast<QScrollArea*>(m_scrollTarget);
+    QScrollArea* area = qobject_cast<QScrollArea*>(m_scrollTarget.data());
     int scrollValue = 0;
     if (area && area->verticalScrollBar())
     {
@@ -600,16 +688,42 @@ void AntFloatButton::checkBackTopVisibility()
 
 void AntFloatButton::animateScrollToTop()
 {
-    QScrollArea* area = qobject_cast<QScrollArea*>(m_scrollTarget);
+    QScrollArea* area = qobject_cast<QScrollArea*>(m_scrollTarget.data());
     if (!area || !area->verticalScrollBar()) return;
 
+    stopScrollAnimation();
     QScrollBar* bar = area->verticalScrollBar();
     auto* anim = new QPropertyAnimation(bar, "value", this);
+    m_scrollAnimation = anim;
     anim->setDuration(m_scrollDuration);
     anim->setStartValue(bar->value());
     anim->setEndValue(0);
     anim->setEasingCurve(QEasingCurve::OutCubic);
     anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+void AntFloatButton::pruneDestroyedChildren()
+{
+    for (int i = m_children.size() - 1; i >= 0; --i)
+    {
+        if (!m_children[i])
+        {
+            m_children.removeAt(i);
+        }
+    }
+}
+
+void AntFloatButton::stopScrollAnimation()
+{
+    if (!m_scrollAnimation)
+    {
+        return;
+    }
+
+    QPropertyAnimation* animation = m_scrollAnimation.data();
+    m_scrollAnimation.clear();
+    animation->stop();
+    animation->deleteLater();
 }
 
 void AntFloatButton::syncFloatButtonPerfCounters() const

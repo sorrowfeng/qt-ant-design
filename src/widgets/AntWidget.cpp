@@ -10,7 +10,9 @@ AntWidget::AntWidget(QWidget* parent)
     : QWidget(parent)
 {
     refreshThemeCache();
-    connect(antTheme, &AntTheme::themeModeChanged, this, &AntWidget::handleThemeChanged);
+    connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        handleThemeChanged(antTheme->themeMode());
+    });
 }
 
 const AntThemeTokens& AntWidget::tokens() const

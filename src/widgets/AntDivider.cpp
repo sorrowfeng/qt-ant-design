@@ -96,19 +96,20 @@ void AntDivider::setVariant(Ant::DividerVariant variant)
     Q_EMIT variantChanged(m_variant);
 }
 
-Ant::Size AntDivider::dividerSize() const { return m_dividerSize; }
+Ant::Size AntDivider::size() const { return m_size; }
 
-void AntDivider::setDividerSize(Ant::Size size)
+void AntDivider::setSize(Ant::Size size)
 {
-    if (m_dividerSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_dividerSize = size;
+    m_size = size;
     invalidatePaintCache();
     updateGeometry();
     update();
-    Q_EMIT dividerSizeChanged(m_dividerSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT dividerSizeChanged(m_size);
 }
 
 QSize AntDivider::sizeHint() const
@@ -256,7 +257,7 @@ int AntDivider::horizontalMargin() const
     {
         return token.margin;
     }
-    switch (m_dividerSize)
+    switch (m_size)
     {
     case Ant::Size::Small:
         return token.marginXS;

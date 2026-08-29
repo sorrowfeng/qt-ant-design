@@ -43,19 +43,12 @@ void AntPlainTextEditStyle::onThemeUpdate(QWidget* w)
 void AntPlainTextEditStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntPlainTextEdit*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntPlainTextEdit>(widget);
 }
 
 void AntPlainTextEditStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntPlainTextEdit*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntPlainTextEdit>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -70,19 +63,21 @@ void AntPlainTextEditStyle::drawPrimitive(PrimitiveElement element, const QStyle
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntPlainTextEditStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntPlainTextEditStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* te = qobject_cast<AntPlainTextEdit*>(watched);
-    if (te && event->type() == QEvent::Paint)
+    auto* te = qobject_cast<AntPlainTextEdit*>(widget);
+    if (!te)
     {
-        QStyleOption option;
-        option.initFrom(te);
-        option.rect = te->rect();
-        QPainter painter(te);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, te);
         return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(te);
+    option.rect = te->rect();
+    QPainter painter(te);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, te);
+
+    return false;
 }
 
 void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* painter,
@@ -127,9 +122,8 @@ void AntPlainTextEditStyle::drawFrame(const QStyleOption* option, QPainter* pain
     // Focus glow
     if (focused && enabled && variant != Ant::Variant::Borderless)
     {
-        const QColor focus = AntPalette::alpha(token.colorPrimary, 0.18);
-        AntStyleBase::drawCrispRoundedRect(painter, r.toRect(),
-            QPen(focus, m.focusWidth), Qt::NoBrush, m.radius, m.radius);
+        AntStyleBase::drawInputFocusGlow(painter, r, m.radius,
+            AntPalette::alpha(token.colorPrimary, 0.16), m.focusWidth);
     }
 
     // Placeholder

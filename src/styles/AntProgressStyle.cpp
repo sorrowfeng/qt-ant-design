@@ -32,18 +32,12 @@ AntProgressStyle::AntProgressStyle(QStyle* style)
 void AntProgressStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntProgress*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntProgress>(widget);
 }
 
 void AntProgressStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntProgress*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntProgress>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -62,19 +56,21 @@ QSize AntProgressStyle::sizeFromContents(ContentsType type, const QStyleOption* 
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntProgressStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntProgressStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* progress = qobject_cast<AntProgress*>(watched);
-    if (progress && event->type() == QEvent::Paint)
+    auto* progress = qobject_cast<AntProgress*>(widget);
+    if (!progress)
     {
-        QStyleOption option;
-        option.initFrom(progress);
-        option.rect = progress->rect();
-        QPainter painter(progress);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, progress);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(progress);
+    option.rect = progress->rect();
+    QPainter painter(progress);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, progress);
+
+    return true;
 }
 
 void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -105,9 +101,9 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
                                   0,
                                   layout.lineFilledRect.left() + progress->m_activeOffset,
                                   0);
-            shine.setColorAt(0.0, QColor(255, 255, 255, 0));
-            shine.setColorAt(0.5, QColor(255, 255, 255, 110));
-            shine.setColorAt(1.0, QColor(255, 255, 255, 0));
+            shine.setColorAt(0.0, AntPalette::alpha(Qt::white, 0.0f));
+            shine.setColorAt(0.5, AntPalette::alpha(Qt::white, 110.0f / 255.0f));
+            shine.setColorAt(1.0, AntPalette::alpha(Qt::white, 0.0f));
             AntStyleBase::drawCrispRoundedRect(painter, layout.lineFilledRect.toRect(),
                 Qt::NoPen, shine, radius, radius);
         }
@@ -120,9 +116,7 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
             }
             else
             {
-                QFont f = painter->font();
-                f.setPixelSize(token.fontSizeSM);
-                f.setWeight(QFont::Normal);
+                const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM, QFont::Normal);
                 painter->setFont(f);
                 painter->setPen(layout.infoColor);
                 painter->drawText(layout.lineInfoRect, Qt::AlignCenter, layout.infoText);
@@ -144,9 +138,7 @@ void AntProgressStyle::drawProgress(const QStyleOption* option, QPainter* painte
             }
             else
             {
-                QFont f = painter->font();
-                f.setPixelSize(layout.circleInfoFontSize);
-                f.setWeight(QFont::DemiBold);
+                const QFont f = AntStyleBase::withPixelSize(painter->font(), layout.circleInfoFontSize, QFont::DemiBold);
                 painter->setFont(f);
                 painter->setPen(token.colorText);
                 painter->drawText(option->rect, Qt::AlignCenter, layout.infoText);

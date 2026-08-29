@@ -41,7 +41,7 @@ void TestAntFloatButton::propertiesAndSignals()
     auto* w = new AntFloatButton;
     QCOMPARE(w->floatButtonType(), Ant::FloatButtonType::Default);
     QCOMPARE(w->floatButtonShape(), Ant::FloatButtonShape::Circle);
-    QCOMPARE(w->placement(), Ant::FloatButtonPlacement::BottomRight);
+    QCOMPARE(w->placement(), Ant::Placement::BottomRight);
     QCOMPARE(w->isOpen(), false);
     QCOMPARE(w->isBackTop(), false);
     QCOMPARE(w->badgeDot(), false);
@@ -58,8 +58,8 @@ void TestAntFloatButton::propertiesAndSignals()
     QCOMPARE(shapeSpy.count(), 1);
 
     QSignalSpy placeSpy(w, &AntFloatButton::placementChanged);
-    w->setPlacement(Ant::FloatButtonPlacement::TopLeft);
-    QCOMPARE(w->placement(), Ant::FloatButtonPlacement::TopLeft);
+    w->setPlacement(Ant::Placement::TopLeft);
+    QCOMPARE(w->placement(), Ant::Placement::TopLeft);
     QCOMPARE(placeSpy.count(), 1);
 
     QSignalSpy iconSpy(w, &AntFloatButton::iconChanged);

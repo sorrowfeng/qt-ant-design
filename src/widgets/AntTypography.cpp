@@ -1,12 +1,14 @@
 #include "AntTypography.h"
 
+#include "core/AntUrlPolicy.h"
+
 #include <QApplication>
 #include <QClipboard>
-#include <QDesktopServices>
 #include <QEvent>
 #include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPointer>
 #include <QResizeEvent>
 #include <QSizePolicy>
 #include <QTimer>
@@ -143,7 +145,12 @@ bool AntTypography::wordWrap() const { return m_paragraph; }
 
 void AntTypography::setWordWrap(bool wordWrap)
 {
+    if (m_paragraph == wordWrap)
+    {
+        return;
+    }
     setParagraph(wordWrap);
+    Q_EMIT wordWrapChanged(wordWrap);
 }
 
 bool AntTypography::isDisabled() const { return m_disabled; }
@@ -529,7 +536,7 @@ void AntTypography::mouseReleaseEvent(QMouseEvent* event)
         m_copyPressed = false;
         if (triggerCopy)
         {
-            QApplication::clipboard()->setText(m_text);
+            const QString copiedText = m_text;
             m_copied = true;
             QTimer::singleShot(2000, this, [this]() {
                 if (m_copied)
@@ -538,7 +545,16 @@ void AntTypography::mouseReleaseEvent(QMouseEvent* event)
                     update(copyButtonRect());
                 }
             });
-            Q_EMIT copied(m_text);
+            update(copyButtonRect());
+            event->accept();
+            QPointer<AntTypography> guard(this);
+            QApplication::clipboard()->setText(copiedText);
+            if (!guard)
+            {
+                return;
+            }
+            Q_EMIT copied(copiedText);
+            return;
         }
         update(copyButtonRect());
         event->accept();
@@ -548,14 +564,29 @@ void AntTypography::mouseReleaseEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && m_pressed)
     {
         const bool triggerLink = !m_disabled && rect().contains(event->pos()) && !m_href.isEmpty();
+        const QString href = m_href;
         m_pressed = false;
-        if (triggerLink)
-        {
-            Q_EMIT linkActivated(m_href);
-            QDesktopServices::openUrl(QUrl(m_href));
-        }
         update();
         event->accept();
+        if (triggerLink)
+        {
+            QPointer<AntTypography> guard(this);
+            Q_EMIT linkActivated(href);
+            if (!guard)
+            {
+                return;
+            }
+
+            const bool opened = AntUrlPolicy::openExternalUrl(QUrl::fromUserInput(href));
+            if (!guard)
+            {
+                return;
+            }
+            if (!opened)
+            {
+                Q_EMIT linkOpenBlocked(href);
+            }
+        }
         return;
     }
 

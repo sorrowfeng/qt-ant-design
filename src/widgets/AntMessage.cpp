@@ -120,7 +120,7 @@ void sendMouseClick(QWidget* target, const QPoint& globalPos, Qt::KeyboardModifi
 void drawMessageShadow(QPainter& painter, const QRectF& bubble, qreal radius)
 {
     painter.save();
-    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    const bool dark = antTheme->isDarkMode();
     constexpr int ShadowLayers = 14;
     const qreal maxAlpha = dark ? 0.040 : 0.024;
     for (int i = ShadowLayers; i >= 1; --i)
@@ -156,9 +156,7 @@ AntMessage::AntMessage(QWidget* parent)
         AntPopupMotion::close(this, messageMotionPlacement(m_placement), MessageMotionDistance);
     });
 
-    m_loadingTimer = new QTimer(this);
-    connect(m_loadingTimer, &QTimer::timeout, this, [this]() {
-        m_loadingAngle = (m_loadingAngle + 30) % 360;
+    connect(&m_loadingSpinner, &AntSpinner::ticked, this, [this]() {
         requestMessageUpdate(messageLayout().iconRect.toAlignedRect().adjusted(-3, -3, 3, 3),
                              QStringLiteral("loading"),
                              true);
@@ -297,7 +295,7 @@ void AntMessage::setPauseOnHover(bool pause)
     Q_EMIT pauseOnHoverChanged(m_pauseOnHover);
 }
 
-int AntMessage::loadingAngle() const { return m_loadingAngle; }
+int AntMessage::loadingAngle() const { return m_loadingSpinner.angle(); }
 
 QSize AntMessage::sizeHint() const
 {
@@ -344,7 +342,7 @@ void AntMessage::showEvent(QShowEvent* event)
 void AntMessage::hideEvent(QHideEvent* event)
 {
     m_closeTimer->stop();
-    m_loadingTimer->stop();
+    m_loadingSpinner.stop();
     Q_EMIT closed();
     QWidget::hideEvent(event);
 }
@@ -747,21 +745,11 @@ void AntMessage::startTimers()
 
 void AntMessage::updateLoadingState()
 {
-    if (m_messageType == Ant::MessageType::Loading && isVisible())
-    {
-        m_loadingTimer->start(80);
-    }
-    else
-    {
-        m_loadingTimer->stop();
-    }
+    m_loadingSpinner.setRunning(m_messageType == Ant::MessageType::Loading && isVisible());
 }
 
 void AntMessage::drawLoadingIcon(QPainter& painter, const QRectF& rect) const
 {
-    painter.save();
-    painter.setPen(QPen(accentColor(), 1.8, Qt::SolidLine, Qt::RoundCap));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect.adjusted(1, 1, -1, -1), m_loadingAngle * 16, 270 * 16);
-    painter.restore();
+    AntSpinner::drawArc(&painter, rect.adjusted(1, 1, -1, -1), accentColor(),
+                        m_loadingSpinner.angle(), 270, 1.8);
 }

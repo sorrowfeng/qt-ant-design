@@ -5,6 +5,9 @@ Generate the local Chinese component/API reference page.
 The page is intentionally generated from the public widget headers so it stays
 close to the exported C++ surface. It uses AGENTS.md only as human-maintained
 category and description metadata.
+
+The generated HTML is a build artifact. Keep final static HTML in the gh_page
+branch or under build/ locally, not in the development branches.
 """
 
 from __future__ import annotations
@@ -19,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WIDGETS_DIR = ROOT / "src" / "widgets"
 ANT_TYPES = ROOT / "src" / "core" / "AntTypes.h"
 AGENTS = ROOT / "AGENTS.md"
-OUTPUT = ROOT / "docs" / "component-api-overview-cn.html"
+OUTPUT = ROOT / "build" / "docs" / "component-api-overview-cn.html"
 
 
 CATEGORY_ORDER = [
@@ -2352,6 +2355,7 @@ def render_html(components: list[dict[str, object]], aliases: list[dict[str, str
 
 def main() -> None:
     components, aliases, enums = build_data()
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(render_html(components, aliases, enums), encoding="utf-8", newline="\n")
     print(f"Generated {OUTPUT.relative_to(ROOT)}")
     print(f"API classes: {len(components)}, aliases: {len(aliases)}, enums: {len(enums)}")

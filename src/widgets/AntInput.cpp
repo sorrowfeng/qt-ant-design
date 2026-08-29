@@ -216,22 +216,23 @@ void AntInput::cut() { m_lineEdit->cut(); }
 void AntInput::paste() { m_lineEdit->paste(); }
 void AntInput::undo() { m_lineEdit->undo(); }
 void AntInput::redo() { m_lineEdit->redo(); }
-Ant::Size AntInput::inputSize() const { return m_inputSize; }
+Ant::Size AntInput::size() const { return m_size; }
 Ant::Status AntInput::status() const { return m_status; }
 Ant::Variant AntInput::variant() const { return m_variant; }
 bool AntInput::allowClear() const { return m_allowClear; }
 bool AntInput::isPasswordMode() const { return m_passwordMode; }
 
-void AntInput::setInputSize(Ant::Size size)
+void AntInput::setSize(Ant::Size size)
 {
-    if (m_inputSize == size)
+    if (m_size == size)
         return;
-    m_inputSize = size;
+    m_size = size;
     invalidateMetricsCache();
     rebuildLayout();
     updateGeometry();
     update();
-    Q_EMIT inputSizeChanged(m_inputSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT inputSizeChanged(m_size);
 }
 
 void AntInput::setStatus(Ant::Status status)
@@ -523,7 +524,7 @@ AntInput::Metrics AntInput::metrics() const
 
     const auto& token = antTheme->tokens();
     Metrics m;
-    switch (m_inputSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         m.height = token.controlHeightLG;

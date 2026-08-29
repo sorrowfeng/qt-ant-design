@@ -42,19 +42,12 @@ AntRateStyle::AntRateStyle(QStyle* style)
 void AntRateStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntRate*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntRate>(widget);
 }
 
 void AntRateStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntRate*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntRate>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -68,28 +61,30 @@ void AntRateStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* o
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntRateStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntRateStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* rate = qobject_cast<AntRate*>(watched);
-    if (rate && event->type() == QEvent::Paint)
+    auto* rate = qobject_cast<AntRate*>(widget);
+    if (!rate)
     {
-        QStyleOption option;
-        option.initFrom(rate);
-        option.rect = rate->rect();
-        if (rate->isEnabled())
-        {
-            option.state |= QStyle::State_Enabled;
-        }
-        if (rate->hasFocus())
-        {
-            option.state |= QStyle::State_HasFocus;
-        }
-
-        QPainter painter(rate);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, rate);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(rate);
+    option.rect = rate->rect();
+    if (rate->isEnabled())
+    {
+        option.state |= QStyle::State_Enabled;
+    }
+    if (rate->hasFocus())
+    {
+        option.state |= QStyle::State_HasFocus;
+    }
+
+    QPainter painter(rate);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, rate);
+
+    return true;
 }
 
 void AntRateStyle::drawRate(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

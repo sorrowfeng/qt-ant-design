@@ -104,7 +104,7 @@ void AntSelectOptionWidget::paintEvent(QPaintEvent* event)
 
     if (multiMode && selected)
     {
-        const QColor checkColor = antTheme->themeMode() == Ant::ThemeMode::Dark
+        const QColor checkColor = antTheme->isDarkMode()
             ? token.colorPrimaryHover
             : token.colorPrimary;
         QPen checkPen(disabled ? token.colorTextDisabled : checkColor, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
@@ -177,13 +177,11 @@ AntSelect::AntSelect(QWidget* parent)
     m_arrowAnimation->setDuration(160);
     m_arrowAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
-    m_loadingTimer = new QTimer(this);
-    connect(m_loadingTimer, &QTimer::timeout, this, [this]() {
-        m_loadingAngle = (m_loadingAngle + 30) % 360;
+    connect(&m_loadingSpinner, &AntSpinner::ticked, this, [this]() {
         update();
     });
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -233,20 +231,21 @@ AntSelect::~AntSelect()
     }
 }
 
-Ant::Size AntSelect::selectSize() const { return m_selectSize; }
+Ant::Size AntSelect::size() const { return m_size; }
 
-void AntSelect::setSelectSize(Ant::Size size)
+void AntSelect::setSize(Ant::Size size)
 {
-    if (m_selectSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_selectSize = size;
+    m_size = size;
     invalidateMetricsCache();
     rebuildPopup();
     updateGeometry();
     update();
-    Q_EMIT selectSizeChanged(m_selectSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT selectSizeChanged(m_size);
 }
 
 Ant::Status AntSelect::status() const { return m_status; }
@@ -340,7 +339,7 @@ void AntSelect::setLoading(bool loading)
         return;
     }
     m_loading = loading;
-    m_loading ? m_loadingTimer->start(80) : m_loadingTimer->stop();
+    m_loadingSpinner.setRunning(m_loading);
     update();
     Q_EMIT loadingChanged(m_loading);
 }
@@ -435,6 +434,11 @@ QVariant AntSelect::currentValue() const
         return QVariant();
     }
     return m_options.at(m_currentIndex).value;
+}
+
+void AntSelect::setCurrentValue(const QVariant& value)
+{
+    setCurrentIndex(findData(value));
 }
 
 QVariant AntSelect::currentData(int role) const
@@ -741,7 +745,7 @@ bool AntSelect::isHoveredState() const { return m_hovered; }
 
 bool AntSelect::isPressedState() const { return m_pressed; }
 
-int AntSelect::loadingAngle() const { return m_loadingAngle; }
+int AntSelect::loadingAngle() const { return m_loadingSpinner.angle(); }
 
 QSize AntSelect::sizeHint() const
 {
@@ -916,13 +920,13 @@ AntSelect::Metrics AntSelect::metrics() const
     m.arrowWidth = token.fontSize + token.paddingXS * 2;
     m.optionHeight = token.controlHeight;
 
-    if (m_selectSize == Ant::Size::Large)
+    if (m_size == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
         m.optionHeight = token.controlHeightLG;
     }
-    else if (m_selectSize == Ant::Size::Small)
+    else if (m_size == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;

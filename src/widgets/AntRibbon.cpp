@@ -63,7 +63,7 @@ public:
         setIconSize(size == Ant::RibbonItemSize::Large ? QSize(28, 28) : QSize(16, 16));
         m_toolTip = new AntToolTip(this);
         m_toolTip->setObjectName(QStringLiteral("AntRibbonActionToolTip"));
-        m_toolTip->setPlacement(Ant::TooltipPlacement::Top);
+        m_toolTip->setPlacement(Ant::Placement::Top);
         m_toolTip->setTarget(this);
         if (action)
         {

@@ -34,14 +34,12 @@ AntSwitch::AntSwitch(QWidget* parent)
     m_stretchAnimation->setDuration(120);
     m_stretchAnimation->setEasingCurve(QEasingCurve::InOutSine);
 
-    m_loadingTimer = new QTimer(this);
-    connect(m_loadingTimer, &QTimer::timeout, this, [this]() {
-        m_loadingAngle = (m_loadingAngle + 30) % 360;
+    connect(&m_loadingSpinner, &AntSpinner::ticked, this, [this]() {
         ++m_loadingRegionUpdateCount;
         updateSwitchRegion(switchLoadingDirtyRect(), QStringLiteral("loading"));
     });
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -74,19 +72,20 @@ void AntSwitch::setChecked(bool checked)
     Q_EMIT toggled(m_checked);
 }
 
-Ant::Size AntSwitch::switchSize() const { return m_switchSize; }
+Ant::Size AntSwitch::size() const { return m_size; }
 
-void AntSwitch::setSwitchSize(Ant::Size size)
+void AntSwitch::setSize(Ant::Size size)
 {
-    if (m_switchSize == size)
+    if (m_size == size)
     {
         return;
     }
 
-    m_switchSize = size;
+    m_size = size;
     updateGeometryFromState();
     updateSwitchRegion(switchTrackDirtyRect(), QStringLiteral("size"));
-    Q_EMIT switchSizeChanged(m_switchSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT switchSizeChanged(m_size);
 }
 
 bool AntSwitch::isLoading() const { return m_loading; }
@@ -171,7 +170,7 @@ bool AntSwitch::isHoveredState() const { return m_hovered; }
 
 bool AntSwitch::isPressedState() const { return m_pressed; }
 
-int AntSwitch::loadingAngle() const { return m_loadingAngle; }
+int AntSwitch::loadingAngle() const { return m_loadingSpinner.angle(); }
 
 QSize AntSwitch::sizeHint() const
 {
@@ -302,7 +301,7 @@ AntSwitch::Metrics AntSwitch::metrics() const
     const int controlHeight = token.controlHeight > 0 ? token.controlHeight : Ant::ControlHeight;
     const qreal lineHeight = token.lineHeight > 0.0 ? token.lineHeight : 1.5715;
     const qreal height = fontSize * lineHeight;
-    if (m_switchSize == Ant::Size::Small)
+    if (m_size == Ant::Size::Small)
     {
         m.trackHeight = controlHeight / 2;
         m.trackPadding = 2;
@@ -351,9 +350,9 @@ const AntSwitch::LayoutCache& AntSwitch::layoutCache() const
     };
 
     if (m_layoutCache.valid
-        && m_layoutCache.widgetSize == size()
+        && m_layoutCache.widgetSize == QWidget::size()
         && sameMetrics(m_layoutCache.metrics, currentMetrics)
-        && m_layoutCache.switchSize == m_switchSize
+        && m_layoutCache.switchSize == m_size
         && m_layoutCache.checkedText == m_checkedText
         && m_layoutCache.uncheckedText == m_uncheckedText
         && std::abs(m_layoutCache.handleProgress - m_handleProgress) < 0.0001
@@ -362,9 +361,9 @@ const AntSwitch::LayoutCache& AntSwitch::layoutCache() const
         return m_layoutCache;
     }
 
-    m_layoutCache.widgetSize = size();
+    m_layoutCache.widgetSize = QWidget::size();
     m_layoutCache.metrics = currentMetrics;
-    m_layoutCache.switchSize = m_switchSize;
+    m_layoutCache.switchSize = m_size;
     m_layoutCache.checkedText = m_checkedText;
     m_layoutCache.uncheckedText = m_uncheckedText;
     m_layoutCache.handleProgress = m_handleProgress;
@@ -454,15 +453,8 @@ void AntSwitch::invalidateLayoutCache() const
 void AntSwitch::updateLoadingTimerState()
 {
     const bool shouldRun = m_loading && isVisible();
-    if (shouldRun && !m_loadingTimer->isActive())
-    {
-        m_loadingTimer->start(80);
-    }
-    else if (!shouldRun && m_loadingTimer->isActive())
-    {
-        m_loadingTimer->stop();
-    }
-    setProperty("antSwitchLoadingTimerActive", m_loadingTimer->isActive());
+    m_loadingSpinner.setRunning(shouldRun);
+    setProperty("antSwitchLoadingTimerActive", m_loadingSpinner.isRunning());
 }
 
 void AntSwitch::syncSwitchPerfCounters() const
@@ -474,7 +466,7 @@ void AntSwitch::syncSwitchPerfCounters() const
     self->setProperty("antSwitchRegionUpdateCount", m_regionUpdateCount);
     self->setProperty("antSwitchHandleRegionUpdateCount", m_handleRegionUpdateCount);
     self->setProperty("antSwitchLoadingRegionUpdateCount", m_loadingRegionUpdateCount);
-    self->setProperty("antSwitchLoadingTimerActive", m_loadingTimer ? m_loadingTimer->isActive() : false);
+    self->setProperty("antSwitchLoadingTimerActive", m_loadingSpinner.isRunning());
 }
 
 void AntSwitch::animateToChecked(bool checked)

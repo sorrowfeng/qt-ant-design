@@ -105,6 +105,7 @@
 #include "widgets/AntWatermark.h"
 #include "widgets/AntWidget.h"
 #include "widgets/AntWindow.h"
+#include "widgets/AntWindowFrame.h"
 
 class TestAntMetaProperties : public QObject
 {
@@ -157,7 +158,11 @@ QList<ObjectCase> objectCases()
         {"AntFlex", [](QWidget* parent) { return new AntFlex(parent); }},
         {"AntFloatButton", [](QWidget* parent) { return new AntFloatButton(parent); }},
         {"AntFileDialog", [](QWidget* parent) { return new AntFileDialog(parent); }},
-        {"AntFormItem", [](QWidget* parent) { return new AntFormItem(parent); }},
+        {"AntFormItem", [](QWidget* parent) {
+             auto* item = new AntFormItem(parent);
+             item->setFieldWidget(new QLineEdit);
+             return item;
+         }},
         {"AntFormProvider", [](QWidget* parent) { return new AntFormProvider(parent); }},
         {"AntForm", [](QWidget* parent) { return new AntForm(parent); }},
         {"AntFormList", [](QWidget* parent) { return new AntFormList(parent); }},
@@ -198,7 +203,11 @@ QList<ObjectCase> objectCases()
         {"AntScrollArea", [](QWidget* parent) { return new AntScrollArea(parent); }},
         {"AntScrollBar", [](QWidget* parent) { return new AntScrollBar(parent); }},
         {"AntSegmented", [](QWidget* parent) { return new AntSegmented(parent); }},
-        {"AntSelect", [](QWidget* parent) { return new AntSelect(parent); }},
+        {"AntSelect", [](QWidget* parent) {
+             auto* select = new AntSelect(parent);
+             select->addOption(QStringLiteral("Meta Value"), QStringLiteral("meta-value"));
+             return select;
+         }},
         {"AntSkeleton", [](QWidget* parent) { return new AntSkeleton(parent); }},
         {"AntSlider", [](QWidget* parent) { return new AntSlider(parent); }},
         {"AntSpace", [](QWidget* parent) { return new AntSpace(parent); }},

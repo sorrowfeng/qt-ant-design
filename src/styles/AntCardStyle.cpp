@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#include "core/AntSpinner.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntCard.h"
 
@@ -15,19 +16,12 @@ AntCardStyle::AntCardStyle(QStyle* style)
 void AntCardStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntCard*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntCard>(widget);
 }
 
 void AntCardStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntCard*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntCard>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -46,19 +40,21 @@ QSize AntCardStyle::sizeFromContents(ContentsType type, const QStyleOption* opti
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntCardStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntCardStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* card = qobject_cast<AntCard*>(watched);
-    if (card && event->type() == QEvent::Paint)
+    auto* card = qobject_cast<AntCard*>(widget);
+    if (!card)
     {
-        QStyleOption option;
-        option.initFrom(card);
-        option.rect = card->rect();
-        QPainter painter(card);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, card);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(card);
+    option.rect = card->rect();
+    QPainter painter(card);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, card);
+
+    return true;
 }
 
 void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -116,9 +112,8 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
         mask.setAlphaF(0.72);
         AntStyleBase::drawCrispRoundedRect(painter, cardRect, Qt::NoPen, mask, radius, radius);
 
-        painter->setPen(QPen(token.colorPrimary, 3, Qt::SolidLine, Qt::RoundCap));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawArc(cache.spinnerRect, card->m_spinnerAngle * 16, 280 * 16);
+        AntSpinner::drawArc(painter, cache.spinnerRect, token.colorPrimary,
+                            card->m_spinner.angle(), 280, 3.0);
     }
 
     painter->restore();

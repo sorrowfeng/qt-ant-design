@@ -16,18 +16,12 @@ AntStepsStyle::AntStepsStyle(QStyle* style)
 void AntStepsStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSteps*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntSteps>(widget);
 }
 
 void AntStepsStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSteps*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSteps>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -46,19 +40,21 @@ QSize AntStepsStyle::sizeFromContents(ContentsType type, const QStyleOption* opt
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntStepsStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntStepsStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* steps = qobject_cast<AntSteps*>(watched);
-    if (steps && event->type() == QEvent::Paint)
+    auto* steps = qobject_cast<AntSteps*>(widget);
+    if (!steps)
     {
-        QStyleOption option;
-        option.initFrom(steps);
-        option.rect = steps->rect();
-        QPainter painter(steps);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, steps);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(steps);
+    option.rect = steps->rect();
+    QPainter painter(steps);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, steps);
+
+    return true;
 }
 
 void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -86,12 +82,8 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         const QColor color = steps->statusColor(status);
         const AntStepItem step = steps->stepAt(i);
         const bool disabled = step.disabled;
-        QFont titleFontForItem = painter->font();
-        titleFontForItem.setPixelSize(m.titleFontSize);
-        titleFontForItem.setWeight(status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
-        QFont descFontForItem = painter->font();
-        descFontForItem.setPixelSize(m.descFontSize);
-        descFontForItem.setWeight(QFont::Normal);
+        const QFont titleFontForItem = AntStyleBase::withPixelSize(painter->font(), m.titleFontSize, status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
+        const QFont descFontForItem = AntStyleBase::withPixelSize(painter->font(), m.descFontSize, QFont::Normal);
 
         // Tail line
         if (i < layouts.size() - 1)
@@ -164,9 +156,7 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         }
         else
         {
-            QFont iconFont = painter->font();
-            iconFont.setPixelSize(14);
-            iconFont.setWeight(QFont::DemiBold);
+            const QFont iconFont = AntStyleBase::withPixelSize(painter->font(), 14, QFont::DemiBold);
             painter->setFont(iconFont);
             painter->setPen(numberColor);
             painter->drawText(circle, Qt::AlignCenter, steps->iconText(status, i));

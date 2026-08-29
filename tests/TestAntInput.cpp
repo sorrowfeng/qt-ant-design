@@ -28,7 +28,7 @@ QImage renderInput(AntInput* input)
     input->lineEdit()->setFocus(Qt::OtherFocusReason);
     QCoreApplication::processEvents();
 
-    QImage image(input->size(), QImage::Format_ARGB32_Premultiplied);
+    QImage image(input->QWidget::size(), QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter(&image);
     input->render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
@@ -129,8 +129,23 @@ void TestAntInput::propertiesAndSignals()
     QCOMPARE(input->status(), Ant::Status::Error);
     QCOMPARE(statusSpy.count(), 1);
 
+    // setError is a deprecated alias for setStatus(Error/Normal); it must keep working.
+    input->setStatus(Ant::Status::Normal);
+    QSignalSpy errorAliasSpy(input, &AntInput::statusChanged);
+    input->setError(true);
+    QCOMPARE(input->status(), Ant::Status::Error);
+    QCOMPARE(errorAliasSpy.count(), 1);
+    input->setError(false);
+    QCOMPARE(input->status(), Ant::Status::Normal);
+    QCOMPARE(errorAliasSpy.count(), 2);
+
+    QSignalSpy variantSpy(input, &AntInput::variantChanged);
     input->setVariant(Ant::Variant::Filled);
     QCOMPARE(input->variant(), Ant::Variant::Filled);
+    QCOMPARE(variantSpy.count(), 1);
+    input->setVariant(Ant::Variant::Outlined);
+    QCOMPARE(input->variant(), Ant::Variant::Outlined);
+    QCOMPARE(variantSpy.count(), 2);
 
     QSignalSpy clearSpy(input, &AntInput::allowClearChanged);
     input->setAllowClear(true);

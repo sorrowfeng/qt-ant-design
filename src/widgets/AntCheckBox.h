@@ -46,14 +46,18 @@ public:
     QSize minimumSizeHint() const override;
 
 Q_SIGNALS:
+    // Canonical state-change signals - prefer these over the legacy aliases below.
     void checkedChanged(bool checked);
     void checkStateChanged(Qt::CheckState state);
     void indeterminateChanged(bool indeterminate);
     void tristateChanged(bool tristate);
     void textChanged(const QString& text);
-    void stateChanged(int state);
-    void toggled(bool checked);
+    // User-gesture event (fires on click/keyboard activation, not on programmatic set).
     void clicked(bool checked);
+    // Deprecated - use checkStateChanged() instead.
+    void stateChanged(int state);
+    // Deprecated - use checkedChanged() instead.
+    void toggled(bool checked);
 
 protected:
     void enterEvent(AntEnterEvent* event) override;

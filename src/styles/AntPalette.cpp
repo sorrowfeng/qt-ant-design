@@ -1,6 +1,7 @@
 #include "AntPalette.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace
 {

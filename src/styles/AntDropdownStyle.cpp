@@ -16,18 +16,12 @@ AntDropdownStyle::AntDropdownStyle(QStyle* style)
 void AntDropdownStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntDropdown*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntDropdown>(widget);
 }
 
 void AntDropdownStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntDropdown*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntDropdown>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -46,19 +40,21 @@ QSize AntDropdownStyle::sizeFromContents(ContentsType type, const QStyleOption* 
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntDropdownStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntDropdownStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* dropdown = qobject_cast<AntDropdown*>(watched);
-    if (dropdown && event->type() == QEvent::Paint)
+    auto* dropdown = qobject_cast<AntDropdown*>(widget);
+    if (!dropdown)
     {
-        QStyleOption option;
-        option.initFrom(dropdown);
-        option.rect = dropdown->rect();
-        QPainter painter(dropdown);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, dropdown);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(dropdown);
+    option.rect = dropdown->rect();
+    QPainter painter(dropdown);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, dropdown);
+
+    return true;
 }
 
 void AntDropdownStyle::drawDropdown(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

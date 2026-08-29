@@ -144,7 +144,7 @@ private:
 
         switch (m_owner->m_placement)
         {
-        case Ant::DrawerPlacement::Right:
+        case Ant::Placement::Right:
         {
             QLinearGradient gradient(rect.topLeft(), rect.topLeft() + QPoint(shadowWidth, 0));
             gradient.setColorAt(0.0, shadowColor);
@@ -153,7 +153,7 @@ private:
             painter.drawRect(QRect(rect.topLeft(), QSize(shadowWidth, rect.height())));
             break;
         }
-        case Ant::DrawerPlacement::Left:
+        case Ant::Placement::Left:
         {
             QLinearGradient gradient(rect.topRight() - QPoint(shadowWidth - 1, 0), rect.topRight());
             gradient.setColorAt(0.0, Qt::transparent);
@@ -162,7 +162,7 @@ private:
             painter.drawRect(QRect(rect.topRight() - QPoint(shadowWidth - 1, 0), QSize(shadowWidth, rect.height())));
             break;
         }
-        case Ant::DrawerPlacement::Bottom:
+        case Ant::Placement::Bottom:
         {
             QLinearGradient gradient(rect.topLeft(), rect.topLeft() + QPoint(0, shadowWidth));
             gradient.setColorAt(0.0, shadowColor);
@@ -171,7 +171,7 @@ private:
             painter.drawRect(QRect(rect.topLeft(), QSize(rect.width(), shadowWidth)));
             break;
         }
-        case Ant::DrawerPlacement::Top:
+        case Ant::Placement::Top:
         {
             QLinearGradient gradient(rect.bottomLeft() - QPoint(0, shadowWidth - 1), rect.bottomLeft());
             gradient.setColorAt(0.0, Qt::transparent);
@@ -266,10 +266,17 @@ void AntDrawer::setTitle(const QString& title)
     Q_EMIT titleChanged(m_title);
 }
 
-Ant::DrawerPlacement AntDrawer::placement() const { return m_placement; }
+Ant::Placement AntDrawer::placement() const { return m_placement; }
 
-void AntDrawer::setPlacement(Ant::DrawerPlacement placement)
+void AntDrawer::setPlacement(Ant::Placement placement)
 {
+    // Placement is the shared 8-value superset; drawer only supports the
+    // four cardinal directions. Ignore out-of-domain values.
+    if (placement != Ant::Placement::Left && placement != Ant::Placement::Right
+        && placement != Ant::Placement::Top && placement != Ant::Placement::Bottom)
+    {
+        return;
+    }
     if (m_placement == placement)
     {
         return;
@@ -704,28 +711,28 @@ const AntDrawer::GeometryCache& AntDrawer::drawerGeometryCache() const
     const int h = height();
     switch (m_placement)
     {
-    case Ant::DrawerPlacement::Right:
+    case Ant::Placement::Right:
     {
         const int dw = qMin(m_drawerWidth, w);
         cache.endGeometry = QRect(w - dw, 0, dw, h);
         cache.startGeometry = QRect(w, 0, dw, h);
         break;
     }
-    case Ant::DrawerPlacement::Left:
+    case Ant::Placement::Left:
     {
         const int dw = qMin(m_drawerWidth, w);
         cache.endGeometry = QRect(0, 0, dw, h);
         cache.startGeometry = QRect(-dw, 0, dw, h);
         break;
     }
-    case Ant::DrawerPlacement::Bottom:
+    case Ant::Placement::Bottom:
     {
         const int dh = qMin(m_drawerHeight, h);
         cache.endGeometry = QRect(0, h - dh, w, dh);
         cache.startGeometry = QRect(0, h, w, dh);
         break;
     }
-    case Ant::DrawerPlacement::Top:
+    case Ant::Placement::Top:
     {
         const int dh = qMin(m_drawerHeight, h);
         cache.endGeometry = QRect(0, 0, w, dh);
@@ -756,13 +763,13 @@ qreal AntDrawer::maskProgressForPanelGeometry(const QRect& panelGeometry) const
     qreal travelled = 0.0;
     switch (m_placement)
     {
-    case Ant::DrawerPlacement::Right:
-    case Ant::DrawerPlacement::Left:
+    case Ant::Placement::Right:
+    case Ant::Placement::Left:
         denom = qAbs(static_cast<qreal>(end.x() - start.x()));
         travelled = qAbs(static_cast<qreal>(panelGeometry.x() - start.x()));
         break;
-    case Ant::DrawerPlacement::Top:
-    case Ant::DrawerPlacement::Bottom:
+    case Ant::Placement::Top:
+    case Ant::Placement::Bottom:
         denom = qAbs(static_cast<qreal>(end.y() - start.y()));
         travelled = qAbs(static_cast<qreal>(panelGeometry.y() - start.y()));
         break;
@@ -783,22 +790,22 @@ QRect AntDrawer::panelShadowRegion(const QRect& panelGeometry) const
 
     switch (m_placement)
     {
-    case Ant::DrawerPlacement::Right:
+    case Ant::Placement::Right:
         return QRect(panelGeometry.left() - DrawerOverlayShadowSize,
                      panelGeometry.top(),
                      DrawerOverlayShadowSize,
                      panelGeometry.height()).intersected(rect());
-    case Ant::DrawerPlacement::Left:
+    case Ant::Placement::Left:
         return QRect(panelGeometry.right() + 1,
                      panelGeometry.top(),
                      DrawerOverlayShadowSize,
                      panelGeometry.height()).intersected(rect());
-    case Ant::DrawerPlacement::Bottom:
+    case Ant::Placement::Bottom:
         return QRect(panelGeometry.left(),
                      panelGeometry.top() - DrawerOverlayShadowSize,
                      panelGeometry.width(),
                      DrawerOverlayShadowSize).intersected(rect());
-    case Ant::DrawerPlacement::Top:
+    case Ant::Placement::Top:
         return QRect(panelGeometry.left(),
                      panelGeometry.bottom() + 1,
                      panelGeometry.width(),

@@ -32,18 +32,18 @@ QRect availableScreenGeometryFor(const QWidget* widget)
     return QRect(0, 0, 1280, 720);
 }
 
-bool isTopPlacement(Ant::TooltipPlacement placement)
+bool isTopPlacement(Ant::Placement placement)
 {
-    return placement == Ant::TooltipPlacement::Top
-        || placement == Ant::TooltipPlacement::TopLeft
-        || placement == Ant::TooltipPlacement::TopRight;
+    return placement == Ant::Placement::Top
+        || placement == Ant::Placement::TopLeft
+        || placement == Ant::Placement::TopRight;
 }
 
-bool isBottomPlacement(Ant::TooltipPlacement placement)
+bool isBottomPlacement(Ant::Placement placement)
 {
-    return placement == Ant::TooltipPlacement::Bottom
-        || placement == Ant::TooltipPlacement::BottomLeft
-        || placement == Ant::TooltipPlacement::BottomRight;
+    return placement == Ant::Placement::Bottom
+        || placement == Ant::Placement::BottomLeft
+        || placement == Ant::Placement::BottomRight;
 }
 }
 
@@ -104,17 +104,17 @@ void AntToolTip::setTitle(const QString& title)
     Q_EMIT titleChanged(m_title);
 }
 
-Ant::TooltipPlacement AntToolTip::placement() const
+Ant::Placement AntToolTip::placement() const
 {
     return m_placement;
 }
 
-Ant::TooltipPlacement AntToolTip::renderPlacement() const
+Ant::Placement AntToolTip::renderPlacement() const
 {
     return m_renderPlacement;
 }
 
-void AntToolTip::setPlacement(Ant::TooltipPlacement placement)
+void AntToolTip::setPlacement(Ant::Placement placement)
 {
     if (m_placement == placement)
     {
@@ -334,7 +334,7 @@ const AntToolTip::ToolTipLayoutCache& AntToolTip::tooltipLayout() const
                                                Qt::TextWordWrap,
                                                m_title);
     const int arrow = m_arrowVisible ? cache.metrics.arrowSize : 0;
-    if (m_renderPlacement == Ant::TooltipPlacement::Left || m_renderPlacement == Ant::TooltipPlacement::Right)
+    if (m_renderPlacement == Ant::Placement::Left || m_renderPlacement == Ant::Placement::Right)
     {
         cache.sizeHint = QSize(measuredText.width() + cache.metrics.paddingX * 2 + arrow,
                                measuredText.height() + cache.metrics.paddingY * 2);
@@ -358,7 +358,7 @@ const AntToolTip::ToolTipLayoutCache& AntToolTip::tooltipLayout() const
     {
         cache.bubbleRect = fullRect.adjusted(0, cache.metrics.arrowSize, 0, 0);
     }
-    else if (m_renderPlacement == Ant::TooltipPlacement::Left)
+    else if (m_renderPlacement == Ant::Placement::Left)
     {
         cache.bubbleRect = fullRect.adjusted(0, 0, -cache.metrics.arrowSize, 0);
     }
@@ -373,42 +373,42 @@ const AntToolTip::ToolTipLayoutCache& AntToolTip::tooltipLayout() const
         const int arrowSize = cache.metrics.arrowSize;
         switch (m_renderPlacement)
         {
-        case Ant::TooltipPlacement::Top:
+        case Ant::Placement::Top:
             cache.arrowPolygon = QPolygonF({QPointF(fullRect.width() / 2.0 - arrowSize, bubble.bottom()),
                                             QPointF(fullRect.width() / 2.0 + arrowSize, bubble.bottom()),
                                             QPointF(fullRect.width() / 2.0, fullRect.bottom())});
             break;
-        case Ant::TooltipPlacement::TopLeft:
+        case Ant::Placement::TopLeft:
             cache.arrowPolygon = QPolygonF({QPointF(bubble.left() + 18 - arrowSize, bubble.bottom()),
                                             QPointF(bubble.left() + 18 + arrowSize, bubble.bottom()),
                                             QPointF(bubble.left() + 18, fullRect.bottom())});
             break;
-        case Ant::TooltipPlacement::TopRight:
+        case Ant::Placement::TopRight:
             cache.arrowPolygon = QPolygonF({QPointF(bubble.right() - 18 - arrowSize, bubble.bottom()),
                                             QPointF(bubble.right() - 18 + arrowSize, bubble.bottom()),
                                             QPointF(bubble.right() - 18, fullRect.bottom())});
             break;
-        case Ant::TooltipPlacement::Bottom:
+        case Ant::Placement::Bottom:
             cache.arrowPolygon = QPolygonF({QPointF(fullRect.width() / 2.0 - arrowSize, bubble.top()),
                                             QPointF(fullRect.width() / 2.0 + arrowSize, bubble.top()),
                                             QPointF(fullRect.width() / 2.0, fullRect.top())});
             break;
-        case Ant::TooltipPlacement::BottomLeft:
+        case Ant::Placement::BottomLeft:
             cache.arrowPolygon = QPolygonF({QPointF(bubble.left() + 18 - arrowSize, bubble.top()),
                                             QPointF(bubble.left() + 18 + arrowSize, bubble.top()),
                                             QPointF(bubble.left() + 18, fullRect.top())});
             break;
-        case Ant::TooltipPlacement::BottomRight:
+        case Ant::Placement::BottomRight:
             cache.arrowPolygon = QPolygonF({QPointF(bubble.right() - 18 - arrowSize, bubble.top()),
                                             QPointF(bubble.right() - 18 + arrowSize, bubble.top()),
                                             QPointF(bubble.right() - 18, fullRect.top())});
             break;
-        case Ant::TooltipPlacement::Left:
+        case Ant::Placement::Left:
             cache.arrowPolygon = QPolygonF({QPointF(bubble.right(), fullRect.height() / 2.0 - arrowSize),
                                             QPointF(bubble.right(), fullRect.height() / 2.0 + arrowSize),
                                             QPointF(fullRect.right(), fullRect.height() / 2.0)});
             break;
-        case Ant::TooltipPlacement::Right:
+        case Ant::Placement::Right:
         default:
             cache.arrowPolygon = QPolygonF({QPointF(bubble.left(), fullRect.height() / 2.0 - arrowSize),
                                             QPointF(bubble.left(), fullRect.height() / 2.0 + arrowSize),
@@ -455,7 +455,7 @@ QColor AntToolTip::bubbleColor() const
     {
         return m_color;
     }
-    return antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626");
+    return antTheme->isDarkMode() ? QColor("#424242") : QColor("#262626");
 }
 
 QColor AntToolTip::textColor() const
@@ -467,42 +467,42 @@ QColor AntToolTip::textColor() const
     return QColor(Qt::white);
 }
 
-Ant::TooltipPlacement AntToolTip::resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& tipSize) const
+Ant::Placement AntToolTip::resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& tipSize) const
 {
     const int gap = metrics().gap;
 
     switch (m_placement)
     {
-    case Ant::TooltipPlacement::Top:
-    case Ant::TooltipPlacement::TopLeft:
-    case Ant::TooltipPlacement::TopRight:
+    case Ant::Placement::Top:
+    case Ant::Placement::TopLeft:
+    case Ant::Placement::TopRight:
         if (targetRect.top() - gap - tipSize.height() < screenRect.top())
         {
-            return m_placement == Ant::TooltipPlacement::TopLeft ? Ant::TooltipPlacement::BottomLeft :
-                   m_placement == Ant::TooltipPlacement::TopRight ? Ant::TooltipPlacement::BottomRight :
-                                                                    Ant::TooltipPlacement::Bottom;
+            return m_placement == Ant::Placement::TopLeft ? Ant::Placement::BottomLeft :
+                   m_placement == Ant::Placement::TopRight ? Ant::Placement::BottomRight :
+                                                                    Ant::Placement::Bottom;
         }
         break;
-    case Ant::TooltipPlacement::Bottom:
-    case Ant::TooltipPlacement::BottomLeft:
-    case Ant::TooltipPlacement::BottomRight:
+    case Ant::Placement::Bottom:
+    case Ant::Placement::BottomLeft:
+    case Ant::Placement::BottomRight:
         if (targetRect.bottom() + gap + tipSize.height() > screenRect.bottom())
         {
-            return m_placement == Ant::TooltipPlacement::BottomLeft ? Ant::TooltipPlacement::TopLeft :
-                   m_placement == Ant::TooltipPlacement::BottomRight ? Ant::TooltipPlacement::TopRight :
-                                                                       Ant::TooltipPlacement::Top;
+            return m_placement == Ant::Placement::BottomLeft ? Ant::Placement::TopLeft :
+                   m_placement == Ant::Placement::BottomRight ? Ant::Placement::TopRight :
+                                                                       Ant::Placement::Top;
         }
         break;
-    case Ant::TooltipPlacement::Left:
+    case Ant::Placement::Left:
         if (targetRect.left() - gap - tipSize.width() < screenRect.left())
         {
-            return Ant::TooltipPlacement::Right;
+            return Ant::Placement::Right;
         }
         break;
-    case Ant::TooltipPlacement::Right:
+    case Ant::Placement::Right:
         if (targetRect.right() + gap + tipSize.width() > screenRect.right())
         {
-            return Ant::TooltipPlacement::Left;
+            return Ant::Placement::Left;
         }
         break;
     }
@@ -511,26 +511,26 @@ Ant::TooltipPlacement AntToolTip::resolvedPlacement(const QRect& targetRect, con
 
 QPoint AntToolTip::tooltipTopLeft(const QRect& targetRect,
                                   const QSize& tooltipSize,
-                                  Ant::TooltipPlacement placement) const
+                                  Ant::Placement placement) const
 {
     const int gap = metrics().gap;
     switch (placement)
     {
-    case Ant::TooltipPlacement::Top:
+    case Ant::Placement::Top:
         return QPoint(targetRect.center().x() - tooltipSize.width() / 2, targetRect.top() - tooltipSize.height() - gap);
-    case Ant::TooltipPlacement::TopLeft:
+    case Ant::Placement::TopLeft:
         return QPoint(targetRect.left(), targetRect.top() - tooltipSize.height() - gap);
-    case Ant::TooltipPlacement::TopRight:
+    case Ant::Placement::TopRight:
         return QPoint(targetRect.right() - tooltipSize.width(), targetRect.top() - tooltipSize.height() - gap);
-    case Ant::TooltipPlacement::Bottom:
+    case Ant::Placement::Bottom:
         return QPoint(targetRect.center().x() - tooltipSize.width() / 2, targetRect.bottom() + gap);
-    case Ant::TooltipPlacement::BottomLeft:
+    case Ant::Placement::BottomLeft:
         return QPoint(targetRect.left(), targetRect.bottom() + gap);
-    case Ant::TooltipPlacement::BottomRight:
+    case Ant::Placement::BottomRight:
         return QPoint(targetRect.right() - tooltipSize.width(), targetRect.bottom() + gap);
-    case Ant::TooltipPlacement::Left:
+    case Ant::Placement::Left:
         return QPoint(targetRect.left() - tooltipSize.width() - gap, targetRect.center().y() - tooltipSize.height() / 2);
-    case Ant::TooltipPlacement::Right:
+    case Ant::Placement::Right:
     default:
         return QPoint(targetRect.right() + gap, targetRect.center().y() - tooltipSize.height() / 2);
     }
@@ -546,7 +546,7 @@ void AntToolTip::updatePosition()
     const QRect targetRect(m_target->mapToGlobal(QPoint(0, 0)), m_target->size());
     const QRect screenRect = availableScreenGeometryFor(m_target);
     const QSize tooltipSize = sizeHint();
-    const Ant::TooltipPlacement placement = resolvedPlacement(targetRect, screenRect, tooltipSize);
+    const Ant::Placement placement = resolvedPlacement(targetRect, screenRect, tooltipSize);
     QPoint topLeft = tooltipTopLeft(targetRect, tooltipSize, placement);
 
     topLeft.setX(qBound(screenRect.left() + 4, topLeft.x(), screenRect.right() - tooltipSize.width() - 4));

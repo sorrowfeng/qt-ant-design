@@ -88,7 +88,7 @@ void drawShadowLayer(QPainter& painter, const QRectF& card, int blur, qreal yOff
 
 void drawNotificationShadow(QPainter& painter, const QRectF& card, qreal radius)
 {
-    const bool dark = antTheme->themeMode() == Ant::ThemeMode::Dark;
+    const bool dark = antTheme->isDarkMode();
     drawShadowLayer(painter, card, 12, 4, dark ? 0.048 : 0.026, radius);
     drawShadowLayer(painter, card, 5, 1, dark ? 0.022 : 0.012, radius);
 }
@@ -116,9 +116,7 @@ AntNotification::AntNotification(QWidget* parent)
                                   true);
     });
 
-    m_spinnerTimer = new QTimer(this);
-    connect(m_spinnerTimer, &QTimer::timeout, this, [this]() {
-        m_spinnerAngle = (m_spinnerAngle + 30) % 360;
+    connect(&m_spinner, &AntSpinner::ticked, this, [this]() {
         requestNotificationUpdate(notificationLayout().iconRect.toAlignedRect().adjusted(-3, -3, 3, 3),
                                   QStringLiteral("loading"),
                                   false,
@@ -323,6 +321,13 @@ Ant::Placement AntNotification::placement() const { return m_placement; }
 
 void AntNotification::setPlacement(Ant::Placement placement)
 {
+    // Placement is the shared 8-value superset; notification only supports
+    // the six top/bottom anchored values (the left/right slide-ins are not
+    // part of the notification domain). Ignore out-of-domain values.
+    if (placement == Ant::Placement::Left || placement == Ant::Placement::Right)
+    {
+        return;
+    }
     if (m_placement == placement)
     {
         return;
@@ -470,7 +475,7 @@ void AntNotification::setIconVisible(bool visible)
     Q_EMIT iconVisibleChanged(m_iconVisible);
 }
 
-int AntNotification::spinnerAngle() const { return m_spinnerAngle; }
+int AntNotification::spinnerAngle() const { return m_spinner.angle(); }
 
 QSize AntNotification::sizeHint() const
 {
@@ -520,7 +525,7 @@ void AntNotification::hideEvent(QHideEvent* event)
 {
     m_closeTimer->stop();
     m_progressTimer->stop();
-    m_spinnerTimer->stop();
+    m_spinner.stop();
     Q_EMIT closed();
     QWidget::hideEvent(event);
 }
@@ -988,11 +993,8 @@ void AntNotification::syncNotificationPerfCounters() const
 
 void AntNotification::drawLoadingIcon(QPainter& painter, const QRectF& rect) const
 {
-    painter.save();
-    painter.setPen(QPen(accentColor(), 2.0, Qt::SolidLine, Qt::RoundCap));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect.adjusted(2, 2, -2, -2), m_spinnerAngle * 16, 270 * 16);
-    painter.restore();
+    AntSpinner::drawArc(&painter, rect.adjusted(2, 2, -2, -2), accentColor(),
+                        m_spinner.angle(), 270, 2.0);
 }
 
 qreal AntNotification::progressRatio() const
@@ -1064,12 +1066,7 @@ void AntNotification::resumeCloseTimer()
 
 void AntNotification::updateSpinnerState()
 {
-    if (m_iconVisible && m_notificationType == Ant::MessageType::Loading && isVisible())
-    {
-        m_spinnerTimer->start(80);
-    }
-    else
-    {
-        m_spinnerTimer->stop();
-    }
+    m_spinner.setRunning(m_iconVisible
+                         && m_notificationType == Ant::MessageType::Loading
+                         && isVisible());
 }

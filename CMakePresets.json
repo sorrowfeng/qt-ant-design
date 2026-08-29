@@ -1,0 +1,116 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-msvc-qt6-debug",
+      "displayName": "Windows MSVC Qt6 Debug",
+      "description": "Configure Qt6 Debug with examples and tests. Set CMAKE_PREFIX_PATH or Qt6_DIR if Qt is not discoverable.",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/qt6-msvc-debug",
+      "cacheVariables": {
+        "QT_DEFAULT_MAJOR_VERSION": "6",
+        "QT_ANT_DESIGN_BUILD_EXAMPLES": "ON",
+        "QT_ANT_DESIGN_BUILD_TESTS": "ON",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/qt6-msvc-debug"
+      }
+    },
+    {
+      "name": "windows-msvc-qt5-debug",
+      "displayName": "Windows MSVC Qt5 Debug",
+      "description": "Configure Qt5 Debug with examples and tests. Set QT5_CMAKE_PREFIX_PATH to the Qt 5 lib/cmake directory when Qt5 is not the default Qt.",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/qt5-msvc-debug",
+      "cacheVariables": {
+        "QT_DEFAULT_MAJOR_VERSION": "5",
+        "CMAKE_PREFIX_PATH": "$env{QT5_CMAKE_PREFIX_PATH}",
+        "QT_ANT_DESIGN_BUILD_EXAMPLES": "ON",
+        "QT_ANT_DESIGN_BUILD_TESTS": "ON",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/qt5-msvc-debug"
+      }
+    },
+    {
+      "name": "windows-msvc-qt6-release",
+      "displayName": "Windows MSVC Qt6 Release",
+      "description": "Configure Qt6 Release install layout for the default static library build.",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/qt6-msvc-release",
+      "cacheVariables": {
+        "QT_DEFAULT_MAJOR_VERSION": "6",
+        "QT_ANT_DESIGN_BUILD_EXAMPLES": "ON",
+        "QT_ANT_DESIGN_BUILD_TESTS": "ON",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/qt6-msvc-release"
+      }
+    },
+    {
+      "name": "windows-msvc-qt6-shared-release",
+      "displayName": "Windows MSVC Qt6 Shared Release",
+      "description": "Configure Qt6 Release with BUILD_SHARED_LIBS enabled.",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/qt6-msvc-shared-release",
+      "cacheVariables": {
+        "QT_DEFAULT_MAJOR_VERSION": "6",
+        "BUILD_SHARED_LIBS": "ON",
+        "QT_ANT_DESIGN_BUILD_EXAMPLES": "ON",
+        "QT_ANT_DESIGN_BUILD_TESTS": "ON",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/qt6-msvc-shared-release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "qt6-debug",
+      "configurePreset": "windows-msvc-qt6-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "qt5-debug",
+      "configurePreset": "windows-msvc-qt5-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "qt6-release",
+      "configurePreset": "windows-msvc-qt6-release",
+      "configuration": "Release"
+    },
+    {
+      "name": "qt6-shared-release",
+      "configurePreset": "windows-msvc-qt6-shared-release",
+      "configuration": "Release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "qt6-debug",
+      "configurePreset": "windows-msvc-qt6-debug",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "qt5-debug",
+      "configurePreset": "windows-msvc-qt5-debug",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "qt6-release",
+      "configurePreset": "windows-msvc-qt6-release",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

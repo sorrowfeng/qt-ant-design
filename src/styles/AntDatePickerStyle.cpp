@@ -17,19 +17,12 @@ AntDatePickerStyle::AntDatePickerStyle(QStyle* style)
 void AntDatePickerStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntDatePicker*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntDatePicker>(widget);
 }
 
 void AntDatePickerStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntDatePicker*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntDatePicker>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -48,19 +41,21 @@ QSize AntDatePickerStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntDatePickerStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntDatePickerStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* picker = qobject_cast<AntDatePicker*>(watched);
-    if (picker && event->type() == QEvent::Paint)
+    auto* picker = qobject_cast<AntDatePicker*>(widget);
+    if (!picker)
     {
-        QStyleOption option;
-        option.initFrom(picker);
-        option.rect = picker->rect();
-        QPainter painter(picker);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, picker);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(picker);
+    option.rect = picker->rect();
+    QPainter painter(picker);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, picker);
+
+    return true;
 }
 
 void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -84,9 +79,8 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
         picker->variant() != Ant::Variant::Borderless &&
         picker->variant() != Ant::Variant::Underlined)
     {
-        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
-            QPen(AntPalette::alpha(picker->borderColor(), 0.16), token.controlOutlineWidth),
-            Qt::NoBrush, m.radius + 1, m.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, m.radius,
+            AntPalette::alpha(picker->borderColor(), 0.16), token.controlOutlineWidth);
     }
 
     // Border and background
@@ -114,8 +108,7 @@ void AntDatePickerStyle::drawDatePicker(const QStyleOption* option, QPainter* pa
     }
 
     // Text
-    QFont f = painter->font();
-    f.setPixelSize(m.fontSize);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), m.fontSize);
     painter->setFont(f);
 
     const QRectF textArea = control.adjusted(m.paddingX, 0, -(m.iconWidth + m.paddingX), 0);

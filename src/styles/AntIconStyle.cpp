@@ -1,5 +1,6 @@
 #include "AntIconStyle.h"
 
+#include <QCryptographicHash>
 #include <QEvent>
 #include <QFile>
 #include <QHash>
@@ -611,6 +612,16 @@ QString renderedResourceIconCacheKey(const QString& iconName,
              QString::number(qRound(devicePixelRatio * 100.0)),
              colorCacheKey(primaryColor),
              colorCacheKey(secondaryColor));
+}
+
+QString renderedSvgIconCacheKey(const QString& svg, const QSize& pixelSize, qreal devicePixelRatio)
+{
+    const QByteArray svgHash = QCryptographicHash::hash(svg.toUtf8(), QCryptographicHash::Sha1).toHex();
+    return QStringLiteral("qt-ant-design/AntIcon/svg/%1/%2x%3/%4")
+        .arg(QString::fromLatin1(svgHash),
+             QString::number(pixelSize.width()),
+             QString::number(pixelSize.height()),
+             QString::number(qRound(devicePixelRatio * 100.0)));
 }
 
 qreal renderedIconDevicePixelRatio(const QPainter* painter)
@@ -1409,11 +1420,23 @@ bool drawSvgPixmap(const QString& svg, const QRectF& iconRect, QPainter* painter
         return false;
     }
 
+    const qreal devicePixelRatio = renderedIconDevicePixelRatio(painter);
+    const QSize pixelSize = renderedIconPixelSize(iconRect, painter);
+    const QString cacheKey = renderedSvgIconCacheKey(svg, pixelSize, devicePixelRatio);
+
+    QPixmap cachedPixmap;
+    if (QPixmapCache::find(cacheKey, &cachedPixmap))
+    {
+        painter->drawPixmap(iconRect, cachedPixmap, QRectF(cachedPixmap.rect()));
+        return true;
+    }
+
     QPixmap pixmap;
-    if (!renderSvgToPixmap(svg, renderedIconPixelSize(iconRect, painter), &pixmap))
+    if (!renderSvgToPixmap(svg, pixelSize, &pixmap))
     {
         return false;
     }
+    QPixmapCache::insert(cacheKey, pixmap);
 
     painter->drawPixmap(iconRect, pixmap, QRectF(pixmap.rect()));
     return true;
@@ -1587,14 +1610,7 @@ bool drawIcon(QPainter& painter,
     svg.replace(QStringLiteral("__PRIMARY__"), primaryColor.name(QColor::HexRgb));
     svg.replace(QStringLiteral("__SECONDARY__"), resolvedSecondary.name(QColor::HexRgb));
 
-    QPixmap pixmap;
-    if (!renderSvgToPixmap(svg, renderedIconPixelSize(iconRect, &painter), &pixmap))
-    {
-        return false;
-    }
-
-    painter.drawPixmap(iconRect, pixmap, QRectF(pixmap.rect()));
-    return true;
+    return drawSvgPixmap(svg, iconRect, &painter);
 }
 
 QPixmap renderIconPixmap(const QString& iconName,
@@ -1639,18 +1655,12 @@ AntIconStyle::AntIconStyle(QStyle* style)
 void AntIconStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntIcon*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntIcon>(widget);
 }
 
 void AntIconStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntIcon*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntIcon>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -1669,19 +1679,21 @@ QSize AntIconStyle::sizeFromContents(ContentsType type, const QStyleOption* opti
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntIconStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntIconStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* icon = qobject_cast<AntIcon*>(watched);
-    if (icon && event->type() == QEvent::Paint)
+    auto* icon = qobject_cast<AntIcon*>(widget);
+    if (!icon)
     {
-        QStyleOption option;
-        option.initFrom(icon);
-        option.rect = icon->rect();
-        QPainter painter(icon);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, icon);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(icon);
+    option.rect = icon->rect();
+    QPainter painter(icon);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, icon);
+
+    return true;
 }
 
 void AntIconStyle::drawIcon(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

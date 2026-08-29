@@ -4,6 +4,7 @@
 
 #include <QHash>
 #include <QMenuBar>
+#include <QPointer>
 #include <QRect>
 
 class QAction;
@@ -37,6 +38,6 @@ private:
 
     mutable QHash<const QAction*, QRect> m_actionGeometryCache;
     mutable int m_actionGeometryCacheBuildCount = 0;
-    QAction* m_hoveredAction = nullptr;
+    QPointer<QAction> m_hoveredAction;
     bool m_lastHoverUpdateWasScoped = false;
 };

@@ -4,9 +4,11 @@ Updated: `2026-06-01`
 
 This report tracks evidence for the Qt 5.15.2 visual-adaptation goal. It is not a claim that the entire long-running objective is complete; it records the current verified pass and the fixes made during this pass.
 
+Inventory counts in this report are evidence from the `2026-06-01` verification snapshot. For the current component and test inventory, see `AGENTS.md` and `docs/project-status.md`.
+
 ## Current Evidence
 
-Qt 5.15.2 and Qt 6.9.1 now share a repeatable cross-version visual parity check:
+The `2026-06-01` Qt 5.15.2 / Qt 6.9.1 pass established a repeatable cross-version visual parity check:
 
 - Test target: `TestAntQtVersionVisualParity`
 - Default mode: renders 26 critical Ant Design scenes in both light and dark themes, for 52 themed atlas snapshots, and fails on blank/invalid output.
@@ -33,11 +35,11 @@ Windows scale-factor coverage is also automated:
 
 The real example program is now covered by a separate traversal/export path:
 
-- `qt-ant-design-example --smoke-traverse-pages` selects all 88 example pages in light and dark themes.
+- `qt-ant-design-example --smoke-traverse-pages` selected all then-current 88 example pages in light and dark themes.
 - Export mode writes stable top/bottom page grabs and `manifest.tsv`; compare mode compares those grabs against another Qt version and writes `comparison.tsv`.
-- The latest full-page Qt5-vs-Qt6 example comparison covered 352 frames (`88` pages x `2` themes x `2` scroll probes). It passed with mean pixel deltas from `0.018` to `0.576`, average mean delta `0.043136`, maximum `changed32Ratio` `0.0043`, and maximum `changed64Ratio` `0.0032`.
+- The `2026-06-01` full-page Qt5-vs-Qt6 example comparison covered 352 frames (`88` pages x `2` themes x `2` scroll probes). It passed with mean pixel deltas from `0.018` to `0.576`, average mean delta `0.043136`, maximum `changed32Ratio` `0.0043`, and maximum `changed64Ratio` `0.0032`.
 
-Latest local comparison used Qt 6.9.1 as the baseline and Qt 5.15.2 as the actual renderer. Both light and dark theme renders passed:
+The recorded local comparison used Qt 6.9.1 as the baseline and Qt 5.15.2 as the actual renderer. Both light and dark theme renders passed:
 
 | Scene | Covered controls | Mean delta | Limit | Changed >32 | Limit |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -122,7 +124,7 @@ Generated evidence path for the latest local run:
 | Analyze complex child-control geometry drift | Metric audit records default `QComboBox`, `QTabBar`, `QHeaderView`, and `QScrollBar` complex geometry; adapted Ant geometry rows passed strict comparison. | Verified |
 | Preserve Qt6 behavior | All adaptation tests run in both Qt6 and Qt5 build trees; shared fixes avoid Qt-version branches unless the root cause is startup API availability. | Verified |
 | Forbid QSS/QStyleSheet | `TestAntNoStyleSheetUsage` scans production sources, examples, tests, and resources for stylesheet usage and passed in both Qt6 and Qt5 build trees. | Verified |
-| Real example visual traversal | `qt-ant-design-example --smoke-traverse-pages` renders all 88 pages in light/dark and compares 352 Qt5 frames against Qt6 baseline frames. | Verified |
+| Real example visual traversal | `qt-ant-design-example --smoke-traverse-pages` rendered the then-current 88 pages in light/dark and compared 352 Qt5 frames against Qt6 baseline frames. | Verified for the 2026-06-01 snapshot |
 | Success-standard controls | `acceptance-state-matrix`, `interaction-states`, `navigation`, `feedback`, `data-display`, `tree`, and `scroll-carousel` scenes cover the named Button, CheckBox, Radio, Progress, Tabs, ScrollBar, Menu, ToolTip, Input, Table, List, Tree, Pagination, Tag, and Badge checks. | Verified |
 | Detailed report and maintenance advice | This report lists changed files, affected controls, drift causes, adaptation mechanism, version-isolation approach, verification commands, and maintenance notes. | Verified for this pass |
 
@@ -252,7 +254,7 @@ $env:PATH='C:\Qt\5.15.2\msvc2019_64\bin;' + $env:PATH
 Start-Process -FilePath 'D:\Project\GitProject\qt-ant-design\build-qt5-msvc\examples\Debug\qt-ant-design-example.exe' -ArgumentList @('--smoke-traverse-pages','--smoke-traverse-step-ms','1','--smoke-traverse-export-dir', (Join-Path $base 'qt5'),'--smoke-traverse-baseline-dir', (Join-Path $base 'qt6')) -Wait -WindowStyle Hidden
 ```
 
-Result: Qt6 targeted tests passed, Qt5 targeted tests passed, and the latest combined targeted CTest run passed `9 / 9` entries in each build tree for `TestAntQtVersionVisualParity`, `TestAntQtVersionVisualParity_Scale_1_25`, `TestAntQtVersionVisualParity_Scale_1_5`, `TestAntQtVersionMetricAudit`, the three `TestAntHighDpiScaling_*` entries, `TestAntNoStyleSheetUsage`, and `TestAntExamplePageTraversal`. The Qt5-vs-Qt6 themed atlas comparison passed for 52 snapshots, the full visual atlas smoke passed at `QT_SCALE_FACTOR=1.25` and `QT_SCALE_FACTOR=1.5` in both Qt6 and Qt5 build trees, Qt5-vs-Qt6 metric audit comparison passed for 216 rows, Qt5 example smoke launches passed at `QT_SCALE_FACTOR=1.25` and `QT_SCALE_FACTOR=1.5`, `TestAntExamplePageTraversal` passed on both Qt6 and Qt5 by traversing all 88 example pages in light and dark themes, and the full real-example Qt5-vs-Qt6 comparison passed for 352 exported frames. On `2026-06-02`, the focused `AntInputNumber` / `AntInputDialog` numeric-border regression was also verified by building and passing `TestAntDataEntryA` and `TestAntQtExtensions` in both Qt6 and Qt5 build trees, then launching the Qt5 example smoke. Qt5 builds still emit MSVC STL4043 warnings from Qt 5.15.2 `QVector` internals; these are warnings, not visual failures.
+Result: Qt6 targeted tests passed, Qt5 targeted tests passed, and the recorded combined targeted CTest run passed `9 / 9` entries in each build tree for `TestAntQtVersionVisualParity`, `TestAntQtVersionVisualParity_Scale_1_25`, `TestAntQtVersionVisualParity_Scale_1_5`, `TestAntQtVersionMetricAudit`, the three `TestAntHighDpiScaling_*` entries, `TestAntNoStyleSheetUsage`, and `TestAntExamplePageTraversal`. The Qt5-vs-Qt6 themed atlas comparison passed for 52 snapshots, the full visual atlas smoke passed at `QT_SCALE_FACTOR=1.25` and `QT_SCALE_FACTOR=1.5` in both Qt6 and Qt5 build trees, Qt5-vs-Qt6 metric audit comparison passed for 216 rows, Qt5 example smoke launches passed at `QT_SCALE_FACTOR=1.25` and `QT_SCALE_FACTOR=1.5`, `TestAntExamplePageTraversal` passed on both Qt6 and Qt5 by traversing the then-current 88 example pages in light and dark themes, and that full real-example Qt5-vs-Qt6 comparison passed for 352 exported frames. On `2026-06-02`, the focused `AntInputNumber` / `AntInputDialog` numeric-border regression was also verified by building and passing `TestAntDataEntryA` and `TestAntQtExtensions` in both Qt6 and Qt5 build trees, then launching the Qt5 example smoke. Qt5 builds still emit MSVC STL4043 warnings from Qt 5.15.2 `QVector` internals; these are warnings, not visual failures.
 
 ## Maintenance Notes
 

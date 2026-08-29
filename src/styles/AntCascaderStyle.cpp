@@ -133,19 +133,12 @@ AntCascaderStyle::AntCascaderStyle(QStyle* style)
 void AntCascaderStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntCascader*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntCascader>(widget);
 }
 
 void AntCascaderStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntCascader*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntCascader>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -160,33 +153,34 @@ void AntCascaderStyle::drawPrimitive(PrimitiveElement element, const QStyleOptio
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntCascaderStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntCascaderStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* cascader = qobject_cast<AntCascader*>(watched);
-    if (cascader && event->type() == QEvent::Paint)
+    auto* cascader = qobject_cast<AntCascader*>(widget);
+    if (!cascader)
     {
-        QStyleOption option;
-        option.initFrom(cascader);
-        option.rect = cascader->rect();
-        if (cascader->isHoveredState())
-        {
-            option.state |= QStyle::State_MouseOver;
-        }
-        if (cascader->isPressedState())
-        {
-            option.state |= QStyle::State_Sunken;
-        }
-        if (cascader->isOpen())
-        {
-            option.state |= QStyle::State_On;
-        }
-
-        QPainter painter(cascader);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, cascader);
-        return true;
+        return false;
     }
 
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOption option;
+    option.initFrom(cascader);
+    option.rect = cascader->rect();
+    if (cascader->isHoveredState())
+    {
+        option.state |= QStyle::State_MouseOver;
+    }
+    if (cascader->isPressedState())
+    {
+        option.state |= QStyle::State_Sunken;
+    }
+    if (cascader->isOpen())
+    {
+        option.state |= QStyle::State_On;
+    }
+
+    QPainter painter(cascader);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, cascader);
+
+    return true;
 }
 
 void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -214,9 +208,8 @@ void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painte
         && cascader->variant() != Ant::Variant::Borderless
         && cascader->variant() != Ant::Variant::Underlined)
     {
-        const QColor outline = AntPalette::alpha(bColor, 0.16);
-        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
-            QPen(outline, token.controlOutlineWidth), Qt::NoBrush, metrics.radius + 1, metrics.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, metrics.radius,
+            AntPalette::alpha(bColor, 0.16), token.controlOutlineWidth);
     }
 
     if (cascader->variant() != Ant::Variant::Borderless
@@ -245,8 +238,7 @@ void AntCascaderStyle::drawCascader(const QStyleOption* option, QPainter* painte
         textColor = token.colorTextDisabled;
     }
 
-    QFont font = painter->font();
-    font.setPixelSize(metrics.fontSize);
+    const QFont font = AntStyleBase::withPixelSize(painter->font(), metrics.fontSize);
     painter->setFont(font);
     painter->setPen(textColor);
     const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);

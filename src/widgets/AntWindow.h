@@ -10,6 +10,7 @@
 #include <array>
 
 #include "core/AntTypes.h"
+#include "widgets/AntWindowFrame.h"
 
 class AntModal;
 class QEvent;
@@ -171,6 +172,7 @@ private:
     void updateLegacySoftwareShadow();
     void hideLegacySoftwareShadow();
     void updateCornerSmoother();
+    void updateContentFrameInsets();
     void syncTheme();
     void applyContentPalette(QWidget* widget);
 
@@ -206,7 +208,7 @@ private:
     bool m_ribbonVisible = true;
     QWidget* m_themeTransitionOverlay = nullptr;
     QPointer<AntModal> m_closeConfirmationModal;
-    QWidget* m_legacySoftwareShadow = nullptr;
+    AntWindowFrame::LegacySoftwareShadowHandle m_legacySoftwareShadow;
     QWidget* m_cornerSmoother = nullptr;
     bool m_legacyLiveResize = false;
     bool m_useTranslucentBackground = true;

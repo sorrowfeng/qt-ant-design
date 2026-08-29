@@ -37,6 +37,20 @@ enum class Status
 };
 Q_ENUM_NS(Status)
 
+enum class StatusBarStatus
+{
+    Default,
+    Info,
+    Success,
+    Warning,
+    Error,
+    Inherit,
+};
+Q_ENUM_NS(StatusBarStatus)
+
+// Unified placement superset shared by Tooltip/Dropdown/Drawer/FloatButton.
+// Kept in the same value order as the former TooltipPlacement so ordinal
+// behavior is unchanged; the other placement enums are aliases of this one.
 enum class Placement
 {
     Top,
@@ -45,6 +59,8 @@ enum class Placement
     Bottom,
     BottomLeft,
     BottomRight,
+    Left,
+    Right,
 };
 Q_ENUM_NS(Placement)
 
@@ -142,29 +158,23 @@ enum class AlertType
 };
 Q_ENUM_NS(AlertType)
 
-enum class TooltipPlacement
+// Result status shares the same four semantic states as AlertType but is a
+// distinct concept (what a Result page communicates), so it gets its own
+// well-named type instead of reusing the alert-oriented one.
+enum class ResultStatus
 {
-    Top,
-    TopLeft,
-    TopRight,
-    Bottom,
-    BottomLeft,
-    BottomRight,
-    Left,
-    Right,
+    Success,
+    Info,
+    Warning,
+    Error,
 };
-Q_ENUM_NS(TooltipPlacement)
+Q_ENUM_NS(ResultStatus)
 
-enum class DropdownPlacement
-{
-    Bottom,
-    BottomLeft,
-    BottomRight,
-    Top,
-    TopLeft,
-    TopRight,
-};
-Q_ENUM_NS(DropdownPlacement)
+// Legacy alias - prefer Ant::Placement.
+using TooltipPlacement = Placement;
+
+// Legacy alias - prefer Ant::Placement.
+using DropdownPlacement = Placement;
 
 enum class DropdownTrigger
 {
@@ -444,14 +454,8 @@ enum class UploadFileStatus
 };
 Q_ENUM_NS(UploadFileStatus)
 
-enum class DrawerPlacement
-{
-    Left,
-    Right,
-    Top,
-    Bottom,
-};
-Q_ENUM_NS(DrawerPlacement)
+// Legacy alias - prefer Ant::Placement.
+using DrawerPlacement = Placement;
 
 enum class SegmentedShape
 {
@@ -492,14 +496,8 @@ enum class FloatButtonShape
 };
 Q_ENUM_NS(FloatButtonShape)
 
-enum class FloatButtonPlacement
-{
-    BottomRight,
-    BottomLeft,
-    TopRight,
-    TopLeft,
-};
-Q_ENUM_NS(FloatButtonPlacement)
+// Legacy alias - prefer Ant::Placement.
+using FloatButtonPlacement = Placement;
 
 enum class ColorPickerMode
 {
@@ -527,6 +525,8 @@ constexpr int FontSize = 14;
 constexpr int FontSizeSmall = 12;
 constexpr int FontSizeLarge = 16;
 constexpr int BorderRadius = 6;
+constexpr int MaximumThemeFontSize = 512;
+constexpr int MaximumThemeBorderRadius = 512;
 
 QT_ANT_DESIGN_EXPORT void registerMetaTypes();
 

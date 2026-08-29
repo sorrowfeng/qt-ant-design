@@ -19,7 +19,7 @@ class QPaintEvent;
 class QT_ANT_DESIGN_EXPORT AntResult : public QWidget
 {
     Q_OBJECT
-    Q_PROPERTY(Ant::AlertType status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::ResultStatus status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
     Q_PROPERTY(QString subTitle READ subTitle WRITE setSubTitle NOTIFY subTitleChanged)
     Q_PROPERTY(bool iconVisible READ isIconVisible WRITE setIconVisible NOTIFY iconVisibleChanged)
@@ -28,8 +28,8 @@ public:
     explicit AntResult(QWidget* parent = nullptr);
     explicit AntResult(const QString& title, QWidget* parent = nullptr);
 
-    Ant::AlertType status() const;
-    void setStatus(Ant::AlertType status);
+    Ant::ResultStatus status() const;
+    void setStatus(Ant::ResultStatus status);
 
     QString title() const;
     void setTitle(const QString& title);
@@ -47,7 +47,7 @@ public:
     QSize minimumSizeHint() const override;
 
 Q_SIGNALS:
-    void statusChanged(Ant::AlertType status);
+    void statusChanged(Ant::ResultStatus status);
     void titleChanged(const QString& title);
     void subTitleChanged(const QString& subTitle);
     void iconVisibleChanged(bool visible);
@@ -78,7 +78,7 @@ private:
         int tokenFontSize = 0;
         QString title;
         QString subTitle;
-        Ant::AlertType status = Ant::AlertType::Info;
+        Ant::ResultStatus status = Ant::ResultStatus::Info;
         bool iconVisible = true;
         bool hasExtraWidget = false;
         QSize extraSize;
@@ -101,7 +101,7 @@ private:
         bool valid = false;
         qreal devicePixelRatio = 1.0;
         QSize logicalSize;
-        Ant::AlertType status = Ant::AlertType::Info;
+        Ant::ResultStatus status = Ant::ResultStatus::Info;
         Ant::ThemeMode themeMode = Ant::ThemeMode::Default;
         QColor iconColor;
         QColor secondaryColor;
@@ -124,7 +124,7 @@ private:
     QColor iconColor() const;
     Ant::IconType iconTypeForStatus() const;
 
-    Ant::AlertType m_status = Ant::AlertType::Info;
+    Ant::ResultStatus m_status = Ant::ResultStatus::Info;
     QString m_title;
     QString m_subTitle;
     bool m_iconVisible = true;

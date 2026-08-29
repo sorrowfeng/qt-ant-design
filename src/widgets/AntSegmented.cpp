@@ -191,15 +191,16 @@ void AntSegmented::setBlock(bool block)
     Q_EMIT blockChanged(m_block);
 }
 
-Ant::Size AntSegmented::segmentedSize() const { return m_size; }
+Ant::Size AntSegmented::size() const { return m_size; }
 
-void AntSegmented::setSegmentedSize(Ant::Size size)
+void AntSegmented::setSize(Ant::Size size)
 {
     if (m_size == size) return;
     m_size = size;
     invalidateLayoutCache();
     updateGeometry();
     update();
+    Q_EMIT sizeChanged(m_size);
     Q_EMIT segmentedSizeChanged(m_size);
 }
 
@@ -348,7 +349,7 @@ const AntSegmented::LayoutCache& AntSegmented::layoutCache() const
     const int itemRadius = segmentedItemRadius(m_size, m_shape);
 
     if (m_layoutCache.valid
-        && m_layoutCache.widgetSize == size()
+        && m_layoutCache.widgetSize == QWidget::size()
         && m_layoutCache.font == layoutFont
         && m_layoutCache.optionsRevision == m_optionsRevision
         && m_layoutCache.segmentedSize == m_size
@@ -364,7 +365,7 @@ const AntSegmented::LayoutCache& AntSegmented::layoutCache() const
         return m_layoutCache;
     }
 
-    m_layoutCache.widgetSize = size();
+    m_layoutCache.widgetSize = QWidget::size();
     m_layoutCache.font = layoutFont;
     m_layoutCache.optionsRevision = m_optionsRevision;
     m_layoutCache.segmentedSize = m_size;

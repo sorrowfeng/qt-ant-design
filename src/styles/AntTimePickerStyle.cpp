@@ -17,19 +17,12 @@ AntTimePickerStyle::AntTimePickerStyle(QStyle* style)
 void AntTimePickerStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntTimePicker*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntTimePicker>(widget);
 }
 
 void AntTimePickerStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTimePicker*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTimePicker>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -48,19 +41,21 @@ QSize AntTimePickerStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTimePickerStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTimePickerStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* picker = qobject_cast<AntTimePicker*>(watched);
-    if (picker && event->type() == QEvent::Paint)
+    auto* picker = qobject_cast<AntTimePicker*>(widget);
+    if (!picker)
     {
-        QStyleOption option;
-        option.initFrom(picker);
-        option.rect = picker->rect();
-        QPainter painter(picker);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, picker);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(picker);
+    option.rect = picker->rect();
+    QPainter painter(picker);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, picker);
+
+    return true;
 }
 
 namespace
@@ -188,9 +183,8 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
         picker->variant() != Ant::Variant::Borderless &&
         picker->variant() != Ant::Variant::Underlined)
     {
-        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
-            QPen(AntPalette::alpha(timePickerBorderColor(picker), 0.16), token.controlOutlineWidth),
-            Qt::NoBrush, m.radius + 1, m.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, m.radius,
+            AntPalette::alpha(timePickerBorderColor(picker), 0.16), token.controlOutlineWidth);
     }
 
     // Border and background
@@ -218,8 +212,7 @@ void AntTimePickerStyle::drawTimePicker(const QStyleOption* option, QPainter* pa
     }
 
     // Text
-    QFont f = painter->font();
-    f.setPixelSize(m.fontSize);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), m.fontSize);
     painter->setFont(f);
 
     if (picker->isRangeMode())

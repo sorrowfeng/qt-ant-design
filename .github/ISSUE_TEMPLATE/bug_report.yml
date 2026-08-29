@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a visual, runtime, build, or API compatibility problem.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Minimal steps, code, or project configuration that reproduces the issue.
+      placeholder: |
+        1. Configure with ...
+        2. Build ...
+        3. Open ...
+    validations:
+      required: true
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      description: Affected Ant component or subsystem.
+      placeholder: AntInput, AntWindow, CMake install, example app
+  - type: dropdown
+    id: qt-version
+    attributes:
+      label: Qt version
+      options:
+        - Qt 5.15.2
+        - Qt 6.x
+        - Both Qt5 and Qt6
+        - Unknown
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, compiler, CMake generator, build type, DPI scale, and relevant runtime details.
+      placeholder: Windows 11, MSVC 2022, CMake 3.29, Debug, 150% scale
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or logs
+      description: Drag images or paste build/test output here.

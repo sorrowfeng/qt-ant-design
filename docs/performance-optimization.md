@@ -1,8 +1,10 @@
-# Component Performance Optimization Progress
+# Historical Component Performance Optimization Pass
 
-Updated: `2026-05-29`
+Recorded: `2026-05-29`
 
-This document starts the performance pass for all `84` public components. The first pass is intentionally conservative: define the optimization target for every component, measure before changing behavior, and keep the existing interaction, motion, shadow, theme, and layout experience intact.
+This document records the May 2026 performance pass for the then-current `84` public components. It is retained as historical engineering evidence, not as the live component inventory; the current inventory is tracked in `AGENTS.md` and `docs/project-status.md`.
+
+Canonical archive copy: `docs/archive/performance-optimization-2026-05.md`. This source path remains only as a compatibility pointer for older links.
 
 ## Goals
 
@@ -23,7 +25,7 @@ This document starts the performance pass for all `84` public components. The fi
 | `Optimized` | Code optimized and targeted tests/example build passed. |
 | `Watching` | Recently optimized or high-risk; keep regression checks around it. |
 
-Current summary: `84 / 84` components have an initial plan. `84` components are optimized from this pass, and `0` remain in planned or watching states.
+Historical summary: `84 / 84` components tracked at the time had an initial plan. `84` components were optimized during this pass, and `0` remained in planned or watching states at the end of the pass.
 
 Latest completed optimization:
 

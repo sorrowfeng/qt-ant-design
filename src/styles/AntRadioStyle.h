@@ -16,5 +16,5 @@ public:
     void unpolish(QWidget* widget) override;
     void drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget = nullptr) const override;
     int pixelMetric(PixelMetric metric, const QStyleOption* option = nullptr, const QWidget* widget = nullptr) const override;
-    bool eventFilter(QObject* watched, QEvent* event) override;
+    bool drawWidget(QWidget* widget, QPaintEvent* event) override;
 };

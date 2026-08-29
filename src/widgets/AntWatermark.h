@@ -5,6 +5,7 @@
 
 #include <QColor>
 #include <QFont>
+#include <QMetaType>
 #include <QPoint>
 #include <QPixmap>
 #include <QSize>
@@ -18,6 +19,13 @@ class QPainter;
 
 struct AntWatermarkFont
 {
+    Q_GADGET
+    Q_PROPERTY(QColor color MEMBER color)
+    Q_PROPERTY(int fontSize MEMBER fontSize)
+    Q_PROPERTY(int fontWeight MEMBER fontWeight)
+    Q_PROPERTY(QString fontFamily MEMBER fontFamily)
+
+public:
     QColor color;
     int fontSize = 16;
     int fontWeight = 400;
@@ -30,6 +38,7 @@ struct AntWatermarkFont
     }
     bool operator!=(const AntWatermarkFont& other) const { return !(*this == other); }
 };
+Q_DECLARE_METATYPE(AntWatermarkFont)
 
 class QT_ANT_DESIGN_EXPORT AntWatermark : public QWidget
 {

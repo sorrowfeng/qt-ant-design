@@ -408,81 +408,6 @@ private:
     QColor m_color = Qt::white;
 };
 
-// ---- ColorGrid ----
-
-class ColorGrid : public QWidget
-{
-public:
-    explicit ColorGrid(int cols, QWidget* parent = nullptr) : QWidget(parent), m_cols(cols) {}
-
-    void setColors(const QList<QColor>& colors)
-    {
-        m_colors = colors;
-        setFixedHeight(((colors.size() + m_cols - 1) / m_cols) * 28 + 4);
-        update();
-    }
-
-    void setColor(int idx, const QColor& c)
-    {
-        while (m_colors.size() <= idx) m_colors.append(QColor());
-        m_colors[idx] = c;
-        update();
-    }
-
-    int indexAt(const QPoint& pos) const
-    {
-        int row = (pos.y() - 2) / 28;
-        int col = (pos.x() - 2) / 28;
-        int i = row * m_cols + col;
-        return i < m_colors.size() ? i : -1;
-    }
-
-std::function<void(int)> onColorClicked;
-
-protected:
-    void paintEvent(QPaintEvent*) override
-    {
-        QPainter p(this);
-        p.setRenderHint(QPainter::Antialiasing);
-        const auto& token = antTheme->tokens();
-        for (int i = 0; i < m_colors.size(); ++i)
-        {
-            int row = i / m_cols;
-            int col = i % m_cols;
-            QRectF r(2 + col * 28, 2 + row * 28, 24, 24);
-            if (m_colors[i].isValid())
-            {
-                p.setPen(QPen(token.colorBorderSecondary, 1));
-                p.setBrush(m_colors[i]);
-                p.drawEllipse(r);
-                if (i == m_selected)
-                {
-                    p.setPen(QPen(token.colorPrimary, 2));
-                    p.setBrush(Qt::NoBrush);
-                    p.drawEllipse(r.adjusted(-2, -2, 2, 2));
-                }
-            }
-            else
-            {
-                p.setPen(QPen(token.colorBorderSecondary, 1, Qt::DashLine));
-                p.setBrush(Qt::NoBrush);
-                p.drawEllipse(r);
-            }
-        }
-    }
-
-    void mousePressEvent(QMouseEvent* e) override
-    {
-        int idx = indexAt(e->pos());
-        if (idx >= 0) { m_selected = idx; update(); if (onColorClicked) onColorClicked(idx); }
-    }
-
-private:
-    QList<QColor> m_colors;
-    int m_cols = 8;
-    int m_selected = -1;
-};
-
 class ColorPickerPopup : public QFrame
 {
 public:
@@ -779,17 +704,15 @@ AntColorPicker::AntColorPicker(QWidget* parent)
     setCursor(Qt::PointingHandCursor);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this]() {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
         if (m_open && m_popup)
         {
             m_popup->setProperty("antColorPickerPreserveOpenOnThemeChange", true);
         }
     });
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this]() {
-        requestTriggerUpdate(QStringLiteral("themeMode"));
-    });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
+        requestTriggerUpdate(QStringLiteral("theme"));
         invalidateTriggerCaches();
         AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         updatePopupGeometry();

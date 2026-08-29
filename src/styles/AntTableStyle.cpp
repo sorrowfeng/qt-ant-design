@@ -7,7 +7,6 @@
 
 #include "core/AntStyleBase.h"
 #include "styles/AntIconPainter.h"
-#include "styles/AntPalette.h"
 #include "widgets/AntTable.h"
 
 AntTableStyle::AntTableStyle(QStyle* style)
@@ -19,18 +18,12 @@ AntTableStyle::AntTableStyle(QStyle* style)
 void AntTableStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntTable*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntTable>(widget);
 }
 
 void AntTableStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTable*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTable>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -49,19 +42,21 @@ QSize AntTableStyle::sizeFromContents(ContentsType type, const QStyleOption* opt
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTableStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTableStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* table = qobject_cast<AntTable*>(watched);
-    if (table && event->type() == QEvent::Paint)
+    auto* table = qobject_cast<AntTable*>(widget);
+    if (!table)
     {
-        QStyleOption option;
-        option.initFrom(table);
-        option.rect = table->rect();
-        QPainter painter(table);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, table);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(table);
+    option.rect = table->rect();
+    QPainter painter(table);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, table);
+
+    return true;
 }
 
 namespace
@@ -300,9 +295,7 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
     }
 
     // Column headers
-    QFont headerFont = painter->font();
-    headerFont.setPixelSize(m.fontSize);
-    headerFont.setWeight(QFont::DemiBold);
+    const QFont headerFont = AntStyleBase::withPixelSize(painter->font(), m.fontSize, QFont::DemiBold);
     painter->setFont(headerFont);
     const QFontMetrics headerFm(headerFont);
 
@@ -455,9 +448,7 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
 
         // Data cells
         int cellX = selW;
-        QFont cellFont = painter->font();
-        cellFont.setPixelSize(m.fontSize);
-        cellFont.setWeight(QFont::Normal);
+        const QFont cellFont = AntStyleBase::withPixelSize(painter->font(), m.fontSize, QFont::Normal);
         painter->setFont(cellFont);
 
         for (const auto& col : columns)
@@ -485,41 +476,15 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
     // Empty state
     if (table->rowCount() == 0 && !table->isLoading())
     {
-        const bool isDark = antTheme->themeMode() == Ant::ThemeMode::Dark;
-        const QColor primary = AntPalette::alpha(token.colorTextTertiary, isDark ? 0.5 : 0.32);
-        const QColor fill = AntPalette::alpha(token.colorFillQuaternary, isDark ? 0.78 : 1.0);
-        const QColor line = AntPalette::alpha(token.colorTextTertiary, isDark ? 0.68 : 0.45);
-
         const int imgW = 96;
         const int imgH = 60;
         const int centerX = bodyRect.center().x();
         const int centerY = bodyRect.center().y() - 14;
         const QRectF imgRect(centerX - imgW / 2.0, centerY - imgH / 2.0, imgW, imgH);
 
-        painter->save();
-        painter->translate(imgRect.topLeft());
-        painter->scale(imgW / 128.0, imgH / 80.0);
+        AntStyleBase::drawEmptyIllustration(painter, imgRect, true, true);
 
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(AntPalette::alpha(token.colorPrimary, 0.08));
-        painter->drawEllipse(QRectF(16, 58, 96, 14));
-
-        AntStyleBase::drawCrispRoundedRect(painter, QRect(34, 10, 60, 46), Qt::NoPen, fill, 10, 10);
-        AntStyleBase::drawCrispRoundedRect(painter, QRect(42, 18, 44, 30), Qt::NoPen,
-            AntPalette::alpha(token.colorBgContainer, 0.88), 6, 6);
-
-        painter->setPen(QPen(primary, 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        painter->drawArc(QRectF(10, 20, 26, 26), 35 * 16, 260 * 16);
-        painter->drawArc(QRectF(92, 18, 22, 22), 220 * 16, 220 * 16);
-
-        painter->setPen(QPen(line, 2.2, Qt::SolidLine, Qt::RoundCap));
-        painter->drawLine(QPointF(49, 27), QPointF(79, 27));
-        painter->drawLine(QPointF(49, 34), QPointF(73, 34));
-        painter->drawLine(QPointF(49, 41), QPointF(67, 41));
-        painter->restore();
-
-        QFont descFont = painter->font();
-        descFont.setPixelSize(token.fontSize);
+        const QFont descFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
         painter->setFont(descFont);
         painter->setPen(token.colorTextSecondary);
         const QRect descRect(0, centerY + imgH / 2 + 8, option->rect.width(), token.fontSize + 8);
@@ -562,9 +527,7 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
         painter->drawLine(paginationRect.topLeft(), paginationRect.topRight());
 
         // "Showing X-Y of Z" text
-        QFont pageFont = painter->font();
-        pageFont.setPixelSize(m.fontSizeSM);
-        pageFont.setWeight(QFont::Normal);
+        const QFont pageFont = AntStyleBase::withPixelSize(painter->font(), m.fontSizeSM, QFont::Normal);
         painter->setFont(pageFont);
 
         const int startRow = start + 1;
@@ -594,17 +557,15 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
 
             if (isCurrent)
             {
-                AntStyleBase::drawCrispRoundedRect(painter, btnRect, Qt::NoPen, token.colorPrimary, 4, 4);
+                AntStyleBase::drawCrispRoundedRect(painter, btnRect, Qt::NoPen, token.colorPrimary, token.borderRadiusSM, token.borderRadiusSM);
             }
             else
             {
                 AntStyleBase::drawCrispRoundedRect(painter, btnRect,
-                    QPen(token.colorBorderSecondary, token.lineWidth), Qt::NoBrush, 4, 4);
+                    QPen(token.colorBorderSecondary, token.lineWidth), Qt::NoBrush, token.borderRadiusSM, token.borderRadiusSM);
             }
 
-            QFont btnFont = painter->font();
-            btnFont.setPixelSize(m.fontSizeSM);
-            btnFont.setWeight(isCurrent ? QFont::DemiBold : QFont::Normal);
+            const QFont btnFont = AntStyleBase::withPixelSize(painter->font(), m.fontSizeSM, isCurrent ? QFont::DemiBold : QFont::Normal);
             painter->setFont(btnFont);
             painter->setPen(isCurrent ? token.colorTextLightSolid : token.colorText);
             painter->drawText(btnRect, Qt::AlignCenter, QString::number(p));

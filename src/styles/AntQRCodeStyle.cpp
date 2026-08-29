@@ -31,7 +31,7 @@ void drawQRIcon(QPainter* painter, const AntQRCode* qr, const QRect& contentRect
     const int halfBg = iconSize / 2 + 4;
     const QRect bgRect(center.x() - halfBg, center.y() - halfBg, halfBg * 2, halfBg * 2);
 
-    AntStyleBase::drawCrispRoundedRect(painter, bgRect, Qt::NoPen, token.colorBgContainer, 4, 4);
+    AntStyleBase::drawCrispRoundedRect(painter, bgRect, Qt::NoPen, token.colorBgContainer, token.borderRadiusSM, token.borderRadiusSM);
 
     const QRect iconRect(center.x() - iconSize / 2, center.y() - iconSize / 2, iconSize, iconSize);
     icon.paint(painter, iconRect, Qt::AlignCenter);
@@ -50,8 +50,7 @@ void drawQRStatusOverlay(QPainter* painter, const AntQRCode* qr)
     overlay.setAlphaF(0.85);
     painter->fillRect(r, overlay);
 
-    QFont f = painter->font();
-    f.setPixelSize(token.fontSize);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
     painter->setFont(f);
 
     switch (status)
@@ -66,10 +65,9 @@ void drawQRStatusOverlay(QPainter* painter, const AntQRCode* qr)
         QPoint center = r.center().toPoint();
         QRectF refreshBtn(center.x() - 28, center.y() + 4, 56, 28);
         AntStyleBase::drawCrispRoundedRect(painter, refreshBtn.toRect(),
-            QPen(token.colorPrimary, 1), Qt::NoBrush, 4, 4);
+            QPen(token.colorPrimary, 1), Qt::NoBrush, token.borderRadiusSM, token.borderRadiusSM);
         painter->setPen(token.colorPrimary);
-        f.setPixelSize(token.fontSizeSM);
-        painter->setFont(f);
+        painter->setFont(AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM));
         painter->drawText(refreshBtn, Qt::AlignCenter, QStringLiteral("Refresh"));
         break;
     }
@@ -109,7 +107,6 @@ void drawQRStatusOverlay(QPainter* painter, const AntQRCode* qr)
         painter->drawPath(path);
 
         painter->setPen(token.colorTextSecondary);
-        f.setPixelSize(token.fontSize);
         painter->setFont(f);
         painter->drawText(r.adjusted(0, 24, 0, 24), Qt::AlignCenter, QStringLiteral("Scanned"));
         break;
@@ -130,19 +127,12 @@ AntQRCodeStyle::AntQRCodeStyle(QStyle* style)
 void AntQRCodeStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntQRCode*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntQRCode>(widget);
 }
 
 void AntQRCodeStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntQRCode*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntQRCode>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -161,19 +151,21 @@ QSize AntQRCodeStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntQRCodeStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntQRCodeStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* qr = qobject_cast<AntQRCode*>(watched);
-    if (qr && event->type() == QEvent::Paint)
+    auto* qr = qobject_cast<AntQRCode*>(widget);
+    if (!qr)
     {
-        QStyleOption option;
-        option.initFrom(qr);
-        option.rect = qr->rect();
-        QPainter painter(qr);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, qr);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(qr);
+    option.rect = qr->rect();
+    QPainter painter(qr);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, qr);
+
+    return true;
 }
 
 void AntQRCodeStyle::drawQRCode(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -197,7 +189,7 @@ void AntQRCodeStyle::drawQRCode(const QStyleOption* option, QPainter* painter, c
         // Placeholder: dashed border
         QPen dashPen(token.colorBorder, 1, Qt::DashLine);
         AntStyleBase::drawCrispRoundedRect(painter, r.adjusted(4, 4, -4, -4).toRect(),
-            dashPen, Qt::NoBrush, 8, 8);
+            dashPen, Qt::NoBrush, token.borderRadiusLG, token.borderRadiusLG);
         painter->restore();
         return;
     }
@@ -216,7 +208,7 @@ void AntQRCodeStyle::drawQRCode(const QStyleOption* option, QPainter* painter, c
     if (qr->isBordered())
     {
         AntStyleBase::drawCrispRoundedRect(painter, r.adjusted(0.5, 0.5, -0.5, -0.5).toRect(),
-            QPen(token.colorBorder, 1), Qt::NoBrush, 4, 4);
+            QPen(token.colorBorder, 1), Qt::NoBrush, token.borderRadiusSM, token.borderRadiusSM);
     }
 
     // Status overlay

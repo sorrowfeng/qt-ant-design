@@ -1,0 +1,70 @@
+#include <QApplication>
+#include <QCoreApplication>
+#include <QEvent>
+#include <QEventLoop>
+#include <QImage>
+#include <QObject>
+#include <QPainter>
+#include <QSize>
+#include <QString>
+#include <QTest>
+#include <QWidget>
+
+#include "core/AntDesign.h"
+#include "widgets/@ANT_WIDGET_SMOKE_HEADER@"
+
+class TestAntWidgetSmoke : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void initTestCase();
+    void constructAndRender();
+};
+
+void TestAntWidgetSmoke::initTestCase()
+{
+    AntDesign::initialize(qobject_cast<QApplication*>(QCoreApplication::instance()));
+}
+
+void TestAntWidgetSmoke::constructAndRender()
+{
+    QWidget rootWidget;
+    QObject* object = @ANT_WIDGET_SMOKE_CONSTRUCT@;
+    QVERIFY(object);
+    QCOMPARE(QString::fromLatin1(object->metaObject()->className()), QStringLiteral("@ANT_WIDGET_SMOKE_TYPE@"));
+
+    auto* widget = qobject_cast<QWidget*>(object);
+    if (widget)
+    {
+        widget->ensurePolished();
+        QCoreApplication::sendPostedEvents(widget, QEvent::Polish);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 5);
+
+        QSize size = widget->sizeHint();
+        if (!size.isValid() || size.isEmpty())
+        {
+            size = widget->minimumSizeHint();
+        }
+        if (!size.isValid() || size.isEmpty())
+        {
+            size = QSize(240, 160);
+        }
+        size = size.expandedTo(QSize(80, 40)).boundedTo(QSize(640, 480));
+        widget->resize(size);
+
+        QImage image(widget->size(), QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        widget->render(&painter, QPoint(), QRegion(), QWidget::DrawChildren);
+        QVERIFY(!image.isNull());
+        QVERIFY(image.width() > 0);
+        QVERIFY(image.height() > 0);
+    }
+
+    delete object;
+}
+
+QTEST_MAIN(TestAntWidgetSmoke)
+
+#include "@ANT_WIDGET_SMOKE_MOC@"

@@ -93,6 +93,7 @@
 #include "widgets/AntWatermark.h"
 #include "widgets/AntWidget.h"
 #include "widgets/AntWindow.h"
+#include "widgets/AntWindowFrame.h"
 
 class TestAntObjectTree : public QObject
 {

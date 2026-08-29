@@ -38,19 +38,12 @@ AntUploadStyle::AntUploadStyle(QStyle* style)
 void AntUploadStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntUpload*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntUpload>(widget);
 }
 
 void AntUploadStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntUpload*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntUpload>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -69,19 +62,21 @@ QSize AntUploadStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntUploadStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntUploadStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* upload = qobject_cast<AntUpload*>(watched);
-    if (upload && event->type() == QEvent::Paint)
+    auto* upload = qobject_cast<AntUpload*>(widget);
+    if (!upload)
     {
-        QStyleOption option;
-        option.initFrom(upload);
-        option.rect = upload->rect();
-        QPainter painter(upload);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, upload);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(upload);
+    option.rect = upload->rect();
+    QPainter painter(upload);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, upload);
+
+    return true;
 }
 
 void AntUploadStyle::drawUpload(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -171,8 +166,7 @@ void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool 
                                  QRectF(rect.center().x() - 18, rect.top() + 22, 36, 36),
                                  disabled ? token.colorTextDisabled : token.colorPrimary);
 
-        QFont titleFont = painter->font();
-        titleFont.setPixelSize(token.fontSize);
+        const QFont titleFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
         painter->setFont(titleFont);
         painter->setPen(disabled ? token.colorTextDisabled : token.colorText);
         painter->drawText(QRect(rect.left() + 16, rect.top() + 72, rect.width() - 32, 22),
@@ -188,8 +182,7 @@ void AntUploadStyle::drawTriggerArea(QPainter* painter, const QRect& rect, bool 
     const int textGap = 8;
     const QString text = QStringLiteral("Click to Upload");
 
-    QFont font = painter->font();
-    font.setPixelSize(token.fontSize);
+    const QFont font = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
     painter->setFont(font);
     const QFontMetrics fm(font);
     const int textWidth = fm.horizontalAdvance(text);
@@ -235,8 +228,7 @@ void AntUploadStyle::drawTextFileItem(QPainter* painter, const QRect& itemRect, 
     const int rightReserved = 56;
     const int textWidth = itemRect.width() - textLeft - rightReserved;
 
-    QFont nameFont = painter->font();
-    nameFont.setPixelSize(token.fontSize);
+    const QFont nameFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
     painter->setFont(nameFont);
     const QFontMetrics nameFm(nameFont);
 
@@ -304,7 +296,9 @@ void AntUploadStyle::drawPictureFileItem(QPainter* painter, const QRect& itemRec
     if (!file.thumbUrl.isEmpty())
     {
         const auto* upload = qobject_cast<const AntUpload*>(widget);
-        const QPixmap pixmap = upload ? upload->cachedThumbPixmap(file.thumbUrl) : QPixmap(file.thumbUrl);
+        const QPixmap pixmap = upload
+            ? upload->cachedThumbPixmap(file.thumbUrl, thumbRect.size(), upload->devicePixelRatioF())
+            : QPixmap();
         if (!pixmap.isNull())
         {
             painter->drawPixmap(thumbRect, pixmap);
@@ -312,8 +306,7 @@ void AntUploadStyle::drawPictureFileItem(QPainter* painter, const QRect& itemRec
     }
     else
     {
-        QFont iconFont = painter->font();
-        iconFont.setPixelSize(16);
+        const QFont iconFont = AntStyleBase::withPixelSize(painter->font(), 16);
         painter->setFont(iconFont);
         painter->setPen(token.colorTextTertiary);
         painter->drawText(thumbRect, Qt::AlignCenter, fileIconText(file.name));
@@ -322,8 +315,7 @@ void AntUploadStyle::drawPictureFileItem(QPainter* painter, const QRect& itemRec
     const int textLeft = thumbLeft + thumbSize + 8;
     const int textWidth = itemRect.width() - textLeft - 8;
 
-    QFont nameFont = painter->font();
-    nameFont.setPixelSize(token.fontSize);
+    const QFont nameFont = AntStyleBase::withPixelSize(painter->font(), token.fontSize);
     painter->setFont(nameFont);
     const QFontMetrics nameFm(nameFont);
     const QString displayName = truncatedName(file.name, textWidth, nameFm);
@@ -352,7 +344,9 @@ void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRec
     if (!file.thumbUrl.isEmpty())
     {
         const auto* upload = qobject_cast<const AntUpload*>(widget);
-        const QPixmap pixmap = upload ? upload->cachedThumbPixmap(file.thumbUrl) : QPixmap(file.thumbUrl);
+        const QPixmap pixmap = upload
+            ? upload->cachedThumbPixmap(file.thumbUrl, cardRect.size(), upload->devicePixelRatioF())
+            : QPixmap();
         if (!pixmap.isNull())
         {
             painter->save();
@@ -366,8 +360,7 @@ void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRec
     else
     {
         painter->setPen(token.colorTextTertiary);
-        QFont iconFont = painter->font();
-        iconFont.setPixelSize(24);
+        const QFont iconFont = AntStyleBase::withPixelSize(painter->font(), 24);
         painter->setFont(iconFont);
         painter->drawText(cardRect, Qt::AlignCenter, fileIconText(file.name));
     }
@@ -379,8 +372,7 @@ void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRec
     painter->setBrush(overlayBg);
     painter->drawRect(overlayRect);
 
-    QFont nameFont = painter->font();
-    nameFont.setPixelSize(token.fontSizeSM);
+    const QFont nameFont = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM);
     painter->setFont(nameFont);
     const QFontMetrics fm(nameFont);
     const QString displayName = truncatedName(file.name, cardRect.width() - 8, fm);
@@ -403,8 +395,7 @@ void AntUploadStyle::drawPictureCardItem(QPainter* painter, const QRect& cardRec
         painter->setBrush(Qt::NoBrush);
         painter->drawEllipse(spinnerRect);
 
-        QFont pctFont = painter->font();
-        pctFont.setPixelSize(token.fontSizeSM);
+        const QFont pctFont = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM);
         painter->setFont(pctFont);
         painter->setPen(Qt::white);
         painter->drawText(cardRect, Qt::AlignCenter, QString::number(file.percent) + QStringLiteral("%"));

@@ -37,6 +37,7 @@ class QT_ANT_DESIGN_EXPORT AntCascader : public QWidget
     Q_PROPERTY(QStringList value READ value WRITE setValue NOTIFY valueChanged)
     Q_PROPERTY(QString placeholder READ placeholder WRITE setPlaceholder NOTIFY placeholderChanged)
     Q_PROPERTY(bool allowClear READ allowClear WRITE setAllowClear NOTIFY allowClearChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size cascaderSize READ cascaderSize WRITE setCascaderSize NOTIFY cascaderSizeChanged)
     Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
@@ -60,8 +61,11 @@ public:
     bool allowClear() const;
     void setAllowClear(bool allowClear);
 
-    Ant::Size cascaderSize() const;
-    void setCascaderSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size cascaderSize() const { return size(); }
+    void setCascaderSize(Ant::Size size) { setSize(size); }
 
     Ant::Status status() const;
     void setStatus(Ant::Status status);
@@ -91,6 +95,7 @@ Q_SIGNALS:
     void valueChanged(const QStringList& path);
     void placeholderChanged(const QString& placeholder);
     void allowClearChanged(bool allowClear);
+    void sizeChanged(Ant::Size size);
     void cascaderSizeChanged(Ant::Size size);
     void statusChanged(Ant::Status status);
     void variantChanged(Ant::Variant variant);
@@ -138,7 +143,7 @@ private:
     QStringList m_value;
     QString m_placeholder;
     bool m_allowClear = false;
-    Ant::Size m_cascaderSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     Ant::Status m_status = Ant::Status::Normal;
     Ant::Variant m_variant = Ant::Variant::Outlined;
     Ant::Trigger m_expandTrigger = Ant::Trigger::Click;

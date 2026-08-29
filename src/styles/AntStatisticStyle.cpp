@@ -32,8 +32,7 @@ Metrics statisticMetrics()
 QRect statisticTitleRect(const AntStatistic* stat, const QRect& widgetRect, const QFont& widgetFont)
 {
     const Metrics m = statisticMetrics();
-    QFont titleFont = widgetFont;
-    titleFont.setPixelSize(m.titleFontSize);
+    const QFont titleFont = AntStyleBase::withPixelSize(widgetFont, m.titleFontSize);
     QFontMetrics titleFm(titleFont);
     return QRect(m.padding, m.padding, widgetRect.width() - m.padding * 2, titleFm.height());
 }
@@ -45,13 +44,11 @@ QRect statisticValueRect(const AntStatistic* stat, const QRect& widgetRect, cons
 
     if (!stat->title().isEmpty())
     {
-        QFont titleFont = widgetFont;
-        titleFont.setPixelSize(m.titleFontSize);
+        const QFont titleFont = AntStyleBase::withPixelSize(widgetFont, m.titleFontSize);
         top += QFontMetrics(titleFont).height() + m.spacing;
     }
 
-    QFont valueFont = widgetFont;
-    valueFont.setPixelSize(m.valueFontSize);
+    const QFont valueFont = AntStyleBase::withPixelSize(widgetFont, m.valueFontSize);
     const int valueHeight = QFontMetrics(valueFont).height();
 
     return QRect(m.padding, top, widgetRect.width() - m.padding * 2, valueHeight);
@@ -68,19 +65,12 @@ AntStatisticStyle::AntStatisticStyle(QStyle* style)
 void AntStatisticStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntStatistic*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntStatistic>(widget);
 }
 
 void AntStatisticStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntStatistic*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntStatistic>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -99,19 +89,21 @@ QSize AntStatisticStyle::sizeFromContents(ContentsType type, const QStyleOption*
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntStatisticStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntStatisticStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* stat = qobject_cast<AntStatistic*>(watched);
-    if (stat && event->type() == QEvent::Paint)
+    auto* stat = qobject_cast<AntStatistic*>(widget);
+    if (!stat)
     {
-        QStyleOption option;
-        option.initFrom(stat);
-        option.rect = stat->rect();
-        QPainter painter(stat);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, stat);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(stat);
+    option.rect = stat->rect();
+    QPainter painter(stat);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, stat);
+
+    return true;
 }
 
 void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -135,8 +127,7 @@ void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* pain
 
     if (!title.isEmpty())
     {
-        QFont titleFont = widgetFont;
-        titleFont.setPixelSize(m.titleFontSize);
+        const QFont titleFont = AntStyleBase::withPixelSize(widgetFont, m.titleFontSize);
         painter->setFont(titleFont);
         painter->setPen(token.colorTextSecondary);
         painter->drawText(statisticTitleRect(stat, option->rect, widgetFont), Qt::AlignLeft | Qt::AlignVCenter, title);
@@ -144,9 +135,7 @@ void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* pain
 
     const QRect vr = statisticValueRect(stat, option->rect, widgetFont);
 
-    QFont valueFont = widgetFont;
-    valueFont.setPixelSize(m.valueFontSize);
-    valueFont.setWeight(QFont::Normal);
+    const QFont valueFont = AntStyleBase::withPixelSize(widgetFont, m.valueFontSize, QFont::Normal);
     QFontMetrics valueFm(valueFont);
 
     const QString formatted = stat->formattedValue();
@@ -154,17 +143,13 @@ void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* pain
 
     if (!prefix.isEmpty())
     {
-        QFont prefixFont = widgetFont;
-        prefixFont.setPixelSize(m.prefixFontSize);
-        prefixFont.setWeight(QFont::Normal);
+        const QFont prefixFont = AntStyleBase::withPixelSize(widgetFont, m.prefixFontSize, QFont::Normal);
         QFontMetrics prefixFm(prefixFont);
         contentWidth += prefixFm.horizontalAdvance(prefix) + m.spacing;
     }
     if (!suffix.isEmpty())
     {
-        QFont suffixFont = widgetFont;
-        suffixFont.setPixelSize(m.suffixFontSize);
-        suffixFont.setWeight(QFont::Normal);
+        const QFont suffixFont = AntStyleBase::withPixelSize(widgetFont, m.suffixFontSize, QFont::Normal);
         QFontMetrics suffixFm(suffixFont);
         contentWidth += m.spacing + suffixFm.horizontalAdvance(suffix);
     }
@@ -174,9 +159,7 @@ void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* pain
 
     if (!prefix.isEmpty())
     {
-        QFont prefixFont = widgetFont;
-        prefixFont.setPixelSize(m.prefixFontSize);
-        prefixFont.setWeight(QFont::Normal);
+        const QFont prefixFont = AntStyleBase::withPixelSize(widgetFont, m.prefixFontSize, QFont::Normal);
         painter->setFont(prefixFont);
         painter->setPen(token.colorText);
         QFontMetrics prefixFm(prefixFont);
@@ -194,9 +177,7 @@ void AntStatisticStyle::drawStatistic(const QStyleOption* option, QPainter* pain
     if (!suffix.isEmpty())
     {
         x += m.spacing;
-        QFont suffixFont = widgetFont;
-        suffixFont.setPixelSize(m.suffixFontSize);
-        suffixFont.setWeight(QFont::Normal);
+        const QFont suffixFont = AntStyleBase::withPixelSize(widgetFont, m.suffixFontSize, QFont::Normal);
         painter->setFont(suffixFont);
         painter->setPen(token.colorTextSecondary);
         QFontMetrics suffixFm(suffixFont);

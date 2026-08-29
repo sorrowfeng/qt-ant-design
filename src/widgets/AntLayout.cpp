@@ -16,7 +16,7 @@
 AntLayoutHeader::AntLayoutHeader(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -47,7 +47,7 @@ void AntLayoutHeader::paintEvent(QPaintEvent* event)
 AntLayoutFooter::AntLayoutFooter(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -78,7 +78,7 @@ void AntLayoutFooter::paintEvent(QPaintEvent* event)
 AntLayoutContent::AntLayoutContent(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -109,7 +109,7 @@ void AntLayoutContent::paintEvent(QPaintEvent* event)
 AntLayoutSider::AntLayoutSider(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

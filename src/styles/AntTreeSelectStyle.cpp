@@ -6,6 +6,7 @@
 #include <QStyleOption>
 
 #include "styles/AntIconPainter.h"
+#include "styles/AntPalette.h"
 #include "widgets/AntTreeSelect.h"
 
 AntTreeSelectStyle::AntTreeSelectStyle(QStyle* style)
@@ -17,18 +18,12 @@ AntTreeSelectStyle::AntTreeSelectStyle(QStyle* style)
 void AntTreeSelectStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntTreeSelect*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntTreeSelect>(widget);
 }
 
 void AntTreeSelectStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTreeSelect*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTreeSelect>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -47,19 +42,21 @@ QSize AntTreeSelectStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTreeSelectStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTreeSelectStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* treeSelect = qobject_cast<AntTreeSelect*>(watched);
-    if (treeSelect && event->type() == QEvent::Paint)
+    auto* treeSelect = qobject_cast<AntTreeSelect*>(widget);
+    if (!treeSelect)
     {
-        QStyleOption option;
-        option.initFrom(treeSelect);
-        option.rect = treeSelect->rect();
-        QPainter painter(treeSelect);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, treeSelect);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(treeSelect);
+    option.rect = treeSelect->rect();
+    QPainter painter(treeSelect);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, treeSelect);
+
+    return true;
 }
 
 namespace
@@ -109,10 +106,8 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
     if (focused && !disabled && select->variant() != Ant::Variant::Borderless
         && select->variant() != Ant::Variant::Underlined)
     {
-        const QColor outline = token.colorPrimaryBorder;
-        AntStyleBase::drawCrispRoundedRect(painter, control.toRect(),
-            QPen(outline, token.controlOutlineWidth), Qt::NoBrush,
-            m.radius + 1, m.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, m.radius,
+            AntPalette::alpha(borderColor, 0.16), token.controlOutlineWidth);
     }
 
     if (select->variant() != Ant::Variant::Borderless
@@ -141,8 +136,7 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
         textColor = token.colorTextDisabled;
     }
 
-    QFont font = painter->font();
-    font.setPixelSize(m.fontSize);
+    const QFont font = AntStyleBase::withPixelSize(painter->font(), m.fontSize);
     painter->setFont(font);
     painter->setPen(textColor);
 
@@ -157,8 +151,7 @@ void AntTreeSelectStyle::drawTreeSelect(const QStyleOption* option, QPainter* pa
         int tagGap = 4;
         int y = textRect.center().y() - tagH / 2;
 
-        QFont tagFont;
-        tagFont.setPixelSize(12);
+        const QFont tagFont = AntStyleBase::withPixelSize(QFont(), 12);
         QFontMetrics fm(tagFont);
 
         for (int i = 0; i < titles.size(); ++i)

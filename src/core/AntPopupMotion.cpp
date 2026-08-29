@@ -216,42 +216,50 @@ AntPopupMotion::Placement AntPopupMotion::fromPlacement(Ant::Placement placement
     case Ant::Placement::Bottom:
     case Ant::Placement::BottomLeft:
     case Ant::Placement::BottomRight:
-    default:
         return Placement::Bottom;
-    }
-}
-
-AntPopupMotion::Placement AntPopupMotion::fromDropdownPlacement(Ant::DropdownPlacement placement)
-{
-    switch (placement)
-    {
-    case Ant::DropdownPlacement::Top:
-    case Ant::DropdownPlacement::TopLeft:
-    case Ant::DropdownPlacement::TopRight:
-        return Placement::Top;
-    case Ant::DropdownPlacement::Bottom:
-    case Ant::DropdownPlacement::BottomLeft:
-    case Ant::DropdownPlacement::BottomRight:
-    default:
-        return Placement::Bottom;
-    }
-}
-
-AntPopupMotion::Placement AntPopupMotion::fromTooltipPlacement(Ant::TooltipPlacement placement)
-{
-    switch (placement)
-    {
-    case Ant::TooltipPlacement::Top:
-    case Ant::TooltipPlacement::TopLeft:
-    case Ant::TooltipPlacement::TopRight:
-        return Placement::Top;
-    case Ant::TooltipPlacement::Bottom:
-    case Ant::TooltipPlacement::BottomLeft:
-    case Ant::TooltipPlacement::BottomRight:
-        return Placement::Bottom;
-    case Ant::TooltipPlacement::Left:
+    case Ant::Placement::Left:
         return Placement::Left;
-    case Ant::TooltipPlacement::Right:
+    case Ant::Placement::Right:
+    default:
+        return Placement::Right;
+    }
+}
+
+AntPopupMotion::Placement AntPopupMotion::fromDropdownPlacement(Ant::Placement placement)
+{
+    switch (placement)
+    {
+    case Ant::Placement::Top:
+    case Ant::Placement::TopLeft:
+    case Ant::Placement::TopRight:
+        return Placement::Top;
+    case Ant::Placement::Bottom:
+    case Ant::Placement::BottomLeft:
+    case Ant::Placement::BottomRight:
+        return Placement::Bottom;
+    case Ant::Placement::Left:
+        return Placement::Left;
+    case Ant::Placement::Right:
+    default:
+        return Placement::Right;
+    }
+}
+
+AntPopupMotion::Placement AntPopupMotion::fromTooltipPlacement(Ant::Placement placement)
+{
+    switch (placement)
+    {
+    case Ant::Placement::Top:
+    case Ant::Placement::TopLeft:
+    case Ant::Placement::TopRight:
+        return Placement::Top;
+    case Ant::Placement::Bottom:
+    case Ant::Placement::BottomLeft:
+    case Ant::Placement::BottomRight:
+        return Placement::Bottom;
+    case Ant::Placement::Left:
+        return Placement::Left;
+    case Ant::Placement::Right:
     default:
         return Placement::Right;
     }

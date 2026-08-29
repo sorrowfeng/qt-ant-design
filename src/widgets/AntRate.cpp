@@ -197,34 +197,49 @@ bool AntRate::isDisabled() const
 
 void AntRate::setDisabled(bool disabled)
 {
+    if (isEnabled() != !disabled)
+    {
+        QWidget::setEnabled(!disabled);
+    }
+    syncDisabledState(disabled);
+}
+
+void AntRate::syncDisabledState(bool disabled)
+{
     if (m_disabled == disabled)
     {
+        updateDisabledVisual();
         return;
     }
-
     m_disabled = disabled;
-    setCursor(m_disabled ? Qt::ArrowCursor : Qt::PointingHandCursor);
-    updateValueRegion(0.0, static_cast<double>(m_count));
+    updateDisabledVisual();
     Q_EMIT disabledChanged(m_disabled);
 }
 
-Ant::Size AntRate::rateSize() const
+void AntRate::updateDisabledVisual()
 {
-    return m_rateSize;
+    setCursor(m_disabled || !isEnabled() ? Qt::ArrowCursor : Qt::PointingHandCursor);
+    updateValueRegion(0.0, static_cast<double>(m_count));
 }
 
-void AntRate::setRateSize(Ant::Size size)
+Ant::Size AntRate::size() const
 {
-    if (m_rateSize == size)
+    return m_size;
+}
+
+void AntRate::setSize(Ant::Size size)
+{
+    if (m_size == size)
     {
         return;
     }
 
-    m_rateSize = size;
+    m_size = size;
     invalidateLayoutCache();
     updateGeometry();
     update();
-    Q_EMIT rateSizeChanged(m_rateSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT rateSizeChanged(m_size);
 }
 
 double AntRate::hoverValue() const
@@ -374,8 +389,7 @@ void AntRate::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::EnabledChange)
     {
-        setCursor(isEnabled() && !m_disabled ? Qt::PointingHandCursor : Qt::ArrowCursor);
-        updateValueRegion(0.0, static_cast<double>(m_count));
+        syncDisabledState(!isEnabled());
     }
     QWidget::changeEvent(event);
 }
@@ -389,19 +403,19 @@ void AntRate::resizeEvent(QResizeEvent* event)
 const AntRate::LayoutCache& AntRate::layoutCache() const
 {
     if (m_layoutCache.valid
-        && m_layoutCache.widgetSize == size()
-        && m_layoutCache.rateSize == m_rateSize
+        && m_layoutCache.widgetSize == QWidget::size()
+        && m_layoutCache.rateSize == m_size
         && m_layoutCache.count == m_count
-        && m_layoutCache.starSize == starSizeFor(m_rateSize)
+        && m_layoutCache.starSize == starSizeFor(m_size)
         && m_layoutCache.margin == antTheme->tokens().marginXS)
     {
         return m_layoutCache;
     }
 
-    m_layoutCache.widgetSize = size();
-    m_layoutCache.rateSize = m_rateSize;
+    m_layoutCache.widgetSize = QWidget::size();
+    m_layoutCache.rateSize = m_size;
     m_layoutCache.count = m_count;
-    m_layoutCache.starSize = starSizeFor(m_rateSize);
+    m_layoutCache.starSize = starSizeFor(m_size);
     m_layoutCache.margin = antTheme->tokens().marginXS;
     m_layoutCache.totalWidth = m_count * m_layoutCache.starSize + (m_count - 1) * m_layoutCache.margin;
     m_layoutCache.sizeHint = QSize(m_layoutCache.totalWidth + kSelectionPadding * 2,

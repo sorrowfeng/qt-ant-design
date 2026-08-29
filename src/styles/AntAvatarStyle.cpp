@@ -101,19 +101,12 @@ AntAvatarStyle::AntAvatarStyle(QStyle* style)
 void AntAvatarStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntAvatar*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntAvatar>(widget);
 }
 
 void AntAvatarStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntAvatar*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntAvatar>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -132,19 +125,21 @@ QSize AntAvatarStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntAvatarStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntAvatarStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* avatar = qobject_cast<AntAvatar*>(watched);
-    if (avatar && event->type() == QEvent::Paint)
+    auto* avatar = qobject_cast<AntAvatar*>(widget);
+    if (!avatar)
     {
-        QStyleOption option;
-        option.initFrom(avatar);
-        option.rect = avatar->rect();
-        QPainter painter(avatar);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, avatar);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(avatar);
+    option.rect = avatar->rect();
+    QPainter painter(avatar);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, avatar);
+
+    return true;
 }
 
 void AntAvatarStyle::drawAvatar(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

@@ -60,6 +60,10 @@ struct AntThemeTokens
     QColor colorSplit;
     QColor colorShadow;
     QColor colorRateStar;
+    // Always-dark menu surface (MenuTheme::Dark is mode-independent).
+    QColor colorBgMenuDark;
+    // Typography <mark> highlight background (antd gold-2 in light, dark-gold in dark).
+    QColor colorMarkBg;
 
     int fontSize = Ant::FontSize;
     int fontSizeSM = Ant::FontSizeSmall;
@@ -104,6 +108,9 @@ public:
     static AntTheme* instance();
 
     Ant::ThemeMode themeMode() const;
+    // Single source of truth for "is the global theme dark". All styles and
+    // widgets must use this instead of re-comparing themeMode() inline.
+    bool isDarkMode() const { return m_themeMode == Ant::ThemeMode::Dark; }
     const AntThemeTokens& tokens() const;
     const AntThemeTokens& tokens(Ant::ThemeMode mode) const;
 
@@ -134,6 +141,15 @@ public:
     int largeBorderRadius() const;
     int spacingUnit() const;
 
+    // Atomically apply the global theme configuration. An invalid primary
+    // color restores the built-in color for each theme mode. Font size and
+    // border radius are seed values; their related size tokens are derived
+    // from them for both the light and dark token sets.
+    void applyConfiguration(Ant::ThemeMode mode,
+                            const QColor& primaryColor = QColor(),
+                            int fontSize = Ant::FontSize,
+                            int borderRadius = Ant::BorderRadius);
+
     QColor hoverColor(const QColor& base) const;
     QColor activeColor(const QColor& base) const;
     QColor disabledColor(const QColor& foreground) const;
@@ -145,6 +161,10 @@ public Q_SLOTS:
     void toggleThemeMode();
 
 Q_SIGNALS:
+    // Emitted before any mode or token change. Internal styles use this to
+    // cache geometry hints for both ordinary mode changes and ConfigProvider
+    // token updates.
+    void themeAboutToChange();
     void themeModeAboutToChange(Ant::ThemeMode mode);
     void themeModeChanged(Ant::ThemeMode mode);
     void themeChanged();
@@ -153,8 +173,17 @@ private:
     explicit AntTheme(QObject* parent = nullptr);
 
     static AntThemeTokens createTokens(Ant::ThemeMode mode);
+    static void applyTokenOverrides(AntThemeTokens& tokens,
+                                    Ant::ThemeMode mode,
+                                    const QColor& primaryColor,
+                                    int fontSize,
+                                    int borderRadius);
+    void rebuildTokens();
 
     Ant::ThemeMode m_themeMode = Ant::ThemeMode::Default;
+    QColor m_primaryColorOverride;
+    int m_fontSizeOverride = Ant::FontSize;
+    int m_borderRadiusOverride = Ant::BorderRadius;
     AntThemeTokens m_lightTokens;
     AntThemeTokens m_darkTokens;
 };

@@ -25,8 +25,8 @@ public:
     static bool isClosing(const QWidget* popup);
 
     static Placement fromPlacement(Ant::Placement placement);
-    static Placement fromDropdownPlacement(Ant::DropdownPlacement placement);
-    static Placement fromTooltipPlacement(Ant::TooltipPlacement placement);
+    static Placement fromDropdownPlacement(Ant::Placement placement);
+    static Placement fromTooltipPlacement(Ant::Placement placement);
 
 private:
     AntPopupMotion() = default;

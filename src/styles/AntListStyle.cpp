@@ -17,18 +17,12 @@ AntListStyle::AntListStyle(QStyle* style)
 void AntListStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntList*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntList>(widget);
 }
 
 void AntListStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntList*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntList>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -47,19 +41,21 @@ QSize AntListStyle::sizeFromContents(ContentsType type, const QStyleOption* opti
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntListStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntListStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* list = qobject_cast<AntList*>(watched);
-    if (list && event->type() == QEvent::Paint)
+    auto* list = qobject_cast<AntList*>(widget);
+    if (!list)
     {
-        QStyleOption option;
-        option.initFrom(list);
-        option.rect = list->rect();
-        QPainter painter(list);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, list);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(list);
+    option.rect = list->rect();
+    QPainter painter(list);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, list);
+
+    return true;
 }
 
 namespace

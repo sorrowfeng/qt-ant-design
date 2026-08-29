@@ -22,6 +22,7 @@ class QT_ANT_DESIGN_EXPORT AntTreeSelect : public QWidget
     Q_PROPERTY(bool multiple READ isMultiple WRITE setMultiple NOTIFY multipleChanged)
     Q_PROPERTY(bool treeCheckable READ isTreeCheckable WRITE setTreeCheckable NOTIFY treeCheckableChanged)
     Q_PROPERTY(bool showSearch READ isShowSearch WRITE setShowSearch NOTIFY showSearchChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size selectSize READ selectSize WRITE setSelectSize NOTIFY selectSizeChanged)
     Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
@@ -52,8 +53,11 @@ public:
     bool isShowSearch() const;
     void setShowSearch(bool enable);
 
-    Ant::Size selectSize() const;
-    void setSelectSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size selectSize() const { return size(); }
+    void setSelectSize(Ant::Size size) { setSize(size); }
 
     Ant::Status status() const;
     void setStatus(Ant::Status status);
@@ -78,6 +82,7 @@ Q_SIGNALS:
     void multipleChanged(bool enable);
     void treeCheckableChanged(bool enable);
     void showSearchChanged(bool enable);
+    void sizeChanged(Ant::Size size);
     void selectSizeChanged(Ant::Size size);
     void statusChanged(Ant::Status status);
     void variantChanged(Ant::Variant variant);
@@ -139,7 +144,7 @@ private:
     bool m_multiple = false;
     bool m_treeCheckable = false;
     bool m_showSearch = false;
-    Ant::Size m_selectSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     Ant::Status m_status = Ant::Status::Normal;
     Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_open = false;

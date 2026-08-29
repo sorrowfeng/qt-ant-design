@@ -378,11 +378,11 @@ QWidget* createTooltipPage(QWidget* /*owner*/)
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(16);
-        const QList<QPair<QString, Ant::TooltipPlacement>> placements = {
-            {QStringLiteral("Top"), Ant::TooltipPlacement::Top},
-            {QStringLiteral("Bottom"), Ant::TooltipPlacement::Bottom},
-            {QStringLiteral("Left"), Ant::TooltipPlacement::Left},
-            {QStringLiteral("Right"), Ant::TooltipPlacement::Right},
+        const QList<QPair<QString, Ant::Placement>> placements = {
+            {QStringLiteral("Top"), Ant::Placement::Top},
+            {QStringLiteral("Bottom"), Ant::Placement::Bottom},
+            {QStringLiteral("Left"), Ant::Placement::Left},
+            {QStringLiteral("Right"), Ant::Placement::Right},
         };
         for (const auto& item : placements)
         {

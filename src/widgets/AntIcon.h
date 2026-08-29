@@ -6,9 +6,9 @@
 #include <QPainterPath>
 #include <QString>
 #include <QStringList>
-#include <QTimer>
 #include <QWidget>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class QT_ANT_DESIGN_EXPORT AntIcon : public QWidget
@@ -88,6 +88,8 @@ Q_SIGNALS:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
 
 private:
     QColor effectivePrimaryColor() const;
@@ -102,9 +104,8 @@ private:
     QColor m_twoToneColor;
     int m_rotate = 0;
     bool m_spin = false;
-    int m_spinAngle = 0;
     bool m_hasCustomPath = false;
     QPainterPath m_customPrimaryPath;
     QPainterPath m_customSecondaryPath;
-    QTimer m_spinTimer;
+    AntSpinner m_spinner;
 };

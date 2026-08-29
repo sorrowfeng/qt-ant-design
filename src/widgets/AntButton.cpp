@@ -13,15 +13,6 @@
 #include "core/AntTheme.h"
 #include "core/AntWave.h"
 
-namespace
-{
-int focusPaddingFor()
-{
-    const auto& token = antTheme->tokens();
-    return token.lineWidthFocus + 1;
-}
-} // namespace
-
 AntButton::AntButton(QWidget* parent)
     : QPushButton(parent)
 {
@@ -33,7 +24,7 @@ AntButton::AntButton(QWidget* parent)
     buttonStyle->setParent(this);
     setStyle(buttonStyle);
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -41,8 +32,9 @@ AntButton::AntButton(QWidget* parent)
         AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         update();
     });
-    connect(&m_spinnerTimer, &QTimer::timeout, this, [this]() {
-        m_spinnerAngle = (m_spinnerAngle + 6) % 360;
+    m_spinner.setInterval(16);
+    m_spinner.setStep(6);
+    connect(&m_spinner, &AntSpinner::ticked, this, [this]() {
         updateSpinnerRegion();
     });
 
@@ -69,16 +61,17 @@ void AntButton::setButtonType(Ant::ButtonType type)
     Q_EMIT buttonTypeChanged(m_buttonType);
 }
 
-Ant::Size AntButton::buttonSize() const { return m_buttonSize; }
+Ant::Size AntButton::size() const { return m_size; }
 
-void AntButton::setButtonSize(Ant::Size size)
+void AntButton::setSize(Ant::Size size)
 {
-    if (m_buttonSize == size)
+    if (m_size == size)
         return;
-    m_buttonSize = size;
+    m_size = size;
     updateGeometryFromState();
     update();
-    Q_EMIT buttonSizeChanged(m_buttonSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT buttonSizeChanged(m_size);
 }
 
 Ant::ButtonShape AntButton::buttonShape() const { return m_buttonShape; }
@@ -232,7 +225,7 @@ void AntButton::focusOutEvent(QFocusEvent* event)
 
 bool AntButton::hitButton(const QPoint& pos) const
 {
-    const int focusPadding = focusPaddingFor();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     return rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding).contains(pos);
 }
 
@@ -255,7 +248,7 @@ void AntButton::mouseReleaseEvent(QMouseEvent* event)
                 return;
             }
             const AntButton::Metrics m = guard->metrics();
-            const int focusPadding = focusPaddingFor();
+            const int focusPadding = AntStyleBase::focusPaddingFor();
             const QRect bodyRect = guard->rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
             AntWave::triggerRect(guard, bodyRect, guard->waveColor(), guard->cornerRadius(m));
         });
@@ -292,7 +285,7 @@ AntButton::Metrics AntButton::metrics() const
 {
     const auto& token = antTheme->tokens();
     Metrics m;
-    switch (m_buttonSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         m.height = token.controlHeightLG;
@@ -328,7 +321,7 @@ int AntButton::cornerRadius(const Metrics& metrics) const
 
 QRectF AntButton::contentRect(const Metrics& metrics) const
 {
-    const int focusPadding = focusPaddingFor();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     if (m_buttonShape == Ant::ButtonShape::Circle)
         return bodyRect;
@@ -378,7 +371,7 @@ void AntButton::updateGeometryFromState(bool notifyGeometry)
     {
         setFont(f);
     }
-    const int totalHeight = m.height + focusPaddingFor() * 2;
+    const int totalHeight = m.height + AntStyleBase::focusPaddingFor() * 2;
     setMinimumHeight(totalHeight);
     setMaximumHeight(totalHeight);
     setSizePolicy(m_block ? QSizePolicy::Expanding : QSizePolicy::Minimum, QSizePolicy::Fixed);
@@ -396,7 +389,7 @@ QRect AntButton::spinnerIndicatorRect() const
     }
 
     const Metrics m = metrics();
-    const int focusPadding = focusPaddingFor();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     if (!bodyRect.isValid())
     {
@@ -428,20 +421,7 @@ void AntButton::updateSpinnerRegion()
 void AntButton::updateSpinnerTimer()
 {
     const bool shouldRun = m_loading && isVisible();
-    if (m_spinnerTimer.isActive() == shouldRun)
-    {
-        syncButtonPerfCounters();
-        return;
-    }
-
-    if (shouldRun)
-    {
-        m_spinnerTimer.start(16);
-    }
-    else
-    {
-        m_spinnerTimer.stop();
-    }
+    m_spinner.setRunning(shouldRun);
     syncButtonPerfCounters();
 }
 
@@ -449,12 +429,12 @@ void AntButton::syncButtonPerfCounters() const
 {
     auto* self = const_cast<AntButton*>(this);
     self->setProperty("antButtonSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
-    self->setProperty("antButtonSpinnerTimerActive", m_spinnerTimer.isActive());
+    self->setProperty("antButtonSpinnerTimerActive", m_spinner.isRunning());
 }
 
 int AntButton::spinnerAngle() const
 {
-    return m_spinnerAngle;
+    return m_spinner.angle();
 }
 
 bool AntButton::isFocusVisibleState() const

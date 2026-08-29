@@ -12,6 +12,7 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QVBoxLayout>
+#include "core/AntQRGenerator.h"
 #include "core/AntTheme.h"
 #include "widgets/AntList.h"
 #include "widgets/AntListWidget.h"
@@ -102,6 +103,8 @@ private slots:
     void carouselPausesAutoplayAndScopesTransitionWork();
     void collapseCachesSizeHintsAndScopesAnimationUpdates();
     void qrCodeReusesRenderedModuleCache();
+    void qrCodeRejectsInvalidInputs();
+    void qrCodeHonorsByteModeCapacity();
     void watermarkCachesRenderedPixmap();
     void timelineCachesPaintLayoutAndColors();
     void descriptionsUpdatesTextWithoutGridRebuildAndCachesSizeHint();
@@ -1006,7 +1009,7 @@ void TestAntDataDisplayB::treeCachesFlattenedVisibleNodes()
     QVERIFY(buildsAfterSetData > 0);
 
     auto renderTree = [&tree]() {
-        QImage image(tree.size(), QImage::Format_ARGB32_Premultiplied);
+        QImage image(tree.QWidget::size(), QImage::Format_ARGB32_Premultiplied);
         image.fill(Qt::transparent);
         QPainter painter(&image);
         tree.render(&painter);
@@ -1197,6 +1200,180 @@ void TestAntDataDisplayB::qrCodeReusesRenderedModuleCache()
     qr.setValue(QStringLiteral("https://example.com/cache-bust"));
     const QPixmap changedPayload = qr.cachedQrPixmap(moduleSize, 1.0, foreground);
     QVERIFY(changedPayload.cacheKey() != firstKey);
+}
+
+void TestAntDataDisplayB::qrCodeRejectsInvalidInputs()
+{
+    using Generator = Ant::AntQRGenerator;
+    using Error = Generator::GenerationError;
+
+    QVERIFY(Generator::isSupportedVersion(Generator::MinimumSupportedVersion));
+    QVERIFY(Generator::isSupportedVersion(Generator::MaximumSupportedVersion));
+    QVERIFY(!Generator::isSupportedVersion(0));
+    QVERIFY(!Generator::isSupportedVersion(11));
+    QVERIFY(Generator::isSupportedErrorLevel(Ant::QRCodeErrorLevel::L));
+    QVERIFY(Generator::isSupportedErrorLevel(Ant::QRCodeErrorLevel::H));
+
+    const auto negativeLevel = Generator::tryGenerate(
+        QStringLiteral("payload"), static_cast<Ant::QRCodeErrorLevel>(-1));
+    QCOMPARE(static_cast<int>(negativeLevel.error), static_cast<int>(Error::InvalidErrorLevel));
+    QVERIFY(negativeLevel.matrix.isEmpty());
+
+    const auto highLevel = Generator::tryGenerate(
+        QStringLiteral("payload"), static_cast<Ant::QRCodeErrorLevel>(4));
+    QCOMPARE(static_cast<int>(highLevel.error), static_cast<int>(Error::InvalidErrorLevel));
+    QVERIFY(highLevel.matrix.isEmpty());
+
+    for (int version : {-1, 11})
+    {
+        const auto invalidVersion = Generator::tryGenerate(
+            QStringLiteral("payload"), Ant::QRCodeErrorLevel::M, version);
+        QCOMPARE(static_cast<int>(invalidVersion.error), static_cast<int>(Error::InvalidVersion));
+        QVERIFY(invalidVersion.matrix.isEmpty());
+    }
+
+    const auto invalidEmptyVersion = Generator::tryGenerate(
+        QString(), Ant::QRCodeErrorLevel::M, 11);
+    QCOMPARE(static_cast<int>(invalidEmptyVersion.error), static_cast<int>(Error::InvalidVersion));
+
+    const auto oversizedPayload = Generator::tryGenerate(
+        QString(4 * 1024 * 1024, QLatin1Char('A')), Ant::QRCodeErrorLevel::L);
+    QCOMPARE(static_cast<int>(oversizedPayload.error), static_cast<int>(Error::DataTooLong));
+    QVERIFY(oversizedPayload.matrix.isEmpty());
+    QCOMPARE(oversizedPayload.capacityBytes,
+             Generator::maximumDataBytes(Generator::MaximumSupportedVersion,
+                                         Ant::QRCodeErrorLevel::L));
+
+    AntQRCode qr;
+    QVERIFY(qr.isEncodingValid());
+    QVERIFY(qr.encodingError().isEmpty());
+
+    QSignalSpy validSpy(&qr, &AntQRCode::encodingValidChanged);
+    QSignalSpy errorSpy(&qr, &AntQRCode::encodingErrorChanged);
+    QSignalSpy failureSpy(&qr, &AntQRCode::encodingFailed);
+    QSignalSpy levelSpy(&qr, &AntQRCode::errorLevelChanged);
+
+    const auto originalLevel = qr.errorLevel();
+    qr.setErrorLevel(static_cast<Ant::QRCodeErrorLevel>(4));
+    QCOMPARE(static_cast<int>(qr.errorLevel()), 4);
+    QVERIFY(!qr.isEncodingValid());
+    QVERIFY(!qr.encodingError().isEmpty());
+    QVERIFY(qr.qrMatrix().isEmpty());
+    QCOMPARE(levelSpy.count(), 1);
+    QCOMPARE(validSpy.count(), 1);
+    QCOMPARE(errorSpy.count(), 1);
+    QCOMPARE(failureSpy.count(), 1);
+
+    qr.setErrorLevel(originalLevel);
+    QVERIFY(qr.isEncodingValid());
+    QVERIFY(qr.encodingError().isEmpty());
+    QVERIFY(!qr.qrMatrix().isEmpty());
+    QCOMPARE(levelSpy.count(), 2);
+    QCOMPARE(validSpy.count(), 2);
+    QCOMPARE(errorSpy.count(), 2);
+
+    qr.setValue(QString(Generator::maximumDataBytes(
+                            Generator::MaximumSupportedVersion, originalLevel) + 1,
+                        QLatin1Char('A')));
+    QVERIFY(!qr.isEncodingValid());
+    QVERIFY(!qr.encodingError().isEmpty());
+    QVERIFY(qr.qrMatrix().isEmpty());
+    QCOMPARE(failureSpy.count(), 2);
+
+    qr.setValue(QStringLiteral("recovered"));
+    QVERIFY(qr.isEncodingValid());
+    QVERIFY(qr.encodingError().isEmpty());
+    QVERIFY(!qr.qrMatrix().isEmpty());
+
+    qr.setValue(QString());
+    QVERIFY(!qr.isEncodingValid());
+    QVERIFY(qr.qrMatrix().isEmpty());
+    QVERIFY(qr.encodingError().isEmpty());
+    QCOMPARE(failureSpy.count(), 2);
+}
+
+void TestAntDataDisplayB::qrCodeHonorsByteModeCapacity()
+{
+    using Generator = Ant::AntQRGenerator;
+    using Error = Generator::GenerationError;
+
+    static const int expectedCapacities[10][4] = {
+        {17, 14, 11, 7},
+        {32, 26, 20, 14},
+        {53, 42, 32, 24},
+        {78, 62, 46, 34},
+        {106, 84, 60, 44},
+        {134, 106, 74, 58},
+        {154, 122, 86, 64},
+        {192, 152, 108, 84},
+        {230, 180, 130, 98},
+        {271, 213, 151, 119},
+    };
+
+    const Ant::QRCodeErrorLevel levels[] = {
+        Ant::QRCodeErrorLevel::L,
+        Ant::QRCodeErrorLevel::M,
+        Ant::QRCodeErrorLevel::Q,
+        Ant::QRCodeErrorLevel::H,
+    };
+
+    for (int version = Generator::MinimumSupportedVersion;
+         version <= Generator::MaximumSupportedVersion; ++version)
+    {
+        for (int levelIndex = 0; levelIndex < 4; ++levelIndex)
+        {
+            const auto level = levels[levelIndex];
+            const int capacity = expectedCapacities[version - 1][levelIndex];
+            QCOMPARE(Generator::maximumDataBytes(version, level), capacity);
+
+            const auto atCapacity = Generator::tryGenerate(
+                QString(capacity, QLatin1Char('A')), level, version);
+            QVERIFY2(atCapacity.succeeded(), "the documented byte-mode capacity must encode");
+            QCOMPARE(atCapacity.version, version);
+            QCOMPARE(atCapacity.capacityBytes, capacity);
+            QCOMPARE(atCapacity.matrix.size(), 17 + version * 4);
+
+            const auto overCapacity = Generator::tryGenerate(
+                QString(capacity + 1, QLatin1Char('A')), level, version);
+            QCOMPARE(static_cast<int>(overCapacity.error), static_cast<int>(Error::DataTooLong));
+            QVERIFY(overCapacity.matrix.isEmpty());
+            QCOMPARE(overCapacity.version, version);
+            QCOMPARE(overCapacity.capacityBytes, capacity);
+        }
+    }
+
+    const QString utf8AtCapacity = QString(14, QLatin1Char('A')) + QChar(0x4e2d);
+    const QString utf8OverCapacity = QString(15, QLatin1Char('A')) + QChar(0x4e2d);
+    QCOMPARE(utf8AtCapacity.size(), 15);
+    QCOMPARE(utf8AtCapacity.toUtf8().size(), 17);
+    QCOMPARE(utf8OverCapacity.size(), 16);
+    QCOMPARE(utf8OverCapacity.toUtf8().size(), 18);
+
+    const auto utf8Accepted = Generator::tryGenerate(
+        utf8AtCapacity, Ant::QRCodeErrorLevel::L, 1);
+    QVERIFY(utf8Accepted.succeeded());
+    QCOMPARE(utf8Accepted.version, 1);
+
+    const auto utf8Rejected = Generator::tryGenerate(
+        utf8OverCapacity, Ant::QRCodeErrorLevel::L, 1);
+    QCOMPARE(static_cast<int>(utf8Rejected.error), static_cast<int>(Error::DataTooLong));
+    QVERIFY(utf8Rejected.matrix.isEmpty());
+
+    for (int levelIndex = 0; levelIndex < 4; ++levelIndex)
+    {
+        const auto level = levels[levelIndex];
+        const int maxCapacity = expectedCapacities[9][levelIndex];
+        const auto automatic = Generator::tryGenerate(
+            QString(maxCapacity, QLatin1Char('Z')), level);
+        QVERIFY(automatic.succeeded());
+        QCOMPARE(automatic.version, Generator::MaximumSupportedVersion);
+
+        const auto automaticOverflow = Generator::tryGenerate(
+            QString(maxCapacity + 1, QLatin1Char('Z')), level);
+        QCOMPARE(static_cast<int>(automaticOverflow.error), static_cast<int>(Error::DataTooLong));
+        QVERIFY(automaticOverflow.matrix.isEmpty());
+        QCOMPARE(automaticOverflow.capacityBytes, maxCapacity);
+    }
 }
 
 void TestAntDataDisplayB::watermarkCachesRenderedPixmap()

@@ -1,5 +1,7 @@
 #include "AntQRGenerator.h"
 
+#include <QByteArray>
+
 #include "AntTypes.h"
 
 namespace Ant
@@ -53,21 +55,51 @@ AntQRGenerator::QRInfo AntQRGenerator::qrInfo(int version, QRCodeErrorLevel leve
     return info;
 }
 
-int AntQRGenerator::minVersion(int dataBytes, QRCodeErrorLevel level)
+bool AntQRGenerator::isSupportedErrorLevel(QRCodeErrorLevel errorLevel)
 {
-    for (int v = 1; v <= 10; ++v)
-    {
-        auto info = qrInfo(v, level);
-        int capacity = info.blocks1 * info.dataPerBlock1 + info.blocks2 * info.dataPerBlock2;
-        if (dataBytes <= capacity) return v;
-    }
-    return 10; // Max supported
+    const int level = static_cast<int>(errorLevel);
+    return level >= static_cast<int>(QRCodeErrorLevel::L) &&
+           level <= static_cast<int>(QRCodeErrorLevel::H);
 }
 
-QVector<int> AntQRGenerator::encodeData(const QString& data, int version, QRCodeErrorLevel level)
+bool AntQRGenerator::isSupportedVersion(int version)
 {
-    QByteArray bytes = data.toUtf8();
+    return version >= MinimumSupportedVersion && version <= MaximumSupportedVersion;
+}
+
+int AntQRGenerator::maximumDataBytes(int version, QRCodeErrorLevel errorLevel)
+{
+    if (!isSupportedVersion(version) || !isSupportedErrorLevel(errorLevel))
+        return -1;
+
+    const QRInfo info = qrInfo(version, errorLevel);
+    const int dataCodewords = info.blocks1 * info.dataPerBlock1 +
+                              info.blocks2 * info.dataPerBlock2;
+    const int countBits = version <= 9 ? 8 : 16;
+    const int payloadBits = dataCodewords * 8 - 4 - countBits;
+    return qMax(0, payloadBits / 8);
+}
+
+int AntQRGenerator::minVersion(qint64 dataBytes, QRCodeErrorLevel level)
+{
+    if (dataBytes < 0 || !isSupportedErrorLevel(level))
+        return 0;
+
+    for (int v = MinimumSupportedVersion; v <= MaximumSupportedVersion; ++v)
+    {
+        if (dataBytes <= maximumDataBytes(v, level))
+            return v;
+    }
+    return 0;
+}
+
+QVector<int> AntQRGenerator::encodeData(const QByteArray& bytes, int version, QRCodeErrorLevel level)
+{
     QVector<int> bits;
+    const QRInfo info = qrInfo(version, level);
+    const int capacityBits = (info.blocks1 * info.dataPerBlock1 +
+                              info.blocks2 * info.dataPerBlock2) * 8;
+    bits.reserve(capacityBits);
 
     // Byte mode indicator: 0100
     bits.append(0); bits.append(1); bits.append(0); bits.append(0);
@@ -87,8 +119,6 @@ QVector<int> AntQRGenerator::encodeData(const QString& data, int version, QRCode
     }
 
     // Terminator (up to 4 zero bits)
-    auto info = qrInfo(version, level);
-    int capacityBits = (info.blocks1 * info.dataPerBlock1 + info.blocks2 * info.dataPerBlock2) * 8;
     int termBits = qMin(4, capacityBits - bits.size());
     for (int i = 0; i < termBits; ++i)
         bits.append(0);
@@ -196,7 +226,8 @@ void AntQRGenerator::placeTimingPatterns(QVector<QVector<int>>& matrix)
     int dim = matrix.size();
     for (int i = 8; i < dim - 8; ++i)
     {
-        int v = (i % 2 == 0) ? 2 : 0;
+        // Timing patterns are function modules and must never be masked.
+        int v = (i % 2 == 0) ? 1 : 0;
         if (matrix[6][i] == -1) matrix[6][i] = v;
         if (matrix[i][6] == -1) matrix[i][6] = v;
     }
@@ -317,7 +348,7 @@ void AntQRGenerator::placeData(QVector<QVector<int>>& matrix, const QVector<int>
     }
 }
 
-int AntQRGenerator::applyBestMask(QVector<QVector<int>>& matrix)
+int AntQRGenerator::applyBestMask(QVector<QVector<int>>& matrix, int errorLevel)
 {
     int dim = matrix.size();
     int bestMask = 0;
@@ -332,7 +363,7 @@ int AntQRGenerator::applyBestMask(QVector<QVector<int>>& matrix)
                 test[r][c] = matrix[r][c];
 
         applyMask(test, mask);
-        placeFormatInfo(test, 0, mask); // Temporary format for penalty eval
+        placeFormatInfo(test, errorLevel, mask);
         int penalty = evaluatePenalty(test);
         if (penalty < bestPenalty)
         {
@@ -414,23 +445,35 @@ int AntQRGenerator::evaluatePenalty(const QVector<QVector<int>>& matrix)
                     ((matrix[r+1][c+1] == 1 || matrix[r+1][c+1] == 3) ? 1 : 0))
                 penalty += 3;
 
-    // Condition 3: Finder-like patterns (dark-light-dark-dark-dark-light-dark)
-    static const int pattern[7] = {1,0,1,1,1,0,1};
+    // Condition 3: finder-like pattern with four light modules immediately
+    // before or after it: 00001011101 or 10111010000.
+    static const int patternA[11] = {0,0,0,0,1,0,1,1,1,0,1};
+    static const int patternB[11] = {1,0,1,1,1,0,1,0,0,0,0};
     for (int r = 0; r < dim; ++r)
-        for (int c = 0; c < dim - 6; ++c)
+        for (int c = 0; c <= dim - 11; ++c)
         {
-            bool match = true;
-            for (int k = 0; k < 7; ++k)
-                if (((matrix[r][c+k] == 1 || matrix[r][c+k] == 3) ? 1 : 0) != pattern[k]) { match = false; break; }
-            if (match) penalty += 40;
+            bool matchA = true;
+            bool matchB = true;
+            for (int k = 0; k < 11; ++k)
+            {
+                const int value = (matrix[r][c + k] == 1 || matrix[r][c + k] == 3) ? 1 : 0;
+                matchA = matchA && value == patternA[k];
+                matchB = matchB && value == patternB[k];
+            }
+            if (matchA || matchB) penalty += 40;
         }
     for (int c = 0; c < dim; ++c)
-        for (int r = 0; r < dim - 6; ++r)
+        for (int r = 0; r <= dim - 11; ++r)
         {
-            bool match = true;
-            for (int k = 0; k < 7; ++k)
-                if (((matrix[r+k][c] == 1 || matrix[r+k][c] == 3) ? 1 : 0) != pattern[k]) { match = false; break; }
-            if (match) penalty += 40;
+            bool matchA = true;
+            bool matchB = true;
+            for (int k = 0; k < 11; ++k)
+            {
+                const int value = (matrix[r + k][c] == 1 || matrix[r + k][c] == 3) ? 1 : 0;
+                matchA = matchA && value == patternA[k];
+                matchB = matchB && value == patternB[k];
+            }
+            if (matchA || matchB) penalty += 40;
         }
 
     // Condition 4: Dark module ratio
@@ -438,9 +481,8 @@ int AntQRGenerator::evaluatePenalty(const QVector<QVector<int>>& matrix)
     for (int r = 0; r < dim; ++r)
         for (int c = 0; c < dim; ++c)
             if (matrix[r][c] == 1 || matrix[r][c] == 3) ++darkCount;
-    double ratio = static_cast<double>(darkCount) / (dim * dim);
-    int deviation = static_cast<int>(qAbs(ratio * 100 - 50) / 5);
-    penalty += deviation * 10;
+    const int totalModules = dim * dim;
+    penalty += (qAbs(darkCount * 20 - totalModules * 10) / totalModules) * 10;
 
     return penalty;
 }
@@ -480,32 +522,24 @@ void AntQRGenerator::placeFormatInfo(QVector<QVector<int>>& matrix, int errorLev
     int dim = matrix.size();
     int format = formatBits(errorLevel, maskPattern);
 
-    // Place format bits
-    for (int i = 0; i < 15; ++i)
-    {
-        int bit = (format >> i) & 1;
+    // First copy, wrapped around the top-left finder. Bit 0 is the least
+    // significant bit of the masked BCH(15,5) value.
+    for (int i = 0; i <= 5; ++i)
+        matrix[i][8] = (format >> i) & 1;
+    matrix[7][8] = (format >> 6) & 1;
+    matrix[8][8] = (format >> 7) & 1;
+    matrix[8][7] = (format >> 8) & 1;
+    for (int i = 9; i < 15; ++i)
+        matrix[8][14 - i] = (format >> i) & 1;
 
-        // Around top-left finder
-        if (i < 6) { matrix[i][8] = bit; }
-        else if (i < 8) { matrix[i + 1][8] = bit; }
-        else if (i < 9) { matrix[8][dim - i - 1] = bit; }
-        else { matrix[8][14 - i] = bit; }
+    // Second copy, split between the top-right and bottom-left finders.
+    for (int i = 0; i < 8; ++i)
+        matrix[8][dim - 1 - i] = (format >> i) & 1;
+    for (int i = 8; i < 15; ++i)
+        matrix[dim - 15 + i][8] = (format >> i) & 1;
 
-        // Dark module
-        matrix[dim - 8][8] = 1;
-
-        // Top-right / bottom-left
-        if (i < 8)
-        {
-            matrix[8][dim - 1 - i] = bit;
-            matrix[dim - 1 - i][8] = bit;
-        }
-        else
-        {
-            int idx = 14 - i;
-            matrix[8][idx < 1 ? 0 : (idx < 2 ? 1 : idx < 3 ? 2 : idx < 4 ? 3 : idx < 5 ? 4 : idx < 6 ? 5 : idx < 7 ? 7 : 8)] = bit;
-        }
-    }
+    // Fixed dark module (not part of either 15-bit format information copy).
+    matrix[dim - 8][8] = 1;
 }
 
 void AntQRGenerator::placeVersionInfo(QVector<QVector<int>>& matrix, int version)
@@ -523,23 +557,61 @@ void AntQRGenerator::placeVersionInfo(QVector<QVector<int>>& matrix, int version
     }
 }
 
-QVector<QVector<bool>> AntQRGenerator::generate(const QString& data, QRCodeErrorLevel errorLevel, int version)
+AntQRGenerator::GenerationResult AntQRGenerator::tryGenerate(
+    const QString& data, QRCodeErrorLevel errorLevel, int version)
 {
-    if (data.isEmpty())
-        return {};
+    GenerationResult result;
 
-    QByteArray bytes = data.toUtf8();
-    // Overhead: mode(4) + count(up to 16) + terminator(up to 4) + byte-pad(up to 7) ≤ 4 bytes
-    int dataBytes = bytes.size() + 4;
-    int ver = version > 0 ? version : minVersion(dataBytes, errorLevel);
-    if (ver < 1) ver = 1;
-    if (ver > 10) ver = 10;
+    if (!isSupportedErrorLevel(errorLevel))
+    {
+        result.error = GenerationError::InvalidErrorLevel;
+        return result;
+    }
+
+    if (version != 0 && !isSupportedVersion(version))
+    {
+        result.error = GenerationError::InvalidVersion;
+        return result;
+    }
+
+    if (data.isEmpty())
+    {
+        result.error = GenerationError::EmptyData;
+        return result;
+    }
+
+    const int requestedCapacity = maximumDataBytes(
+        version == 0 ? MaximumSupportedVersion : version, errorLevel);
+    if (data.size() > requestedCapacity)
+    {
+        result.error = GenerationError::DataTooLong;
+        result.version = version;
+        result.capacityBytes = requestedCapacity;
+        return result;
+    }
+
+    const QByteArray bytes = data.toUtf8();
+    const int ver = version == 0 ? minVersion(bytes.size(), errorLevel) : version;
+    if (ver == 0)
+    {
+        result.error = GenerationError::DataTooLong;
+        result.capacityBytes = maximumDataBytes(MaximumSupportedVersion, errorLevel);
+        return result;
+    }
+
+    result.version = ver;
+    result.capacityBytes = maximumDataBytes(ver, errorLevel);
+    if (bytes.size() > result.capacityBytes)
+    {
+        result.error = GenerationError::DataTooLong;
+        return result;
+    }
 
     QRInfo info = qrInfo(ver, errorLevel);
     int dim = info.dimension;
 
     // Encode data
-    QVector<int> rawCodewords = encodeData(data, ver, errorLevel);
+    QVector<int> rawCodewords = encodeData(bytes, ver, errorLevel);
 
     // Split into blocks and compute ECC
     int totalDataBlocks = info.blocks1 + info.blocks2;
@@ -577,21 +649,30 @@ QVector<QVector<bool>> AntQRGenerator::generate(const QString& data, QRCodeError
     placeTimingPatterns(matrix);
     placeAlignmentPatterns(matrix);
     placeReservedAreas(matrix);
+    // Version information contributes to mask penalty scoring and therefore
+    // must be present before candidate masks are evaluated.
+    placeVersionInfo(matrix, ver);
     placeData(matrix, allCodewords);
 
     // Apply mask and add format/version info
-    int bestMask = applyBestMask(matrix);
-    // Re-apply the best mask (applyBestMask already did it, but format info needs correct mask)
+    int bestMask = applyBestMask(matrix, static_cast<int>(errorLevel));
+    // applyBestMask() already placed the winning format information; write it
+    // once more here to keep this finalization step explicit.
     placeFormatInfo(matrix, static_cast<int>(errorLevel), bestMask);
-    placeVersionInfo(matrix, ver);
 
     // Convert to bool matrix (dark = true)
-    QVector<QVector<bool>> result(dim, QVector<bool>(dim, false));
+    result.matrix = QVector<QVector<bool>>(dim, QVector<bool>(dim, false));
     for (int r = 0; r < dim; ++r)
         for (int c = 0; c < dim; ++c)
-            result[r][c] = matrix[r][c] == 1 || matrix[r][c] == 3;
+            result.matrix[r][c] = matrix[r][c] == 1 || matrix[r][c] == 3;
 
     return result;
+}
+
+QVector<QVector<bool>> AntQRGenerator::generate(
+    const QString& data, QRCodeErrorLevel errorLevel, int version)
+{
+    return tryGenerate(data, errorLevel, version).matrix;
 }
 
 } // namespace Ant

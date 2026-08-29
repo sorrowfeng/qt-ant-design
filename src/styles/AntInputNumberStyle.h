@@ -26,7 +26,7 @@ public:
                            const QStyleOption* option,
                            const QSize& contentsSize,
                            const QWidget* widget = nullptr) const override;
-    bool eventFilter(QObject* watched, QEvent* event) override;
+    bool drawWidget(QWidget* widget, QPaintEvent* event) override;
 
 private:
     void drawSpinBox(const QStyleOptionComplex* option, QPainter* painter, const QWidget* widget) const;

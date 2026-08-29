@@ -16,7 +16,7 @@ AntAvatar::AntAvatar(QWidget* parent)
 {
     installAntStyle<AntAvatarStyle>(this);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -131,19 +131,20 @@ void AntAvatar::setShape(Ant::AvatarShape shape)
     Q_EMIT shapeChanged(m_shape);
 }
 
-Ant::Size AntAvatar::avatarSize() const { return m_avatarSize; }
+Ant::Size AntAvatar::size() const { return m_size; }
 
-void AntAvatar::setAvatarSize(Ant::Size size)
+void AntAvatar::setSize(Ant::Size size)
 {
-    if (m_avatarSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_avatarSize = size;
+    m_size = size;
     invalidateImagePixmapCache();
     updateGeometry();
     requestAvatarUpdate(QStringLiteral("avatarSize"));
-    Q_EMIT avatarSizeChanged(m_avatarSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT avatarSizeChanged(m_size);
 }
 
 QSize AntAvatar::sizeHint() const
@@ -169,7 +170,7 @@ int AntAvatar::avatarExtent() const
         return m_customSize;
     }
     const auto& token = antTheme->tokens();
-    switch (m_avatarSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         return token.controlHeightLG;
@@ -184,7 +185,7 @@ int AntAvatar::avatarExtent() const
 int AntAvatar::textFontSize() const
 {
     const auto& token = antTheme->tokens();
-    if (m_avatarSize == Ant::Size::Small)
+    if (m_size == Ant::Size::Small)
     {
         return token.fontSizeSM;
     }
@@ -194,11 +195,11 @@ int AntAvatar::textFontSize() const
 int AntAvatar::iconFontSize() const
 {
     const auto& token = antTheme->tokens();
-    if (m_avatarSize == Ant::Size::Large || m_customSize >= token.controlHeightLG)
+    if (m_size == Ant::Size::Large || m_customSize >= token.controlHeightLG)
     {
         return token.fontSizeXL;
     }
-    if (m_avatarSize == Ant::Size::Small && m_customSize == 0)
+    if (m_size == Ant::Size::Small && m_customSize == 0)
     {
         return token.fontSize;
     }
@@ -325,17 +326,18 @@ void AntAvatarGroup::setMaxCount(int maxCount)
     Q_EMIT maxCountChanged(m_maxCount);
 }
 
-Ant::Size AntAvatarGroup::avatarSize() const { return m_avatarSize; }
+Ant::Size AntAvatarGroup::size() const { return m_size; }
 
-void AntAvatarGroup::setAvatarSize(Ant::Size size)
+void AntAvatarGroup::setSize(Ant::Size size)
 {
-    if (m_avatarSize == size)
+    if (m_size == size)
         return;
-    m_avatarSize = size;
+    m_size = size;
     for (auto* av : m_avatars)
         av->setAvatarSize(size);
     relayout();
-    Q_EMIT avatarSizeChanged(m_avatarSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT avatarSizeChanged(m_size);
 }
 
 void AntAvatarGroup::addAvatar(AntAvatar* avatar)
@@ -343,7 +345,7 @@ void AntAvatarGroup::addAvatar(AntAvatar* avatar)
     if (!avatar || m_avatars.contains(avatar))
         return;
     avatar->setParent(this);
-    avatar->setAvatarSize(m_avatarSize);
+    avatar->setAvatarSize(m_size);
     m_avatars.append(avatar);
     relayout();
 }
@@ -431,7 +433,7 @@ void AntAvatarGroup::relayout()
         {
             m_overflowAvatar = new AntAvatar(this);
         }
-        m_overflowAvatar->setAvatarSize(m_avatarSize);
+        m_overflowAvatar->setAvatarSize(m_size);
         m_overflowAvatar->setText(QStringLiteral("+%1").arg(total - visibleCount));
         m_overflowAvatar->setFixedSize(sz, sz);
         m_overflowAvatar->move(visibleCount * step, 0);

@@ -40,11 +40,6 @@ QSize AntTabsStyle::sizeFromContents(ContentsType type, const QStyleOption* opti
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTabsStyle::eventFilter(QObject* watched, QEvent* event)
-{
-    return QProxyStyle::eventFilter(watched, event);
-}
-
 void AntTabsStyle::drawTabs(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
     const auto* tabs = qobject_cast<const AntTabs*>(widget);

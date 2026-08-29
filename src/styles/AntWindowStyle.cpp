@@ -35,18 +35,12 @@ AntWindowStyle::AntWindowStyle(QStyle* style)
 void AntWindowStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntWindow*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntWindow>(widget);
 }
 
 void AntWindowStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntWindow*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntWindow>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -65,19 +59,21 @@ QSize AntWindowStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntWindowStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntWindowStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* window = qobject_cast<AntWindow*>(watched);
-    if (window && event->type() == QEvent::Paint)
+    auto* window = qobject_cast<AntWindow*>(widget);
+    if (!window)
     {
-        QStyleOption option;
-        option.initFrom(window);
-        option.rect = window->rect();
-        QPainter painter(window);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, window);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(window);
+    option.rect = window->rect();
+    QPainter painter(window);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, window);
+
+    return true;
 }
 
 void AntWindowStyle::drawWindow(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

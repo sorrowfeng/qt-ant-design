@@ -19,7 +19,7 @@ class QT_ANT_DESIGN_EXPORT AntPopover : public QWidget
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
     Q_PROPERTY(QString content READ content WRITE setContent NOTIFY contentChanged)
-    Q_PROPERTY(Ant::TooltipPlacement placement READ placement WRITE setPlacement NOTIFY placementChanged)
+    Q_PROPERTY(Ant::Placement placement READ placement WRITE setPlacement NOTIFY placementChanged)
     Q_PROPERTY(Ant::PopoverTrigger trigger READ trigger WRITE setTrigger NOTIFY triggerChanged)
     Q_PROPERTY(bool arrowVisible READ arrowVisible WRITE setArrowVisible NOTIFY arrowVisibleChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
@@ -36,9 +36,9 @@ public:
     QString content() const;
     void setContent(const QString& content);
 
-    Ant::TooltipPlacement placement() const;
-    void setPlacement(Ant::TooltipPlacement placement);
-    Ant::TooltipPlacement renderPlacement() const;
+    Ant::Placement placement() const;
+    void setPlacement(Ant::Placement placement);
+    Ant::Placement renderPlacement() const;
 
     Ant::PopoverTrigger trigger() const;
     void setTrigger(Ant::PopoverTrigger trigger);
@@ -61,7 +61,7 @@ public:
 Q_SIGNALS:
     void titleChanged(const QString& title);
     void contentChanged(const QString& content);
-    void placementChanged(Ant::TooltipPlacement placement);
+    void placementChanged(Ant::Placement placement);
     void triggerChanged(Ant::PopoverTrigger trigger);
     void arrowVisibleChanged(bool visible);
     void openChanged(bool open);
@@ -97,7 +97,7 @@ private:
         QString title;
         QString content;
         Ant::IconType titleIconType = Ant::IconType::None;
-        Ant::TooltipPlacement renderPlacement = Ant::TooltipPlacement::Top;
+        Ant::Placement renderPlacement = Ant::Placement::Top;
         bool arrowVisible = true;
         bool hasActionWidget = false;
         QSize actionSize;
@@ -132,14 +132,14 @@ private:
     void installTarget(QWidget* target);
     void uninstallTarget();
     bool isHoveringInteractiveArea() const;
-    Ant::TooltipPlacement resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& popupSize) const;
-    QPoint popupTopLeft(const QRect& targetRect, const QSize& popupSize, Ant::TooltipPlacement placement) const;
+    Ant::Placement resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& popupSize) const;
+    QPoint popupTopLeft(const QRect& targetRect, const QSize& popupSize, Ant::Placement placement) const;
 
     QString m_title;
     Ant::IconType m_titleIconType = Ant::IconType::None;
     QString m_content;
-    Ant::TooltipPlacement m_placement = Ant::TooltipPlacement::Top;
-    Ant::TooltipPlacement m_renderPlacement = Ant::TooltipPlacement::Top;
+    Ant::Placement m_placement = Ant::Placement::Top;
+    Ant::Placement m_renderPlacement = Ant::Placement::Top;
     Ant::PopoverTrigger m_trigger = Ant::PopoverTrigger::Hover;
     bool m_arrowVisible = true;
     bool m_open = false;
@@ -152,8 +152,8 @@ private:
     mutable QRect m_cachedTargetRect;
     mutable QRect m_cachedScreenRect;
     mutable QSize m_cachedPopupSize;
-    mutable Ant::TooltipPlacement m_cachedPlacementRequest = Ant::TooltipPlacement::Top;
-    mutable Ant::TooltipPlacement m_cachedResolvedPlacement = Ant::TooltipPlacement::Top;
+    mutable Ant::Placement m_cachedPlacementRequest = Ant::Placement::Top;
+    mutable Ant::Placement m_cachedResolvedPlacement = Ant::Placement::Top;
     mutable int m_layoutBuildCount = 0;
     mutable int m_layoutCacheHitCount = 0;
     mutable int m_positionResolveCount = 0;

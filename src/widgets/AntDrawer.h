@@ -23,7 +23,7 @@ class QT_ANT_DESIGN_EXPORT AntDrawer : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
-    Q_PROPERTY(Ant::DrawerPlacement placement READ placement WRITE setPlacement NOTIFY placementChanged)
+    Q_PROPERTY(Ant::Placement placement READ placement WRITE setPlacement NOTIFY placementChanged)
     Q_PROPERTY(int drawerWidth READ drawerWidth WRITE setDrawerWidth NOTIFY drawerWidthChanged)
     Q_PROPERTY(int drawerHeight READ drawerHeight WRITE setDrawerHeight NOTIFY drawerHeightChanged)
     Q_PROPERTY(bool closable READ isClosable WRITE setClosable NOTIFY closableChanged)
@@ -36,8 +36,8 @@ public:
     QString title() const;
     void setTitle(const QString& title);
 
-    Ant::DrawerPlacement placement() const;
-    void setPlacement(Ant::DrawerPlacement placement);
+    Ant::Placement placement() const;
+    void setPlacement(Ant::Placement placement);
 
     int drawerWidth() const;
     void setDrawerWidth(int width);
@@ -68,7 +68,7 @@ public:
 
 Q_SIGNALS:
     void titleChanged(const QString& title);
-    void placementChanged(Ant::DrawerPlacement placement);
+    void placementChanged(Ant::Placement placement);
     void drawerWidthChanged(int width);
     void drawerHeightChanged(int height);
     void closableChanged(bool closable);
@@ -93,7 +93,7 @@ private:
     {
         bool valid = false;
         QSize overlaySize;
-        Ant::DrawerPlacement placement = Ant::DrawerPlacement::Right;
+        Ant::Placement placement = Ant::Placement::Right;
         int drawerWidth = 0;
         int drawerHeight = 0;
         QRect endGeometry;
@@ -119,7 +119,7 @@ private:
     void syncDrawerPerfCounters() const;
 
     QString m_title;
-    Ant::DrawerPlacement m_placement = Ant::DrawerPlacement::Right;
+    Ant::Placement m_placement = Ant::Placement::Right;
     int m_drawerWidth = 378;
     int m_drawerHeight = 378;
     bool m_closable = true;

@@ -1,10 +1,16 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QEnterEvent>
+#include <QFile>
+#include <QImage>
 #include <QLabel>
+#include <QRandomGenerator>
 #include <QRegularExpression>
+#include <QTemporaryDir>
 #include "core/AntTheme.h"
+#include "private/AntImageDecodeUtils.h"
 #include "widgets/AntAvatar.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntStatistic.h"
@@ -22,6 +28,8 @@ private slots:
     void cardCachesPaintAndSpinnerUpdates();
     void emptyCachesLayoutAndIllustrationPixmap();
     void imageCachesScaledPixmapAndPreviewOverlay();
+    void imageRejectsOversizedSourcesBeforeDecode();
+    void imageDecodeBudgetProperties();
     void statisticFormattedValueCache();
     void cardTitlePaletteTracksTheme();
 };
@@ -553,6 +561,147 @@ void TestAntDataDisplayA::imageCachesScaledPixmapAndPreviewOverlay()
     QVERIFY(image.property("antImagePreviewOverlayPixmapBuildCount").toInt() > overlayBeforeTheme);
 
     antTheme->setThemeMode(previousMode);
+}
+
+void TestAntDataDisplayA::imageRejectsOversizedSourcesBeforeDecode()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+
+    const QString ordinaryPath = directory.filePath(QStringLiteral("ordinary.png"));
+    QImage ordinary(24, 18, QImage::Format_ARGB32_Premultiplied);
+    ordinary.fill(QColor(QStringLiteral("#1677ff")));
+    QVERIFY(ordinary.save(ordinaryPath));
+
+    AntImage image;
+    QSignalSpy loadedSpy(&image, &AntImage::loadedChanged);
+    QSignalSpy errorSpy(&image, &AntImage::loadErrorChanged);
+    QSignalSpy failureSpy(&image, &AntImage::loadFailed);
+
+    image.setSrc(ordinaryPath);
+    QVERIFY(image.isLoaded());
+    QVERIFY(image.loadError().isEmpty());
+    QCOMPARE(image.property("antImageSourceFormat").toString(), QStringLiteral("png"));
+    QCOMPARE(image.property("antImageSourceWidth").toInt(), 24);
+    QCOMPARE(image.property("antImageSourceHeight").toInt(), 18);
+    QCOMPARE(loadedSpy.count(), 1);
+    QCOMPARE(failureSpy.count(), 0);
+
+    QImage replacement(12, 10, QImage::Format_ARGB32_Premultiplied);
+    replacement.fill(QColor(QStringLiteral("#52c41a")));
+    QVERIFY(replacement.save(ordinaryPath));
+    QVERIFY(image.reload());
+    QVERIFY(image.isLoaded());
+    QCOMPARE(image.property("antImageSourceWidth").toInt(), 12);
+    QCOMPARE(image.property("antImageSourceHeight").toInt(), 10);
+
+    const QString oversizedFilePath = directory.filePath(QStringLiteral("encoded-too-large.bin"));
+    QFile oversizedFile(oversizedFilePath);
+    QVERIFY(oversizedFile.open(QIODevice::WriteOnly));
+    QVERIFY(oversizedFile.resize(32LL * 1024 * 1024 + 1));
+    oversizedFile.close();
+
+    QElapsedTimer timer;
+    timer.start();
+    image.setSrc(oversizedFilePath);
+    QVERIFY2(timer.elapsed() < 1000, "encoded byte limit must reject before format parsing or decoding");
+    QVERIFY(!image.isLoaded());
+    QVERIFY(image.loadError().contains(QStringLiteral("encoded byte budget")));
+    QCOMPARE(loadedSpy.count(), 2);
+    QCOMPARE(failureSpy.count(), 1);
+
+    const QString oversizedDimensionsPath = directory.filePath(QStringLiteral("dimensions-too-large.ppm"));
+    QFile oversizedDimensions(oversizedDimensionsPath);
+    QVERIFY(oversizedDimensions.open(QIODevice::WriteOnly));
+    QCOMPARE(oversizedDimensions.write("P6\n40000 40000\n255\n"), qint64(19));
+    oversizedDimensions.close();
+
+    timer.restart();
+    image.setSrc(oversizedDimensionsPath);
+    QVERIFY2(timer.elapsed() < 1000, "dimension limit must reject from metadata before pixel decoding");
+    QVERIFY(!image.isLoaded());
+    QVERIFY2(image.loadError().contains(QStringLiteral("dimensions")), qPrintable(image.loadError()));
+    QCOMPARE(failureSpy.count(), 2);
+    QVERIFY(errorSpy.count() >= 2);
+
+    const QString highDepthPath = directory.filePath(QStringLiteral("rgba64.png"));
+    QImage highDepth(64, 48, QImage::Format_RGBA64);
+    highDepth.fill(QColor(QStringLiteral("#1677ff")));
+    QVERIFY(highDepth.save(highDepthPath, "PNG"));
+
+    QImage decodedHighDepth;
+    AntImageDecode::DecodeMetadata highDepthMetadata;
+    QString highDepthError;
+    QVERIFY2(AntImageDecode::read(highDepthPath, {}, &decodedHighDepth,
+                                  &highDepthMetadata, &highDepthError),
+             qPrintable(highDepthError));
+    const qint64 highDepthPixels = static_cast<qint64>(highDepth.width()) * highDepth.height();
+    QCOMPARE(highDepthMetadata.estimatedDecodedBytes,
+             highDepthPixels * AntImageDecode::WorstCaseDecodedBytesPerPixel);
+    QVERIFY(decodedHighDepth.sizeInBytes() > highDepthPixels * 4);
+    QVERIFY(decodedHighDepth.sizeInBytes() <= highDepthMetadata.estimatedDecodedBytes);
+    QCOMPARE(highDepthMetadata.stamp.encodedBytes, QFileInfo(highDepthPath).size());
+}
+
+void TestAntDataDisplayA::imageDecodeBudgetProperties()
+{
+    const auto expectedAllowed = [](int width, int height) {
+        if (width <= 0 || height <= 0
+            || width > AntImageDecode::MaxDimension
+            || height > AntImageDecode::MaxDimension)
+        {
+            return false;
+        }
+        const qint64 pixels = static_cast<qint64>(width) * static_cast<qint64>(height);
+        return pixels <= AntImageDecode::MaxPixelCount
+            && pixels <= AntImageDecode::MaxDecodedBytes
+                / AntImageDecode::WorstCaseDecodedBytesPerPixel;
+    };
+
+    const QVector<QSize> boundaries{
+        QSize(),
+        QSize(-1, 1),
+        QSize(1, -1),
+        QSize(1, 1),
+        QSize(AntImageDecode::MaxDimension, 1),
+        QSize(AntImageDecode::MaxDimension + 1, 1),
+        QSize(4096, 4096),
+        QSize(4096, 4097),
+        QSize(8192, 8192),
+        QSize(8192, 8193),
+        QSize(AntImageDecode::MaxDimension, AntImageDecode::MaxDimension)
+    };
+    for (const QSize& size : boundaries)
+    {
+        qint64 pixels = -1;
+        qint64 bytes = -1;
+        const bool allowed = AntImageDecode::checkedDecodedBytes(size, &pixels, &bytes);
+        QCOMPARE(allowed, expectedAllowed(size.width(), size.height()));
+        if (allowed)
+        {
+            QCOMPARE(pixels, static_cast<qint64>(size.width()) * size.height());
+            QCOMPARE(bytes, pixels * AntImageDecode::WorstCaseDecodedBytesPerPixel);
+            QVERIFY(bytes <= AntImageDecode::MaxDecodedBytes);
+        }
+    }
+
+    QRandomGenerator random(0x51A6E123u);
+    for (int iteration = 0; iteration < 4096; ++iteration)
+    {
+        const int width = static_cast<int>(random.generate() % 100000u) - 25000;
+        const int height = static_cast<int>(random.generate() % 100000u) - 25000;
+        qint64 pixels = 0;
+        qint64 bytes = 0;
+        const bool allowed = AntImageDecode::checkedDecodedBytes(QSize(width, height), &pixels, &bytes);
+        QCOMPARE(allowed, expectedAllowed(width, height));
+        if (allowed)
+        {
+            QVERIFY(pixels > 0);
+            QCOMPARE(bytes, pixels * AntImageDecode::WorstCaseDecodedBytesPerPixel);
+            QVERIFY(pixels <= AntImageDecode::MaxPixelCount);
+            QVERIFY(bytes <= AntImageDecode::MaxDecodedBytes);
+        }
+    }
 }
 
 void TestAntDataDisplayA::statisticFormattedValueCache()

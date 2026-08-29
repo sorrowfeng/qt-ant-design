@@ -15,18 +15,12 @@ AntAlertStyle::AntAlertStyle(QStyle* style)
 void AntAlertStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntAlert*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntAlert>(widget);
 }
 
 void AntAlertStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntAlert*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntAlert>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -45,25 +39,21 @@ QSize AntAlertStyle::sizeFromContents(ContentsType type, const QStyleOption* opt
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntAlertStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntAlertStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* alert = qobject_cast<AntAlert*>(watched);
+    auto* alert = qobject_cast<AntAlert*>(widget);
     if (!alert)
     {
-        return QProxyStyle::eventFilter(watched, event);
+        return false;
     }
 
-    if (event->type() == QEvent::Paint)
-    {
-        QStyleOption option;
-        option.initFrom(alert);
-        option.rect = alert->rect();
-        QPainter painter(alert);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, alert);
-        return true;
-    }
+    QStyleOption option;
+    option.initFrom(alert);
+    option.rect = alert->rect();
+    QPainter painter(alert);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, alert);
 
-    return QProxyStyle::eventFilter(watched, event);
+    return true;
 }
 
 void AntAlertStyle::drawAlert(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -108,9 +98,7 @@ void AntAlertStyle::drawAlert(const QStyleOption* option, QPainter* painter, con
     }
 
     // Title
-    QFont titleFont = painter->font();
-    titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(layout.hasDescription ? QFont::DemiBold : QFont::Normal);
+    const QFont titleFont = AntStyleBase::withPixelSize(painter->font(), m.titleFontSize, layout.hasDescription ? QFont::DemiBold : QFont::Normal);
     painter->setFont(titleFont);
     painter->setPen(alert->titleColor());
 
@@ -121,9 +109,7 @@ void AntAlertStyle::drawAlert(const QStyleOption* option, QPainter* painter, con
     // Description
     if (layout.hasDescription)
     {
-        QFont descFont = painter->font();
-        descFont.setPixelSize(m.descFontSize);
-        descFont.setWeight(QFont::Normal);
+        const QFont descFont = AntStyleBase::withPixelSize(painter->font(), m.descFontSize, QFont::Normal);
         painter->setFont(descFont);
         painter->setPen(alert->descriptionColor());
         painter->drawText(layout.descriptionRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, alert->description());

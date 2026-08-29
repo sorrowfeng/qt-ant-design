@@ -92,6 +92,15 @@ bool AntPopconfirm::isDisabled() const { return m_disabled; }
 
 void AntPopconfirm::setDisabled(bool disabled)
 {
+    if (isEnabled() != !disabled)
+    {
+        QWidget::setEnabled(!disabled);
+    }
+    syncDisabledState(disabled);
+}
+
+void AntPopconfirm::syncDisabledState(bool disabled)
+{
     if (m_disabled == disabled)
     {
         return;
@@ -109,12 +118,21 @@ void AntPopconfirm::setDisabled(bool disabled)
     Q_EMIT disabledChanged(m_disabled);
 }
 
-Ant::TooltipPlacement AntPopconfirm::placement() const
+void AntPopconfirm::changeEvent(QEvent* event)
+{
+    if (event && event->type() == QEvent::EnabledChange)
+    {
+        syncDisabledState(!isEnabled());
+    }
+    QWidget::changeEvent(event);
+}
+
+Ant::Placement AntPopconfirm::placement() const
 {
     return m_popover->placement();
 }
 
-void AntPopconfirm::setPlacement(Ant::TooltipPlacement placement)
+void AntPopconfirm::setPlacement(Ant::Placement placement)
 {
     if (m_popover->placement() == placement)
     {

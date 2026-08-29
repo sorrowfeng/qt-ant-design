@@ -36,7 +36,7 @@ AntCascader::AntCascader(QWidget* parent)
     m_arrowAnimation->setDuration(160);
     m_arrowAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -144,21 +144,22 @@ void AntCascader::setAllowClear(bool allowClear)
     emit allowClearChanged(m_allowClear);
 }
 
-Ant::Size AntCascader::cascaderSize() const
+Ant::Size AntCascader::size() const
 {
-    return m_cascaderSize;
+    return m_size;
 }
 
-void AntCascader::setCascaderSize(Ant::Size size)
+void AntCascader::setSize(Ant::Size size)
 {
-    if (m_cascaderSize == size)
+    if (m_size == size)
     {
         return;
     }
-    m_cascaderSize = size;
+    m_size = size;
     updateGeometry();
     update();
-    emit cascaderSizeChanged(m_cascaderSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT cascaderSizeChanged(m_size);
 }
 
 Ant::Status AntCascader::status() const
@@ -407,12 +408,12 @@ AntCascader::Metrics AntCascader::metrics() const
     m.paddingX = token.paddingSM - token.lineWidth;
     m.arrowWidth = token.fontSize + token.paddingXS * 2;
 
-    if (m_cascaderSize == Ant::Size::Large)
+    if (m_size == Ant::Size::Large)
     {
         m.height = token.controlHeightLG;
         m.fontSize = token.fontSizeLG;
     }
-    else if (m_cascaderSize == Ant::Size::Small)
+    else if (m_size == Ant::Size::Small)
     {
         m.height = token.controlHeightSM;
         m.fontSize = token.fontSizeSM;

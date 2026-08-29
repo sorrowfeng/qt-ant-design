@@ -6,6 +6,7 @@
 
 #include <cmath>
 
+#include "styles/AntPalette.h"
 #include "widgets/AntSegmented.h"
 
 namespace
@@ -14,19 +15,25 @@ void drawSegmentedThumbShadow(QPainter* painter, const QRectF& rect, qreal radiu
 {
     painter->save();
     painter->setPen(Qt::NoPen);
-    painter->setBrush(QColor(0, 0, 0, 8));
+    // Floating thumb shadow stays black in both themes (same as antd).
+    painter->setBrush(AntPalette::alpha(Qt::black, 0.03f));
     painter->drawRoundedRect(rect.translated(0, 1), radius, radius);
-    painter->setBrush(QColor(0, 0, 0, 5));
+    painter->setBrush(AntPalette::alpha(Qt::black, 0.02f));
     painter->drawRoundedRect(rect.adjusted(-1, 0, 1, 2), radius, radius);
-    painter->setBrush(QColor(0, 0, 0, 5));
+    painter->setBrush(AntPalette::alpha(Qt::black, 0.02f));
     painter->drawRoundedRect(rect.translated(0, 2), radius, radius);
     painter->restore();
 }
 
 QColor itemOverlayColor(const AntThemeTokens& token, bool pressed)
 {
-    const bool dark = token.colorBgBase.lightness() < 32;
-    QColor color = dark ? QColor(255, 255, 255) : QColor(0, 0, 0);
+    // Overlay alpha is tuned per theme; the tint itself derives from
+    // token.colorText (see below), so misjudging the mode only shifts
+    // strength, never the black/white polarity.
+    const bool dark = antTheme->isDarkMode();
+    // Derive the overlay tint from colorText so it follows the active theme:
+    // dark text on light surfaces, light text on dark surfaces.
+    QColor color = token.colorText;
     color.setAlphaF(pressed ? (dark ? 0.18 : 0.15) : (dark ? 0.12 : 0.06));
     return color;
 }
@@ -80,19 +87,12 @@ AntSegmentedStyle::AntSegmentedStyle(QStyle* style)
 void AntSegmentedStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSegmented*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover);
-    }
+    installPaintFilter<AntSegmented>(widget);
 }
 
 void AntSegmentedStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSegmented*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSegmented>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -111,19 +111,21 @@ QSize AntSegmentedStyle::sizeFromContents(ContentsType type, const QStyleOption*
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntSegmentedStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntSegmentedStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* seg = qobject_cast<AntSegmented*>(watched);
-    if (seg && event->type() == QEvent::Paint)
+    auto* seg = qobject_cast<AntSegmented*>(widget);
+    if (!seg)
     {
-        QStyleOption option;
-        option.initFrom(seg);
-        option.rect = seg->rect();
-        QPainter painter(seg);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, seg);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(seg);
+    option.rect = seg->rect();
+    QPainter painter(seg);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, seg);
+
+    return true;
 }
 
 void AntSegmentedStyle::drawSegmented(const QStyleOption* option, QPainter* painter, const QWidget* widget) const

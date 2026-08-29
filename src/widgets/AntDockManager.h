@@ -8,6 +8,7 @@
 #include <QHash>
 #include <QMainWindow>
 #include <QPoint>
+#include <QPointer>
 #include <QRect>
 #include <QSet>
 #include <QStringList>
@@ -110,6 +111,7 @@ Q_SIGNALS:
     void activeDropGuideChanged(AntDockManager::DockPlacement placement);
     void perspectiveSaved(const QString& name);
     void perspectiveRestored(const QString& name);
+    void perspectiveRestoreFailed(const QString& name, const QString& reason);
     void perspectiveRemoved(const QString& name);
 
 protected:
@@ -158,6 +160,7 @@ private:
     AntDockWidget* dockForWatchedObject(QObject* watched) const;
     void installDockEventFilters(AntDockWidget* dockWidget);
     void removeDockEventFilters(AntDockWidget* dockWidget);
+    void clearDockEventFilterTracking();
     void handleDockTitleMouseEvent(AntDockWidget* dockWidget, QEvent* event);
     bool handleGlobalDockDragEvent(QObject* watched, QEvent* event);
     void startDockDragTracking(AntDockWidget* dockWidget, const QPoint& globalPos);
@@ -167,6 +170,7 @@ private:
     void floatDockWidget(AntDockWidget* dockWidget, const QRect& globalGeometry);
     bool dockWidgetFeatureEnabled(AntDockWidget* dockWidget, QDockWidget::DockWidgetFeature feature) const;
     void setDockWidgetFeatureEnabled(AntDockWidget* dockWidget, QDockWidget::DockWidgetFeature feature, bool enabled);
+    void queueDockContextMenu(AntDockWidget* dockWidget, const QPoint& globalPos);
     void showDockContextMenu(AntDockWidget* dockWidget, const QPoint& globalPos);
     QRect floatingGeometryForDock(AntDockWidget* dockWidget, const QPoint& globalPos) const;
     void setDraggedDockTranslucent(bool translucent);
@@ -201,6 +205,12 @@ private:
     DockDropPreviewWindow* m_dropPreviewWindow = nullptr;
     QSet<AntDockWidget*> m_docks;
     QHash<AntDockWidget*, DockArea*> m_dockAreas;
+    // Keep the guard at QObject level: on Qt 5 a typed QPointer can remain
+    // non-null while AntDockWidget is already running a QWidget base
+    // destructor, where reading QPointer<AntDockWidget>::data() is an invalid
+    // downcast. Normal event handling resolves the live type with qobject_cast.
+    QHash<QObject*, QPointer<QObject>> m_dockEventFilterOwners;
+    QHash<QObject*, QMetaObject::Connection> m_dockEventFilterDestroyedConnections;
     QHash<QString, QByteArray> m_perspectives;
     bool m_placeholderVisible = true;
     bool m_dropGuideVisible = true;
@@ -208,12 +218,13 @@ private:
     bool m_draggingDockTitle = false;
     bool m_dockDragActivated = false;
     bool m_appEventFilterInstalled = false;
-    AntDockWidget* m_draggedDock = nullptr;
+    QPointer<AntDockWidget> m_draggedDock;
+    QMetaObject::Connection m_draggedDockDestroyedConnection;
     QPoint m_dragStartGlobal;
     QPoint m_lastDropGuideGlobal;
     QPoint m_dragPreviewOffset;
     qreal m_draggedDockPreviousOpacity = 1.0;
-    QGraphicsOpacityEffect* m_draggedDockOpacityEffect = nullptr;
+    QPointer<QGraphicsOpacityEffect> m_draggedDockOpacityEffect;
     bool m_draggedDockOpacityChanged = false;
     bool m_hasLastDropGuideGlobal = false;
     DockArea* m_tabReorderArea = nullptr;

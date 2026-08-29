@@ -5,12 +5,106 @@
 #include <QMouseEvent>
 #include <QResizeEvent>
 #include <QTimer>
+#include <QVariant>
 
 #include "../styles/AntStatusBarStyle.h"
 #include "core/AntTheme.h"
 
 namespace
 {
+
+constexpr auto kStatusStorageProperty = "_q_antStatusBarStatus";
+constexpr auto kMessageStatusStorageProperty = "_q_antStatusBarMessageStatus";
+constexpr auto kItemStatusesStorageProperty = "_q_antStatusBarItemStatuses";
+constexpr auto kPermanentItemStatusesStorageProperty = "_q_antStatusBarPermanentItemStatuses";
+
+Ant::StatusBarStatus normalizedStatus(Ant::StatusBarStatus status,
+                                      Ant::StatusBarStatus fallback)
+{
+    switch (status)
+    {
+    case Ant::StatusBarStatus::Default:
+    case Ant::StatusBarStatus::Info:
+    case Ant::StatusBarStatus::Success:
+    case Ant::StatusBarStatus::Warning:
+    case Ant::StatusBarStatus::Error:
+    case Ant::StatusBarStatus::Inherit:
+        return status;
+    }
+    return fallback;
+}
+
+Ant::StatusBarStatus storedStatus(const QObject* object,
+                                  const char* propertyName,
+                                  Ant::StatusBarStatus fallback)
+{
+    if (!object)
+    {
+        return fallback;
+    }
+
+    const QVariant value = object->property(propertyName);
+    if (!value.isValid())
+    {
+        return fallback;
+    }
+    return normalizedStatus(static_cast<Ant::StatusBarStatus>(value.toInt()), fallback);
+}
+
+Ant::StatusBarStatus statusAt(const QObject* object,
+                              const char* propertyName,
+                              int index)
+{
+    if (!object || index < 0)
+    {
+        return Ant::StatusBarStatus::Inherit;
+    }
+
+    const QVariantList statuses = object->property(propertyName).toList();
+    if (index >= statuses.size())
+    {
+        return Ant::StatusBarStatus::Inherit;
+    }
+    return normalizedStatus(
+        static_cast<Ant::StatusBarStatus>(statuses.at(index).toInt()),
+        Ant::StatusBarStatus::Inherit);
+}
+
+void appendStatus(QObject* object,
+                  const char* propertyName,
+                  Ant::StatusBarStatus status)
+{
+    QVariantList statuses = object->property(propertyName).toList();
+    statuses.append(static_cast<int>(normalizedStatus(status, Ant::StatusBarStatus::Inherit)));
+    object->setProperty(propertyName, statuses);
+}
+
+void setStatusAt(QObject* object,
+                 const char* propertyName,
+                 int index,
+                 Ant::StatusBarStatus status)
+{
+    QVariantList statuses = object->property(propertyName).toList();
+    while (statuses.size() <= index)
+    {
+        statuses.append(static_cast<int>(Ant::StatusBarStatus::Inherit));
+    }
+    statuses[index] = static_cast<int>(normalizedStatus(status, Ant::StatusBarStatus::Inherit));
+    object->setProperty(propertyName, statuses);
+}
+
+void removeStatusAt(QObject* object,
+                    const char* propertyName,
+                    int index)
+{
+    QVariantList statuses = object->property(propertyName).toList();
+    if (index < 0 || index >= statuses.size())
+    {
+        return;
+    }
+    statuses.removeAt(index);
+    object->setProperty(propertyName, statuses);
+}
 
 int statusBarItemWidth(const AntStatusBarItem& item, const QFontMetrics& metrics)
 {
@@ -66,10 +160,56 @@ void AntStatusBar::showMessage(const QString& message, int timeout)
     }
 }
 
+void AntStatusBar::showMessage(const QString& message,
+                               Ant::StatusBarStatus status,
+                               int timeout)
+{
+    setMessageStatus(status);
+    showMessage(message, timeout);
+}
+
 void AntStatusBar::clearMessage()
 {
     m_messageTimer->stop();
     setMessage(QString());
+}
+
+Ant::StatusBarStatus AntStatusBar::status() const
+{
+    return storedStatus(this, kStatusStorageProperty, Ant::StatusBarStatus::Default);
+}
+
+void AntStatusBar::setStatus(Ant::StatusBarStatus status)
+{
+    status = normalizedStatus(status, Ant::StatusBarStatus::Default);
+    if (this->status() == status)
+    {
+        return;
+    }
+
+    setProperty(kStatusStorageProperty, static_cast<int>(status));
+    update();
+    Q_EMIT statusChanged(status);
+}
+
+Ant::StatusBarStatus AntStatusBar::messageStatus() const
+{
+    return storedStatus(this, kMessageStatusStorageProperty, Ant::StatusBarStatus::Inherit);
+}
+
+void AntStatusBar::setMessageStatus(Ant::StatusBarStatus status)
+{
+    status = normalizedStatus(status, Ant::StatusBarStatus::Inherit);
+    if (messageStatus() == status)
+    {
+        return;
+    }
+
+    setProperty(kMessageStatusStorageProperty, static_cast<int>(status));
+    updateStatusRegion(messageAreaRect());
+    ++m_messageRegionUpdateCount;
+    syncStatusBarPerfCounters();
+    Q_EMIT messageStatusChanged(status);
 }
 
 bool AntStatusBar::hasSizeGrip() const { return m_sizeGrip; }
@@ -91,12 +231,22 @@ int AntStatusBar::addItem(const QString& text,
                           const QString& tooltip,
                           int stretch)
 {
+    return addItem(text, Ant::StatusBarStatus::Inherit, icon, tooltip, stretch);
+}
+
+int AntStatusBar::addItem(const QString& text,
+                          Ant::StatusBarStatus status,
+                          const QString& icon,
+                          const QString& tooltip,
+                          int stretch)
+{
     AntStatusBarItem item;
     item.text = text;
     item.icon = icon;
     item.tooltip = tooltip;
     item.stretch = stretch;
     m_items.append(item);
+    appendStatus(this, kItemStatusesStorageProperty, status);
     invalidateLayoutCache();
     update();
     return static_cast<int>(m_items.size()) - 1;
@@ -107,15 +257,59 @@ int AntStatusBar::addPermanentItem(const QString& text,
                                    const QString& tooltip,
                                    int stretch)
 {
+    return addPermanentItem(text, Ant::StatusBarStatus::Inherit, icon, tooltip, stretch);
+}
+
+int AntStatusBar::addPermanentItem(const QString& text,
+                                   Ant::StatusBarStatus status,
+                                   const QString& icon,
+                                   const QString& tooltip,
+                                   int stretch)
+{
     AntStatusBarItem item;
     item.text = text;
     item.icon = icon;
     item.tooltip = tooltip;
     item.stretch = stretch;
     m_permanentItems.append(item);
+    appendStatus(this, kPermanentItemStatusesStorageProperty, status);
     invalidateLayoutCache();
     update();
     return static_cast<int>(m_permanentItems.size()) - 1;
+}
+
+bool AntStatusBar::setItem(int index, const AntStatusBarItem& item)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+    if (m_items.at(index) == item)
+    {
+        return true;
+    }
+
+    m_items[index] = item;
+    invalidateLayoutCache();
+    update();
+    return true;
+}
+
+bool AntStatusBar::setPermanentItem(int index, const AntStatusBarItem& item)
+{
+    if (index < 0 || index >= m_permanentItems.size())
+    {
+        return false;
+    }
+    if (m_permanentItems.at(index) == item)
+    {
+        return true;
+    }
+
+    m_permanentItems[index] = item;
+    invalidateLayoutCache();
+    update();
+    return true;
 }
 
 void AntStatusBar::removeItem(int index)
@@ -123,9 +317,14 @@ void AntStatusBar::removeItem(int index)
     if (index >= 0 && index < m_items.size())
     {
         m_items.remove(index);
-        if (m_hoveredRegularIndex >= m_items.size())
+        removeStatusAt(this, kItemStatusesStorageProperty, index);
+        if (m_hoveredRegularIndex == index)
         {
             m_hoveredRegularIndex = -1;
+        }
+        else if (m_hoveredRegularIndex > index)
+        {
+            --m_hoveredRegularIndex;
         }
         invalidateLayoutCache();
         update();
@@ -152,6 +351,60 @@ AntStatusBarItem AntStatusBar::permanentItemAt(int index) const
         return {};
     }
     return m_permanentItems.at(index);
+}
+
+Ant::StatusBarStatus AntStatusBar::itemStatus(int index) const
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return Ant::StatusBarStatus::Inherit;
+    }
+    return statusAt(this, kItemStatusesStorageProperty, index);
+}
+
+void AntStatusBar::setItemStatus(int index, Ant::StatusBarStatus status)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    status = normalizedStatus(status, Ant::StatusBarStatus::Inherit);
+    if (itemStatus(index) == status)
+    {
+        return;
+    }
+
+    setStatusAt(this, kItemStatusesStorageProperty, index, status);
+    updateStatusRegion(regularItemRects().value(index));
+    Q_EMIT itemStatusChanged(index, status);
+}
+
+Ant::StatusBarStatus AntStatusBar::permanentItemStatus(int index) const
+{
+    if (index < 0 || index >= m_permanentItems.size())
+    {
+        return Ant::StatusBarStatus::Inherit;
+    }
+    return statusAt(this, kPermanentItemStatusesStorageProperty, index);
+}
+
+void AntStatusBar::setPermanentItemStatus(int index, Ant::StatusBarStatus status)
+{
+    if (index < 0 || index >= m_permanentItems.size())
+    {
+        return;
+    }
+
+    status = normalizedStatus(status, Ant::StatusBarStatus::Inherit);
+    if (permanentItemStatus(index) == status)
+    {
+        return;
+    }
+
+    setStatusAt(this, kPermanentItemStatusesStorageProperty, index, status);
+    updateStatusRegion(permanentItemRects().value(index));
+    Q_EMIT permanentItemStatusChanged(index, status);
 }
 
 int AntStatusBar::hoveredRegularIndex() const { return m_hoveredRegularIndex; }

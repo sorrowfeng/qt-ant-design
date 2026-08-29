@@ -1,5 +1,9 @@
 add_executable(qt-ant-design-example
     main.cpp
+    ExampleApp.h
+    ExampleApp.cpp
+    ExampleSmoke.h
+    ExampleSmoke.cpp
     ExampleWindow.h
     ExampleWindow.cpp
     pages/Pages.h

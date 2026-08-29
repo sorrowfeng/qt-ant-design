@@ -188,7 +188,7 @@ protected:
                                             -kListContextMenuShadowMargin,
                                             -kListContextMenuShadowMargin);
         antTheme->drawEffectShadow(&painter, panel, 12, token.borderRadiusLG, 0.72);
-        const QColor border = antTheme->themeMode() == Ant::ThemeMode::Dark
+        const QColor border = antTheme->isDarkMode()
                                   ? AntPalette::alpha(token.colorTextLightSolid, 0.18)
                                   : token.colorBorder;
         painter.setPen(QPen(border, token.lineWidth));
@@ -232,7 +232,7 @@ private:
         {
             return;
         }
-        m_menu->setMenuTheme(antTheme->themeMode() == Ant::ThemeMode::Dark
+        m_menu->setMenuTheme(antTheme->isDarkMode()
                                  ? Ant::MenuTheme::Dark
                                  : Ant::MenuTheme::Light);
     }
@@ -417,7 +417,7 @@ private:
 AntListItemMeta::AntListItemMeta(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -575,7 +575,7 @@ void AntListItemMeta::syncAvatarGeometry()
 AntListItem::AntListItem(QWidget* parent)
     : QWidget(parent)
 {
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "core/AntSpinner.h"
 #include "styles/AntIconPainter.h"
 #include "styles/AntPalette.h"
 #include "widgets/AntSelect.h"
@@ -24,8 +25,7 @@ QList<TagLayout> layoutTags(const AntSelect* select, const QRectF& textArea, int
 {
     QList<TagLayout> tags;
     const auto& token = antTheme->tokens();
-    QFont f;
-    f.setPixelSize(fontSize);
+    const QFont f = AntStyleBase::withPixelSize(QFont(), fontSize);
     const QFontMetrics fm(f);
 
     const QList<int> indices = select->selectedIndices();
@@ -86,9 +86,7 @@ void drawTag(QPainter* painter, const QRectF& rect, const QString& text, int fon
     AntStyleBase::drawCrispRoundedRect(painter, rect.toRect(), Qt::NoPen,
         tagBg, token.borderRadiusSM, token.borderRadiusSM);
 
-    QFont f = painter->font();
-    f.setPixelSize(fontSize);
-    f.setWeight(QFont::Normal);
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), fontSize, QFont::Normal);
     painter->setFont(f);
     painter->setPen(tagText);
     const QRectF textRect = rect.adjusted(6, 0, closable ? -18 : -6, 0);
@@ -115,19 +113,12 @@ AntSelectStyle::AntSelectStyle(QStyle* style)
 void AntSelectStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSelect*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntSelect>(widget);
 }
 
 void AntSelectStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSelect*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSelect>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -142,33 +133,34 @@ void AntSelectStyle::drawPrimitive(PrimitiveElement element, const QStyleOption*
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntSelectStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntSelectStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* select = qobject_cast<AntSelect*>(watched);
-    if (select && event->type() == QEvent::Paint)
+    auto* select = qobject_cast<AntSelect*>(widget);
+    if (!select)
     {
-        QStyleOption option;
-        option.initFrom(select);
-        option.rect = select->rect();
-        if (select->isHoveredState())
-        {
-            option.state |= QStyle::State_MouseOver;
-        }
-        if (select->isPressedState())
-        {
-            option.state |= QStyle::State_Sunken;
-        }
-        if (select->isOpen())
-        {
-            option.state |= QStyle::State_On;
-        }
-
-        QPainter painter(select);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, select);
         return false;
     }
 
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOption option;
+    option.initFrom(select);
+    option.rect = select->rect();
+    if (select->isHoveredState())
+    {
+        option.state |= QStyle::State_MouseOver;
+    }
+    if (select->isPressedState())
+    {
+        option.state |= QStyle::State_Sunken;
+    }
+    if (select->isOpen())
+    {
+        option.state |= QStyle::State_On;
+    }
+
+    QPainter painter(select);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, select);
+
+    return false;
 }
 
 void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -197,9 +189,8 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
         && select->variant() != Ant::Variant::Borderless
         && select->variant() != Ant::Variant::Underlined)
     {
-        const QColor outline = AntPalette::alpha(borderColor, 0.16);
-        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
-            QPen(outline, token.controlOutlineWidth), Qt::NoBrush, metrics.radius + 1, metrics.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, metrics.radius,
+            AntPalette::alpha(borderColor, 0.16), token.controlOutlineWidth);
     }
 
     if (select->variant() != Ant::Variant::Borderless
@@ -239,8 +230,7 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
     else if (multiMode && select->selectedIndices().isEmpty())
     {
         // Placeholder text for empty multi-mode
-        QFont font = painter->font();
-        font.setPixelSize(metrics.fontSize);
+        const QFont font = AntStyleBase::withPixelSize(painter->font(), metrics.fontSize);
         painter->setFont(font);
         painter->setPen(disabled ? token.colorTextDisabled : token.colorTextPlaceholder);
         const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);
@@ -257,8 +247,7 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
             textColor = token.colorTextDisabled;
         }
 
-        QFont font = painter->font();
-        font.setPixelSize(metrics.fontSize);
+        const QFont font = AntStyleBase::withPixelSize(painter->font(), metrics.fontSize);
         painter->setFont(font);
         painter->setPen(textColor);
         const QRectF textRect = control.adjusted(metrics.paddingX, 0, -(metrics.arrowWidth + metrics.paddingX), 0);
@@ -267,12 +256,9 @@ void AntSelectStyle::drawSelect(const QStyleOption* option, QPainter* painter, c
 
     if (select->isLoading())
     {
-        painter->setPen(QPen(disabled ? token.colorTextDisabled : token.colorTextTertiary,
-                             1.6,
-                             Qt::SolidLine,
-                             Qt::RoundCap));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawArc(clearRect.adjusted(2, 2, -2, -2), select->loadingAngle() * 16, 270 * 16);
+        const QColor spinnerColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
+        AntSpinner::drawArc(painter, clearRect.adjusted(2, 2, -2, -2), spinnerColor,
+                            select->loadingAngle());
     }
     else if (select->canClear())
     {

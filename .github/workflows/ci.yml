@@ -1,0 +1,215 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  windows-msvc:
+    name: Windows ${{ matrix.qt.label }}
+    runs-on: windows-2022
+
+    strategy:
+      fail-fast: false
+      matrix:
+        qt:
+          - label: Qt 5.15.2
+            version: 5.15.2
+            arch: win64_msvc2019_64
+            config: Debug
+            shared: "OFF"
+            unit_tests: "ON"
+          - label: Qt 6.7.3
+            version: 6.7.3
+            arch: win64_msvc2019_64
+            config: Debug
+            shared: "OFF"
+            unit_tests: "ON"
+          - label: Qt 6.7.3 shared Release
+            version: 6.7.3
+            arch: win64_msvc2019_64
+            config: Release
+            # Static jobs own internal/unit coverage; this job validates the DLL
+            # boundary through the installed example and consumer below.
+            shared: "ON"
+            unit_tests: "OFF"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1
+        with:
+          version: ${{ matrix.qt.version }}
+          arch: ${{ matrix.qt.arch }}
+          cache: true
+
+      - name: Configure
+        shell: pwsh
+        run: >
+          cmake -S . -B build
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DQT_ANT_DESIGN_BUILD_EXAMPLES=ON
+          -DQT_ANT_DESIGN_BUILD_TESTS=ON
+          -DQT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=OFF
+          -DBUILD_SHARED_LIBS=${{ matrix.qt.shared }}
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\install"
+
+      - name: Build library, example, and unit tests
+        if: matrix.qt.unit_tests == 'ON'
+        shell: pwsh
+        run: cmake --build build --config ${{ matrix.qt.config }} --parallel
+
+      - name: Build shared library and example
+        if: matrix.qt.unit_tests == 'OFF'
+        shell: pwsh
+        run: >
+          cmake --build build
+          --config ${{ matrix.qt.config }}
+          --target qt-ant-design qt-ant-design-example
+          --parallel
+
+      - name: Install
+        shell: pwsh
+        run: cmake --install build --config ${{ matrix.qt.config }}
+
+      - name: Run installed example smoke
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}\install\bin\qt-ant-design-example.exe" --smoke-exit-ms 800
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify installed consumer
+        shell: pwsh
+        run: ctest --test-dir build -C ${{ matrix.qt.config }} --output-on-failure --timeout 180 -R "^TestAntInstallConsumer$"
+
+      - name: Run targeted tests
+        if: matrix.qt.unit_tests == 'ON'
+        shell: pwsh
+        # These aggregate GUI suites terminate without QTest diagnostics on
+        # Windows hosted runners. Their cross-platform paths run under the
+        # Linux sanitizer job, while full Windows coverage remains local.
+        run: >
+          ctest --test-dir build
+          -C ${{ matrix.qt.config }}
+          --output-on-failure
+          --timeout 120
+          -E "TestAntInstallConsumer|TestAntVisualRegression|TestAntQtVersionVisualParity.*|TestAntHighDpiScaling.*|TestAntExampleCloseStress|TestAntExamplePageTraversal|TestAnt(DataEntryB|DataDisplayB|QtExtensions)"
+
+  linux:
+    name: Linux ${{ matrix.qt.label }}
+    runs-on: ubuntu-22.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        qt:
+          # Qt6 remains covered on Windows/macOS; the Linux aqt repository
+          # currently lacks qt_base metadata for the tested Qt6 releases.
+          - label: Qt 5.15.2 Debug ASan+UBSan
+            version: 5.15.2
+            config: Debug
+            shared: "OFF"
+            tests: "ON"
+            asan: "ON"
+            ubsan: "ON"
+          - label: Qt 5.15.2 shared Release
+            version: 5.15.2
+            config: Release
+            shared: "ON"
+            tests: "OFF"
+            asan: "OFF"
+            ubsan: "OFF"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1
+        with:
+          version: ${{ matrix.qt.version }}
+          arch: gcc_64
+          cache: true
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.qt.config }}
+          -DQT_ANT_DESIGN_BUILD_EXAMPLES=OFF
+          -DQT_ANT_DESIGN_BUILD_TESTS=${{ matrix.qt.tests }}
+          -DQT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=OFF
+          -DQT_ANT_DESIGN_ENABLE_ADDRESS_SANITIZER=${{ matrix.qt.asan }}
+          -DQT_ANT_DESIGN_ENABLE_UNDEFINED_SANITIZER=${{ matrix.qt.ubsan }}
+          -DBUILD_SHARED_LIBS=${{ matrix.qt.shared }}
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+
+      - name: Build
+        run: cmake --build build --parallel 2
+
+      - name: Run sanitizer and robustness tests
+        if: matrix.qt.tests == 'ON'
+        env:
+          # Qt/platform plugins retain process-lifetime caches; focus this job on
+          # address/UB violations in project code instead of third-party LSAN noise.
+          ASAN_OPTIONS: halt_on_error=1:abort_on_error=1:detect_leaks=0
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          ctest --test-dir build --output-on-failure --timeout 180 \
+            -R "TestAnt(StressLifecycle|DataEntryA|DataEntryB|DataDisplayA|DataDisplayB|Feedback|Navigation|QRGenerator|DockPerspectiveLimits|Typography|Interactions)"
+          ./build/tests/TestAntQtExtensions \
+            formItem form formProvider formIncrementalUpdates formList -o -,txt
+
+      - name: Install library
+        if: matrix.qt.asan == 'OFF' && matrix.qt.ubsan == 'OFF'
+        run: cmake --install build
+
+  macos:
+    name: macOS Qt 6 shared Release
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4.3.1
+        with:
+          version: 6.7.3
+          arch: clang_64
+          cache: true
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DQT_ANT_DESIGN_BUILD_EXAMPLES=OFF
+          -DQT_ANT_DESIGN_BUILD_TESTS=OFF
+          -DBUILD_SHARED_LIBS=ON
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install"
+
+      - name: Build and install library
+        run: cmake --build build --parallel 2 && cmake --install build

@@ -1,18 +1,176 @@
 set(CMAKE_AUTOMOC ON)
 
+set(_qt_ant_design_default_widget_smoke ${PROJECT_IS_TOP_LEVEL})
+if(PROJECT_IS_TOP_LEVEL AND DEFINED BUILD_WIDGET_SMOKE_TESTS)
+    set(_qt_ant_design_default_widget_smoke ${BUILD_WIDGET_SMOKE_TESTS})
+endif()
+option(QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS
+    "Build one target per public Ant widget smoke test"
+    ${_qt_ant_design_default_widget_smoke}
+)
+unset(_qt_ant_design_default_widget_smoke)
+
 function(add_ant_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
     target_link_libraries(${TEST_NAME} PRIVATE qt-ant-design Qt${QT_VERSION_MAJOR}::Test)
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME} -o -,txt)
 endfunction()
 
 function(add_ant_inventory_test TEST_NAME)
     add_ant_test(${TEST_NAME})
     target_compile_definitions(${TEST_NAME} PRIVATE
-        ANT_WIDGETS_DIR="${CMAKE_SOURCE_DIR}/src/widgets"
+        ANT_WIDGETS_DIR="${PROJECT_SOURCE_DIR}/src/widgets"
         ANT_TESTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
     )
 endfunction()
+
+function(add_ant_widget_smoke_test TEST_TYPE TEST_HEADER TEST_CONSTRUCT)
+    set(ANT_WIDGET_SMOKE_TYPE "${TEST_TYPE}")
+    set(ANT_WIDGET_SMOKE_HEADER "${TEST_HEADER}")
+    set(ANT_WIDGET_SMOKE_CONSTRUCT "${TEST_CONSTRUCT}")
+    set(ANT_WIDGET_SMOKE_MOC "TestAntWidgetSmoke_${TEST_TYPE}.moc")
+
+    set(TEST_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/widget_smoke/TestAntWidgetSmoke_${TEST_TYPE}.cpp")
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/WidgetSmokeTest.cpp.in
+        ${TEST_SOURCE}
+        @ONLY
+    )
+
+    set(TEST_TARGET "TestAntWidgetSmoke_${TEST_TYPE}")
+    add_executable(${TEST_TARGET} ${TEST_SOURCE})
+    target_link_libraries(${TEST_TARGET} PRIVATE qt-ant-design Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME "WidgetSmoke.${TEST_TYPE}" COMMAND ${TEST_TARGET} -o -,txt)
+    # Smoke targets are pure construct+render: a 30s cap catches hangs from
+    # event loops, popups, or async model population without false positives.
+    set_tests_properties("WidgetSmoke.${TEST_TYPE}"
+        PROPERTIES LABELS "widget-smoke;${TEST_TYPE}" TIMEOUT 30)
+    set_property(GLOBAL APPEND PROPERTY ANT_WIDGET_SMOKE_TARGETS "${TEST_TARGET}")
+endfunction()
+
+if(QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS)
+    set(ANT_WIDGET_SMOKE_TESTS
+        "AntAffix|AntAffix.h|new AntAffix()"
+        "AntAlert|AntAlert.h|new AntAlert()"
+        "AntAnchor|AntAnchor.h|new AntAnchor()"
+        "AntApp|AntApp.h|new AntApp(&rootWidget)"
+        "AntAutoComplete|AntAutoComplete.h|new AntAutoComplete()"
+        "AntAvatar|AntAvatar.h|new AntAvatar()"
+        "AntAvatarGroup|AntAvatar.h|new AntAvatarGroup()"
+        "AntBadge|AntBadge.h|new AntBadge()"
+        "AntBreadcrumb|AntBreadcrumb.h|new AntBreadcrumb()"
+        "AntButton|AntButton.h|new AntButton()"
+        "AntCalendar|AntCalendar.h|new AntCalendar()"
+        "AntCard|AntCard.h|new AntCard()"
+        "AntCarousel|AntCarousel.h|new AntCarousel()"
+        "AntCascader|AntCascader.h|new AntCascader()"
+        "AntCheckBox|AntCheckBox.h|new AntCheckBox()"
+        "AntCollapse|AntCollapse.h|new AntCollapse()"
+        "AntCollapsePanel|AntCollapse.h|new AntCollapsePanel(QStringLiteral(\"Panel\"))"
+        "AntColorPicker|AntColorPicker.h|new AntColorPicker()"
+        "AntConfigProvider|AntConfigProvider.h|new AntConfigProvider()"
+        "AntDatePicker|AntDatePicker.h|new AntDatePicker()"
+        "AntDescriptions|AntDescriptions.h|new AntDescriptions()"
+        "AntDescriptionsItem|AntDescriptions.h|new AntDescriptionsItem()"
+        "AntDialog|AntDialog.h|new AntDialog()"
+        "AntDivider|AntDivider.h|new AntDivider()"
+        "AntDockManager|AntDockManager.h|new AntDockManager()"
+        "AntDockWidget|AntDockWidget.h|new AntDockWidget()"
+        "AntDrawer|AntDrawer.h|new AntDrawer()"
+        "AntDropdown|AntDropdown.h|new AntDropdown()"
+        "AntEmpty|AntEmpty.h|new AntEmpty()"
+        "AntFileDialog|AntFileDialog.h|new AntFileDialog()"
+        "AntFlex|AntFlex.h|new AntFlex()"
+        "AntFloatButton|AntFloatButton.h|new AntFloatButton()"
+        "AntForm|AntForm.h|new AntForm()"
+        "AntFormItem|AntForm.h|new AntFormItem()"
+        "AntFormList|AntForm.h|new AntFormList()"
+        "AntFormProvider|AntForm.h|new AntFormProvider()"
+        "AntCol|AntGrid.h|new AntCol()"
+        "AntRow|AntGrid.h|new AntRow()"
+        "AntIcon|AntIcon.h|new AntIcon()"
+        "AntImage|AntImage.h|new AntImage()"
+        "AntInput|AntInput.h|new AntInput()"
+        "AntInputDialog|AntInputDialog.h|new AntInputDialog()"
+        "AntInputNumber|AntInputNumber.h|new AntInputNumber()"
+        "AntLayout|AntLayout.h|new AntLayout()"
+        "AntLayoutContent|AntLayout.h|new AntLayoutContent()"
+        "AntLayoutFooter|AntLayout.h|new AntLayoutFooter()"
+        "AntLayoutHeader|AntLayout.h|new AntLayoutHeader()"
+        "AntLayoutSider|AntLayout.h|new AntLayoutSider()"
+        "AntList|AntList.h|new AntList()"
+        "AntListItem|AntList.h|new AntListItem()"
+        "AntListItemMeta|AntList.h|new AntListItemMeta()"
+        "AntLog|AntLog.h|new AntLog()"
+        "AntMasonry|AntMasonry.h|new AntMasonry()"
+        "AntMentions|AntMentions.h|new AntMentions()"
+        "AntMenu|AntMenu.h|new AntMenu()"
+        "AntMenuBar|AntMenuBar.h|new AntMenuBar()"
+        "AntMessage|AntMessage.h|new AntMessage()"
+        "AntModal|AntModal.h|new AntModal()"
+        "AntNav|AntNav.h|new AntNav()"
+        "AntNavItem|AntNavItem.h|new AntNavItem(QStringLiteral(\"Item\"))"
+        "AntNotification|AntNotification.h|new AntNotification()"
+        "AntPagination|AntPagination.h|new AntPagination()"
+        "AntPlainTextEdit|AntPlainTextEdit.h|new AntPlainTextEdit()"
+        "AntPopconfirm|AntPopconfirm.h|new AntPopconfirm()"
+        "AntPopover|AntPopover.h|new AntPopover()"
+        "AntProgress|AntProgress.h|new AntProgress()"
+        "AntQRCode|AntQRCode.h|new AntQRCode()"
+        "AntRadio|AntRadio.h|new AntRadio()"
+        "AntRate|AntRate.h|new AntRate()"
+        "AntResult|AntResult.h|new AntResult()"
+        "AntRibbon|AntRibbon.h|new AntRibbon()"
+        "AntRibbonGroup|AntRibbon.h|new AntRibbonGroup()"
+        "AntRibbonPage|AntRibbon.h|new AntRibbonPage()"
+        "AntScrollArea|AntScrollArea.h|new AntScrollArea()"
+        "AntScrollBar|AntScrollBar.h|new AntScrollBar()"
+        "AntSegmented|AntSegmented.h|new AntSegmented()"
+        "AntSelect|AntSelect.h|new AntSelect()"
+        "AntSkeleton|AntSkeleton.h|new AntSkeleton()"
+        "AntSlider|AntSlider.h|new AntSlider()"
+        "AntSpace|AntSpace.h|new AntSpace()"
+        "AntSpin|AntSpin.h|new AntSpin()"
+        "AntSplitter|AntSplitter.h|new AntSplitter()"
+        "AntStackedWidget|AntStackedWidget.h|new AntStackedWidget()"
+        "AntStatistic|AntStatistic.h|new AntStatistic()"
+        "AntStatusBar|AntStatusBar.h|new AntStatusBar()"
+        "AntSteps|AntSteps.h|new AntSteps()"
+        "AntSwitch|AntSwitch.h|new AntSwitch()"
+        "AntTable|AntTable.h|new AntTable()"
+        "AntTabs|AntTabs.h|new AntTabs()"
+        "AntTag|AntTag.h|new AntTag()"
+        "AntTimeline|AntTimeline.h|new AntTimeline()"
+        "AntTimePicker|AntTimePicker.h|new AntTimePicker()"
+        "AntToolBar|AntToolBar.h|new AntToolBar()"
+        "AntToolButton|AntToolButton.h|new AntToolButton()"
+        "AntToolTip|AntToolTip.h|new AntToolTip()"
+        "AntTour|AntTour.h|new AntTour()"
+        "AntTransfer|AntTransfer.h|new AntTransfer()"
+        "AntTree|AntTree.h|new AntTree()"
+        "AntTreeSelect|AntTreeSelect.h|new AntTreeSelect()"
+        "AntTypography|AntTypography.h|new AntTypography()"
+        "AntUpload|AntUpload.h|new AntUpload()"
+        "AntWatermark|AntWatermark.h|new AntWatermark()"
+        "AntWidget|AntWidget.h|new AntWidget()"
+        "AntWindow|AntWindow.h|new AntWindow()"
+    )
+
+    foreach(ANT_WIDGET_SMOKE_ENTRY IN LISTS ANT_WIDGET_SMOKE_TESTS)
+        string(REPLACE "|" ";" ANT_WIDGET_SMOKE_FIELDS "${ANT_WIDGET_SMOKE_ENTRY}")
+        list(GET ANT_WIDGET_SMOKE_FIELDS 0 ANT_WIDGET_SMOKE_TYPE)
+        list(GET ANT_WIDGET_SMOKE_FIELDS 1 ANT_WIDGET_SMOKE_HEADER)
+        list(GET ANT_WIDGET_SMOKE_FIELDS 2 ANT_WIDGET_SMOKE_CONSTRUCT)
+        add_ant_widget_smoke_test(
+            "${ANT_WIDGET_SMOKE_TYPE}"
+            "${ANT_WIDGET_SMOKE_HEADER}"
+            "${ANT_WIDGET_SMOKE_CONSTRUCT}"
+        )
+    endforeach()
+
+    get_property(ANT_WIDGET_SMOKE_TARGETS GLOBAL PROPERTY ANT_WIDGET_SMOKE_TARGETS)
+    add_custom_target(TestAntWidgetSmoke_All DEPENDS ${ANT_WIDGET_SMOKE_TARGETS})
+endif()
 
 # Core types
 add_ant_test(TestAntTypes)
@@ -39,6 +197,7 @@ add_ant_test(TestAntDataDisplayA)
 
 # Data Display B (10 widgets)
 add_ant_test(TestAntDataDisplayB)
+add_ant_test(TestAntQRGenerator)
 add_ant_test(TestAntTag)
 
 # Feedback (13 widgets)
@@ -51,8 +210,10 @@ add_ant_test(TestAntNavigation)
 # Layout (7 widgets)
 add_ant_test(TestAntLayout)
 
-# Qt Extensions (18 widgets)
+# Qt Extensions (19 widgets)
 add_ant_test(TestAntQtExtensions)
+add_ant_test(TestAntDockPerspectiveLimits)
+set_tests_properties(TestAntDockPerspectiveLimits PROPERTIES TIMEOUT 10)
 
 # Qt-style widget aliases
 add_ant_test(TestAntAliases)
@@ -72,6 +233,9 @@ add_ant_test(TestAntMetaProperties)
 # Complex interaction coverage
 add_ant_test(TestAntInteractions)
 add_ant_test(TestAntAdvancedInteractions)
+
+# Deep behavioral coverage for historically smoke-only widgets
+add_ant_test(TestAntDeepCoverage)
 
 # Motion and animation coverage
 add_ant_test(TestAntMotion)
@@ -100,6 +264,7 @@ foreach(ANT_VISUAL_PARITY_SCALE IN ITEMS 1.25 1.5)
     )
 endforeach()
 add_ant_test(TestAntQtVersionMetricAudit)
+add_ant_test(TestAntWindowsSystemLibrary)
 
 # Windows / Qt high-DPI logical geometry coverage
 add_executable(TestAntHighDpiScaling TestAntHighDpiScaling.cpp)
@@ -128,6 +293,7 @@ add_test(NAME TestAntInstallConsumer
         -DANT_CONFIG=$<CONFIG>
         -DANT_QT_PACKAGE=${QT_ANT_DESIGN_QT_PACKAGE}
         -DANT_QT_PACKAGE_DIR=${${QT_ANT_DESIGN_QT_PACKAGE}_DIR}
+        -DANT_EXPECTED_VERSION=${PROJECT_VERSION}
         -DANT_CMAKE_GENERATOR=${CMAKE_GENERATOR}
         -DANT_CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
         -DANT_CMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
@@ -138,14 +304,29 @@ add_test(NAME TestAntInstallConsumer
 # Build-system option coverage
 add_test(NAME TestAntBuildSystem
     COMMAND ${CMAKE_COMMAND}
-        -DANT_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -DANT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -DANT_TEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+        -DANT_QT_PACKAGE=${QT_ANT_DESIGN_QT_PACKAGE}
+        -DANT_QT_PACKAGE_DIR=${${QT_ANT_DESIGN_QT_PACKAGE}_DIR}
+        -DANT_CMAKE_GENERATOR=${CMAKE_GENERATOR}
+        -DANT_CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+        -DANT_CMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+        -DANT_CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+        -DANT_CONFIG=$<CONFIG>
         -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntBuildSystem.cmake
+)
+set_tests_properties(TestAntBuildSystem PROPERTIES TIMEOUT 900)
+
+add_test(NAME TestAntCiPolicy
+    COMMAND ${CMAKE_COMMAND}
+        -DANT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntCiPolicy.cmake
 )
 
 # No-QSS / no-QStyleSheet styling guard
 add_test(NAME TestAntNoStyleSheetUsage
     COMMAND ${CMAKE_COMMAND}
-        -DANT_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -DANT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/TestAntNoStyleSheetUsage.cmake
 )
 

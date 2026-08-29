@@ -683,7 +683,7 @@ void addAntWidgetAudit(QVector<MetricRecord>& records)
 
     AntToolTip tooltip;
     tooltip.setTitle(QStringLiteral("Token-driven tooltip"));
-    tooltip.setPlacement(Ant::TooltipPlacement::Top);
+    tooltip.setPlacement(Ant::Placement::Top);
     addWidgetMetrics(records, tooltip, QStringLiteral("AntToolTip.Top"), 4.0);
 }
 

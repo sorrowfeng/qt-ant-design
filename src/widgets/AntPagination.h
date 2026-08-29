@@ -27,6 +27,7 @@ class QT_ANT_DESIGN_EXPORT AntPagination : public QWidget
     Q_PROPERTY(bool showTotal READ isShowTotal WRITE setShowTotal NOTIFY showTotalChanged)
     Q_PROPERTY(bool showQuickJumper READ isShowQuickJumper WRITE setShowQuickJumper NOTIFY showQuickJumperChanged)
     Q_PROPERTY(bool showSizeChanger READ isShowSizeChanger WRITE setShowSizeChanger NOTIFY showSizeChangerChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size paginationSize READ paginationSize WRITE setPaginationSize NOTIFY paginationSizeChanged)
 
 public:
@@ -59,8 +60,11 @@ public:
     bool isShowSizeChanger() const;
     void setShowSizeChanger(bool show);
 
-    Ant::Size paginationSize() const;
-    void setPaginationSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size paginationSize() const { return size(); }
+    void setPaginationSize(Ant::Size size) { setSize(size); }
 
     int pageCount() const;
 
@@ -77,6 +81,7 @@ Q_SIGNALS:
     void showTotalChanged(bool show);
     void showQuickJumperChanged(bool show);
     void showSizeChangerChanged(bool show);
+    void sizeChanged(Ant::Size size);
     void paginationSizeChanged(Ant::Size size);
     void change(int page, int pageSize);
     void showSizeChange(int current, int pageSize);
@@ -129,6 +134,7 @@ private:
     QRect itemDirtyRect(int itemIndex) const;
     void updateItemStateRegion(int oldIndex, int newIndex);
     void syncPaginationPerfCounters() const;
+    void syncDisabledState(bool disabled);
     void ensureQuickJumperEdit();
     QRect quickJumperInputRect() const;
     void syncQuickJumperEdit();
@@ -143,7 +149,7 @@ private:
     bool m_showTotal = false;
     bool m_showQuickJumper = false;
     bool m_showSizeChanger = false;
-    Ant::Size m_paginationSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     int m_hoveredIndex = -1;
     QLineEdit* m_quickJumperEdit = nullptr;
     QIntValidator* m_quickJumperValidator = nullptr;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/QtAntDesignExport.h"
+#include "core/AntTypes.h"
 
 #include <QFont>
 #include <QRect>
@@ -35,6 +36,8 @@ class QT_ANT_DESIGN_EXPORT AntStatusBar : public QWidget
     Q_OBJECT
     Q_PROPERTY(QString message READ message WRITE setMessage NOTIFY messageChanged)
     Q_PROPERTY(bool sizeGrip READ hasSizeGrip WRITE setSizeGrip NOTIFY sizeGripChanged)
+    Q_PROPERTY(Ant::StatusBarStatus status READ status WRITE setStatus NOTIFY statusChanged)
+    Q_PROPERTY(Ant::StatusBarStatus messageStatus READ messageStatus WRITE setMessageStatus NOTIFY messageStatusChanged)
 
 public:
     explicit AntStatusBar(QWidget* parent = nullptr);
@@ -43,7 +46,14 @@ public:
     void setMessage(const QString& message);
     QString currentMessage() const;
     void showMessage(const QString& message, int timeout = 0);
+    void showMessage(const QString& message, Ant::StatusBarStatus status, int timeout = 0);
     void clearMessage();
+
+    Ant::StatusBarStatus status() const;
+    void setStatus(Ant::StatusBarStatus status);
+
+    Ant::StatusBarStatus messageStatus() const;
+    void setMessageStatus(Ant::StatusBarStatus status);
 
     bool hasSizeGrip() const;
     void setSizeGrip(bool enabled);
@@ -52,16 +62,32 @@ public:
                 const QString& icon = QString(),
                 const QString& tooltip = QString(),
                 int stretch = 0);
+    int addItem(const QString& text,
+                Ant::StatusBarStatus status,
+                const QString& icon = QString(),
+                const QString& tooltip = QString(),
+                int stretch = 0);
     int addPermanentItem(const QString& text,
                          const QString& icon = QString(),
                          const QString& tooltip = QString(),
                          int stretch = 0);
+    int addPermanentItem(const QString& text,
+                         Ant::StatusBarStatus status,
+                         const QString& icon = QString(),
+                         const QString& tooltip = QString(),
+                         int stretch = 0);
+    bool setItem(int index, const AntStatusBarItem& item);
+    bool setPermanentItem(int index, const AntStatusBarItem& item);
     void removeItem(int index);
 
     int itemCount() const;
     int permanentItemCount() const;
     AntStatusBarItem itemAt(int index) const;
     AntStatusBarItem permanentItemAt(int index) const;
+    Ant::StatusBarStatus itemStatus(int index) const;
+    void setItemStatus(int index, Ant::StatusBarStatus status);
+    Ant::StatusBarStatus permanentItemStatus(int index) const;
+    void setPermanentItemStatus(int index, Ant::StatusBarStatus status);
 
     int hoveredRegularIndex() const;
     int hoveredPermanentIndex() const;
@@ -73,6 +99,10 @@ Q_SIGNALS:
     void messageChanged(const QString& message);
     void sizeGripChanged(bool enabled);
     void itemClicked(int index);
+    void statusChanged(Ant::StatusBarStatus status);
+    void messageStatusChanged(Ant::StatusBarStatus status);
+    void itemStatusChanged(int index, Ant::StatusBarStatus status);
+    void permanentItemStatusChanged(int index, Ant::StatusBarStatus status);
 
 protected:
     void changeEvent(QEvent* event) override;

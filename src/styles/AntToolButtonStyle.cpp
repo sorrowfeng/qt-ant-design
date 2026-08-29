@@ -60,12 +60,6 @@ ToolButtonMetrics toolMetrics(const AntToolButton* btn)
     return m;
 }
 
-int focusPaddingForToolButton()
-{
-    const auto& token = antTheme->tokens();
-    return token.lineWidthFocus + 1;
-}
-
 QRectF contentRectFor(const ToolButtonMetrics& metrics, const QRect& rect)
 {
     return rect.adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
@@ -194,52 +188,6 @@ void drawArrow(QPainter* painter, const QRectF& rect, const QColor& color, qreal
     AntIconPainter::drawIcon(*painter, Ant::IconType::Down, rect, color);
     painter->restore();
 }
-
-void drawSpinner(QPainter& painter, const QRectF& rect, const QColor& color, int angle)
-{
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    const qreal penWidth = qMax<qreal>(1.5, rect.width() * 0.12);
-    const QRectF arcRect = rect.adjusted(penWidth / 2.0, penWidth / 2.0, -penWidth / 2.0, -penWidth / 2.0);
-    painter.translate(arcRect.center());
-    painter.rotate(angle);
-    painter.translate(-arcRect.center());
-    painter.setPen(QPen(color, penWidth, Qt::SolidLine, Qt::RoundCap));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawArc(arcRect, 90 * 16, -96 * 16);
-    painter.restore();
-}
-
-void drawButtonBottomShadow(QPainter& painter, const QRectF& outer, int radius, const QColor& color)
-{
-    if (color.alpha() == 0)
-    {
-        return;
-    }
-
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(color);
-    painter.drawRoundedRect(outer.adjusted(0, 2, 0, 2), radius, radius);
-    painter.restore();
-}
-
-void drawButtonFocusOutline(QPainter& painter, const QRectF& bodyRect, int radius)
-{
-    const auto& token = antTheme->tokens();
-    const qreal offset = 1.0;
-    const qreal width = token.lineWidthFocus;
-    const qreal expand = offset + width / 2.0;
-    const QRectF focusRect = bodyRect.adjusted(-expand, -expand, expand, expand);
-
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(QPen(token.colorPrimaryBorder, width, Qt::SolidLine, Qt::SquareCap, Qt::RoundJoin));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(focusRect, radius + expand, radius + expand);
-    painter.restore();
-}
 } // namespace
 
 AntToolButtonStyle::AntToolButtonStyle(QStyle* style)
@@ -285,8 +233,7 @@ QSize AntToolButtonStyle::sizeFromContents(ContentsType type, const QStyleOption
     if (type == QStyle::CT_ToolButton && btn)
     {
         const ToolButtonMetrics m = toolMetrics(btn);
-        QFont f = btn->font();
-        f.setPixelSize(m.fontSize);
+        const QFont f = AntStyleBase::withPixelSize(btn->font(), m.fontSize);
         int width = QFontMetrics(f).horizontalAdvance(btn->text()) + m.paddingX * 2;
         if (btn->isLoading() || !btn->icon().isNull())
         {
@@ -297,7 +244,7 @@ QSize AntToolButtonStyle::sizeFromContents(ContentsType type, const QStyleOption
             width += m.arrowSize + 8;
         }
 
-        const int focusPadding = focusPaddingForToolButton();
+        const int focusPadding = AntStyleBase::focusPaddingFor();
         return QSize(std::max(width, m.height) + focusPadding * 2, m.height + focusPadding * 2);
     }
     return QProxyStyle::sizeFromContents(type, option, size, widget);
@@ -315,7 +262,7 @@ void AntToolButtonStyle::drawToolButton(const QStyleOptionComplex* option, QPain
 
     const auto& token = antTheme->tokens();
     const ToolButtonMetrics m = toolMetrics(btn);
-    const int focusPadding = focusPaddingForToolButton();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRectF outer = QRectF(bopt->rect).adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     const int radius = m.radius;
     const bool enabled = bopt->state.testFlag(QStyle::State_Enabled);
@@ -332,7 +279,7 @@ void AntToolButtonStyle::drawToolButton(const QStyleOptionComplex* option, QPain
 
     if (!plainType && enabled && !pressed && !btn->isLoading())
     {
-        drawButtonBottomShadow(*painter, outer, radius, shadowColorFor(btn));
+        AntStyleBase::drawButtonBottomShadow(painter, outer, radius, shadowColorFor(btn));
     }
 
     AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
@@ -341,7 +288,7 @@ void AntToolButtonStyle::drawToolButton(const QStyleOptionComplex* option, QPain
 
     if (focused && enabled)
     {
-        drawButtonFocusOutline(*painter, outer, radius);
+        AntStyleBase::drawButtonFocusOutline(painter, outer, radius);
     }
 
     QRectF textRect = contentRectFor(m, outer.toRect());
@@ -363,7 +310,7 @@ void AntToolButtonStyle::drawToolButton(const QStyleOptionComplex* option, QPain
         const QRectF spinnerRect = spinnerOnly
             ? QRectF(textRect.center().x() - m.iconSize / 2.0, textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize)
             : QRectF(textRect.left(), textRect.center().y() - m.iconSize / 2.0, m.iconSize, m.iconSize);
-        drawSpinner(*painter, spinnerRect, colors.text, btn->spinnerAngle());
+        AntStyleBase::drawSpinner(painter, spinnerRect, colors.text, btn->spinnerAngle());
         if (!spinnerOnly)
         {
             textRect.adjust(m.iconSize + 8, 0, 0, 0);

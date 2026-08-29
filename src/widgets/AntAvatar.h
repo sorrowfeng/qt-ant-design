@@ -18,6 +18,7 @@ class QT_ANT_DESIGN_EXPORT AntAvatarGroup : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(int maxCount READ maxCount WRITE setMaxCount NOTIFY maxCountChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size avatarSize READ avatarSize WRITE setAvatarSize NOTIFY avatarSizeChanged)
 
 public:
@@ -26,8 +27,11 @@ public:
     int maxCount() const;
     void setMaxCount(int maxCount);
 
-    Ant::Size avatarSize() const;
-    void setAvatarSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size avatarSize() const { return size(); }
+    void setAvatarSize(Ant::Size size) { setSize(size); }
 
     void addAvatar(AntAvatar* avatar);
     void removeAvatar(AntAvatar* avatar);
@@ -38,6 +42,7 @@ public:
 
 Q_SIGNALS:
     void maxCountChanged(int maxCount);
+    void sizeChanged(Ant::Size size);
     void avatarSizeChanged(Ant::Size size);
 
 protected:
@@ -48,7 +53,7 @@ private:
     void relayout();
 
     int m_maxCount = 0; // 0 = no limit
-    Ant::Size m_avatarSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     QList<AntAvatar*> m_avatars;
     AntAvatar* m_overflowAvatar = nullptr;
 };
@@ -63,6 +68,7 @@ class QT_ANT_DESIGN_EXPORT AntAvatar : public QWidget
     Q_PROPERTY(int gap READ gap WRITE setGap NOTIFY gapChanged)
     Q_PROPERTY(int customSize READ customSize WRITE setCustomSize NOTIFY customSizeChanged)
     Q_PROPERTY(Ant::AvatarShape shape READ shape WRITE setShape NOTIFY shapeChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size avatarSize READ avatarSize WRITE setAvatarSize NOTIFY avatarSizeChanged)
 
 public:
@@ -90,8 +96,11 @@ public:
     Ant::AvatarShape shape() const;
     void setShape(Ant::AvatarShape shape);
 
-    Ant::Size avatarSize() const;
-    void setAvatarSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size avatarSize() const { return size(); }
+    void setAvatarSize(Ant::Size size) { setSize(size); }
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -104,6 +113,7 @@ Q_SIGNALS:
     void gapChanged(int gap);
     void customSizeChanged(int size);
     void shapeChanged(Ant::AvatarShape shape);
+    void sizeChanged(Ant::Size size);
     void avatarSizeChanged(Ant::Size size);
 
 protected:
@@ -142,7 +152,7 @@ private:
     int m_gap = 4;
     int m_customSize = 0;
     Ant::AvatarShape m_shape = Ant::AvatarShape::Circle;
-    Ant::Size m_avatarSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     mutable AvatarImagePixmapCache m_imagePixmapCache;
     mutable int m_imagePixmapBuildCount = 0;
     mutable int m_imagePixmapCacheHitCount = 0;

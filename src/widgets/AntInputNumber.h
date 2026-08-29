@@ -15,6 +15,7 @@ class QWidget;
 class QT_ANT_DESIGN_EXPORT AntInputNumber : public QDoubleSpinBox
 {
     Q_OBJECT
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size inputSize READ inputSize WRITE setInputSize NOTIFY inputSizeChanged)
     Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
@@ -28,8 +29,11 @@ class QT_ANT_DESIGN_EXPORT AntInputNumber : public QDoubleSpinBox
 public:
     explicit AntInputNumber(QWidget* parent = nullptr);
 
-    Ant::Size inputSize() const;
-    void setInputSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size inputSize() const { return size(); }
+    void setInputSize(Ant::Size size) { setSize(size); }
 
     Ant::Status status() const;
     void setStatus(Ant::Status status);
@@ -64,6 +68,7 @@ public:
     QAbstractSpinBox::StepEnabled stepEnabledFlags() const;
 
 Q_SIGNALS:
+    void sizeChanged(Ant::Size size);
     void inputSizeChanged(Ant::Size size);
     void statusChanged(Ant::Status status);
     void variantChanged(Ant::Variant variant);
@@ -108,7 +113,7 @@ private:
     int controlsInsetWidth() const;
     void updateControlsOverlayGeometry();
 
-    Ant::Size m_inputSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     Ant::Status m_status = Ant::Status::Normal;
     Ant::Variant m_variant = Ant::Variant::Outlined;
     bool m_controlsVisible = true;

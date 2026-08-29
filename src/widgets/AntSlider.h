@@ -31,7 +31,7 @@ class QT_ANT_DESIGN_EXPORT AntSlider : public QWidget
     Q_PROPERTY(Qt::Orientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
     Q_PROPERTY(bool reverse READ isReverse WRITE setReverse NOTIFY reverseChanged)
     Q_PROPERTY(bool tracking READ hasTracking WRITE setTracking NOTIFY trackingChanged)
-    Q_PROPERTY(bool invertedAppearance READ invertedAppearance WRITE setInvertedAppearance NOTIFY reverseChanged)
+    Q_PROPERTY(bool invertedAppearance READ invertedAppearance WRITE setInvertedAppearance NOTIFY invertedAppearanceChanged)
     Q_PROPERTY(bool dots READ dots WRITE setDots NOTIFY dotsChanged)
     Q_PROPERTY(bool included READ included WRITE setIncluded NOTIFY includedChanged)
     Q_PROPERTY(bool keyboard READ keyboard WRITE setKeyboard NOTIFY keyboardChanged)
@@ -112,6 +112,7 @@ Q_SIGNALS:
     void pageStepChanged(int step);
     void orientationChanged(Qt::Orientation orientation);
     void reverseChanged(bool reverse);
+    void invertedAppearanceChanged(bool inverted);
     void trackingChanged(bool tracking);
     void dotsChanged(bool dots);
     void includedChanged(bool included);

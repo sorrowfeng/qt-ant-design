@@ -47,16 +47,6 @@ QSize AntMenuStyle::sizeFromContents(ContentsType type, const QStyleOption* opti
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntMenuStyle::eventFilter(QObject* watched, QEvent* event)
-{
-    Q_UNUSED(watched)
-    Q_UNUSED(event)
-    // AntMenu paints itself (background + items); we don't intercept paint
-    // here, otherwise the menu items would vanish. Style still participates
-    // via polish()/unpolish() for theme wiring.
-    return QProxyStyle::eventFilter(watched, event);
-}
-
 void AntMenuStyle::drawMenu(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
     const auto* menu = qobject_cast<const AntMenu*>(widget);
@@ -73,7 +63,7 @@ void AntMenuStyle::drawMenu(const QStyleOption* option, QPainter* painter, const
     const Ant::MenuTheme menuTheme = menu->menuTheme();
 
     // Background
-    const QColor bgColor = (menuTheme == Ant::MenuTheme::Dark) ? QColor(0, 21, 41) : token.colorBgContainer;
+    const QColor bgColor = (menuTheme == Ant::MenuTheme::Dark) ? token.colorBgMenuDark : token.colorBgContainer;
     painter->fillRect(option->rect, bgColor);
 
     // Border line

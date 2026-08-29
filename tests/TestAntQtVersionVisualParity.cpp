@@ -223,6 +223,7 @@ QSet<QString> atlasDeferredHeaders()
         QStringLiteral("AntAffix"),
         QStringLiteral("AntApp"),
         QStringLiteral("AntConfigProvider"),
+        QStringLiteral("AntWindowFrame"),
     };
 }
 
@@ -731,7 +732,7 @@ QWidget* makePopoverSurfaceScene()
     popover->setTitle(QStringLiteral("Popover"));
     popover->setContent(QStringLiteral("Arrow, text and shadow remain crisp."));
     popover->setTitleIconType(Ant::IconType::InfoCircle);
-    popover->setPlacement(Ant::TooltipPlacement::Top);
+    popover->setPlacement(Ant::Placement::Top);
     popover->setFixedSize(popover->sizeHint());
     popover->show();
     popoverLayout->addWidget(popover, 0, Qt::AlignLeft);
@@ -740,7 +741,7 @@ QWidget* makePopoverSurfaceScene()
     actionPopover->setWindowFlags(Qt::Widget);
     actionPopover->setTitle(QStringLiteral("Action"));
     actionPopover->setContent(QStringLiteral("Footer widgets keep palette tokens."));
-    actionPopover->setPlacement(Ant::TooltipPlacement::Bottom);
+    actionPopover->setPlacement(Ant::Placement::Bottom);
     auto* actionButton = new AntButton(QStringLiteral("OK"), actionPopover);
     actionButton->setButtonType(Ant::ButtonType::Primary);
     actionPopover->setActionWidget(actionButton);
@@ -806,7 +807,7 @@ QWidget* makeDrawerSurfaceScene()
     auto* drawer = new AntDrawer(drawerTarget);
     drawer->setObjectName(QStringLiteral("popupDrawer"));
     drawer->setTitle(QStringLiteral("Drawer"));
-    drawer->setPlacement(Ant::DrawerPlacement::Right);
+    drawer->setPlacement(Ant::Placement::Right);
     drawer->setDrawerWidth(220);
     drawer->setMaskClosable(false);
     auto* drawerBody = new QWidget;
@@ -849,7 +850,7 @@ QWidget* makeDropdownSurfaceScene()
     dropdown->setObjectName(QStringLiteral("dropdownController"));
     dropdown->setTarget(trigger);
     dropdown->setTrigger(Ant::DropdownTrigger::Click);
-    dropdown->setPlacement(Ant::DropdownPlacement::BottomLeft);
+    dropdown->setPlacement(Ant::Placement::BottomLeft);
     dropdown->setArrowVisible(true);
     dropdown->addItem(QStringLiteral("edit"), QStringLiteral("Edit"));
     dropdown->addItem(QStringLiteral("copy"), QStringLiteral("Copy"));
@@ -891,7 +892,7 @@ QWidget* makePopconfirmSurfaceScene()
     popconfirm->setDescription(QStringLiteral("This action cannot be undone."));
     popconfirm->setOkText(QStringLiteral("Delete"));
     popconfirm->setCancelText(QStringLiteral("Cancel"));
-    popconfirm->setPlacement(Ant::TooltipPlacement::BottomLeft);
+    popconfirm->setPlacement(Ant::Placement::BottomLeft);
 
     layout->addWidget(row, 1);
     return surface;

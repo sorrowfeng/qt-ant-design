@@ -26,19 +26,19 @@ constexpr int kDockTabMinHeight = 36;
 QColor dockBorderColor()
 {
     const auto& token = antTheme->tokens();
-    return antTheme->themeMode() == Ant::ThemeMode::Dark ? token.colorBorderSecondary : token.colorSplit;
+    return antTheme->isDarkMode() ? token.colorBorderSecondary : token.colorSplit;
 }
 
 QColor dockInactiveTabColor()
 {
     const auto& token = antTheme->tokens();
-    return antTheme->themeMode() == Ant::ThemeMode::Dark ? token.colorBgElevated : token.colorBgContainer;
+    return antTheme->isDarkMode() ? token.colorBgElevated : token.colorBgContainer;
 }
 
 QColor dockHoverColor()
 {
     const auto& token = antTheme->tokens();
-    return antTheme->themeMode() == Ant::ThemeMode::Dark ? token.colorFillTertiary : token.colorFillQuaternary;
+    return antTheme->isDarkMode() ? token.colorFillTertiary : token.colorFillQuaternary;
 }
 
 QPainterPath topRoundedPath(const QRectF& rect, qreal radius)

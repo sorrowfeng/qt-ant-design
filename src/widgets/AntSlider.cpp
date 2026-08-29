@@ -19,6 +19,13 @@
 
 namespace
 {
+int clampSliderValue(qint64 value, int minimum, int maximum)
+{
+    return static_cast<int>(std::clamp(value,
+                                       static_cast<qint64>(minimum),
+                                       static_cast<qint64>(maximum)));
+}
+
 class SliderValueBubble : public QWidget
 {
 public:
@@ -78,7 +85,7 @@ protected:
         path.quadTo(bubble.left(), bubble.top(), bubble.left() + radius, bubble.top());
         path.closeSubpath();
 
-        QColor bg = antTheme->themeMode() == Ant::ThemeMode::Dark ? QColor("#424242") : QColor("#262626");
+        QColor bg = antTheme->isDarkMode() ? QColor("#424242") : QColor("#262626");
         QPainter painter(this);
         painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
         painter.setPen(Qt::NoPen);
@@ -265,7 +272,12 @@ bool AntSlider::invertedAppearance() const { return m_reverse; }
 
 void AntSlider::setInvertedAppearance(bool inverted)
 {
+    if (m_reverse == inverted)
+    {
+        return;
+    }
     setReverse(inverted);
+    Q_EMIT invertedAppearanceChanged(inverted);
 }
 
 bool AntSlider::hasTracking() const { return m_tracking; }
@@ -502,10 +514,10 @@ void AntSlider::keyPressEvent(QKeyEvent* event)
         return;
     }
 
-    const int step = std::max(1, m_singleStep);
-    int delta = 0;
+    const qint64 step = std::max(1, m_singleStep);
+    qint64 delta = 0;
     bool absolute = false;
-    int target = m_value;
+    qint64 target = m_value;
 
     switch (event->key())
     {
@@ -518,10 +530,10 @@ void AntSlider::keyPressEvent(QKeyEvent* event)
         delta = step;
         break;
     case Qt::Key_PageDown:
-        delta = -m_pageStep;
+        delta = -static_cast<qint64>(m_pageStep);
         break;
     case Qt::Key_PageUp:
-        delta = m_pageStep;
+        delta = static_cast<qint64>(m_pageStep);
         break;
     case Qt::Key_Home:
         target = m_minimum;
@@ -539,10 +551,10 @@ void AntSlider::keyPressEvent(QKeyEvent* event)
     if (!absolute)
     {
         const bool invert = (m_orientation == Qt::Horizontal && m_reverse) || (m_orientation == Qt::Vertical && !m_reverse);
-        target = m_value + (invert ? -delta : delta);
+        target = static_cast<qint64>(m_value) + (invert ? -delta : delta);
     }
 
-    setValueFromUser(target, true);
+    setValueFromUser(clampSliderValue(target, m_minimum, m_maximum), true);
     event->accept();
 }
 
@@ -675,9 +687,11 @@ const AntSlider::LayoutCache& AntSlider::layoutCache() const
     m_layoutCache.dotCenters.clear();
     m_layoutCache.markLayouts.clear();
 
-    const int dotCount = std::max(1, (m_maximum - m_minimum) / std::max(1, m_singleStep));
-    if (dotCount <= 80)
+    const qint64 rangeSpan = static_cast<qint64>(m_maximum) - static_cast<qint64>(m_minimum);
+    const qint64 wideDotCount = std::max<qint64>(1, rangeSpan / std::max(1, m_singleStep));
+    if (wideDotCount <= 80)
     {
+        const int dotCount = static_cast<int>(wideDotCount);
         m_layoutCache.dotCenters.reserve(dotCount + 1);
         for (int index = 0; index <= dotCount; ++index)
         {
@@ -835,7 +849,9 @@ qreal AntSlider::ratioForValue(int value) const
         return 0.0;
     }
 
-    qreal ratio = (value - m_minimum) / static_cast<qreal>(m_maximum - m_minimum);
+    const qint64 rangeSpan = static_cast<qint64>(m_maximum) - static_cast<qint64>(m_minimum);
+    const qint64 offset = static_cast<qint64>(value) - static_cast<qint64>(m_minimum);
+    qreal ratio = static_cast<qreal>(static_cast<double>(offset) / static_cast<double>(rangeSpan));
     if (m_reverse)
     {
         ratio = 1.0 - ratio;
@@ -864,8 +880,9 @@ int AntSlider::valueFromPosition(const QPointF& pos) const
         ratio = 1.0 - ratio;
     }
 
-    const qreal raw = m_minimum + ratio * (m_maximum - m_minimum);
-    return steppedValue(static_cast<int>(std::round(raw)));
+    const qint64 rangeSpan = static_cast<qint64>(m_maximum) - static_cast<qint64>(m_minimum);
+    const double raw = static_cast<double>(m_minimum) + static_cast<double>(ratio) * static_cast<double>(rangeSpan);
+    return steppedValue(clampSliderValue(std::llround(raw), m_minimum, m_maximum));
 }
 
 int AntSlider::normalizeValue(int value) const
@@ -880,9 +897,10 @@ int AntSlider::steppedValue(int value) const
         return std::clamp(value, m_minimum, m_maximum);
     }
 
-    const int offset = value - m_minimum;
-    const int steps = static_cast<int>(std::round(offset / static_cast<double>(m_singleStep)));
-    return std::clamp(m_minimum + steps * m_singleStep, m_minimum, m_maximum);
+    const qint64 offset = static_cast<qint64>(value) - static_cast<qint64>(m_minimum);
+    const qint64 steps = std::llround(static_cast<double>(offset) / static_cast<double>(m_singleStep));
+    const qint64 stepped = static_cast<qint64>(m_minimum) + steps * static_cast<qint64>(m_singleStep);
+    return clampSliderValue(stepped, m_minimum, m_maximum);
 }
 
 void AntSlider::setValueFromUser(int value, bool finalChange)

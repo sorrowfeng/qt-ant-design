@@ -922,7 +922,8 @@ QWidget* createStatusBarPage(QWidget* /*owner*/)
         auto* cl = card->bodyLayout();
 
         auto* desc = new AntTypography(QStringLiteral("AntStatusBar displays status information at the bottom of a window. "
-                                                      "Supports regular items, permanent items, message text, and size grip."));
+                                                      "The bar, individual items, and messages can use semantic Info, Success, "
+                                                      "Warning, or Error emphasis while following the active theme."));
         desc->setParagraph(true);
         cl->addWidget(desc);
 
@@ -931,13 +932,16 @@ QWidget* createStatusBarPage(QWidget* /*owner*/)
         statusBar->addItem(QStringLiteral("Line 1, Col 1"));
         statusBar->addPermanentItem(QStringLiteral("UTF-8"));
         statusBar->addPermanentItem(QStringLiteral("LF"));
-        statusBar->setMessage(QStringLiteral("File saved successfully"));
+        statusBar->showMessage(QStringLiteral("File saved successfully"), Ant::StatusBarStatus::Success);
         cl->addWidget(statusBar);
 
         auto* statusBar2 = new AntStatusBar(page);
-        statusBar2->addItem(QStringLiteral("Connected"));
-        statusBar2->addItem(QStringLiteral("3 warnings"));
-        statusBar2->addPermanentItem(QStringLiteral("v1.0.0"));
+        statusBar2->setStatus(Ant::StatusBarStatus::Info);
+        statusBar2->addItem(QStringLiteral("Syncing"));
+        statusBar2->addItem(QStringLiteral("Connected"), Ant::StatusBarStatus::Success);
+        statusBar2->addItem(QStringLiteral("3 warnings"), Ant::StatusBarStatus::Warning);
+        statusBar2->addPermanentItem(QStringLiteral("Build failed"), Ant::StatusBarStatus::Error);
+        statusBar2->addPermanentItem(QStringLiteral("v1.0.0"), Ant::StatusBarStatus::Default);
         statusBar2->setSizeGrip(false);
         cl->addWidget(statusBar2);
 

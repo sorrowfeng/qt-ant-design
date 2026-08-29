@@ -8,6 +8,7 @@
 #include <QSize>
 
 #include "core/AntTypes.h"
+#include "widgets/AntWindowFrame.h"
 
 struct AntThemeTokens;
 class QEvent;
@@ -130,7 +131,7 @@ private:
     QSize m_cachedSizeHint;
     QSize m_cachedMinimumSizeHint;
     qint64 m_cachedPaletteKey = 0;
-    QWidget* m_legacySoftwareShadow = nullptr;
+    AntWindowFrame::LegacySoftwareShadowHandle m_legacySoftwareShadow;
     bool m_childSyncQueued = false;
     int m_childSyncCount = 0;
     int m_themeChangeCount = 0;

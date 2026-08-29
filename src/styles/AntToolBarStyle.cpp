@@ -38,15 +38,9 @@ ToolBarButtonMetrics buttonMetrics()
     return metrics;
 }
 
-int focusPaddingForToolBarButton()
-{
-    const auto& token = antTheme->tokens();
-    return token.lineWidthFocus + 1;
-}
-
 QRect centeredTotalButtonRect(const QRect& rect, const ToolBarButtonMetrics& metrics)
 {
-    const int focusPadding = focusPaddingForToolBarButton();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const int totalHeight = metrics.height + focusPadding * 2;
     if (rect.height() <= totalHeight)
     {
@@ -98,37 +92,6 @@ QColor shadowColorForToolBarButton()
 {
     return antTheme->tokens().colorFillQuaternary;
 }
-
-void drawButtonBottomShadow(QPainter& painter, const QRectF& outer, int radius, const QColor& color)
-{
-    if (color.alpha() == 0)
-    {
-        return;
-    }
-
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(color);
-    painter.drawRoundedRect(outer.adjusted(0, 2, 0, 2), radius, radius);
-    painter.restore();
-}
-
-void drawButtonFocusOutline(QPainter& painter, const QRectF& bodyRect, int radius)
-{
-    const auto& token = antTheme->tokens();
-    const qreal offset = 1.0;
-    const qreal width = token.lineWidthFocus;
-    const qreal expand = offset + width / 2.0;
-    const QRectF focusRect = bodyRect.adjusted(-expand, -expand, expand, expand);
-
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(QPen(token.colorPrimaryBorder, width, Qt::SolidLine, Qt::SquareCap, Qt::RoundJoin));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(focusRect, radius + expand, radius + expand);
-    painter.restore();
-}
 } // namespace
 
 AntToolBarStyle::AntToolBarStyle(QStyle* style)
@@ -152,7 +115,7 @@ void AntToolBarStyle::drawControl(ControlElement element, const QStyleOption* op
             const int shadowBorder = 6;
             const QRectF bg = option->rect.adjusted(shadowBorder, shadowBorder, -shadowBorder, -shadowBorder);
 
-            antTheme->drawEffectShadow(painter, bg.toAlignedRect(), shadowBorder, 6, 0.15);
+            antTheme->drawEffectShadow(painter, bg.toAlignedRect(), shadowBorder, token.borderRadius, 0.15);
 
             painter->setRenderHint(QPainter::Antialiasing);
             AntStyleBase::drawCrispRoundedRect(painter, bg.toRect(),
@@ -186,10 +149,9 @@ QSize AntToolBarStyle::sizeFromContents(ContentsType type, const QStyleOption* o
         Q_UNUSED(size)
         const auto* button = qobject_cast<const QToolButton*>(widget);
         const ToolBarButtonMetrics metrics = buttonMetrics();
-        const int focusPadding = focusPaddingForToolBarButton();
+        const int focusPadding = AntStyleBase::focusPaddingFor();
 
-        QFont font = button ? button->font() : QFont();
-        font.setPixelSize(metrics.fontSize);
+        const QFont font = AntStyleBase::withPixelSize(button ? button->font() : QFont(), metrics.fontSize);
         int width = button ? cachedButtonTextWidth(button, font) : 0;
         if (button && !button->icon().isNull())
         {
@@ -275,7 +237,7 @@ void AntToolBarStyle::drawToolBarButton(const QStyleOptionComplex* option, QPain
 
     const auto& token = antTheme->tokens();
     const ToolBarButtonMetrics metrics = buttonMetrics();
-    const int focusPadding = focusPaddingForToolBarButton();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRect total = centeredTotalButtonRect(toolOption->rect, metrics);
     const QRectF outer = QRectF(total).adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     const bool enabled = toolOption->state.testFlag(QStyle::State_Enabled);
@@ -305,7 +267,7 @@ void AntToolBarStyle::drawToolBarButton(const QStyleOptionComplex* option, QPain
 
     if (enabled && !pressed)
     {
-        drawButtonBottomShadow(*painter, outer, metrics.radius, shadowColorForToolBarButton());
+        AntStyleBase::drawButtonBottomShadow(painter, outer, metrics.radius, shadowColorForToolBarButton());
     }
 
     AntStyleBase::drawCrispRoundedRect(painter, outer.toRect(),
@@ -314,11 +276,10 @@ void AntToolBarStyle::drawToolBarButton(const QStyleOptionComplex* option, QPain
 
     if (focused)
     {
-        drawButtonFocusOutline(*painter, outer, metrics.radius);
+        AntStyleBase::drawButtonFocusOutline(painter, outer, metrics.radius);
     }
 
-    QFont font = button->font();
-    font.setPixelSize(metrics.fontSize);
+    const QFont font = AntStyleBase::withPixelSize(button->font(), metrics.fontSize);
     painter->setFont(font);
     painter->setPen(text);
 

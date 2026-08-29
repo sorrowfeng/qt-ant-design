@@ -170,7 +170,7 @@ private:
             panelHeight += 32 + kPopupInnerPadding;
         }
         const QSize targetSize(panelWidth + kPopupShadowMargin * 2, panelHeight + kPopupShadowMargin * 2);
-        if (size() == targetSize)
+        if (QWidget::size() == targetSize)
         {
             ++m_sizeSkipCount;
         }
@@ -288,7 +288,7 @@ AntTreeSelect::AntTreeSelect(QWidget* parent)
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     syncTreeSelectPerfCounters();
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -439,20 +439,21 @@ void AntTreeSelect::setShowSearch(bool enable)
     }
 }
 
-Ant::Size AntTreeSelect::selectSize() const
+Ant::Size AntTreeSelect::size() const
 {
-    return m_selectSize;
+    return m_size;
 }
 
-void AntTreeSelect::setSelectSize(Ant::Size size)
+void AntTreeSelect::setSize(Ant::Size size)
 {
-    if (m_selectSize != size)
+    if (m_size != size)
     {
-        m_selectSize = size;
+        m_size = size;
         invalidateTriggerLayout();
         updateGeometry();
         updateTriggerRegion(rect(), QStringLiteral("size"));
-        Q_EMIT selectSizeChanged(size);
+        Q_EMIT sizeChanged(m_size);
+        Q_EMIT selectSizeChanged(m_size);
     }
 }
 
@@ -682,8 +683,8 @@ QStringList AntTreeSelect::findNodeTitles(const QVector<AntTreeNode>& nodes, con
 const AntTreeSelect::TriggerLayout& AntTreeSelect::triggerLayout() const
 {
     if (m_triggerLayout.valid
-        && m_triggerLayout.widgetSize == size()
-        && m_triggerLayout.selectSize == m_selectSize)
+        && m_triggerLayout.widgetSize == QWidget::size()
+        && m_triggerLayout.selectSize == m_size)
     {
         ++m_triggerLayoutCacheHitCount;
         syncTreeSelectPerfCounters();
@@ -692,9 +693,9 @@ const AntTreeSelect::TriggerLayout& AntTreeSelect::triggerLayout() const
 
     const auto& token = antTheme->tokens();
     m_triggerLayout = TriggerLayout{};
-    m_triggerLayout.widgetSize = size();
-    m_triggerLayout.selectSize = m_selectSize;
-    switch (m_selectSize)
+    m_triggerLayout.widgetSize = QWidget::size();
+    m_triggerLayout.selectSize = m_size;
+    switch (m_size)
     {
     case Ant::Size::Large:
         m_triggerLayout.height = token.controlHeightLG;

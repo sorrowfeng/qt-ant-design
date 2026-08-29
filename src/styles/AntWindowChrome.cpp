@@ -24,7 +24,7 @@ QString iconNameForButton(const AntWindowChrome::TitleBarButtonState& state,
     case AntWindowChrome::TitleBarButton::Pin:
         return state.active ? QStringLiteral("PushpinFilled") : QStringLiteral("PushpinOutlined");
     case AntWindowChrome::TitleBarButton::Theme:
-        return antTheme->themeMode() == Ant::ThemeMode::Dark
+        return antTheme->isDarkMode()
             ? QStringLiteral("SunOutlined")
             : QStringLiteral("MoonOutlined");
     case AntWindowChrome::TitleBarButton::Minimize:
@@ -117,7 +117,7 @@ QRectF centeredIconRect(const QRect& buttonRect, qreal iconSize)
 
 QColor legacyOutlineColor()
 {
-    return antTheme->themeMode() == Ant::ThemeMode::Dark
+    return antTheme->isDarkMode()
         ? QColor(255, 255, 255, 54)
         : QColor(0, 0, 0, 88);
 }
@@ -183,9 +183,7 @@ void drawChrome(QPainter* painter, const PaintOptions& options)
                 }
             }
 
-            QFont titleFont = options.widget ? options.widget->font() : painter->font();
-            titleFont.setPixelSize(token.fontSizeLG);
-            titleFont.setWeight(QFont::DemiBold);
+            const QFont titleFont = AntStyleBase::withPixelSize(options.widget ? options.widget->font() : painter->font(), token.fontSizeLG, QFont::DemiBold);
             painter->setFont(titleFont);
             painter->setPen(token.colorText);
 

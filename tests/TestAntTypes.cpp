@@ -12,12 +12,14 @@ private slots:
     void buttonShapeValues();
     void inputSizeValues();
     void inputStatusValues();
+    void statusBarStatusValues();
     void inputVariantValues();
     void switchSizeValues();
     void selectModeValues();
     void badgeModeValues();
     void skeletonElementValues();
     void messagePlacementValues();
+    void resultStatusValues();
     void typographyTypeValues();
     void enumRegistration();
 };
@@ -57,6 +59,16 @@ void TestAntTypes::inputStatusValues()
     QCOMPARE(static_cast<int>(Ant::Status::Normal), 0);
     QCOMPARE(static_cast<int>(Ant::Status::Error), 1);
     QCOMPARE(static_cast<int>(Ant::Status::Warning), 2);
+}
+
+void TestAntTypes::statusBarStatusValues()
+{
+    QCOMPARE(static_cast<int>(Ant::StatusBarStatus::Default), 0);
+    QCOMPARE(static_cast<int>(Ant::StatusBarStatus::Info), 1);
+    QCOMPARE(static_cast<int>(Ant::StatusBarStatus::Success), 2);
+    QCOMPARE(static_cast<int>(Ant::StatusBarStatus::Warning), 3);
+    QCOMPARE(static_cast<int>(Ant::StatusBarStatus::Error), 4);
+    QCOMPARE(static_cast<int>(Ant::StatusBarStatus::Inherit), 5);
 }
 
 void TestAntTypes::inputVariantValues()
@@ -105,6 +117,16 @@ void TestAntTypes::messagePlacementValues()
     QCOMPARE(static_cast<int>(Ant::Placement::Bottom), 3);
     QCOMPARE(static_cast<int>(Ant::Placement::BottomLeft), 4);
     QCOMPARE(static_cast<int>(Ant::Placement::BottomRight), 5);
+    QCOMPARE(static_cast<int>(Ant::Placement::Left), 6);
+    QCOMPARE(static_cast<int>(Ant::Placement::Right), 7);
+}
+
+void TestAntTypes::resultStatusValues()
+{
+    QCOMPARE(static_cast<int>(Ant::ResultStatus::Success), 0);
+    QCOMPARE(static_cast<int>(Ant::ResultStatus::Info), 1);
+    QCOMPARE(static_cast<int>(Ant::ResultStatus::Warning), 2);
+    QCOMPARE(static_cast<int>(Ant::ResultStatus::Error), 3);
 }
 
 void TestAntTypes::typographyTypeValues()
@@ -143,6 +165,16 @@ void TestAntTypes::enumRegistration()
     QCOMPARE(me.keyCount(), 6);
 
     me = QMetaEnum::fromType<Ant::Placement>();
+    QVERIFY(me.isValid());
+    QCOMPARE(me.keyCount(), 8);
+    QCOMPARE(me.keyToValue("Left"), static_cast<int>(Ant::Placement::Left));
+    QCOMPARE(me.keyToValue("Right"), static_cast<int>(Ant::Placement::Right));
+
+    me = QMetaEnum::fromType<Ant::ResultStatus>();
+    QVERIFY(me.isValid());
+    QCOMPARE(me.keyCount(), 4);
+
+    me = QMetaEnum::fromType<Ant::StatusBarStatus>();
     QVERIFY(me.isValid());
     QCOMPARE(me.keyCount(), 6);
 }

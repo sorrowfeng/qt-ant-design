@@ -1,4 +1,6 @@
-# Showcase 首页对标整改计划
+# Archived: Showcase 首页对标整改计划
+
+> 归档说明：这份文件是 2026-04 Showcase 首页对标的历史整改计划，不再作为当前任务入口。当前状态以 `docs/project-status.md` 和 `docs/visual-audit.md` 为准；归档副本见 `docs/archive/showcase-homepage-plan-2026-04.md`。
 
 ## 状态更新（2026-04-30）
 
@@ -6,7 +8,7 @@
 
 - 当前项目总览：`docs/project-status.md`
 - Showcase 审计结论：`docs/visual-audit.md` 的 `Homepage Showcase Audit`
-- 当前参考页面：`docs/ant-design-reference.html`
+- 当前参考来源：官方 Ant Design 页面；需要固定快照时放到 `build/` 临时目录
 - Qt 示例页面：`examples/pages/ShowcasePage.cpp`
 
 已完成事项：

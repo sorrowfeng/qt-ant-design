@@ -16,18 +16,12 @@ AntTimelineStyle::AntTimelineStyle(QStyle* style)
 void AntTimelineStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntTimeline*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntTimeline>(widget);
 }
 
 void AntTimelineStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntTimeline*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntTimeline>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -46,19 +40,21 @@ QSize AntTimelineStyle::sizeFromContents(ContentsType type, const QStyleOption* 
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntTimelineStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntTimelineStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* timeline = qobject_cast<AntTimeline*>(watched);
-    if (timeline && event->type() == QEvent::Paint)
+    auto* timeline = qobject_cast<AntTimeline*>(widget);
+    if (!timeline)
     {
-        QStyleOption option;
-        option.initFrom(timeline);
-        option.rect = timeline->rect();
-        QPainter painter(timeline);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, timeline);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(timeline);
+    option.rect = timeline->rect();
+    QPainter painter(timeline);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, timeline);
+
+    return true;
 }
 
 void AntTimelineStyle::onThemeUpdate(QWidget* widget)
@@ -213,14 +209,10 @@ void AntTimelineStyle::drawTimeline(const QStyleOption* option, QPainter* painte
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    QFont titleFont = painter->font();
-    titleFont.setPixelSize(m.titleFontSize);
-    titleFont.setWeight(QFont::Normal);
+    const QFont titleFont = AntStyleBase::withPixelSize(painter->font(), m.titleFontSize, QFont::Normal);
     const QFontMetrics titleFm(titleFont);
 
-    QFont contentFont = painter->font();
-    contentFont.setPixelSize(m.contentFontSize);
-    contentFont.setWeight(QFont::Normal);
+    const QFont contentFont = AntStyleBase::withPixelSize(painter->font(), m.contentFontSize, QFont::Normal);
     const QFontMetrics contentFm(contentFont);
 
     const bool colorCacheHit = !timeline->m_dotColorCacheDirty

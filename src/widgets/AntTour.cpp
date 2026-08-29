@@ -61,7 +61,8 @@ public:
     AntButton* prevBtn = nullptr;
     AntButton* nextBtn = nullptr;
     AntButton* closeBtn = nullptr;
-    QWidget* target = nullptr;
+    QPointer<QWidget> target;
+    QMetaObject::Connection targetDestroyedConnection;
     QWidget* tooltip = nullptr;
     QRect targetRect;
     QRect spotlightRect;
@@ -151,10 +152,19 @@ public:
         {
             target->removeEventFilter(this);
         }
+        if (targetDestroyedConnection)
+        {
+            disconnect(targetDestroyedConnection);
+            targetDestroyedConnection = QMetaObject::Connection();
+        }
         target = t;
         if (target)
         {
             target->installEventFilter(this);
+            targetDestroyedConnection = connect(t, &QObject::destroyed, this, [this]() {
+                target.clear();
+                updateTargetGeometry();
+            });
         }
         return updateTargetGeometry();
     }
@@ -289,7 +299,23 @@ protected:
 
 AntTour::AntTour(QObject* parent) : QObject(parent) {}
 
-void AntTour::addStep(const AntTourStep& step) { m_steps.append(step); }
+AntTour::~AntTour()
+{
+    QDialog* overlay = m_overlay.data();
+    m_overlay.clear();
+    m_current = -1;
+    if (overlay)
+    {
+        overlay->hide();
+        delete overlay;
+    }
+}
+
+void AntTour::addStep(const AntTourStep& step)
+{
+    m_steps.append(step);
+    m_stepTargets.append(QPointer<QWidget>(step.target));
+}
 
 void AntTour::start(int index)
 {
@@ -310,9 +336,10 @@ void AntTour::start(int index)
     m_overlay->resize(topWidget->size());
     m_overlay->move(topWidget->mapToGlobal(QPoint(0, 0)));
 
-    connect(dynamic_cast<TourOverlay*>(m_overlay)->prevBtn, &QPushButton::clicked, this, &AntTour::prev);
-    connect(dynamic_cast<TourOverlay*>(m_overlay)->nextBtn, &QPushButton::clicked, this, &AntTour::next);
-    connect(dynamic_cast<TourOverlay*>(m_overlay)->closeBtn, &QPushButton::clicked, this, &AntTour::close);
+    auto* overlay = dynamic_cast<TourOverlay*>(m_overlay.data());
+    connect(overlay->prevBtn, &QPushButton::clicked, this, &AntTour::prev);
+    connect(overlay->nextBtn, &QPushButton::clicked, this, &AntTour::next);
+    connect(overlay->closeBtn, &QPushButton::clicked, this, &AntTour::close);
 
     showStep(index);
     m_overlay->show();
@@ -344,7 +371,7 @@ void AntTour::showStep(int index)
     m_current = index;
     const auto& step = m_steps[m_current];
 
-    auto* overlay = dynamic_cast<TourOverlay*>(m_overlay);
+    auto* overlay = dynamic_cast<TourOverlay*>(m_overlay.data());
     const auto& token = antTheme->tokens();
     bool isLast = (index == m_steps.size() - 1);
     const bool contentChanged = overlay->syncContent(step, isLast, index > 0);
@@ -354,10 +381,11 @@ void AntTour::showStep(int index)
     QPalette descPalette = overlay->descLabel->palette();
     descPalette.setColor(QPalette::WindowText, token.colorText);
     overlay->descLabel->setPalette(descPalette);
-    overlay->setTarget(step.target);
+    QWidget* target = m_stepTargets.value(m_current).data();
+    overlay->setTarget(target);
 
     // Position tooltip near target
-    if (step.target && overlay->targetRect.isValid())
+    if (target && overlay->targetRect.isValid())
     {
         if (contentChanged)
         {
@@ -386,7 +414,7 @@ void AntTour::showStep(int index)
 void AntTour::syncTourPerfCounters() const
 {
     auto* self = const_cast<AntTour*>(this);
-    const auto* overlay = dynamic_cast<const TourOverlay*>(m_overlay);
+    const auto* overlay = dynamic_cast<const TourOverlay*>(m_overlay.data());
     self->setProperty("antTourOverlayVisible", overlay && overlay->isVisible());
     self->setProperty("antTourCurrentIndex", m_current);
     self->setProperty("antTourTargetGeometryApplyCount", overlay ? overlay->targetGeometryApplyCount : 0);

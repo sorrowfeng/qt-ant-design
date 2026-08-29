@@ -22,12 +22,6 @@
 
 namespace
 {
-int focusPaddingForToolButton()
-{
-    const auto& token = antTheme->tokens();
-    return token.lineWidthFocus + 1;
-}
-
 QString cleanActionTextForToolButton(QString text)
 {
     const QChar escapedAmpersand(1);
@@ -49,14 +43,14 @@ AntToolButton::AntToolButton(QWidget* parent)
 
     m_antToolTip = new AntToolTip(this);
     m_antToolTip->setObjectName(QStringLiteral("AntToolButtonToolTip"));
-    m_antToolTip->setPlacement(Ant::TooltipPlacement::Top);
+    m_antToolTip->setPlacement(Ant::Placement::Top);
     m_antToolTip->setTarget(this);
 
     auto* style = new AntToolButtonStyle(this->style());
     style->setParent(this);
     setStyle(style);
 
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
@@ -66,9 +60,9 @@ AntToolButton::AntToolButton(QWidget* parent)
         update();
     });
 
-    m_spinnerTimer = new QTimer(this);
-    connect(m_spinnerTimer, &QTimer::timeout, this, [this]() {
-        m_spinnerAngle = (m_spinnerAngle + 6) % 360;
+    m_spinner.setInterval(16);
+    m_spinner.setStep(6);
+    connect(&m_spinner, &AntSpinner::ticked, this, [this]() {
         updateSpinnerRegion();
     });
 
@@ -108,15 +102,16 @@ void AntToolButton::setButtonType(Ant::ButtonType type)
     Q_EMIT buttonTypeChanged(m_buttonType);
 }
 
-Ant::Size AntToolButton::buttonSize() const { return m_buttonSize; }
+Ant::Size AntToolButton::size() const { return m_size; }
 
-void AntToolButton::setButtonSize(Ant::Size size)
+void AntToolButton::setSize(Ant::Size size)
 {
-    if (m_buttonSize == size) return;
-    m_buttonSize = size;
+    if (m_size == size) return;
+    m_size = size;
     updateGeometryFromState();
     update();
-    Q_EMIT buttonSizeChanged(m_buttonSize);
+    Q_EMIT sizeChanged(m_size);
+    Q_EMIT buttonSizeChanged(m_size);
 }
 
 bool AntToolButton::isDanger() const { return m_danger; }
@@ -264,7 +259,7 @@ void AntToolButton::mouseReleaseEvent(QMouseEvent* event)
                 return;
             }
             const AntToolButton::Metrics m = guard->metrics();
-            const int focusPadding = focusPaddingForToolButton();
+            const int focusPadding = AntStyleBase::focusPaddingFor();
             const QRect bodyRect = guard->rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
             AntWave::triggerRect(guard, bodyRect, guard->waveColor(), guard->cornerRadius(m));
         });
@@ -344,7 +339,7 @@ void AntToolButton::hideEvent(QHideEvent* event)
 
 bool AntToolButton::hitButton(const QPoint& pos) const
 {
-    const int focusPadding = focusPaddingForToolButton();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     return rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding).contains(pos);
 }
 
@@ -352,7 +347,7 @@ AntToolButton::Metrics AntToolButton::metrics() const
 {
     const auto& token = antTheme->tokens();
     Metrics m;
-    switch (m_buttonSize)
+    switch (m_size)
     {
     case Ant::Size::Large:
         m.height = token.controlHeightLG;
@@ -386,7 +381,7 @@ int AntToolButton::cornerRadius(const Metrics& m) const
 
 QRectF AntToolButton::contentRect(const Metrics& metrics) const
 {
-    const int focusPadding = focusPaddingForToolButton();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     return bodyRect.adjusted(metrics.paddingX, 0, -metrics.paddingX, 0);
 }
@@ -434,10 +429,9 @@ void AntToolButton::updateGeometryFromState(bool notifyGeometry)
     {
         setFont(f);
     }
-    const int totalHeight = m.height + focusPaddingForToolButton() * 2;
+    const int totalHeight = m.height + AntStyleBase::focusPaddingFor() * 2;
     setMinimumHeight(totalHeight);
     setMaximumHeight(totalHeight);
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     if (notifyGeometry)
     {
         updateGeometry();
@@ -452,7 +446,7 @@ QRect AntToolButton::spinnerIndicatorRect() const
     }
 
     const Metrics m = metrics();
-    const int focusPadding = focusPaddingForToolButton();
+    const int focusPadding = AntStyleBase::focusPaddingFor();
     const QRect bodyRect = rect().adjusted(focusPadding, focusPadding, -focusPadding, -focusPadding);
     if (!bodyRect.isValid())
     {
@@ -514,20 +508,7 @@ void AntToolButton::updateIndicatorRegion(const QRect& rect, int& counter)
 void AntToolButton::updateSpinnerTimer()
 {
     const bool shouldRun = m_loading && isVisible();
-    if (m_spinnerTimer->isActive() == shouldRun)
-    {
-        syncToolButtonPerfCounters();
-        return;
-    }
-
-    if (shouldRun)
-    {
-        m_spinnerTimer->start(16);
-    }
-    else
-    {
-        m_spinnerTimer->stop();
-    }
+    m_spinner.setRunning(shouldRun);
     syncToolButtonPerfCounters();
 }
 
@@ -577,13 +558,12 @@ void AntToolButton::syncToolButtonPerfCounters() const
     auto* self = const_cast<AntToolButton*>(this);
     self->setProperty("antToolButtonSpinnerRegionUpdateCount", m_spinnerRegionUpdateCount);
     self->setProperty("antToolButtonArrowRegionUpdateCount", m_arrowRegionUpdateCount);
-    self->setProperty("antToolButtonSpinnerTimerActive",
-                      m_spinnerTimer && m_spinnerTimer->isActive());
+    self->setProperty("antToolButtonSpinnerTimerActive", m_spinner.isRunning());
 }
 
 int AntToolButton::spinnerAngle() const
 {
-    return m_spinnerAngle;
+    return m_spinner.angle();
 }
 
 bool AntToolButton::isFocusVisibleState() const

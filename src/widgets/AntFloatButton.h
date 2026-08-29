@@ -2,10 +2,12 @@
 
 #include "core/QtAntDesignExport.h"
 
-#include <QWidget>
+#include <QHash>
+#include <QPoint>
+#include <QPointer>
 #include <QTimer>
 #include <QVector>
-#include <QPoint>
+#include <QWidget>
 
 #include "core/AntTypes.h"
 
@@ -18,7 +20,7 @@ class QT_ANT_DESIGN_EXPORT AntFloatButton : public QWidget
     Q_PROPERTY(QString content READ content WRITE setContent NOTIFY contentChanged)
     Q_PROPERTY(Ant::FloatButtonType floatButtonType READ floatButtonType WRITE setFloatButtonType NOTIFY floatButtonTypeChanged)
     Q_PROPERTY(Ant::FloatButtonShape floatButtonShape READ floatButtonShape WRITE setFloatButtonShape NOTIFY floatButtonShapeChanged)
-    Q_PROPERTY(Ant::FloatButtonPlacement placement READ placement WRITE setPlacement NOTIFY placementChanged)
+    Q_PROPERTY(Ant::Placement placement READ placement WRITE setPlacement NOTIFY placementChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
     Q_PROPERTY(qreal pressProgress READ pressProgress WRITE setPressProgress)
 
@@ -66,8 +68,8 @@ public:
     void setScrollTarget(QWidget* target);
 
     // Placement
-    Ant::FloatButtonPlacement placement() const;
-    void setPlacement(Ant::FloatButtonPlacement placement);
+    Ant::Placement placement() const;
+    void setPlacement(Ant::Placement placement);
 
     bool isHoveredState() const;
     bool isPressedState() const;
@@ -83,7 +85,7 @@ Q_SIGNALS:
     void contentChanged(const QString& content);
     void floatButtonTypeChanged(Ant::FloatButtonType type);
     void floatButtonShapeChanged(Ant::FloatButtonShape shape);
-    void placementChanged(Ant::FloatButtonPlacement placement);
+    void placementChanged(Ant::Placement placement);
     void openChanged(bool open);
     void clicked();
     void backTopClicked();
@@ -107,6 +109,8 @@ private:
     void updateHoverState(const QPoint& pos);
     void checkBackTopVisibility();
     void animateScrollToTop();
+    void pruneDestroyedChildren();
+    void stopScrollAnimation();
     void syncFloatButtonPerfCounters() const;
 
     // Main props
@@ -120,7 +124,11 @@ private:
     int m_badgeCount = 0;
 
     // Group
-    QVector<AntFloatButton*> m_children;
+    // Keep the weak guard QObject-typed: during Qt 5's destroyed() emission the
+    // QWidget-derived object is already destructed, so a typed QPointer downcast
+    // is invalid even though the QObject base is still alive.
+    QVector<QPointer<QObject>> m_children;
+    QHash<AntFloatButton*, QMetaObject::Connection> m_childDestroyedConnections;
     Ant::Trigger m_groupTrigger = Ant::Trigger::Click;
     bool m_open = false;
     QString m_closeIcon;
@@ -129,10 +137,12 @@ private:
     bool m_backTop = false;
     int m_visibilityHeight = 400;
     int m_scrollDuration = 450;
-    QWidget* m_scrollTarget = nullptr;
+    QPointer<QWidget> m_scrollTarget;
+    QMetaObject::Connection m_scrollTargetDestroyedConnection;
+    QPointer<QPropertyAnimation> m_scrollAnimation;
 
     // State
-    Ant::FloatButtonPlacement m_placement = Ant::FloatButtonPlacement::BottomRight;
+    Ant::Placement m_placement = Ant::Placement::BottomRight;
     bool m_hovered = false;
     bool m_pressed = false;
     qreal m_pressProgress = 0.0;

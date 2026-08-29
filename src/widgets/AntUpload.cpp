@@ -1,7 +1,7 @@
 #include "AntUpload.h"
 
 #include <QDateTime>
-#include <QDesktopServices>
+#include <QDir>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QEvent>
@@ -10,11 +10,16 @@
 #include <QMimeDatabase>
 #include <QMimeType>
 #include <QMouseEvent>
+#include <QPointer>
 #include <QResizeEvent>
+#include <QTimer>
 #include <QUrl>
+#include <QtMath>
 
 #include "AntFileDialog.h"
 #include "core/AntTheme.h"
+#include "core/AntUrlPolicy.h"
+#include "private/AntImageDecodeUtils.h"
 #include "styles/AntUploadStyle.h"
 
 namespace
@@ -26,6 +31,28 @@ constexpr int PictureItemHeight = 48;
 constexpr int CardSize = 100;
 constexpr int CardGap = 8;
 constexpr int GridColumns = 4;
+constexpr int MaxThumbnailCacheBudgetBytes = 256 * 1024 * 1024;
+
+QString normalizedThumbnailSource(const QString& path)
+{
+    QString ignoredError;
+    const AntImageDecode::SourceStamp stamp = AntImageDecode::sourceStamp(path, &ignoredError);
+    if (stamp.valid)
+        return stamp.normalizedPath;
+
+    const QString localPath = AntImageDecode::localPath(path);
+    if (localPath.startsWith(QStringLiteral(":/")))
+        return localPath;
+    const QFileInfo info(localPath);
+    return QDir::cleanPath(info.absoluteFilePath());
+}
+
+QString thumbnailCacheKey(const QString& normalizedPath, const QSize& physicalSize, qreal devicePixelRatio)
+{
+    return normalizedPath + QChar(0x1f)
+        + QString::number(physicalSize.width()) + QLatin1Char('x') + QString::number(physicalSize.height())
+        + QChar(0x1f) + QString::number(devicePixelRatio, 'g', 8);
+}
 } // namespace
 
 AntUpload::AntUpload(QWidget* parent)
@@ -82,6 +109,15 @@ void AntUpload::setMaxCount(int maxCount)
 bool AntUpload::isDisabled() const { return m_disabled; }
 
 void AntUpload::setDisabled(bool disabled)
+{
+    if (isEnabled() != !disabled)
+    {
+        QWidget::setEnabled(!disabled);
+    }
+    syncDisabledState(disabled);
+}
+
+void AntUpload::syncDisabledState(bool disabled)
 {
     if (m_disabled == disabled)
     {
@@ -200,7 +236,9 @@ void AntUpload::removeFile(const QString& uid)
         if (m_files[i].uid == uid)
         {
             const QRect dirty = dirtyRectFromIndex(i).united(triggerRect());
+            const QString removedThumbnail = m_files[i].thumbUrl;
             m_files.remove(i);
+            evictThumbnailSource(removedThumbnail);
             if (m_hoveredItemIndex >= m_files.size())
             {
                 m_hoveredItemIndex = -1;
@@ -237,6 +275,7 @@ void AntUpload::updateFileStatus(const QString& uid, Ant::UploadFileStatus statu
 
 void AntUpload::setFileList(const QVector<AntUploadFile>& files)
 {
+    clearThumbnailCache();
     m_files = files;
     m_hoveredItemIndex = -1;
     invalidateUploadLayout();
@@ -247,6 +286,44 @@ void AntUpload::setFileList(const QVector<AntUploadFile>& files)
 QVector<AntUploadFile> AntUpload::fileList() const
 {
     return m_files;
+}
+
+int AntUpload::thumbnailCacheBudgetBytes() const
+{
+    return m_thumbnailCacheBudgetBytes;
+}
+
+void AntUpload::setThumbnailCacheBudgetBytes(int bytes)
+{
+    const int bounded = qBound(0, bytes, MaxThumbnailCacheBudgetBytes);
+    if (m_thumbnailCacheBudgetBytes == bounded)
+        return;
+
+    m_thumbnailCacheBudgetBytes = bounded;
+    enforceThumbnailCacheBudget();
+    syncUploadPerfCounters();
+    Q_EMIT thumbnailCacheBudgetBytesChanged(m_thumbnailCacheBudgetBytes);
+}
+
+qint64 AntUpload::thumbnailCacheBytes() const
+{
+    return m_thumbnailCacheBytes;
+}
+
+QString AntUpload::thumbnailError(const QString& path) const
+{
+    const auto it = m_thumbLoadErrors.constFind(normalizedThumbnailSource(path));
+    return it == m_thumbLoadErrors.constEnd() ? QString() : it->error;
+}
+
+bool AntUpload::requestFilePreview(const QString& uid)
+{
+    for (const AntUploadFile& file : m_files)
+    {
+        if (file.uid == uid)
+            return openFilePreview(file);
+    }
+    return false;
 }
 
 QSize AntUpload::sizeHint() const
@@ -428,6 +505,15 @@ void AntUpload::resizeEvent(QResizeEvent* event)
 {
     invalidateUploadLayout();
     QWidget::resizeEvent(event);
+}
+
+void AntUpload::changeEvent(QEvent* event)
+{
+    if (event && event->type() == QEvent::EnabledChange)
+    {
+        syncDisabledState(!isEnabled());
+    }
+    QWidget::changeEvent(event);
 }
 
 const AntUpload::UploadLayout& AntUpload::uploadLayout() const
@@ -753,35 +839,266 @@ void AntUpload::addLocalFiles(const QStringList& paths)
     }
 }
 
-void AntUpload::openFilePreview(const AntUploadFile& file) const
+bool AntUpload::openFilePreview(const AntUploadFile& file)
 {
     const QString target = !file.url.isEmpty() ? file.url : file.thumbUrl;
     if (target.isEmpty())
     {
-        return;
+        return false;
     }
-    const QUrl url = QUrl::fromUserInput(target);
-    QDesktopServices::openUrl(url.isLocalFile() ? QUrl::fromLocalFile(url.toLocalFile()) : url);
+
+    const QUrl parsed(target);
+    const bool qrcResource = parsed.scheme().compare(QStringLiteral("qrc"), Qt::CaseInsensitive) == 0;
+    if (parsed.isLocalFile() || parsed.scheme().isEmpty() || qrcResource || QDir::isAbsolutePath(target))
+    {
+        QString path = parsed.isLocalFile() ? parsed.toLocalFile() : target;
+        if (qrcResource)
+            path = QLatin1Char(':') + parsed.path();
+        const QString previewPath = path.startsWith(QStringLiteral(":/"))
+            ? path
+            : QFileInfo(path).absoluteFilePath();
+        Q_EMIT localFilePreviewRequested(previewPath);
+        return true;
+    }
+
+    QPointer<AntUpload> guard(this);
+    const bool opened = AntUrlPolicy::openExternalUrl(parsed);
+    if (!guard)
+    {
+        return false;
+    }
+    if (!opened)
+    {
+        Q_EMIT externalPreviewBlocked(parsed);
+        return false;
+    }
+    return true;
 }
 
-QPixmap AntUpload::cachedThumbPixmap(const QString& path) const
+QPixmap AntUpload::cachedThumbPixmap(const QString& path,
+                                     const QSize& logicalSize,
+                                     qreal devicePixelRatio) const
 {
-    if (path.isEmpty())
+    if (path.isEmpty() || logicalSize.isEmpty())
     {
         return {};
     }
-    auto it = m_thumbPixmapCache.constFind(path);
-    if (it != m_thumbPixmapCache.constEnd())
+
+    const qreal dpr = qBound<qreal>(1.0, devicePixelRatio, 4.0);
+    QSize boundedLogical(qBound(1, logicalSize.width(), AntImageDecode::MaxThumbnailLogicalDimension),
+                         qBound(1, logicalSize.height(), AntImageDecode::MaxThumbnailLogicalDimension));
+    QSize physicalSize(qCeil(boundedLogical.width() * dpr), qCeil(boundedLogical.height() * dpr));
+    physicalSize.setWidth(qMin(physicalSize.width(), AntImageDecode::MaxThumbnailPhysicalDimension));
+    physicalSize.setHeight(qMin(physicalSize.height(), AntImageDecode::MaxThumbnailPhysicalDimension));
+
+    QString stampError;
+    const AntImageDecode::SourceStamp stamp = AntImageDecode::sourceStamp(path, &stampError);
+    const QString sourceKey = stamp.valid ? stamp.normalizedPath : normalizedThumbnailSource(path);
+
+    for (auto it = m_thumbPixmapCache.begin(); it != m_thumbPixmapCache.end();)
     {
+        const bool sameSource = it->normalizedPath == sourceKey;
+        const bool sameStamp = stamp.valid
+            && it->sourceBytes == stamp.encodedBytes
+            && it->sourceModifiedMs == stamp.modifiedMs;
+        if (sameSource && !sameStamp)
+        {
+            m_thumbnailCacheBytes -= it->bytes;
+            it = m_thumbPixmapCache.erase(it);
+            ++m_thumbPixmapEvictionCount;
+            ++m_thumbPixmapSourceChangeCount;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    auto failureIt = m_thumbLoadErrors.find(sourceKey);
+    if (failureIt != m_thumbLoadErrors.end())
+    {
+        const bool sameFailureStamp = failureIt->sourceBytes == stamp.encodedBytes
+            && failureIt->sourceModifiedMs == stamp.modifiedMs
+            && failureIt->normalizedPath == sourceKey;
+        if (sameFailureStamp)
+        {
+            syncUploadPerfCounters();
+            return {};
+        }
+        m_thumbLoadErrors.erase(failureIt);
+        m_pendingThumbnailFailureSignals.remove(sourceKey);
+        ++m_thumbPixmapSourceChangeCount;
+    }
+
+    if (!stamp.valid)
+    {
+        recordThumbnailFailure(path, sourceKey, -1, 0, stampError);
+        return {};
+    }
+
+    const QString key = thumbnailCacheKey(sourceKey, physicalSize, dpr);
+    auto it = m_thumbPixmapCache.find(key);
+    if (it != m_thumbPixmapCache.end())
+    {
+        it->lastAccess = ++m_thumbnailAccessClock;
         ++m_thumbPixmapCacheHitCount;
         syncUploadPerfCounters();
-        return it.value();
+        return it->pixmap;
     }
-    const QPixmap pixmap(path);
-    m_thumbPixmapCache.insert(path, pixmap);
+
+    QImage image;
+    AntImageDecode::DecodeMetadata metadata;
+    QString decodeError;
+    if (!AntImageDecode::read(path, physicalSize, &image, &metadata, &decodeError))
+    {
+        const AntImageDecode::SourceStamp failureStamp = metadata.stamp.valid
+            ? metadata.stamp
+            : stamp;
+        recordThumbnailFailure(path,
+                               sourceKey,
+                               failureStamp.encodedBytes,
+                               failureStamp.modifiedMs,
+                               decodeError);
+        return {};
+    }
+
+    QPixmap pixmap = QPixmap::fromImage(image);
+    pixmap.setDevicePixelRatio(dpr);
     ++m_thumbPixmapBuildCount;
+
+    const qint64 bytes = image.sizeInBytes();
+    if (bytes > 0 && bytes <= m_thumbnailCacheBudgetBytes)
+    {
+        ThumbnailCacheEntry entry;
+        entry.normalizedPath = sourceKey;
+        entry.sourceBytes = metadata.stamp.encodedBytes;
+        entry.sourceModifiedMs = metadata.stamp.modifiedMs;
+        entry.physicalSize = physicalSize;
+        entry.devicePixelRatio = dpr;
+        entry.pixmap = pixmap;
+        entry.bytes = bytes;
+        entry.lastAccess = ++m_thumbnailAccessClock;
+        m_thumbPixmapCache.insert(key, entry);
+        m_thumbnailCacheBytes += bytes;
+        enforceThumbnailCacheBudget();
+    }
     syncUploadPerfCounters();
     return pixmap;
+}
+
+void AntUpload::invalidateThumbnail(const QString& path) const
+{
+    evictThumbnailSource(path);
+    const_cast<AntUpload*>(this)->update();
+}
+
+void AntUpload::evictThumbnailSource(const QString& path) const
+{
+    if (path.isEmpty())
+        return;
+
+    const QString sourceKey = normalizedThumbnailSource(path);
+    for (auto it = m_thumbPixmapCache.begin(); it != m_thumbPixmapCache.end();)
+    {
+        if (it->normalizedPath == sourceKey)
+        {
+            m_thumbnailCacheBytes -= it->bytes;
+            it = m_thumbPixmapCache.erase(it);
+            ++m_thumbPixmapEvictionCount;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    m_thumbLoadErrors.remove(sourceKey);
+    m_pendingThumbnailFailureSignals.remove(sourceKey);
+    syncUploadPerfCounters();
+}
+
+void AntUpload::clearThumbnailCache() const
+{
+    m_thumbPixmapEvictionCount += m_thumbPixmapCache.size();
+    m_thumbPixmapCache.clear();
+    m_thumbLoadErrors.clear();
+    m_pendingThumbnailFailureSignals.clear();
+    m_thumbnailCacheBytes = 0;
+    syncUploadPerfCounters();
+    const_cast<AntUpload*>(this)->update();
+}
+
+void AntUpload::enforceThumbnailCacheBudget() const
+{
+    while (m_thumbnailCacheBytes > m_thumbnailCacheBudgetBytes && !m_thumbPixmapCache.isEmpty())
+    {
+        auto lru = m_thumbPixmapCache.begin();
+        for (auto it = m_thumbPixmapCache.begin(); it != m_thumbPixmapCache.end(); ++it)
+        {
+            if (it->lastAccess < lru->lastAccess)
+                lru = it;
+        }
+        m_thumbnailCacheBytes -= lru->bytes;
+        m_thumbPixmapCache.erase(lru);
+        ++m_thumbPixmapEvictionCount;
+    }
+    if (m_thumbnailCacheBytes < 0)
+        m_thumbnailCacheBytes = 0;
+}
+
+void AntUpload::recordThumbnailFailure(const QString& path,
+                                       const QString& normalizedPath,
+                                       qint64 sourceBytes,
+                                       qint64 sourceModifiedMs,
+                                       const QString& error) const
+{
+    const QString sourceKey = normalizedPath.isEmpty() ? path : normalizedPath;
+    ThumbnailFailureEntry failure;
+    failure.normalizedPath = sourceKey;
+    failure.sourceBytes = sourceBytes;
+    failure.sourceModifiedMs = sourceModifiedMs;
+    failure.error = error.isEmpty() ? QStringLiteral("thumbnail decoding failed") : error;
+
+    const auto existing = m_thumbLoadErrors.constFind(sourceKey);
+    const bool sameFailure = existing != m_thumbLoadErrors.constEnd()
+        && existing->normalizedPath == failure.normalizedPath
+        && existing->sourceBytes == failure.sourceBytes
+        && existing->sourceModifiedMs == failure.sourceModifiedMs
+        && existing->error == failure.error;
+    if (!sameFailure)
+    {
+        m_thumbLoadErrors.insert(sourceKey, failure);
+        ++m_thumbPixmapFailureCount;
+    }
+    auto* self = const_cast<AntUpload*>(this);
+    self->setProperty("antUploadLastThumbnailErrorPath", path);
+    self->setProperty("antUploadLastThumbnailError", failure.error);
+    syncUploadPerfCounters();
+
+    if (m_pendingThumbnailFailureSignals.contains(sourceKey))
+        return;
+
+    m_pendingThumbnailFailureSignals.insert(sourceKey);
+    QPointer<AntUpload> guard(self);
+    QTimer::singleShot(0, self, [guard, sourceKey, path, failure]() {
+        if (!guard)
+            return;
+        const auto current = guard->m_thumbLoadErrors.constFind(sourceKey);
+        if (current == guard->m_thumbLoadErrors.constEnd())
+        {
+            guard->m_pendingThumbnailFailureSignals.remove(sourceKey);
+            return;
+        }
+        const bool sameCurrentFailure = current->normalizedPath == failure.normalizedPath
+            && current->sourceBytes == failure.sourceBytes
+            && current->sourceModifiedMs == failure.sourceModifiedMs
+            && current->error == failure.error;
+        if (!sameCurrentFailure)
+        {
+            return;
+        }
+        guard->m_pendingThumbnailFailureSignals.remove(sourceKey);
+        Q_EMIT guard->thumbnailLoadFailed(path, failure.error);
+    });
 }
 
 void AntUpload::updateUploadRegion(const QRect& dirty,
@@ -820,6 +1137,12 @@ void AntUpload::syncUploadPerfCounters() const
     self->setProperty("antUploadLayoutCacheHitCount", m_layoutCacheHitCount);
     self->setProperty("antUploadThumbPixmapBuildCount", m_thumbPixmapBuildCount);
     self->setProperty("antUploadThumbPixmapCacheHitCount", m_thumbPixmapCacheHitCount);
+    self->setProperty("antUploadThumbPixmapCacheBytes", m_thumbnailCacheBytes);
+    self->setProperty("antUploadThumbPixmapCacheBudgetBytes", m_thumbnailCacheBudgetBytes);
+    self->setProperty("antUploadThumbPixmapCacheEntryCount", m_thumbPixmapCache.size());
+    self->setProperty("antUploadThumbPixmapEvictionCount", m_thumbPixmapEvictionCount);
+    self->setProperty("antUploadThumbPixmapFailureCount", m_thumbPixmapFailureCount);
+    self->setProperty("antUploadThumbPixmapSourceChangeCount", m_thumbPixmapSourceChangeCount);
     self->setProperty("antUploadRegionUpdateCount", m_regionUpdateCount);
     self->setProperty("antUploadItemRegionUpdateCount", m_itemRegionUpdateCount);
     self->setProperty("antUploadTriggerRegionUpdateCount", m_triggerRegionUpdateCount);

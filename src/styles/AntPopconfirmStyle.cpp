@@ -36,11 +36,6 @@ QSize AntPopconfirmStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntPopconfirmStyle::eventFilter(QObject* watched, QEvent* event)
-{
-    return QProxyStyle::eventFilter(watched, event);
-}
-
 void AntPopconfirmStyle::drawPopconfirm(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
     Q_UNUSED(option)

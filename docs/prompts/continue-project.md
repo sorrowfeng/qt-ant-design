@@ -1,4 +1,6 @@
-# qt-ant-design 跨电脑续做通用提示词
+# Archived: qt-ant-design 跨电脑续做通用提示词
+
+> 归档说明：这份提示词反映早期项目状态，其中组件数量、Qt 版本定位、迁移阶段和自动 commit/push 要求已不再适合作为当前工作入口。当前状态以根目录 `AGENTS.md`、`DEVELOPMENT.md` 和 `docs/project-status.md` 为准；完整归档副本见 `docs/archive/prompts/continue-project.md`。
 
 下面这段提示词用于在新电脑上继续 `qt-ant-design` 项目的开发工作。  
 使用前请先完成仓库拉取：

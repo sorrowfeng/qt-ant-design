@@ -9,6 +9,7 @@
 #include <QVariant>
 #include <QWidget>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class AntSelectOptionWidget;
@@ -22,7 +23,6 @@ class QKeyEvent;
 class QMouseEvent;
 class QPaintEvent;
 class QPropertyAnimation;
-class QTimer;
 class QVBoxLayout;
 
 struct AntSelectOption
@@ -35,6 +35,7 @@ struct AntSelectOption
 class QT_ANT_DESIGN_EXPORT AntSelect : public QWidget
 {
     Q_OBJECT
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size selectSize READ selectSize WRITE setSelectSize NOTIFY selectSizeChanged)
     Q_PROPERTY(Ant::Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
@@ -43,6 +44,9 @@ class QT_ANT_DESIGN_EXPORT AntSelect : public QWidget
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
+    Q_PROPERTY(QVariant value READ value WRITE setValue NOTIFY valueChanged)
+    // Deprecated - use AntSelect::value instead.
+    Q_PROPERTY(QVariant currentValue READ currentValue WRITE setCurrentValue NOTIFY currentValueChanged)
     Q_PROPERTY(int maxVisibleItems READ maxVisibleItems WRITE setMaxVisibleItems NOTIFY maxVisibleItemsChanged)
     Q_PROPERTY(Ant::SelectMode selectMode READ selectMode WRITE setSelectMode NOTIFY selectModeChanged)
     Q_PROPERTY(int maxTagCount READ maxTagCount WRITE setMaxTagCount NOTIFY maxTagCountChanged)
@@ -52,8 +56,11 @@ public:
     explicit AntSelect(QWidget* parent = nullptr);
     ~AntSelect() override;
 
-    Ant::Size selectSize() const;
-    void setSelectSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size selectSize() const { return size(); }
+    void setSelectSize(Ant::Size size) { setSize(size); }
 
     Ant::Status status() const;
     void setStatus(Ant::Status status);
@@ -81,7 +88,20 @@ public:
     void setCurrentText(const QString& text);
 
     QString currentText() const;
+    // Canonical value API - the selected option's data (QVariant).
+    QVariant value() const { return currentValue(); }
+    void setValue(const QVariant& value)
+    {
+        if (currentValue() == value)
+        {
+            return;
+        }
+        setCurrentValue(value);
+        Q_EMIT valueChanged(currentValue());
+    }
+    // Deprecated - prefer value()/setValue().
     QVariant currentValue() const;
+    void setCurrentValue(const QVariant& value);
     QVariant currentData(int role = Qt::UserRole) const;
 
     int count() const;
@@ -137,6 +157,7 @@ public:
     QSize minimumSizeHint() const override;
 
 Q_SIGNALS:
+    void sizeChanged(Ant::Size size);
     void selectSizeChanged(Ant::Size size);
     void statusChanged(Ant::Status status);
     void variantChanged(Ant::Variant variant);
@@ -147,6 +168,8 @@ Q_SIGNALS:
     void openChanged(bool open);
     void currentIndexChanged(int index);
     void currentTextChanged(const QString& text);
+    void valueChanged(const QVariant& value);
+    // Deprecated - use valueChanged instead.
     void currentValueChanged(const QVariant& value);
     void optionSelected(int index, const QVariant& value);
     void activated(int index);
@@ -219,7 +242,7 @@ private:
     Ant::SelectMode m_selectMode = Ant::SelectMode::Single;
     QList<int> m_selectedIndices;
     int m_maxTagCount = 0; // 0 = show all
-    Ant::Size m_selectSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     Ant::Status m_status = Ant::Status::Normal;
     Ant::Variant m_variant = Ant::Variant::Outlined;
     QString m_placeholderText;
@@ -229,7 +252,6 @@ private:
     bool m_hovered = false;
     bool m_pressed = false;
     bool m_open = false;
-    int m_loadingAngle = 0;
     qreal m_arrowRotation = 0.0;
     QFrame* m_popup = nullptr;
     QVBoxLayout* m_popupLayout = nullptr;
@@ -237,7 +259,7 @@ private:
     QList<int> m_visiblePopupIndices;
     QRect m_lastPopupGeometry;
     QPropertyAnimation* m_arrowAnimation = nullptr;
-    QTimer* m_loadingTimer = nullptr;
+    AntSpinner m_loadingSpinner;
     QLineEdit* m_editField = nullptr;
     mutable MetricsCache m_metricsCache;
     mutable int m_metricsResolveCount = 0;

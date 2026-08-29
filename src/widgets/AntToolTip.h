@@ -26,7 +26,7 @@ class QT_ANT_DESIGN_EXPORT AntToolTip : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
-    Q_PROPERTY(Ant::TooltipPlacement placement READ placement WRITE setPlacement NOTIFY placementChanged)
+    Q_PROPERTY(Ant::Placement placement READ placement WRITE setPlacement NOTIFY placementChanged)
     Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged)
     Q_PROPERTY(bool arrowVisible READ arrowVisible WRITE setArrowVisible NOTIFY arrowVisibleChanged)
     Q_PROPERTY(int openDelay READ openDelay WRITE setOpenDelay NOTIFY openDelayChanged)
@@ -38,9 +38,9 @@ public:
     QString title() const;
     void setTitle(const QString& title);
 
-    Ant::TooltipPlacement placement() const;
-    void setPlacement(Ant::TooltipPlacement placement);
-    Ant::TooltipPlacement renderPlacement() const;
+    Ant::Placement placement() const;
+    void setPlacement(Ant::Placement placement);
+    Ant::Placement renderPlacement() const;
 
     QColor color() const;
     void setColor(const QColor& color);
@@ -62,7 +62,7 @@ public:
 
 Q_SIGNALS:
     void titleChanged(const QString& title);
-    void placementChanged(Ant::TooltipPlacement placement);
+    void placementChanged(Ant::Placement placement);
     void colorChanged(const QColor& color);
     void arrowVisibleChanged(bool visible);
     void openDelayChanged(int delayMs);
@@ -97,7 +97,7 @@ private:
         QString title;
         QColor customColor;
         bool arrowVisible = true;
-        Ant::TooltipPlacement renderPlacement = Ant::TooltipPlacement::Top;
+        Ant::Placement renderPlacement = Ant::Placement::Top;
         Metrics metrics;
         QSize sizeHint;
         QSize minimumSizeHint;
@@ -116,8 +116,8 @@ private:
     QPolygonF arrowPolygon() const;
     QColor bubbleColor() const;
     QColor textColor() const;
-    Ant::TooltipPlacement resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& tooltipSize) const;
-    QPoint tooltipTopLeft(const QRect& targetRect, const QSize& tooltipSize, Ant::TooltipPlacement placement) const;
+    Ant::Placement resolvedPlacement(const QRect& targetRect, const QRect& screenRect, const QSize& tooltipSize) const;
+    QPoint tooltipTopLeft(const QRect& targetRect, const QSize& tooltipSize, Ant::Placement placement) const;
     void updatePosition();
     void requestToolTipUpdate(const QRect& region, const QString& mode);
     void maybeStartOpenTimer();
@@ -126,8 +126,8 @@ private:
     void uninstallTarget();
 
     QString m_title;
-    Ant::TooltipPlacement m_placement = Ant::TooltipPlacement::Top;
-    Ant::TooltipPlacement m_renderPlacement = Ant::TooltipPlacement::Top;
+    Ant::Placement m_placement = Ant::Placement::Top;
+    Ant::Placement m_renderPlacement = Ant::Placement::Top;
     QColor m_color;
     bool m_arrowVisible = true;
     int m_openDelay = 120;
@@ -139,7 +139,7 @@ private:
     QRect m_lastScreenRect;
     QSize m_lastTooltipSize;
     QPoint m_lastTooltipTopLeft;
-    Ant::TooltipPlacement m_lastPositionPlacement = Ant::TooltipPlacement::Top;
+    Ant::Placement m_lastPositionPlacement = Ant::Placement::Top;
     bool m_positionCacheValid = false;
     mutable int m_layoutBuildCount = 0;
     mutable int m_layoutCacheHitCount = 0;

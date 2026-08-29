@@ -21,7 +21,7 @@ public:
     QSize sizeFromContents(ContentsType type, const QStyleOption* option,
                            const QSize& size, const QWidget* widget = nullptr) const override;
 
-    bool eventFilter(QObject* watched, QEvent* event) override;
+    bool drawWidget(QWidget* widget, QPaintEvent* event) override;
 
 private:
     void drawTreeSelect(const QStyleOption* option, QPainter* painter, const QWidget* widget) const;

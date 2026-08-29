@@ -16,18 +16,12 @@ AntPaginationStyle::AntPaginationStyle(QStyle* style)
 void AntPaginationStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntPagination*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntPagination>(widget);
 }
 
 void AntPaginationStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntPagination*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntPagination>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -46,19 +40,21 @@ QSize AntPaginationStyle::sizeFromContents(ContentsType type, const QStyleOption
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntPaginationStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntPaginationStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* pagination = qobject_cast<AntPagination*>(watched);
-    if (pagination && event->type() == QEvent::Paint)
+    auto* pagination = qobject_cast<AntPagination*>(widget);
+    if (!pagination)
     {
-        QStyleOption option;
-        option.initFrom(pagination);
-        option.rect = pagination->rect();
-        QPainter painter(pagination);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, pagination);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(pagination);
+    option.rect = pagination->rect();
+    QPainter painter(pagination);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, pagination);
+
+    return true;
 }
 
 void AntPaginationStyle::drawPagination(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -73,8 +69,7 @@ void AntPaginationStyle::drawPagination(const QStyleOption* option, QPainter* pa
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    QFont f = painter->font();
-    f.setPixelSize(pagination->fontSize());
+    const QFont f = AntStyleBase::withPixelSize(painter->font(), pagination->fontSize());
     painter->setFont(f);
 
     const auto items = pagination->pageItems();

@@ -145,8 +145,7 @@ int addonAfterWidthFor(const AntInputNumber* input, const InputNumberMetrics& me
     {
         return 0;
     }
-    QFont font = input->font();
-    font.setPixelSize(metrics.fontSize);
+    const QFont font = AntStyleBase::withPixelSize(input->font(), metrics.fontSize);
     return QFontMetrics(font).horizontalAdvance(input->addonAfterText()) + metrics.paddingX * 2;
 }
 }
@@ -159,19 +158,12 @@ AntInputNumberStyle::AntInputNumberStyle(QStyle* style)
 void AntInputNumberStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntInputNumber*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntInputNumber>(widget);
 }
 
 void AntInputNumberStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntInputNumber*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntInputNumber>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -248,48 +240,49 @@ QSize AntInputNumberStyle::sizeFromContents(ContentsType type,
     return QProxyStyle::sizeFromContents(type, option, contentsSize, widget);
 }
 
-bool AntInputNumberStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntInputNumberStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* input = qobject_cast<AntInputNumber*>(watched);
-    if (input && event->type() == QEvent::Paint)
+    auto* input = qobject_cast<AntInputNumber*>(widget);
+    if (!input)
     {
-        QStyleOptionSpinBox option;
-        option.initFrom(input);
-        option.rect = input->rect();
-        option.subControls = SC_SpinBoxFrame | SC_SpinBoxEditField;
-        if (input->controlsVisible())
-        {
-            option.subControls |= SC_SpinBoxUp | SC_SpinBoxDown;
-        }
-        if (input->isHoveredState())
-        {
-            option.state |= State_MouseOver;
-        }
-        if (focusedFor(input))
-        {
-            option.state |= State_HasFocus;
-        }
-        option.activeSubControls = input->activeSubControl();
-        if (input->isStepPressed())
-        {
-            option.state |= State_Sunken;
-        }
-        option.stepEnabled = QAbstractSpinBox::StepNone;
-        if (input->stepEnabledFlags().testFlag(QAbstractSpinBox::StepUpEnabled))
-        {
-            option.stepEnabled |= QAbstractSpinBox::StepUpEnabled;
-        }
-        if (input->stepEnabledFlags().testFlag(QAbstractSpinBox::StepDownEnabled))
-        {
-            option.stepEnabled |= QAbstractSpinBox::StepDownEnabled;
-        }
-
-        QPainter painter(input);
-        drawComplexControl(CC_SpinBox, &option, &painter, input);
-        return true;
+        return false;
     }
 
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOptionSpinBox option;
+    option.initFrom(input);
+    option.rect = input->rect();
+    option.subControls = SC_SpinBoxFrame | SC_SpinBoxEditField;
+    if (input->controlsVisible())
+    {
+        option.subControls |= SC_SpinBoxUp | SC_SpinBoxDown;
+    }
+    if (input->isHoveredState())
+    {
+        option.state |= State_MouseOver;
+    }
+    if (focusedFor(input))
+    {
+        option.state |= State_HasFocus;
+    }
+    option.activeSubControls = input->activeSubControl();
+    if (input->isStepPressed())
+    {
+        option.state |= State_Sunken;
+    }
+    option.stepEnabled = QAbstractSpinBox::StepNone;
+    if (input->stepEnabledFlags().testFlag(QAbstractSpinBox::StepUpEnabled))
+    {
+        option.stepEnabled |= QAbstractSpinBox::StepUpEnabled;
+    }
+    if (input->stepEnabledFlags().testFlag(QAbstractSpinBox::StepDownEnabled))
+    {
+        option.stepEnabled |= QAbstractSpinBox::StepDownEnabled;
+    }
+
+    QPainter painter(input);
+    drawComplexControl(CC_SpinBox, &option, &painter, input);
+
+    return true;
 }
 
 void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainter* painter, const QWidget* widget) const
@@ -321,8 +314,8 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
         && input->variant() != Ant::Variant::Borderless
         && input->variant() != Ant::Variant::Underlined)
     {
-        AntStyleBase::drawCrispRoundedRect(painter, control.adjusted(-1, -1, 1, 1).toRect(),
-            QPen(AntPalette::alpha(borderColor, 0.16), token.controlOutlineWidth), Qt::NoBrush, metrics.radius + 1, metrics.radius + 1);
+        AntStyleBase::drawInputFocusGlow(painter, control, metrics.radius,
+            AntPalette::alpha(borderColor, 0.16), token.controlOutlineWidth);
     }
 
     if (input->variant() != Ant::Variant::Borderless
@@ -396,8 +389,7 @@ void AntInputNumberStyle::drawSpinBox(const QStyleOptionComplex* option, QPainte
         painter->setPen(QPen(disabled ? token.colorBorderDisabled : token.colorSplit, token.lineWidth));
         painter->drawLine(QPointF(addonRect.left(), control.top()), QPointF(addonRect.left(), control.bottom()));
 
-        QFont addonFont = painter->font();
-        addonFont.setPixelSize(metrics.fontSize);
+        const QFont addonFont = AntStyleBase::withPixelSize(painter->font(), metrics.fontSize);
         painter->setFont(addonFont);
         painter->setPen(disabled ? token.colorTextDisabled : token.colorText);
         painter->drawText(addonRect, Qt::AlignCenter, input->addonAfterText());

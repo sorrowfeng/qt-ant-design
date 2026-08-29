@@ -21,19 +21,12 @@ AntSliderStyle::AntSliderStyle(QStyle* style)
 void AntSliderStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntSlider*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntSlider>(widget);
 }
 
 void AntSliderStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntSlider*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntSlider>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -48,29 +41,30 @@ void AntSliderStyle::drawPrimitive(PrimitiveElement element, const QStyleOption*
     QProxyStyle::drawPrimitive(element, option, painter, widget);
 }
 
-bool AntSliderStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntSliderStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* slider = qobject_cast<AntSlider*>(watched);
-    if (slider && event->type() == QEvent::Paint)
+    auto* slider = qobject_cast<AntSlider*>(widget);
+    if (!slider)
     {
-        QStyleOption option;
-        option.initFrom(slider);
-        option.rect = slider->rect();
-        if (slider->isHoveredState())
-        {
-            option.state |= QStyle::State_MouseOver;
-        }
-        if (slider->isPressedState())
-        {
-            option.state |= QStyle::State_Sunken;
-        }
-
-        QPainter painter(slider);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, slider);
         return false;
     }
 
-    return QProxyStyle::eventFilter(watched, event);
+    QStyleOption option;
+    option.initFrom(slider);
+    option.rect = slider->rect();
+    if (slider->isHoveredState())
+    {
+        option.state |= QStyle::State_MouseOver;
+    }
+    if (slider->isPressedState())
+    {
+        option.state |= QStyle::State_Sunken;
+    }
+
+    QPainter painter(slider);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, slider);
+
+    return false;
 }
 
 void AntSliderStyle::drawSlider(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -141,8 +135,7 @@ void AntSliderStyle::drawSlider(const QStyleOption* option, QPainter* painter, c
     }
     if (!cache.markLayouts.isEmpty())
     {
-        QFont markFont = painter->font();
-        markFont.setPixelSize(token.fontSizeSM);
+        const QFont markFont = AntStyleBase::withPixelSize(painter->font(), token.fontSizeSM);
         painter->setFont(markFont);
         for (const auto& mark : cache.markLayouts)
         {

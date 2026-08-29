@@ -22,19 +22,12 @@ AntRadioStyle::AntRadioStyle(QStyle* style)
 void AntRadioStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntRadio*>(widget))
-    {
-        widget->installEventFilter(this);
-        widget->setAttribute(Qt::WA_Hover, true);
-    }
+    installPaintFilter<AntRadio>(widget);
 }
 
 void AntRadioStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntRadio*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntRadio>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -166,28 +159,30 @@ int AntRadioStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, c
     return QProxyStyle::pixelMetric(metric, option, widget);
 }
 
-bool AntRadioStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntRadioStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* radio = qobject_cast<AntRadio*>(watched);
-    if (radio && event->type() == QEvent::Paint)
+    auto* radio = qobject_cast<AntRadio*>(widget);
+    if (!radio)
     {
-        QStyleOptionButton option;
-        option.initFrom(radio);
-        option.rect = radio->rect();
-        option.text = radio->text();
-        option.state |= radio->isChecked() ? QStyle::State_On : QStyle::State_Off;
-        if (radio->isHoveredState())
-        {
-            option.state |= QStyle::State_MouseOver;
-        }
-        if (radio->isPressedState())
-        {
-            option.state |= QStyle::State_Sunken;
-        }
-
-        QPainter painter(radio);
-        drawControl(QStyle::CE_RadioButton, &option, &painter, radio);
         return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOptionButton option;
+    option.initFrom(radio);
+    option.rect = radio->rect();
+    option.text = radio->text();
+    option.state |= radio->isChecked() ? QStyle::State_On : QStyle::State_Off;
+    if (radio->isHoveredState())
+    {
+        option.state |= QStyle::State_MouseOver;
+    }
+    if (radio->isPressedState())
+    {
+        option.state |= QStyle::State_Sunken;
+    }
+
+    QPainter painter(radio);
+    drawControl(QStyle::CE_RadioButton, &option, &painter, radio);
+
+    return false;
 }

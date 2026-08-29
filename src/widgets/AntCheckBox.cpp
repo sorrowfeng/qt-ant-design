@@ -31,11 +31,7 @@ AntCheckBox::AntCheckBox(QWidget* parent)
     checkboxStyle->setParent(this);
     setStyle(checkboxStyle);
 
-    connect(antTheme, &AntTheme::themeModeChanged, this, [this]() {
-        invalidateLayoutCache();
-        update();
-    });
-    connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+    connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
         AntThemeRefresh::cacheGeometryHints(this);
     });
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {

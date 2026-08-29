@@ -8,6 +8,7 @@
 #include <QSize>
 #include <QWidget>
 
+#include "core/AntSpinner.h"
 #include "core/AntTypes.h"
 
 class QEvent;
@@ -18,13 +19,13 @@ class QMouseEvent;
 class QPainter;
 class QResizeEvent;
 class QShowEvent;
-class QTimer;
 class AntSwitchStyle;
 
 class QT_ANT_DESIGN_EXPORT AntSwitch : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool checked READ isChecked WRITE setChecked NOTIFY checkedChanged)
+    Q_PROPERTY(Ant::Size size READ size WRITE setSize NOTIFY sizeChanged)
     Q_PROPERTY(Ant::Size switchSize READ switchSize WRITE setSwitchSize NOTIFY switchSizeChanged)
     Q_PROPERTY(bool loading READ isLoading WRITE setLoading NOTIFY loadingChanged)
     Q_PROPERTY(QString checkedText READ checkedText WRITE setCheckedText NOTIFY checkedTextChanged)
@@ -39,8 +40,11 @@ public:
     bool isChecked() const;
     void setChecked(bool checked);
 
-    Ant::Size switchSize() const;
-    void setSwitchSize(Ant::Size size);
+    Ant::Size size() const;
+    void setSize(Ant::Size size);
+    // Legacy alias - prefer size()/setSize().
+    Ant::Size switchSize() const { return size(); }
+    void setSwitchSize(Ant::Size size) { setSize(size); }
 
     bool isLoading() const;
     void setLoading(bool loading);
@@ -64,9 +68,13 @@ public:
     QSize minimumSizeHint() const override;
 
 Q_SIGNALS:
+    // Canonical state-change signal - prefer this over the legacy alias below.
     void checkedChanged(bool checked);
-    void toggled(bool checked);
+    // User-gesture event (fires on click/keyboard activation, not on programmatic set).
     void clicked(bool checked);
+    // Deprecated - use checkedChanged() instead.
+    void toggled(bool checked);
+    void sizeChanged(Ant::Size size);
     void switchSizeChanged(Ant::Size size);
     void loadingChanged(bool loading);
     void checkedTextChanged(const QString& text);
@@ -129,15 +137,14 @@ private:
     bool m_loading = false;
     bool m_hovered = false;
     bool m_pressed = false;
-    Ant::Size m_switchSize = Ant::Size::Middle;
+    Ant::Size m_size = Ant::Size::Middle;
     QString m_checkedText;
     QString m_uncheckedText;
     qreal m_handleProgress = 0.0;
     qreal m_handleStretch = 0.0;
-    int m_loadingAngle = 0;
+    AntSpinner m_loadingSpinner;
     QPropertyAnimation* m_progressAnimation = nullptr;
     QPropertyAnimation* m_stretchAnimation = nullptr;
-    QTimer* m_loadingTimer = nullptr;
     mutable LayoutCache m_layoutCache;
     mutable int m_layoutBuildCount = 0;
     mutable int m_metricsResolveCount = 0;

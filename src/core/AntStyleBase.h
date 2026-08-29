@@ -4,6 +4,7 @@
 
 #include <QApplication>
 #include <QBrush>
+#include <QFont>
 #include <QList>
 #include <QPen>
 #include <QPointer>
@@ -27,6 +28,65 @@ public:
     // When pen is valid, rect is inset by 0.5px to center the border on pixel boundaries.
     static void drawCrispRoundedRect(QPainter* painter, const QRect& rect,
         const QPen& pen, const QBrush& brush, qreal rx, qreal ry);
+
+    // Draw the focus outline glow shared by input-family widgets (Input,
+    // InputNumber, Select, Cascader, DatePicker, TimePicker, TreeSelect,
+    // AutoComplete). The glow is a soft rounded outline drawn 1px outside the
+    // frame, following the Ant Design "focus outline" convention:
+    //   frameRect.adjusted(-1, -1, 1, 1) + pen(glowColor, outlineWidth) + radius + 1
+    // glowColor must already carry its desired alpha (e.g. alpha(border, 0.16)).
+    static void drawInputFocusGlow(QPainter* painter, const QRectF& frameRect,
+        qreal radius, const QColor& glowColor, qreal outlineWidth);
+
+    // ---- Button-family shared drawing helpers ----
+    // Used by AntButtonStyle / AntToolButtonStyle / AntToolBarStyle to avoid
+    // three copies of the same shadow / focus outline / spinner code.
+
+    // Padding reserved around a button for its focus outline
+    // (lineWidthFocus + 1). Used for size hints and hit-testing.
+    static int focusPaddingFor();
+
+    // Draw the soft bottom shadow under a button body (Ant Design elevation).
+    // No-op when color is transparent.
+    static void drawButtonBottomShadow(QPainter* painter, const QRectF& outer,
+        int radius, const QColor& color);
+
+    // Draw the focus outline around a button body: a rounded ring 1px outside
+    // the body using token.colorPrimaryBorder at lineWidthFocus width.
+    static void drawButtonFocusOutline(QPainter* painter, const QRectF& bodyRect,
+        int radius);
+
+    // Draw a loading spinner arc. The arc starts at the top when angle == 0
+    // and its start point rotates clockwise as angle increases.
+    //   spanAngle - arc length in degrees, drawn clockwise (Ant Design loader
+    //               shows ~30%, i.e. 96 degrees); default 96
+    //   penWidth  - stroke width; when <= 0 it derives from rect width
+    //               (max(1.5, rect.width() * 0.12))
+    static void drawSpinner(QPainter* painter, const QRectF& rect,
+        const QColor& color, int angle, int spanAngle = 96, qreal penWidth = -1);
+
+    // Draw the Ant Design empty-state illustration, shared by AntEmptyStyle
+    // and AntTableStyle (empty table state). The illustration is drawn in its
+    // intrinsic 184x152 (default) or 128x80 (simple) coordinate system: the
+    // painter is translated to targetRect.topLeft() and scaled so the artwork
+    // fills targetRect exactly. Colors derive from the current theme tokens
+    // (dark mode adjusts opacities automatically).
+    // extraLine additionally draws the third text line used by the Table
+    // empty-state variant.
+    static void drawEmptyIllustration(QPainter* painter, const QRectF& targetRect,
+        bool simple, bool extraLine = false);
+
+    // ---- Font helpers ----
+    // Resolve a base font at the given pixel size, preserving the base font's
+    // family / weight / style. Replaces the repeated
+    //   QFont f = widget/painter->font(); f.setPixelSize(n);
+    // idiom across style classes. The family chain comes from the AntFont
+    // application font (AntFont::applyToApplication), so per-widget overrides
+    // (e.g. a user-assigned monospace font) are preserved.
+    static QFont withPixelSize(const QFont& base, int pixelSize);
+
+    // Convenience overload that also forces a weight (e.g. DemiBold titles).
+    static QFont withPixelSize(const QFont& base, int pixelSize, QFont::Weight weight);
 
     void polish(QWidget* widget) override;
     void unpolish(QWidget* widget) override;
@@ -62,7 +122,7 @@ protected:
     template <typename WidgetType>
     void connectThemeUpdate()
     {
-        connect(antTheme, &AntTheme::themeModeAboutToChange, this, [this](Ant::ThemeMode) {
+        connect(antTheme, &AntTheme::themeAboutToChange, this, [this]() {
             bool usedGlobalWidgetScan = false;
             const QList<QWidget*> targets = collectThemeTargets<WidgetType>(&usedGlobalWidgetScan);
             for (QWidget* widget : targets)
@@ -71,7 +131,7 @@ protected:
             }
         });
 
-        connect(antTheme, &AntTheme::themeModeChanged, this, [this](Ant::ThemeMode) {
+        connect(antTheme, &AntTheme::themeChanged, this, [this]() {
             const int updateCount = property("antStyleThemeUpdateCount").toInt() + 1;
             bool usedGlobalWidgetScan = false;
             const QList<QWidget*> targets = collectThemeTargets<WidgetType>(&usedGlobalWidgetScan);

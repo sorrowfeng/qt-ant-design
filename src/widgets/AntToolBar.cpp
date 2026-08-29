@@ -78,7 +78,7 @@ AntToolTip* ensureActionToolTip(QToolButton* button)
     {
         toolTip = new AntToolTip(button);
         toolTip->setObjectName(QStringLiteral("AntToolBarActionToolTip"));
-        toolTip->setPlacement(Ant::TooltipPlacement::Top);
+        toolTip->setPlacement(Ant::Placement::Top);
         toolTip->setTarget(button);
     }
     return toolTip;

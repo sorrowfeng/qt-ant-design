@@ -98,7 +98,7 @@ void TestAntLayout::divider()
 
     AntDivider cached(QStringLiteral("Cached"));
     cached.resize(260, 36);
-    QImage image(cached.size(), QImage::Format_ARGB32_Premultiplied);
+    QImage image(cached.QWidget::size(), QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     {
         QPainter painter(&image);

@@ -28,28 +28,28 @@ void drawPanelShadow(QPainter* painter, const QStyleOption* option, const AntDra
     QLinearGradient gradient;
     switch (drawer->placement())
     {
-    case Ant::DrawerPlacement::Right:
+    case Ant::Placement::Right:
         shadowRect = QRect(panel.left() - ShadowSize, panel.top(), ShadowSize, panel.height());
         gradient = QLinearGradient(shadowRect.topLeft(), shadowRect.topRight());
         gradient.setColorAt(0.0, farEdge);
         gradient.setColorAt(0.55, midEdge);
         gradient.setColorAt(1.0, nearEdge);
         break;
-    case Ant::DrawerPlacement::Left:
+    case Ant::Placement::Left:
         shadowRect = QRect(panel.right() + 1, panel.top(), ShadowSize, panel.height());
         gradient = QLinearGradient(shadowRect.topRight(), shadowRect.topLeft());
         gradient.setColorAt(0.0, farEdge);
         gradient.setColorAt(0.55, midEdge);
         gradient.setColorAt(1.0, nearEdge);
         break;
-    case Ant::DrawerPlacement::Bottom:
+    case Ant::Placement::Bottom:
         shadowRect = QRect(panel.left(), panel.top() - ShadowSize, panel.width(), ShadowSize);
         gradient = QLinearGradient(shadowRect.topLeft(), shadowRect.bottomLeft());
         gradient.setColorAt(0.0, farEdge);
         gradient.setColorAt(0.55, midEdge);
         gradient.setColorAt(1.0, nearEdge);
         break;
-    case Ant::DrawerPlacement::Top:
+    case Ant::Placement::Top:
         shadowRect = QRect(panel.left(), panel.bottom() + 1, panel.width(), ShadowSize);
         gradient = QLinearGradient(shadowRect.bottomLeft(), shadowRect.topLeft());
         gradient.setColorAt(0.0, farEdge);
@@ -78,18 +78,12 @@ AntDrawerStyle::AntDrawerStyle(QStyle* style)
 void AntDrawerStyle::polish(QWidget* widget)
 {
     AntStyleBase::polish(widget);
-    if (qobject_cast<AntDrawer*>(widget))
-    {
-        widget->installEventFilter(this);
-    }
+    installPaintFilter<AntDrawer>(widget);
 }
 
 void AntDrawerStyle::unpolish(QWidget* widget)
 {
-    if (qobject_cast<AntDrawer*>(widget))
-    {
-        widget->removeEventFilter(this);
-    }
+    removePaintFilter<AntDrawer>(widget);
     AntStyleBase::unpolish(widget);
 }
 
@@ -108,20 +102,21 @@ QSize AntDrawerStyle::sizeFromContents(ContentsType type, const QStyleOption* op
     return QProxyStyle::sizeFromContents(type, option, size, widget);
 }
 
-bool AntDrawerStyle::eventFilter(QObject* watched, QEvent* event)
+bool AntDrawerStyle::drawWidget(QWidget* widget, QPaintEvent* event)
 {
-    auto* drawer = qobject_cast<AntDrawer*>(watched);
-    if (drawer && event->type() == QEvent::Paint)
+    auto* drawer = qobject_cast<AntDrawer*>(widget);
+    if (!drawer)
     {
-        auto* paintEvent = static_cast<QPaintEvent*>(event);
-        QStyleOption option;
-        option.initFrom(drawer);
-        option.rect = paintEvent->rect();
-        QPainter painter(drawer);
-        drawPrimitive(QStyle::PE_Widget, &option, &painter, drawer);
-        return true;
+        return false;
     }
-    return QProxyStyle::eventFilter(watched, event);
+
+    QStyleOption option;
+    option.initFrom(drawer);
+    option.rect = event->rect();
+    QPainter painter(drawer);
+    drawPrimitive(QStyle::PE_Widget, &option, &painter, drawer);
+
+    return true;
 }
 
 void AntDrawerStyle::drawDrawer(const QStyleOption* option, QPainter* painter, const QWidget* widget) const
@@ -134,7 +129,7 @@ void AntDrawerStyle::drawDrawer(const QStyleOption* option, QPainter* painter, c
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
-    const qreal baseOpacity = antTheme->themeMode() == Ant::ThemeMode::Dark ? 0.58 : 0.45;
+    const qreal baseOpacity = antTheme->isDarkMode() ? 0.58 : 0.45;
     const qreal opacity = baseOpacity * drawer->maskProgress();
     painter->fillRect(option->rect, AntPalette::alpha(Qt::black, opacity));
     drawPanelShadow(painter, option, drawer);

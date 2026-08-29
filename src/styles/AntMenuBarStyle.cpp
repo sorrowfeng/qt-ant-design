@@ -91,7 +91,7 @@ void AntMenuBarStyle::drawControl(ControlElement element, const QStyleOption* op
         {
             QColor bg = active ? token.colorFillTertiary : token.colorFillQuaternary;
             AntStyleBase::drawCrispRoundedRect(painter, r.toRect().adjusted(4, 3, -4, -3),
-                Qt::NoPen, bg, 4, 4);
+                Qt::NoPen, bg, token.borderRadiusSM, token.borderRadiusSM);
         }
 
         // Text
@@ -99,8 +99,7 @@ void AntMenuBarStyle::drawControl(ControlElement element, const QStyleOption* op
         if (active) textColor = token.colorPrimary;
         if (!enabled) textColor = token.colorTextDisabled;
 
-        QFont f = widget ? widget->font() : painter->font();
-        f.setPixelSize(token.fontSize);
+        const QFont f = AntStyleBase::withPixelSize(widget ? widget->font() : painter->font(), token.fontSize);
         painter->setFont(f);
         painter->setPen(textColor);
 
@@ -151,8 +150,7 @@ QSize AntMenuBarStyle::sizeFromContents(ContentsType type, const QStyleOption* o
         }
 
         const auto& token = antTheme->tokens();
-        QFont f = widget ? widget->font() : QFont();
-        f.setPixelSize(token.fontSize);
+        const QFont f = AntStyleBase::withPixelSize(widget ? widget->font() : QFont(), token.fontSize);
         const CachedTextMetric textMetric = cachedTextMetric(menuItem->text, f, widget);
         int width = textMetric.width + 16;
         if (!menuItem->icon.isNull())

@@ -62,14 +62,18 @@ void TestAntMotion::popupMotionPlacementMapping()
     QCOMPARE(AntPopupMotion::fromPlacement(Ant::Placement::TopLeft), AntPopupMotion::Placement::Top);
     QCOMPARE(AntPopupMotion::fromPlacement(Ant::Placement::Top), AntPopupMotion::Placement::Top);
     QCOMPARE(AntPopupMotion::fromPlacement(Ant::Placement::BottomRight), AntPopupMotion::Placement::Bottom);
+    QCOMPARE(AntPopupMotion::fromPlacement(Ant::Placement::Left), AntPopupMotion::Placement::Left);
+    QCOMPARE(AntPopupMotion::fromPlacement(Ant::Placement::Right), AntPopupMotion::Placement::Right);
 
-    QCOMPARE(AntPopupMotion::fromDropdownPlacement(Ant::DropdownPlacement::TopRight), AntPopupMotion::Placement::Top);
-    QCOMPARE(AntPopupMotion::fromDropdownPlacement(Ant::DropdownPlacement::BottomLeft), AntPopupMotion::Placement::Bottom);
+    QCOMPARE(AntPopupMotion::fromDropdownPlacement(Ant::Placement::TopRight), AntPopupMotion::Placement::Top);
+    QCOMPARE(AntPopupMotion::fromDropdownPlacement(Ant::Placement::BottomLeft), AntPopupMotion::Placement::Bottom);
+    QCOMPARE(AntPopupMotion::fromDropdownPlacement(Ant::Placement::Left), AntPopupMotion::Placement::Left);
+    QCOMPARE(AntPopupMotion::fromDropdownPlacement(Ant::Placement::Right), AntPopupMotion::Placement::Right);
 
-    QCOMPARE(AntPopupMotion::fromTooltipPlacement(Ant::TooltipPlacement::Left), AntPopupMotion::Placement::Left);
-    QCOMPARE(AntPopupMotion::fromTooltipPlacement(Ant::TooltipPlacement::Right), AntPopupMotion::Placement::Right);
-    QCOMPARE(AntPopupMotion::fromTooltipPlacement(Ant::TooltipPlacement::Top), AntPopupMotion::Placement::Top);
-    QCOMPARE(AntPopupMotion::fromTooltipPlacement(Ant::TooltipPlacement::Bottom), AntPopupMotion::Placement::Bottom);
+    QCOMPARE(AntPopupMotion::fromTooltipPlacement(Ant::Placement::Left), AntPopupMotion::Placement::Left);
+    QCOMPARE(AntPopupMotion::fromTooltipPlacement(Ant::Placement::Right), AntPopupMotion::Placement::Right);
+    QCOMPARE(AntPopupMotion::fromTooltipPlacement(Ant::Placement::Top), AntPopupMotion::Placement::Top);
+    QCOMPARE(AntPopupMotion::fromTooltipPlacement(Ant::Placement::Bottom), AntPopupMotion::Placement::Bottom);
 }
 
 void TestAntMotion::radioButtonStyleClickCreatesWave()

@@ -28,9 +28,9 @@ AntResult::AntResult(const QString& title, QWidget* parent)
     m_title = title;
 }
 
-Ant::AlertType AntResult::status() const { return m_status; }
+Ant::ResultStatus AntResult::status() const { return m_status; }
 
-void AntResult::setStatus(Ant::AlertType status)
+void AntResult::setStatus(Ant::ResultStatus status)
 {
     if (m_status == status)
     {
@@ -377,13 +377,13 @@ QColor AntResult::iconColor() const
     const auto& token = antTheme->tokens();
     switch (m_status)
     {
-    case Ant::AlertType::Success:
+    case Ant::ResultStatus::Success:
         return token.colorSuccess;
-    case Ant::AlertType::Warning:
+    case Ant::ResultStatus::Warning:
         return token.colorWarning;
-    case Ant::AlertType::Error:
+    case Ant::ResultStatus::Error:
         return token.colorError;
-    case Ant::AlertType::Info:
+    case Ant::ResultStatus::Info:
     default:
         return token.colorPrimary;
     }
@@ -393,13 +393,13 @@ Ant::IconType AntResult::iconTypeForStatus() const
 {
     switch (m_status)
     {
-    case Ant::AlertType::Success:
+    case Ant::ResultStatus::Success:
         return Ant::IconType::CheckCircle;
-    case Ant::AlertType::Error:
+    case Ant::ResultStatus::Error:
         return Ant::IconType::CloseCircle;
-    case Ant::AlertType::Warning:
+    case Ant::ResultStatus::Warning:
         return Ant::IconType::ExclamationCircle;
-    case Ant::AlertType::Info:
+    case Ant::ResultStatus::Info:
     default:
         return Ant::IconType::InfoCircle;
     }
