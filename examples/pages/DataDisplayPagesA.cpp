@@ -31,6 +31,7 @@
 #include "widgets/AntIcon.h"
 #include "widgets/AntImage.h"
 #include "widgets/AntList.h"
+#include "widgets/AntListy.h"
 #include "widgets/AntSwitch.h"
 #include "widgets/AntTag.h"
 #include "widgets/AntTypography.h"
@@ -634,6 +635,90 @@ QWidget* createListPage(QWidget* /*owner*/)
         }
 
         cl->addWidget(actionList);
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* createListyPage(QWidget* /*owner*/)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    {
+        auto* card = new AntCard(QStringLiteral("Virtualized + Grouped"));
+        auto* cl = card->bodyLayout();
+
+        auto* desc = makeParagraph(QStringLiteral("AntListy renders via Qt Model/View virtualization: only visible rows are painted. Grouping inserts sticky section headers; enable drag sorting to reorder items."),
+                                   page,
+                                   Ant::TypographyType::Secondary);
+        cl->addWidget(desc);
+
+        auto* list = new AntListy(page);
+        list->setGroupingEnabled(true);
+        list->setStickyGroupHeader(true);
+
+        QList<AntListyItem> items;
+        const QStringList groups = {QStringLiteral("Fruits"), QStringLiteral("Vegetables"), QStringLiteral("Drinks")};
+        const QStringList names = {QStringLiteral("Apple"), QStringLiteral("Banana"), QStringLiteral("Carrot"), QStringLiteral("Potato"), QStringLiteral("Coffee"), QStringLiteral("Tea")};
+        for (int i = 0; i < 30; ++i)
+        {
+            AntListyItem item;
+            item.key = QStringLiteral("item-%1").arg(i);
+            item.title = QStringLiteral("%1 %2").arg(names.at(i % 6)).arg(i + 1);
+            item.description = QStringLiteral("Virtual row %1").arg(i + 1);
+            item.group = groups.at(i / 10);
+            items.append(item);
+        }
+        list->setItems(items);
+
+        cl->addWidget(list);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("Drag Sorting + Infinite Load"));
+        auto* cl = card->bodyLayout();
+
+        auto* list = new AntListy(page);
+        list->setDragSortingEnabled(true);
+
+        QList<AntListyItem> items;
+        for (int i = 1; i <= 8; ++i)
+        {
+            AntListyItem item;
+            item.key = QStringLiteral("sort-%1").arg(i);
+            item.title = QStringLiteral("Drag me %1").arg(i);
+            items.append(item);
+        }
+        list->setItems(items);
+
+        auto* status = makeParagraph(QStringLiteral("Scroll to bottom to trigger loadMoreRequested; drag rows to reorder."), page, Ant::TypographyType::Secondary);
+        cl->addWidget(status);
+
+        QObject::connect(list, &AntListy::loadMoreRequested, list, [list]() {
+            list->setLoading(true);
+            const int base = list->count();
+            QList<AntListyItem> more;
+            for (int i = 1; i <= 5; ++i)
+            {
+                AntListyItem item;
+                item.key = QStringLiteral("more-%1").arg(base + i);
+                item.title = QStringLiteral("Loaded %1").arg(base + i);
+                more.append(item);
+            }
+            list->addItems(more);
+            list->setLoading(false);
+        });
+        QObject::connect(list, &AntListy::orderChanged, status, [status]() {
+            status->setText(QStringLiteral("Order changed via drag sorting."));
+        });
+
+        cl->addWidget(list);
         layout->addWidget(card);
     }
 

@@ -75,6 +75,7 @@ QVector<PageEntry> buildPageRegistry()
     add(kDataDisplay, QStringLiteral("Empty"), &createEmptyPage);
     add(kDataDisplay, QStringLiteral("Image"), &createImagePage);
     add(kDataDisplay, QStringLiteral("List"), &createListPage);
+    add(kDataDisplay, QStringLiteral("Listy"), &createListyPage);
     add(kDataDisplay, QStringLiteral("Popover"), &createPopoverPage);
     add(kDataDisplay, QStringLiteral("QRCode"), &createQRCodePage);
     add(kDataDisplay, QStringLiteral("Segmented"), &createSegmentedPage);
@@ -100,6 +101,7 @@ QVector<PageEntry> buildPageRegistry()
     add(kFeedback, QStringLiteral("Watermark"), &createWatermarkPage);
 
     add(kOther, QStringLiteral("App"), &createAppPage);
+    add(kOther, QStringLiteral("BorderBeam"), &createBorderBeamPage);
     add(kOther, QStringLiteral("ConfigProvider"), &createConfigProviderPage);
     add(kOther, QStringLiteral("FloatButton"), &createFloatButtonPage);
 

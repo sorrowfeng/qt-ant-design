@@ -43,6 +43,7 @@ Validation results: on `2026-05-30`, `37 / 37` CTest targets passed and `qt-ant-
 | `AntAutoComplete` | `TestAntDataEntryA` | Yes | Yes | Yes | Yes |
 | `AntAvatar` | `TestAntDataDisplayA` | Yes | Yes | Yes | Yes |
 | `AntBadge` | `TestAntBadge`, `TestAntChildOwnership`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
+| `AntBorderBeam` | `TestAntLayout` | Yes | Yes | Yes | Yes |
 | `AntBreadcrumb` | `TestAntNavigation` | Yes | Yes | Yes | Yes |
 | `AntButton` | `TestAntAliases`, `TestAntButton`, `TestAntFeedback`, `TestAntStressLifecycle`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntCalendar` | `TestAntAliases`, `TestAntDataDisplayA` | Yes | Yes | Yes | Yes |
@@ -74,6 +75,7 @@ Validation results: on `2026-05-30`, `37 / 37` CTest targets passed and `qt-ant-
 | `AntInputNumber` | `TestAntAliases`, `TestAntDataEntryA`, `TestAntInteractions`, `TestAntStressLifecycle`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntLayout` | `TestAntChildOwnership`, `TestAntLayout`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntList` | `TestAntAliases`, `TestAntChildOwnership`, `TestAntDataDisplayB`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
+| `AntListy` | `TestAntDataDisplayB` | Yes | Yes | Yes | Yes |
 | `AntLog` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntMasonry` | `TestAntChildOwnership`, `TestAntLayout`, `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntMentions` | `TestAntDataEntryB` | Yes | Yes | Yes | Yes |

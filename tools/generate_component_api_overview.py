@@ -122,10 +122,12 @@ ANT_CN_NAMES = {
 }
 
 LOCAL_CN_NAMES = {
+    "AntBorderBeam": "边框光束",
     "AntDialog": "无边框对话框",
     "AntDockManager": "停靠管理器",
     "AntDockWidget": "停靠面板",
     "AntFileDialog": "文件对话框",
+    "AntListy": "高性能列表",
     "AntLog": "日志面板",
     "AntMenuBar": "菜单栏",
     "AntNav": "侧边导航",

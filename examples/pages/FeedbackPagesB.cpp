@@ -11,6 +11,7 @@
 #include "core/AntTheme.h"
 #include "core/AntTypes.h"
 #include "widgets/AntApp.h"
+#include "widgets/AntBorderBeam.h"
 #include "widgets/AntButton.h"
 #include "widgets/AntCard.h"
 #include "widgets/AntConfigProvider.h"
@@ -133,6 +134,73 @@ QWidget* createConfigProviderPage(QWidget* /*owner*/)
             status->setText(QStringLiteral("Restored the built-in theme token defaults."));
         });
 
+        layout->addWidget(card);
+    }
+
+    layout->addStretch();
+    return page;
+}
+
+QWidget* createBorderBeamPage(QWidget* /*owner*/)
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+
+    auto makeBeamContent = [](const QString& text, QWidget* parent) {
+        auto* content = new AntWidget(parent);
+        auto* cl = new QVBoxLayout(content);
+        cl->setContentsMargins(16, 12, 16, 12);
+        cl->addWidget(makeParagraph(text, content));
+        return content;
+    };
+
+    {
+        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+
+        auto* beam = new AntBorderBeam(page);
+        beam->setContentWidget(makeBeamContent(QStringLiteral("AntBorderBeam draws an animated light beam along the container border, useful for highlighting key cards or call-to-action areas."), beam));
+        cl->addWidget(beam);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("Count & Color"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+
+        auto* row = new QHBoxLayout();
+        row->setSpacing(16);
+
+        auto* triple = new AntBorderBeam(page);
+        triple->setCount(3);
+        triple->setColor(QColor(QStringLiteral("#722ed1")));
+        triple->setContentWidget(makeBeamContent(QStringLiteral("count = 3"), triple));
+        auto* fast = new AntBorderBeam(page);
+        fast->setDuration(1200);
+        fast->setBeamLength(96);
+        fast->setColor(QColor(QStringLiteral("#13c2c2")));
+        fast->setContentWidget(makeBeamContent(QStringLiteral("duration = 1200, beamLength = 96"), fast));
+
+        row->addWidget(triple);
+        row->addWidget(fast);
+        cl->addLayout(row);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("Hover To Run"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+
+        auto* hoverBeam = new AntBorderBeam(page);
+        hoverBeam->setActiveOnHover(true);
+        hoverBeam->setLineWidth(3);
+        hoverBeam->setContentWidget(makeBeamContent(QStringLiteral("Hover this card to start the beam animation."), hoverBeam));
+        cl->addWidget(hoverBeam);
         layout->addWidget(card);
     }
 

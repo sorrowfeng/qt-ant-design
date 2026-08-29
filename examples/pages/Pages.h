@@ -60,6 +60,7 @@ QWidget* createDescriptionsPage(QWidget* owner);
 QWidget* createEmptyPage(QWidget* owner);
 QWidget* createImagePage(QWidget* owner);
 QWidget* createListPage(QWidget* owner);
+QWidget* createListyPage(QWidget* owner);
 QWidget* createPopoverPage(QWidget* owner);
 QWidget* createQRCodePage(QWidget* owner);
 QWidget* createSegmentedPage(QWidget* owner);
@@ -87,6 +88,7 @@ QWidget* createWatermarkPage(QWidget* owner);
 
 // 其他 (Other)
 QWidget* createAppPage(QWidget* owner);
+QWidget* createBorderBeamPage(QWidget* owner);
 QWidget* createConfigProviderPage(QWidget* owner);
 QWidget* createFloatButtonPage(QWidget* owner);
 

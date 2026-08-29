@@ -8,17 +8,17 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 
 | Area | Status |
 | --- | --- |
-| Ant Design standard coverage | `70 / 70` top-level components covered |
-| Public Qt component count | `89` public components |
-| Widget headers | `110` headers in `src/widgets`: `89` public component headers, `19` Qt-style alias headers, installed non-component helper `AntWindowFrame`, and internal non-installed popup helper `AntSelectPopup` |
+| Ant Design standard coverage | Ant Design v6 parity: `70 / 70` standard components plus v6 additions `AntBorderBeam` (6.4) and `AntListy` (6.6); upstream gap list in `docs/porting-todo.md` |
+| Public Qt component count | `91` public components |
+| Widget headers | `112` headers in `src/widgets`: `91` public component headers, `19` Qt-style alias headers, installed non-component helper `AntWindowFrame`, and internal non-installed popup helper `AntSelectPopup` |
 | Qt / desktop extensions | `19` components |
-| Style architecture | `67` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
-| Example coverage | `89 / 89` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
+| Style architecture | `68` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
+| Example coverage | `91 / 91` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
 | Dedicated examples intentionally absent | None |
 | Tests | Current Windows top-level inventory is `155` CTest entries when `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON`: `51` deep/system entries plus `104` per-widget smoke entries. The latest Qt6 Debug full run on 2026-07-16 passed `155 / 155` in `379.87s`; the final Qt5 P1/P2 targeted matrix passed `5 / 5`, and nine key targets linked to the MSVC ASan-instrumented library passed `9 / 9` |
 | Build contract | Qt 6.5.0+ or Qt 5.15.2+ is enforced for source and installed-package consumers; manual CMake supports 3.16+, while `CMakePresets.json` requires 3.21+ |
 | CI definition | Windows Qt5 Debug static plus Qt6 Debug static/Release shared and install smoke/consumer, Linux Qt5 Debug static ASan+UBSan plus Qt5 Release shared, and macOS Qt6 Release shared are configured; this snapshot does not claim the newly expanded remote matrix has run successfully |
-| Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
+| Official icon resources | `848` SVG files from `@ant-design/icons-svg@4.5.0` |
 | README component gallery | `176` committed PNGs: light/dark screenshots for `88` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Component/API reference | Online site generated into the `gh_page` branch; local HTML can be generated under `build/docs/` from public widget headers |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
