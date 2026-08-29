@@ -109,10 +109,30 @@ void TestAntIcon::propertiesAndSignals()
     QCOMPARE(w->resolvedIconName(), QStringLiteral("AccountBookTwoTone"));
 
     const QStringList builtinIconNames = AntIcon::builtinIconNames();
-    QCOMPARE(builtinIconNames.size(), 831);
+    QCOMPARE(builtinIconNames.size(), 848);
     QVERIFY(builtinIconNames.contains(QStringLiteral("AccountBookOutlined")));
     QVERIFY(builtinIconNames.contains(QStringLiteral("GithubFilled")));
     QVERIFY(builtinIconNames.contains(QStringLiteral("HeartTwoTone")));
+    // @ant-design/icons-svg 4.5.0 additions (AI / brand filled icons)
+    const QStringList newIcons45 = {
+        QStringLiteral("AnthropicFilled"), QStringLiteral("ClaudeFilled"),
+        QStringLiteral("DeepSeekFilled"), QStringLiteral("ElevenLabsFilled"),
+        QStringLiteral("GeminiFilled"), QStringLiteral("HuggingFaceFilled"),
+        QStringLiteral("MastodonFilled"), QStringLiteral("MetaFilled"),
+        QStringLiteral("MistralFilled"), QStringLiteral("NetflixFilled"),
+        QStringLiteral("OllamaFilled"), QStringLiteral("PerplexityFilled"),
+        QStringLiteral("QwenFilled"), QStringLiteral("ReplicateFilled"),
+        QStringLiteral("SnapchatFilled"), QStringLiteral("TelegramFilled"),
+        QStringLiteral("ThreadsFilled"),
+    };
+    for (const QString& name : newIcons45)
+    {
+        QVERIFY2(builtinIconNames.contains(name), qPrintable(name));
+        AntIcon icon(name);
+        icon.setIconSize(24);
+        icon.resize(24, 24);
+        QVERIFY2(hasPaintedPixel(renderIcon(icon)), qPrintable(name));
+    }
 
     AntIcon official(QStringLiteral("GithubFilled"));
     official.setIconSize(24);
