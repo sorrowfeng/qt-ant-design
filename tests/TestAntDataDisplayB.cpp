@@ -101,6 +101,7 @@ private slots:
     void listUsesExpandingLayoutPolicy();
     void treeCachesFlattenedVisibleNodes();
     void tableHoverUsesRowScopedUpdates();
+    void tableWheelScrollUsesBitBltUpdates();
     void tableSelectionCompatibilityApis();
     void carouselPausesAutoplayAndScopesTransitionWork();
     void collapseCachesSizeHintsAndScopesAnimationUpdates();
@@ -1190,6 +1191,56 @@ void TestAntDataDisplayB::tableHoverUsesRowScopedUpdates()
     QCoreApplication::sendEvent(&table, &leaveEvent);
     QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("row"));
     QCOMPARE(table.property("antTableLastRowUpdateCount").toInt(), 1);
+}
+
+void TestAntDataDisplayB::tableWheelScrollUsesBitBltUpdates()
+{
+    AntTable table;
+    table.resize(360, 240);
+    table.addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 140});
+    table.addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 80});
+    // No pagination: one long page so the body actually scrolls.
+    table.setPageSize(200);
+    for (int i = 0; i < 40; ++i)
+    {
+        AntTableRow row;
+        row.data[QStringLiteral("name")] = QStringLiteral("User %1").arg(i);
+        row.data[QStringLiteral("age")] = i + 20;
+        table.addRow(row);
+    }
+
+    QCOMPARE(table.scrollY(), 0);
+
+    const auto sendWheel = [&table](int y) {
+        QWheelEvent event(QPointF(table.rect().center()),
+                           QPointF(table.mapToGlobal(table.rect().center())),
+                           QPoint(),
+                           QPoint(0, y),
+                           Qt::NoButton,
+                           Qt::NoModifier,
+                           Qt::NoScrollPhase,
+                           false);
+        QCoreApplication::sendEvent(&table, &event);
+    };
+
+    // Hidden widget: the wheel handler falls back to a body-scoped update.
+    sendWheel(-120);
+    QVERIFY(table.scrollY() > 0);
+    QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("body"));
+
+    table.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&table));
+
+    // Visible widget scrolling in range: bit-blit path with a partial repaint.
+    sendWheel(120);
+    QCOMPARE(table.scrollY(), 0);
+    QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("scroll"));
+    QCOMPARE(table.property("antTableLastRowUpdateCount").toInt(), 1);
+
+    // Scrolling at the edge must not change the offset and must not repaint.
+    sendWheel(120);
+    QCOMPARE(table.scrollY(), 0);
+    QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("none"));
 }
 
 void TestAntDataDisplayB::tableSelectionCompatibilityApis()
