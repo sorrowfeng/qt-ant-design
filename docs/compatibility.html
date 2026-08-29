@@ -118,39 +118,6 @@ a:hover { color: var(--brand); }
   color: var(--brand);
   background: #e6f4ff;
 }
-.hero {
-  position: relative;
-  min-height: clamp(500px, 74vh, 720px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: clamp(36px, 8vw, 104px);
-  padding: 72px max(32px, calc((100vw - 1180px) / 2)) 82px;
-  overflow: hidden;
-  isolation: isolate;
-  background-image: url("../resources/images/showcase-light.png");
-  background-size: cover;
-  background-position: center;
-}
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: rgba(255, 255, 255, 0.78);
-}
-.hero-copy {
-  flex: 1 1 640px;
-  max-width: 720px;
-  min-width: 0;
-}
-.hero-logo {
-  flex: 0 0 auto;
-  width: clamp(190px, 23vw, 330px);
-  height: auto;
-  max-width: 34vw;
-  filter: drop-shadow(0 22px 34px rgba(22, 119, 255, 0.18));
-}
 .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -165,18 +132,6 @@ h1 {
   font-size: clamp(44px, 7vw, 82px);
   line-height: 1.04;
   letter-spacing: 0;
-}
-.hero p {
-  margin: 0;
-  max-width: 660px;
-  color: rgba(0, 0, 0, 0.68);
-  font-size: 18px;
-}
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 34px;
 }
 .btn {
   display: inline-flex;
@@ -404,15 +359,6 @@ pre code {
   .site-header { padding: 0 18px; }
   .nav { gap: 0; }
   .nav a { padding: 7px 9px; }
-  .hero {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .hero-logo {
-    order: -1;
-    width: 148px;
-    max-width: 42vw;
-  }
   .stats,
   .feature-grid,
   .doc-grid,
@@ -456,9 +402,6 @@ pre code {
     padding: 6px 10px;
     white-space: nowrap;
   }
-  .hero { padding: 54px 20px 62px; }
-  .hero-logo { width: 120px; }
-  .hero p { font-size: 16px; }
   .section { padding: 44px 20px; }
   .section-head { display: block; }
   .stats,
@@ -517,10 +460,6 @@ html[data-theme="dark"] {
 html[data-theme="dark"] .site-header { background: rgba(20, 20, 20, 0.94); }
 html[data-theme="dark"] .nav a.active,
 html[data-theme="dark"] .nav a:hover { background: #111a2c; }
-html[data-theme="dark"] .hero { background-image: url("resources/images/showcase-dark.png"); }
-html[data-theme="dark"] .hero::before { background: rgba(20, 20, 20, 0.84); }
-html[data-theme="dark"] .hero p { color: rgba(255, 255, 255, 0.68); }
-html[data-theme="dark"] .hero-badges span { background: rgba(31, 31, 31, 0.82); }
 html[data-theme="dark"] .btn { background: #1f1f1f; }
 html[data-theme="dark"] .path-card { background: linear-gradient(180deg, #1f1f1f 0%, #161a22 100%); }
 html[data-theme="dark"] .path-card:hover { border-color: #15325b; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); }
@@ -529,7 +468,6 @@ html[data-theme="dark"] .component-strip a { background: var(--surface); }
 html[data-theme="dark"] .callout { border-color: #15325b; background: #111a2c; color: rgba(255, 255, 255, 0.72); }
 html[data-theme="dark"] .page-hero { background: var(--bg); }
 html[data-theme="dark"] .side a.active { background: #111a2c; }
-html[data-theme="dark"] .hero-logo { filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.5)); }
   </style>
 </head>
 <body>
