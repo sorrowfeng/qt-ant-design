@@ -369,6 +369,27 @@ QWidget* createCardPage(QWidget* /*owner*/)
         layout->addWidget(card);
     }
 
+    {
+        auto* card = new AntCard(QStringLiteral("Variant"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* row = new QHBoxLayout();
+        row->setSpacing(16);
+        auto* outlined = new AntCard(QStringLiteral("Outlined (default)"), page);
+        outlined->setFixedWidth(260);
+        outlined->setVariant(Ant::Variant::Outlined);
+        outlined->bodyLayout()->addWidget(new AntTypography(QStringLiteral("variant = Outlined, bordered = true"), outlined));
+        auto* borderless = new AntCard(QStringLiteral("Borderless"), page);
+        borderless->setFixedWidth(260);
+        borderless->setVariant(Ant::Variant::Borderless);
+        borderless->bodyLayout()->addWidget(new AntTypography(QStringLiteral("variant = Borderless, bordered = false"), borderless));
+        row->addWidget(outlined);
+        row->addWidget(borderless);
+        row->addStretch();
+        cl->addLayout(row);
+        layout->addWidget(card);
+    }
+
     layout->addStretch();
     return page;
 }
@@ -509,6 +530,28 @@ QWidget* createDescriptionsPage(QWidget* /*owner*/)
         basic->addItem(QStringLiteral("IP"), QStringLiteral("192.168.1.1"));
         cl->addWidget(basic);
         cl->addStretch();
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("Variant"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* outlined = new AntDescriptions(page);
+        outlined->setVariant(Ant::Variant::Outlined);
+        outlined->setColumnCount(2);
+        outlined->addItem(QStringLiteral("Name"), QStringLiteral("Alice"));
+        outlined->addItem(QStringLiteral("Age"), QStringLiteral("28"));
+        outlined->addItem(QStringLiteral("City"), QStringLiteral("Shanghai"));
+        cl->addWidget(outlined);
+        auto* borderless = new AntDescriptions(page);
+        borderless->setVariant(Ant::Variant::Borderless);
+        borderless->setColumnCount(2);
+        borderless->addItem(QStringLiteral("Product"), QStringLiteral("qt-ant-design"));
+        borderless->addItem(QStringLiteral("License"), QStringLiteral("MIT"));
+        cl->addSpacing(12);
+        cl->addWidget(borderless);
+        cl->addWidget(makeSecondaryText(QStringLiteral("variant = Outlined (bordered) / Borderless."), page));
         layout->addWidget(card);
     }
 

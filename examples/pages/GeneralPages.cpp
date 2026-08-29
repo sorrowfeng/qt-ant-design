@@ -11,6 +11,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "PageCommon.h"
 #include "core/AntTheme.h"
 #include "widgets/AntCard.h"
 #include "core/AntTypes.h"
@@ -124,6 +125,32 @@ QWidget* createButtonPage(QWidget* /*owner*/)
         row->addWidget(loading);
         row->addStretch();
         cl->addLayout(row);
+        layout->addWidget(card);
+    }
+
+    // Icon Placement — icon at start (default) / end
+    {
+        auto* card = new AntCard(QStringLiteral("Icon Placement"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* row = new QHBoxLayout();
+        row->setSpacing(12);
+        auto* startBtn = new AntButton(QStringLiteral("Search"));
+        startBtn->setButtonIconType(Ant::IconType::Search);
+        startBtn->setIconPlacement(Ant::IconPlacement::Start);
+        auto* endBtn = new AntButton(QStringLiteral("Down"));
+        endBtn->setButtonIconType(Ant::IconType::Down);
+        endBtn->setIconPlacement(Ant::IconPlacement::End);
+        auto* endPrimary = new AntButton(QStringLiteral("Next"));
+        endPrimary->setButtonType(Ant::ButtonType::Primary);
+        endPrimary->setButtonIconType(Ant::IconType::Right);
+        endPrimary->setIconPlacement(Ant::IconPlacement::End);
+        row->addWidget(startBtn);
+        row->addWidget(endBtn);
+        row->addWidget(endPrimary);
+        row->addStretch();
+        cl->addLayout(row);
+        cl->addWidget(makeSecondaryText(QStringLiteral("iconPlacement = Start (default) / End — icon rendered after text."), page));
         layout->addWidget(card);
     }
 
@@ -487,6 +514,19 @@ QWidget* createTypographyPage(QWidget* /*owner*/)
         copyable->setParagraph(true);
         copyable->setCopyable(true);
         cl->addWidget(copyable);
+        layout->addWidget(card);
+    }
+
+    {
+        auto* card = new AntCard(QStringLiteral("Editable"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* editable = new AntTypography(QStringLiteral("Double-click this text to edit inline."));
+        editable->setEditable(true);
+        cl->addWidget(editable);
+        cl->addWidget(makeSecondaryText(
+            QStringLiteral("Double-click enters inline editing; Enter or focus-out commits, Esc cancels, edited() signal is emitted."),
+            page));
         layout->addWidget(card);
     }
 

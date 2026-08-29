@@ -472,6 +472,31 @@ QWidget* createSpacePage(QWidget* /*owner*/)
         layout->addWidget(card);
     }
 
+    {
+        auto* card = new AntCard(QStringLiteral("Compact"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* note = new AntTypography(QStringLiteral("Space.Compact removes spacing — replaces the deprecated Button.Group."));
+        note->setType(Ant::TypographyType::Secondary);
+        note->setParagraph(true);
+        cl->addWidget(note);
+        auto* row = new AntSpace();
+        row->setCompact(true);
+        row->addItem(new AntButton(QStringLiteral("Left")));
+        row->addItem(new AntButton(QStringLiteral("Middle")));
+        row->addItem(new AntButton(QStringLiteral("Right")));
+        cl->addWidget(row);
+        auto* rowBtn = new AntSpace();
+        rowBtn->setCompact(true);
+        auto* btnPrimary = new AntButton(QStringLiteral("Save"));
+        btnPrimary->setButtonType(Ant::ButtonType::Primary);
+        rowBtn->addItem(btnPrimary);
+        rowBtn->addItem(new AntButton(QStringLiteral("Cancel")));
+        cl->addSpacing(12);
+        cl->addWidget(rowBtn);
+        layout->addWidget(card);
+    }
+
     layout->addStretch();
     return page;
 }
