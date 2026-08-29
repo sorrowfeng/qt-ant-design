@@ -34,28 +34,24 @@
   <link rel="alternate icon" type="image/png" href="/qt-ant-design/assets/qt-ant-design-icon.png">
   <link rel="apple-touch-icon" href="/qt-ant-design/assets/qt-ant-design-icon.png">
   <style>
-
 :root {
   color-scheme: light;
   --brand: #1677ff;
   --brand-hover: #4096ff;
-  --qt: #41cd52;
   --ink: rgba(0, 0, 0, 0.88);
   --text: rgba(0, 0, 0, 0.72);
   --muted: rgba(0, 0, 0, 0.48);
   --line: #f0f0f0;
   --line-strong: #d9d9d9;
   --bg: #fff;
-  --surface: #fff;
-  --soft: #f5f8ff;
-  --code: #f6f8fa;
-  --radius: 8px;
   --shadow: 0 8px 24px rgba(18, 35, 64, 0.08);
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
 body {
   margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   color: var(--ink);
   background: var(--bg);
@@ -114,70 +110,47 @@ a:hover { color: var(--brand); }
   border-radius: 6px;
   color: var(--text);
 }
-.nav a.active,
 .nav a:hover {
   color: var(--brand);
   background: #e6f4ff;
 }
-.hero {
-  position: relative;
-  min-height: clamp(500px, 74vh, 720px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: clamp(36px, 8vw, 104px);
-  padding: 72px max(32px, calc((100vw - 1180px) / 2)) 82px;
-  overflow: hidden;
-  isolation: isolate;
-  background-image: url("/qt-ant-design/resources/images/showcase-light.png");
-  background-size: cover;
-  background-position: center;
+main {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 48px 20px;
+  background:
+    radial-gradient(560px 300px at 82% 0%, rgba(22, 119, 255, 0.10), transparent 72%),
+    radial-gradient(480px 280px at 8% 100%, rgba(22, 119, 255, 0.06), transparent 70%);
 }
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: rgba(255, 255, 255, 0.78);
+.result {
+  max-width: 560px;
+  text-align: center;
 }
-.hero-copy {
-  flex: 1 1 640px;
-  max-width: 720px;
-  min-width: 0;
-}
-.hero-logo {
-  flex: 0 0 auto;
-  width: clamp(190px, 23vw, 330px);
-  height: auto;
-  max-width: 34vw;
-  filter: drop-shadow(0 22px 34px rgba(22, 119, 255, 0.18));
-}
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--brand);
-  font-size: 13px;
-  font-weight: 650;
+.result-code {
+  font-size: clamp(96px, 18vw, 160px);
+  font-weight: 800;
+  line-height: 1;
   letter-spacing: 0;
+  background: linear-gradient(135deg, #4096ff 0%, #1677ff 60%, #0958d9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-h1 {
-  margin: 18px 0 18px;
-  font-size: clamp(44px, 7vw, 82px);
-  line-height: 1.04;
-  letter-spacing: 0;
+.result h1 {
+  margin: 12px 0 8px;
+  font-size: 24px;
 }
-.hero p {
+.result p {
   margin: 0;
-  max-width: 660px;
-  color: rgba(0, 0, 0, 0.68);
-  font-size: 18px;
+  color: var(--text);
 }
-.hero-actions {
+.result-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
-  margin-top: 34px;
+  margin-top: 28px;
 }
 .btn {
   display: inline-flex;
@@ -190,6 +163,7 @@ h1 {
   background: #fff;
   color: var(--ink);
   font-weight: 600;
+  transition: border-color .16s ease, background .16s ease, color .16s ease, box-shadow .16s ease;
 }
 .btn.primary {
   border-color: var(--brand);
@@ -198,227 +172,11 @@ h1 {
   box-shadow: 0 8px 18px rgba(22, 119, 255, 0.18);
 }
 .btn.primary:hover { background: var(--brand-hover); color: #fff; }
-.section {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 68px 32px;
-}
-.section.compact { padding-top: 46px; }
-.section-head {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-.section h2 {
-  margin: 0;
-  font-size: 30px;
-  line-height: 1.25;
-  letter-spacing: 0;
-}
-.section-head p,
-.lead {
-  margin: 8px 0 0;
-  max-width: 760px;
-  color: var(--text);
-}
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-}
-.stat,
-.card,
-.doc-card,
-.shot {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-.stat {
-  padding: 20px;
-}
-.stat strong {
-  display: block;
-  font-size: 32px;
-  line-height: 1.1;
-}
-.stat span { color: var(--muted); }
-.feature-grid,
-.doc-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-}
-.card,
-.doc-card {
-  padding: 22px;
-}
-.card h3,
-.doc-card h3 {
-  margin: 0 0 8px;
-  font-size: 18px;
-}
-.card p,
-.doc-card p {
-  margin: 0;
-  color: var(--text);
-}
-.showcase-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-.shot {
-  overflow: hidden;
-}
-.shot img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  background: #f5f5f5;
-}
-.shot figcaption {
-  padding: 12px 14px;
-  color: var(--muted);
-}
-.component-strip {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 14px;
-}
-.component-strip a {
-  display: block;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fff;
-}
-.component-strip img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  border-bottom: 1px solid var(--line);
-}
-.component-strip span {
-  display: block;
-  padding: 9px 10px;
-  color: var(--text);
-}
-.page-hero {
-  border-bottom: 1px solid var(--line);
-  background: #fff;
-}
-.page-hero .section {
-  padding-top: 58px;
-  padding-bottom: 48px;
-}
-.page-hero h1 {
-  margin: 12px 0 10px;
-  font-size: clamp(36px, 5vw, 56px);
-}
-.content-grid {
-  display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-  gap: 32px;
-  align-items: start;
-}
-.side {
-  position: sticky;
-  top: 88px;
-  border-right: 1px solid var(--line);
-  padding-right: 18px;
-}
-.side a {
-  display: block;
-  padding: 8px 0;
-  color: var(--muted);
-}
-.article {
-  min-width: 0;
-}
-.article section {
-  padding-bottom: 28px;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 28px;
-}
-.article h2 {
-  margin: 0 0 12px;
-  font-size: 26px;
-}
-.article h3 {
-  margin: 22px 0 8px;
-  font-size: 18px;
-}
-.article p,
-.article li {
-  color: var(--text);
-}
-.article ul,
-.article ol {
-  padding-left: 20px;
-}
-pre {
-  margin: 14px 0;
-  overflow: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--code);
-}
-code {
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 12px;
-}
-pre code {
-  display: block;
-  padding: 16px;
-  line-height: 1.65;
-}
-.callout {
-  padding: 16px 18px;
-  border: 1px solid #91caff;
-  border-radius: var(--radius);
-  background: #e6f4ff;
-  color: rgba(0, 0, 0, 0.72);
-}
 .footer {
   border-top: 1px solid var(--line);
   padding: 24px 32px;
   color: var(--muted);
   text-align: center;
-}
-@media (max-width: 980px) {
-  .site-header { padding: 0 18px; }
-  .nav { gap: 0; }
-  .nav a { padding: 7px 9px; }
-  .hero {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .hero-logo {
-    order: -1;
-    width: 148px;
-    max-width: 42vw;
-  }
-  .stats,
-  .feature-grid,
-  .doc-grid,
-  .component-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-  .side {
-    position: static;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-    padding: 0 0 14px;
-  }
 }
 @media (max-width: 680px) {
   .site-header {
@@ -428,11 +186,7 @@ pre code {
     flex-direction: column;
     padding: 10px 20px 0;
   }
-  .brand {
-    min-width: 0;
-    min-height: 44px;
-  }
-  .brand span { display: inline; }
+  .brand { min-width: 0; min-height: 44px; }
   .nav {
     width: calc(100% + 40px);
     margin: 0 -20px;
@@ -442,23 +196,8 @@ pre code {
     scrollbar-width: none;
   }
   .nav::-webkit-scrollbar { display: none; }
-  .nav a {
-    flex: 0 0 auto;
-    padding: 6px 10px;
-    white-space: nowrap;
-  }
-  .hero { padding: 54px 20px 62px; }
-  .hero-logo { width: 120px; }
-  .hero p { font-size: 16px; }
-  .section { padding: 44px 20px; }
-  .section-head { display: block; }
-  .stats,
-  .feature-grid,
-  .doc-grid,
-  .showcase-grid,
-  .component-strip {
-    grid-template-columns: 1fr;
-  }
+  .nav a { flex: 0 0 auto; padding: 6px 10px; white-space: nowrap; }
+  .theme-toggle { position: absolute; top: 12px; right: 20px; }
 }
 
   /* ---- theme toggle ---- */
@@ -473,13 +212,13 @@ pre code {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: transparent;
-  color: var(--text, var(--subtle));
+  color: var(--text);
   cursor: pointer;
   transition: color .16s ease, border-color .16s ease, background .16s ease;
 }
 .theme-toggle:hover,
 .theme-toggle:focus-visible {
-  color: var(--brand, var(--ant-blue));
+  color: var(--brand);
   border-color: #91caff;
   outline: none;
 }
@@ -500,46 +239,34 @@ html[data-theme="dark"] {
   --line: #303030;
   --line-strong: #424242;
   --bg: #141414;
-  --surface: #1f1f1f;
-  --soft: #111a2c;
-  --code: #161616;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 html[data-theme="dark"] .site-header { background: rgba(20, 20, 20, 0.94); }
-html[data-theme="dark"] .nav a.active,
 html[data-theme="dark"] .nav a:hover { background: #111a2c; }
-html[data-theme="dark"] .hero { background-image: url("resources/images/showcase-dark.png"); }
-html[data-theme="dark"] .hero::before { background: rgba(20, 20, 20, 0.84); }
-html[data-theme="dark"] .hero p { color: rgba(255, 255, 255, 0.68); }
-html[data-theme="dark"] .hero-badges span { background: rgba(31, 31, 31, 0.82); }
+html[data-theme="dark"] main {
+  background:
+    radial-gradient(560px 300px at 82% 0%, rgba(60, 137, 232, 0.12), transparent 72%),
+    radial-gradient(480px 280px at 8% 100%, rgba(60, 137, 232, 0.07), transparent 70%);
+}
 html[data-theme="dark"] .btn { background: #1f1f1f; }
-html[data-theme="dark"] .path-card { background: linear-gradient(180deg, #1f1f1f 0%, #161a22 100%); }
-html[data-theme="dark"] .path-card:hover { border-color: #15325b; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); }
-html[data-theme="dark"] .shot img { background: #262626; }
-html[data-theme="dark"] .component-strip a { background: var(--surface); }
-html[data-theme="dark"] .callout { border-color: #15325b; background: #111a2c; color: rgba(255, 255, 255, 0.72); }
-html[data-theme="dark"] .page-hero { background: var(--bg); }
-html[data-theme="dark"] .hero-logo { filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.5)); }
   </style>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
   <header class="site-header">
     <a class="brand" href="/qt-ant-design/"><img src="/qt-ant-design/assets/qt-ant-design-icon.png" width="1024" height="1024" alt="qt-ant-design logo" decoding="async"><span>qt-ant-design</span></a>
-    <nav class="nav" aria-label="主导航"><a class="active" href="/qt-ant-design/">首页</a><a href="/qt-ant-design/components/">组件</a><a href="/qt-ant-design/docs/getting-started.html">指南</a><a href="/qt-ant-design/docs/design.html">设计</a><a href="/qt-ant-design/docs/compatibility.html">兼容性</a><a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a><a href="https://ant.design/index-cn">Ant Design</a></nav>
+    <nav class="nav" aria-label="主导航"><a href="/qt-ant-design/">首页</a><a href="/qt-ant-design/components/">组件</a><a href="/qt-ant-design/docs/getting-started.html">指南</a><a href="/qt-ant-design/docs/design.html">设计</a><a href="/qt-ant-design/docs/compatibility.html">兼容性</a><a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a><a href="https://ant.design/index-cn">Ant Design</a></nav>
     <button class="theme-toggle" id="theme-toggle" type="button" aria-label="切换亮色 / 暗色主题" aria-pressed="false" title="切换亮色 / 暗色主题"><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
   </header>
 
   <main id="main" tabindex="-1">
-    <section class="page-hero">
-      <div class="section">
-        <span class="eyebrow">404</span>
-        <h1>页面没有找到</h1>
-        <p class="lead">你可以回到首页，或从组件文档继续浏览。</p>
-        <div class="hero-actions">
-          <a class="btn primary" href="/qt-ant-design/">回到首页</a>
-          <a class="btn" href="/qt-ant-design/components/">组件文档</a>
-        </div>
+    <section class="result">
+      <div class="result-code" aria-hidden="true">404</div>
+      <h1>页面没有找到</h1>
+      <p>你访问的页面不存在或已被移动，可以回到首页，或从组件文档继续浏览。</p>
+      <div class="result-actions">
+        <a class="btn primary" href="/qt-ant-design/">回到首页</a>
+        <a class="btn" href="/qt-ant-design/components/">组件文档</a>
       </div>
     </section>
   </main>
@@ -550,22 +277,9 @@ html[data-theme="dark"] .hero-logo { filter: drop-shadow(0 22px 34px rgba(0, 0, 
     var button = document.getElementById('theme-toggle');
     var metaTheme = document.querySelector('meta[name="theme-color"]');
     function currentTheme() { return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; }
-    function swapImages(theme) {
-      var suffix = theme === 'dark' ? '-dark.png' : '-light.png';
-      var imgs = document.querySelectorAll('img');
-      for (var i = 0; i < imgs.length; i++) {
-        var img = imgs[i];
-        if (img.closest && img.closest('.theme-static')) continue;
-        var src = img.getAttribute('src');
-        if (!src) continue;
-        if (/-light\.png$/.test(src)) { img.setAttribute('src', src.replace(/-light\.png$/, suffix)); }
-        else if (/-dark\.png$/.test(src)) { img.setAttribute('src', src.replace(/-dark\.png$/, suffix)); }
-      }
-    }
     function sync(theme) {
       if (button) button.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
       if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#141414' : '#1677ff');
-      swapImages(theme);
     }
     sync(currentTheme());
     if (button) {

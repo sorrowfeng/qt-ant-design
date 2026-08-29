@@ -28,20 +28,7 @@ document.documentElement.setAttribute('data-theme', theme);
 <meta name="twitter:title" content="组件 - qt-ant-design">
 <meta name="twitter:description" content="89 个公开组件、19 个 Qt 风格别名、831 个官方图标，提供截图、基本用法与完整 API 文档。">
 <meta name="twitter:image" content="https://www.sorrowfeng.top/qt-ant-design/assets/og-card.png">
-<meta name="description" content="qt-ant-design 组件总览、示例截图、C++ 基本用法和公开 API 说明。">
-<meta name="theme-color" content="#1677ff">
-<link rel="canonical" href="https://www.sorrowfeng.top/qt-ant-design/components/">
 <link rel="manifest" href="../site.webmanifest">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="qt-ant-design">
-<meta property="og:title" content="组件 - qt-ant-design">
-<meta property="og:description" content="qt-ant-design 组件总览、示例截图、C++ 基本用法和公开 API 说明。">
-<meta property="og:url" content="https://www.sorrowfeng.top/qt-ant-design/components/">
-<meta property="og:image" content="https://www.sorrowfeng.top/qt-ant-design/assets/og-card.png">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="组件 - qt-ant-design">
-<meta name="twitter:description" content="qt-ant-design 组件总览、示例截图、C++ 基本用法和公开 API 说明。">
-<meta name="twitter:image" content="https://www.sorrowfeng.top/qt-ant-design/assets/og-card.png">
 <link rel="icon" type="image/svg+xml" href="../assets/qt-ant-design-icon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/qt-ant-design-icon.png">
 <link rel="apple-touch-icon" href="../assets/qt-ant-design-icon.png">
@@ -212,21 +199,18 @@ min-width: 220px;
 .topnav {
 display: flex;
 align-items: center;
-gap: 28px;
+gap: 4px;
 color: var(--subtle);
 }
-.topnav a.active {
-color: var(--ant-blue);
-position: relative;
+.topnav a {
+padding: 8px 12px;
+border-radius: 6px;
+transition: color .16s ease, background .16s ease;
 }
-.topnav a.active::after {
-content: "";
-position: absolute;
-left: 0;
-right: 0;
-bottom: -22px;
-height: 2px;
-background: var(--ant-blue);
+.topnav a.active,
+.topnav a:hover {
+color: var(--ant-blue);
+background: var(--ant-blue-bg);
 }
 .version-pill {
 border: 1px solid var(--line);
@@ -316,8 +300,12 @@ white-space: nowrap;
 }
 main { min-width: 0; }
 .hero {
-padding-bottom: 30px;
-border-bottom: 1px solid var(--line);
+padding: 26px 24px 30px;
+border: 1px solid var(--line);
+border-radius: 12px;
+background:
+radial-gradient(520px 240px at 92% -24%, rgba(22, 119, 255, 0.09), transparent 72%),
+linear-gradient(180deg, #f6faff 0%, #ffffff 88%);
 }
 .hero h1 {
 margin: 0 0 18px;
@@ -342,18 +330,25 @@ display: flex;
 align-items: center;
 gap: 10px;
 margin-top: 28px;
-border-top: 1px solid var(--line);
-border-bottom: 1px solid var(--line);
-height: 64px;
+height: 48px;
+padding: 0 12px;
+border: 1px solid var(--line-strong);
+border-radius: 8px;
+background: var(--surface);
+transition: border-color .16s ease, box-shadow .16s ease;
+}
+.toolbar:focus-within {
+border-color: var(--ant-blue);
+box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
 }
 .search {
 flex: 1 1 auto;
 min-width: 0;
 width: 100%;
-height: 48px;
+height: 46px;
 border: 0;
 padding: 0 4px;
-font-size: 20px;
+font-size: 16px;
 outline: none;
 color: var(--text);
 background: transparent;
@@ -823,14 +818,13 @@ display: flex;
 width: calc(100% + 32px);
 margin: 0 -16px;
 padding: 0 16px 10px;
-gap: 18px;
+gap: 8px;
 overflow-x: auto;
 white-space: nowrap;
 scrollbar-width: none;
 }
 .topnav::-webkit-scrollbar { display: none; }
-.topnav a { flex: 0 0 auto; }
-.topnav a.active::after { bottom: -10px; }
+.topnav a { flex: 0 0 auto; padding: 6px 10px; }
 .layout { padding: 22px 16px 44px; }
 .sidebar, .toc { display: none; }
 .overview-grid, .meta-grid { grid-template-columns: 1fr; }
@@ -923,6 +917,11 @@ html[data-theme="dark"] .overview-card-art { background: var(--surface); }
 html[data-theme="dark"] .overview-card em { background: var(--surface); }
 html[data-theme="dark"] .source-links a { background: var(--surface); }
 html[data-theme="dark"] .search::placeholder { color: rgba(255, 255, 255, 0.3); }
+html[data-theme="dark"] .hero {
+background:
+radial-gradient(520px 240px at 92% -24%, rgba(60, 137, 232, 0.14), transparent 72%),
+linear-gradient(180deg, #17202f 0%, #141414 88%);
+}
 html[data-theme="dark"] .hero .eyebrow { background: #111a2c; border-color: #15325b; }
 html[data-theme="dark"] .api-count { border-color: #15325b; }
 html[data-theme="dark"] .api-filter { background: linear-gradient(var(--surface), var(--surface)); }
@@ -8087,7 +8086,7 @@ data-keywords="anttreewidget anttree">
 <ul><li><strong>Size</strong><span><code>Large</code>, <code>Middle</code>, <code>Small</code></span></li><li><strong>Variant</strong><span><code>Outlined</code>, <code>Borderless</code>, <code>Filled</code>, <code>Underlined</code></span></li><li><strong>Status</strong><span><code>Normal</code>, <code>Error</code>, <code>Warning</code></span></li><li><strong>Placement</strong><span><code>Top</code>, <code>TopLeft</code>, <code>TopRight</code>, <code>Bottom</code>, <code>BottomLeft</code>, <code>BottomRight</code></span></li><li><strong>Orientation</strong><span><code>Horizontal</code>, <code>Vertical</code></span></li><li><strong>RibbonItemSize</strong><span><code>Large</code>, <code>Small</code></span></li><li><strong>Trigger</strong><span><code>Click</code>, <code>Hover</code></span></li><li><strong>ThemeMode</strong><span><code>Default</code>, <code>Dark</code></span></li><li><strong>ButtonType</strong><span><code>Default</code>, <code>Primary</code>, <code>Dashed</code>, <code>Text</code>, <code>Link</code></span></li><li><strong>ButtonShape</strong><span><code>Default</code>, <code>Circle</code>, <code>Round</code></span></li><li><strong>SelectMode</strong><span><code>Single</code>, <code>Multiple</code>, <code>Tags</code></span></li><li><strong>ProgressType</strong><span><code>Line</code>, <code>Circle</code>, <code>Dashboard</code></span></li><li><strong>ProgressStatus</strong><span><code>Normal</code>, <code>Success</code>, <code>Exception</code>, <code>Active</code></span></li><li><strong>MessageType</strong><span><code>Info</code>, <code>Success</code>, <code>Warning</code>, <code>Error</code>, <code>Loading</code></span></li><li><strong>AlertType</strong><span><code>Success</code>, <code>Info</code>, <code>Warning</code>, <code>Error</code></span></li><li><strong>TooltipPlacement</strong><span><code>Top</code>, <code>TopLeft</code>, <code>TopRight</code>, <code>Bottom</code>, <code>BottomLeft</code>, <code>BottomRight</code>, <code>Left</code>, <code>Right</code></span></li><li><strong>DropdownPlacement</strong><span><code>Bottom</code>, <code>BottomLeft</code>, <code>BottomRight</code>, <code>Top</code>, <code>TopLeft</code>, <code>TopRight</code></span></li><li><strong>DropdownTrigger</strong><span><code>Hover</code>, <code>Click</code>, <code>ContextMenu</code></span></li><li><strong>PopoverTrigger</strong><span><code>Hover</code>, <code>Click</code></span></li><li><strong>MenuMode</strong><span><code>Vertical</code>, <code>Horizontal</code>, <code>Inline</code></span></li><li><strong>MenuTheme</strong><span><code>Light</code>, <code>Dark</code></span></li><li><strong>TabsType</strong><span><code>Line</code>, <code>Card</code>, <code>EditableCard</code></span></li><li><strong>TabsPlacement</strong><span><code>Top</code>, <code>Bottom</code>, <code>Left</code>, <code>Right</code></span></li><li><strong>TagVariant</strong><span><code>Filled</code>, <code>Solid</code>, <code>Outlined</code></span></li><li><strong>BadgeStatus</strong><span><code>None</code>, <code>Success</code>, <code>Processing</code>, <code>Default</code>, <code>Error</code>, <code>Warning</code></span></li><li><strong>BadgeMode</strong><span><code>Default</code>, <code>Dot</code>, <code>Ribbon</code></span></li><li><strong>AvatarShape</strong><span><code>Circle</code>, <code>Square</code></span></li><li><strong>DividerTitlePlacement</strong><span><code>Start</code>, <code>Center</code>, <code>End</code></span></li><li><strong>DividerVariant</strong><span><code>Solid</code>, <code>Dashed</code>, <code>Dotted</code></span></li><li><strong>CardSize</strong><span><code>Default</code>, <code>Small</code></span></li><li><strong>CardVariant</strong><span><code>Outlined</code>, <code>Borderless</code></span></li><li><strong>SkeletonElement</strong><span><code>Default</code>, <code>Button</code>, <code>Avatar</code>, <code>Input</code>, <code>Image</code>, <code>Node</code></span></li><li><strong>FormLayout</strong><span><code>Horizontal</code>, <code>Vertical</code>, <code>Inline</code></span></li><li><strong>FormLabelAlign</strong><span><code>Left</code>, <code>Right</code></span></li><li><strong>StepStatus</strong><span><code>Wait</code>, <code>Process</code>, <code>Finish</code>, <code>Error</code></span></li><li><strong>IconType</strong><span><code>None</code>, <code>Search</code>, <code>Close</code>, <code>Plus</code>, <code>Minus</code>, <code>Check</code>, <code>InfoCircle</code>, <code>ExclamationCircle</code>, <code>CloseCircle</code>, <code>CheckCircle</code>, <code>Loading</code>, <code>Down</code>, <code>Up</code>, <code>Left</code>, <code>Right</code>, <code>Calendar</code>, <code>ClockCircle</code>, <code>User</code>, <code>Home</code>, <code>Star</code>, <code>Setting</code>, <code>Heart</code>, <code>Bell</code>, <code>Mail</code>, <code>Edit</code>, <code>Delete</code>, <code>CloudUpload</code></span></li><li><strong>IconTheme</strong><span><code>Outlined</code>, <code>Filled</code>, <code>TwoTone</code></span></li><li><strong>TimelineMode</strong><span><code>Start</code>, <code>Alternate</code>, <code>End</code></span></li><li><strong>TimelineOrientation</strong><span><code>Vertical</code>, <code>Horizontal</code></span></li><li><strong>TimelineDotVariant</strong><span><code>Outlined</code>, <code>Filled</code></span></li><li><strong>LayoutSiderTheme</strong><span><code>Dark</code>, <code>Light</code></span></li><li><strong>TypographyType</strong><span><code>Default</code>, <code>Secondary</code>, <code>Success</code>, <code>Warning</code>, <code>Danger</code>, <code>LightSolid</code>, <code>Link</code></span></li><li><strong>TypographyTitleLevel</strong><span><code>H1</code>, <code>H2</code>, <code>H3</code>, <code>H4</code>, <code>H5</code></span></li><li><strong>TableSortOrder</strong><span><code>None</code>, <code>Ascending</code>, <code>Descending</code></span></li><li><strong>TableSelectionMode</strong><span><code>None</code>, <code>Checkbox</code>, <code>Radio</code></span></li><li><strong>TableColumnAlign</strong><span><code>Left</code>, <code>Center</code>, <code>Right</code></span></li><li><strong>UploadListType</strong><span><code>Text</code>, <code>Picture</code>, <code>PictureCard</code></span></li><li><strong>UploadFileStatus</strong><span><code>Uploading</code>, <code>Done</code>, <code>Error</code>, <code>Removed</code></span></li><li><strong>DrawerPlacement</strong><span><code>Left</code>, <code>Right</code>, <code>Top</code>, <code>Bottom</code></span></li><li><strong>SegmentedShape</strong><span><code>Default</code>, <code>Round</code></span></li><li><strong>QRCodeErrorLevel</strong><span><code>L</code>, <code>M</code>, <code>Q</code>, <code>H</code></span></li><li><strong>QRCodeStatus</strong><span><code>Active</code>, <code>Expired</code>, <code>Loading</code>, <code>Scanned</code></span></li><li><strong>FloatButtonType</strong><span><code>Default</code>, <code>Primary</code></span></li><li><strong>FloatButtonShape</strong><span><code>Circle</code>, <code>Square</code></span></li><li><strong>FloatButtonPlacement</strong><span><code>BottomRight</code>, <code>BottomLeft</code>, <code>TopRight</code>, <code>TopLeft</code></span></li><li><strong>ColorPickerMode</strong><span><code>RGB</code>, <code>HSV</code>, <code>HEX</code></span></li><li><strong>CalendarMode</strong><span><code>Day</code>, <code>Month</code>, <code>Year</code></span></li></ul>
 </section>
 </section>
-<p class="footer">文档更新时间：2026-06-14。当前发布版本：v0.1.2。源数据：<code>src/widgets/*.h</code>、<code>src/core/AntTypes.h</code>、<code>AGENTS.md</code>。</p>
+<p class="footer">文档更新时间：2026-08-29。当前发布版本：v0.1.3。源数据：<code>src/widgets/*.h</code>、<code>src/core/AntTypes.h</code>、<code>AGENTS.md</code>。</p>
 </main>
 <aside class="toc">
 <strong>本页目录</strong>

@@ -276,6 +276,7 @@ h1 {
 .shot img {
   display: block;
   width: 100%;
+  height: auto;
   aspect-ratio: 16 / 9;
   object-fit: cover;
   background: #f5f5f5;
@@ -310,7 +311,9 @@ h1 {
 }
 .page-hero {
   border-bottom: 1px solid var(--line);
-  background: #fff;
+  background:
+    radial-gradient(560px 260px at 86% -20%, rgba(22, 119, 255, 0.08), transparent 72%),
+    linear-gradient(180deg, #f6faff 0%, #ffffff 88%);
 }
 .page-hero .section {
   padding-top: 58px;
@@ -334,8 +337,16 @@ h1 {
 }
 .side a {
   display: block;
-  padding: 8px 0;
+  padding: 8px 12px;
+  border-radius: 6px;
   color: var(--muted);
+  transition: color .16s ease, background .16s ease;
+}
+.side a:hover { color: var(--brand); }
+.side a.active {
+  color: var(--brand);
+  background: #e6f4ff;
+  font-weight: 500;
 }
 .article {
   min-width: 0;
@@ -518,6 +529,7 @@ html[data-theme="dark"] .shot img { background: #262626; }
 html[data-theme="dark"] .component-strip a { background: var(--surface); }
 html[data-theme="dark"] .callout { border-color: #15325b; background: #111a2c; color: rgba(255, 255, 255, 0.72); }
 html[data-theme="dark"] .page-hero { background: var(--bg); }
+html[data-theme="dark"] .side a.active { background: #111a2c; }
 html[data-theme="dark"] .hero-logo { filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.5)); }
   </style>
 </head>
@@ -614,6 +626,26 @@ html[data-theme="dark"] .hero-logo { filter: drop-shadow(0 22px 34px rgba(0, 0, 
       swapImages(theme);
     }
     sync(currentTheme());
+    var sideLinks = document.querySelectorAll('.side a[href^="#"]');
+    var spyMap = [];
+    for (var i = 0; i < sideLinks.length; i++) {
+      var sec = document.getElementById(sideLinks[i].getAttribute('href').slice(1));
+      if (sec) spyMap.push({ a: sideLinks[i], sec: sec });
+    }
+    if (spyMap.length) {
+      var onSpyScroll = function () {
+        var pos = window.scrollY + 140;
+        var current = spyMap[0];
+        for (var i = 0; i < spyMap.length; i++) {
+          if (spyMap[i].sec.offsetTop <= pos) current = spyMap[i];
+        }
+        for (var j = 0; j < spyMap.length; j++) {
+          spyMap[j].a.classList.toggle('active', spyMap[j] === current);
+        }
+      };
+      window.addEventListener('scroll', onSpyScroll, { passive: true });
+      onSpyScroll();
+    }
     if (button) {
       button.addEventListener('click', function () {
         var next = currentTheme() === 'dark' ? 'light' : 'dark';
