@@ -107,6 +107,7 @@
 #include "widgets/AntWidget.h"
 #include "widgets/AntWindow.h"
 #include "widgets/AntWindowFrame.h"
+#include "TestUtils.h"
 
 class TestAntThemeLifecycle : public QObject
 {
@@ -317,22 +318,7 @@ QList<ObjectCase> objectCases()
     };
 }
 
-bool waitUntil(const std::function<bool()>& predicate, int timeoutMs = 700)
-{
-    QElapsedTimer timer;
-    timer.start();
-    while (timer.elapsed() < timeoutMs)
-    {
-        QCoreApplication::processEvents();
-        if (predicate())
-        {
-            return true;
-        }
-        QTest::qWait(10);
-    }
-    QCoreApplication::processEvents();
-    return predicate();
-}
+using AntTestUtils::waitUntil;
 
 void drainDeferredDeletes()
 {

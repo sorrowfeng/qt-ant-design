@@ -46,6 +46,7 @@
 #include "widgets/AntTimePicker.h"
 #include "widgets/AntTour.h"
 #include "widgets/AntTreeSelect.h"
+#include "TestUtils.h"
 
 class TestAntStressLifecycle : public QObject
 {
@@ -84,21 +85,12 @@ private:
     Ant::ThemeMode m_originalMode;
 };
 
+// Stress tests need a longer default polling budget than the shared helper
+// (1200ms vs 700ms), so wrap it with a stress-specific default while still
+// delegating the polling loop to AntTestUtils::waitUntil.
 bool waitUntil(const std::function<bool()>& predicate, int timeoutMs = 1200)
 {
-    QElapsedTimer timer;
-    timer.start();
-    while (timer.elapsed() < timeoutMs)
-    {
-        QCoreApplication::processEvents();
-        if (predicate())
-        {
-            return true;
-        }
-        QTest::qWait(10);
-    }
-    QCoreApplication::processEvents();
-    return predicate();
+    return AntTestUtils::waitUntil(predicate, timeoutMs);
 }
 
 void drainDeferredDeletes()

@@ -14,6 +14,11 @@ function(add_ant_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
     target_link_libraries(${TEST_NAME} PRIVATE qt-ant-design Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME} -o -,txt)
+    # Default timeout caps hangs from event loops, popups, or blocking
+    # animations so a stuck test fails fast instead of stalling the CI job.
+    # Individual tests that legitimately need longer (stress, visual parity,
+    # build-system) override this via an explicit set_tests_properties below.
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 60)
 endfunction()
 
 function(add_ant_inventory_test TEST_NAME)

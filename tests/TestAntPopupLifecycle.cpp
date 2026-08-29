@@ -19,6 +19,7 @@
 #include "widgets/AntTimePicker.h"
 #include "widgets/AntToolTip.h"
 #include "widgets/AntTreeSelect.h"
+#include "TestUtils.h"
 
 class TestAntPopupLifecycle : public QObject
 {
@@ -31,22 +32,7 @@ private slots:
 
 namespace
 {
-bool waitUntil(const std::function<bool()>& predicate, int timeoutMs = 700)
-{
-    QElapsedTimer timer;
-    timer.start();
-    while (timer.elapsed() < timeoutMs)
-    {
-        QCoreApplication::processEvents();
-        if (predicate())
-        {
-            return true;
-        }
-        QTest::qWait(10);
-    }
-    QCoreApplication::processEvents();
-    return predicate();
-}
+using AntTestUtils::waitUntil;
 
 void drainDeferredDeletes()
 {
