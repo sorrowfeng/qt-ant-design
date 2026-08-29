@@ -3,21 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function () {
+    try {
+      var saved = localStorage.getItem('qad-theme');
+      var theme = saved === 'dark' || saved === 'light' ? saved
+        : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) { /* keep light */ }
+  })();
+</script>
+
   <title>设计与架构 - qt-ant-design</title>
   <meta name="description" content="qt-ant-design 的设计原则、绘制架构、组件分类和桌面扩展说明。">
   <meta name="theme-color" content="#1677ff">
-  <link rel="canonical" href="http://www.sorrowfeng.top/qt-ant-design/docs/design.html">
+  <link rel="canonical" href="https://www.sorrowfeng.top/qt-ant-design/docs/design.html">
   <link rel="manifest" href="../site.webmanifest">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="qt-ant-design">
   <meta property="og:title" content="设计与架构 - qt-ant-design">
   <meta property="og:description" content="qt-ant-design 的设计原则、绘制架构、组件分类和桌面扩展说明。">
-  <meta property="og:url" content="http://www.sorrowfeng.top/qt-ant-design/docs/design.html">
-  <meta property="og:image" content="http://www.sorrowfeng.top/qt-ant-design/assets/qt-ant-design-icon.png">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:url" content="https://www.sorrowfeng.top/qt-ant-design/docs/design.html">
+  <meta property="og:image" content="https://www.sorrowfeng.top/qt-ant-design/assets/og-card.png">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="设计与架构 - qt-ant-design">
   <meta name="twitter:description" content="qt-ant-design 的设计原则、绘制架构、组件分类和桌面扩展说明。">
-  <meta name="twitter:image" content="http://www.sorrowfeng.top/qt-ant-design/assets/qt-ant-design-icon.png">
+  <meta name="twitter:image" content="https://www.sorrowfeng.top/qt-ant-design/assets/og-card.png">
   <link rel="icon" type="image/svg+xml" href="../assets/qt-ant-design-icon.svg">
   <link rel="alternate icon" type="image/png" href="../assets/qt-ant-design-icon.png">
   <link rel="apple-touch-icon" href="../assets/qt-ant-design-icon.png">
@@ -449,6 +460,65 @@ pre code {
   }
 }
 
+  /* ---- theme toggle ---- */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  margin-left: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text, var(--subtle));
+  cursor: pointer;
+  transition: color .16s ease, border-color .16s ease, background .16s ease;
+}
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  color: var(--brand, var(--ant-blue));
+  border-color: #91caff;
+  outline: none;
+}
+html[data-theme="dark"] .theme-toggle:hover,
+html[data-theme="dark"] .theme-toggle:focus-visible { border-color: #15325b; }
+.theme-toggle svg { width: 18px; height: 18px; }
+.theme-toggle .icon-sun { display: none; }
+html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+/* ---- dark theme ---- */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --brand: #1668dc;
+  --brand-hover: #3c89e8;
+  --ink: rgba(255, 255, 255, 0.88);
+  --text: rgba(255, 255, 255, 0.72);
+  --muted: rgba(255, 255, 255, 0.45);
+  --line: #303030;
+  --line-strong: #424242;
+  --bg: #141414;
+  --surface: #1f1f1f;
+  --soft: #111a2c;
+  --code: #161616;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+html[data-theme="dark"] .site-header { background: rgba(20, 20, 20, 0.94); }
+html[data-theme="dark"] .nav a.active,
+html[data-theme="dark"] .nav a:hover { background: #111a2c; }
+html[data-theme="dark"] .hero { background-image: url("resources/images/showcase-dark.png"); }
+html[data-theme="dark"] .hero::before { background: rgba(20, 20, 20, 0.84); }
+html[data-theme="dark"] .hero p { color: rgba(255, 255, 255, 0.68); }
+html[data-theme="dark"] .hero-badges span { background: rgba(31, 31, 31, 0.82); }
+html[data-theme="dark"] .btn { background: #1f1f1f; }
+html[data-theme="dark"] .path-card { background: linear-gradient(180deg, #1f1f1f 0%, #161a22 100%); }
+html[data-theme="dark"] .path-card:hover { border-color: #15325b; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); }
+html[data-theme="dark"] .shot img { background: #262626; }
+html[data-theme="dark"] .component-strip a { background: var(--surface); }
+html[data-theme="dark"] .callout { border-color: #15325b; background: #111a2c; color: rgba(255, 255, 255, 0.72); }
+html[data-theme="dark"] .page-hero { background: var(--bg); }
+html[data-theme="dark"] .hero-logo { filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.5)); }
   </style>
 </head>
 <body>
@@ -456,6 +526,7 @@ pre code {
   <header class="site-header">
     <a class="brand" href="../index.html"><img src="../assets/qt-ant-design-icon.png" width="1024" height="1024" alt="qt-ant-design logo" decoding="async"><span>qt-ant-design</span></a>
     <nav class="nav" aria-label="主导航"><a href="../index.html">首页</a><a href="../components/">组件</a><a href="../docs/getting-started.html">指南</a><a class="active" aria-current="page" href="../docs/design.html">设计</a><a href="../docs/compatibility.html">兼容性</a><a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a><a href="https://ant.design/index-cn">Ant Design</a></nav>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="切换亮色 / 暗色主题" aria-pressed="false" title="切换亮色 / 暗色主题"><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
   </header>
 
   <main id="main" tabindex="-1">
@@ -478,7 +549,7 @@ pre code {
         <section id="snapshot">
           <h2>版本快照</h2>
           <div class="feature-grid">
-            <article class="card"><h3>v0.1.2</h3><p>当前发布版本，包含 manifest 修复、高 DPI 初始化优化和 Qt5 / Qt6 视觉一致性改进。</p></article>
+            <article class="card"><h3>v0.1.3</h3><p>当前发布版本，包含 manifest 修复、高 DPI 初始化优化和 Qt5 / Qt6 视觉一致性改进。</p></article>
             <article class="card"><h3>89 个公开组件</h3><p>覆盖 Ant Design 标准组件，并补充窗口、对话框、Dock、Ribbon、Nav 等桌面控件。</p></article>
             <article class="card"><h3>67 个 Style 类</h3><p>主要组件迁移到 QProxyStyle，API 状态和绘制职责分离。</p></article>
             <article class="card"><h3>47 个 CTest</h3><p>覆盖组件行为、主题切换、Qt5/Qt6 差异、高 DPI 和 example 页面遍历。</p></article>
@@ -518,6 +589,40 @@ pre code {
       </article>
     </section>
   </main>
-  <footer class="footer">qt-ant-design · v0.1.2 · Qt Widgets components inspired by Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
+  <footer class="footer">qt-ant-design · v0.1.3 · Qt Widgets implementation of Ant Design · <a href="https://github.com/sorrowfeng/qt-ant-design">GitHub</a></footer>
+<script>
+  (function () {
+    var root = document.documentElement;
+    var button = document.getElementById('theme-toggle');
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    function currentTheme() { return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; }
+    function swapImages(theme) {
+      var suffix = theme === 'dark' ? '-dark.png' : '-light.png';
+      var imgs = document.querySelectorAll('img');
+      for (var i = 0; i < imgs.length; i++) {
+        var img = imgs[i];
+        if (img.closest && img.closest('.theme-static')) continue;
+        var src = img.getAttribute('src');
+        if (!src) continue;
+        if (/-light\.png$/.test(src)) { img.setAttribute('src', src.replace(/-light\.png$/, suffix)); }
+        else if (/-dark\.png$/.test(src)) { img.setAttribute('src', src.replace(/-dark\.png$/, suffix)); }
+      }
+    }
+    function sync(theme) {
+      if (button) button.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+      if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#141414' : '#1677ff');
+      swapImages(theme);
+    }
+    sync(currentTheme());
+    if (button) {
+      button.addEventListener('click', function () {
+        var next = currentTheme() === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('qad-theme', next); } catch (e) { /* private mode */ }
+        sync(next);
+      });
+    }
+  })();
+</script>
 </body>
 </html>
