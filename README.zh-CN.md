@@ -15,6 +15,10 @@
 
 [English](README.md) | 简体中文
 
+<p align="center">
+  <img src="assets/qt-ant-design-poster.png" alt="qt-ant-design 海报" width="880">
+</p>
+
 `qt-ant-design` 是一个基于 Qt Widgets 的 C++ 组件库，配置时可自动识别 Qt6 或 Qt5，目标是将 Ant Design 设计系统移植到原生桌面组件中。
 
 在线文档：[www.sorrowfeng.top/qt-ant-design](http://www.sorrowfeng.top/qt-ant-design/)

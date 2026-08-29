@@ -15,6 +15,10 @@
 
 English | [简体中文](README.zh-CN.md)
 
+<p align="center">
+  <img src="assets/qt-ant-design-poster.png" alt="qt-ant-design poster" width="880">
+</p>
+
 `qt-ant-design` is a C++ component library built on Qt Widgets that auto-detects Qt 6 or Qt 5 at configure time and ports the Ant Design system to native desktop widgets.
 
 Online documentation: [www.sorrowfeng.top/qt-ant-design](http://www.sorrowfeng.top/qt-ant-design/)
