@@ -1,5 +1,7 @@
 #include "Pages.h"
 
+#include "PageCommon.h"
+
 #include <QColor>
 #include <QDateTime>
 #include <QFrame>
@@ -32,13 +34,10 @@ namespace example::pages
 {
 QWidget* createPopoverPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(16);
@@ -60,7 +59,7 @@ QWidget* createPopoverPage(QWidget* /*owner*/)
         basicRow->addWidget(clickButton);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -69,13 +68,10 @@ QWidget* createPopoverPage(QWidget* /*owner*/)
 
 QWidget* createQRCodePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* qr1 = new AntQRCode();
         qr1->setFixedSize(160, 160);
@@ -102,7 +98,7 @@ QWidget* createQRCodePage(QWidget* /*owner*/)
         controlRow->addWidget(regenerate);
         controlRow->addStretch();
         cl->addLayout(controlRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -111,10 +107,7 @@ QWidget* createQRCodePage(QWidget* /*owner*/)
 
 QWidget* createSegmentedPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     const QVector<AntSegmentedOption> basicOptions = {
         {QStringLiteral("daily"), QStringLiteral("Daily")},
@@ -123,17 +116,17 @@ QWidget* createSegmentedPage(QWidget* /*owner*/)
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basic = new AntSegmented();
         basic->setOptions(basicOptions);
         basic->setValue(QStringLiteral("daily"));
         cl->addWidget(basic, 0, Qt::AlignLeft | Qt::AlignTop);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Icons"));
+        auto* card = makeCard(layout, QStringLiteral("With Icons"));
         auto* cl = card->bodyLayout();
         auto* withIcons = new AntSegmented();
         withIcons->setOptions({
@@ -142,7 +135,7 @@ QWidget* createSegmentedPage(QWidget* /*owner*/)
         });
         withIcons->setValue(QStringLiteral("list"));
         cl->addWidget(withIcons, 0, Qt::AlignLeft | Qt::AlignTop);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -151,13 +144,10 @@ QWidget* createSegmentedPage(QWidget* /*owner*/)
 
 QWidget* createStatisticPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(40);
@@ -178,11 +168,11 @@ QWidget* createStatisticPage(QWidget* /*owner*/)
         basicRow->addWidget(balance);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Countdown"));
+        auto* card = makeCard(layout, QStringLiteral("Countdown"));
         auto* cl = card->bodyLayout();
         auto* countdown = new AntStatistic(page);
         countdown->setTitle(QStringLiteral("Countdown"));
@@ -191,7 +181,7 @@ QWidget* createStatisticPage(QWidget* /*owner*/)
         countdown->setValue(QDateTime::currentDateTime().addDays(2).toMSecsSinceEpoch() / 1000.0);
         countdown->setFixedWidth(180);
         cl->addWidget(countdown);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -200,10 +190,7 @@ QWidget* createStatisticPage(QWidget* /*owner*/)
 
 QWidget* createTablePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     auto makeRows = [](int count) {
         static const char* const kNames[] = {
@@ -226,7 +213,7 @@ QWidget* createTablePage(QWidget* /*owner*/)
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* table = new AntTable(page);
@@ -238,11 +225,11 @@ QWidget* createTablePage(QWidget* /*owner*/)
         table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 320});
         table->setRows(makeRows(3));
         cl->addWidget(table);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Row selection"));
+        auto* card = makeCard(layout, QStringLiteral("Row selection"));
         auto* cl = card->bodyLayout();
 
         auto* table = new AntTable(page);
@@ -264,11 +251,11 @@ QWidget* createTablePage(QWidget* /*owner*/)
         cl->addWidget(table);
         cl->addSpacing(8);
         cl->addWidget(hint);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Pagination & border"));
+        auto* card = makeCard(layout, QStringLiteral("Pagination & border"));
         auto* cl = card->bodyLayout();
 
         auto* table = new AntTable(page);
@@ -279,7 +266,7 @@ QWidget* createTablePage(QWidget* /*owner*/)
         table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 280});
         table->setRows(makeRows(15));
         cl->addWidget(table);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -288,10 +275,7 @@ QWidget* createTablePage(QWidget* /*owner*/)
 
 QWidget* createTabsPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     auto makePane = [](const QString& text) {
         auto* pane = new QWidget();
@@ -305,7 +289,7 @@ QWidget* createTabsPage(QWidget* /*owner*/)
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("Line"));
+        auto* card = makeCard(layout, QStringLiteral("Line"));
         auto* cl = card->bodyLayout();
         auto* lineTabs = new AntTabs();
         lineTabs->setMinimumHeight(110);
@@ -314,11 +298,11 @@ QWidget* createTabsPage(QWidget* /*owner*/)
         lineTabs->addTab(makePane(QStringLiteral("Content 3")), QStringLiteral("3"), QStringLiteral("Tab 3"));
         lineTabs->setActiveKey(QStringLiteral("1"));
         cl->addWidget(lineTabs);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Card"));
+        auto* card = makeCard(layout, QStringLiteral("Card"));
         auto* cl = card->bodyLayout();
         auto* cardTabs = new AntTabs();
         cardTabs->setTabsType(Ant::TabsType::Card);
@@ -327,7 +311,7 @@ QWidget* createTabsPage(QWidget* /*owner*/)
         cardTabs->addTab(makePane(QStringLiteral("Content B")), QStringLiteral("2"), QStringLiteral("Card B"));
         cardTabs->setActiveKey(QStringLiteral("1"));
         cl->addWidget(cardTabs);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -336,13 +320,10 @@ QWidget* createTabsPage(QWidget* /*owner*/)
 
 QWidget* createTagPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(10);
@@ -358,11 +339,11 @@ QWidget* createTagPage(QWidget* /*owner*/)
         }
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Checkable & Closable"));
+        auto* card = makeCard(layout, QStringLiteral("Checkable & Closable"));
         auto* cl = card->bodyLayout();
         auto* checkRow = new QHBoxLayout();
         checkRow->setSpacing(10);
@@ -386,7 +367,7 @@ QWidget* createTagPage(QWidget* /*owner*/)
 
         checkRow->addStretch();
         cl->addLayout(checkRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -395,13 +376,10 @@ QWidget* createTagPage(QWidget* /*owner*/)
 
 QWidget* createTimelinePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basic = new AntTimeline();
         basic->addItem(QStringLiteral("Step 1 - Create services site 2024-01-01"), QString(), QStringLiteral("blue"));
@@ -409,7 +387,7 @@ QWidget* createTimelinePage(QWidget* /*owner*/)
         basic->addItem(QStringLiteral("Step 3 - Testing and verification 2024-01-03"), QString(), QStringLiteral("green"));
         basic->addItem(QStringLiteral("Step 4 - Network problems resolved 2024-01-04"), QString(), QStringLiteral("red"));
         cl->addWidget(basic);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -418,13 +396,10 @@ QWidget* createTimelinePage(QWidget* /*owner*/)
 
 QWidget* createTooltipPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(16);
@@ -445,7 +420,7 @@ QWidget* createTooltipPage(QWidget* /*owner*/)
         }
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -454,13 +429,10 @@ QWidget* createTooltipPage(QWidget* /*owner*/)
 
 QWidget* createTreePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* tree = new AntTree(page);
@@ -484,7 +456,7 @@ QWidget* createTreePage(QWidget* /*owner*/)
 
         tree->setTreeData(treeData);
         cl->addWidget(tree);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();

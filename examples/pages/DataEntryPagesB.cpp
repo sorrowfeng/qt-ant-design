@@ -25,13 +25,10 @@ namespace example::pages
 {
 QWidget* createRadioPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
@@ -45,11 +42,26 @@ QWidget* createRadioPage(QWidget* /*owner*/)
         basicRow->addWidget(radioC);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
+        auto* echo = makeSecondaryText(QStringLiteral("Selected: A"), page);
+        const auto reflect = [echo](const QString& label) {
+            echo->setText(QStringLiteral("Selected: %1").arg(label));
+        };
+        QObject::connect(radioA, &AntRadio::toggled, echo, [reflect](bool checked) {
+            if (checked) reflect(QStringLiteral("A"));
+        });
+        QObject::connect(radioB, &AntRadio::toggled, echo, [reflect](bool checked) {
+            if (checked) reflect(QStringLiteral("B"));
+        });
+        QObject::connect(radioC, &AntRadio::toggled, echo, [reflect](bool checked) {
+            if (checked) reflect(QStringLiteral("C"));
+        });
+        cl->addWidget(echo);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Button Style"));
+        auto* card = makeCard(layout, QStringLiteral("Button Style"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* buttonRow = new QHBoxLayout();
@@ -66,7 +78,7 @@ QWidget* createRadioPage(QWidget* /*owner*/)
         buttonRow->addWidget(monthly);
         buttonRow->addStretch();
         cl->addLayout(buttonRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -75,23 +87,26 @@ QWidget* createRadioPage(QWidget* /*owner*/)
 
 QWidget* createRatePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basic = new AntRate();
         basic->setValue(3.0);
         cl->addWidget(basic, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
+        auto* echo = makeSecondaryText(QStringLiteral("Value: 3"), page);
+        QObject::connect(basic, &AntRate::valueChanged, echo, [echo](double value) {
+            echo->setText(QStringLiteral("Value: %1").arg(value));
+        });
+        cl->addWidget(echo);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Half & Disabled"));
+        auto* card = makeCard(layout, QStringLiteral("Half & Disabled"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* row = new QHBoxLayout();
@@ -106,7 +121,7 @@ QWidget* createRatePage(QWidget* /*owner*/)
         row->addWidget(disabled);
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -115,13 +130,10 @@ QWidget* createRatePage(QWidget* /*owner*/)
 
 QWidget* createSelectPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basic = new AntSelect();
@@ -129,11 +141,17 @@ QWidget* createSelectPage(QWidget* /*owner*/)
         basic->setCurrentIndex(0);
         basic->setFixedWidth(160);
         cl->addWidget(basic, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
+        auto* echo = makeSecondaryText(QStringLiteral("Selected: Apple"), page);
+        QObject::connect(basic, &AntSelect::currentTextChanged, echo, [echo](const QString& text) {
+            echo->setText(QStringLiteral("Selected: %1").arg(text));
+        });
+        cl->addWidget(echo);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Multiple"));
+        auto* card = makeCard(layout, QStringLiteral("Multiple"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* multi = new AntSelect();
@@ -142,11 +160,11 @@ QWidget* createSelectPage(QWidget* /*owner*/)
         multi->addSelectedIndex(0);
         multi->setFixedWidth(280);
         cl->addWidget(multi, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Sizes"));
+        auto* card = makeCard(layout, QStringLiteral("Sizes"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* sizeRow = new QHBoxLayout();
@@ -170,7 +188,7 @@ QWidget* createSelectPage(QWidget* /*owner*/)
         sizeRow->addWidget(small);
         sizeRow->addStretch();
         cl->addLayout(sizeRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -180,24 +198,27 @@ QWidget* createSelectPage(QWidget* /*owner*/)
 QWidget* createSliderPage(QWidget* owner)
 {
     Q_UNUSED(owner)
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basic = new AntSlider();
         basic->setFixedWidth(400);
         basic->setValue(30);
         cl->addWidget(basic, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
+        auto* echo = makeSecondaryText(QStringLiteral("Value: 30"), page);
+        QObject::connect(basic, &AntSlider::valueChanged, echo, [echo](int value) {
+            echo->setText(QStringLiteral("Value: %1").arg(value));
+        });
+        cl->addWidget(echo);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Range"));
+        auto* card = makeCard(layout, QStringLiteral("Range"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* range = new AntSlider();
@@ -205,11 +226,11 @@ QWidget* createSliderPage(QWidget* owner)
         range->setRangeValues(20, 60);
         range->setFixedWidth(400);
         cl->addWidget(range, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Step"));
+        auto* card = makeCard(layout, QStringLiteral("With Step"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* marks = new AntSlider();
@@ -219,7 +240,7 @@ QWidget* createSliderPage(QWidget* owner)
         marks->setValue(50);
         marks->setFixedSize(400, 46);
         cl->addWidget(marks, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -228,13 +249,10 @@ QWidget* createSliderPage(QWidget* owner)
 
 QWidget* createSwitchPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
@@ -246,11 +264,21 @@ QWidget* createSwitchPage(QWidget* /*owner*/)
         basicRow->addWidget(offSwitch);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
+        auto* echo = makeSecondaryText(QStringLiteral("State: ON | OFF"), page);
+        const auto reflect = [echo, onSwitch, offSwitch]() {
+            echo->setText(QStringLiteral("State: %1 | %2")
+                              .arg(onSwitch->isChecked() ? QStringLiteral("ON") : QStringLiteral("OFF"))
+                              .arg(offSwitch->isChecked() ? QStringLiteral("ON") : QStringLiteral("OFF")));
+        };
+        QObject::connect(onSwitch, &AntSwitch::toggled, echo, reflect);
+        QObject::connect(offSwitch, &AntSwitch::toggled, echo, reflect);
+        cl->addWidget(echo);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Text"));
+        auto* card = makeCard(layout, QStringLiteral("With Text"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* textRow = new QHBoxLayout();
@@ -266,18 +294,18 @@ QWidget* createSwitchPage(QWidget* /*owner*/)
         textRow->addWidget(digitSwitch);
         textRow->addStretch();
         cl->addLayout(textRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Disabled"));
+        auto* card = makeCard(layout, QStringLiteral("Disabled"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* disabledOn = new AntSwitch();
         disabledOn->setChecked(true);
         disabledOn->setEnabled(false);
         cl->addWidget(disabledOn, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -286,13 +314,10 @@ QWidget* createSwitchPage(QWidget* /*owner*/)
 
 QWidget* createTimePickerPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
@@ -304,7 +329,7 @@ QWidget* createTimePickerPage(QWidget* /*owner*/)
         basicRow->addWidget(range);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -313,12 +338,9 @@ QWidget* createTimePickerPage(QWidget* /*owner*/)
 
 QWidget* createTransferPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
-    auto* card = new AntCard(QStringLiteral("Basic"));
+    auto* card = makeCard(layout, QStringLiteral("Basic"));
     auto* cl = card->bodyLayout();
     cl->setAlignment(Qt::AlignTop);
 
@@ -329,7 +351,6 @@ QWidget* createTransferPage(QWidget* /*owner*/)
                               QStringLiteral("Item 9")});
     transfer->setTargetItems({});
     cl->addWidget(transfer, 0, Qt::AlignLeft);
-    layout->addWidget(card);
 
     layout->addStretch();
     return page;
@@ -337,13 +358,10 @@ QWidget* createTransferPage(QWidget* /*owner*/)
 
 QWidget* createTreeSelectPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -367,7 +385,6 @@ QWidget* createTreeSelectPage(QWidget* /*owner*/)
         treeSelect->setTreeData(treeData);
         cl->addWidget(treeSelect, 0, Qt::AlignLeft);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -376,13 +393,10 @@ QWidget* createTreeSelectPage(QWidget* /*owner*/)
 
 QWidget* createUploadPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Default"));
+        auto* card = makeCard(layout, QStringLiteral("Default"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -390,11 +404,10 @@ QWidget* createUploadPage(QWidget* /*owner*/)
         upload->setFixedWidth(180);
         cl->addWidget(upload, 0, Qt::AlignLeft);
 
-        layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Dragger"));
+        auto* card = makeCard(layout, QStringLiteral("Dragger"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -404,7 +417,6 @@ QWidget* createUploadPage(QWidget* /*owner*/)
         dragger->setFixedSize(480, 150);
         cl->addWidget(dragger, 0, Qt::AlignLeft);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();

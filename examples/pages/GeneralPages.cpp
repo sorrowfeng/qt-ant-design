@@ -11,6 +11,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include <memory>
+
 #include "PageCommon.h"
 #include "core/AntTheme.h"
 #include "widgets/AntCard.h"
@@ -24,14 +26,11 @@ namespace example::pages
 {
 QWidget* createButtonPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     // Types — Primary / Default / Dashed / Text / Link
     {
-        auto* card = new AntCard(QStringLiteral("Button Types"));
+        auto* card = makeCard(layout, QStringLiteral("Button Types"));
         auto* cl = card->bodyLayout();
         auto* row = new QHBoxLayout();
         row->setSpacing(12);
@@ -52,12 +51,12 @@ QWidget* createButtonPage(QWidget* /*owner*/)
         row->addWidget(link);
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     // Danger & Disabled
     {
-        auto* card = new AntCard(QStringLiteral("Danger & Disabled"));
+        auto* card = makeCard(layout, QStringLiteral("Danger & Disabled"));
         auto* cl = card->bodyLayout();
         auto* row = new QHBoxLayout();
         row->setSpacing(12);
@@ -75,12 +74,12 @@ QWidget* createButtonPage(QWidget* /*owner*/)
         row->addWidget(disabled);
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     // Sizes — Large / Middle / Small
     {
-        auto* card = new AntCard(QStringLiteral("Sizes"));
+        auto* card = makeCard(layout, QStringLiteral("Sizes"));
         auto* cl = card->bodyLayout();
         auto* row = new QHBoxLayout();
         row->setSpacing(12);
@@ -97,12 +96,12 @@ QWidget* createButtonPage(QWidget* /*owner*/)
         row->addWidget(small);
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     // Shapes — Round / Circle / Ghost / Loading
     {
-        auto* card = new AntCard(QStringLiteral("Shapes"));
+        auto* card = makeCard(layout, QStringLiteral("Shapes"));
         auto* cl = card->bodyLayout();
         auto* row = new QHBoxLayout();
         row->setSpacing(12);
@@ -125,12 +124,12 @@ QWidget* createButtonPage(QWidget* /*owner*/)
         row->addWidget(loading);
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     // Icon Placement — icon at start (default) / end
     {
-        auto* card = new AntCard(QStringLiteral("Icon Placement"));
+        auto* card = makeCard(layout, QStringLiteral("Icon Placement"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* row = new QHBoxLayout();
@@ -151,7 +150,32 @@ QWidget* createButtonPage(QWidget* /*owner*/)
         row->addStretch();
         cl->addLayout(row);
         cl->addWidget(makeSecondaryText(QStringLiteral("iconPlacement = Start (default) / End — icon rendered after text."), page));
-        layout->addWidget(card);
+
+    }
+
+    // Click Event — click feedback via the clicked(bool) signal
+    {
+        auto* card = makeCard(layout, QStringLiteral("Click Event"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* row = new QHBoxLayout();
+        row->setSpacing(12);
+        auto* counterText = new AntTypography(QStringLiteral("Clicked 0 times"));
+        counterText->setType(Ant::TypographyType::Secondary);
+        auto* clickMe = new AntButton(QStringLiteral("Click me"));
+        clickMe->setButtonType(Ant::ButtonType::Primary);
+        auto counter = std::make_shared<int>(0);
+        QObject::connect(clickMe, &AntButton::clicked, counterText, [counterText, counter]() {
+            ++*counter;
+            counterText->setText(QStringLiteral("Clicked %1 time%2")
+                                     .arg(*counter)
+                                     .arg(*counter == 1 ? QStringLiteral("") : QStringLiteral("s")));
+        });
+        row->addWidget(clickMe);
+        row->addWidget(counterText);
+        row->addStretch();
+        cl->addLayout(row);
+
     }
 
     layout->addStretch();
@@ -160,10 +184,7 @@ QWidget* createButtonPage(QWidget* /*owner*/)
 
 QWidget* createIconPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     auto createIconBlock = [](const QString& title, AntIcon* icon) {
         auto* block = new QWidget();
@@ -198,7 +219,7 @@ QWidget* createIconPage(QWidget* /*owner*/)
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("Outlined Icons"));
+        auto* card = makeCard(layout, QStringLiteral("Outlined Icons"));
         auto* cl = card->bodyLayout();
         auto* grid = new QGridLayout();
         grid->setContentsMargins(0, 0, 0, 0);
@@ -230,11 +251,11 @@ QWidget* createIconPage(QWidget* /*owner*/)
             grid->addWidget(createIconBlock(item.first, icon), i / 10, i % 10);
         }
         cl->addLayout(grid);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Official Icon Library"));
+        auto* card = makeCard(layout, QStringLiteral("Official Icon Library"));
         auto* cl = card->bodyLayout();
         const QStringList iconNames = AntIcon::builtinIconNames();
         card->setProperty("antExampleIconGalleryTotal", iconNames.size());
@@ -321,11 +342,11 @@ QWidget* createIconPage(QWidget* /*owner*/)
         relayoutIconGallery(QString());
 
         cl->addLayout(grid);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Themes and Colors"));
+        auto* card = makeCard(layout, QStringLiteral("Themes and Colors"));
         auto* cl = card->bodyLayout();
         auto* row = new QHBoxLayout();
         row->setSpacing(24);
@@ -353,11 +374,11 @@ QWidget* createIconPage(QWidget* /*owner*/)
         row->addWidget(createIconBlock(QStringLiteral("Status"), error));
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Rotate and Spin"));
+        auto* card = makeCard(layout, QStringLiteral("Rotate and Spin"));
         auto* cl = card->bodyLayout();
         auto* row = new QHBoxLayout();
         row->setSpacing(24);
@@ -378,11 +399,11 @@ QWidget* createIconPage(QWidget* /*owner*/)
         row->addWidget(createIconBlock(QStringLiteral("Rotate 180"), rotate180));
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Custom Path"));
+        auto* card = makeCard(layout, QStringLiteral("Custom Path"));
         auto* cl = card->bodyLayout();
         auto* row = new QHBoxLayout();
         row->setSpacing(24);
@@ -417,7 +438,7 @@ QWidget* createIconPage(QWidget* /*owner*/)
         inlineLayout->addStretch();
         row->addWidget(inlineWrap, 1);
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -426,13 +447,10 @@ QWidget* createIconPage(QWidget* /*owner*/)
 
 QWidget* createTypographyPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Title Levels"));
+        auto* card = makeCard(layout, QStringLiteral("Title Levels"));
         auto* cl = card->bodyLayout();
         for (int i = 1; i <= 5; ++i)
         {
@@ -441,11 +459,11 @@ QWidget* createTypographyPage(QWidget* /*owner*/)
             title->setTitleLevel(static_cast<Ant::TypographyTitleLevel>(i - 1));
             cl->addWidget(title);
         }
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Text Types"));
+        auto* card = makeCard(layout, QStringLiteral("Text Types"));
         auto* cl = card->bodyLayout();
         auto* row = new QHBoxLayout();
         row->setSpacing(16);
@@ -469,11 +487,11 @@ QWidget* createTypographyPage(QWidget* /*owner*/)
         row->addWidget(link);
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Decorations"));
+        auto* card = makeCard(layout, QStringLiteral("Decorations"));
         auto* cl = card->bodyLayout();
         auto* strongText = new AntTypography(QStringLiteral("Strong Text"));
         strongText->setStrong(true);
@@ -493,32 +511,32 @@ QWidget* createTypographyPage(QWidget* /*owner*/)
         auto* italicText = new AntTypography(QStringLiteral("Italic Text"));
         italicText->setItalic(true);
         cl->addWidget(italicText);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Paragraph"));
+        auto* card = makeCard(layout, QStringLiteral("Paragraph"));
         auto* cl = card->bodyLayout();
         auto* paragraph = new AntTypography(
             QStringLiteral("Ant Design is a design system for enterprise-level products. "
                            "Create an efficient and enjoyable work experience with the design language."));
         paragraph->setParagraph(true);
         cl->addWidget(paragraph);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Copyable"));
+        auto* card = makeCard(layout, QStringLiteral("Copyable"));
         auto* cl = card->bodyLayout();
         auto* copyable = new AntTypography(QStringLiteral("This text is copyable. Click to copy!"));
         copyable->setParagraph(true);
         copyable->setCopyable(true);
         cl->addWidget(copyable);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Editable"));
+        auto* card = makeCard(layout, QStringLiteral("Editable"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* editable = new AntTypography(QStringLiteral("Double-click this text to edit inline."));
@@ -527,7 +545,7 @@ QWidget* createTypographyPage(QWidget* /*owner*/)
         cl->addWidget(makeSecondaryText(
             QStringLiteral("Double-click enters inline editing; Enter or focus-out commits, Esc cancels, edited() signal is emitted."),
             page));
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();

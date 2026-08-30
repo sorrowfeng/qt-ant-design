@@ -34,7 +34,7 @@ QWidget* createAppPage(QWidget* /*owner*/)
     layout->setSpacing(16);
 
     {
-        auto* card = new AntCard(QStringLiteral("App Component"));
+        auto* card = makeCard(layout, QStringLiteral("App Component"));
         auto* cl = card->bodyLayout();
 
         auto* desc = makeParagraph(QStringLiteral("AntApp binds feedback to a visible host widget and exposes real Message, Modal, and Notification entry points. It also reports presentation failures instead of silently creating feedback for a hidden or zero-size host."),
@@ -79,7 +79,6 @@ QWidget* createAppPage(QWidget* /*owner*/)
                                 .arg(feedbackType));
         });
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -95,7 +94,7 @@ QWidget* createConfigProviderPage(QWidget* /*owner*/)
     layout->setSpacing(16);
 
     {
-        auto* card = new AntCard(QStringLiteral("ConfigProvider"));
+        auto* card = makeCard(layout, QStringLiteral("ConfigProvider"));
         auto* cl = card->bodyLayout();
 
         auto* note = makeParagraph(
@@ -136,11 +135,10 @@ QWidget* createConfigProviderPage(QWidget* /*owner*/)
             status->setText(QStringLiteral("Restored the built-in theme token defaults."));
         });
 
-        layout->addWidget(card);
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Compact Density"));
+        auto* card = makeCard(layout, QStringLiteral("Compact Density"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* note = makeParagraph(
@@ -178,11 +176,11 @@ QWidget* createConfigProviderPage(QWidget* /*owner*/)
             provider->apply();
             status->setText(QStringLiteral("Current density: Default"));
         });
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("RTL Direction"));
+        auto* card = makeCard(layout, QStringLiteral("RTL Direction"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* note = makeParagraph(
@@ -211,11 +209,11 @@ QWidget* createConfigProviderPage(QWidget* /*owner*/)
             provider->apply();
             status->setText(QStringLiteral("Current: RightToLeft"));
         });
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Locale"));
+        auto* card = makeCard(layout, QStringLiteral("Locale"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* note = makeParagraph(
@@ -248,11 +246,11 @@ QWidget* createConfigProviderPage(QWidget* /*owner*/)
             antLocale->setLanguage(Ant::LocaleLanguage::ChineseSimplified);
             status->setText(QStringLiteral("当前语言：简体中文"));
         });
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Component Token Override"));
+        auto* card = makeCard(layout, QStringLiteral("Component Token Override"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* note = makeParagraph(
@@ -303,7 +301,7 @@ QWidget* createConfigProviderPage(QWidget* /*owner*/)
             antTheme->clearComponentTokens(QStringLiteral("Button"));
             status->setText(QStringLiteral("Button.borderRadius: default (token)"));
         });
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -312,10 +310,7 @@ QWidget* createConfigProviderPage(QWidget* /*owner*/)
 
 QWidget* createBorderBeamPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     auto makeBeamContent = [](const QString& text, QWidget* parent) {
         auto* content = new AntWidget(parent);
@@ -326,18 +321,18 @@ QWidget* createBorderBeamPage(QWidget* /*owner*/)
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
         auto* beam = new AntBorderBeam(page);
         beam->setContentWidget(makeBeamContent(QStringLiteral("AntBorderBeam draws an animated light beam along the container border, useful for highlighting key cards or call-to-action areas."), beam));
         cl->addWidget(beam);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Count & Color"));
+        auto* card = makeCard(layout, QStringLiteral("Count & Color"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -357,11 +352,11 @@ QWidget* createBorderBeamPage(QWidget* /*owner*/)
         row->addWidget(triple);
         row->addWidget(fast);
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Hover To Run"));
+        auto* card = makeCard(layout, QStringLiteral("Hover To Run"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -370,7 +365,7 @@ QWidget* createBorderBeamPage(QWidget* /*owner*/)
         hoverBeam->setLineWidth(3);
         hoverBeam->setContentWidget(makeBeamContent(QStringLiteral("Hover this card to start the beam animation."), hoverBeam));
         cl->addWidget(hoverBeam);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -379,13 +374,10 @@ QWidget* createBorderBeamPage(QWidget* /*owner*/)
 
 QWidget* createFloatButtonPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -393,7 +385,6 @@ QWidget* createFloatButtonPage(QWidget* /*owner*/)
         desc->setType(Ant::TypographyType::Secondary);
         cl->addWidget(desc);
 
-        layout->addWidget(card);
     }
 
     auto* fab1 = new AntFloatButton(page);

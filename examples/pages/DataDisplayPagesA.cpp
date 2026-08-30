@@ -172,13 +172,10 @@ namespace example::pages
 {
 QWidget* createAvatarPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(16);
@@ -191,11 +188,11 @@ QWidget* createAvatarPage(QWidget* /*owner*/)
         }
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Type"));
+        auto* card = makeCard(layout, QStringLiteral("Type"));
         auto* cl = card->bodyLayout();
         auto* typeRow = new QHBoxLayout();
         typeRow->setSpacing(16);
@@ -214,11 +211,11 @@ QWidget* createAvatarPage(QWidget* /*owner*/)
         typeRow->addWidget(orange);
         typeRow->addStretch();
         cl->addLayout(typeRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Group"));
+        auto* card = makeCard(layout, QStringLiteral("Group"));
         auto* cl = card->bodyLayout();
         auto* groupRow = new QHBoxLayout();
         groupRow->setSpacing(28);
@@ -239,7 +236,7 @@ QWidget* createAvatarPage(QWidget* /*owner*/)
         groupRow->addWidget(group1);
         groupRow->addStretch();
         cl->addLayout(groupRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -248,10 +245,7 @@ QWidget* createAvatarPage(QWidget* /*owner*/)
 
 QWidget* createBadgePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     auto makeAvatar = [](const QString& iconText, Ant::AvatarShape shape = Ant::AvatarShape::Square) {
         auto* avatar = new AntAvatar();
@@ -261,7 +255,7 @@ QWidget* createBadgePage(QWidget* /*owner*/)
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basicRow = new QHBoxLayout();
         basicRow->setSpacing(8);
@@ -280,11 +274,11 @@ QWidget* createBadgePage(QWidget* /*owner*/)
         basicRow->addWidget(dot);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Status"));
+        auto* card = makeCard(layout, QStringLiteral("Status"));
         auto* cl = card->bodyLayout();
         auto* statusRow = new QHBoxLayout();
         statusRow->setSpacing(14);
@@ -304,7 +298,7 @@ QWidget* createBadgePage(QWidget* /*owner*/)
         }
         statusRow->addStretch();
         cl->addLayout(statusRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -313,19 +307,15 @@ QWidget* createBadgePage(QWidget* /*owner*/)
 
 QWidget* createCalendarPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* cal = new AntCalendar(page);
         cl->addWidget(cal);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -334,13 +324,10 @@ QWidget* createCalendarPage(QWidget* /*owner*/)
 
 QWidget* createCardPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* basic = new AntCard(QStringLiteral("Card Title"), page);
@@ -348,11 +335,11 @@ QWidget* createCardPage(QWidget* /*owner*/)
         basic->setFixedSize(340, 140);
         basic->bodyLayout()->addWidget(new AntTypography(QStringLiteral("Card content"), basic));
         cl->addWidget(basic, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Cover & Meta"));
+        auto* card = makeCard(layout, QStringLiteral("With Cover & Meta"));
         auto* cl = card->bodyLayout();
 
         auto* meta = new AntCard(page);
@@ -366,11 +353,11 @@ QWidget* createCardPage(QWidget* /*owner*/)
         meta->addActionWidget(makeCardActionIcon(Ant::IconType::Delete));
         meta->addActionWidget(makeEllipsisActionIcon());
         cl->addWidget(meta, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Variant"));
+        auto* card = makeCard(layout, QStringLiteral("Variant"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* row = new QHBoxLayout();
@@ -387,7 +374,7 @@ QWidget* createCardPage(QWidget* /*owner*/)
         row->addWidget(borderless);
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -396,13 +383,10 @@ QWidget* createCardPage(QWidget* /*owner*/)
 
 QWidget* createCarouselPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* carousel = new AntCarousel(page);
@@ -448,7 +432,7 @@ QWidget* createCarouselPage(QWidget* /*owner*/)
         cl->addWidget(carousel);
         cl->addLayout(controlRow);
         cl->addStretch();
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -457,13 +441,10 @@ QWidget* createCarouselPage(QWidget* /*owner*/)
 
 QWidget* createCollapsePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* collapse = new AntCollapse(page);
@@ -479,11 +460,11 @@ QWidget* createCollapsePage(QWidget* /*owner*/)
         p3->setContentWidget(makeCollapseContent(QStringLiteral("Content 3"), collapse));
 
         cl->addWidget(collapse);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Accordion"));
+        auto* card = makeCard(layout, QStringLiteral("Accordion"));
         auto* cl = card->bodyLayout();
 
         auto* collapse = new AntCollapse(page);
@@ -497,7 +478,7 @@ QWidget* createCollapsePage(QWidget* /*owner*/)
         p2->setContentWidget(makeCollapseContent(QStringLiteral("Content 2"), collapse));
 
         cl->addWidget(collapse);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -506,13 +487,10 @@ QWidget* createCollapsePage(QWidget* /*owner*/)
 
 QWidget* createDescriptionsPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basic = new AntDescriptions(page);
         basic->setBordered(true);
@@ -530,11 +508,11 @@ QWidget* createDescriptionsPage(QWidget* /*owner*/)
         basic->addItem(QStringLiteral("IP"), QStringLiteral("192.168.1.1"));
         cl->addWidget(basic);
         cl->addStretch();
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Variant"));
+        auto* card = makeCard(layout, QStringLiteral("Variant"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* outlined = new AntDescriptions(page);
@@ -552,7 +530,7 @@ QWidget* createDescriptionsPage(QWidget* /*owner*/)
         cl->addSpacing(12);
         cl->addWidget(borderless);
         cl->addWidget(makeSecondaryText(QStringLiteral("variant = Outlined (bordered) / Borderless."), page));
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -561,28 +539,25 @@ QWidget* createDescriptionsPage(QWidget* /*owner*/)
 
 QWidget* createEmptyPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basic = new AntEmpty(page);
         cl->addWidget(basic, 0, Qt::AlignHCenter | Qt::AlignTop);
         cl->addStretch();
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Custom Description"));
+        auto* card = makeCard(layout, QStringLiteral("Custom Description"));
         auto* cl = card->bodyLayout();
         auto* custom = new AntEmpty(page);
         custom->setDescription(QStringLiteral("No Data Available"));
         cl->addWidget(custom, 0, Qt::AlignHCenter | Qt::AlignTop);
         cl->addStretch();
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -591,13 +566,10 @@ QWidget* createEmptyPage(QWidget* /*owner*/)
 
 QWidget* createImagePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
         auto* img = new AntImage(page);
@@ -606,7 +578,6 @@ QWidget* createImagePage(QWidget* /*owner*/)
         cl->addWidget(img, 0, Qt::AlignLeft | Qt::AlignTop);
         cl->addStretch();
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -615,13 +586,10 @@ QWidget* createImagePage(QWidget* /*owner*/)
 
 QWidget* createListPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         auto* basicList = new AntList(page);
         basicList->setBordered(true);
@@ -648,11 +616,11 @@ QWidget* createListPage(QWidget* /*owner*/)
         }
 
         cl->addWidget(basicList);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Actions"));
+        auto* card = makeCard(layout, QStringLiteral("With Actions"));
         auto* cl = card->bodyLayout();
         auto* actionList = new AntList(page);
         actionList->setBordered(true);
@@ -678,7 +646,7 @@ QWidget* createListPage(QWidget* /*owner*/)
         }
 
         cl->addWidget(actionList);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -687,13 +655,10 @@ QWidget* createListPage(QWidget* /*owner*/)
 
 QWidget* createListyPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Virtualized + Grouped"));
+        auto* card = makeCard(layout, QStringLiteral("Virtualized + Grouped"));
         auto* cl = card->bodyLayout();
 
         auto* desc = makeParagraph(QStringLiteral("AntListy renders via Qt Model/View virtualization: only visible rows are painted. Grouping inserts sticky section headers; enable drag sorting to reorder items."),
@@ -720,11 +685,11 @@ QWidget* createListyPage(QWidget* /*owner*/)
         list->setItems(items);
 
         cl->addWidget(list);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Drag Sorting + Infinite Load"));
+        auto* card = makeCard(layout, QStringLiteral("Drag Sorting + Infinite Load"));
         auto* cl = card->bodyLayout();
 
         auto* list = new AntListy(page);
@@ -762,7 +727,7 @@ QWidget* createListyPage(QWidget* /*owner*/)
         });
 
         cl->addWidget(list);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();

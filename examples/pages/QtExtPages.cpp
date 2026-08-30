@@ -148,13 +148,10 @@ private:
 
 QWidget* createWidgetPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntWidget"));
+        auto* card = makeCard(layout, QStringLiteral("AntWidget"));
         auto* cl = card->bodyLayout();
 
         auto* desc = makeParagraph(QStringLiteral("AntWidget is the theme-aware base QWidget used by the example shell. "
@@ -177,7 +174,6 @@ QWidget* createWidgetPage(QWidget* /*owner*/)
         QObject::connect(toggle, &AntButton::clicked, antTheme, &AntTheme::toggleThemeMode);
         cl->addWidget(toggle, 0, Qt::AlignLeft);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -186,13 +182,10 @@ QWidget* createWidgetPage(QWidget* /*owner*/)
 
 QWidget* createDialogPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntDialog"));
+        auto* card = makeCard(layout, QStringLiteral("AntDialog"));
         auto* cl = card->bodyLayout();
 
         auto* desc = makeParagraph(QStringLiteral("AntDialog is a frameless QDialog replacement with an Ant token title bar, theme-aware child palettes, Ant scroll bars, and a content widget for custom dialog bodies."),
@@ -240,7 +233,7 @@ QWidget* createDialogPage(QWidget* /*owner*/)
 
         cl->addWidget(openButton);
         cl->addWidget(result);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -249,13 +242,10 @@ QWidget* createDialogPage(QWidget* /*owner*/)
 
 QWidget* createInputDialogPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntInputDialog"));
+        auto* card = makeCard(layout, QStringLiteral("AntInputDialog"));
         auto* cl = card->bodyLayout();
 
         auto* desc = makeParagraph(QStringLiteral("AntInputDialog is the Ant Design replacement for QInputDialog. It reuses AntDialog chrome and provides text, integer, double, item selection, button text, options, and changed/selected signals without using the native dialog."),
@@ -332,7 +322,7 @@ QWidget* createInputDialogPage(QWidget* /*owner*/)
 
         cl->addLayout(actionRow);
         cl->addWidget(result);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -341,13 +331,10 @@ QWidget* createInputDialogPage(QWidget* /*owner*/)
 
 QWidget* createStackedWidgetPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntStackedWidget"));
+        auto* card = makeCard(layout, QStringLiteral("AntStackedWidget"));
         auto* cl = card->bodyLayout();
 
         auto* stack = new AntStackedWidget(page);
@@ -428,7 +415,7 @@ QWidget* createStackedWidgetPage(QWidget* /*owner*/)
 
         cl->addLayout(actionRow);
         cl->addWidget(stack);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -437,13 +424,10 @@ QWidget* createStackedWidgetPage(QWidget* /*owner*/)
 
 QWidget* createNavItemPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntNavItem"));
+        auto* card = makeCard(layout, QStringLiteral("AntNavItem"));
         auto* cl = card->bodyLayout();
 
         auto* desc = makeParagraph(QStringLiteral("AntNavItem is the self-painted sidebar item used by the example navigation. "
@@ -491,7 +475,6 @@ QWidget* createNavItemPage(QWidget* /*owner*/)
         demoRow->addWidget(detail, 1);
         cl->addLayout(demoRow);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -500,13 +483,10 @@ QWidget* createNavItemPage(QWidget* /*owner*/)
 
 QWidget* createNavPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntNav"));
+        auto* card = makeCard(layout, QStringLiteral("AntNav"));
         auto* cl = card->bodyLayout();
 
         auto* desc = makeParagraph(QStringLiteral("AntNav wraps AntNavItem into a reusable selection rail with grouped headers, current-index state, item data and Ant scroll bars."),
@@ -539,7 +519,6 @@ QWidget* createNavPage(QWidget* /*owner*/)
         demoRow->addWidget(detail, 1);
         cl->addLayout(demoRow);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -548,13 +527,10 @@ QWidget* createNavPage(QWidget* /*owner*/)
 
 QWidget* createFileDialogPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntFileDialog"));
+        auto* card = makeCard(layout, QStringLiteral("AntFileDialog"));
         auto* cl = card->bodyLayout();
 
         auto* desc = makeParagraph(QStringLiteral("AntFileDialog is a fully custom Ant Design file browser built from AntDialog, common places, a collapsed directory tree, QFileSystemModel/QTreeView file views, Ant inputs, Ant select, Ant buttons, token-painted panels, and a scoped QProxyStyle for file views."),
@@ -600,7 +576,7 @@ QWidget* createFileDialogPage(QWidget* /*owner*/)
 
         cl->addLayout(actionRow);
         cl->addWidget(selected);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -609,13 +585,10 @@ QWidget* createFileDialogPage(QWidget* /*owner*/)
 
 QWidget* createDockWidgetPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntDockWidget"));
+        auto* card = makeCard(layout, QStringLiteral("AntDockWidget"));
         auto* cl = card->bodyLayout();
 
         auto* infoLabel = makeParagraph(QStringLiteral("AntDockManager provides a themed docking workspace with a custom splitter/tab dock tree, draggable tabs, context menus, saved perspectives, translucent draggable AntDockWidget panels, and toggleable center/edge drop guide squares."), page);
@@ -694,7 +667,7 @@ QWidget* createDockWidgetPage(QWidget* /*owner*/)
         cl->addLayout(actionRow);
 
         cl->addWidget(manager);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -703,13 +676,10 @@ QWidget* createDockWidgetPage(QWidget* /*owner*/)
 
 QWidget* createLogPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntLog"));
+        auto* card = makeCard(layout, QStringLiteral("AntLog"));
         auto* cl = card->bodyLayout();
 
         auto* log = new AntLog(page);
@@ -733,7 +703,6 @@ QWidget* createLogPage(QWidget* /*owner*/)
         btnRow->addStretch();
         cl->addLayout(btnRow);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -742,13 +711,10 @@ QWidget* createLogPage(QWidget* /*owner*/)
 
 QWidget* createMasonryPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntMasonry"));
+        auto* card = makeCard(layout, QStringLiteral("AntMasonry"));
         auto* cl = card->bodyLayout();
 
         auto* masonry = new AntMasonry(page);
@@ -769,7 +735,7 @@ QWidget* createMasonryPage(QWidget* /*owner*/)
         }
 
         cl->addWidget(masonry);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -778,13 +744,10 @@ QWidget* createMasonryPage(QWidget* /*owner*/)
 
 QWidget* createMenuBarPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntMenuBar"));
+        auto* card = makeCard(layout, QStringLiteral("AntMenuBar"));
         auto* cl = card->bodyLayout();
 
         auto* menuBar = new AntMenuBar(page);
@@ -804,7 +767,6 @@ QWidget* createMenuBarPage(QWidget* /*owner*/)
         menuBar->addMenu(QStringLiteral("Help"));
         cl->addWidget(menuBar);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -813,13 +775,10 @@ QWidget* createMenuBarPage(QWidget* /*owner*/)
 
 QWidget* createPlainTextEditPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntPlainTextEdit"));
+        auto* card = makeCard(layout, QStringLiteral("AntPlainTextEdit"));
         auto* cl = card->bodyLayout();
 
         auto* te = new AntPlainTextEdit(page);
@@ -833,7 +792,6 @@ QWidget* createPlainTextEditPage(QWidget* /*owner*/)
         filled->setMinimumHeight(100);
         cl->addWidget(filled);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -842,13 +800,10 @@ QWidget* createPlainTextEditPage(QWidget* /*owner*/)
 
 QWidget* createScrollAreaPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntScrollArea"));
+        auto* card = makeCard(layout, QStringLiteral("AntScrollArea"));
         auto* cl = card->bodyLayout();
 
         auto* scroll = new AntScrollArea(page);
@@ -864,7 +819,6 @@ QWidget* createScrollAreaPage(QWidget* /*owner*/)
         scroll->setWidget(content);
         cl->addWidget(scroll);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -873,13 +827,10 @@ QWidget* createScrollAreaPage(QWidget* /*owner*/)
 
 QWidget* createScrollBarPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntScrollBar"));
+        auto* card = makeCard(layout, QStringLiteral("AntScrollBar"));
         auto* cl = card->bodyLayout();
 
         auto* desc = new AntTypography(QStringLiteral("AntScrollBar is a custom scrollbar with thin (8px) rounded handle, "
@@ -903,7 +854,6 @@ QWidget* createScrollBarPage(QWidget* /*owner*/)
         scrollArea->setWidget(scrollContent);
         cl->addWidget(scrollArea, 1);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -912,13 +862,10 @@ QWidget* createScrollBarPage(QWidget* /*owner*/)
 
 QWidget* createStatusBarPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntStatusBar"));
+        auto* card = makeCard(layout, QStringLiteral("AntStatusBar"));
         auto* cl = card->bodyLayout();
 
         auto* desc = new AntTypography(QStringLiteral("AntStatusBar displays status information at the bottom of a window. "
@@ -945,7 +892,6 @@ QWidget* createStatusBarPage(QWidget* /*owner*/)
         statusBar2->setSizeGrip(false);
         cl->addWidget(statusBar2);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -954,13 +900,10 @@ QWidget* createStatusBarPage(QWidget* /*owner*/)
 
 QWidget* createToolBarPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntToolBar"));
+        auto* card = makeCard(layout, QStringLiteral("AntToolBar"));
         auto* cl = card->bodyLayout();
 
         auto* toolBar = new AntToolBar(QStringLiteral("Main Toolbar"), page);
@@ -972,7 +915,6 @@ QWidget* createToolBarPage(QWidget* /*owner*/)
         toolBar->addAction(QStringLiteral("Redo"));
         cl->addWidget(toolBar);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -1038,12 +980,9 @@ AntRibbon* createSampleRibbon(QWidget* parent)
 
 QWidget* createRibbonPage(QWidget* owner)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
-    auto* card = new AntCard(QStringLiteral("AntRibbon - Current Window"));
+    auto* card = makeCard(layout, QStringLiteral("AntRibbon - Current Window"));
     auto* cl = card->bodyLayout();
 
     auto* desc = new AntTypography(QStringLiteral("Use this page to attach a Ribbon to the current AntWindow, "
@@ -1103,24 +1042,19 @@ QWidget* createRibbonPage(QWidget* owner)
         });
     }
 
-    auto* previewCard = new AntCard(QStringLiteral("Standalone Preview"));
+    auto* previewCard = makeCard(layout, QStringLiteral("Standalone Preview"));
     previewCard->bodyLayout()->addWidget(createSampleRibbon(previewCard));
 
-    layout->addWidget(card);
-    layout->addWidget(previewCard);
     layout->addStretch();
     return page;
 }
 
 QWidget* createToolButtonPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntToolButton"));
+        auto* card = makeCard(layout, QStringLiteral("AntToolButton"));
         auto* cl = card->bodyLayout();
 
         auto* typeRow = new QHBoxLayout();
@@ -1172,7 +1106,6 @@ QWidget* createToolButtonPage(QWidget* /*owner*/)
         ddBtn->setMenu(menu);
         cl->addWidget(ddBtn);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -1181,13 +1114,10 @@ QWidget* createToolButtonPage(QWidget* /*owner*/)
 
 QWidget* createWindowPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("AntWindow - Frameless Window"));
+        auto* card = makeCard(layout, QStringLiteral("AntWindow - Frameless Window"));
         auto* cl = card->bodyLayout();
 
         auto* desc = new AntTypography(QStringLiteral("AntWindow is a frameless window with custom title bar, "
@@ -1219,7 +1149,6 @@ QWidget* createWindowPage(QWidget* /*owner*/)
         });
         cl->addWidget(openBtn);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
