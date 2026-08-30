@@ -16,6 +16,7 @@
 #include <QPushButton>
 #include <QRadioButton>
 #include <QScrollArea>
+#include <QSet>
 #include <QSignalSpy>
 #include <QSlider>
 #include <QStackedWidget>
@@ -30,98 +31,8 @@
 
 #include <functional>
 
-#include "widgets/AntAffix.h"
-#include "widgets/AntAlert.h"
-#include "widgets/AntAnchor.h"
-#include "widgets/AntApp.h"
-#include "widgets/AntAutoComplete.h"
-#include "widgets/AntAvatar.h"
-#include "widgets/AntBadge.h"
-#include "widgets/AntBreadcrumb.h"
-#include "widgets/AntButton.h"
-#include "widgets/AntCalendar.h"
-#include "widgets/AntCard.h"
-#include "widgets/AntCarousel.h"
-#include "widgets/AntCascader.h"
-#include "widgets/AntCheckBox.h"
-#include "widgets/AntCollapse.h"
-#include "widgets/AntColorPicker.h"
-#include "widgets/AntConfigProvider.h"
-#include "widgets/AntDatePicker.h"
-#include "widgets/AntDescriptions.h"
-#include "widgets/AntDialog.h"
-#include "widgets/AntBorderBeam.h"
-#include "widgets/AntDivider.h"
-#include "widgets/AntDockManager.h"
-#include "widgets/AntDockWidget.h"
-#include "widgets/AntDrawer.h"
-#include "widgets/AntDropdown.h"
-#include "widgets/AntEmpty.h"
-#include "widgets/AntFlex.h"
-#include "widgets/AntFloatButton.h"
-#include "widgets/AntFileDialog.h"
-#include "widgets/AntForm.h"
-#include "widgets/AntGrid.h"
-#include "widgets/AntIcon.h"
-#include "widgets/AntImage.h"
-#include "widgets/AntInput.h"
-#include "widgets/AntInputDialog.h"
-#include "widgets/AntInputNumber.h"
-#include "widgets/AntLayout.h"
-#include "widgets/AntList.h"
-#include "widgets/AntListy.h"
-#include "widgets/AntLog.h"
-#include "widgets/AntMasonry.h"
-#include "widgets/AntMentions.h"
-#include "widgets/AntMenu.h"
-#include "widgets/AntMenuBar.h"
-#include "widgets/AntMessage.h"
-#include "widgets/AntModal.h"
-#include "widgets/AntNav.h"
-#include "widgets/AntNavItem.h"
-#include "widgets/AntNotification.h"
-#include "widgets/AntPagination.h"
-#include "widgets/AntPlainTextEdit.h"
-#include "widgets/AntPopconfirm.h"
-#include "widgets/AntPopover.h"
-#include "widgets/AntProgress.h"
-#include "widgets/AntQRCode.h"
-#include "widgets/AntRadio.h"
-#include "widgets/AntRate.h"
-#include "widgets/AntResult.h"
-#include "widgets/AntScrollArea.h"
-#include "widgets/AntScrollBar.h"
-#include "widgets/AntSegmented.h"
-#include "widgets/AntSelect.h"
-#include "widgets/AntSkeleton.h"
-#include "widgets/AntSlider.h"
-#include "widgets/AntSpace.h"
-#include "widgets/AntSpin.h"
-#include "widgets/AntSplitter.h"
-#include "widgets/AntStackedWidget.h"
-#include "widgets/AntStatistic.h"
-#include "widgets/AntStatusBar.h"
-#include "widgets/AntRibbon.h"
-#include "widgets/AntSteps.h"
-#include "widgets/AntSwitch.h"
-#include "widgets/AntTable.h"
-#include "widgets/AntTabs.h"
-#include "widgets/AntTag.h"
-#include "widgets/AntTimeline.h"
-#include "widgets/AntTimePicker.h"
-#include "widgets/AntToolBar.h"
-#include "widgets/AntToolButton.h"
-#include "widgets/AntToolTip.h"
-#include "widgets/AntTour.h"
-#include "widgets/AntTransfer.h"
-#include "widgets/AntTree.h"
-#include "widgets/AntTreeSelect.h"
-#include "widgets/AntTypography.h"
-#include "widgets/AntUpload.h"
-#include "widgets/AntWatermark.h"
-#include "widgets/AntWidget.h"
-#include "widgets/AntWindow.h"
-#include "widgets/AntWindowFrame.h"
+#include "WidgetInventory.h"
+
 
 class TestAntRenderSmoke : public QObject
 {
@@ -130,6 +41,7 @@ class TestAntRenderSmoke : public QObject
 private slots:
     void everyVisualWidgetRendersNonBlank();
     void qtAnalogWidgetsFollowNativeLayoutPolicies();
+    void renderInventoryCoversAllPaintableWidgets();
 };
 
 namespace
@@ -772,6 +684,34 @@ void TestAntRenderSmoke::qtAnalogWidgetsFollowNativeLayoutPolicies()
     AntSwitch sw;
     QCOMPARE(sw.sizePolicy().horizontalPolicy(), QSizePolicy::Minimum);
     QCOMPARE(sw.sizePolicy().verticalPolicy(), QSizePolicy::Fixed);
+}
+
+void TestAntRenderSmoke::renderInventoryCoversAllPaintableWidgets()
+{
+    // 纯 QObject（非 QWidget）控件没有可绘制的 widget 表面，不出现在渲染清单里。
+    const QSet<QString> nonPaintable = {
+        QStringLiteral("AntAffix"),
+        QStringLiteral("AntApp"),
+        QStringLiteral("AntConfigProvider"),
+        QStringLiteral("AntTour"),
+    };
+
+    QSet<QString> expected;
+    for (const AntTestUtils::WidgetFactoryCase& objectCase : AntTestUtils::allWidgetFactoryCases())
+    {
+        if (!nonPaintable.contains(QString::fromLatin1(objectCase.name)))
+        {
+            expected.insert(QString::fromLatin1(objectCase.name));
+        }
+    }
+
+    QSet<QString> actual;
+    for (const RenderCase& renderCase : renderCases())
+    {
+        actual.insert(QString::fromLatin1(renderCase.name));
+    }
+
+    QCOMPARE(actual, expected);
 }
 
 QTEST_MAIN(TestAntRenderSmoke)

@@ -61,7 +61,7 @@ AntNav::AntNav(QWidget* parent)
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
-    m_scrollContent = new QWidget();
+    m_scrollContent = new QWidget(m_scrollArea);
     m_navLayout = new QVBoxLayout(m_scrollContent);
     m_navLayout->setContentsMargins(0, 8, 0, 0);
     m_navLayout->setSpacing(0);

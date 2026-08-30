@@ -20,6 +20,8 @@ constexpr int kTrackPadding = 2;
 constexpr int kIconSize = 14;
 constexpr int kIconGap = 6;
 
+const auto kSegmentsUpdateMode = QStringLiteral("segments");
+
 int segmentedFontSize(Ant::Size size)
 {
     const auto& token = antTheme->tokens();
@@ -252,7 +254,7 @@ void AntSegmented::mouseMoveEvent(QMouseEvent* event)
     {
         m_hoveredIndex = idx;
         m_pressedIndex = pressedIdx;
-        updateSegmentRegions({oldHovered, m_hoveredIndex, oldPressed, m_pressedIndex}, QStringLiteral("segments"));
+        updateSegmentRegions({oldHovered, m_hoveredIndex, oldPressed, m_pressedIndex}, kSegmentsUpdateMode);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -266,7 +268,7 @@ void AntSegmented::mousePressEvent(QMouseEvent* event)
         {
             const int oldPressed = m_pressedIndex;
             m_pressedIndex = idx;
-            updateSegmentRegions({oldPressed, m_pressedIndex}, QStringLiteral("segments"));
+            updateSegmentRegions({oldPressed, m_pressedIndex}, kSegmentsUpdateMode);
         }
         event->accept();
         return;
@@ -285,7 +287,7 @@ void AntSegmented::mouseReleaseEvent(QMouseEvent* event)
         {
             setValue(m_options[idx].value);
         }
-        updateSegmentRegions({pressedIdx}, QStringLiteral("segments"));
+        updateSegmentRegions({pressedIdx}, kSegmentsUpdateMode);
         event->accept();
         return;
     }
@@ -303,7 +305,7 @@ void AntSegmented::leaveEvent(QEvent* event)
     // leave caused mouseReleaseEvent to see "no pressed index" and skip the
     // value commit — the press indicator flashed but the segment never
     // actually switched. m_pressedIndex is cleared in mouseReleaseEvent.
-    updateSegmentRegions({oldHovered}, QStringLiteral("segments"));
+    updateSegmentRegions({oldHovered}, kSegmentsUpdateMode);
     QWidget::leaveEvent(event);
 }
 

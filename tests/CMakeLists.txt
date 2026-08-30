@@ -256,6 +256,9 @@ add_ant_test(TestAntStressLifecycle)
 # Render smoke coverage
 add_ant_test(TestAntRenderSmoke)
 
+# Accessibility minimal coverage
+add_ant_test(TestAntAccessibility)
+
 # Automated visual regression coverage
 add_ant_test(TestAntVisualRegression)
 add_ant_inventory_test(TestAntQtVersionVisualParity)

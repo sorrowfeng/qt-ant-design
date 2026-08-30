@@ -95,20 +95,29 @@ void TestAntCoverageInventory::publicWidgetHeadersAreInCoverageTests()
     const QSet<QString> publicHeaders = publicWidgetHeaders();
     QVERIFY(!publicHeaders.isEmpty());
 
-    const QSet<QString> objectTreeHeaders = includedWidgetHeaders(QStringLiteral("TestAntObjectTree.cpp"));
-    const QSet<QString> metaPropertyHeaders = includedWidgetHeaders(QStringLiteral("TestAntMetaProperties.cpp"));
-    const QSet<QString> themeLifecycleHeaders = includedWidgetHeaders(QStringLiteral("TestAntThemeLifecycle.cpp"));
-    const QSet<QString> renderSmokeHeaders = includedWidgetHeaders(QStringLiteral("TestAntRenderSmoke.cpp"));
+    // 权威控件清单（WidgetInventory.h）是公开控件头的单一来源：它必须
+    // include 所有公开控件头。表驱动测试（MetaProperties/ThemeLifecycle/
+    // ObjectTree/RenderSmoke/Accessibility）都从它派生控件集合，因此只需
+    // 守护 WidgetInventory.h 一处即可防止清单漂移。
+    const QSet<QString> inventoryHeaders = includedWidgetHeaders(QStringLiteral("WidgetInventory.h"));
 
-    const QStringList missingObjectTree = (publicHeaders - objectTreeHeaders).values();
-    const QStringList missingMetaProperties = (publicHeaders - metaPropertyHeaders).values();
-    const QStringList missingThemeLifecycle = (publicHeaders - themeLifecycleHeaders).values();
-    const QStringList missingRenderSmoke = (publicHeaders - renderSmokeHeaders).values();
+    const QStringList missingInventory = (publicHeaders - inventoryHeaders).values();
+    QCOMPARE(missingInventory, QStringList());
 
-    QCOMPARE(missingObjectTree, QStringList());
-    QCOMPARE(missingMetaProperties, QStringList());
-    QCOMPARE(missingThemeLifecycle, QStringList());
-    QCOMPARE(missingRenderSmoke, QStringList());
+    // 表驱动测试必须引入权威清单，否则它们会各自维护一份已漂移的副本。
+    const QSet<QString> coverageFiles = {
+        QStringLiteral("TestAntObjectTree.cpp"),
+        QStringLiteral("TestAntMetaProperties.cpp"),
+        QStringLiteral("TestAntThemeLifecycle.cpp"),
+        QStringLiteral("TestAntRenderSmoke.cpp"),
+        QStringLiteral("TestAntAccessibility.cpp"),
+    };
+    for (const QString& fileName : coverageFiles)
+    {
+        const QString text = readTextFile(QStringLiteral(ANT_TESTS_DIR) + QLatin1Char('/') + fileName);
+        QVERIFY2(text.contains(QStringLiteral("#include \"WidgetInventory.h\"")),
+                 qPrintable(QStringLiteral("%1 must include the shared WidgetInventory.h").arg(fileName)));
+    }
 }
 
 void TestAntCoverageInventory::publicWidgetHeadersAreInBehaviorReliabilityTests()
@@ -122,6 +131,7 @@ void TestAntCoverageInventory::publicWidgetHeadersAreInBehaviorReliabilityTests(
         QStringLiteral("TestAntObjectTree.cpp"),
         QStringLiteral("TestAntRenderSmoke.cpp"),
         QStringLiteral("TestAntThemeLifecycle.cpp"),
+        QStringLiteral("TestAntAccessibility.cpp"),
     };
 
     QSet<QString> behaviorHeaders;
