@@ -1,5 +1,6 @@
 #include "AntTypes.h"
 
+#include <QAction>
 #include <QMetaType>
 
 namespace Ant
@@ -75,6 +76,9 @@ void registerMetaTypes()
         qRegisterMetaType<FloatButtonPlacement>("Ant::Placement");
         qRegisterMetaType<ColorPickerMode>("Ant::ColorPickerMode");
         qRegisterMetaType<CalendarMode>("Ant::CalendarMode");
+        // QAction* 是 AntRibbon 等组件的信号参数类型；Qt5 下需显式注册才能被
+        // QSignalSpy 捕获并支持跨线程 queued connection（Qt6 已自动处理）。
+        qRegisterMetaType<QAction*>("QAction*");
         return true;
     }();
     Q_UNUSED(registered);
