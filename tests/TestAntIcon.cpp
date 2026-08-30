@@ -84,6 +84,23 @@ void TestAntIcon::propertiesAndSignals()
     QCOMPARE(w->rotate(), 90);
     QCOMPARE(rotateSpy.count(), 1);
 
+    // spin 动画只在 icon 可见时推进（隐藏时停表以省 CPU）。挂到可见父上验证
+    // spinAngle 会随动画推进，而不是依赖不可见的顶层窗口 show() 带来的布局副作用。
+    {
+        QWidget spinHost;
+        spinHost.resize(80, 80);
+        AntIcon spinIcon(&spinHost);
+        spinIcon.setIconName(QStringLiteral("GithubFilled"));
+        spinIcon.setIconSize(24);
+        spinIcon.resize(24, 24);
+        spinHost.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&spinHost));
+        const int spinAngleBefore = spinIcon.spinAngle();
+        spinIcon.setSpin(true);
+        QTRY_VERIFY(spinIcon.spinAngle() != spinAngleBefore);
+        spinIcon.setSpin(false);
+    }
+
     QPainterPath primaryPath;
     primaryPath.addRect(QRectF(0, 0, 32, 32));
     QPainterPath secondaryPath;
@@ -158,14 +175,6 @@ void TestAntIcon::propertiesAndSignals()
     QVERIFY(hasPaintedPixel(renderIcon(cachedOfficial)));
     QCOMPARE(cachedOfficial.property("antIconRenderCacheHit").toBool(), true);
     QCOMPARE(cachedOfficial.property("antIconRenderCacheKey").toString(), firstCacheKey);
-
-    const int spinAngleBefore = cachedOfficial.spinAngle();
-    cachedOfficial.setSpin(true);
-    QTRY_VERIFY(cachedOfficial.spinAngle() != spinAngleBefore);
-    QVERIFY(hasPaintedPixel(renderIcon(cachedOfficial)));
-    QCOMPARE(cachedOfficial.property("antIconRenderCacheHit").toBool(), true);
-    QCOMPARE(cachedOfficial.property("antIconRenderCacheKey").toString(), firstCacheKey);
-    cachedOfficial.setSpin(false);
 
     const QList<Ant::IconType> outlinedReferenceIcons = {
         Ant::IconType::Home,

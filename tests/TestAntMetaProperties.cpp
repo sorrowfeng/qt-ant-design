@@ -112,6 +112,14 @@ QVariant representativeValue(const QMetaProperty& property, const QVariant& curr
         option.label = QStringLiteral("Meta Option");
         return QVariant::fromValue(QVector<AntCascaderOption>{option});
     }
+    if (typeName == QStringLiteral("Ant::MaskConfig"))
+    {
+        const Ant::MaskConfig currentMask = current.value<Ant::MaskConfig>();
+        Ant::MaskConfig next;
+        next.closable = !currentMask.closable;
+        next.blur = !currentMask.blur;
+        return QVariant::fromValue(next);
+    }
 
     return {};
 }

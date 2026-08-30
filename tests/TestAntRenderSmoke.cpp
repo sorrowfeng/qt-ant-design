@@ -629,7 +629,10 @@ void TestAntRenderSmoke::qtAnalogWidgetsFollowNativeLayoutPolicies()
 
     QTableWidget nativeTableWidget;
     AntTable table;
-    expectSameLayoutPolicy("AntTable", table, nativeTableWidget);
+    // AntTable 有意偏离 QTableWidget 的默认 Expanding：改用 Preferred 以尊重
+    // sizeHint（含全部列宽），避免被布局压缩到容器宽度而裁剪右侧列。
+    QCOMPARE(table.sizePolicy().horizontalPolicy(), QSizePolicy::Preferred);
+    QCOMPARE(table.sizePolicy().verticalPolicy(), nativeTableWidget.sizePolicy().verticalPolicy());
 
     QTreeWidget nativeTreeWidget;
     AntTree tree;

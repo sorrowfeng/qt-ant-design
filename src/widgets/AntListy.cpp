@@ -115,7 +115,7 @@ public:
             return false;
         }
         QList<AntListyItem> moved = m_items.mid(sourceRow, count);
-        m_items.remove(sourceRow, count);
+        m_items.erase(m_items.begin() + sourceRow, m_items.begin() + sourceRow + count);
         const int adjusted = destinationChild > sourceRow ? destinationChild - count : destinationChild;
         for (int i = 0; i < moved.size(); ++i)
         {
