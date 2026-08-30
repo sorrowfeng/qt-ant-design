@@ -56,6 +56,12 @@ ExampleCommandLineOptions parseExampleCommandLine(QApplication& app)
                                                      QStringLiteral("Maximum allowed ratio of pixels whose average channel delta exceeds 32."),
                                                      QStringLiteral("ratio"),
                                                      QStringLiteral("0.28"));
+    QCommandLineOption startPageNameOption(QStringLiteral("start-page-name"),
+                                            QStringLiteral("Open the example at the page with <name>."),
+                                            QStringLiteral("name"));
+    QCommandLineOption startPageIndexOption(QStringLiteral("start-page-index"),
+                                             QStringLiteral("Open the example at zero-based page <index>."),
+                                             QStringLiteral("index"));
     parser.addOption(smokeExitOption);
     parser.addOption(stressThemeCyclesOption);
     parser.addOption(stressThemeIntervalOption);
@@ -66,6 +72,8 @@ ExampleCommandLineOptions parseExampleCommandLine(QApplication& app)
     parser.addOption(smokeTraversePageFilterOption);
     parser.addOption(smokeTraverseMaxMeanOption);
     parser.addOption(smokeTraverseMaxChangedOption);
+    parser.addOption(startPageNameOption);
+    parser.addOption(startPageIndexOption);
     parser.process(app);
 
     ExampleCommandLineOptions options;
@@ -112,6 +120,14 @@ ExampleCommandLineOptions parseExampleCommandLine(QApplication& app)
         options.traversalOptions.maxChanged32Ratio = maxChanged;
     }
 
+    options.startPageName = parser.value(startPageNameOption);
+    bool startIndexOk = false;
+    const int startIndex = parser.value(startPageIndexOption).toInt(&startIndexOk);
+    if (startIndexOk && startIndex >= 0)
+    {
+        options.startPageIndex = startIndex;
+    }
+
     return options;
 }
 
@@ -121,6 +137,23 @@ int runExampleApplication(QApplication& app, const ExampleCommandLineOptions& op
     window.setMinimumSize(960, 640);
     window.resize(1200, 800);
     window.show();
+
+    if (!options.startPageName.isEmpty())
+    {
+        const int count = window.examplePageCount();
+        for (int i = 0; i < count; ++i)
+        {
+            if (window.examplePageName(i) == options.startPageName)
+            {
+                window.setExamplePageIndex(i);
+                break;
+            }
+        }
+    }
+    else if (options.startPageIndex >= 0)
+    {
+        window.setExamplePageIndex(options.startPageIndex);
+    }
 
     if (options.traversePages)
     {

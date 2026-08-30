@@ -18,6 +18,7 @@
 #include "widgets/AntCard.h"
 #include "widgets/AntInput.h"
 #include "widgets/AntPopover.h"
+#include "widgets/AntScrollArea.h"
 #include "widgets/AntQRCode.h"
 #include "widgets/AntSegmented.h"
 #include "widgets/AntStatistic.h"
@@ -212,17 +213,36 @@ QWidget* createTablePage(QWidget* /*owner*/)
         return rows;
     };
 
+    // AntTable is a self-painted widget with a fixed total column width and
+    // no internal horizontal scrolling, so when the table's sizeHint() exceeds
+    // the host container's width the rightmost columns would be clipped.
+    // Pass the table through this helper to wrap it in a non-resizable
+    // AntScrollArea that exposes a horizontal scrollbar instead.
+    auto wrapTableForHorizontalScroll = [](AntTable* table) {
+        auto* scroll = new AntScrollArea();
+        scroll->setWidgetResizable(false);
+        scroll->setAutoHideScrollBar(false);
+        scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        scroll->setWidget(table);
+        return scroll;
+    };
+
     {
         auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
 
+        // Column widths are sized so the table fits within a 1200px window
+        // without horizontal clipping; AntTable does not autoscale column
+        // widths to its container, so too-wide tables get wrapped in
+        // wrapTableForHorizontalScroll() below instead.
         auto* table = new AntTable(page);
         table->setBordered(false);
-        table->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 280});
-        AntTableColumn ageColumn{QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 280};
+        table->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 220});
+        AntTableColumn ageColumn{QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 180};
         ageColumn.sorter = true;
         table->addColumn(ageColumn);
-        table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 320});
+        table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 300});
         table->setRows(makeRows(3));
         cl->addWidget(table);
 
@@ -234,8 +254,8 @@ QWidget* createTablePage(QWidget* /*owner*/)
 
         auto* table = new AntTable(page);
         table->setRowSelection(Ant::TableSelectionMode::Checkbox);
-        table->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 240});
-        table->addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 200});
+        table->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 220});
+        table->addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 140});
         table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 280});
         table->setRows(makeRows(5));
 
@@ -261,8 +281,8 @@ QWidget* createTablePage(QWidget* /*owner*/)
         auto* table = new AntTable(page);
         table->setBordered(true);
         table->setPageSize(5);
-        table->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 240});
-        table->addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 200});
+        table->addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 220});
+        table->addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 140});
         table->addColumn({QStringLiteral("Address"), QStringLiteral("address"), QStringLiteral("address"), 280});
         table->setRows(makeRows(15));
         cl->addWidget(table);

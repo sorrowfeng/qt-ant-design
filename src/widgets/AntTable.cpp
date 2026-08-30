@@ -50,7 +50,7 @@ AntTable::AntTable(QWidget* parent)
     installAntStyle<AntTableStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 
     m_rowToolTipTarget = new QWidget(this);
     m_rowToolTipTarget->setObjectName(QStringLiteral("AntTableRowToolTipTarget"));
