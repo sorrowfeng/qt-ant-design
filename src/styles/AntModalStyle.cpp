@@ -71,5 +71,14 @@ void AntModalStyle::drawModal(const QStyleOption* option, QPainter* painter, con
     // Fade mask alongside the open/close animation
     const qreal opacity = baseOpacity * modal->animationProgress();
     painter->fillRect(option->rect, AntPalette::alpha(Qt::black, opacity));
+
+    // antd v6 mask.blur：遮罩下内容做毛玻璃模糊。Qt 自绘遮罩层无法直接
+    // 采样底层像素，这里用一层随透明度衰减的白色雾化近似 blur 的视觉观感，
+    // 叠加在黑色遮罩上以弱化边缘对比，模拟 backdrop-filter 的柔和效果。
+    if (modal->mask().blur)
+    {
+        const qreal haze = 0.22 * modal->animationProgress();
+        painter->fillRect(option->rect, AntPalette::alpha(Qt::white, haze));
+    }
     painter->restore();
 }

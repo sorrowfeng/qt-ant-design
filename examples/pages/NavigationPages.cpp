@@ -312,6 +312,46 @@ QWidget* createStepsPage(QWidget* /*owner*/)
 
     }
 
+    {
+        auto* card = makeCard(layout, QStringLiteral("Dot"));
+        auto* cl = topAlignedBody(card);
+        auto* dot = new AntSteps(page);
+        dot->setStepType(Ant::StepType::Dot);
+        dot->addStep(QStringLiteral("Finished"));
+        dot->addStep(QStringLiteral("In Progress"));
+        dot->addStep(QStringLiteral("Waiting"));
+        dot->setCurrentIndex(1);
+        cl->addWidget(dot);
+
+    }
+
+    {
+        auto* card = makeCard(layout, QStringLiteral("Navigation"));
+        auto* cl = topAlignedBody(card);
+        auto* nav = new AntSteps(page);
+        nav->setStepType(Ant::StepType::Navigation);
+        nav->addStep(QStringLiteral("Step 1"));
+        nav->addStep(QStringLiteral("Step 2"));
+        nav->addStep(QStringLiteral("Step 3"));
+        nav->setCurrentIndex(1);
+        cl->addWidget(nav);
+
+    }
+
+    {
+        auto* card = makeCard(layout, QStringLiteral("Vertical Label"));
+        auto* cl = topAlignedBody(card);
+        auto* vlabel = new AntSteps(page);
+        vlabel->setLabelPlacement(Ant::StepLabelPlacement::Vertical);
+        vlabel->addStep(QStringLiteral("Finished"), QStringLiteral("This is a description."));
+        vlabel->addStep(QStringLiteral("In Progress"), QStringLiteral("This is a description."));
+        vlabel->addStep(QStringLiteral("Waiting"), QStringLiteral("This is a description."));
+        vlabel->setCurrentIndex(1);
+        vlabel->setMinimumHeight(140);
+        cl->addWidget(vlabel);
+
+    }
+
     layout->addStretch();
     return page;
 }

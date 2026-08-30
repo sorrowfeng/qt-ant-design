@@ -49,6 +49,10 @@ void registerMetaTypes()
         qRegisterMetaType<FormLayout>("Ant::FormLayout");
         qRegisterMetaType<FormLabelAlign>("Ant::FormLabelAlign");
         qRegisterMetaType<StepStatus>("Ant::StepStatus");
+        qRegisterMetaType<StepType>("Ant::StepType");
+        qRegisterMetaType<StepLabelPlacement>("Ant::StepLabelPlacement");
+        qRegisterMetaType<MaskConfig>("Ant::MaskConfig");
+        qRegisterMetaType<FormRule>("Ant::FormRule");
         qRegisterMetaType<IconType>("Ant::IconType");
         qRegisterMetaType<IconTheme>("Ant::IconTheme");
         qRegisterMetaType<TimelineMode>("Ant::TimelineMode");

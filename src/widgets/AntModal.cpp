@@ -505,7 +505,27 @@ void AntModal::setMaskClosable(bool closable)
         return;
     }
     m_maskClosable = closable;
+    m_mask.closable = closable;
     Q_EMIT maskClosableChanged(m_maskClosable);
+}
+
+Ant::MaskConfig AntModal::mask() const { return m_mask; }
+
+void AntModal::setMask(const Ant::MaskConfig& mask)
+{
+    if (m_mask == mask)
+    {
+        return;
+    }
+    const bool blurChanged = m_mask.blur != mask.blur;
+    m_mask = mask;
+    m_maskClosable = mask.closable;
+    if (blurChanged)
+    {
+        requestModalUpdate(rect(), QStringLiteral("mask"), true);
+    }
+    Q_EMIT maskClosableChanged(m_maskClosable);
+    Q_EMIT maskChanged(m_mask);
 }
 
 bool AntModal::isCentered() const { return m_centered; }

@@ -115,6 +115,33 @@ QWidget* createDrawerPage(QWidget* /*owner*/)
 
     }
 
+    {
+        auto* card = makeCard(layout, QStringLiteral("Blur Mask"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+
+        auto* openButton = new AntButton(QStringLiteral("Open Blur Drawer"));
+        openButton->setButtonType(Ant::ButtonType::Primary);
+        auto* drawer = new AntDrawer(page);
+        drawer->setTitle(QStringLiteral("Blur Drawer"));
+        Ant::MaskConfig maskCfg;
+        maskCfg.blur = true;
+        drawer->setMask(maskCfg);
+
+        auto* body = new QWidget();
+        auto* bodyLayout = new QVBoxLayout(body);
+        bodyLayout->setContentsMargins(0, 0, 0, 0);
+        auto* content = new AntTypography(QStringLiteral("Backdrop is blurred."));
+        content->setParagraph(true);
+        bodyLayout->addWidget(content);
+        bodyLayout->addStretch();
+        drawer->setBodyWidget(body);
+
+        QObject::connect(openButton, &AntButton::clicked, drawer, &AntDrawer::open);
+        cl->addWidget(openButton, 0, Qt::AlignLeft);
+
+    }
+
     layout->addStretch();
     return page;
 }

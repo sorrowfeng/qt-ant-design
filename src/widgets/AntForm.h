@@ -2,10 +2,13 @@
 
 #include "core/QtAntDesignExport.h"
 
+#include <QList>
 #include <QPointer>
 #include <QMetaObject>
 #include <QVariantMap>
 #include <QWidget>
+
+#include <functional>
 
 #include "core/AntTypes.h"
 
@@ -56,6 +59,22 @@ public:
     QWidget* fieldWidget() const;
     void setFieldWidget(QWidget* widget);
 
+    // 校验规则（对齐 antd 的 Form.Item rules）。
+    QList<Ant::FormRule> rules() const;
+    void setRules(const QList<Ant::FormRule>& rules);
+    void addRule(const Ant::FormRule& rule);
+    void clearRules();
+
+    // 校验当前字段。返回错误信息（空字符串表示通过）。失败时自动把
+    // validateStatus 置为 Error 并显示 helpText。
+    QString validate();
+
+    // 当前校验错误信息（空表示无错误）。
+    QString validationError() const;
+
+    // 清除校验错误状态（恢复到 Normal，清空错误 helpText）。
+    void clearValidation();
+
     void applyFormSettings(Ant::FormLayout layoutMode,
                            Ant::FormLabelAlign labelAlign,
                            bool showColon,
@@ -71,6 +90,7 @@ Q_SIGNALS:
     void requiredChanged(bool required);
     void colonChanged(bool colon);
     void validateStatusChanged(Ant::Status status);
+    void rulesChanged();
 
 protected:
     void changeEvent(QEvent* event) override;
@@ -85,6 +105,7 @@ private:
     void syncFormItemPerfCounters() const;
     QString effectiveLabelText() const;
     QColor helpColor() const;
+    void setValidationError(const QString& error);
 
     QString m_label;
     QString m_helpText;
@@ -94,6 +115,8 @@ private:
     bool m_colon = true;
     bool m_useFormColon = true;
     Ant::Status m_validateStatus = Ant::Status::Normal;
+    QList<Ant::FormRule> m_rules;
+    QString m_validationError; // 当前校验错误信息（用于恢复 helpText）
     Ant::FormLayout m_layoutMode = Ant::FormLayout::Horizontal;
     Ant::FormLabelAlign m_labelAlign = Ant::FormLabelAlign::Right;
     bool m_showRequiredMark = true;
@@ -186,6 +209,16 @@ public:
     QVariant fieldValue(const QString& fieldName) const;
     QVariantMap values() const;
 
+    // 校验所有字段。返回 true 表示全部通过，false 表示存在失败字段
+    // （失败字段的 validateStatus 已被置为 Error 并显示错误信息）。
+    bool validateFields();
+
+    // 注册提交成功/失败回调（对齐 antd 的 onFinish / onFinishFailed）。
+    // onFinish 在 finish() 且校验通过时触发，参数为字段值 map；
+    // onFinishFailed 在 finish() 但校验失败时触发，参数为错误信息 map。
+    void setOnFinish(std::function<void(const QVariantMap&)> callback);
+    void setOnFinishFailed(std::function<void(const QVariantMap&)> callback);
+
 public Q_SLOTS:
     // Explicitly report a custom field that does not expose a Qt property with
     // a NOTIFY signal. Standard Ant/Qt inputs are observed automatically.
@@ -201,6 +234,7 @@ Q_SIGNALS:
     void itemSpacingChanged(int spacing);
     void fieldChanged(const QString& fieldName, const QVariant& value);
     void finished(const QVariantMap& values);
+    void finishedFailed(const QVariantMap& errors);
 
 protected:
     void changeEvent(QEvent* event) override;
@@ -223,6 +257,8 @@ private:
     // QObject avoids a typed QPointer downcast while Qt5 emits destroyed().
     QList<QPointer<QObject>> m_items;
     QVariantMap m_customFieldValues;
+    std::function<void(const QVariantMap&)> m_onFinish;
+    std::function<void(const QVariantMap&)> m_onFinishFailed;
     int m_layoutRebuildCount = 0;
     int m_itemSettingsApplyCount = 0;
     int m_spacingUpdateCount = 0;

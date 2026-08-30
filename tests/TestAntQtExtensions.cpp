@@ -742,6 +742,7 @@ private slots:
     void configProvider();
     void formItem();
     void form();
+    void formValidation();
     void formProvider();
     void formIncrementalUpdates();
     void formList();
@@ -1151,6 +1152,88 @@ void TestAntQtExtensions::form()
 
     w->clearItems();
     QCOMPARE(w->items().size(), 0);
+}
+
+void TestAntQtExtensions::formValidation()
+{
+    AntForm form;
+    auto* nameField = new QLineEdit;
+    auto* emailField = new QLineEdit;
+
+    AntFormItem* nameItem = form.addItem(QStringLiteral("Name"), nameField);
+    Ant::FormRule requiredRule;
+    requiredRule.required = true;
+    requiredRule.message = QStringLiteral("Name is required");
+    nameItem->setRules({requiredRule});
+
+    AntFormItem* emailItem = form.addItem(QStringLiteral("Email"), emailField);
+    Ant::FormRule emailRule;
+    emailRule.type = QStringLiteral("email");
+    emailRule.message = QStringLiteral("Invalid email");
+    emailItem->setRules({emailRule});
+
+    // 空值（name 必填失败；email 非必填，空值跳过类型校验）→ 仅 name 失败
+    QCOMPARE(form.validateFields(), false);
+    QCOMPARE(nameItem->validateStatus(), Ant::Status::Error);
+    QCOMPARE(nameItem->validationError(), QStringLiteral("Name is required"));
+    QCOMPARE(emailItem->validateStatus(), Ant::Status::Normal);
+
+    // 非法邮箱（非空但格式错误）→ email 失败
+    emailField->setText(QStringLiteral("not-an-email"));
+    QCOMPARE(form.validateFields(), false);
+    QCOMPARE(emailItem->validateStatus(), Ant::Status::Error);
+    QCOMPARE(emailItem->validationError(), QStringLiteral("Invalid email"));
+
+    // 填写合法值 → 校验通过
+    nameField->setText(QStringLiteral("Alice"));
+    emailField->setText(QStringLiteral("alice@example.com"));
+    QCOMPARE(form.validateFields(), true);
+    QCOMPARE(nameItem->validateStatus(), Ant::Status::Normal);
+    QCOMPARE(nameItem->validationError(), QString());
+
+    // onFinish / onFinishFailed
+    QVariantMap finishedValues;
+    QVariantMap failedErrors;
+    bool finishedCalled = false;
+    bool failedCalled = false;
+    form.setOnFinish([&](const QVariantMap& v) {
+        finishedCalled = true;
+        finishedValues = v;
+    });
+    form.setOnFinishFailed([&](const QVariantMap& e) {
+        failedCalled = true;
+        failedErrors = e;
+    });
+
+    nameField->clear();
+    emailField->setText(QStringLiteral("not-an-email"));
+    form.finish();
+    QVERIFY(!finishedCalled);
+    QVERIFY(failedCalled);
+    QVERIFY(failedErrors.contains(QStringLiteral("Name")));
+    QVERIFY(failedErrors.contains(QStringLiteral("Email")));
+
+    nameField->setText(QStringLiteral("Bob"));
+    emailField->setText(QStringLiteral("bob@example.com"));
+    form.finish();
+    QVERIFY(finishedCalled);
+    QCOMPARE(finishedValues.value(QStringLiteral("Name")).toString(), QStringLiteral("Bob"));
+
+    // 数值范围 + 字符串长度
+    AntFormItem* ageItem = new AntFormItem;
+    auto* ageField = new QLineEdit;
+    ageItem->setLabel(QStringLiteral("Age"));
+    ageItem->setFieldName(QStringLiteral("Age"));
+    ageItem->setFieldWidget(ageField);
+    Ant::FormRule ageRule;
+    ageRule.min = 18.0;
+    ageRule.max = 100.0;
+    ageRule.message = QStringLiteral("Age out of range");
+    ageItem->setRules({ageRule});
+    ageField->setText(QStringLiteral("10"));
+    QCOMPARE(ageItem->validate(), QStringLiteral("Age out of range"));
+    ageField->setText(QStringLiteral("30"));
+    QCOMPARE(ageItem->validate(), QString());
 }
 
 void TestAntQtExtensions::formProvider()

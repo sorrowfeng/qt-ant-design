@@ -262,12 +262,30 @@ QWidget* createFormPage(QWidget* owner)
 
     auto* username = new AntInput(form);
     username->setPlaceholderText(QStringLiteral("Enter username"));
-    form->addItem(QStringLiteral("Username"), username, true);
+    auto* usernameItem = form->addItem(QStringLiteral("Username"), username, true);
+    Ant::FormRule usernameRule;
+    usernameRule.required = true;
+    usernameRule.minLength = 3;
+    usernameRule.message = QStringLiteral("At least 3 characters");
+    usernameItem->setRules({usernameRule});
 
     auto* password = new AntInput(form);
     password->setPasswordMode(true);
     password->setPlaceholderText(QStringLiteral("Enter password"));
-    form->addItem(QStringLiteral("Password"), password, true);
+    auto* passwordItem = form->addItem(QStringLiteral("Password"), password, true);
+    Ant::FormRule passwordRule;
+    passwordRule.required = true;
+    passwordRule.minLength = 6;
+    passwordRule.message = QStringLiteral("At least 6 characters");
+    passwordItem->setRules({passwordRule});
+
+    auto* email = new AntInput(form);
+    email->setPlaceholderText(QStringLiteral("Enter email"));
+    auto* emailItem = form->addItem(QStringLiteral("Email"), email);
+    Ant::FormRule emailRule;
+    emailRule.type = QStringLiteral("email");
+    emailRule.message = QStringLiteral("Invalid email address");
+    emailItem->setRules({emailRule});
 
     auto* gender = new AntSelect(form);
     gender->setPlaceholderText(QStringLiteral("Select"));
@@ -283,8 +301,7 @@ QWidget* createFormPage(QWidget* owner)
     auto* submitItem = form->addItem(QStringLiteral(" "), submit);
     submitItem->setColon(false);
 
-    QObject::connect(submit, &AntButton::clicked, owner, [form, owner]() {
-        const QVariantMap values = form->values();
+    form->setOnFinish([owner](const QVariantMap& values) {
         QStringList parts;
         for (auto it = values.cbegin(); it != values.cend(); ++it)
         {
@@ -294,6 +311,10 @@ QWidget* createFormPage(QWidget* owner)
                                 .arg(parts.isEmpty() ? QStringLiteral("(empty)")
                                                      : parts.join(QStringLiteral(", "))),
                             owner);
+    });
+
+    QObject::connect(submit, &AntButton::clicked, owner, [form]() {
+        form->finish();
     });
 
     cl->addWidget(form, 0, Qt::AlignLeft);

@@ -132,6 +132,11 @@ void AntDrawerStyle::drawDrawer(const QStyleOption* option, QPainter* painter, c
     const qreal baseOpacity = antTheme->isDarkMode() ? 0.58 : 0.45;
     const qreal opacity = baseOpacity * drawer->maskProgress();
     painter->fillRect(option->rect, AntPalette::alpha(Qt::black, opacity));
+    if (drawer->mask().blur)
+    {
+        const qreal haze = 0.22 * drawer->maskProgress();
+        painter->fillRect(option->rect, AntPalette::alpha(Qt::white, haze));
+    }
     drawPanelShadow(painter, option, drawer);
     painter->restore();
 }

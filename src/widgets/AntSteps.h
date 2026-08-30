@@ -25,6 +25,8 @@ class QT_ANT_DESIGN_EXPORT AntSteps : public QWidget
     Q_OBJECT
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(Ant::Orientation direction READ direction WRITE setDirection NOTIFY directionChanged)
+    Q_PROPERTY(Ant::StepType stepType READ stepType WRITE setStepType NOTIFY stepTypeChanged)
+    Q_PROPERTY(Ant::StepLabelPlacement labelPlacement READ labelPlacement WRITE setLabelPlacement NOTIFY labelPlacementChanged)
     Q_PROPERTY(bool clickable READ isClickable WRITE setClickable NOTIFY clickableChanged)
 
 public:
@@ -35,6 +37,12 @@ public:
 
     Ant::Orientation direction() const;
     void setDirection(Ant::Orientation direction);
+
+    Ant::StepType stepType() const;
+    void setStepType(Ant::StepType type);
+
+    Ant::StepLabelPlacement labelPlacement() const;
+    void setLabelPlacement(Ant::StepLabelPlacement placement);
 
     bool isClickable() const;
     void setClickable(bool clickable);
@@ -56,6 +64,8 @@ public:
 Q_SIGNALS:
     void currentIndexChanged(int index);
     void directionChanged(Ant::Orientation direction);
+    void stepTypeChanged(Ant::StepType type);
+    void labelPlacementChanged(Ant::StepLabelPlacement placement);
     void clickableChanged(bool clickable);
     void stepClicked(int index);
 
@@ -104,6 +114,8 @@ private:
     QVector<AntStepItem> m_steps;
     int m_currentIndex = 0;
     Ant::Orientation m_direction = Ant::Orientation::Horizontal;
+    Ant::StepType m_stepType = Ant::StepType::Default;
+    Ant::StepLabelPlacement m_labelPlacement = Ant::StepLabelPlacement::Horizontal;
     bool m_clickable = true;
     int m_hoveredIndex = -1;
     quint64 m_layoutRevision = 1;

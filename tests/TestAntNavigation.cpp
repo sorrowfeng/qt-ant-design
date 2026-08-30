@@ -241,6 +241,20 @@ void TestAntNavigation::propertiesAndSignals()
     QCOMPARE(steps->isClickable(), false);
     QCOMPARE(clickSpy.count(), 1);
 
+    // v6 type / labelPlacement
+    QCOMPARE(steps->stepType(), Ant::StepType::Default);
+    QCOMPARE(steps->labelPlacement(), Ant::StepLabelPlacement::Horizontal);
+    QSignalSpy stepTypeSpy(steps, &AntSteps::stepTypeChanged);
+    steps->setStepType(Ant::StepType::Dot);
+    QCOMPARE(steps->stepType(), Ant::StepType::Dot);
+    QCOMPARE(stepTypeSpy.count(), 1);
+    steps->setStepType(Ant::StepType::Navigation);
+    QCOMPARE(steps->stepType(), Ant::StepType::Navigation);
+    QSignalSpy labelPlacementSpy(steps, &AntSteps::labelPlacementChanged);
+    steps->setLabelPlacement(Ant::StepLabelPlacement::Vertical);
+    QCOMPARE(steps->labelPlacement(), Ant::StepLabelPlacement::Vertical);
+    QCOMPARE(labelPlacementSpy.count(), 1);
+
     steps->clearSteps();
     QCOMPARE(steps->count(), 0);
 

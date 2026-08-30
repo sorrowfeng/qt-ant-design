@@ -85,8 +85,8 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         const QFont titleFontForItem = AntStyleBase::withPixelSize(painter->font(), m.titleFontSize, status == Ant::StepStatus::Process ? QFont::DemiBold : QFont::Normal);
         const QFont descFontForItem = AntStyleBase::withPixelSize(painter->font(), m.descFontSize, QFont::Normal);
 
-        // Tail line
-        if (i < layouts.size() - 1)
+        // Tail line（navigation 类型省略连接线）
+        if (i < layouts.size() - 1 && steps->stepType() != Ant::StepType::Navigation)
         {
             if (steps->direction() == Ant::Orientation::Horizontal)
             {
@@ -116,50 +116,68 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
             }
         }
 
-        // Circle fill/border
-        QColor fill = Qt::transparent;
-        QColor border = color;
-        QColor numberColor = color;
-        if (status == Ant::StepStatus::Process)
+        // Circle fill/border（dot 类型用实心小圆点，跳过内部数字/图标）
+        if (steps->stepType() == Ant::StepType::Dot)
         {
-            fill = color;
-            numberColor = token.colorTextLightSolid;
-        }
-        else if (status == Ant::StepStatus::Finish)
-        {
-            fill = token.colorPrimaryBg;
-            border = token.colorPrimaryBg;
-        }
-        else if (status == Ant::StepStatus::Error)
-        {
-            fill = token.colorError;
-            border = token.colorError;
-            numberColor = token.colorTextLightSolid;
+            QColor dotColor = color;
+            if (status == Ant::StepStatus::Wait)
+            {
+                dotColor = disabled ? token.colorBorderDisabled : token.colorBorder;
+            }
+            else if (status == Ant::StepStatus::Finish)
+            {
+                dotColor = token.colorPrimary;
+            }
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(dotColor);
+            painter->drawEllipse(circle);
         }
         else
         {
-            fill = token.colorFillQuaternary;
-            border = disabled ? token.colorBorderDisabled : token.colorBorder;
-            numberColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
-        }
+            QColor fill = Qt::transparent;
+            QColor border = color;
+            QColor numberColor = color;
+            if (status == Ant::StepStatus::Process)
+            {
+                fill = color;
+                numberColor = token.colorTextLightSolid;
+            }
+            else if (status == Ant::StepStatus::Finish)
+            {
+                fill = token.colorPrimaryBg;
+                border = token.colorPrimaryBg;
+            }
+            else if (status == Ant::StepStatus::Error)
+            {
+                fill = token.colorError;
+                border = token.colorError;
+                numberColor = token.colorTextLightSolid;
+            }
+            else
+            {
+                fill = token.colorFillQuaternary;
+                border = disabled ? token.colorBorderDisabled : token.colorBorder;
+                numberColor = disabled ? token.colorTextDisabled : token.colorTextTertiary;
+            }
 
-        painter->setPen(QPen(border, 2));
-        painter->setBrush(fill);
-        painter->drawEllipse(circle);
+            painter->setPen(QPen(border, 2));
+            painter->setBrush(fill);
+            painter->drawEllipse(circle);
 
-        // Icon / number
-        if (status == Ant::StepStatus::Finish || status == Ant::StepStatus::Error)
-        {
-            const Ant::IconType iconType = status == Ant::StepStatus::Error ? Ant::IconType::Close : Ant::IconType::Check;
-            const QColor iconColor = status == Ant::StepStatus::Finish ? token.colorPrimary : token.colorTextLightSolid;
-            AntIconPainter::drawIcon(*painter, iconType, QRectF(circle).adjusted(8, 8, -8, -8), iconColor);
-        }
-        else
-        {
-            const QFont iconFont = AntStyleBase::withPixelSize(painter->font(), 14, QFont::DemiBold);
-            painter->setFont(iconFont);
-            painter->setPen(numberColor);
-            painter->drawText(circle, Qt::AlignCenter, steps->iconText(status, i));
+            // Icon / number
+            if (status == Ant::StepStatus::Finish || status == Ant::StepStatus::Error)
+            {
+                const Ant::IconType iconType = status == Ant::StepStatus::Error ? Ant::IconType::Close : Ant::IconType::Check;
+                const QColor iconColor = status == Ant::StepStatus::Finish ? token.colorPrimary : token.colorTextLightSolid;
+                AntIconPainter::drawIcon(*painter, iconType, QRectF(circle).adjusted(8, 8, -8, -8), iconColor);
+            }
+            else
+            {
+                const QFont iconFont = AntStyleBase::withPixelSize(painter->font(), 14, QFont::DemiBold);
+                painter->setFont(iconFont);
+                painter->setPen(numberColor);
+                painter->drawText(circle, Qt::AlignCenter, steps->iconText(status, i));
+            }
         }
 
         // Title
@@ -168,9 +186,19 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
         QRect titleRect = textArea;
         if (steps->direction() == Ant::Orientation::Horizontal)
         {
-            titleRect.setTop(circle.top());
-            titleRect.setHeight(m.iconSize);
-            painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, step.title);
+            if (steps->labelPlacement() == Ant::StepLabelPlacement::Vertical)
+            {
+                // 文字在图标下方，水平居中
+                titleRect.setTop(circle.bottom() + m.titleGap);
+                titleRect.setHeight(m.titleFontSize + 6);
+                painter->drawText(titleRect, Qt::AlignHCenter | Qt::AlignTop, step.title);
+            }
+            else
+            {
+                titleRect.setTop(circle.top());
+                titleRect.setHeight(m.iconSize);
+                painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, step.title);
+            }
         }
         else
         {
@@ -185,12 +213,22 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
             painter->setPen(token.colorTextTertiary);
             if (steps->direction() == Ant::Orientation::Horizontal)
             {
-                const int titleWidth = QFontMetrics(titleFontForItem).horizontalAdvance(step.title);
-                QRect subRect(titleRect.left() + titleWidth + token.marginXS,
-                              titleRect.top(),
-                              qMax(0, titleRect.width() - titleWidth - token.marginXS),
-                              titleRect.height());
-                painter->drawText(subRect, Qt::AlignLeft | Qt::AlignVCenter, step.subTitle);
+                if (steps->labelPlacement() == Ant::StepLabelPlacement::Vertical)
+                {
+                    QRect subRect = titleRect;
+                    subRect.moveTop(titleRect.bottom() + 2);
+                    subRect.setHeight(m.descFontSize + 6);
+                    painter->drawText(subRect, Qt::AlignHCenter | Qt::AlignTop, step.subTitle);
+                }
+                else
+                {
+                    const int titleWidth = QFontMetrics(titleFontForItem).horizontalAdvance(step.title);
+                    QRect subRect(titleRect.left() + titleWidth + token.marginXS,
+                                  titleRect.top(),
+                                  qMax(0, titleRect.width() - titleWidth - token.marginXS),
+                                  titleRect.height());
+                    painter->drawText(subRect, Qt::AlignLeft | Qt::AlignVCenter, step.subTitle);
+                }
             }
             else
             {
@@ -209,13 +247,28 @@ void AntStepsStyle::drawSteps(const QStyleOption* option, QPainter* painter, con
             QRect descRect = textArea;
             if (steps->direction() == Ant::Orientation::Horizontal)
             {
-                descRect.setTop(titleRect.bottom());
+                if (steps->labelPlacement() == Ant::StepLabelPlacement::Vertical)
+                {
+                    descRect.setTop(titleRect.bottom() + (step.subTitle.isEmpty() ? 6 : 22));
+                }
+                else
+                {
+                    descRect.setTop(titleRect.bottom());
+                }
             }
             else
             {
                 descRect.setTop(titleRect.bottom() + (step.subTitle.isEmpty() ? 6 : 22));
             }
-            painter->drawText(descRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, step.description);
+            if (steps->labelPlacement() == Ant::StepLabelPlacement::Vertical &&
+                steps->direction() == Ant::Orientation::Horizontal)
+            {
+                painter->drawText(descRect, Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap, step.description);
+            }
+            else
+            {
+                painter->drawText(descRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, step.description);
+            }
         }
     }
 

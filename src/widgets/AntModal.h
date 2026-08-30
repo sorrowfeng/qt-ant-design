@@ -31,6 +31,7 @@ class QT_ANT_DESIGN_EXPORT AntModal : public QWidget
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
     Q_PROPERTY(bool closable READ isClosable WRITE setClosable NOTIFY closableChanged)
     Q_PROPERTY(bool maskClosable READ isMaskClosable WRITE setMaskClosable NOTIFY maskClosableChanged)
+    Q_PROPERTY(Ant::MaskConfig mask READ mask WRITE setMask NOTIFY maskChanged)
     Q_PROPERTY(bool centered READ isCentered WRITE setCentered NOTIFY centeredChanged)
     Q_PROPERTY(int dialogWidth READ dialogWidth WRITE setDialogWidth NOTIFY dialogWidthChanged)
     Q_PROPERTY(QString okText READ okText WRITE setOkText NOTIFY okTextChanged)
@@ -61,6 +62,9 @@ public:
 
     bool isMaskClosable() const;
     void setMaskClosable(bool closable);
+
+    Ant::MaskConfig mask() const;
+    void setMask(const Ant::MaskConfig& mask);
 
     bool isCentered() const;
     void setCentered(bool centered);
@@ -96,6 +100,7 @@ Q_SIGNALS:
     void openChanged(bool open);
     void closableChanged(bool closable);
     void maskClosableChanged(bool closable);
+    void maskChanged(const Ant::MaskConfig& mask);
     void centeredChanged(bool centered);
     void dialogWidthChanged(int width);
     void okTextChanged(const QString& text);
@@ -148,6 +153,7 @@ private:
     bool m_open = false;
     bool m_closable = true;
     bool m_maskClosable = true;
+    Ant::MaskConfig m_mask;
     bool m_centered = true;
     int m_dialogWidth = 520;
     QString m_okText;
