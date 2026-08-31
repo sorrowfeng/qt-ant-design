@@ -204,7 +204,9 @@ protected:
 
     void mouseDoubleClickEvent(QMouseEvent* event) override
     {
-        if (event->button() == Qt::LeftButton)
+        // 双击切换只对图片区域生效；工具栏/翻页按钮上的快速连点
+        // 会触发 dblclick，不能把缩放重置回 100%。
+        if (event->button() == Qt::LeftButton && controlAt(event->pos()) == Control::None)
         {
             // 双击在「适应窗口」与「100%」之间切换
             if (qFuzzyCompare(m_scale, 1.0))
@@ -287,7 +289,6 @@ private:
     static constexpr qreal kMaxScale = 50.0;
     static constexpr int kControlSize = 40;
     static constexpr int kControlMargin = 12;
-    static constexpr qreal kEdgeKeep = 80.0;
     static constexpr int kFooterPillGap = 12;
     static constexpr int kIconSize = 18;
 
@@ -364,6 +365,8 @@ private:
 
     QPointF clampOffset(const QPointF& offset) const
     {
+        // 边缘到边缘钳制：图片可滑动到任一边缘贴住视图对侧边缘，
+        // 保证放大后图片任意部分（上/下/左/右）都能拖入视野。
         const QSizeF image = scaledImageSize();
         qreal dx = offset.x();
         if (image.width() <= width())
@@ -372,7 +375,8 @@ private:
         }
         else
         {
-            dx = qBound(width() - image.width() - kEdgeKeep, dx, kEdgeKeep);
+            const qreal halfOverflow = (image.width() - width()) / 2.0;
+            dx = qBound(-halfOverflow, dx, halfOverflow);
         }
         qreal dy = offset.y();
         if (image.height() <= height())
@@ -381,7 +385,8 @@ private:
         }
         else
         {
-            dy = qBound(height() - image.height() - kEdgeKeep, dy, kEdgeKeep);
+            const qreal halfOverflow = (image.height() - height()) / 2.0;
+            dy = qBound(-halfOverflow, dy, halfOverflow);
         }
         return QPointF(dx, dy);
     }
