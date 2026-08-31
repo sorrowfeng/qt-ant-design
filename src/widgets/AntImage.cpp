@@ -14,7 +14,10 @@
 #include <QWindow>
 #include <QtMath>
 
+#include <functional>
+
 #include "AntButton.h"
+#include "AntDialog.h"
 #include "AntIcon.h"
 #include "core/AntTheme.h"
 #include "private/AntImageDecodeUtils.h"
@@ -55,27 +58,32 @@ QSize imageTargetSize(const QPixmap& pixmap, int requestedWidth, int requestedHe
     return natural;
 }
 
-class ImagePreviewDialog : public QDialog
+// 图片预览内容区：缩放/平移/旋转/导航全部在这里绘制与交互，
+// 外层由 AntDialog 提供窗口化的标题栏与关闭按钮（类似微信看图）。
+class ImagePreviewSurface : public QWidget
 {
 public:
-    explicit ImagePreviewDialog(const QList<QPixmap>& pixmaps, int startIndex, QWidget* parent = nullptr)
-        : QDialog(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
+    explicit ImagePreviewSurface(const QList<QPixmap>& pixmaps, QWidget* parent = nullptr)
+        : QWidget(parent)
         , m_pixmaps(pixmaps)
-        , m_currentIndex(qBound(0, startIndex, qMax(0, pixmaps.size() - 1)))
     {
-        setAttribute(Qt::WA_TranslucentBackground);
-        setAttribute(Qt::WA_DeleteOnClose);
         setMouseTracking(true);
+        setFocusPolicy(Qt::StrongFocus);
+    }
 
-        const QScreen* screen = QApplication::screenAt(QCursor::pos());
-        if (!screen)
-        {
-            screen = QApplication::primaryScreen();
-        }
-        const QRect geometry = screen ? screen->availableGeometry() : QRect(0, 0, 1280, 800);
-        setGeometry(geometry);
+    int currentIndex() const { return m_currentIndex; }
 
+    void setCurrentIndex(int index)
+    {
+        const int target = qBound(0, index, qMax(0, m_pixmaps.size() - 1));
+        m_currentIndex = target;
         resetView();
+        update();
+    }
+
+    void setIndexChangedHandler(std::function<void(int)> handler)
+    {
+        m_indexChanged = std::move(handler);
     }
 
 protected:
@@ -85,10 +93,8 @@ protected:
         QPainter p(this);
         p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-        // antd 全屏遮罩（colorBgMask），无面板、无边框
-        p.fillRect(rect(), token.colorBgMask);
+        p.fillRect(rect(), token.colorBgContainer);
 
-        // 图片本体（居中 + 缩放 + 平移 + 旋转）
         const QPixmap& pix = currentPixmap();
         if (!pix.isNull())
         {
@@ -98,29 +104,41 @@ protected:
             p.translate(center);
             p.rotate(m_rotation);
             p.translate(-center);
-            // 按缩放后的 imageRect 绘制源图（旋转围绕中心进行）
             p.drawPixmap(imageRect, pix, QRectF(QPointF(0, 0), QSizeF(pix.size())));
             p.restore();
         }
 
-        // 控制按钮
-        drawRoundControl(p, closeRect(), QLatin1String("Close"), Control::Close, token);
-        const bool hasGroup = m_pixmaps.size() > 1;
-        if (hasGroup)
+        if (m_pixmaps.size() > 1)
         {
-            drawRoundControl(p, prevRect(), QLatin1String("Left"), Control::Prev, token, m_currentIndex <= 0);
-            drawRoundControl(p, nextRect(), QLatin1String("Right"), Control::Next, token,
-                             m_currentIndex >= m_pixmaps.size() - 1);
+            drawRoundControl(p, prevRect(), QLatin1String("Left"), Control::Prev, token);
+            drawRoundControl(p, nextRect(), QLatin1String("Right"), Control::Next, token);
         }
         drawFooter(p, token);
+    }
+
+    void resizeEvent(QResizeEvent* event) override
+    {
+        QWidget::resizeEvent(event);
+        const qreal previousFit = m_fitScale;
+        recomputeFitScale();
+        if (!qFuzzyCompare(m_fitScale, previousFit))
+        {
+            // 视图变化后不允许小于新的 fit 比例
+            if (m_scale < m_fitScale || qFuzzyCompare(m_scale, previousFit))
+            {
+                m_scale = m_fitScale;
+                m_offset = QPointF();
+            }
+        }
+        m_offset = clampOffset(m_offset);
+        update();
     }
 
     void mouseMoveEvent(QMouseEvent* event) override
     {
         if (m_dragging)
         {
-            const QPointF delta = event->pos() - m_dragStartPos;
-            m_offset = clampOffset(m_dragStartOffset + delta);
+            m_offset = clampOffset(m_dragStartOffset + (event->pos() - m_dragStartPos));
             update();
             return;
         }
@@ -130,19 +148,15 @@ protected:
             m_hoverControl = control;
             update();
         }
-        QDialog::mouseMoveEvent(event);
+        QWidget::mouseMoveEvent(event);
     }
 
     void mousePressEvent(QMouseEvent* event) override
     {
         if (event->button() == Qt::LeftButton)
         {
-            const Control control = controlAt(event->pos());
-            switch (control)
+            switch (controlAt(event->pos()))
             {
-            case Control::Close:
-                close();
-                return;
             case Control::Prev:
                 navigate(-1);
                 return;
@@ -174,7 +188,7 @@ protected:
                 return;
             }
         }
-        QDialog::mousePressEvent(event);
+        QWidget::mousePressEvent(event);
     }
 
     void mouseReleaseEvent(QMouseEvent* event) override
@@ -185,14 +199,14 @@ protected:
             updateCursor();
             return;
         }
-        QDialog::mouseReleaseEvent(event);
+        QWidget::mouseReleaseEvent(event);
     }
 
     void mouseDoubleClickEvent(QMouseEvent* event) override
     {
         if (event->button() == Qt::LeftButton)
         {
-            // 双击在「适应窗口」与「100%」之间切换（antd 无此快捷键，属附加便利操作）
+            // 双击在「适应窗口」与「100%」之间切换
             if (qFuzzyCompare(m_scale, 1.0))
             {
                 applyScaleAt(mouseEventPosition(event), m_fitScale);
@@ -203,7 +217,7 @@ protected:
             }
             return;
         }
-        QDialog::mouseDoubleClickEvent(event);
+        QWidget::mouseDoubleClickEvent(event);
     }
 
     void wheelEvent(QWheelEvent* event) override
@@ -218,7 +232,10 @@ protected:
         switch (event->key())
         {
         case Qt::Key_Escape:
-            close();
+            if (QWidget* top = window())
+            {
+                top->close();
+            }
             return;
         case Qt::Key_Left:
             navigate(-1);
@@ -241,7 +258,7 @@ protected:
         default:
             break;
         }
-        QDialog::keyPressEvent(event);
+        QWidget::keyPressEvent(event);
     }
 
     void leaveEvent(QEvent* event) override
@@ -251,14 +268,13 @@ protected:
             m_hoverControl = Control::None;
             update();
         }
-        QDialog::leaveEvent(event);
+        QWidget::leaveEvent(event);
     }
 
 private:
     enum class Control
     {
         None,
-        Close,
         Prev,
         Next,
         RotateLeft,
@@ -299,17 +315,21 @@ private:
         return QRectF(centeredTopLeft() + m_offset, scaledImageSize());
     }
 
-    void resetView()
+    void recomputeFitScale()
     {
         const QSizeF source = rotatedSourceSize();
-        if (source.isEmpty())
+        if (source.isEmpty() || width() <= 0 || height() <= 0)
         {
             return;
         }
-        // antd：maxWidth 100%、maxHeight 约 70%（留出工具栏空间），小图按 100% 显示
         const qreal availableWidth = width() - (kControlMargin + 16) * 2.0;
-        const qreal availableHeight = height() * 0.70;
+        const qreal availableHeight = height() - 96.0;
         m_fitScale = qMin(1.0, qMin(availableWidth / source.width(), availableHeight / source.height()));
+    }
+
+    void resetView()
+    {
+        recomputeFitScale();
         m_scale = m_fitScale;
         m_offset = QPointF();
         updateCursor();
@@ -322,7 +342,6 @@ private:
         {
             return;
         }
-        // 旋转后源图宽高互换，需重新按适应尺寸摆放
         m_rotation = step;
         resetView();
         update();
@@ -346,25 +365,23 @@ private:
     QPointF clampOffset(const QPointF& offset) const
     {
         const QSizeF image = scaledImageSize();
-        const qreal areaWidth = width();
-        const qreal areaHeight = height();
         qreal dx = offset.x();
-        if (image.width() <= areaWidth)
+        if (image.width() <= width())
         {
             dx = 0.0;
         }
         else
         {
-            dx = qBound(areaWidth - image.width() - kEdgeKeep, dx, kEdgeKeep);
+            dx = qBound(width() - image.width() - kEdgeKeep, dx, kEdgeKeep);
         }
         qreal dy = offset.y();
-        if (image.height() <= areaHeight)
+        if (image.height() <= height())
         {
             dy = 0.0;
         }
         else
         {
-            dy = qBound(areaHeight - image.height() - kEdgeKeep, dy, kEdgeKeep);
+            dy = qBound(height() - image.height() - kEdgeKeep, dy, kEdgeKeep);
         }
         return QPointF(dx, dy);
     }
@@ -389,14 +406,14 @@ private:
         m_currentIndex = target;
         resetView();
         update();
+        if (m_indexChanged)
+        {
+            m_indexChanged(m_currentIndex);
+        }
     }
 
     Control controlAt(const QPoint& pos) const
     {
-        if (closeRect().contains(pos))
-        {
-            return Control::Close;
-        }
         if (m_pixmaps.size() > 1)
         {
             if (prevRect().contains(pos))
@@ -429,11 +446,6 @@ private:
         return Control::None;
     }
 
-    QRect closeRect() const
-    {
-        return QRect(width() - kControlSize - kControlMargin, kControlMargin, kControlSize, kControlSize);
-    }
-
     QRect prevRect() const
     {
         return QRect(kControlMargin, (height() - kControlSize) / 2, kControlSize, kControlSize);
@@ -446,54 +458,24 @@ private:
 
     QRect footerPillRect() const
     {
-        // 4 个操作（rotateLeft/rotateRight/zoomOut/zoomIn），下方留出页码文本的空间
         const int actionCount = 4;
         const int widthSum = actionCount * kControlSize + (actionCount - 1) * kFooterPillGap;
         const int x = (width() - widthSum) / 2;
-        const int y = height() - kControlMargin - kControlSize - 32;
+        const int y = height() - kControlMargin - kControlSize - 12;
         return QRect(x, y, widthSum, kControlSize);
     }
 
-    QRect footerProgressRect() const
+    void drawRoundControl(QPainter& p, const QRect& rect, const QString& iconName, Control control,
+                          const AntThemeTokens& token)
     {
-        const QRect pill = footerPillRect();
-        return QRect(0, pill.bottom() + 10, width(), 22);
-    }
-
-    QColor operationColor(const QColor& base, Control control, bool disabled) const
-    {
-        if (disabled)
+        const bool hovered = m_hoverControl == control;
+        if (hovered)
         {
-            QColor c = base;
-            c.setAlphaF(0.28);
-            return c;
+            p.setPen(Qt::NoPen);
+            p.setBrush(token.colorFillTertiary);
+            p.drawEllipse(QRectF(rect));
         }
-        if (m_hoverControl == control)
-        {
-            QColor c = base;
-            c.setAlphaF(0.85);
-            return c;
-        }
-        QColor c = base;
-        c.setAlphaF(0.65);
-        return c;
-    }
-
-    void drawRoundControl(QPainter& p,
-                          const QRect& rect,
-                          const QString& iconName,
-                          Control control,
-                          const AntThemeTokens& token,
-                          bool disabled = false) const
-    {
-        const bool hovered = !disabled && m_hoverControl == control;
-        QColor circle = token.colorBgMask;
-        circle.setAlphaF(hovered ? 0.25 : 0.12);
-        p.setPen(Qt::NoPen);
-        p.setBrush(circle);
-        p.drawEllipse(QRectF(rect));
-
-        const QColor iconColor = operationColor(token.colorTextLightSolid, control, disabled);
+        QColor iconColor = hovered ? token.colorPrimaryHover : token.colorTextSecondary;
         const QPixmap icon = AntIcon::renderPixmap(iconName, kIconSize, iconColor);
         if (!icon.isNull())
         {
@@ -508,10 +490,8 @@ private:
     void drawFooter(QPainter& p, const AntThemeTokens& token)
     {
         const QRect pill = footerPillRect();
-        QColor pillBg = token.colorBgMask;
-        pillBg.setAlphaF(0.12);
         p.setPen(Qt::NoPen);
-        p.setBrush(pillBg);
+        p.setBrush(token.colorFillQuaternary);
         p.drawRoundedRect(QRectF(pill), pill.height() / 2.0, pill.height() / 2.0);
 
         const struct
@@ -526,36 +506,12 @@ private:
         };
         for (int i = 0; i < 4; ++i)
         {
-            const QRect buttonRect(pill.left() + i * (kControlSize + kFooterPillGap), pill.top(), kControlSize, kControlSize);
-            QColor circle = token.colorBgMask;
-            const bool hovered = m_hoverControl == actions[i].control;
-            circle.setAlphaF(hovered ? 0.25 : 0.08);
-            p.setPen(Qt::NoPen);
-            p.setBrush(circle);
-            p.drawEllipse(QRectF(buttonRect));
-
-            const QColor iconColor = operationColor(token.colorTextLightSolid, actions[i].control, false);
-            const QPixmap icon = AntIcon::renderPixmap(actions[i].icon, kIconSize, iconColor);
-            if (!icon.isNull())
-            {
-                const QRectF iconRect(buttonRect.center().x() - kIconSize / 2.0,
-                                      buttonRect.center().y() - kIconSize / 2.0,
-                                      kIconSize,
-                                      kIconSize);
-                p.drawPixmap(iconRect, icon, QRectF(icon.rect()));
-            }
+            const QRect buttonRect(pill.left() + i * (kControlSize + kFooterPillGap),
+                                   pill.top(),
+                                   kControlSize,
+                                   kControlSize);
+            drawRoundControl(p, buttonRect, actions[i].icon, actions[i].control, token);
         }
-
-        // 页码（antd preview footer 的 progress 文案）
-        QRect progressRect = footerProgressRect();
-        QFont f = font();
-        f.setPixelSize(token.fontSize);
-        p.setFont(f);
-        QColor progressColor = token.colorTextLightSolid;
-        progressColor.setAlphaF(0.65);
-        p.setPen(progressColor);
-        p.drawText(progressRect, Qt::AlignCenter,
-                   QStringLiteral("%1 / %2").arg(m_currentIndex + 1).arg(m_pixmaps.size()));
     }
 
     QList<QPixmap> m_pixmaps;
@@ -568,8 +524,74 @@ private:
     QPointF m_dragStartPos;
     QPointF m_dragStartOffset;
     Control m_hoverControl = Control::None;
+    std::function<void(int)> m_indexChanged;
 };
 
+// Ant 窗口化图片预览（类似微信看图）：窗口带标题栏与关闭按钮，
+// 内容区即 ImagePreviewSurface，无全屏遮罩。
+class ImagePreviewDialog : public AntDialog
+{
+public:
+    explicit ImagePreviewDialog(const QList<QPixmap>& pixmaps,
+                                const QStringList& titles,
+                                int startIndex,
+                                QWidget* parent = nullptr)
+        : AntDialog(parent)
+        , m_pixmaps(pixmaps)
+        , m_titles(titles)
+    {
+        setAttribute(Qt::WA_DeleteOnClose);
+
+        m_surface = new ImagePreviewSurface(pixmaps, this);
+        setContentWidget(m_surface);
+        m_surface->setCurrentIndex(startIndex);
+        m_surface->setIndexChangedHandler([this](int) { syncTitle(); });
+
+        // 按首图比例开窗，上限 80% 屏幕，保底 420x320，并居中
+        const int firstIndex = qMax(0, qMin(startIndex, m_pixmaps.size() - 1));
+        const QPixmap& first = m_pixmaps.at(firstIndex);
+        const QScreen* screen = QApplication::screenAt(QCursor::pos());
+        if (!screen)
+        {
+            screen = QApplication::primaryScreen();
+        }
+        const QSize maxSize = screen ? screen->availableSize() * 0.8 : QSize(1024, 720);
+        QSize windowSize = first.size().scaled(maxSize, Qt::KeepAspectRatio);
+        windowSize = windowSize.expandedTo(QSize(420, 320)).boundedTo(maxSize);
+        resize(windowSize);
+        if (screen)
+        {
+            const QRect available = screen->availableGeometry();
+            move(available.center().x() - width() / 2, available.center().y() - height() / 2);
+        }
+        syncTitle();
+    }
+
+protected:
+    void showEvent(QShowEvent* event) override
+    {
+        AntDialog::showEvent(event);
+        m_surface->setFocus();
+    }
+
+private:
+    void syncTitle()
+    {
+        const int index = m_surface ? m_surface->currentIndex() : 0;
+        QString title = (index >= 0 && index < m_titles.size())
+            ? (m_titles.at(index).isEmpty() ? QStringLiteral("图片预览") : m_titles.at(index))
+            : QStringLiteral("图片预览");
+        if (m_pixmaps.size() > 1)
+        {
+            title += QStringLiteral("（%1 / %2）").arg(index + 1).arg(m_pixmaps.size());
+        }
+        setWindowTitle(title);
+    }
+
+    ImagePreviewSurface* m_surface = nullptr;
+    QList<QPixmap> m_pixmaps;
+    QStringList m_titles;
+};
 } // namespace
 
 static void initAntImageResources()
@@ -765,11 +787,13 @@ void AntImage::showPreviewDialog()
 void AntImage::showPreviewDialogAt(int index)
 {
     QList<QPixmap> pixmaps;
+    QStringList titles;
     int startIndex = 0;
 
     if (m_previewGroup.isEmpty())
     {
         pixmaps.append(m_pixmap);
+        titles.append(m_alt);
         startIndex = 0;
     }
     else
@@ -780,6 +804,7 @@ void AntImage::showPreviewDialogAt(int index)
             if (img && img->m_loaded)
             {
                 pixmaps.append(img->m_pixmap);
+                titles.append(img->m_alt);
                 if (img == this)
                     startIndex = pixmaps.size() - 1;
             }
@@ -791,7 +816,7 @@ void AntImage::showPreviewDialogAt(int index)
     if (pixmaps.isEmpty())
         return;
 
-    auto* dlg = new ImagePreviewDialog(pixmaps, startIndex, window());
+    auto* dlg = new ImagePreviewDialog(pixmaps, titles, startIndex, window());
     dlg->exec();
 }
 

@@ -241,7 +241,7 @@
 | `AntCarousel` | `carousel` | 自绘 | 是 | 自动播放、圆点指示器、左右箭头、手动切换、点击事件 |
 | `AntCollapse` | `collapse` | 自绘 | 是 | 折叠面板、accordion 模式、动画 |
 | `AntEmpty` | `empty` | `QProxyStyle` | 是 | 默认插画、simple 模式 |
-| `AntImage` | `image` | 自绘 | 是 | 图片展示、全屏预览、PreviewGroup |
+| `AntImage` | `image` | 自绘 | 是 | 图片展示、Ant 窗口式预览（标题栏/关闭钮，缩放/平移/旋转/翻页，类似微信看图）、PreviewGroup |
 | `AntListy` | `listy` | 自绘（Model/View 虚拟化） | 是 | 高性能列表：虚拟滚动、分组头 + 吸顶指示、拖拽排序、无限加载、滚动定位 |
 | `AntList` | `list` | `QProxyStyle` | 是 | header/footer/bordered/split/size，item 支持 AntIcon 与 QPixmap/QImage 媒体，内部滚动，平衡选中高亮 inset，`AntListWidget` 覆盖常用 QListWidget-style API |
 | `AntPopover` | — | `QProxyStyle` | 是 | 已在反馈类 |
