@@ -10,10 +10,12 @@
 #include <QPainterPath>
 #include <QScreen>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 #include <QWindow>
 #include <QtMath>
 
 #include "AntButton.h"
+#include "AntIcon.h"
 #include "core/AntTheme.h"
 #include "private/AntImageDecodeUtils.h"
 
@@ -47,78 +49,23 @@ class ImagePreviewDialog : public QDialog
 {
 public:
     explicit ImagePreviewDialog(const QList<QPixmap>& pixmaps, int startIndex, QWidget* parent = nullptr)
-        : QDialog(parent, Qt::FramelessWindowHint)
+        : QDialog(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
         , m_pixmaps(pixmaps)
-        , m_currentIndex(startIndex)
+        , m_currentIndex(qBound(0, startIndex, qMax(0, pixmaps.size() - 1)))
     {
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_DeleteOnClose);
+        setMouseTracking(true);
 
-        auto* layout = new QVBoxLayout(this);
-        layout->setContentsMargins(16, 16, 16, 16);
-
-        // Top row: prev / counter / close
-        auto* topRow = new QHBoxLayout();
-        if (m_pixmaps.size() > 1)
+        const QScreen* screen = QApplication::screenAt(QCursor::pos());
+        if (!screen)
         {
-            m_prevBtn = new AntButton(QStringLiteral("◀"), this);
-            m_prevBtn->setButtonType(Ant::ButtonType::Text);
-            m_prevBtn->setButtonSize(Ant::Size::Small);
-            m_prevBtn->setFixedSize(32, 32);
-            topRow->addWidget(m_prevBtn);
+            screen = QApplication::primaryScreen();
         }
-        topRow->addStretch();
-        m_counterLabel = new QLabel(this);
-        m_counterLabel->setAlignment(Qt::AlignCenter);
-        topRow->addWidget(m_counterLabel);
-        topRow->addStretch();
-        auto* closeBtn = new AntButton(QStringLiteral("✕"), this);
-        closeBtn->setButtonType(Ant::ButtonType::Text);
-        closeBtn->setButtonSize(Ant::Size::Small);
-        closeBtn->setFixedSize(32, 32);
-        topRow->addWidget(closeBtn);
-        if (m_pixmaps.size() > 1)
-        {
-            m_nextBtn = new AntButton(QStringLiteral("▶"), this);
-            m_nextBtn->setButtonType(Ant::ButtonType::Text);
-            m_nextBtn->setButtonSize(Ant::Size::Small);
-            m_nextBtn->setFixedSize(32, 32);
-            topRow->addWidget(m_nextBtn);
-        }
-        layout->addLayout(topRow);
+        const QRect geometry = screen ? screen->availableGeometry() : QRect(0, 0, 1280, 800);
+        setGeometry(geometry);
 
-        m_imgLabel = new QLabel(this);
-        m_imgLabel->setAlignment(Qt::AlignCenter);
-        layout->addWidget(m_imgLabel);
-
-        connect(closeBtn, &QPushButton::clicked, this, &QDialog::close);
-        if (m_prevBtn)
-            connect(m_prevBtn, &QPushButton::clicked, this, [this]() { navigate(-1); });
-        if (m_nextBtn)
-            connect(m_nextBtn, &QPushButton::clicked, this, [this]() { navigate(1); });
-
-        updateDisplay();
-    }
-
-private:
-    void navigate(int delta)
-    {
-        const int count = m_pixmaps.size();
-        if (count <= 1) return;
-        m_currentIndex = (m_currentIndex + delta + count) % count;
-        updateDisplay();
-    }
-
-    void updateDisplay()
-    {
-        const QScreen* screen = QApplication::primaryScreen();
-        const QSize maxSz = screen ? screen->availableSize() : QSize(1920, 1080);
-        const QPixmap& pix = m_pixmaps[m_currentIndex];
-        QSize scaled = pix.size().scaled(maxSz * 0.85, Qt::KeepAspectRatio);
-        m_imgLabel->setPixmap(pix.scaled(scaled, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        m_counterLabel->setText(QStringLiteral("%1 / %2").arg(m_currentIndex + 1).arg(m_pixmaps.size()));
-        setFixedSize(scaled.width() + 32, scaled.height() + 60);
-        move((maxSz.width() - width()) / 2, (maxSz.height() - height()) / 2);
+        resetView();
     }
 
 protected:
@@ -126,27 +73,491 @@ protected:
     {
         const auto& token = antTheme->tokens();
         QPainter p(this);
-        p.setRenderHint(QPainter::Antialiasing);
-        p.fillRect(rect(), token.colorBgMaskHeavy);
-        p.setPen(QPen(token.colorBorderSecondary, 1));
-        p.setBrush(token.colorBgElevated);
-        p.drawRoundedRect(rect().adjusted(8, 8, -8, -8), 8, 8);
+        p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+
+        // antd 全屏遮罩（colorBgMask），无面板、无边框
+        p.fillRect(rect(), token.colorBgMask);
+
+        // 图片本体（居中 + 缩放 + 平移 + 旋转）
+        const QPixmap& pix = currentPixmap();
+        if (!pix.isNull())
+        {
+            p.save();
+            const QRectF imageRect = currentImageRect();
+            const QPointF center = imageRect.center();
+            p.translate(center);
+            p.rotate(m_rotation);
+            p.translate(-center);
+            // 按缩放后的 imageRect 绘制源图（旋转围绕中心进行）
+            p.drawPixmap(imageRect, pix, QRectF(QPointF(0, 0), QSizeF(pix.size())));
+            p.restore();
+        }
+
+        // 控制按钮
+        drawRoundControl(p, closeRect(), QLatin1String("Close"), Control::Close, token);
+        const bool hasGroup = m_pixmaps.size() > 1;
+        if (hasGroup)
+        {
+            drawRoundControl(p, prevRect(), QLatin1String("Left"), Control::Prev, token, m_currentIndex <= 0);
+            drawRoundControl(p, nextRect(), QLatin1String("Right"), Control::Next, token,
+                             m_currentIndex >= m_pixmaps.size() - 1);
+        }
+        drawFooter(p, token);
     }
 
-    void keyPressEvent(QKeyEvent* e) override
+    void mouseMoveEvent(QMouseEvent* event) override
     {
-        if (e->key() == Qt::Key_Escape) close();
-        else if (e->key() == Qt::Key_Left) navigate(-1);
-        else if (e->key() == Qt::Key_Right) navigate(1);
-        QDialog::keyPressEvent(e);
+        if (m_dragging)
+        {
+            const QPointF delta = event->pos() - m_dragStartPos;
+            m_offset = clampOffset(m_dragStartOffset + delta);
+            update();
+            return;
+        }
+        const Control control = controlAt(event->pos());
+        if (control != m_hoverControl)
+        {
+            m_hoverControl = control;
+            update();
+        }
+        QDialog::mouseMoveEvent(event);
+    }
+
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        if (event->button() == Qt::LeftButton)
+        {
+            const Control control = controlAt(event->pos());
+            switch (control)
+            {
+            case Control::Close:
+                close();
+                return;
+            case Control::Prev:
+                navigate(-1);
+                return;
+            case Control::Next:
+                navigate(1);
+                return;
+            case Control::RotateLeft:
+                setRotation(m_rotation - 90);
+                return;
+            case Control::RotateRight:
+                setRotation(m_rotation + 90);
+                return;
+            case Control::ZoomIn:
+                applyScaleAt(event->position(), m_scale * kZoomStep);
+                return;
+            case Control::ZoomOut:
+                applyScaleAt(event->position(), m_scale / kZoomStep);
+                return;
+            case Control::None:
+                break;
+            }
+
+            if (m_scale > m_fitScale + 0.01)
+            {
+                m_dragging = true;
+                m_dragStartPos = event->pos();
+                m_dragStartOffset = m_offset;
+                setCursor(Qt::ClosedHandCursor);
+                return;
+            }
+        }
+        QDialog::mousePressEvent(event);
+    }
+
+    void mouseReleaseEvent(QMouseEvent* event) override
+    {
+        if (m_dragging)
+        {
+            m_dragging = false;
+            updateCursor();
+            return;
+        }
+        QDialog::mouseReleaseEvent(event);
+    }
+
+    void mouseDoubleClickEvent(QMouseEvent* event) override
+    {
+        if (event->button() == Qt::LeftButton)
+        {
+            // 双击在「适应窗口」与「100%」之间切换（antd 无此快捷键，属附加便利操作）
+            if (qFuzzyCompare(m_scale, 1.0))
+            {
+                applyScaleAt(event->position(), m_fitScale);
+            }
+            else
+            {
+                applyScaleAt(event->position(), 1.0);
+            }
+            return;
+        }
+        QDialog::mouseDoubleClickEvent(event);
+    }
+
+    void wheelEvent(QWheelEvent* event) override
+    {
+        const qreal factor = event->angleDelta().y() > 0 ? kZoomStep : 1.0 / kZoomStep;
+        applyScaleAt(event->position(), m_scale * factor);
+        event->accept();
+    }
+
+    void keyPressEvent(QKeyEvent* event) override
+    {
+        switch (event->key())
+        {
+        case Qt::Key_Escape:
+            close();
+            return;
+        case Qt::Key_Left:
+            navigate(-1);
+            return;
+        case Qt::Key_Right:
+            navigate(1);
+            return;
+        case Qt::Key_Plus:
+        case Qt::Key_Equal:
+            applyScaleAt(rect().center(), m_scale * kZoomStep);
+            return;
+        case Qt::Key_Minus:
+            applyScaleAt(rect().center(), m_scale / kZoomStep);
+            return;
+        case Qt::Key_Home:
+        case Qt::Key_0:
+            resetView();
+            update();
+            return;
+        default:
+            break;
+        }
+        QDialog::keyPressEvent(event);
+    }
+
+    void leaveEvent(QEvent* event) override
+    {
+        if (m_hoverControl != Control::None)
+        {
+            m_hoverControl = Control::None;
+            update();
+        }
+        QDialog::leaveEvent(event);
+    }
+
+private:
+    enum class Control
+    {
+        None,
+        Close,
+        Prev,
+        Next,
+        RotateLeft,
+        RotateRight,
+        ZoomIn,
+        ZoomOut,
+    };
+
+    static constexpr qreal kZoomStep = 1.15;
+    static constexpr qreal kMaxScale = 50.0;
+    static constexpr int kControlSize = 40;
+    static constexpr int kControlMargin = 12;
+    static constexpr qreal kEdgeKeep = 80.0;
+    static constexpr int kFooterPillGap = 12;
+    static constexpr int kIconSize = 18;
+
+    const QPixmap& currentPixmap() const { return m_pixmaps.at(m_currentIndex); }
+
+    QSizeF rotatedSourceSize() const
+    {
+        const QSizeF source = currentPixmap().isNull() ? QSizeF(1, 1) : QSizeF(currentPixmap().size());
+        return (m_rotation % 180 != 0) ? QSizeF(source.height(), source.width()) : source;
+    }
+
+    QSizeF scaledImageSize() const
+    {
+        return rotatedSourceSize() * m_scale;
+    }
+
+    QPointF centeredTopLeft() const
+    {
+        const QSizeF image = scaledImageSize();
+        return QPointF((width() - image.width()) / 2.0, (height() - image.height()) / 2.0);
+    }
+
+    QRectF currentImageRect() const
+    {
+        return QRectF(centeredTopLeft() + m_offset, scaledImageSize());
+    }
+
+    void resetView()
+    {
+        const QSizeF source = rotatedSourceSize();
+        if (source.isEmpty())
+        {
+            return;
+        }
+        // antd：maxWidth 100%、maxHeight 约 70%（留出工具栏空间），小图按 100% 显示
+        const qreal availableWidth = width() - (kControlMargin + 16) * 2.0;
+        const qreal availableHeight = height() * 0.70;
+        m_fitScale = qMin(1.0, qMin(availableWidth / source.width(), availableHeight / source.height()));
+        m_scale = m_fitScale;
+        m_offset = QPointF();
+        updateCursor();
+    }
+
+    void setRotation(int rotation)
+    {
+        const int step = ((rotation % 360) + 360) % 360 / 90 * 90;
+        if (m_rotation == step)
+        {
+            return;
+        }
+        // 旋转后源图宽高互换，需重新按适应尺寸摆放
+        m_rotation = step;
+        resetView();
+        update();
+    }
+
+    void applyScaleAt(const QPointF& anchor, qreal newScale)
+    {
+        newScale = qBound(m_fitScale, newScale, kMaxScale);
+        if (qFuzzyCompare(newScale, m_scale))
+        {
+            return;
+        }
+        const QPointF oldTopLeft = centeredTopLeft() + m_offset;
+        const QPointF imagePoint = (anchor - oldTopLeft) / m_scale;
+        m_scale = newScale;
+        m_offset = clampOffset(anchor - imagePoint * newScale - centeredTopLeft());
+        updateCursor();
+        update();
+    }
+
+    QPointF clampOffset(const QPointF& offset) const
+    {
+        const QSizeF image = scaledImageSize();
+        const qreal areaWidth = width();
+        const qreal areaHeight = height();
+        qreal dx = offset.x();
+        if (image.width() <= areaWidth)
+        {
+            dx = 0.0;
+        }
+        else
+        {
+            dx = qBound(areaWidth - image.width() - kEdgeKeep, dx, kEdgeKeep);
+        }
+        qreal dy = offset.y();
+        if (image.height() <= areaHeight)
+        {
+            dy = 0.0;
+        }
+        else
+        {
+            dy = qBound(areaHeight - image.height() - kEdgeKeep, dy, kEdgeKeep);
+        }
+        return QPointF(dx, dy);
+    }
+
+    void updateCursor()
+    {
+        setCursor(m_scale > m_fitScale + 0.01 ? Qt::OpenHandCursor : Qt::ArrowCursor);
+    }
+
+    void navigate(int delta)
+    {
+        const int count = m_pixmaps.size();
+        if (count <= 1)
+        {
+            return;
+        }
+        const int target = m_currentIndex + delta;
+        if (target < 0 || target >= count)
+        {
+            return;
+        }
+        m_currentIndex = target;
+        resetView();
+        update();
+    }
+
+    Control controlAt(const QPoint& pos) const
+    {
+        if (closeRect().contains(pos))
+        {
+            return Control::Close;
+        }
+        if (m_pixmaps.size() > 1)
+        {
+            if (prevRect().contains(pos))
+            {
+                return Control::Prev;
+            }
+            if (nextRect().contains(pos))
+            {
+                return Control::Next;
+            }
+        }
+        if (footerPillRect().contains(pos))
+        {
+            const QPoint pillTopLeft = footerPillRect().topLeft();
+            const int index = (pos.x() - pillTopLeft.x()) / (kControlSize + kFooterPillGap);
+            switch (index)
+            {
+            case 0:
+                return Control::RotateLeft;
+            case 1:
+                return Control::RotateRight;
+            case 2:
+                return Control::ZoomOut;
+            case 3:
+                return Control::ZoomIn;
+            default:
+                return Control::None;
+            }
+        }
+        return Control::None;
+    }
+
+    QRect closeRect() const
+    {
+        return QRect(width() - kControlSize - kControlMargin, kControlMargin, kControlSize, kControlSize);
+    }
+
+    QRect prevRect() const
+    {
+        return QRect(kControlMargin, (height() - kControlSize) / 2, kControlSize, kControlSize);
+    }
+
+    QRect nextRect() const
+    {
+        return QRect(width() - kControlSize - kControlMargin, (height() - kControlSize) / 2, kControlSize, kControlSize);
+    }
+
+    QRect footerPillRect() const
+    {
+        // 4 个操作（rotateLeft/rotateRight/zoomOut/zoomIn），下方留出页码文本的空间
+        const int actionCount = 4;
+        const int widthSum = actionCount * kControlSize + (actionCount - 1) * kFooterPillGap;
+        const int x = (width() - widthSum) / 2;
+        const int y = height() - kControlMargin - kControlSize - 32;
+        return QRect(x, y, widthSum, kControlSize);
+    }
+
+    QRect footerProgressRect() const
+    {
+        const QRect pill = footerPillRect();
+        return QRect(0, pill.bottom() + 10, width(), 22);
+    }
+
+    QColor operationColor(const QColor& base, Control control, bool disabled) const
+    {
+        if (disabled)
+        {
+            QColor c = base;
+            c.setAlphaF(0.28);
+            return c;
+        }
+        if (m_hoverControl == control)
+        {
+            QColor c = base;
+            c.setAlphaF(0.85);
+            return c;
+        }
+        QColor c = base;
+        c.setAlphaF(0.65);
+        return c;
+    }
+
+    void drawRoundControl(QPainter& p,
+                          const QRect& rect,
+                          const QString& iconName,
+                          Control control,
+                          const AntThemeTokens& token,
+                          bool disabled = false) const
+    {
+        const bool hovered = !disabled && m_hoverControl == control;
+        QColor circle = token.colorBgMask;
+        circle.setAlphaF(hovered ? 0.25 : 0.12);
+        p.setPen(Qt::NoPen);
+        p.setBrush(circle);
+        p.drawEllipse(QRectF(rect));
+
+        const QColor iconColor = operationColor(token.colorTextLightSolid, control, disabled);
+        const QPixmap icon = AntIcon::renderPixmap(iconName, kIconSize, iconColor);
+        if (!icon.isNull())
+        {
+            const QRectF iconRect(rect.center().x() - kIconSize / 2.0,
+                                  rect.center().y() - kIconSize / 2.0,
+                                  kIconSize,
+                                  kIconSize);
+            p.drawPixmap(iconRect, icon, QRectF(icon.rect()));
+        }
+    }
+
+    void drawFooter(QPainter& p, const AntThemeTokens& token)
+    {
+        const QRect pill = footerPillRect();
+        QColor pillBg = token.colorBgMask;
+        pillBg.setAlphaF(0.12);
+        p.setPen(Qt::NoPen);
+        p.setBrush(pillBg);
+        p.drawRoundedRect(QRectF(pill), pill.height() / 2.0, pill.height() / 2.0);
+
+        const struct
+        {
+            QString icon;
+            Control control;
+        } actions[4] = {
+            {QStringLiteral("RotateLeft"), Control::RotateLeft},
+            {QStringLiteral("RotateRight"), Control::RotateRight},
+            {QStringLiteral("ZoomOut"), Control::ZoomOut},
+            {QStringLiteral("ZoomIn"), Control::ZoomIn},
+        };
+        for (int i = 0; i < 4; ++i)
+        {
+            const QRect buttonRect(pill.left() + i * (kControlSize + kFooterPillGap), pill.top(), kControlSize, kControlSize);
+            QColor circle = token.colorBgMask;
+            const bool hovered = m_hoverControl == actions[i].control;
+            circle.setAlphaF(hovered ? 0.25 : 0.08);
+            p.setPen(Qt::NoPen);
+            p.setBrush(circle);
+            p.drawEllipse(QRectF(buttonRect));
+
+            const QColor iconColor = operationColor(token.colorTextLightSolid, actions[i].control, false);
+            const QPixmap icon = AntIcon::renderPixmap(actions[i].icon, kIconSize, iconColor);
+            if (!icon.isNull())
+            {
+                const QRectF iconRect(buttonRect.center().x() - kIconSize / 2.0,
+                                      buttonRect.center().y() - kIconSize / 2.0,
+                                      kIconSize,
+                                      kIconSize);
+                p.drawPixmap(iconRect, icon, QRectF(icon.rect()));
+            }
+        }
+
+        // 页码（antd preview footer 的 progress 文案）
+        QRect progressRect = footerProgressRect();
+        QFont f = font();
+        f.setPixelSize(token.fontSize);
+        p.setFont(f);
+        QColor progressColor = token.colorTextLightSolid;
+        progressColor.setAlphaF(0.65);
+        p.setPen(progressColor);
+        p.drawText(progressRect, Qt::AlignCenter,
+                   QStringLiteral("%1 / %2").arg(m_currentIndex + 1).arg(m_pixmaps.size()));
     }
 
     QList<QPixmap> m_pixmaps;
     int m_currentIndex = 0;
-    QLabel* m_imgLabel = nullptr;
-    QLabel* m_counterLabel = nullptr;
-    AntButton* m_prevBtn = nullptr;
-    AntButton* m_nextBtn = nullptr;
+    qreal m_scale = 1.0;
+    qreal m_fitScale = 1.0;
+    int m_rotation = 0;
+    QPointF m_offset;
+    bool m_dragging = false;
+    QPointF m_dragStartPos;
+    QPointF m_dragStartOffset;
+    Control m_hoverControl = Control::None;
 };
 
 } // namespace
@@ -445,18 +856,14 @@ QPixmap AntImage::cachedPreviewOverlayPixmap(qreal devicePixelRatio, const QSize
     const auto& token = antTheme->tokens();
     const qreal dpr = qMax<qreal>(1.0, devicePixelRatio);
     const QSize logicalSize(qMax(1, targetSize.width()), qMax(1, targetSize.height()));
-    const QColor overlayColor = token.colorBgMask;
-    QFont overlayFont = font();
-    overlayFont.setPixelSize(token.fontSize);
-    const QString fontKey = overlayFont.key();
+    // antd cover：rgba(0,0,0,0.3)
+    const QColor overlayColor = QColor(0, 0, 0, 77);
+    const int iconSize = 40;
 
     if (m_previewOverlayPixmapCache.valid &&
         qFuzzyCompare(m_previewOverlayPixmapCache.devicePixelRatio, dpr) &&
         m_previewOverlayPixmapCache.logicalSize == logicalSize &&
-        m_previewOverlayPixmapCache.textColor == token.colorTextLightSolid &&
-        m_previewOverlayPixmapCache.overlayColor == overlayColor &&
-        m_previewOverlayPixmapCache.fontSize == token.fontSize &&
-        m_previewOverlayPixmapCache.fontKey == fontKey)
+        m_previewOverlayPixmapCache.overlayColor == overlayColor)
     {
         ++m_previewOverlayPixmapCacheHitCount;
         syncImagePerfCounters();
@@ -469,10 +876,7 @@ QPixmap AntImage::cachedPreviewOverlayPixmap(qreal devicePixelRatio, const QSize
     cache.valid = true;
     cache.devicePixelRatio = dpr;
     cache.logicalSize = logicalSize;
-    cache.textColor = token.colorTextLightSolid;
     cache.overlayColor = overlayColor;
-    cache.fontSize = token.fontSize;
-    cache.fontKey = fontKey;
     cache.pixmap = QPixmap(QSize(qCeil(logicalSize.width() * dpr), qCeil(logicalSize.height() * dpr)));
     cache.pixmap.setDevicePixelRatio(dpr);
     cache.pixmap.fill(Qt::transparent);
@@ -482,22 +886,16 @@ QPixmap AntImage::cachedPreviewOverlayPixmap(qreal devicePixelRatio, const QSize
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
     painter.fillRect(r, overlayColor);
 
-    const QPointF center = r.center();
-    QPainterPath eye;
-    eye.moveTo(center.x() - 17.0, center.y() - 10.0);
-    eye.cubicTo(center.x() - 8.0, center.y() - 20.0, center.x() + 8.0, center.y() - 20.0,
-                center.x() + 17.0, center.y() - 10.0);
-    eye.cubicTo(center.x() + 8.0, center.y(), center.x() - 8.0, center.y(), center.x() - 17.0,
-                center.y() - 10.0);
-
-    painter.setPen(token.colorTextLightSolid);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawPath(eye);
-    painter.setBrush(token.colorTextLightSolid);
-    painter.drawEllipse(QRectF(center.x() - 3.5, center.y() - 13.5, 7.0, 7.0));
-    painter.setFont(overlayFont);
-    painter.drawText(QRectF(r.left(), center.y() + 4.0, r.width(), 22.0), Qt::AlignCenter,
-                     QStringLiteral("Preview"));
+    // antd cover 图标（EyeOutlined，无文字）
+    const QPixmap icon = AntIcon::renderPixmap(QStringLiteral("Eye"), iconSize, token.colorTextLightSolid);
+    if (!icon.isNull())
+    {
+        const QRectF iconRect(r.center().x() - iconSize / 2.0,
+                              r.center().y() - iconSize / 2.0,
+                              iconSize,
+                              iconSize);
+        painter.drawPixmap(iconRect, icon, QRectF(icon.rect()));
+    }
 
     m_previewOverlayPixmapCache = cache;
     syncImagePerfCounters();

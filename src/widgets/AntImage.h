@@ -78,10 +78,7 @@ private:
         bool valid = false;
         qreal devicePixelRatio = 1.0;
         QSize logicalSize;
-        QColor textColor;
         QColor overlayColor;
-        int fontSize = 0;
-        QString fontKey;
         QPixmap pixmap;
     };
 

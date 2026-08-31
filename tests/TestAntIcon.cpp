@@ -8,6 +8,7 @@
 
 #include <limits>
 
+#include "core/AntTheme.h"
 #include "widgets/AntIcon.h"
 
 class TestAntIcon : public QObject
@@ -17,6 +18,7 @@ private slots:
     void propertiesAndSignals();
     void resourceIconRasterReferenceMatchesWidgetRender();
     void resourceIconHighDpiCacheUsesFullPixmapSource();
+    void renderPixmapHelperTintsAndCaches();
 };
 
 void TestAntIcon::propertiesAndSignals()
@@ -384,6 +386,47 @@ void TestAntIcon::resourceIconHighDpiCacheUsesFullPixmapSource()
     QVERIFY2(cachedDiff < 0.5,
              qPrintable(QStringLiteral("High-DPI icon cache hit must match the cache miss rendering. diff=%1")
                         .arg(cachedDiff)));
+}
+
+void TestAntIcon::renderPixmapHelperTintsAndCaches()
+{
+    const QColor color(QStringLiteral("#1677ff"));
+    const QPixmap pixmap = AntIcon::renderPixmap(QStringLiteral("FileAdd"), 24, color);
+    QVERIFY(!pixmap.isNull());
+    QCOMPARE(pixmap.size(), QSize(24, 24));
+
+    bool hasTintedPixel = false;
+    const QImage image = pixmap.toImage();
+    for (int y = 0; y < image.height(); ++y)
+    {
+        for (int x = 0; x < image.width(); ++x)
+        {
+            const QRgb pixel = image.pixel(x, y);
+            if (qAlpha(pixel) > 0)
+            {
+                // 主题色替换生效：非纯黑非透明
+                if (qRed(pixel) < 200 && qGreen(pixel) < 200 && qBlue(pixel) > 60)
+                {
+                    hasTintedPixel = true;
+                }
+            }
+        }
+    }
+    QVERIFY2(hasTintedPixel,
+             qPrintable(QStringLiteral("renderPixmap must tint __PRIMARY__ with the requested color")));
+
+    // 名称带 Outlined 后缀与纯名称等价
+    const QPixmap suffixed = AntIcon::renderPixmap(QStringLiteral("FileAddOutlined.svg"), 24, color);
+    QVERIFY(!suffixed.isNull());
+    QCOMPARE(suffixed.toImage(), image);
+
+    // 缺少颜色时使用当前主题 colorText
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const QPixmap themed = AntIcon::renderPixmap(QStringLiteral("Eye"), 16);
+    QVERIFY(!themed.isNull());
+
+    // 未知名称返回空 pixmap
+    QVERIFY(AntIcon::renderPixmap(QStringLiteral("NoSuchIcon"), 16, color).isNull());
 }
 
 QTEST_MAIN(TestAntIcon)

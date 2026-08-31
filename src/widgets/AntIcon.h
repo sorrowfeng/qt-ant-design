@@ -75,6 +75,14 @@ public:
     static QStringList builtinIconNames();
     static QPainterPath transformPath(const QPainterPath& path, const QRectF& targetRect);
 
+    // 按内置图标名（如 "FileAdd" / "FileAddOutlined.svg"）渲染主题色 QPixmap。
+    // 颜色缺失时使用当前主题 colorText；__PRIMARY__ / __SECONDARY__ 占位符会被替换。
+    static QPixmap renderPixmap(const QString& iconName,
+                                int size,
+                                const QColor& primary = QColor(),
+                                const QColor& secondary = QColor(),
+                                Ant::IconTheme theme = Ant::IconTheme::Outlined);
+
 Q_SIGNALS:
     void iconTypeChanged(Ant::IconType iconType);
     void iconNameChanged(const QString& iconName);
