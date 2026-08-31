@@ -11,6 +11,7 @@
 #include <QScreen>
 #include <QVBoxLayout>
 #include <QWheelEvent>
+#include <QVariantAnimation>
 #include <QWindow>
 #include <QtMath>
 
@@ -69,6 +70,20 @@ public:
     {
         setMouseTracking(true);
         setFocusPolicy(Qt::StrongFocus);
+
+        // 过卷回弹阻尼（微信看图式）：松开后从越界位置平滑弹回边界
+        m_bounceAnimation = new QVariantAnimation(this);
+        m_bounceAnimation->setDuration(kBounceDuration);
+        m_bounceAnimation->setEasingCurve(QEasingCurve::OutCubic);
+        connect(m_bounceAnimation, &QVariantAnimation::valueChanged, this, [this](const QVariant& value) {
+            m_offset = value.toPointF();
+            update();
+        });
+        connect(m_bounceAnimation, &QVariantAnimation::finished, this, [this]() {
+            m_offset = clampOffset(m_offset);
+            update();
+            updateCursor();
+        });
     }
 
     int currentIndex() const { return m_currentIndex; }
@@ -119,6 +134,10 @@ protected:
     void resizeEvent(QResizeEvent* event) override
     {
         QWidget::resizeEvent(event);
+        if (m_bounceAnimation)
+        {
+            m_bounceAnimation->stop();
+        }
         const qreal previousFit = m_fitScale;
         recomputeFitScale();
         if (!qFuzzyCompare(m_fitScale, previousFit))
@@ -138,7 +157,8 @@ protected:
     {
         if (m_dragging)
         {
-            m_offset = clampOffset(m_dragStartOffset + (event->pos() - m_dragStartPos));
+            // 拖拽允许有限越界（橡皮筋软化），松手后由回弹动画拉回边界
+            m_offset = rubberBandedOffset(m_dragStartOffset + (event->pos() - m_dragStartPos));
             update();
             return;
         }
@@ -181,6 +201,10 @@ protected:
 
             if (m_scale > m_fitScale + 0.01)
             {
+                if (m_bounceAnimation)
+                {
+                    m_bounceAnimation->stop();
+                }
                 m_dragging = true;
                 m_dragStartPos = event->pos();
                 m_dragStartOffset = m_offset;
@@ -196,7 +220,20 @@ protected:
         if (m_dragging)
         {
             m_dragging = false;
-            updateCursor();
+            const QPointF target = clampOffset(m_offset);
+            if (m_bounceAnimation && (target - m_offset).manhattanLength() > 0.5)
+            {
+                // 有过卷量：OutCubic 回弹到边界
+                m_bounceAnimation->stop();
+                m_bounceAnimation->setStartValue(m_offset);
+                m_bounceAnimation->setEndValue(target);
+                m_bounceAnimation->start();
+            }
+            else
+            {
+                m_offset = target;
+                updateCursor();
+            }
             return;
         }
         QWidget::mouseReleaseEvent(event);
@@ -291,6 +328,9 @@ private:
     static constexpr int kControlMargin = 12;
     static constexpr int kFooterPillGap = 12;
     static constexpr int kIconSize = 18;
+    // 过卷回弹（微信看图式）
+    static constexpr qreal kOverscrollCap = 56.0;
+    static constexpr int kBounceDuration = 240;
 
     const QPixmap& currentPixmap() const { return m_pixmaps.at(m_currentIndex); }
 
@@ -330,6 +370,10 @@ private:
 
     void resetView()
     {
+        if (m_bounceAnimation)
+        {
+            m_bounceAnimation->stop();
+        }
         recomputeFitScale();
         m_scale = m_fitScale;
         m_offset = QPointF();
@@ -355,12 +399,30 @@ private:
         {
             return;
         }
+        if (m_bounceAnimation)
+        {
+            m_bounceAnimation->stop();
+        }
         const QPointF oldTopLeft = centeredTopLeft() + m_offset;
         const QPointF imagePoint = (anchor - oldTopLeft) / m_scale;
         m_scale = newScale;
         m_offset = clampOffset(anchor - imagePoint * newScale - centeredTopLeft());
         updateCursor();
         update();
+    }
+
+    QPointF rubberBandedOffset(const QPointF& desired) const
+    {
+        // 橡皮筋：越界量用渐近曲线软化（越拉越费劲，封顶 kOverscrollCap），
+        // 松手后由回弹动画拉回 clampOffset 边界。
+        const QPointF clamped = clampOffset(desired);
+        const QPointF over = desired - clamped;
+        const auto soften = [](qreal delta) {
+            const qreal magnitude = qAbs(delta);
+            const qreal sign = delta < 0 ? -1.0 : 1.0;
+            return kOverscrollCap * (1.0 - 1.0 / (magnitude / kOverscrollCap + 1.0)) * sign;
+        };
+        return clamped + QPointF(soften(over.x()), soften(over.y()));
     }
 
     QPointF clampOffset(const QPointF& offset) const
@@ -530,6 +592,7 @@ private:
     QPointF m_dragStartOffset;
     Control m_hoverControl = Control::None;
     std::function<void(int)> m_indexChanged;
+    QVariantAnimation* m_bounceAnimation = nullptr;
 };
 
 // Ant 窗口化图片预览（类似微信看图）：窗口带标题栏与关闭按钮，
