@@ -1491,7 +1491,7 @@ QColor AntMenu::menuBackgroundColor() const
 {
     if (m_menuTheme == Ant::MenuTheme::Dark)
     {
-        return QColor(0, 21, 41);
+        return antTheme->tokens().colorBgMenuDark;
     }
     return antTheme->tokens().colorBgContainer;
 }
@@ -1552,7 +1552,7 @@ QColor AntMenu::itemBackgroundColor(const AntMenuItem& item, bool selected, bool
         {
             return item.danger ? token.colorError : token.colorPrimary;
         }
-        return (hovered || pressed) ? QColor(17, 34, 51) : Qt::transparent;
+        return (hovered || pressed) ? antTheme->tokens().colorBgMenuDarkItemHover : Qt::transparent;
     }
     if (selected)
     {

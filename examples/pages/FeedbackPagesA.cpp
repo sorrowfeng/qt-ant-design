@@ -1,5 +1,7 @@
 #include "Pages.h"
 
+#include "PageCommon.h"
+
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QList>
@@ -33,13 +35,10 @@ namespace example::pages
 {
 QWidget* createAlertPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Types"));
+        auto* card = makeCard(layout, QStringLiteral("Types"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -67,11 +66,11 @@ QWidget* createAlertPage(QWidget* /*owner*/)
         cl->addWidget(info);
         cl->addWidget(warning);
         cl->addWidget(error);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Banner"));
+        auto* card = makeCard(layout, QStringLiteral("Banner"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* banner = new AntAlert(QStringLiteral("Warning text"));
@@ -79,7 +78,7 @@ QWidget* createAlertPage(QWidget* /*owner*/)
         banner->setBanner(true);
         banner->setClosable(true);
         cl->addWidget(banner);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -88,13 +87,10 @@ QWidget* createAlertPage(QWidget* /*owner*/)
 
 QWidget* createDrawerPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -116,7 +112,34 @@ QWidget* createDrawerPage(QWidget* /*owner*/)
         QObject::connect(openButton, &AntButton::clicked, drawer, &AntDrawer::open);
 
         cl->addWidget(openButton, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
+    }
+
+    {
+        auto* card = makeCard(layout, QStringLiteral("Blur Mask"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+
+        auto* openButton = new AntButton(QStringLiteral("Open Blur Drawer"));
+        openButton->setButtonType(Ant::ButtonType::Primary);
+        auto* drawer = new AntDrawer(page);
+        drawer->setTitle(QStringLiteral("Blur Drawer"));
+        Ant::MaskConfig maskCfg;
+        maskCfg.blur = true;
+        drawer->setMask(maskCfg);
+
+        auto* body = new QWidget();
+        auto* bodyLayout = new QVBoxLayout(body);
+        bodyLayout->setContentsMargins(0, 0, 0, 0);
+        auto* content = new AntTypography(QStringLiteral("Backdrop is blurred."));
+        content->setParagraph(true);
+        bodyLayout->addWidget(content);
+        bodyLayout->addStretch();
+        drawer->setBodyWidget(body);
+
+        QObject::connect(openButton, &AntButton::clicked, drawer, &AntDrawer::open);
+        cl->addWidget(openButton, 0, Qt::AlignLeft);
+
     }
 
     layout->addStretch();
@@ -125,13 +148,10 @@ QWidget* createDrawerPage(QWidget* /*owner*/)
 
 QWidget* createMessagePage(QWidget* owner)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -151,7 +171,7 @@ QWidget* createMessagePage(QWidget* owner)
         basicRow->addWidget(error);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -160,13 +180,10 @@ QWidget* createMessagePage(QWidget* owner)
 
 QWidget* createModalPage(QWidget* owner)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
@@ -185,11 +202,11 @@ QWidget* createModalPage(QWidget* owner)
         basicRow->addWidget(openBasic);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Confirm"));
+        auto* card = makeCard(layout, QStringLiteral("Confirm"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* cmdRow = new QHBoxLayout();
@@ -221,7 +238,7 @@ QWidget* createModalPage(QWidget* owner)
         cmdRow->addWidget(confirmBtn);
         cmdRow->addStretch();
         cl->addLayout(cmdRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -230,13 +247,10 @@ QWidget* createModalPage(QWidget* owner)
 
 QWidget* createNotificationPage(QWidget* owner)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -304,7 +318,7 @@ QWidget* createNotificationPage(QWidget* owner)
         basicRow->addWidget(downloadProgress);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -313,13 +327,10 @@ QWidget* createNotificationPage(QWidget* owner)
 
 QWidget* createPopconfirmPage(QWidget* owner)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
@@ -343,7 +354,7 @@ QWidget* createPopconfirmPage(QWidget* owner)
         basicRow->addWidget(deleteButton);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();

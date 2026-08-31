@@ -48,6 +48,34 @@ void AntSteps::setDirection(Ant::Orientation direction)
     Q_EMIT directionChanged(m_direction);
 }
 
+Ant::StepType AntSteps::stepType() const { return m_stepType; }
+
+void AntSteps::setStepType(Ant::StepType type)
+{
+    if (m_stepType == type)
+    {
+        return;
+    }
+    m_stepType = type;
+    updateStepsGeometry();
+    update();
+    Q_EMIT stepTypeChanged(m_stepType);
+}
+
+Ant::StepLabelPlacement AntSteps::labelPlacement() const { return m_labelPlacement; }
+
+void AntSteps::setLabelPlacement(Ant::StepLabelPlacement placement)
+{
+    if (m_labelPlacement == placement)
+    {
+        return;
+    }
+    m_labelPlacement = placement;
+    updateStepsGeometry();
+    update();
+    Q_EMIT labelPlacementChanged(m_labelPlacement);
+}
+
 bool AntSteps::isClickable() const { return m_clickable; }
 
 void AntSteps::setClickable(bool clickable)
@@ -187,6 +215,10 @@ AntSteps::Metrics AntSteps::metrics() const
     Metrics m;
     const auto& token = antTheme->tokens();
     m.iconSize = token.controlHeight;
+    if (m_stepType == Ant::StepType::Dot)
+    {
+        m.iconSize = 8; // 小圆点
+    }
     m.titleGap = token.marginXS;
     m.tailThickness = 2;
     m.itemGap = token.marginLG;
@@ -259,6 +291,12 @@ QRect AntSteps::iconRect(const QRect& itemRect) const
     const int leftInset = m.tailThickness + 1;
     if (m_direction == Ant::Orientation::Horizontal)
     {
+        if (m_labelPlacement == Ant::StepLabelPlacement::Vertical)
+        {
+            // 图标居中于 item 顶部，文字在其下方
+            const int iconX = itemRect.left() + (itemRect.width() - m.iconSize) / 2;
+            return QRect(iconX, 8, m.iconSize, m.iconSize);
+        }
         return QRect(itemRect.left() + leftInset, 8, m.iconSize, m.iconSize);
     }
     return QRect(itemRect.left() + leftInset, itemRect.top() + 8, m.iconSize, m.iconSize);
@@ -270,6 +308,14 @@ QRect AntSteps::textRect(const QRect& itemRect) const
     if (m_direction == Ant::Orientation::Horizontal)
     {
         const QRect icon = iconRect(itemRect);
+        if (m_labelPlacement == Ant::StepLabelPlacement::Vertical)
+        {
+            // 文字在图标下方，占满宽度
+            return QRect(itemRect.left(),
+                         icon.bottom() + m.titleGap,
+                         itemRect.width(),
+                         itemRect.height() - icon.bottom() - m.titleGap);
+        }
         return QRect(icon.right() + 1 + m.titleGap,
                      icon.top(),
                      itemRect.width() - m.iconSize - m.titleGap,

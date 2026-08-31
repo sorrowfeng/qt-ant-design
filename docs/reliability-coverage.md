@@ -15,7 +15,7 @@ Coverage dimensions:
 - `Qt version metric audit`: `TestAntQtVersionMetricAudit` exports and compares Qt default `QStyle` metrics, default draw fingerprints, palette roles, font metrics, complex-control geometry, and adapted Ant widget metrics. Qt default rows are audit-only root-cause evidence; adapted Ant rows are strict comparison rows, including representative success-standard controls such as Menu, Pagination, Tag, Badge, Table, and ToolTip.
 - `Windows High DPI scaling`: startup policy and logical render geometry at 1.0, 1.25, and 1.5 scale factors are covered by `TestAntHighDpiScaling_1_0`, `TestAntHighDpiScaling_1_25`, and `TestAntHighDpiScaling_1_5`; `TestAntHighDpiScaling_InitializeDefault` verifies `AntDesign::initialize()` can preconfigure High DPI before `QApplication`; the full visual atlas is also smoke-rendered at 1.25 and 1.5 by `TestAntQtVersionVisualParity_Scale_1_25` and `TestAntQtVersionVisualParity_Scale_1_5`.
 - `No QSS/QStyleSheet guard`: `TestAntNoStyleSheetUsage` scans `src`, `examples`, `tests`, and `resources` and fails on `setStyleSheet()`, `QStyleSheet`, `styleSheet:` in UI files, or committed `.qss` files.
-- `Per-widget smoke tests`: with `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON`, CMake generates `104` `WidgetSmoke.<Type>` entries plus the aggregate build target `TestAntWidgetSmoke_All`, so each public widget and alias can be compiled, constructed, and smoke-rendered independently.
+- `Per-widget smoke tests`: with `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON`, CMake generates `106` `WidgetSmoke.<Type>` entries (including the `2026-08-29` additions `WidgetSmoke.AntBorderBeam` and `WidgetSmoke.AntListy`) plus the aggregate build target `TestAntWidgetSmoke_All`, so each public widget and alias can be compiled, constructed, and smoke-rendered independently.
 - `Borrowed QObject lifetime`: `TestAntStressLifecycle` covers destruction of external targets/anchors/viewports/content widgets before their observing helpers, target switching, and owner destruction while Dock drag filters are active. Nine key targets passed while linked to the MSVC AddressSanitizer-instrumented library. Sanitizer compilation applies to the library sources, not automatically to each test source; UBSan was not available locally, and the Windows runtime retains a documented interception blind spot.
 - `QR conformance`: `TestAntQRGenerator` uses decoder logic independent of the production encoder to verify format/version information, minimum-penalty mask selection, interleaving, Reed-Solomon syndromes, byte payloads, all 40 V1-V10 / L-M-Q-H exact maximum-capacity boundaries, and UTF-8 round-trip behavior. `TestAntDataDisplayB` covers widget-level success/failure/recovery reporting.
 - `Dock perspective budgets`: `TestAntDockPerspectiveLimits` covers the current format's 1 MiB state, depth, global node/Dock-ID, identifier, floating-snapshot and structural budgets, malformed/trailing streams, and atomic rejection without replacing saved state or changing the current layout. Legacy-signature snapshots may be imported and stored for identification or migration, but restoring them explicitly returns false, emits `unsupported-legacy-format`, and leaves the current layout unchanged.
@@ -43,6 +43,7 @@ Validation results: on `2026-05-30`, `37 / 37` CTest targets passed and `qt-ant-
 | `AntAutoComplete` | `TestAntDataEntryA` | Yes | Yes | Yes | Yes |
 | `AntAvatar` | `TestAntDataDisplayA` | Yes | Yes | Yes | Yes |
 | `AntBadge` | `TestAntBadge`, `TestAntChildOwnership`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
+| `AntBorderBeam` | `TestAntLayout` | Yes | Yes | Yes | Yes |
 | `AntBreadcrumb` | `TestAntNavigation` | Yes | Yes | Yes | Yes |
 | `AntButton` | `TestAntAliases`, `TestAntButton`, `TestAntFeedback`, `TestAntStressLifecycle`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntCalendar` | `TestAntAliases`, `TestAntDataDisplayA` | Yes | Yes | Yes | Yes |
@@ -74,6 +75,7 @@ Validation results: on `2026-05-30`, `37 / 37` CTest targets passed and `qt-ant-
 | `AntInputNumber` | `TestAntAliases`, `TestAntDataEntryA`, `TestAntInteractions`, `TestAntStressLifecycle`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntLayout` | `TestAntChildOwnership`, `TestAntLayout`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
 | `AntList` | `TestAntAliases`, `TestAntChildOwnership`, `TestAntDataDisplayB`, `TestAntVisualRegression` | Yes | Yes | Yes | Yes |
+| `AntListy` | `TestAntDataDisplayB` | Yes | Yes | Yes | Yes |
 | `AntLog` | `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntMasonry` | `TestAntChildOwnership`, `TestAntLayout`, `TestAntQtExtensions` | Yes | Yes | Yes | Yes |
 | `AntMentions` | `TestAntDataEntryB` | Yes | Yes | Yes | Yes |

@@ -87,11 +87,7 @@ QStringList splitNameFilterList(const QString& filter)
     {
         return {QStringLiteral("All Files (*)")};
     }
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     return filter.split(QStringLiteral(";;"), Qt::SkipEmptyParts);
-#else
-    return filter.split(QStringLiteral(";;"), QString::SkipEmptyParts);
-#endif
 }
 
 QFileDialog::Options antDialogOptions(QFileDialog::Options options)
@@ -1088,11 +1084,7 @@ QStringList AntFileDialog::patternsForFilter(const QString& filter) const
         patternText = patternText.mid(left + 1, right - left - 1);
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     QStringList patterns = patternText.split(QLatin1Char(' '), Qt::SkipEmptyParts);
-#else
-    QStringList patterns = patternText.split(QLatin1Char(' '), QString::SkipEmptyParts);
-#endif
     if (patterns.isEmpty())
     {
         patterns.append(QStringLiteral("*"));

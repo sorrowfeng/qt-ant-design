@@ -90,6 +90,25 @@ void AntSpace::setWrap(bool wrap)
     Q_EMIT wrapChanged(m_wrap);
 }
 
+bool AntSpace::isCompact() const { return m_compact; }
+
+void AntSpace::setCompact(bool compact)
+{
+    if (m_compact == compact)
+    {
+        return;
+    }
+    m_compact = compact;
+    if (m_layout)
+    {
+        m_layout->setSpacing(spacingValue());
+    }
+    invalidateSizeCache();
+    updateGeometry();
+    update();
+    Q_EMIT compactChanged(m_compact);
+}
+
 Qt::Alignment AntSpace::alignment() const { return m_alignment; }
 
 void AntSpace::setAlignment(Qt::Alignment alignment)
@@ -273,6 +292,10 @@ void AntSpace::resizeEvent(QResizeEvent* event)
 
 int AntSpace::spacingValue() const
 {
+    if (m_compact)
+    {
+        return 0;
+    }
     if (m_customSpacing >= 0)
     {
         return m_customSpacing;

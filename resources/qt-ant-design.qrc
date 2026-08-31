@@ -27,6 +27,7 @@
         <file>icons/antd/AndroidOutlined.svg</file>
         <file>icons/antd/AntCloudOutlined.svg</file>
         <file>icons/antd/AntDesignOutlined.svg</file>
+        <file>icons/antd/AnthropicFilled.svg</file>
         <file>icons/antd/ApartmentOutlined.svg</file>
         <file>icons/antd/ApiFilled.svg</file>
         <file>icons/antd/ApiOutlined.svg</file>
@@ -41,8 +42,8 @@
         <file>icons/antd/ArrowDownOutlined.svg</file>
         <file>icons/antd/ArrowLeftOutlined.svg</file>
         <file>icons/antd/ArrowRightOutlined.svg</file>
-        <file>icons/antd/ArrowUpOutlined.svg</file>
         <file>icons/antd/ArrowsAltOutlined.svg</file>
+        <file>icons/antd/ArrowUpOutlined.svg</file>
         <file>icons/antd/AudioFilled.svg</file>
         <file>icons/antd/AudioMutedOutlined.svg</file>
         <file>icons/antd/AudioOutlined.svg</file>
@@ -76,12 +77,12 @@
         <file>icons/antd/BorderHorizontalOutlined.svg</file>
         <file>icons/antd/BorderInnerOutlined.svg</file>
         <file>icons/antd/BorderLeftOutlined.svg</file>
+        <file>icons/antd/BorderlessTableOutlined.svg</file>
         <file>icons/antd/BorderOuterOutlined.svg</file>
         <file>icons/antd/BorderOutlined.svg</file>
         <file>icons/antd/BorderRightOutlined.svg</file>
         <file>icons/antd/BorderTopOutlined.svg</file>
         <file>icons/antd/BorderVerticleOutlined.svg</file>
-        <file>icons/antd/BorderlessTableOutlined.svg</file>
         <file>icons/antd/BoxPlotFilled.svg</file>
         <file>icons/antd/BoxPlotOutlined.svg</file>
         <file>icons/antd/BoxPlotTwoTone.svg</file>
@@ -104,9 +105,6 @@
         <file>icons/antd/CameraFilled.svg</file>
         <file>icons/antd/CameraOutlined.svg</file>
         <file>icons/antd/CameraTwoTone.svg</file>
-        <file>icons/antd/CarFilled.svg</file>
-        <file>icons/antd/CarOutlined.svg</file>
-        <file>icons/antd/CarTwoTone.svg</file>
         <file>icons/antd/CaretDownFilled.svg</file>
         <file>icons/antd/CaretDownOutlined.svg</file>
         <file>icons/antd/CaretLeftFilled.svg</file>
@@ -115,9 +113,12 @@
         <file>icons/antd/CaretRightOutlined.svg</file>
         <file>icons/antd/CaretUpFilled.svg</file>
         <file>icons/antd/CaretUpOutlined.svg</file>
+        <file>icons/antd/CarFilled.svg</file>
+        <file>icons/antd/CarOutlined.svg</file>
         <file>icons/antd/CarryOutFilled.svg</file>
         <file>icons/antd/CarryOutOutlined.svg</file>
         <file>icons/antd/CarryOutTwoTone.svg</file>
+        <file>icons/antd/CarTwoTone.svg</file>
         <file>icons/antd/CheckCircleFilled.svg</file>
         <file>icons/antd/CheckCircleOutlined.svg</file>
         <file>icons/antd/CheckCircleTwoTone.svg</file>
@@ -132,6 +133,7 @@
         <file>icons/antd/CiCircleTwoTone.svg</file>
         <file>icons/antd/CiOutlined.svg</file>
         <file>icons/antd/CiTwoTone.svg</file>
+        <file>icons/antd/ClaudeFilled.svg</file>
         <file>icons/antd/ClearOutlined.svg</file>
         <file>icons/antd/ClockCircleFilled.svg</file>
         <file>icons/antd/ClockCircleOutlined.svg</file>
@@ -153,14 +155,14 @@
         <file>icons/antd/ClusterOutlined.svg</file>
         <file>icons/antd/CodeFilled.svg</file>
         <file>icons/antd/CodeOutlined.svg</file>
-        <file>icons/antd/CodeSandboxCircleFilled.svg</file>
-        <file>icons/antd/CodeSandboxOutlined.svg</file>
-        <file>icons/antd/CodeSandboxSquareFilled.svg</file>
-        <file>icons/antd/CodeTwoTone.svg</file>
         <file>icons/antd/CodepenCircleFilled.svg</file>
         <file>icons/antd/CodepenCircleOutlined.svg</file>
         <file>icons/antd/CodepenOutlined.svg</file>
         <file>icons/antd/CodepenSquareFilled.svg</file>
+        <file>icons/antd/CodeSandboxCircleFilled.svg</file>
+        <file>icons/antd/CodeSandboxOutlined.svg</file>
+        <file>icons/antd/CodeSandboxSquareFilled.svg</file>
+        <file>icons/antd/CodeTwoTone.svg</file>
         <file>icons/antd/CoffeeOutlined.svg</file>
         <file>icons/antd/ColumnHeightOutlined.svg</file>
         <file>icons/antd/ColumnWidthOutlined.svg</file>
@@ -181,12 +183,12 @@
         <file>icons/antd/ControlTwoTone.svg</file>
         <file>icons/antd/CopyFilled.svg</file>
         <file>icons/antd/CopyOutlined.svg</file>
-        <file>icons/antd/CopyTwoTone.svg</file>
         <file>icons/antd/CopyrightCircleFilled.svg</file>
         <file>icons/antd/CopyrightCircleOutlined.svg</file>
         <file>icons/antd/CopyrightCircleTwoTone.svg</file>
         <file>icons/antd/CopyrightOutlined.svg</file>
         <file>icons/antd/CopyrightTwoTone.svg</file>
+        <file>icons/antd/CopyTwoTone.svg</file>
         <file>icons/antd/CreditCardFilled.svg</file>
         <file>icons/antd/CreditCardOutlined.svg</file>
         <file>icons/antd/CreditCardTwoTone.svg</file>
@@ -196,13 +198,14 @@
         <file>icons/antd/CustomerServiceFilled.svg</file>
         <file>icons/antd/CustomerServiceOutlined.svg</file>
         <file>icons/antd/CustomerServiceTwoTone.svg</file>
-        <file>icons/antd/DashOutlined.svg</file>
         <file>icons/antd/DashboardFilled.svg</file>
         <file>icons/antd/DashboardOutlined.svg</file>
         <file>icons/antd/DashboardTwoTone.svg</file>
+        <file>icons/antd/DashOutlined.svg</file>
         <file>icons/antd/DatabaseFilled.svg</file>
         <file>icons/antd/DatabaseOutlined.svg</file>
         <file>icons/antd/DatabaseTwoTone.svg</file>
+        <file>icons/antd/DeepSeekFilled.svg</file>
         <file>icons/antd/DeleteColumnOutlined.svg</file>
         <file>icons/antd/DeleteFilled.svg</file>
         <file>icons/antd/DeleteOutlined.svg</file>
@@ -237,11 +240,11 @@
         <file>icons/antd/DownCircleFilled.svg</file>
         <file>icons/antd/DownCircleOutlined.svg</file>
         <file>icons/antd/DownCircleTwoTone.svg</file>
+        <file>icons/antd/DownloadOutlined.svg</file>
         <file>icons/antd/DownOutlined.svg</file>
         <file>icons/antd/DownSquareFilled.svg</file>
         <file>icons/antd/DownSquareOutlined.svg</file>
         <file>icons/antd/DownSquareTwoTone.svg</file>
-        <file>icons/antd/DownloadOutlined.svg</file>
         <file>icons/antd/DragOutlined.svg</file>
         <file>icons/antd/DribbbleCircleFilled.svg</file>
         <file>icons/antd/DribbbleOutlined.svg</file>
@@ -253,6 +256,7 @@
         <file>icons/antd/EditFilled.svg</file>
         <file>icons/antd/EditOutlined.svg</file>
         <file>icons/antd/EditTwoTone.svg</file>
+        <file>icons/antd/ElevenLabsFilled.svg</file>
         <file>icons/antd/EllipsisOutlined.svg</file>
         <file>icons/antd/EnterOutlined.svg</file>
         <file>icons/antd/EnvironmentFilled.svg</file>
@@ -355,9 +359,9 @@
         <file>icons/antd/FontColorsOutlined.svg</file>
         <file>icons/antd/FontSizeOutlined.svg</file>
         <file>icons/antd/ForkOutlined.svg</file>
-        <file>icons/antd/FormOutlined.svg</file>
         <file>icons/antd/FormatPainterFilled.svg</file>
         <file>icons/antd/FormatPainterOutlined.svg</file>
+        <file>icons/antd/FormOutlined.svg</file>
         <file>icons/antd/ForwardFilled.svg</file>
         <file>icons/antd/ForwardOutlined.svg</file>
         <file>icons/antd/FrownFilled.svg</file>
@@ -375,6 +379,7 @@
         <file>icons/antd/FunnelPlotOutlined.svg</file>
         <file>icons/antd/FunnelPlotTwoTone.svg</file>
         <file>icons/antd/GatewayOutlined.svg</file>
+        <file>icons/antd/GeminiFilled.svg</file>
         <file>icons/antd/GifOutlined.svg</file>
         <file>icons/antd/GiftFilled.svg</file>
         <file>icons/antd/GiftOutlined.svg</file>
@@ -384,10 +389,10 @@
         <file>icons/antd/GitlabFilled.svg</file>
         <file>icons/antd/GitlabOutlined.svg</file>
         <file>icons/antd/GlobalOutlined.svg</file>
+        <file>icons/antd/GoldenFilled.svg</file>
         <file>icons/antd/GoldFilled.svg</file>
         <file>icons/antd/GoldOutlined.svg</file>
         <file>icons/antd/GoldTwoTone.svg</file>
-        <file>icons/antd/GoldenFilled.svg</file>
         <file>icons/antd/GoogleCircleFilled.svg</file>
         <file>icons/antd/GoogleOutlined.svg</file>
         <file>icons/antd/GooglePlusCircleFilled.svg</file>
@@ -417,6 +422,7 @@
         <file>icons/antd/Html5Filled.svg</file>
         <file>icons/antd/Html5Outlined.svg</file>
         <file>icons/antd/Html5TwoTone.svg</file>
+        <file>icons/antd/HuggingFaceFilled.svg</file>
         <file>icons/antd/IdcardFilled.svg</file>
         <file>icons/antd/IdcardOutlined.svg</file>
         <file>icons/antd/IdcardTwoTone.svg</file>
@@ -464,9 +470,9 @@
         <file>icons/antd/LineChartOutlined.svg</file>
         <file>icons/antd/LineHeightOutlined.svg</file>
         <file>icons/antd/LineOutlined.svg</file>
-        <file>icons/antd/LinkOutlined.svg</file>
         <file>icons/antd/LinkedinFilled.svg</file>
         <file>icons/antd/LinkedinOutlined.svg</file>
+        <file>icons/antd/LinkOutlined.svg</file>
         <file>icons/antd/LinuxOutlined.svg</file>
         <file>icons/antd/Loading3QuartersOutlined.svg</file>
         <file>icons/antd/LoadingOutlined.svg</file>
@@ -481,6 +487,7 @@
         <file>icons/antd/MailOutlined.svg</file>
         <file>icons/antd/MailTwoTone.svg</file>
         <file>icons/antd/ManOutlined.svg</file>
+        <file>icons/antd/MastodonFilled.svg</file>
         <file>icons/antd/MedicineBoxFilled.svg</file>
         <file>icons/antd/MedicineBoxOutlined.svg</file>
         <file>icons/antd/MedicineBoxTwoTone.svg</file>
@@ -500,6 +507,7 @@
         <file>icons/antd/MessageFilled.svg</file>
         <file>icons/antd/MessageOutlined.svg</file>
         <file>icons/antd/MessageTwoTone.svg</file>
+        <file>icons/antd/MetaFilled.svg</file>
         <file>icons/antd/MinusCircleFilled.svg</file>
         <file>icons/antd/MinusCircleOutlined.svg</file>
         <file>icons/antd/MinusCircleTwoTone.svg</file>
@@ -507,6 +515,7 @@
         <file>icons/antd/MinusSquareFilled.svg</file>
         <file>icons/antd/MinusSquareOutlined.svg</file>
         <file>icons/antd/MinusSquareTwoTone.svg</file>
+        <file>icons/antd/MistralFilled.svg</file>
         <file>icons/antd/MobileFilled.svg</file>
         <file>icons/antd/MobileOutlined.svg</file>
         <file>icons/antd/MobileTwoTone.svg</file>
@@ -519,6 +528,7 @@
         <file>icons/antd/MoreOutlined.svg</file>
         <file>icons/antd/MutedFilled.svg</file>
         <file>icons/antd/MutedOutlined.svg</file>
+        <file>icons/antd/NetflixFilled.svg</file>
         <file>icons/antd/NodeCollapseOutlined.svg</file>
         <file>icons/antd/NodeExpandOutlined.svg</file>
         <file>icons/antd/NodeIndexOutlined.svg</file>
@@ -526,6 +536,7 @@
         <file>icons/antd/NotificationOutlined.svg</file>
         <file>icons/antd/NotificationTwoTone.svg</file>
         <file>icons/antd/NumberOutlined.svg</file>
+        <file>icons/antd/OllamaFilled.svg</file>
         <file>icons/antd/OneToOneOutlined.svg</file>
         <file>icons/antd/OpenAIFilled.svg</file>
         <file>icons/antd/OpenAIOutlined.svg</file>
@@ -539,6 +550,7 @@
         <file>icons/antd/PayCircleFilled.svg</file>
         <file>icons/antd/PayCircleOutlined.svg</file>
         <file>icons/antd/PercentageOutlined.svg</file>
+        <file>icons/antd/PerplexityFilled.svg</file>
         <file>icons/antd/PhoneFilled.svg</file>
         <file>icons/antd/PhoneOutlined.svg</file>
         <file>icons/antd/PhoneTwoTone.svg</file>
@@ -598,6 +610,7 @@
         <file>icons/antd/QuestionCircleOutlined.svg</file>
         <file>icons/antd/QuestionCircleTwoTone.svg</file>
         <file>icons/antd/QuestionOutlined.svg</file>
+        <file>icons/antd/QwenFilled.svg</file>
         <file>icons/antd/RadarChartOutlined.svg</file>
         <file>icons/antd/RadiusBottomleftOutlined.svg</file>
         <file>icons/antd/RadiusBottomrightOutlined.svg</file>
@@ -609,14 +622,15 @@
         <file>icons/antd/ReconciliationFilled.svg</file>
         <file>icons/antd/ReconciliationOutlined.svg</file>
         <file>icons/antd/ReconciliationTwoTone.svg</file>
-        <file>icons/antd/RedEnvelopeFilled.svg</file>
-        <file>icons/antd/RedEnvelopeOutlined.svg</file>
-        <file>icons/antd/RedEnvelopeTwoTone.svg</file>
         <file>icons/antd/RedditCircleFilled.svg</file>
         <file>icons/antd/RedditOutlined.svg</file>
         <file>icons/antd/RedditSquareFilled.svg</file>
+        <file>icons/antd/RedEnvelopeFilled.svg</file>
+        <file>icons/antd/RedEnvelopeOutlined.svg</file>
+        <file>icons/antd/RedEnvelopeTwoTone.svg</file>
         <file>icons/antd/RedoOutlined.svg</file>
         <file>icons/antd/ReloadOutlined.svg</file>
+        <file>icons/antd/ReplicateFilled.svg</file>
         <file>icons/antd/RestFilled.svg</file>
         <file>icons/antd/RestOutlined.svg</file>
         <file>icons/antd/RestTwoTone.svg</file>
@@ -663,11 +677,11 @@
         <file>icons/antd/ShareAltOutlined.svg</file>
         <file>icons/antd/ShopFilled.svg</file>
         <file>icons/antd/ShopOutlined.svg</file>
-        <file>icons/antd/ShopTwoTone.svg</file>
         <file>icons/antd/ShoppingCartOutlined.svg</file>
         <file>icons/antd/ShoppingFilled.svg</file>
         <file>icons/antd/ShoppingOutlined.svg</file>
         <file>icons/antd/ShoppingTwoTone.svg</file>
+        <file>icons/antd/ShopTwoTone.svg</file>
         <file>icons/antd/ShrinkOutlined.svg</file>
         <file>icons/antd/SignalFilled.svg</file>
         <file>icons/antd/SignatureFilled.svg</file>
@@ -692,6 +706,7 @@
         <file>icons/antd/SmileFilled.svg</file>
         <file>icons/antd/SmileOutlined.svg</file>
         <file>icons/antd/SmileTwoTone.svg</file>
+        <file>icons/antd/SnapchatFilled.svg</file>
         <file>icons/antd/SnippetsFilled.svg</file>
         <file>icons/antd/SnippetsOutlined.svg</file>
         <file>icons/antd/SnippetsTwoTone.svg</file>
@@ -732,24 +747,26 @@
         <file>icons/antd/TabletTwoTone.svg</file>
         <file>icons/antd/TagFilled.svg</file>
         <file>icons/antd/TagOutlined.svg</file>
-        <file>icons/antd/TagTwoTone.svg</file>
         <file>icons/antd/TagsFilled.svg</file>
         <file>icons/antd/TagsOutlined.svg</file>
         <file>icons/antd/TagsTwoTone.svg</file>
+        <file>icons/antd/TagTwoTone.svg</file>
         <file>icons/antd/TaobaoCircleFilled.svg</file>
         <file>icons/antd/TaobaoCircleOutlined.svg</file>
         <file>icons/antd/TaobaoOutlined.svg</file>
         <file>icons/antd/TaobaoSquareFilled.svg</file>
         <file>icons/antd/TeamOutlined.svg</file>
+        <file>icons/antd/TelegramFilled.svg</file>
+        <file>icons/antd/ThreadsFilled.svg</file>
         <file>icons/antd/ThunderboltFilled.svg</file>
         <file>icons/antd/ThunderboltOutlined.svg</file>
         <file>icons/antd/ThunderboltTwoTone.svg</file>
         <file>icons/antd/TikTokFilled.svg</file>
         <file>icons/antd/TikTokOutlined.svg</file>
-        <file>icons/antd/ToTopOutlined.svg</file>
         <file>icons/antd/ToolFilled.svg</file>
         <file>icons/antd/ToolOutlined.svg</file>
         <file>icons/antd/ToolTwoTone.svg</file>
+        <file>icons/antd/ToTopOutlined.svg</file>
         <file>icons/antd/TrademarkCircleFilled.svg</file>
         <file>icons/antd/TrademarkCircleOutlined.svg</file>
         <file>icons/antd/TrademarkCircleTwoTone.svg</file>
@@ -776,20 +793,20 @@
         <file>icons/antd/UpCircleFilled.svg</file>
         <file>icons/antd/UpCircleOutlined.svg</file>
         <file>icons/antd/UpCircleTwoTone.svg</file>
+        <file>icons/antd/UploadOutlined.svg</file>
         <file>icons/antd/UpOutlined.svg</file>
         <file>icons/antd/UpSquareFilled.svg</file>
         <file>icons/antd/UpSquareOutlined.svg</file>
         <file>icons/antd/UpSquareTwoTone.svg</file>
-        <file>icons/antd/UploadOutlined.svg</file>
         <file>icons/antd/UsbFilled.svg</file>
         <file>icons/antd/UsbOutlined.svg</file>
         <file>icons/antd/UsbTwoTone.svg</file>
         <file>icons/antd/UserAddOutlined.svg</file>
         <file>icons/antd/UserDeleteOutlined.svg</file>
-        <file>icons/antd/UserOutlined.svg</file>
-        <file>icons/antd/UserSwitchOutlined.svg</file>
         <file>icons/antd/UsergroupAddOutlined.svg</file>
         <file>icons/antd/UsergroupDeleteOutlined.svg</file>
+        <file>icons/antd/UserOutlined.svg</file>
+        <file>icons/antd/UserSwitchOutlined.svg</file>
         <file>icons/antd/VerifiedOutlined.svg</file>
         <file>icons/antd/VerticalAlignBottomOutlined.svg</file>
         <file>icons/antd/VerticalAlignMiddleOutlined.svg</file>

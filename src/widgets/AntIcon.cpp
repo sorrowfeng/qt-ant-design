@@ -2,9 +2,12 @@
 
 #include <QDir>
 #include <QEvent>
+#include <QFile>
 #include <QHash>
 #include <QPainter>
 #include <QPainterPathStroker>
+#include <QPixmapCache>
+#include <QSvgRenderer>
 #include <QTransform>
 
 #include "core/AntTheme.h"
@@ -910,6 +913,74 @@ QStringList AntIcon::builtinIconNames()
         initialized = true;
     }
     return names;
+}
+
+QPixmap AntIcon::renderPixmap(const QString& iconName,
+                              int size,
+                              const QColor& primary,
+                              const QColor& secondary,
+                              Ant::IconTheme theme)
+{
+    if (size <= 0)
+    {
+        return {};
+    }
+
+    Ant::IconTheme parsedTheme = theme;
+    const QString baseName = normalizedIconBaseName(iconName, &parsedTheme);
+    if (baseName.isEmpty())
+    {
+        return {};
+    }
+
+    const bool twoTone = parsedTheme == Ant::IconTheme::TwoTone;
+    const QColor effectivePrimary = primary.isValid() ? primary : antTheme->tokens().colorText;
+    const QColor effectiveSecondary = twoTone
+        ? (secondary.isValid() ? secondary : AntPalette::tint(effectivePrimary, 0.72))
+        : (secondary.isValid() ? secondary : effectivePrimary);
+
+    const QString cacheKey = QStringLiteral("antIcon:%1:%2:%3:%4")
+                                 .arg(baseName + themeSuffix(parsedTheme))
+                                 .arg(size)
+                                 .arg(effectivePrimary.name(QColor::HexArgb))
+                                 .arg(effectiveSecondary.name(QColor::HexArgb));
+    QPixmap cached;
+    if (QPixmapCache::find(cacheKey, &cached))
+    {
+        return cached;
+    }
+
+    const QString resourcePath =
+        QStringLiteral(":/qt-ant-design/icons/antd/%1%2.svg").arg(baseName, themeSuffix(parsedTheme));
+    QFile file(resourcePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        return {};
+    }
+
+    QString svg = QString::fromUtf8(file.readAll());
+    if (svg.isEmpty())
+    {
+        return {};
+    }
+    svg.replace(QStringLiteral("__PRIMARY__"), effectivePrimary.name(QColor::HexRgb));
+    svg.replace(QStringLiteral("__SECONDARY__"), effectiveSecondary.name(QColor::HexRgb));
+
+    QSvgRenderer renderer(svg.toUtf8());
+    if (!renderer.isValid())
+    {
+        return {};
+    }
+
+    QPixmap pixmap(size, size);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    renderer.render(&painter, QRectF(0, 0, size, size));
+    painter.end();
+
+    QPixmapCache::insert(cacheKey, pixmap);
+    return pixmap;
 }
 
 QPainterPath AntIcon::transformPath(const QPainterPath& path, const QRectF& targetRect)

@@ -128,13 +128,10 @@ namespace example::pages
 {
 QWidget* createProgressPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Line"));
+        auto* card = makeCard(layout, QStringLiteral("Line"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -153,11 +150,11 @@ QWidget* createProgressPage(QWidget* /*owner*/)
         cl->addWidget(active);
         cl->addWidget(success);
         cl->addWidget(exception);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Circle"));
+        auto* card = makeCard(layout, QStringLiteral("Circle"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* circleRow = new QHBoxLayout();
@@ -177,7 +174,7 @@ QWidget* createProgressPage(QWidget* /*owner*/)
         circleRow->addWidget(circleException);
         circleRow->addStretch();
         cl->addLayout(circleRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -186,13 +183,10 @@ QWidget* createProgressPage(QWidget* /*owner*/)
 
 QWidget* createResultPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Success"));
+        auto* card = makeCard(layout, QStringLiteral("Success"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -205,11 +199,11 @@ QWidget* createResultPage(QWidget* /*owner*/)
         success->setExtraWidget(successBtn);
 
         cl->addWidget(success);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Error"));
+        auto* card = makeCard(layout, QStringLiteral("Error"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -219,7 +213,7 @@ QWidget* createResultPage(QWidget* /*owner*/)
         error->setSubTitle(QStringLiteral("Please check and modify."));
 
         cl->addWidget(error);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -228,13 +222,10 @@ QWidget* createResultPage(QWidget* /*owner*/)
 
 QWidget* createSkeletonPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -242,11 +233,11 @@ QWidget* createSkeletonPage(QWidget* /*owner*/)
         active->setActive(true);
 
         cl->addWidget(active);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Avatar & Title"));
+        auto* card = makeCard(layout, QStringLiteral("Avatar & Title"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -257,7 +248,7 @@ QWidget* createSkeletonPage(QWidget* /*owner*/)
         article->setParagraphRows(2);
 
         cl->addWidget(article);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -266,13 +257,10 @@ QWidget* createSkeletonPage(QWidget* /*owner*/)
 
 QWidget* createSpinPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* sizeRow = new QHBoxLayout();
@@ -284,17 +272,17 @@ QWidget* createSpinPage(QWidget* /*owner*/)
         sizeRow->addWidget(large);
         sizeRow->addStretch();
         cl->addLayout(sizeRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Content"));
+        auto* card = makeCard(layout, QStringLiteral("With Content"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
         auto* surface = new SpinContentSurface(page);
         cl->addWidget(surface);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -303,13 +291,10 @@ QWidget* createSpinPage(QWidget* /*owner*/)
 
 QWidget* createTourPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -334,7 +319,6 @@ QWidget* createTourPage(QWidget* /*owner*/)
         cl->addWidget(desc);
         cl->addLayout(stepRow);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -343,13 +327,10 @@ QWidget* createTourPage(QWidget* /*owner*/)
 
 QWidget* createWatermarkPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -364,7 +345,7 @@ QWidget* createWatermarkPage(QWidget* /*owner*/)
                                                wm1);
         wm1Layout->addWidget(content);
         cl->addWidget(wm1);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();

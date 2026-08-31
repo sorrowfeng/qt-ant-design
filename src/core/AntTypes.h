@@ -64,6 +64,24 @@ enum class Placement
 };
 Q_ENUM_NS(Placement)
 
+// 弹层遮罩配置（对齐 antd v6 的 mask={{ closable, blur }} 对象式 API）。
+// 既可用对象式 setMask(Ant::MaskConfig{...})，也保留布尔式 setMaskClosable 别名。
+struct MaskConfig
+{
+    bool closable = true;
+    bool blur = false; // 是否对遮罩下内容做毛玻璃模糊（antd v6 新增）
+};
+
+inline bool operator==(const MaskConfig& lhs, const MaskConfig& rhs)
+{
+    return lhs.closable == rhs.closable && lhs.blur == rhs.blur;
+}
+
+inline bool operator!=(const MaskConfig& lhs, const MaskConfig& rhs)
+{
+    return !(lhs == rhs);
+}
+
 enum class Orientation
 {
     Horizontal,
@@ -96,6 +114,22 @@ enum class ThemeMode
 };
 Q_ENUM_NS(ThemeMode)
 
+// 主题密度（对应上游 theme algorithm 的 defaultAlgorithm / compactAlgorithm）。
+enum class ThemeDensity
+{
+    Default,
+    Compact,
+};
+Q_ENUM_NS(ThemeDensity)
+
+// 内建文案语言（对应上游 LocaleProvider 的 locale 包）。
+enum class LocaleLanguage
+{
+    English,
+    ChineseSimplified,
+};
+Q_ENUM_NS(LocaleLanguage)
+
 enum class ButtonType
 {
     Default,
@@ -105,6 +139,14 @@ enum class ButtonType
     Link,
 };
 Q_ENUM_NS(ButtonType)
+
+// 图标相对文本的位置（对应上游 iconPlacement="start|end"）。
+enum class IconPlacement
+{
+    Start,
+    End,
+};
+Q_ENUM_NS(IconPlacement)
 
 enum class ButtonShape
 {
@@ -313,6 +355,21 @@ enum class FormLabelAlign
 };
 Q_ENUM_NS(FormLabelAlign)
 
+// 表单校验规则（对齐 antd 的 Form.Item rules）。
+// 每条规则按顺序校验，任一失败即停止并记录错误信息。
+struct FormRule
+{
+    bool required = false;          // 必填（空值视为失败）
+    QString message;                // 校验失败时的提示文案（可选）
+    QString pattern;                // 正则表达式（QRegExp 兼容语法）
+    qreal min = 0.0;                // 数值/长度下限（0 表示不校验）
+    qreal max = 0.0;                // 数值/长度上限（0 表示不校验）
+    int minLength = 0;              // 字符串最小长度
+    int maxLength = 0;              // 字符串最大长度
+    QString type;                   // "email"/"number"/"integer" 等内建类型校验
+    QString validator;              // 命名的自定义校验器（见 AntFormValidator）
+};
+
 enum class StepStatus
 {
     Wait,
@@ -321,6 +378,23 @@ enum class StepStatus
     Error,
 };
 Q_ENUM_NS(StepStatus)
+
+// Steps 展示类型（对齐 antd v6 的 type 属性）。
+enum class StepType
+{
+    Default,    // 标准圆形图标
+    Navigation, // 导航式步骤（图标放大、连接线省略）
+    Dot,        // 点状步骤（小圆点 + 文字，无数字图标）
+};
+Q_ENUM_NS(StepType)
+
+// Steps 标题/描述相对图标的位置（对齐 antd 的 labelPlacement）。
+enum class StepLabelPlacement
+{
+    Horizontal, // 图标右侧（横向步骤）
+    Vertical,   // 图标下方（纵向步骤）
+};
+Q_ENUM_NS(StepLabelPlacement)
 
 enum class IconType
 {
@@ -531,3 +605,6 @@ constexpr int MaximumThemeBorderRadius = 512;
 QT_ANT_DESIGN_EXPORT void registerMetaTypes();
 
 } // namespace Ant
+
+Q_DECLARE_METATYPE(Ant::MaskConfig)
+Q_DECLARE_METATYPE(Ant::FormRule)

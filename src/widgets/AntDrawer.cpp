@@ -353,7 +353,27 @@ void AntDrawer::setMaskClosable(bool closable)
         return;
     }
     m_maskClosable = closable;
+    m_mask.closable = closable;
     Q_EMIT maskClosableChanged(m_maskClosable);
+}
+
+Ant::MaskConfig AntDrawer::mask() const { return m_mask; }
+
+void AntDrawer::setMask(const Ant::MaskConfig& mask)
+{
+    if (m_mask == mask)
+    {
+        return;
+    }
+    const bool blurChanged = m_mask.blur != mask.blur;
+    m_mask = mask;
+    m_maskClosable = mask.closable;
+    if (blurChanged)
+    {
+        requestDrawerUpdate(rect(), QStringLiteral("mask"));
+    }
+    Q_EMIT maskClosableChanged(m_maskClosable);
+    Q_EMIT maskChanged(m_mask);
 }
 
 bool AntDrawer::isOpen() const { return m_open; }

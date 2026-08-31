@@ -232,7 +232,7 @@ private:
         p.drawRoundedRect(field, 3, 3);
 
         QLinearGradient black(0, 0, 0, height());
-        black.setColorAt(0, QColor(0, 0, 0, 0));
+        black.setColorAt(0, Qt::transparent);
         black.setColorAt(1, Qt::black);
         p.setBrush(black);
         p.drawRoundedRect(field, 3, 3);

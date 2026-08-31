@@ -5,6 +5,7 @@
 #include <QDoubleSpinBox>
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QStringList>
 #include <QTime>
 #include <QVBoxLayout>
 #include <QVector>
@@ -23,6 +24,7 @@
 #include "widgets/AntInput.h"
 #include "widgets/AntInputNumber.h"
 #include "widgets/AntMentions.h"
+#include "widgets/AntMessage.h"
 #include "widgets/AntPlainTextEdit.h"
 #include "widgets/AntSelect.h"
 #include "widgets/AntSwitch.h"
@@ -32,12 +34,9 @@ namespace example::pages
 {
 QWidget* createAutoCompletePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
-    auto* card = new AntCard(QStringLiteral("Basic"));
+    auto* card = makeCard(layout, QStringLiteral("Basic"));
     auto* cl = card->bodyLayout();
     cl->setAlignment(Qt::AlignTop);
 
@@ -48,7 +47,6 @@ QWidget* createAutoCompletePage(QWidget* /*owner*/)
     ac->addSuggestion(QStringLiteral("aa"));
     ac->addSuggestion(QStringLiteral("a!"));
     cl->addWidget(ac, 0, Qt::AlignLeft);
-    layout->addWidget(card);
 
     layout->addStretch();
     return page;
@@ -56,13 +54,10 @@ QWidget* createAutoCompletePage(QWidget* /*owner*/)
 
 QWidget* createCascaderPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -98,7 +93,6 @@ QWidget* createCascaderPage(QWidget* /*owner*/)
         cascader->setOptions(options);
         cl->addWidget(cascader, 0, Qt::AlignLeft);
 
-        layout->addWidget(card);
     }
 
     layout->addStretch();
@@ -107,13 +101,10 @@ QWidget* createCascaderPage(QWidget* /*owner*/)
 
 QWidget* createCheckboxPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
@@ -127,11 +118,25 @@ QWidget* createCheckboxPage(QWidget* /*owner*/)
         basicRow->addWidget(orange);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
+        auto* echo = makeSecondaryText(QStringLiteral("Checked: Banana"), page);
+        const auto reflect = [echo, apple, banana, orange]() {
+            QStringList checked;
+            if (apple->isChecked()) checked << QStringLiteral("Apple");
+            if (banana->isChecked()) checked << QStringLiteral("Banana");
+            if (orange->isChecked()) checked << QStringLiteral("Orange");
+            echo->setText(checked.isEmpty() ? QStringLiteral("Checked: (none)")
+                                           : QStringLiteral("Checked: %1").arg(checked.join(QStringLiteral(", "))));
+        };
+        QObject::connect(apple, &AntCheckBox::toggled, echo, [reflect](bool) { reflect(); });
+        QObject::connect(banana, &AntCheckBox::toggled, echo, [reflect](bool) { reflect(); });
+        QObject::connect(orange, &AntCheckBox::toggled, echo, [reflect](bool) { reflect(); });
+        cl->addWidget(echo);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Group"));
+        auto* card = makeCard(layout, QStringLiteral("Group"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* groupRow = new QHBoxLayout();
@@ -145,7 +150,7 @@ QWidget* createCheckboxPage(QWidget* /*owner*/)
         groupRow->addWidget(orange);
         groupRow->addStretch();
         cl->addLayout(groupRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -154,13 +159,10 @@ QWidget* createCheckboxPage(QWidget* /*owner*/)
 
 QWidget* createColorPickerPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
@@ -171,18 +173,18 @@ QWidget* createColorPickerPage(QWidget* /*owner*/)
         row->addWidget(makeText(QStringLiteral("Pick a color"), card));
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Text"));
+        auto* card = makeCard(layout, QStringLiteral("With Text"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
 
         auto* picker = new AntColorPicker(QColor(QStringLiteral("#52c41a")), card);
         picker->setShowText(true);
         cl->addWidget(picker, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -191,13 +193,10 @@ QWidget* createColorPickerPage(QWidget* /*owner*/)
 
 QWidget* createDatePickerPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
@@ -209,11 +208,21 @@ QWidget* createDatePickerPage(QWidget* /*owner*/)
         basicRow->addWidget(range);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
+        auto* echo = makeSecondaryText(QStringLiteral("Selected: (none)"), page);
+        QObject::connect(basic, &AntDatePicker::selectedDateChanged, echo, [echo](const QDate& date) {
+            echo->setText(QStringLiteral("Selected: %1").arg(date.toString(Qt::ISODate)));
+        });
+        QObject::connect(range, &AntDatePicker::dateRangeChanged, echo, [echo](const QDate& minDate, const QDate& maxDate) {
+            echo->setText(QStringLiteral("Range: %1 ~ %2")
+                              .arg(minDate.toString(Qt::ISODate), maxDate.toString(Qt::ISODate)));
+        });
+        cl->addWidget(echo);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Sizes"));
+        auto* card = makeCard(layout, QStringLiteral("Sizes"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* sizeRow = new QHBoxLayout();
@@ -231,21 +240,18 @@ QWidget* createDatePickerPage(QWidget* /*owner*/)
         sizeRow->addWidget(small);
         sizeRow->addStretch();
         cl->addLayout(sizeRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
     return page;
 }
 
-QWidget* createFormPage(QWidget* /*owner*/)
+QWidget* createFormPage(QWidget* owner)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
-    auto* card = new AntCard(QStringLiteral("Basic Form"));
+    auto* card = makeCard(layout, QStringLiteral("Basic Form"));
     auto* cl = card->bodyLayout();
     cl->setAlignment(Qt::AlignTop);
 
@@ -256,12 +262,30 @@ QWidget* createFormPage(QWidget* /*owner*/)
 
     auto* username = new AntInput(form);
     username->setPlaceholderText(QStringLiteral("Enter username"));
-    form->addItem(QStringLiteral("Username"), username, true);
+    auto* usernameItem = form->addItem(QStringLiteral("Username"), username, true);
+    Ant::FormRule usernameRule;
+    usernameRule.required = true;
+    usernameRule.minLength = 3;
+    usernameRule.message = QStringLiteral("At least 3 characters");
+    usernameItem->setRules({usernameRule});
 
     auto* password = new AntInput(form);
     password->setPasswordMode(true);
     password->setPlaceholderText(QStringLiteral("Enter password"));
-    form->addItem(QStringLiteral("Password"), password, true);
+    auto* passwordItem = form->addItem(QStringLiteral("Password"), password, true);
+    Ant::FormRule passwordRule;
+    passwordRule.required = true;
+    passwordRule.minLength = 6;
+    passwordRule.message = QStringLiteral("At least 6 characters");
+    passwordItem->setRules({passwordRule});
+
+    auto* email = new AntInput(form);
+    email->setPlaceholderText(QStringLiteral("Enter email"));
+    auto* emailItem = form->addItem(QStringLiteral("Email"), email);
+    Ant::FormRule emailRule;
+    emailRule.type = QStringLiteral("email");
+    emailRule.message = QStringLiteral("Invalid email address");
+    emailItem->setRules({emailRule});
 
     auto* gender = new AntSelect(form);
     gender->setPlaceholderText(QStringLiteral("Select"));
@@ -277,8 +301,23 @@ QWidget* createFormPage(QWidget* /*owner*/)
     auto* submitItem = form->addItem(QStringLiteral(" "), submit);
     submitItem->setColon(false);
 
+    form->setOnFinish([owner](const QVariantMap& values) {
+        QStringList parts;
+        for (auto it = values.cbegin(); it != values.cend(); ++it)
+        {
+            parts << QStringLiteral("%1=%2").arg(it.key(), it.value().toString());
+        }
+        AntMessage::success(QStringLiteral("Submitted: %1")
+                                .arg(parts.isEmpty() ? QStringLiteral("(empty)")
+                                                     : parts.join(QStringLiteral(", "))),
+                            owner);
+    });
+
+    QObject::connect(submit, &AntButton::clicked, owner, [form]() {
+        form->finish();
+    });
+
     cl->addWidget(form, 0, Qt::AlignLeft);
-    layout->addWidget(card);
 
     layout->addStretch();
     return page;
@@ -286,13 +325,10 @@ QWidget* createFormPage(QWidget* /*owner*/)
 
 QWidget* createInputPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basicRow = new QHBoxLayout();
@@ -308,11 +344,11 @@ QWidget* createInputPage(QWidget* /*owner*/)
         basicRow->addWidget(disabled);
         basicRow->addStretch();
         cl->addLayout(basicRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Sizes"));
+        auto* card = makeCard(layout, QStringLiteral("Sizes"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* sizeRow = new QHBoxLayout();
@@ -333,11 +369,11 @@ QWidget* createInputPage(QWidget* /*owner*/)
         sizeRow->addWidget(small);
         sizeRow->addStretch();
         cl->addLayout(sizeRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Search & Password"));
+        auto* card = makeCard(layout, QStringLiteral("Search & Password"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* searchRow = new QHBoxLayout();
@@ -355,11 +391,11 @@ QWidget* createInputPage(QWidget* /*owner*/)
         searchRow->addWidget(password);
         searchRow->addStretch();
         cl->addLayout(searchRow);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("TextArea"));
+        auto* card = makeCard(layout, QStringLiteral("TextArea"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* textArea = new AntPlainTextEdit(card);
@@ -368,11 +404,11 @@ QWidget* createInputPage(QWidget* /*owner*/)
         textArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         textArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         cl->addWidget(textArea, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Addon"));
+        auto* card = makeCard(layout, QStringLiteral("With Addon"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* addon = new AntInput();
@@ -381,7 +417,7 @@ QWidget* createInputPage(QWidget* /*owner*/)
         addon->setText(QStringLiteral("mysite"));
         addon->setFixedWidth(300);
         cl->addWidget(addon, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -391,13 +427,10 @@ QWidget* createInputPage(QWidget* /*owner*/)
 QWidget* createInputNumberPage(QWidget* owner)
 {
     Q_UNUSED(owner)
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* basic = new AntInputNumber();
@@ -406,11 +439,11 @@ QWidget* createInputNumberPage(QWidget* owner)
         basic->setValue(3);
         basic->setFixedWidth(90);
         cl->addWidget(basic, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Prefix/Suffix"));
+        auto* card = makeCard(layout, QStringLiteral("With Prefix/Suffix"));
         auto* cl = card->bodyLayout();
         cl->setAlignment(Qt::AlignTop);
         auto* formatRow = new QHBoxLayout();
@@ -431,7 +464,7 @@ QWidget* createInputNumberPage(QWidget* owner)
         formatRow->addWidget(percent);
         formatRow->addStretch();
         cl->addLayout(formatRow);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -440,12 +473,9 @@ QWidget* createInputNumberPage(QWidget* owner)
 
 QWidget* createMentionsPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
-    auto* card = new AntCard(QStringLiteral("Basic"));
+    auto* card = makeCard(layout, QStringLiteral("Basic"));
     auto* cl = card->bodyLayout();
     cl->setAlignment(Qt::AlignTop);
 
@@ -455,7 +485,6 @@ QWidget* createMentionsPage(QWidget* /*owner*/)
     mentions->setRows(3);
     mentions->setFixedWidth(400);
     cl->addWidget(mentions, 0, Qt::AlignLeft);
-    layout->addWidget(card);
 
     layout->addStretch();
     return page;

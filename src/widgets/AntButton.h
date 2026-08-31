@@ -23,6 +23,7 @@ class QT_ANT_DESIGN_EXPORT AntButton : public QPushButton
     Q_PROPERTY(bool block READ isBlock WRITE setBlock NOTIFY blockChanged)
     Q_PROPERTY(Ant::IconType buttonIconType READ buttonIconType WRITE setButtonIconType NOTIFY buttonIconTypeChanged)
     Q_PROPERTY(QColor buttonIconColor READ buttonIconColor WRITE setButtonIconColor NOTIFY buttonIconColorChanged)
+    Q_PROPERTY(Ant::IconPlacement iconPlacement READ iconPlacement WRITE setIconPlacement NOTIFY iconPlacementChanged)
 
 public:
     explicit AntButton(QWidget* parent = nullptr);
@@ -51,6 +52,9 @@ public:
     void setButtonIconType(Ant::IconType iconType);
     QColor buttonIconColor() const;
     void setButtonIconColor(const QColor& color);
+    // 图标在文本之后绘制（对应上游 iconPlacement="end"）。
+    Ant::IconPlacement iconPlacement() const;
+    void setIconPlacement(Ant::IconPlacement placement);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -68,6 +72,7 @@ Q_SIGNALS:
     void blockChanged(bool block);
     void buttonIconTypeChanged(Ant::IconType iconType);
     void buttonIconColorChanged(const QColor& color);
+    void iconPlacementChanged(Ant::IconPlacement placement);
 
 protected:
     void enterEvent(AntEnterEvent* event) override;
@@ -116,5 +121,6 @@ private:
     AntSpinner m_spinner;
     Ant::IconType m_buttonIconType = Ant::IconType::None;
     QColor m_buttonIconColor;
+    Ant::IconPlacement m_iconPlacement = Ant::IconPlacement::Start;
     int m_spinnerRegionUpdateCount = 0;
 };

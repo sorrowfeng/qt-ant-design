@@ -10,6 +10,7 @@
 #include <QTest>
 #include <QVBoxLayout>
 #include "core/AntTheme.h"
+#include "widgets/AntBorderBeam.h"
 #include "widgets/AntDivider.h"
 #include "widgets/AntFlex.h"
 #include "widgets/AntGrid.h"
@@ -43,6 +44,7 @@ class TestAntLayout : public QObject
 {
     Q_OBJECT
 private slots:
+    void borderBeam();
     void divider();
     void flex();
     void grid();
@@ -298,6 +300,16 @@ void TestAntLayout::space()
     QCOMPARE(w->isWrap(), true);
     QCOMPARE(wrapSpy.count(), 1);
     const int rebuildsAfterWrap = w->property("antSpaceRebuildCount").toInt();
+
+    // Space.Compact：紧凑模式强制零间距
+    QCOMPARE(w->isCompact(), false);
+    QSignalSpy compactSpy(w, &AntSpace::compactChanged);
+    w->setCompact(true);
+    QCOMPARE(w->isCompact(), true);
+    QCOMPARE(compactSpy.count(), 1);
+    w->setCompact(false);
+    QCOMPARE(w->isCompact(), false);
+    QCOMPARE(compactSpy.count(), 2);
 
     auto* i1 = new QWidget;
     i1->setMinimumSize(28, 12);
@@ -589,6 +601,90 @@ void TestAntLayout::affix()
     QCoreApplication::processEvents();
     QCOMPARE(affix.property("antAffixLastCheckSkipped").toBool(), true);
     QCOMPARE(affix.property("antAffixEffectiveCheckCount").toInt(), effectiveChecks);
+}
+
+void TestAntLayout::borderBeam()
+{
+    auto* w = new AntBorderBeam;
+    QCOMPARE(w->color(), QColor());
+    QCOMPARE(w->count(), 1);
+    QCOMPARE(w->duration(), 3000);
+    QCOMPARE(w->beamLength(), 48);
+    QCOMPARE(w->lineWidth(), 2);
+    QCOMPARE(w->borderRadius(), -1);
+    QCOMPARE(w->isRunning(), true);
+    QCOMPARE(w->isActiveOnHover(), false);
+    QCOMPARE(w->contentWidget(), nullptr);
+
+    QSignalSpy colorSpy(w, &AntBorderBeam::colorChanged);
+    w->setColor(QColor("#ff4d4f"));
+    QCOMPARE(w->color(), QColor("#ff4d4f"));
+    QCOMPARE(colorSpy.count(), 1);
+
+    QSignalSpy countSpy(w, &AntBorderBeam::countChanged);
+    w->setCount(3);
+    QCOMPARE(w->count(), 3);
+    QCOMPARE(countSpy.count(), 1);
+    w->setCount(99);
+    QCOMPARE(w->count(), 8);
+
+    QSignalSpy durationSpy(w, &AntBorderBeam::durationChanged);
+    w->setDuration(1500);
+    QCOMPARE(w->duration(), 1500);
+    QCOMPARE(durationSpy.count(), 1);
+
+    QSignalSpy lengthSpy(w, &AntBorderBeam::beamLengthChanged);
+    w->setBeamLength(80);
+    QCOMPARE(w->beamLength(), 80);
+    QCOMPARE(lengthSpy.count(), 1);
+
+    QSignalSpy widthSpy(w, &AntBorderBeam::lineWidthChanged);
+    w->setLineWidth(4);
+    QCOMPARE(w->lineWidth(), 4);
+    QCOMPARE(widthSpy.count(), 1);
+
+    QSignalSpy radiusSpy(w, &AntBorderBeam::borderRadiusChanged);
+    w->setBorderRadius(12);
+    QCOMPARE(w->borderRadius(), 12);
+    QCOMPARE(radiusSpy.count(), 1);
+
+    QSignalSpy runningSpy(w, &AntBorderBeam::runningChanged);
+    w->setRunning(false);
+    QCOMPARE(w->isRunning(), false);
+    QCOMPARE(runningSpy.count(), 1);
+
+    QSignalSpy hoverSpy(w, &AntBorderBeam::activeOnHoverChanged);
+    w->setActiveOnHover(true);
+    QCOMPARE(w->isActiveOnHover(), true);
+    QCOMPARE(hoverSpy.count(), 1);
+
+    auto* content = new AntDivider;
+    w->setContentWidget(content);
+    QCOMPARE(w->contentWidget(), content);
+    QCOMPARE(w->sizeHint().width(), content->sizeHint().width() + 2 * (w->lineWidth() + 4));
+    w->setContentWidget(nullptr);
+    QCOMPARE(w->contentWidget(), nullptr);
+
+    // 渲染烟测：隐藏状态下仍应绘制光束像素
+    w->resize(200, 120);
+    QImage img(w->size(), QImage::Format_ARGB32);
+    img.fill(Qt::transparent);
+    QPainter painter(&img);
+    w->render(&painter);
+    painter.end();
+    bool hasPixel = false;
+    for (int y = 0; y < img.height() && !hasPixel; ++y)
+    {
+        for (int x = 0; x < img.width(); ++x)
+        {
+            if (qAlpha(img.pixel(x, y)) > 0)
+            {
+                hasPixel = true;
+                break;
+            }
+        }
+    }
+    QVERIFY(hasPixel);
 }
 
 QTEST_MAIN(TestAntLayout)

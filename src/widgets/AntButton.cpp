@@ -157,6 +157,18 @@ void AntButton::setButtonIconColor(const QColor& color)
     Q_EMIT buttonIconColorChanged(m_buttonIconColor);
 }
 
+Ant::IconPlacement AntButton::iconPlacement() const { return m_iconPlacement; }
+
+void AntButton::setIconPlacement(Ant::IconPlacement placement)
+{
+    if (m_iconPlacement == placement)
+        return;
+    m_iconPlacement = placement;
+    updateGeometry();
+    update();
+    Q_EMIT iconPlacementChanged(m_iconPlacement);
+}
+
 QSize AntButton::sizeHint() const
 {
     QStyleOptionButton option;

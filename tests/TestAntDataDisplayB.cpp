@@ -15,6 +15,7 @@
 #include "core/AntQRGenerator.h"
 #include "core/AntTheme.h"
 #include "widgets/AntList.h"
+#include "widgets/AntListy.h"
 #include "widgets/AntListWidget.h"
 #include "widgets/AntMenu.h"
 #include "widgets/AntTable.h"
@@ -91,6 +92,7 @@ class TestAntDataDisplayB : public QObject
     Q_OBJECT
 private slots:
     void propertiesAndSignals();
+    void listyPropertiesGroupingAndSignals();
     void listWidgetCompatibilityApis();
     void listContextMenusUseAntMenu();
     void listItemIconMediaApis();
@@ -99,6 +101,7 @@ private slots:
     void listUsesExpandingLayoutPolicy();
     void treeCachesFlattenedVisibleNodes();
     void tableHoverUsesRowScopedUpdates();
+    void tableWheelScrollUsesBitBltUpdates();
     void tableSelectionCompatibilityApis();
     void carouselPausesAutoplayAndScopesTransitionWork();
     void collapseCachesSizeHintsAndScopesAnimationUpdates();
@@ -374,6 +377,15 @@ void TestAntDataDisplayB::propertiesAndSignals()
     desc->setBordered(true);
     QCOMPARE(desc->isBordered(), true);
     QCOMPARE(dBorderSpy.count(), 1);
+
+    // variant 别名（上游 v6）
+    QCOMPARE(desc->variant(), Ant::Variant::Outlined);
+    QSignalSpy dVariantSpy(desc, &AntDescriptions::variantChanged);
+    desc->setVariant(Ant::Variant::Borderless);
+    QCOMPARE(desc->variant(), Ant::Variant::Borderless);
+    QCOMPARE(desc->isBordered(), false);
+    QCOMPARE(dVariantSpy.count(), 1);
+    QCOMPARE(dBorderSpy.count(), 2);
 
     QSignalSpy vertSpy(desc, &AntDescriptions::verticalChanged);
     desc->setVertical(true);
@@ -688,6 +700,95 @@ void TestAntDataDisplayB::collapseCachesSizeHintsAndScopesAnimationUpdates()
     QCoreApplication::sendEvent(panel, &enterEvent);
     QCOMPARE(panel->property("antCollapsePanelLastUpdateMode").toString(), QStringLiteral("hover"));
     QVERIFY(panel->property("antCollapsePanelRegionUpdateCount").toInt() > headerUpdates);
+}
+
+void TestAntDataDisplayB::listyPropertiesGroupingAndSignals()
+{
+    auto* w = new AntListy;
+    QCOMPARE(w->count(), 0);
+    QCOMPARE(w->isGroupingEnabled(), false);
+    QCOMPARE(w->hasStickyGroupHeader(), false);
+    QCOMPARE(w->isDragSortingEnabled(), false);
+    QCOMPARE(w->isLoading(), false);
+    QCOMPARE(w->currentRow(), -1);
+
+    QList<AntListyItem> items;
+    for (int i = 0; i < 4; ++i)
+    {
+        AntListyItem item;
+        item.key = QStringLiteral("k%1").arg(i);
+        item.title = QStringLiteral("Item %1").arg(i);
+        item.group = i < 2 ? QStringLiteral("GroupA") : QStringLiteral("GroupB");
+        items.append(item);
+    }
+    w->setItems(items);
+    QCOMPARE(w->count(), 4);
+    QCOMPARE(w->itemKey(1), QStringLiteral("k1"));
+    QCOMPARE(w->itemAt(2).group, QStringLiteral("GroupB"));
+
+    QSignalSpy clickSpy(w, &AntListy::itemClicked);
+    QSignalSpy groupingSpy(w, &AntListy::groupingEnabledChanged);
+    w->setGroupingEnabled(true);
+    QCOMPARE(w->isGroupingEnabled(), true);
+    QCOMPARE(groupingSpy.count(), 1);
+
+    QSignalSpy stickySpy(w, &AntListy::stickyGroupHeaderChanged);
+    w->setStickyGroupHeader(true);
+    QCOMPARE(w->hasStickyGroupHeader(), true);
+    QCOMPARE(stickySpy.count(), 1);
+
+    // 拖拽排序与分组互斥：开启拖拽时自动关闭分组
+    QSignalSpy dragSpy(w, &AntListy::dragSortingEnabledChanged);
+    w->setDragSortingEnabled(true);
+    QCOMPARE(w->isDragSortingEnabled(), true);
+    QCOMPARE(w->isGroupingEnabled(), false);
+    QCOMPARE(dragSpy.count(), 1);
+
+    QSignalSpy loadingSpy(w, &AntListy::loadingChanged);
+    w->setLoading(true);
+    QCOMPARE(w->isLoading(), true);
+    QCOMPARE(loadingSpy.count(), 1);
+    w->setLoading(false);
+    QCOMPARE(w->isLoading(), false);
+
+    // 滚动定位与当前行
+    w->setCurrentRow(2);
+    QCOMPARE(w->currentRow(), 2);
+    QSignalSpy currentSpy(w, &AntListy::currentRowChanged);
+    w->setCurrentRow(1);
+    QCOMPARE(w->currentRow(), 1);
+    QCOMPARE(currentSpy.count(), 1);
+
+    w->scrollToKey(QStringLiteral("k3"));
+    w->scrollToRow(0);
+    w->scrollToRow(-1);
+    w->scrollToRow(999);
+
+    // 渲染烟测
+    w->resize(280, 200);
+    w->show();
+    QVERIFY(QTest::qWaitForWindowExposed(w));
+    QImage img(w->size(), QImage::Format_ARGB32);
+    img.fill(Qt::transparent);
+    QPainter painter(&img);
+    w->render(&painter);
+    painter.end();
+    bool hasPixel = false;
+    for (int y = 0; y < img.height() && !hasPixel; ++y)
+    {
+        for (int x = 0; x < img.width(); ++x)
+        {
+            if (qAlpha(img.pixel(x, y)) > 0)
+            {
+                hasPixel = true;
+                break;
+            }
+        }
+    }
+    QVERIFY(hasPixel);
+    w->clear();
+    QCOMPARE(w->count(), 0);
+    QCOMPARE(clickSpy.count(), 0);
 }
 
 void TestAntDataDisplayB::listWidgetCompatibilityApis()
@@ -1090,6 +1191,56 @@ void TestAntDataDisplayB::tableHoverUsesRowScopedUpdates()
     QCoreApplication::sendEvent(&table, &leaveEvent);
     QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("row"));
     QCOMPARE(table.property("antTableLastRowUpdateCount").toInt(), 1);
+}
+
+void TestAntDataDisplayB::tableWheelScrollUsesBitBltUpdates()
+{
+    AntTable table;
+    table.resize(360, 240);
+    table.addColumn({QStringLiteral("Name"), QStringLiteral("name"), QStringLiteral("name"), 140});
+    table.addColumn({QStringLiteral("Age"), QStringLiteral("age"), QStringLiteral("age"), 80});
+    // No pagination: one long page so the body actually scrolls.
+    table.setPageSize(200);
+    for (int i = 0; i < 40; ++i)
+    {
+        AntTableRow row;
+        row.data[QStringLiteral("name")] = QStringLiteral("User %1").arg(i);
+        row.data[QStringLiteral("age")] = i + 20;
+        table.addRow(row);
+    }
+
+    QCOMPARE(table.scrollY(), 0);
+
+    const auto sendWheel = [&table](int y) {
+        QWheelEvent event(QPointF(table.rect().center()),
+                           QPointF(table.mapToGlobal(table.rect().center())),
+                           QPoint(),
+                           QPoint(0, y),
+                           Qt::NoButton,
+                           Qt::NoModifier,
+                           Qt::NoScrollPhase,
+                           false);
+        QCoreApplication::sendEvent(&table, &event);
+    };
+
+    // Hidden widget: the wheel handler falls back to a body-scoped update.
+    sendWheel(-120);
+    QVERIFY(table.scrollY() > 0);
+    QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("body"));
+
+    table.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&table));
+
+    // Visible widget scrolling in range: bit-blit path with a partial repaint.
+    sendWheel(120);
+    QCOMPARE(table.scrollY(), 0);
+    QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("scroll"));
+    QCOMPARE(table.property("antTableLastRowUpdateCount").toInt(), 1);
+
+    // Scrolling at the edge must not change the offset and must not repaint.
+    sendWheel(120);
+    QCOMPARE(table.scrollY(), 0);
+    QCOMPARE(table.property("antTableLastUpdateMode").toString(), QStringLiteral("none"));
 }
 
 void TestAntDataDisplayB::tableSelectionCompatibilityApis()

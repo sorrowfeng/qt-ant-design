@@ -79,8 +79,10 @@ private:
     AntButton* m_okButton = nullptr;
     QString m_title;
     QString m_description;
-    QString m_okText = QStringLiteral("OK");
-    QString m_cancelText = QStringLiteral("Cancel");
+    QString m_okText;
+    QString m_cancelText;
+    bool m_okTextCustomized = false;
+    bool m_cancelTextCustomized = false;
     bool m_showCancel = true;
     bool m_disabled = false;
     QString m_actionSyncKey;

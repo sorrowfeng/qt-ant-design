@@ -28,6 +28,7 @@ class QT_ANT_DESIGN_EXPORT AntDrawer : public QWidget
     Q_PROPERTY(int drawerHeight READ drawerHeight WRITE setDrawerHeight NOTIFY drawerHeightChanged)
     Q_PROPERTY(bool closable READ isClosable WRITE setClosable NOTIFY closableChanged)
     Q_PROPERTY(bool maskClosable READ isMaskClosable WRITE setMaskClosable NOTIFY maskClosableChanged)
+    Q_PROPERTY(Ant::MaskConfig mask READ mask WRITE setMask NOTIFY maskChanged)
     Q_PROPERTY(bool open READ isOpen WRITE setOpen NOTIFY openChanged)
 
 public:
@@ -51,6 +52,9 @@ public:
     bool isMaskClosable() const;
     void setMaskClosable(bool closable);
 
+    Ant::MaskConfig mask() const;
+    void setMask(const Ant::MaskConfig& mask);
+
     bool isOpen() const;
     void setOpen(bool open);
 
@@ -73,6 +77,7 @@ Q_SIGNALS:
     void drawerHeightChanged(int height);
     void closableChanged(bool closable);
     void maskClosableChanged(bool closable);
+    void maskChanged(const Ant::MaskConfig& mask);
     void openChanged(bool open);
     void opened();
     void closed();
@@ -124,6 +129,7 @@ private:
     int m_drawerHeight = 378;
     bool m_closable = true;
     bool m_maskClosable = true;
+    Ant::MaskConfig m_mask;
     bool m_open = false;
     bool m_animating = false;
 

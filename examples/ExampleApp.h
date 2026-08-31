@@ -10,6 +10,8 @@ struct ExampleCommandLineOptions
     int stressThemeCycles = 0;
     int stressThemeIntervalMs = 25;
     bool traversePages = false;
+    QString startPageName;
+    int startPageIndex = -1;
     ExampleTraversalOptions traversalOptions;
 };
 

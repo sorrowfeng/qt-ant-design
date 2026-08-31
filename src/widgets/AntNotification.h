@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/AntAnchorWatch.h"
 #include "core/QtAntDesignExport.h"
 
 #include <QColor>
@@ -7,7 +8,6 @@
 #include <QEvent>
 #include <QList>
 #include <QPixmap>
-#include <QPointer>
 #include <QRectF>
 #include <QWidget>
 
@@ -228,8 +228,7 @@ private:
     bool m_iconVisible = true;
     bool m_hovered = false;
     bool m_closeHovered = false;
-    QPointer<QWidget> m_anchor;
-    QPointer<QWidget> m_anchorWindow;
+    AntAnchorWatch m_anchorWatch;
     QTimer* m_closeTimer = nullptr;
     QTimer* m_progressTimer = nullptr;
     AntSpinner m_spinner;

@@ -50,7 +50,7 @@ AntTable::AntTable(QWidget* parent)
     installAntStyle<AntTableStyle>(this);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 
     m_rowToolTipTarget = new QWidget(this);
     m_rowToolTipTarget->setObjectName(QStringLiteral("AntTableRowToolTipTarget"));
@@ -416,6 +416,19 @@ void AntTable::selectRow(int index)
         return;
     }
 
+    // Rows whose visuals may change: the clicked row plus the previously
+    // selected/current rows, so the repaint can stay limited to those bands.
+    int previousSelectedSource = -1;
+    for (int i = 0; i < m_rows.size(); ++i)
+    {
+        if (m_rows.at(i).selected)
+        {
+            previousSelectedSource = i;
+            break;
+        }
+    }
+    const int previousCurrentSource = m_currentSourceRowIndex;
+
     bool changed = false;
     m_currentSourceRowIndex = sourceIndex;
     if (m_rowSelection != Ant::TableSelectionMode::Checkbox)
@@ -436,7 +449,11 @@ void AntTable::selectRow(int index)
         changed = true;
     }
 
-    update();
+    if (previousSelectedSource >= 0 && previousSelectedSource != previousCurrentSource)
+    {
+        updateRow(displayRowIndex(previousSelectedSource));
+    }
+    updateRows(displayRowIndex(previousCurrentSource), index);
     if (changed)
     {
         Q_EMIT selectionChanged(selectedRowKeys());
@@ -517,9 +534,10 @@ void AntTable::mousePressEvent(QMouseEvent* event)
         if (btnIndex >= 0)
         {
             m_pressedPageButton = btnIndex;
+            // setCurrentPage() repaints internally when the page actually
+            // changes; a redundant full-table update is not needed here.
             setCurrentPage(btnIndex + 1);
             m_pressedPageButton = -1;
-            update();
         }
         event->accept();
         return;
@@ -595,8 +613,9 @@ void AntTable::mousePressEvent(QMouseEvent* event)
         // Row click
         if (m_rowSelection == Ant::TableSelectionMode::Checkbox)
         {
+            const int previousCurrentDisplay = displayRowIndex(m_currentSourceRowIndex);
             m_currentSourceRowIndex = sourceRowIndex(rowIdx);
-            update();
+            updateRows(previousCurrentDisplay, rowIdx);
         }
         else
         {
@@ -650,9 +669,31 @@ void AntTable::wheelEvent(QWheelEvent* event)
 
     const int delta = event->angleDelta().y();
     const int scrollStep = m.rowHeight * 3;
+    const int previousScrollY = m_scrollY;
     m_scrollY = qBound(0, m_scrollY - (delta > 0 ? scrollStep : -scrollStep), maxScroll);
     hideRowToolTip();
-    update();
+
+    // Bit-blit the still-valid body pixels and repaint only the exposed band
+    // instead of repainting the whole table on every wheel tick.
+    const int dy = m_scrollY - previousScrollY;
+    const QRect body = tableBodyRect();
+    if (dy == 0)
+    {
+        setProperty("antTableLastUpdateMode", QStringLiteral("none"));
+        setProperty("antTableLastRowUpdateCount", 0);
+    }
+    else if (isVisible() && qAbs(dy) < body.height())
+    {
+        scroll(0, -dy, body);
+        setProperty("antTableLastUpdateMode", QStringLiteral("scroll"));
+        setProperty("antTableLastRowUpdateCount", 1);
+    }
+    else
+    {
+        update(body);
+        setProperty("antTableLastUpdateMode", QStringLiteral("body"));
+        setProperty("antTableLastRowUpdateCount", 1);
+    }
     event->accept();
 }
 

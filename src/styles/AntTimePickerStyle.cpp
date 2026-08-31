@@ -137,23 +137,8 @@ QColor timePickerBorderColor(const AntTimePicker* picker)
 
 QColor timePickerBackgroundColor(const AntTimePicker* picker)
 {
-    const auto& token = antTheme->tokens();
-    if (!picker->isEnabled())
-    {
-        return token.colorBgContainerDisabled;
-    }
-    if (picker->variant() == Ant::Variant::Filled)
-    {
-        return (picker->hasFocus() || picker->isOpen())
-            ? token.colorBgContainer
-            : (picker->isHoveredState() ? token.colorFillSecondary : token.colorFillTertiary);
-    }
-    if (picker->variant() == Ant::Variant::Borderless ||
-        picker->variant() == Ant::Variant::Underlined)
-    {
-        return QColor(0, 0, 0, 0);
-    }
-    return token.colorBgContainer;
+    return AntStyleBase::variantBackgroundColor(antTheme->tokens(), picker->variant(),
+        picker->isEnabled(), picker->isHoveredState(), picker->hasFocus() || picker->isOpen(), true);
 }
 
 bool timePickerCanClear(const AntTimePicker* picker)

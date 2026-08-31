@@ -45,10 +45,10 @@ The project focuses on:
 
 - Built on Qt Widgets — lightweight, easy to embed, and consumable as either a static or shared library in existing projects
 - Built-in Design Token system with real-time light / dark theme switching
-- `89` public components ported so far (full coverage of Ant Design's `70 / 70` standard components, plus `19` Qt / desktop extension components)
+- `91` public components ported so far (Ant Design v6 parity, including the new `BorderBeam` and `Listy` components, plus `19` Qt / desktop extension components)
 - `67` style-driven components are rendered through a `QProxyStyle` architecture
-- The example app currently demos `89 / 89` public components, plus a standalone Ant Design homepage-style `Showcase`
-- `AntIcon` bundles `831` official SVG resources from `@ant-design/icons-svg@4.4.2`
+- The example app currently demos `91 / 91` public components, plus a standalone Ant Design homepage-style `Showcase`
+- `AntIcon` bundles `848` official SVG resources from `@ant-design/icons-svg@4.5.0`
 - Comparable standard components are tracked as visual-audit `Pass`; Qt-only desktop extensions are tracked as `Local Pass`
 - Clean code structure — `core / styles / widgets / examples` layering keeps the project easy to extend
 
@@ -233,9 +233,9 @@ int main(int argc, char* argv[])
 
 ## Ported Components
 
-Total public components implemented: `89`
+Total public components implemented: `91`
 
-`src/widgets` currently contains `110` `Ant*.h` headers: `89` public component headers, `19` Qt-style alias headers, the installed non-component window-frame helper `AntWindowFrame`, and the internal non-installed popup helper `AntSelectPopup`.
+`src/widgets` currently contains `112` `Ant*.h` headers: `91` public component headers, `19` Qt-style alias headers, the installed non-component window-frame helper `AntWindowFrame`, and the internal non-installed popup helper `AntSelectPopup`.
 
 Ant Design standard components are counted by the top-level directories under [`ant-design/ant-design`](https://github.com/ant-design/ant-design)'s `components/` directory, with `row / col` rolled into `grid`, `back-top` rolled into `float-button`, and `qrcode` treated as a compatibility alias for `qr-code` — yielding a baseline of `70` standard components.
 
@@ -251,8 +251,8 @@ For names that only differ by casing from Qt, the Qt casing is canonical: use `A
 | Navigation | `AntAnchor` `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | Mixed (`QProxyStyle` / custom paint) |
 | Data Entry | `AntAutoComplete` `AntCascader` `AntCheckBox` `AntColorPicker` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntMentions` `AntRadio` `AntRate` `AntSegmented` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` `AntTransfer` `AntTreeSelect` `AntUpload` | Mixed (`QProxyStyle` / custom paint) |
 | Feedback | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | Mixed (`QProxyStyle` / custom paint) |
-| Data Display | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | Mixed (`QProxyStyle` / custom paint) |
-| Layout & Misc | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | Mixed (`QProxyStyle` / custom paint / QObject helper) |
+| Data Display | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntListy` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | Mixed (`QProxyStyle` / custom paint) |
+| Layout & Misc | `AntAffix` `AntApp` `AntBorderBeam` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | Mixed (`QProxyStyle` / custom paint / QObject helper) |
 | Qt / Desktop Extensions | `AntDialog` `AntInputDialog` `AntDockManager` `AntDockWidget` `AntFileDialog` `AntLog` `AntMenuBar` `AntNav` `AntNavItem` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStackedWidget` `AntStatusBar` `AntToolBar` `AntToolButton` | Mixed (`QProxyStyle` / custom paint) |
 
 ### Component Screenshots
@@ -305,6 +305,7 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 | Data Display | `AntEmpty` | <img src="resources/images/components/ant-empty-light.png" width="360"> | <img src="resources/images/components/ant-empty-dark.png" width="360"> |
 | Data Display | `AntImage` | <img src="resources/images/components/ant-image-light.png" width="360"> | <img src="resources/images/components/ant-image-dark.png" width="360"> |
 | Data Display | `AntList` | <img src="resources/images/components/ant-list-light.png" width="360"> | <img src="resources/images/components/ant-list-dark.png" width="360"> |
+| Data Display | `AntListy` | <img src="resources/images/components/ant-listy-light.png" width="360"> | <img src="resources/images/components/ant-listy-dark.png" width="360"> |
 | Data Display | `AntPopover` | <img src="resources/images/components/ant-popover-light.png" width="360"> | <img src="resources/images/components/ant-popover-dark.png" width="360"> |
 | Data Display | `AntQRCode` | <img src="resources/images/components/ant-qr-code-light.png" width="360"> | <img src="resources/images/components/ant-qr-code-dark.png" width="360"> |
 | Data Display | `AntSegmented` | <img src="resources/images/components/ant-segmented-light.png" width="360"> | <img src="resources/images/components/ant-segmented-dark.png" width="360"> |
@@ -348,12 +349,13 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 | Qt Extensions | `AntLog` | <img src="resources/images/components/ant-log-light.png" width="360"> | <img src="resources/images/components/ant-log-dark.png" width="360"> |
 | Qt Extensions | `AntNav` | <img src="resources/images/components/ant-nav-light.png" width="360"> | <img src="resources/images/components/ant-nav-dark.png" width="360"> |
 | Qt Extensions | `AntNavItem` | <img src="resources/images/components/ant-nav-item-light.png" width="360"> | <img src="resources/images/components/ant-nav-item-dark.png" width="360"> |
+| Layout & Misc | `AntBorderBeam` | <img src="resources/images/components/ant-border-beam-light.png" width="360"> | <img src="resources/images/components/ant-border-beam-dark.png" width="360"> |
 | Qt Extensions | `AntMasonry` | <img src="resources/images/components/ant-masonry-light.png" width="360"> | <img src="resources/images/components/ant-masonry-dark.png" width="360"> |
 
 ### Component Highlights
 
 - `AntButton`: five types, three sizes, three shapes, `loading / danger / ghost / block`
-- `AntIcon`: `831` official SVG icons, string-name API, `Outlined / Filled / TwoTone`, rotation, spin, custom paths
+- `AntIcon`: `848` official SVG icons, string-name API, `Outlined / Filled / TwoTone`, rotation, spin, custom paths
 - `AntInput`: sizes, states, `addonBefore / addonAfter / allowClear / password`
 - `AntInputNumber`: sizes, states, variants, prefix/suffix, QDoubleSpinBox-style decimals/precision, fine-grained step, optional control buttons
 - `AntDescriptions`: title, extra, columns, bordered, vertical, custom value widgets
@@ -365,6 +367,8 @@ Light and dark thumbnails are generated from the example pages; interactive cont
 - `AntAlert`: `success / info / warning / error`, icon, description, closable, banner, custom action
 - `AntModal`: mask, title, body, custom content, custom footer, confirm / cancel, centered or top-offset layout, and a soft outer shadow that fades before the dialog edge
 - `AntResult`: status icons (success / error / warning / info), transparent icon background in dark mode, title, description, custom extra actions area
+- `AntListy`: high-performance list ported from Ant Design 6.6 (Qt Model/View virtualization, group headers with sticky chip, drag sorting, infinite loading, `scrollToKey` / `scrollToRow`)
+- `AntBorderBeam`: animated border-beam decoration from Ant Design 6.4 (multi-beam, custom color/length/width/radius, hover-to-run), wrapping any content widget
 - `AntList`: `header / footer / bordered / split / size`; `AntListItem` supports `Meta` (avatar, title, description), `AntIcon` / image media, action areas, internal scrolling, and QListWidget-style text/data/selection helpers through the `AntListWidget` alias
 - `AntStatistic`: numeric display, thousands separators, prefix / suffix, precision control
 - `AntPopover`: title, body, action, click / hover triggers, placement, arrow

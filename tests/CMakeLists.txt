@@ -14,6 +14,11 @@ function(add_ant_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
     target_link_libraries(${TEST_NAME} PRIVATE qt-ant-design Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME} -o -,txt)
+    # Default timeout caps hangs from event loops, popups, or blocking
+    # animations so a stuck test fails fast instead of stalling the CI job.
+    # Individual tests that legitimately need longer (stress, visual parity,
+    # build-system) override this via an explicit set_tests_properties below.
+    set_tests_properties(${TEST_NAME} PROPERTIES TIMEOUT 60)
 endfunction()
 
 function(add_ant_inventory_test TEST_NAME)
@@ -58,6 +63,7 @@ if(QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS)
         "AntAvatar|AntAvatar.h|new AntAvatar()"
         "AntAvatarGroup|AntAvatar.h|new AntAvatarGroup()"
         "AntBadge|AntBadge.h|new AntBadge()"
+        "AntBorderBeam|AntBorderBeam.h|new AntBorderBeam()"
         "AntBreadcrumb|AntBreadcrumb.h|new AntBreadcrumb()"
         "AntButton|AntButton.h|new AntButton()"
         "AntCalendar|AntCalendar.h|new AntCalendar()"
@@ -101,6 +107,7 @@ if(QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS)
         "AntList|AntList.h|new AntList()"
         "AntListItem|AntList.h|new AntListItem()"
         "AntListItemMeta|AntList.h|new AntListItemMeta()"
+        "AntListy|AntListy.h|new AntListy()"
         "AntLog|AntLog.h|new AntLog()"
         "AntMasonry|AntMasonry.h|new AntMasonry()"
         "AntMentions|AntMentions.h|new AntMentions()"
@@ -248,6 +255,9 @@ add_ant_test(TestAntStressLifecycle)
 
 # Render smoke coverage
 add_ant_test(TestAntRenderSmoke)
+
+# Accessibility minimal coverage
+add_ant_test(TestAntAccessibility)
 
 # Automated visual regression coverage
 add_ant_test(TestAntVisualRegression)

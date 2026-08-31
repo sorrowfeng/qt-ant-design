@@ -1,5 +1,7 @@
 #include "Pages.h"
 
+#include "PageCommon.h"
+
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -147,13 +149,10 @@ namespace example::pages
 {
 QWidget* createDividerPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Horizontal"));
+        auto* card = makeCard(layout, QStringLiteral("Horizontal"));
         auto* cl = card->bodyLayout();
         cl->setSpacing(0);
         auto* top = new AntTypography(QStringLiteral("Top content"));
@@ -163,11 +162,11 @@ QWidget* createDividerPage(QWidget* /*owner*/)
         auto* bottom = new AntTypography(QStringLiteral("Bottom content"));
         bottom->setParagraph(true);
         cl->addWidget(bottom);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Title"));
+        auto* card = makeCard(layout, QStringLiteral("With Title"));
         auto* cl = card->bodyLayout();
         cl->setSpacing(0);
         auto* start = new AntDivider(QStringLiteral("Left Text"));
@@ -177,11 +176,11 @@ QWidget* createDividerPage(QWidget* /*owner*/)
         auto* end = new AntDivider(QStringLiteral("Right Text"));
         end->setTitlePlacement(Ant::DividerTitlePlacement::End);
         cl->addWidget(end);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Dashed & Vertical"));
+        auto* card = makeCard(layout, QStringLiteral("Dashed & Vertical"));
         auto* cl = card->bodyLayout();
         cl->setSpacing(0);
         auto* row = new QHBoxLayout();
@@ -207,7 +206,7 @@ QWidget* createDividerPage(QWidget* /*owner*/)
         auto* dashedCaption = new AntTypography(QStringLiteral("Dashed divider above"));
         dashedCaption->setParagraph(true);
         cl->addWidget(dashedCaption);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -216,13 +215,10 @@ QWidget* createDividerPage(QWidget* /*owner*/)
 
 QWidget* createFlexPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Horizontal"));
+        auto* card = makeCard(layout, QStringLiteral("Horizontal"));
         auto* cl = card->bodyLayout();
         auto* horizontal = new AntFlex(page);
         horizontal->setGap(16);
@@ -233,11 +229,11 @@ QWidget* createFlexPage(QWidget* /*owner*/)
             horizontal->addWidget(button);
         }
         cl->addWidget(horizontal);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Vertical"));
+        auto* card = makeCard(layout, QStringLiteral("Vertical"));
         auto* cl = card->bodyLayout();
         auto* vertical = new AntFlex(page);
         vertical->setVertical(true);
@@ -247,11 +243,11 @@ QWidget* createFlexPage(QWidget* /*owner*/)
             vertical->addWidget(new AntButton(label));
         }
         cl->addWidget(vertical);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Wrap"));
+        auto* card = makeCard(layout, QStringLiteral("Wrap"));
         auto* cl = card->bodyLayout();
         auto* wrap = new AntFlex(page);
         wrap->setWrap(true);
@@ -264,7 +260,7 @@ QWidget* createFlexPage(QWidget* /*owner*/)
             wrap->addWidget(button);
         }
         cl->addWidget(wrap);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -273,10 +269,7 @@ QWidget* createFlexPage(QWidget* /*owner*/)
 
 QWidget* createGridPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     auto makeBlock = [](const QString& text, const QString& color, bool lightText = true) {
         return new ColoredLabel(text, QColor(color), 46, lightText);
@@ -288,7 +281,7 @@ QWidget* createGridPage(QWidget* /*owner*/)
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("24-Column Grid"));
+        auto* card = makeCard(layout, QStringLiteral("24-Column Grid"));
         auto* cl = card->bodyLayout();
         cl->setSpacing(0);
         auto* row1 = new AntRow(page);
@@ -304,18 +297,18 @@ QWidget* createGridPage(QWidget* /*owner*/)
         row2->addWidget(makeBlock(QStringLiteral("8"), QStringLiteral("#52c41a")), 8);
         row2->addWidget(makeTintBlock(QStringLiteral("16"), QStringLiteral("#52c41a")), 16);
         cl->addWidget(row2);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Offset"));
+        auto* card = makeCard(layout, QStringLiteral("Offset"));
         auto* cl = card->bodyLayout();
         auto* row = new AntRow(page);
         row->setGutter(8);
         row->addWidget(makeBlock(QStringLiteral("8"), QStringLiteral("#fa8c16")), 8);
         row->addWidget(makeTintBlock(QStringLiteral("8 offset 8"), QStringLiteral("#fa8c16")), 8, 8);
         cl->addWidget(row);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -324,10 +317,7 @@ QWidget* createGridPage(QWidget* /*owner*/)
 
 QWidget* createLayoutPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     auto addText = [](QWidget* parent, const QString& text, Ant::TypographyType type = Ant::TypographyType::Default) {
         auto* label = new AntTypography(text, parent);
@@ -339,7 +329,7 @@ QWidget* createLayoutPage(QWidget* /*owner*/)
     };
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic Layout"));
+        auto* card = makeCard(layout, QStringLiteral("Basic Layout"));
         auto* cl = card->bodyLayout();
         auto* basicLayout = new AntLayout();
         basicLayout->setFixedHeight(254);
@@ -365,11 +355,11 @@ QWidget* createLayoutPage(QWidget* /*owner*/)
         basicLayout->setFooter(footer);
 
         cl->addWidget(basicLayout);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Sider"));
+        auto* card = makeCard(layout, QStringLiteral("With Sider"));
         auto* cl = card->bodyLayout();
         auto* siderLayout = new AntLayout();
         siderLayout->setFixedHeight(144);
@@ -406,7 +396,7 @@ QWidget* createLayoutPage(QWidget* /*owner*/)
         siderLayout->setContent(siderContent);
 
         cl->addWidget(siderLayout);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -415,13 +405,10 @@ QWidget* createLayoutPage(QWidget* /*owner*/)
 
 QWidget* createSpacePage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Horizontal"));
+        auto* card = makeCard(layout, QStringLiteral("Horizontal"));
         auto* cl = card->bodyLayout();
         auto* space = new AntSpace();
         for (const QString& label : {QStringLiteral("A"), QStringLiteral("B"), QStringLiteral("C")})
@@ -429,11 +416,11 @@ QWidget* createSpacePage(QWidget* /*owner*/)
             space->addItem(new AntButton(label));
         }
         cl->addWidget(space);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Vertical"));
+        auto* card = makeCard(layout, QStringLiteral("Vertical"));
         auto* cl = card->bodyLayout();
         auto* space = new AntSpace();
         space->setOrientation(Ant::Orientation::Vertical);
@@ -442,11 +429,11 @@ QWidget* createSpacePage(QWidget* /*owner*/)
             space->addItem(new AntButton(label));
         }
         cl->addWidget(space);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Size"));
+        auto* card = makeCard(layout, QStringLiteral("Size"));
         auto* cl = card->bodyLayout();
         cl->setSpacing(0);
 
@@ -469,7 +456,32 @@ QWidget* createSpacePage(QWidget* /*owner*/)
         large->addItem(new AntButton(QStringLiteral("L")));
         large->addItem(new AntButton(QStringLiteral("L")));
         cl->addWidget(large);
-        layout->addWidget(card);
+
+    }
+
+    {
+        auto* card = makeCard(layout, QStringLiteral("Compact"));
+        auto* cl = card->bodyLayout();
+        cl->setAlignment(Qt::AlignTop);
+        auto* note = new AntTypography(QStringLiteral("Space.Compact removes spacing — replaces the deprecated Button.Group."));
+        note->setType(Ant::TypographyType::Secondary);
+        note->setParagraph(true);
+        cl->addWidget(note);
+        auto* row = new AntSpace();
+        row->setCompact(true);
+        row->addItem(new AntButton(QStringLiteral("Left")));
+        row->addItem(new AntButton(QStringLiteral("Middle")));
+        row->addItem(new AntButton(QStringLiteral("Right")));
+        cl->addWidget(row);
+        auto* rowBtn = new AntSpace();
+        rowBtn->setCompact(true);
+        auto* btnPrimary = new AntButton(QStringLiteral("Save"));
+        btnPrimary->setButtonType(Ant::ButtonType::Primary);
+        rowBtn->addItem(btnPrimary);
+        rowBtn->addItem(new AntButton(QStringLiteral("Cancel")));
+        cl->addSpacing(12);
+        cl->addWidget(rowBtn);
+
     }
 
     layout->addStretch();
@@ -478,13 +490,10 @@ QWidget* createSpacePage(QWidget* /*owner*/)
 
 QWidget* createSplitterPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic Splitter"));
+        auto* card = makeCard(layout, QStringLiteral("Basic Splitter"));
         auto* cl = card->bodyLayout();
         cl->setSpacing(0);
 
@@ -502,7 +511,7 @@ QWidget* createSplitterPage(QWidget* /*owner*/)
         frameLayout->addWidget(splitter);
 
         cl->addWidget(frame);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();

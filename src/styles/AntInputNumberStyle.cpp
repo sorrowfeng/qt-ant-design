@@ -107,22 +107,8 @@ QColor borderColorFor(const AntInputNumber* input)
 
 QColor backgroundColorFor(const AntInputNumber* input)
 {
-    const auto& token = antTheme->tokens();
-    if (!input || !input->isEnabled())
-    {
-        return token.colorBgContainerDisabled;
-    }
-    switch (input->variant())
-    {
-    case Ant::Variant::Filled:
-        return input->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary;
-    case Ant::Variant::Borderless:
-    case Ant::Variant::Underlined:
-        return QColor(0, 0, 0, 0);
-    case Ant::Variant::Outlined:
-    default:
-        return token.colorBgContainer;
-    }
+    return AntStyleBase::variantBackgroundColor(antTheme->tokens(), input->variant(),
+        input->isEnabled(), input->isHoveredState(), false, false);
 }
 
 bool handlersVisibleFor(const AntInputNumber* input)

@@ -1,6 +1,6 @@
 # Project Status
 
-Updated: `2026-07-16`
+Updated: `2026-08-30`
 
 This snapshot records the current state after the Showcase, ColorPicker popup, AntWindow outline and desktop-window polish, feedback popup anchoring/multi-window scoping, official Ant Design Icon resource work, the 2026-04-30 interaction/motion parity pass, Qt5/Qt6 static/shared build-system support, installed package coverage, lifecycle stress coverage, README component screenshot gallery, the expanded Qt5/Qt6 visual parity atlas check, the real-example Qt5/Qt6 page traversal comparison, the Windows High DPI scaling pass, and the completed 2026-07-16 P0-P2 code-audit remediation pass.
 
@@ -8,17 +8,17 @@ This snapshot records the current state after the Showcase, ColorPicker popup, A
 
 | Area | Status |
 | --- | --- |
-| Ant Design standard coverage | `70 / 70` top-level components covered |
-| Public Qt component count | `89` public components |
-| Widget headers | `110` headers in `src/widgets`: `89` public component headers, `19` Qt-style alias headers, installed non-component helper `AntWindowFrame`, and internal non-installed popup helper `AntSelectPopup` |
+| Ant Design standard coverage | Ant Design v6 parity: `70 / 70` standard components plus v6 additions `AntBorderBeam` (6.4) and `AntListy` (6.6); upstream gap list in `docs/porting-todo.md` |
+| Public Qt component count | `91` public components |
+| Widget headers | `112` headers in `src/widgets`: `91` public component headers, `19` Qt-style alias headers, installed non-component helper `AntWindowFrame`, and internal non-installed popup helper `AntSelectPopup` |
 | Qt / desktop extensions | `19` components |
-| Style architecture | `67` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
-| Example coverage | `89 / 89` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
+| Style architecture | `68` `Ant*Style` classes, plus custom-paint/helper components where a style class is not useful |
+| Example coverage | `91 / 91` public components, plus the standalone `Showcase` page; `AntDockManager` is demonstrated on the DockWidget page |
 | Dedicated examples intentionally absent | None |
-| Tests | Current Windows top-level inventory is `155` CTest entries when `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON`: `51` deep/system entries plus `104` per-widget smoke entries. The latest Qt6 Debug full run on 2026-07-16 passed `155 / 155` in `379.87s`; the final Qt5 P1/P2 targeted matrix passed `5 / 5`, and nine key targets linked to the MSVC ASan-instrumented library passed `9 / 9` |
+| Tests | Current Windows top-level inventory is `158` CTest entries when `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS=ON`: `52` deep/system entries plus `106` per-widget smoke entries (the `2026-08-29` `AntBorderBeam`/`AntListy` additions raised both counts). The latest Qt6 Debug full run on 2026-07-16 passed `155 / 155` in `379.87s` under the then-current inventory; the final Qt5 P1/P2 targeted matrix passed `5 / 5`, and nine key targets linked to the MSVC ASan-instrumented library passed `9 / 9` |
 | Build contract | Qt 6.5.0+ or Qt 5.15.2+ is enforced for source and installed-package consumers; manual CMake supports 3.16+, while `CMakePresets.json` requires 3.21+ |
 | CI definition | Windows Qt5 Debug static plus Qt6 Debug static/Release shared and install smoke/consumer, Linux Qt5 Debug static ASan+UBSan plus Qt5 Release shared, and macOS Qt6 Release shared are configured; this snapshot does not claim the newly expanded remote matrix has run successfully |
-| Official icon resources | `831` SVG files from `@ant-design/icons-svg@4.4.2` |
+| Official icon resources | `848` SVG files from `@ant-design/icons-svg@4.5.0` |
 | README component gallery | `176` committed PNGs: light/dark screenshots for `88` visual component rows; `AntDockManager` is demonstrated through the DockWidget page |
 | Component/API reference | Online site generated into the `gh_page` branch; local HTML can be generated under `build/docs/` from public widget headers |
 | Reliability coverage | Per-component matrix in `docs/reliability-coverage.md`; every public component has behavior/API, lifecycle, meta, theme, and render coverage |
@@ -326,9 +326,9 @@ The component visual audit matrix in `docs/visual-audit.md` is current:
 
 Inventory:
 
-- Total: `831`
+- Total: `848`
 - Outlined: `447`
-- Filled: `234`
+- Filled: `251`
 - TwoTone: `150`
 
 ## Verification
@@ -342,7 +342,7 @@ ctest --test-dir build -C Debug --output-on-failure
 
 Current result: `155 / 155` passed in `379.87s`, including `51` deep/system entries, `104` per-widget smoke entries, visual/High-DPI checks, installed consumer execution, example close stress, real example page traversal, System32 loader policy, CI policy, and the real parent-project integration test. `TestAntBuildSystem` accounted for `247.04s` while configuring and building the generated parent project.
 
-Current source inventory: a Windows top-level build registers `51` deep/system CTest entries. Enabling `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS` adds `104` per-widget compile/construct/render entries labeled `widget-smoke`, for `155` total. Non-Windows configurations omit the Windows-only `TestAntExampleGuiSubsystem` and therefore register one fewer deep/system entry under otherwise equivalent top-level options.
+Current source inventory: a Windows top-level build registers `52` deep/system CTest entries. Enabling `QT_ANT_DESIGN_BUILD_WIDGET_SMOKE_TESTS` adds `106` per-widget compile/construct/render entries labeled `widget-smoke` (including `AntBorderBeam` and `AntListy`), for `158` total. Non-Windows configurations omit the Windows-only `TestAntExampleGuiSubsystem` and therefore register one fewer deep/system entry under otherwise equivalent top-level options.
 
 Additional P1/P2 validation: the final Qt5 targeted matrix passed `5 / 5` in `11.97s`; the Release shared install consumer passed `1 / 1` in `7.77s`; nine key tests linked to the MSVC ASan-instrumented library passed `9 / 9` in `31.09s`; and a fresh ASan `add_subdirectory()` parent successfully built and ran `AntParentConsumer`. Local UBSan and the configured remote CI matrix were not run.
 
@@ -368,7 +368,7 @@ cmake --build build\structure-check --config Debug --target TestAntWidgetSmoke_A
 ctest --test-dir build\structure-check -C Debug -L widget-smoke --output-on-failure --timeout 60
 ```
 
-Historical result: the example built and smoke-launched, `TestAntWidgetSmoke_All` built, and `104 / 104` per-widget smoke CTest entries passed on `2026-06-24`. At that revision, `ctest -N` reported `151` total configured entries. Later additions raised the current source inventory to `155`; use the `QT_ANT_DESIGN_*` option names shown in the current build contract for new commands.
+Historical result: the example built and smoke-launched, `TestAntWidgetSmoke_All` built, and `104 / 104` per-widget smoke CTest entries passed on `2026-06-24`. At that revision, `ctest -N` reported `151` total configured entries. Later additions raised the current source inventory to `158`; use the `QT_ANT_DESIGN_*` option names shown in the current build contract for new commands.
 
 Historical build-system / install targeted validation (recorded before the current AUD-009/AUD-010 expansion):
 

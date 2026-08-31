@@ -2,6 +2,7 @@
 
 #include <QVBoxLayout>
 
+#include "widgets/AntCard.h"
 #include "widgets/AntScrollArea.h"
 #include "widgets/AntWidget.h"
 
@@ -22,6 +23,22 @@ QWidget* wrapPage(QWidget* page)
     scroll->setWidget(page);
     layout->addWidget(scroll);
     return host;
+}
+
+PageScaffold makePage()
+{
+    auto* page = new QWidget();
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(32, 24, 32, 24);
+    layout->setSpacing(16);
+    return {page, layout};
+}
+
+AntCard* makeCard(QVBoxLayout* layout, const QString& title)
+{
+    auto* card = new AntCard(title);
+    layout->addWidget(card);
+    return card;
 }
 
 AntTypography* makeText(const QString& text, QWidget* parent, Ant::TypographyType type)

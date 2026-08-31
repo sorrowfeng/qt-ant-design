@@ -1,12 +1,12 @@
 # Ant Design Icon Inventory
 
-Generated from `@ant-design/icons-svg@4.4.2`, the SVG source package used by Ant Design icons. Package metadata reports MIT license and the upstream repository [`ant-design/ant-design-icons`](https://github.com/ant-design/ant-design-icons).
+Generated from `@ant-design/icons-svg@4.5.0`, the SVG source package used by Ant Design icons. Package metadata reports MIT license and the upstream repository [`ant-design/ant-design-icons`](https://github.com/ant-design/ant-design-icons).
 
 ## Summary
 
-- Total: `831`
+- Total: `848`
 - Outlined: `447`
-- Filled: `234`
+- Filled: `251`
 - TwoTone: `150`
 
 Use these names with `AntIcon(QStringLiteral("IconNameOutlined"))`, `AntIcon(QStringLiteral("IconNameFilled"))`, or `AntIcon(QStringLiteral("IconNameTwoTone"))`.
@@ -19,24 +19,24 @@ Implementation status: all listed SVG files are bundled under `resources/icons/a
 - `AlignRightOutlined`, `AlipayCircleOutlined`, `AlipayOutlined`, `AliwangwangOutlined`, `AliyunOutlined`, `AmazonOutlined`
 - `AndroidOutlined`, `AntCloudOutlined`, `AntDesignOutlined`, `ApartmentOutlined`, `ApiOutlined`, `AppleOutlined`
 - `AppstoreAddOutlined`, `AppstoreOutlined`, `AreaChartOutlined`, `ArrowDownOutlined`, `ArrowLeftOutlined`, `ArrowRightOutlined`
-- `ArrowUpOutlined`, `ArrowsAltOutlined`, `AudioMutedOutlined`, `AudioOutlined`, `AuditOutlined`, `BackwardOutlined`
+- `ArrowsAltOutlined`, `ArrowUpOutlined`, `AudioMutedOutlined`, `AudioOutlined`, `AuditOutlined`, `BackwardOutlined`
 - `BaiduOutlined`, `BankOutlined`, `BarChartOutlined`, `BarcodeOutlined`, `BarsOutlined`, `BehanceOutlined`
 - `BehanceSquareOutlined`, `BellOutlined`, `BgColorsOutlined`, `BilibiliOutlined`, `BlockOutlined`, `BoldOutlined`
-- `BookOutlined`, `BorderBottomOutlined`, `BorderHorizontalOutlined`, `BorderInnerOutlined`, `BorderLeftOutlined`, `BorderOuterOutlined`
-- `BorderOutlined`, `BorderRightOutlined`, `BorderTopOutlined`, `BorderVerticleOutlined`, `BorderlessTableOutlined`, `BoxPlotOutlined`
+- `BookOutlined`, `BorderBottomOutlined`, `BorderHorizontalOutlined`, `BorderInnerOutlined`, `BorderLeftOutlined`, `BorderlessTableOutlined`
+- `BorderOuterOutlined`, `BorderOutlined`, `BorderRightOutlined`, `BorderTopOutlined`, `BorderVerticleOutlined`, `BoxPlotOutlined`
 - `BranchesOutlined`, `BugOutlined`, `BuildOutlined`, `BulbOutlined`, `CalculatorOutlined`, `CalendarOutlined`
-- `CameraOutlined`, `CarOutlined`, `CaretDownOutlined`, `CaretLeftOutlined`, `CaretRightOutlined`, `CaretUpOutlined`
+- `CameraOutlined`, `CaretDownOutlined`, `CaretLeftOutlined`, `CaretRightOutlined`, `CaretUpOutlined`, `CarOutlined`
 - `CarryOutOutlined`, `CheckCircleOutlined`, `CheckOutlined`, `CheckSquareOutlined`, `ChromeOutlined`, `CiCircleOutlined`
 - `CiOutlined`, `ClearOutlined`, `ClockCircleOutlined`, `CloseCircleOutlined`, `CloseOutlined`, `CloseSquareOutlined`
 - `CloudDownloadOutlined`, `CloudOutlined`, `CloudServerOutlined`, `CloudSyncOutlined`, `CloudUploadOutlined`, `ClusterOutlined`
-- `CodeOutlined`, `CodeSandboxOutlined`, `CodepenCircleOutlined`, `CodepenOutlined`, `CoffeeOutlined`, `ColumnHeightOutlined`
+- `CodeOutlined`, `CodepenCircleOutlined`, `CodepenOutlined`, `CodeSandboxOutlined`, `CoffeeOutlined`, `ColumnHeightOutlined`
 - `ColumnWidthOutlined`, `CommentOutlined`, `CompassOutlined`, `CompressOutlined`, `ConsoleSqlOutlined`, `ContactsOutlined`
 - `ContainerOutlined`, `ControlOutlined`, `CopyOutlined`, `CopyrightCircleOutlined`, `CopyrightOutlined`, `CreditCardOutlined`
-- `CrownOutlined`, `CustomerServiceOutlined`, `DashOutlined`, `DashboardOutlined`, `DatabaseOutlined`, `DeleteColumnOutlined`
+- `CrownOutlined`, `CustomerServiceOutlined`, `DashboardOutlined`, `DashOutlined`, `DatabaseOutlined`, `DeleteColumnOutlined`
 - `DeleteOutlined`, `DeleteRowOutlined`, `DeliveredProcedureOutlined`, `DeploymentUnitOutlined`, `DesktopOutlined`, `DiffOutlined`
 - `DingdingOutlined`, `DingtalkOutlined`, `DisconnectOutlined`, `DiscordOutlined`, `DislikeOutlined`, `DockerOutlined`
 - `DollarCircleOutlined`, `DollarOutlined`, `DotChartOutlined`, `DotNetOutlined`, `DoubleLeftOutlined`, `DoubleRightOutlined`
-- `DownCircleOutlined`, `DownOutlined`, `DownSquareOutlined`, `DownloadOutlined`, `DragOutlined`, `DribbbleOutlined`
+- `DownCircleOutlined`, `DownloadOutlined`, `DownOutlined`, `DownSquareOutlined`, `DragOutlined`, `DribbbleOutlined`
 - `DribbbleSquareOutlined`, `DropboxOutlined`, `EditOutlined`, `EllipsisOutlined`, `EnterOutlined`, `EnvironmentOutlined`
 - `EuroCircleOutlined`, `EuroOutlined`, `ExceptionOutlined`, `ExclamationCircleOutlined`, `ExclamationOutlined`, `ExpandAltOutlined`
 - `ExpandOutlined`, `ExperimentOutlined`, `ExportOutlined`, `EyeInvisibleOutlined`, `EyeOutlined`, `FacebookOutlined`
@@ -45,8 +45,8 @@ Implementation status: all listed SVG files are bundled under `resources/icons/a
 - `FileImageOutlined`, `FileJpgOutlined`, `FileMarkdownOutlined`, `FileOutlined`, `FilePdfOutlined`, `FilePptOutlined`
 - `FileProtectOutlined`, `FileSearchOutlined`, `FileSyncOutlined`, `FileTextOutlined`, `FileUnknownOutlined`, `FileWordOutlined`
 - `FileZipOutlined`, `FilterOutlined`, `FireOutlined`, `FlagOutlined`, `FolderAddOutlined`, `FolderOpenOutlined`
-- `FolderOutlined`, `FolderViewOutlined`, `FontColorsOutlined`, `FontSizeOutlined`, `ForkOutlined`, `FormOutlined`
-- `FormatPainterOutlined`, `ForwardOutlined`, `FrownOutlined`, `FullscreenExitOutlined`, `FullscreenOutlined`, `FunctionOutlined`
+- `FolderOutlined`, `FolderViewOutlined`, `FontColorsOutlined`, `FontSizeOutlined`, `ForkOutlined`, `FormatPainterOutlined`
+- `FormOutlined`, `ForwardOutlined`, `FrownOutlined`, `FullscreenExitOutlined`, `FullscreenOutlined`, `FunctionOutlined`
 - `FundOutlined`, `FundProjectionScreenOutlined`, `FundViewOutlined`, `FunnelPlotOutlined`, `GatewayOutlined`, `GifOutlined`
 - `GiftOutlined`, `GithubOutlined`, `GitlabOutlined`, `GlobalOutlined`, `GoldOutlined`, `GoogleOutlined`
 - `GooglePlusOutlined`, `GroupOutlined`, `HarmonyOSOutlined`, `HddOutlined`, `HeartOutlined`, `HeatMapOutlined`
@@ -55,7 +55,7 @@ Implementation status: all listed SVG files are bundled under `resources/icons/a
 - `InsertRowAboveOutlined`, `InsertRowBelowOutlined`, `InsertRowLeftOutlined`, `InsertRowRightOutlined`, `InstagramOutlined`, `InsuranceOutlined`
 - `InteractionOutlined`, `IssuesCloseOutlined`, `ItalicOutlined`, `JavaOutlined`, `JavaScriptOutlined`, `KeyOutlined`
 - `KubernetesOutlined`, `LaptopOutlined`, `LayoutOutlined`, `LeftCircleOutlined`, `LeftOutlined`, `LeftSquareOutlined`
-- `LikeOutlined`, `LineChartOutlined`, `LineHeightOutlined`, `LineOutlined`, `LinkOutlined`, `LinkedinOutlined`
+- `LikeOutlined`, `LineChartOutlined`, `LineHeightOutlined`, `LineOutlined`, `LinkedinOutlined`, `LinkOutlined`
 - `LinuxOutlined`, `Loading3QuartersOutlined`, `LoadingOutlined`, `LockOutlined`, `LoginOutlined`, `LogoutOutlined`
 - `MacCommandOutlined`, `MailOutlined`, `ManOutlined`, `MedicineBoxOutlined`, `MediumOutlined`, `MediumWorkmarkOutlined`
 - `MehOutlined`, `MenuFoldOutlined`, `MenuOutlined`, `MenuUnfoldOutlined`, `MergeCellsOutlined`, `MergeOutlined`
@@ -68,8 +68,8 @@ Implementation status: all listed SVG files are bundled under `resources/icons/a
 - `PoundCircleOutlined`, `PoundOutlined`, `PoweroffOutlined`, `PrinterOutlined`, `ProductOutlined`, `ProfileOutlined`
 - `ProjectOutlined`, `PropertySafetyOutlined`, `PullRequestOutlined`, `PushpinOutlined`, `PythonOutlined`, `QqOutlined`
 - `QrcodeOutlined`, `QuestionCircleOutlined`, `QuestionOutlined`, `RadarChartOutlined`, `RadiusBottomleftOutlined`, `RadiusBottomrightOutlined`
-- `RadiusSettingOutlined`, `RadiusUpleftOutlined`, `RadiusUprightOutlined`, `ReadOutlined`, `ReconciliationOutlined`, `RedEnvelopeOutlined`
-- `RedditOutlined`, `RedoOutlined`, `ReloadOutlined`, `RestOutlined`, `RetweetOutlined`, `RightCircleOutlined`
+- `RadiusSettingOutlined`, `RadiusUpleftOutlined`, `RadiusUprightOutlined`, `ReadOutlined`, `ReconciliationOutlined`, `RedditOutlined`
+- `RedEnvelopeOutlined`, `RedoOutlined`, `ReloadOutlined`, `RestOutlined`, `RetweetOutlined`, `RightCircleOutlined`
 - `RightOutlined`, `RightSquareOutlined`, `RiseOutlined`, `RobotOutlined`, `RocketOutlined`, `RollbackOutlined`
 - `RotateLeftOutlined`, `RotateRightOutlined`, `RubyOutlined`, `SafetyCertificateOutlined`, `SafetyOutlined`, `SaveOutlined`
 - `ScanOutlined`, `ScheduleOutlined`, `ScissorOutlined`, `SearchOutlined`, `SecurityScanOutlined`, `SelectOutlined`
@@ -80,67 +80,70 @@ Implementation status: all listed SVG files are bundled under `resources/icons/a
 - `SpotifyOutlined`, `StarOutlined`, `StepBackwardOutlined`, `StepForwardOutlined`, `StockOutlined`, `StopOutlined`
 - `StrikethroughOutlined`, `SubnodeOutlined`, `SunOutlined`, `SwapLeftOutlined`, `SwapOutlined`, `SwapRightOutlined`
 - `SwitcherOutlined`, `SyncOutlined`, `TableOutlined`, `TabletOutlined`, `TagOutlined`, `TagsOutlined`
-- `TaobaoCircleOutlined`, `TaobaoOutlined`, `TeamOutlined`, `ThunderboltOutlined`, `TikTokOutlined`, `ToTopOutlined`
-- `ToolOutlined`, `TrademarkCircleOutlined`, `TrademarkOutlined`, `TransactionOutlined`, `TranslationOutlined`, `TrophyOutlined`
+- `TaobaoCircleOutlined`, `TaobaoOutlined`, `TeamOutlined`, `ThunderboltOutlined`, `TikTokOutlined`, `ToolOutlined`
+- `ToTopOutlined`, `TrademarkCircleOutlined`, `TrademarkOutlined`, `TransactionOutlined`, `TranslationOutlined`, `TrophyOutlined`
 - `TruckOutlined`, `TwitchOutlined`, `TwitterOutlined`, `UnderlineOutlined`, `UndoOutlined`, `UngroupOutlined`
-- `UnlockOutlined`, `UnorderedListOutlined`, `UpCircleOutlined`, `UpOutlined`, `UpSquareOutlined`, `UploadOutlined`
-- `UsbOutlined`, `UserAddOutlined`, `UserDeleteOutlined`, `UserOutlined`, `UserSwitchOutlined`, `UsergroupAddOutlined`
-- `UsergroupDeleteOutlined`, `VerifiedOutlined`, `VerticalAlignBottomOutlined`, `VerticalAlignMiddleOutlined`, `VerticalAlignTopOutlined`, `VerticalLeftOutlined`
+- `UnlockOutlined`, `UnorderedListOutlined`, `UpCircleOutlined`, `UploadOutlined`, `UpOutlined`, `UpSquareOutlined`
+- `UsbOutlined`, `UserAddOutlined`, `UserDeleteOutlined`, `UsergroupAddOutlined`, `UsergroupDeleteOutlined`, `UserOutlined`
+- `UserSwitchOutlined`, `VerifiedOutlined`, `VerticalAlignBottomOutlined`, `VerticalAlignMiddleOutlined`, `VerticalAlignTopOutlined`, `VerticalLeftOutlined`
 - `VerticalRightOutlined`, `VideoCameraAddOutlined`, `VideoCameraOutlined`, `WalletOutlined`, `WarningOutlined`, `WechatOutlined`
 - `WechatWorkOutlined`, `WeiboCircleOutlined`, `WeiboOutlined`, `WeiboSquareOutlined`, `WhatsAppOutlined`, `WifiOutlined`
 - `WindowsOutlined`, `WomanOutlined`, `XOutlined`, `YahooOutlined`, `YoutubeOutlined`, `YuqueOutlined`
 - `ZhihuOutlined`, `ZoomInOutlined`, `ZoomOutOutlined`
 
-## Filled Icons (234)
+## Filled Icons (251)
 
 - `AccountBookFilled`, `AlertFilled`, `AlipayCircleFilled`, `AlipaySquareFilled`, `AliwangwangFilled`, `AmazonCircleFilled`
-- `AmazonSquareFilled`, `AndroidFilled`, `ApiFilled`, `AppleFilled`, `AppstoreFilled`, `AudioFilled`
-- `BackwardFilled`, `BankFilled`, `BehanceCircleFilled`, `BehanceSquareFilled`, `BellFilled`, `BilibiliFilled`
-- `BookFilled`, `BoxPlotFilled`, `BugFilled`, `BuildFilled`, `BulbFilled`, `CalculatorFilled`
-- `CalendarFilled`, `CameraFilled`, `CarFilled`, `CaretDownFilled`, `CaretLeftFilled`, `CaretRightFilled`
-- `CaretUpFilled`, `CarryOutFilled`, `CheckCircleFilled`, `CheckSquareFilled`, `ChromeFilled`, `CiCircleFilled`
-- `ClockCircleFilled`, `CloseCircleFilled`, `CloseSquareFilled`, `CloudFilled`, `CodeFilled`, `CodeSandboxCircleFilled`
-- `CodeSandboxSquareFilled`, `CodepenCircleFilled`, `CodepenSquareFilled`, `CompassFilled`, `ContactsFilled`, `ContainerFilled`
-- `ControlFilled`, `CopyFilled`, `CopyrightCircleFilled`, `CreditCardFilled`, `CrownFilled`, `CustomerServiceFilled`
-- `DashboardFilled`, `DatabaseFilled`, `DeleteFilled`, `DiffFilled`, `DingtalkCircleFilled`, `DingtalkSquareFilled`
-- `DiscordFilled`, `DislikeFilled`, `DollarCircleFilled`, `DownCircleFilled`, `DownSquareFilled`, `DribbbleCircleFilled`
-- `DribbbleSquareFilled`, `DropboxCircleFilled`, `DropboxSquareFilled`, `EditFilled`, `EnvironmentFilled`, `EuroCircleFilled`
-- `ExclamationCircleFilled`, `ExperimentFilled`, `EyeFilled`, `EyeInvisibleFilled`, `FacebookFilled`, `FastBackwardFilled`
-- `FastForwardFilled`, `FileAddFilled`, `FileExcelFilled`, `FileExclamationFilled`, `FileFilled`, `FileImageFilled`
-- `FileMarkdownFilled`, `FilePdfFilled`, `FilePptFilled`, `FileTextFilled`, `FileUnknownFilled`, `FileWordFilled`
-- `FileZipFilled`, `FilterFilled`, `FireFilled`, `FlagFilled`, `FolderAddFilled`, `FolderFilled`
-- `FolderOpenFilled`, `FormatPainterFilled`, `ForwardFilled`, `FrownFilled`, `FundFilled`, `FunnelPlotFilled`
-- `GiftFilled`, `GithubFilled`, `GitlabFilled`, `GoldFilled`, `GoldenFilled`, `GoogleCircleFilled`
-- `GooglePlusCircleFilled`, `GooglePlusSquareFilled`, `GoogleSquareFilled`, `HddFilled`, `HeartFilled`, `HighlightFilled`
-- `HomeFilled`, `HourglassFilled`, `Html5Filled`, `IdcardFilled`, `IeCircleFilled`, `IeSquareFilled`
+- `AmazonSquareFilled`, `AndroidFilled`, `AnthropicFilled`, `ApiFilled`, `AppleFilled`, `AppstoreFilled`
+- `AudioFilled`, `BackwardFilled`, `BankFilled`, `BehanceCircleFilled`, `BehanceSquareFilled`, `BellFilled`
+- `BilibiliFilled`, `BookFilled`, `BoxPlotFilled`, `BugFilled`, `BuildFilled`, `BulbFilled`
+- `CalculatorFilled`, `CalendarFilled`, `CameraFilled`, `CaretDownFilled`, `CaretLeftFilled`, `CaretRightFilled`
+- `CaretUpFilled`, `CarFilled`, `CarryOutFilled`, `CheckCircleFilled`, `CheckSquareFilled`, `ChromeFilled`
+- `CiCircleFilled`, `ClaudeFilled`, `ClockCircleFilled`, `CloseCircleFilled`, `CloseSquareFilled`, `CloudFilled`
+- `CodeFilled`, `CodepenCircleFilled`, `CodepenSquareFilled`, `CodeSandboxCircleFilled`, `CodeSandboxSquareFilled`, `CompassFilled`
+- `ContactsFilled`, `ContainerFilled`, `ControlFilled`, `CopyFilled`, `CopyrightCircleFilled`, `CreditCardFilled`
+- `CrownFilled`, `CustomerServiceFilled`, `DashboardFilled`, `DatabaseFilled`, `DeepSeekFilled`, `DeleteFilled`
+- `DiffFilled`, `DingtalkCircleFilled`, `DingtalkSquareFilled`, `DiscordFilled`, `DislikeFilled`, `DollarCircleFilled`
+- `DownCircleFilled`, `DownSquareFilled`, `DribbbleCircleFilled`, `DribbbleSquareFilled`, `DropboxCircleFilled`, `DropboxSquareFilled`
+- `EditFilled`, `ElevenLabsFilled`, `EnvironmentFilled`, `EuroCircleFilled`, `ExclamationCircleFilled`, `ExperimentFilled`
+- `EyeFilled`, `EyeInvisibleFilled`, `FacebookFilled`, `FastBackwardFilled`, `FastForwardFilled`, `FileAddFilled`
+- `FileExcelFilled`, `FileExclamationFilled`, `FileFilled`, `FileImageFilled`, `FileMarkdownFilled`, `FilePdfFilled`
+- `FilePptFilled`, `FileTextFilled`, `FileUnknownFilled`, `FileWordFilled`, `FileZipFilled`, `FilterFilled`
+- `FireFilled`, `FlagFilled`, `FolderAddFilled`, `FolderFilled`, `FolderOpenFilled`, `FormatPainterFilled`
+- `ForwardFilled`, `FrownFilled`, `FundFilled`, `FunnelPlotFilled`, `GeminiFilled`, `GiftFilled`
+- `GithubFilled`, `GitlabFilled`, `GoldenFilled`, `GoldFilled`, `GoogleCircleFilled`, `GooglePlusCircleFilled`
+- `GooglePlusSquareFilled`, `GoogleSquareFilled`, `HddFilled`, `HeartFilled`, `HighlightFilled`, `HomeFilled`
+- `HourglassFilled`, `Html5Filled`, `HuggingFaceFilled`, `IdcardFilled`, `IeCircleFilled`, `IeSquareFilled`
 - `InfoCircleFilled`, `InstagramFilled`, `InsuranceFilled`, `InteractionFilled`, `LayoutFilled`, `LeftCircleFilled`
 - `LeftSquareFilled`, `LikeFilled`, `LinkedinFilled`, `LockFilled`, `MacCommandFilled`, `MailFilled`
-- `MedicineBoxFilled`, `MediumCircleFilled`, `MediumSquareFilled`, `MehFilled`, `MergeFilled`, `MessageFilled`
-- `MinusCircleFilled`, `MinusSquareFilled`, `MobileFilled`, `MoneyCollectFilled`, `MoonFilled`, `MutedFilled`
-- `NotificationFilled`, `OpenAIFilled`, `PauseCircleFilled`, `PayCircleFilled`, `PhoneFilled`, `PictureFilled`
+- `MastodonFilled`, `MedicineBoxFilled`, `MediumCircleFilled`, `MediumSquareFilled`, `MehFilled`, `MergeFilled`
+- `MessageFilled`, `MetaFilled`, `MinusCircleFilled`, `MinusSquareFilled`, `MistralFilled`, `MobileFilled`
+- `MoneyCollectFilled`, `MoonFilled`, `MutedFilled`, `NetflixFilled`, `NotificationFilled`, `OllamaFilled`
+- `OpenAIFilled`, `PauseCircleFilled`, `PayCircleFilled`, `PerplexityFilled`, `PhoneFilled`, `PictureFilled`
 - `PieChartFilled`, `PinterestFilled`, `PlayCircleFilled`, `PlaySquareFilled`, `PlusCircleFilled`, `PlusSquareFilled`
 - `PoundCircleFilled`, `PrinterFilled`, `ProductFilled`, `ProfileFilled`, `ProjectFilled`, `PropertySafetyFilled`
-- `PushpinFilled`, `QqCircleFilled`, `QqSquareFilled`, `QuestionCircleFilled`, `ReadFilled`, `ReconciliationFilled`
-- `RedEnvelopeFilled`, `RedditCircleFilled`, `RedditSquareFilled`, `RestFilled`, `RightCircleFilled`, `RightSquareFilled`
-- `RobotFilled`, `RocketFilled`, `SafetyCertificateFilled`, `SaveFilled`, `ScheduleFilled`, `SecurityScanFilled`
-- `SettingFilled`, `ShopFilled`, `ShoppingFilled`, `SignalFilled`, `SignatureFilled`, `SketchCircleFilled`
-- `SketchSquareFilled`, `SkinFilled`, `SkypeFilled`, `SlackCircleFilled`, `SlackSquareFilled`, `SlidersFilled`
-- `SmileFilled`, `SnippetsFilled`, `SoundFilled`, `SpotifyFilled`, `StarFilled`, `StepBackwardFilled`
-- `StepForwardFilled`, `StopFilled`, `SunFilled`, `SwitcherFilled`, `TabletFilled`, `TagFilled`
-- `TagsFilled`, `TaobaoCircleFilled`, `TaobaoSquareFilled`, `ThunderboltFilled`, `TikTokFilled`, `ToolFilled`
-- `TrademarkCircleFilled`, `TrophyFilled`, `TruckFilled`, `TwitchFilled`, `TwitterCircleFilled`, `TwitterSquareFilled`
-- `UnlockFilled`, `UpCircleFilled`, `UpSquareFilled`, `UsbFilled`, `VideoCameraFilled`, `WalletFilled`
-- `WarningFilled`, `WechatFilled`, `WechatWorkFilled`, `WeiboCircleFilled`, `WeiboSquareFilled`, `WindowsFilled`
-- `XFilled`, `YahooFilled`, `YoutubeFilled`, `YuqueFilled`, `ZhihuCircleFilled`, `ZhihuSquareFilled`
+- `PushpinFilled`, `QqCircleFilled`, `QqSquareFilled`, `QuestionCircleFilled`, `QwenFilled`, `ReadFilled`
+- `ReconciliationFilled`, `RedditCircleFilled`, `RedditSquareFilled`, `RedEnvelopeFilled`, `ReplicateFilled`, `RestFilled`
+- `RightCircleFilled`, `RightSquareFilled`, `RobotFilled`, `RocketFilled`, `SafetyCertificateFilled`, `SaveFilled`
+- `ScheduleFilled`, `SecurityScanFilled`, `SettingFilled`, `ShopFilled`, `ShoppingFilled`, `SignalFilled`
+- `SignatureFilled`, `SketchCircleFilled`, `SketchSquareFilled`, `SkinFilled`, `SkypeFilled`, `SlackCircleFilled`
+- `SlackSquareFilled`, `SlidersFilled`, `SmileFilled`, `SnapchatFilled`, `SnippetsFilled`, `SoundFilled`
+- `SpotifyFilled`, `StarFilled`, `StepBackwardFilled`, `StepForwardFilled`, `StopFilled`, `SunFilled`
+- `SwitcherFilled`, `TabletFilled`, `TagFilled`, `TagsFilled`, `TaobaoCircleFilled`, `TaobaoSquareFilled`
+- `TelegramFilled`, `ThreadsFilled`, `ThunderboltFilled`, `TikTokFilled`, `ToolFilled`, `TrademarkCircleFilled`
+- `TrophyFilled`, `TruckFilled`, `TwitchFilled`, `TwitterCircleFilled`, `TwitterSquareFilled`, `UnlockFilled`
+- `UpCircleFilled`, `UpSquareFilled`, `UsbFilled`, `VideoCameraFilled`, `WalletFilled`, `WarningFilled`
+- `WechatFilled`, `WechatWorkFilled`, `WeiboCircleFilled`, `WeiboSquareFilled`, `WindowsFilled`, `XFilled`
+- `YahooFilled`, `YoutubeFilled`, `YuqueFilled`, `ZhihuCircleFilled`, `ZhihuSquareFilled`
 
 ## TwoTone Icons (150)
 
 - `AccountBookTwoTone`, `AlertTwoTone`, `ApiTwoTone`, `AppstoreTwoTone`, `AudioTwoTone`, `BankTwoTone`
 - `BellTwoTone`, `BookTwoTone`, `BoxPlotTwoTone`, `BugTwoTone`, `BuildTwoTone`, `BulbTwoTone`
-- `CalculatorTwoTone`, `CalendarTwoTone`, `CameraTwoTone`, `CarTwoTone`, `CarryOutTwoTone`, `CheckCircleTwoTone`
+- `CalculatorTwoTone`, `CalendarTwoTone`, `CameraTwoTone`, `CarryOutTwoTone`, `CarTwoTone`, `CheckCircleTwoTone`
 - `CheckSquareTwoTone`, `CiCircleTwoTone`, `CiTwoTone`, `ClockCircleTwoTone`, `CloseCircleTwoTone`, `CloseSquareTwoTone`
 - `CloudTwoTone`, `CodeTwoTone`, `CompassTwoTone`, `ContactsTwoTone`, `ContainerTwoTone`, `ControlTwoTone`
-- `CopyTwoTone`, `CopyrightCircleTwoTone`, `CopyrightTwoTone`, `CreditCardTwoTone`, `CrownTwoTone`, `CustomerServiceTwoTone`
+- `CopyrightCircleTwoTone`, `CopyrightTwoTone`, `CopyTwoTone`, `CreditCardTwoTone`, `CrownTwoTone`, `CustomerServiceTwoTone`
 - `DashboardTwoTone`, `DatabaseTwoTone`, `DeleteTwoTone`, `DiffTwoTone`, `DislikeTwoTone`, `DollarCircleTwoTone`
 - `DollarTwoTone`, `DownCircleTwoTone`, `DownSquareTwoTone`, `EditTwoTone`, `EnvironmentTwoTone`, `EuroCircleTwoTone`
 - `EuroTwoTone`, `ExclamationCircleTwoTone`, `ExperimentTwoTone`, `EyeInvisibleTwoTone`, `EyeTwoTone`, `FileAddTwoTone`
@@ -156,7 +159,7 @@ Implementation status: all listed SVG files are bundled under `resources/icons/a
 - `PoundCircleTwoTone`, `PrinterTwoTone`, `ProfileTwoTone`, `ProjectTwoTone`, `PropertySafetyTwoTone`, `PushpinTwoTone`
 - `QuestionCircleTwoTone`, `ReconciliationTwoTone`, `RedEnvelopeTwoTone`, `RestTwoTone`, `RightCircleTwoTone`, `RightSquareTwoTone`
 - `RocketTwoTone`, `SafetyCertificateTwoTone`, `SaveTwoTone`, `ScheduleTwoTone`, `SecurityScanTwoTone`, `SettingTwoTone`
-- `ShopTwoTone`, `ShoppingTwoTone`, `SkinTwoTone`, `SlidersTwoTone`, `SmileTwoTone`, `SnippetsTwoTone`
-- `SoundTwoTone`, `StarTwoTone`, `StopTwoTone`, `SwitcherTwoTone`, `TabletTwoTone`, `TagTwoTone`
-- `TagsTwoTone`, `ThunderboltTwoTone`, `ToolTwoTone`, `TrademarkCircleTwoTone`, `TrophyTwoTone`, `UnlockTwoTone`
+- `ShoppingTwoTone`, `ShopTwoTone`, `SkinTwoTone`, `SlidersTwoTone`, `SmileTwoTone`, `SnippetsTwoTone`
+- `SoundTwoTone`, `StarTwoTone`, `StopTwoTone`, `SwitcherTwoTone`, `TabletTwoTone`, `TagsTwoTone`
+- `TagTwoTone`, `ThunderboltTwoTone`, `ToolTwoTone`, `TrademarkCircleTwoTone`, `TrophyTwoTone`, `UnlockTwoTone`
 - `UpCircleTwoTone`, `UpSquareTwoTone`, `UsbTwoTone`, `VideoCameraTwoTone`, `WalletTwoTone`, `WarningTwoTone`

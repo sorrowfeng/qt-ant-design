@@ -22,6 +22,7 @@ private slots:
     void publicWidgetHeadersAreInBehaviorReliabilityTests();
     void qtCasingWidgetHeadersUseCanonicalNames();
     void qtCasingAliasesDoNotKeepLegacyTypeNames();
+    void smokeEntryCountMatchesDocumentation();
 };
 
 namespace
@@ -94,20 +95,29 @@ void TestAntCoverageInventory::publicWidgetHeadersAreInCoverageTests()
     const QSet<QString> publicHeaders = publicWidgetHeaders();
     QVERIFY(!publicHeaders.isEmpty());
 
-    const QSet<QString> objectTreeHeaders = includedWidgetHeaders(QStringLiteral("TestAntObjectTree.cpp"));
-    const QSet<QString> metaPropertyHeaders = includedWidgetHeaders(QStringLiteral("TestAntMetaProperties.cpp"));
-    const QSet<QString> themeLifecycleHeaders = includedWidgetHeaders(QStringLiteral("TestAntThemeLifecycle.cpp"));
-    const QSet<QString> renderSmokeHeaders = includedWidgetHeaders(QStringLiteral("TestAntRenderSmoke.cpp"));
+    // 权威控件清单（WidgetInventory.h）是公开控件头的单一来源：它必须
+    // include 所有公开控件头。表驱动测试（MetaProperties/ThemeLifecycle/
+    // ObjectTree/RenderSmoke/Accessibility）都从它派生控件集合，因此只需
+    // 守护 WidgetInventory.h 一处即可防止清单漂移。
+    const QSet<QString> inventoryHeaders = includedWidgetHeaders(QStringLiteral("WidgetInventory.h"));
 
-    const QStringList missingObjectTree = (publicHeaders - objectTreeHeaders).values();
-    const QStringList missingMetaProperties = (publicHeaders - metaPropertyHeaders).values();
-    const QStringList missingThemeLifecycle = (publicHeaders - themeLifecycleHeaders).values();
-    const QStringList missingRenderSmoke = (publicHeaders - renderSmokeHeaders).values();
+    const QStringList missingInventory = (publicHeaders - inventoryHeaders).values();
+    QCOMPARE(missingInventory, QStringList());
 
-    QCOMPARE(missingObjectTree, QStringList());
-    QCOMPARE(missingMetaProperties, QStringList());
-    QCOMPARE(missingThemeLifecycle, QStringList());
-    QCOMPARE(missingRenderSmoke, QStringList());
+    // 表驱动测试必须引入权威清单，否则它们会各自维护一份已漂移的副本。
+    const QSet<QString> coverageFiles = {
+        QStringLiteral("TestAntObjectTree.cpp"),
+        QStringLiteral("TestAntMetaProperties.cpp"),
+        QStringLiteral("TestAntThemeLifecycle.cpp"),
+        QStringLiteral("TestAntRenderSmoke.cpp"),
+        QStringLiteral("TestAntAccessibility.cpp"),
+    };
+    for (const QString& fileName : coverageFiles)
+    {
+        const QString text = readTextFile(QStringLiteral(ANT_TESTS_DIR) + QLatin1Char('/') + fileName);
+        QVERIFY2(text.contains(QStringLiteral("#include \"WidgetInventory.h\"")),
+                 qPrintable(QStringLiteral("%1 must include the shared WidgetInventory.h").arg(fileName)));
+    }
 }
 
 void TestAntCoverageInventory::publicWidgetHeadersAreInBehaviorReliabilityTests()
@@ -121,6 +131,7 @@ void TestAntCoverageInventory::publicWidgetHeadersAreInBehaviorReliabilityTests(
         QStringLiteral("TestAntObjectTree.cpp"),
         QStringLiteral("TestAntRenderSmoke.cpp"),
         QStringLiteral("TestAntThemeLifecycle.cpp"),
+        QStringLiteral("TestAntAccessibility.cpp"),
     };
 
     QSet<QString> behaviorHeaders;
@@ -172,6 +183,38 @@ void TestAntCoverageInventory::qtCasingAliasesDoNotKeepLegacyTypeNames()
                      qPrintable(QStringLiteral("%1 must not keep legacy type alias %2").arg(it.key(), legacyName)));
         }
     }
+}
+
+void TestAntCoverageInventory::smokeEntryCountMatchesDocumentation()
+{
+    // Count the entries in the CMake smoke list.
+    const QString cmakeText = readTextFile(QStringLiteral(ANT_TESTS_DIR) + QLatin1Char('/') + QStringLiteral("CMakeLists.txt"));
+    QVERIFY2(!cmakeText.isEmpty(), "Could not read tests/CMakeLists.txt");
+
+    const QRegularExpression listPattern(QStringLiteral("set\\(ANT_WIDGET_SMOKE_TESTS([\\s\\S]*?)^\\s*\\)"),
+                                        QRegularExpression::MultilineOption);
+    const QRegularExpressionMatch listMatch = listPattern.match(cmakeText);
+    QVERIFY2(listMatch.hasMatch(), "ANT_WIDGET_SMOKE_TESTS block not found in tests/CMakeLists.txt");
+
+    QStringList entries;
+    const QRegularExpression entryPattern(QStringLiteral("^[ \t]*\"(Ant[^\"]+)\\|"),
+                                         QRegularExpression::MultilineOption);
+    QRegularExpressionMatchIterator entryIt = entryPattern.globalMatch(listMatch.captured(1));
+    while (entryIt.hasNext())
+    {
+        entries.append(entryIt.next().captured(1));
+    }
+    QVERIFY2(!entries.isEmpty(), "No smoke entries parsed from tests/CMakeLists.txt");
+
+    // The documentation must declare the same count so numbers cannot drift.
+    const QDir projectRoot(QDir(QStringLiteral(ANT_WIDGETS_DIR)).absoluteFilePath(QStringLiteral("../..")));
+    const QString docText = readTextFile(projectRoot.absoluteFilePath(QStringLiteral("docs/reliability-coverage.md")));
+    QVERIFY2(!docText.isEmpty(), "Could not read docs/reliability-coverage.md");
+
+    const QRegularExpression docPattern(QStringLiteral("generates `([0-9]+)` `WidgetSmoke\\.<Type>` entries"));
+    const QRegularExpressionMatch docMatch = docPattern.match(docText);
+    QVERIFY2(docMatch.hasMatch(), "docs/reliability-coverage.md does not declare the smoke entry count");
+    QCOMPARE(docMatch.captured(1).toInt(), entries.size());
 }
 
 QTEST_MAIN(TestAntCoverageInventory)

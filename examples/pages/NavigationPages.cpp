@@ -1,5 +1,7 @@
 #include "Pages.h"
 
+#include "PageCommon.h"
+
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QPainter>
@@ -68,13 +70,10 @@ namespace example::pages
 {
 QWidget* createAffixPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Affix"));
+        auto* card = makeCard(layout, QStringLiteral("Affix"));
         auto* cl = topAlignedBody(card);
         cl->setSpacing(16);
 
@@ -89,7 +88,7 @@ QWidget* createAffixPage(QWidget* /*owner*/)
         auto* affix = new AntAffix(page);
         affix->setOffsetTop(10);
         affix->setAffixedWidget(affixedBtn);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -98,12 +97,9 @@ QWidget* createAffixPage(QWidget* /*owner*/)
 
 QWidget* createAnchorPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
-    auto* card = new AntCard(QStringLiteral("Anchor"));
+    auto* card = makeCard(layout, QStringLiteral("Anchor"));
     auto* cl = topAlignedBody(card);
     cl->setSpacing(12);
 
@@ -116,7 +112,6 @@ QWidget* createAnchorPage(QWidget* /*owner*/)
     cl->addWidget(new AnchorContentBlock(QStringLiteral("Part 1 content"), QColor(QStringLiteral("#f0f5ff")), card));
     cl->addWidget(new AnchorContentBlock(QStringLiteral("Part 2 content"), QColor(QStringLiteral("#f6ffed")), card));
     cl->addWidget(new AnchorContentBlock(QStringLiteral("Part 3 content"), QColor(QStringLiteral("#fff7e6")), card));
-    layout->addWidget(card);
 
     layout->addStretch();
     return page;
@@ -124,24 +119,21 @@ QWidget* createAnchorPage(QWidget* /*owner*/)
 
 QWidget* createBreadcrumbPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = topAlignedBody(card);
         auto* basic = new AntBreadcrumb();
         basic->addItem(QStringLiteral("Home"));
         basic->addItem(QStringLiteral("Products"));
         basic->addItem(QStringLiteral("Detail"));
         cl->addWidget(basic);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Separator"));
+        auto* card = makeCard(layout, QStringLiteral("With Separator"));
         auto* cl = topAlignedBody(card);
         auto* custom = new AntBreadcrumb();
         custom->setSeparator(QStringLiteral(">"));
@@ -149,7 +141,7 @@ QWidget* createBreadcrumbPage(QWidget* /*owner*/)
         custom->addItem(QStringLiteral("Application"));
         custom->addItem(QStringLiteral("List"));
         cl->addWidget(custom);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -158,13 +150,10 @@ QWidget* createBreadcrumbPage(QWidget* /*owner*/)
 
 QWidget* createDropdownPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = topAlignedBody(card);
         auto* row = new QHBoxLayout();
         row->setSpacing(16);
@@ -191,7 +180,7 @@ QWidget* createDropdownPage(QWidget* /*owner*/)
         row->addWidget(contextButton);
         row->addStretch();
         cl->addLayout(row);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -200,13 +189,10 @@ QWidget* createDropdownPage(QWidget* /*owner*/)
 
 QWidget* createMenuPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Horizontal"));
+        auto* card = makeCard(layout, QStringLiteral("Horizontal"));
         auto* cl = topAlignedBody(card);
         auto* horizontal = new AntMenu();
         horizontal->setMode(Ant::MenuMode::Horizontal);
@@ -218,11 +204,11 @@ QWidget* createMenuPage(QWidget* /*owner*/)
         horizontal->addSubItem(QStringLiteral("sub"), QStringLiteral("s2"), QStringLiteral("Option 2"));
         horizontal->setMinimumHeight(48);
         cl->addWidget(horizontal);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Vertical / Inline"));
+        auto* card = makeCard(layout, QStringLiteral("Vertical / Inline"));
         auto* cl = topAlignedBody(card);
         auto* inlineMenu = new AntMenu();
         inlineMenu->setMode(Ant::MenuMode::Inline);
@@ -235,7 +221,7 @@ QWidget* createMenuPage(QWidget* /*owner*/)
         inlineMenu->setFixedWidth(200);
         inlineMenu->setMinimumHeight(200);
         cl->addWidget(inlineMenu, 0, Qt::AlignLeft);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -244,23 +230,20 @@ QWidget* createMenuPage(QWidget* /*owner*/)
 
 QWidget* createPaginationPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = topAlignedBody(card);
         auto* basic = new AntPagination();
         basic->setTotal(50);
         basic->setCurrent(1);
         cl->addWidget(basic);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("More Options"));
+        auto* card = makeCard(layout, QStringLiteral("More Options"));
         auto* cl = topAlignedBody(card);
         auto* options = new AntPagination();
         options->setTotal(200);
@@ -269,18 +252,18 @@ QWidget* createPaginationPage(QWidget* /*owner*/)
         options->setShowQuickJumper(true);
         options->setShowTotal(true);
         cl->addWidget(options);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Simple"));
+        auto* card = makeCard(layout, QStringLiteral("Simple"));
         auto* cl = topAlignedBody(card);
         auto* simple = new AntPagination();
         simple->setSimple(true);
         simple->setTotal(50);
         simple->setCurrent(1);
         cl->addWidget(simple);
-        layout->addWidget(card);
+
     }
 
     layout->addStretch();
@@ -289,13 +272,10 @@ QWidget* createPaginationPage(QWidget* /*owner*/)
 
 QWidget* createStepsPage(QWidget* /*owner*/)
 {
-    auto* page = new QWidget();
-    auto* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(32, 24, 32, 24);
-    layout->setSpacing(16);
+    auto [page, layout] = makePage();
 
     {
-        auto* card = new AntCard(QStringLiteral("Basic"));
+        auto* card = makeCard(layout, QStringLiteral("Basic"));
         auto* cl = topAlignedBody(card);
         auto* basic = new AntSteps(page);
         basic->addStep(QStringLiteral("Finished"));
@@ -303,11 +283,11 @@ QWidget* createStepsPage(QWidget* /*owner*/)
         basic->addStep(QStringLiteral("Waiting"));
         basic->setCurrentIndex(1);
         cl->addWidget(basic);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("With Description"));
+        auto* card = makeCard(layout, QStringLiteral("With Description"));
         auto* cl = topAlignedBody(card);
         auto* vertical = new AntSteps(page);
         vertical->setDirection(Ant::Orientation::Vertical);
@@ -317,11 +297,11 @@ QWidget* createStepsPage(QWidget* /*owner*/)
         vertical->setCurrentIndex(1);
         vertical->setMinimumHeight(280);
         cl->addWidget(vertical);
-        layout->addWidget(card);
+
     }
 
     {
-        auto* card = new AntCard(QStringLiteral("Error"));
+        auto* card = makeCard(layout, QStringLiteral("Error"));
         auto* cl = topAlignedBody(card);
         auto* error = new AntSteps(page);
         error->addStep(QStringLiteral("Finished"));
@@ -329,7 +309,47 @@ QWidget* createStepsPage(QWidget* /*owner*/)
         error->addStep(QStringLiteral("Waiting"));
         error->setCurrentIndex(1);
         cl->addWidget(error);
-        layout->addWidget(card);
+
+    }
+
+    {
+        auto* card = makeCard(layout, QStringLiteral("Dot"));
+        auto* cl = topAlignedBody(card);
+        auto* dot = new AntSteps(page);
+        dot->setStepType(Ant::StepType::Dot);
+        dot->addStep(QStringLiteral("Finished"));
+        dot->addStep(QStringLiteral("In Progress"));
+        dot->addStep(QStringLiteral("Waiting"));
+        dot->setCurrentIndex(1);
+        cl->addWidget(dot);
+
+    }
+
+    {
+        auto* card = makeCard(layout, QStringLiteral("Navigation"));
+        auto* cl = topAlignedBody(card);
+        auto* nav = new AntSteps(page);
+        nav->setStepType(Ant::StepType::Navigation);
+        nav->addStep(QStringLiteral("Step 1"));
+        nav->addStep(QStringLiteral("Step 2"));
+        nav->addStep(QStringLiteral("Step 3"));
+        nav->setCurrentIndex(1);
+        cl->addWidget(nav);
+
+    }
+
+    {
+        auto* card = makeCard(layout, QStringLiteral("Vertical Label"));
+        auto* cl = topAlignedBody(card);
+        auto* vlabel = new AntSteps(page);
+        vlabel->setLabelPlacement(Ant::StepLabelPlacement::Vertical);
+        vlabel->addStep(QStringLiteral("Finished"), QStringLiteral("This is a description."));
+        vlabel->addStep(QStringLiteral("In Progress"), QStringLiteral("This is a description."));
+        vlabel->addStep(QStringLiteral("Waiting"), QStringLiteral("This is a description."));
+        vlabel->setCurrentIndex(1);
+        vlabel->setMinimumHeight(140);
+        cl->addWidget(vlabel);
+
     }
 
     layout->addStretch();

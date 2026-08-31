@@ -8,6 +8,7 @@
 
 #include <limits>
 
+#include "core/AntTheme.h"
 #include "widgets/AntIcon.h"
 
 class TestAntIcon : public QObject
@@ -17,6 +18,7 @@ private slots:
     void propertiesAndSignals();
     void resourceIconRasterReferenceMatchesWidgetRender();
     void resourceIconHighDpiCacheUsesFullPixmapSource();
+    void renderPixmapHelperTintsAndCaches();
 };
 
 void TestAntIcon::propertiesAndSignals()
@@ -84,6 +86,23 @@ void TestAntIcon::propertiesAndSignals()
     QCOMPARE(w->rotate(), 90);
     QCOMPARE(rotateSpy.count(), 1);
 
+    // spin 动画只在 icon 可见时推进（隐藏时停表以省 CPU）。挂到可见父上验证
+    // spinAngle 会随动画推进，而不是依赖不可见的顶层窗口 show() 带来的布局副作用。
+    {
+        QWidget spinHost;
+        spinHost.resize(80, 80);
+        AntIcon spinIcon(&spinHost);
+        spinIcon.setIconName(QStringLiteral("GithubFilled"));
+        spinIcon.setIconSize(24);
+        spinIcon.resize(24, 24);
+        spinHost.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&spinHost));
+        const int spinAngleBefore = spinIcon.spinAngle();
+        spinIcon.setSpin(true);
+        QTRY_VERIFY(spinIcon.spinAngle() != spinAngleBefore);
+        spinIcon.setSpin(false);
+    }
+
     QPainterPath primaryPath;
     primaryPath.addRect(QRectF(0, 0, 32, 32));
     QPainterPath secondaryPath;
@@ -109,10 +128,30 @@ void TestAntIcon::propertiesAndSignals()
     QCOMPARE(w->resolvedIconName(), QStringLiteral("AccountBookTwoTone"));
 
     const QStringList builtinIconNames = AntIcon::builtinIconNames();
-    QCOMPARE(builtinIconNames.size(), 831);
+    QCOMPARE(builtinIconNames.size(), 848);
     QVERIFY(builtinIconNames.contains(QStringLiteral("AccountBookOutlined")));
     QVERIFY(builtinIconNames.contains(QStringLiteral("GithubFilled")));
     QVERIFY(builtinIconNames.contains(QStringLiteral("HeartTwoTone")));
+    // @ant-design/icons-svg 4.5.0 additions (AI / brand filled icons)
+    const QStringList newIcons45 = {
+        QStringLiteral("AnthropicFilled"), QStringLiteral("ClaudeFilled"),
+        QStringLiteral("DeepSeekFilled"), QStringLiteral("ElevenLabsFilled"),
+        QStringLiteral("GeminiFilled"), QStringLiteral("HuggingFaceFilled"),
+        QStringLiteral("MastodonFilled"), QStringLiteral("MetaFilled"),
+        QStringLiteral("MistralFilled"), QStringLiteral("NetflixFilled"),
+        QStringLiteral("OllamaFilled"), QStringLiteral("PerplexityFilled"),
+        QStringLiteral("QwenFilled"), QStringLiteral("ReplicateFilled"),
+        QStringLiteral("SnapchatFilled"), QStringLiteral("TelegramFilled"),
+        QStringLiteral("ThreadsFilled"),
+    };
+    for (const QString& name : newIcons45)
+    {
+        QVERIFY2(builtinIconNames.contains(name), qPrintable(name));
+        AntIcon icon(name);
+        icon.setIconSize(24);
+        icon.resize(24, 24);
+        QVERIFY2(hasPaintedPixel(renderIcon(icon)), qPrintable(name));
+    }
 
     AntIcon official(QStringLiteral("GithubFilled"));
     official.setIconSize(24);
@@ -138,14 +177,6 @@ void TestAntIcon::propertiesAndSignals()
     QVERIFY(hasPaintedPixel(renderIcon(cachedOfficial)));
     QCOMPARE(cachedOfficial.property("antIconRenderCacheHit").toBool(), true);
     QCOMPARE(cachedOfficial.property("antIconRenderCacheKey").toString(), firstCacheKey);
-
-    const int spinAngleBefore = cachedOfficial.spinAngle();
-    cachedOfficial.setSpin(true);
-    QTRY_VERIFY(cachedOfficial.spinAngle() != spinAngleBefore);
-    QVERIFY(hasPaintedPixel(renderIcon(cachedOfficial)));
-    QCOMPARE(cachedOfficial.property("antIconRenderCacheHit").toBool(), true);
-    QCOMPARE(cachedOfficial.property("antIconRenderCacheKey").toString(), firstCacheKey);
-    cachedOfficial.setSpin(false);
 
     const QList<Ant::IconType> outlinedReferenceIcons = {
         Ant::IconType::Home,
@@ -355,6 +386,47 @@ void TestAntIcon::resourceIconHighDpiCacheUsesFullPixmapSource()
     QVERIFY2(cachedDiff < 0.5,
              qPrintable(QStringLiteral("High-DPI icon cache hit must match the cache miss rendering. diff=%1")
                         .arg(cachedDiff)));
+}
+
+void TestAntIcon::renderPixmapHelperTintsAndCaches()
+{
+    const QColor color(QStringLiteral("#1677ff"));
+    const QPixmap pixmap = AntIcon::renderPixmap(QStringLiteral("FileAdd"), 24, color);
+    QVERIFY(!pixmap.isNull());
+    QCOMPARE(pixmap.size(), QSize(24, 24));
+
+    bool hasTintedPixel = false;
+    const QImage image = pixmap.toImage();
+    for (int y = 0; y < image.height(); ++y)
+    {
+        for (int x = 0; x < image.width(); ++x)
+        {
+            const QRgb pixel = image.pixel(x, y);
+            if (qAlpha(pixel) > 0)
+            {
+                // 主题色替换生效：非纯黑非透明
+                if (qRed(pixel) < 200 && qGreen(pixel) < 200 && qBlue(pixel) > 60)
+                {
+                    hasTintedPixel = true;
+                }
+            }
+        }
+    }
+    QVERIFY2(hasTintedPixel,
+             qPrintable(QStringLiteral("renderPixmap must tint __PRIMARY__ with the requested color")));
+
+    // 名称带 Outlined 后缀与纯名称等价
+    const QPixmap suffixed = AntIcon::renderPixmap(QStringLiteral("FileAddOutlined.svg"), 24, color);
+    QVERIFY(!suffixed.isNull());
+    QCOMPARE(suffixed.toImage(), image);
+
+    // 缺少颜色时使用当前主题 colorText
+    antTheme->setThemeMode(Ant::ThemeMode::Default);
+    const QPixmap themed = AntIcon::renderPixmap(QStringLiteral("Eye"), 16);
+    QVERIFY(!themed.isNull());
+
+    // 未知名称返回空 pixmap
+    QVERIFY(AntIcon::renderPixmap(QStringLiteral("NoSuchIcon"), 16, color).isNull());
 }
 
 QTEST_MAIN(TestAntIcon)

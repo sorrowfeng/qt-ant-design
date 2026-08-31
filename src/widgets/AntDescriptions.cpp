@@ -190,6 +190,21 @@ void AntDescriptions::setBordered(bool bordered)
     Q_EMIT borderedChanged(m_bordered);
 }
 
+Ant::Variant AntDescriptions::variant() const
+{
+    return m_bordered ? Ant::Variant::Outlined : Ant::Variant::Borderless;
+}
+void AntDescriptions::setVariant(Ant::Variant variant)
+{
+    const bool bordered = variant != Ant::Variant::Borderless;
+    if (m_bordered == bordered) return;
+    m_bordered = bordered;
+    rebuildGrid();
+    update();
+    Q_EMIT variantChanged(variant);
+    Q_EMIT borderedChanged(m_bordered);
+}
+
 bool AntDescriptions::isVertical() const { return m_vertical; }
 void AntDescriptions::setVertical(bool vertical)
 {

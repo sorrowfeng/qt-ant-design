@@ -4,6 +4,9 @@
 
 #include <QObject>
 #include <QColor>
+#include <QHash>
+#include <QString>
+#include <QVariant>
 
 #include "AntTypes.h"
 
@@ -62,6 +65,12 @@ struct AntThemeTokens
     QColor colorRateStar;
     // Always-dark menu surface (MenuTheme::Dark is mode-independent).
     QColor colorBgMenuDark;
+    // Hovered item background on the always-dark menu surface.
+    QColor colorBgMenuDarkItemHover;
+    // Standard scrim for tour/modal-style masks (antd colorBgMask, ~45%).
+    QColor colorBgMask;
+    // Heavier scrim for full-screen image preview backdrops (~75%).
+    QColor colorBgMaskHeavy;
     // Typography <mark> highlight background (antd gold-2 in light, dark-gold in dark).
     QColor colorMarkBg;
 
@@ -148,7 +157,19 @@ public:
     void applyConfiguration(Ant::ThemeMode mode,
                             const QColor& primaryColor = QColor(),
                             int fontSize = Ant::FontSize,
-                            int borderRadius = Ant::BorderRadius);
+                            int borderRadius = Ant::BorderRadius,
+                            Ant::ThemeDensity density = Ant::ThemeDensity::Default);
+
+    // 当前主题密度（default / compact，对应上游 theme algorithm）。
+    Ant::ThemeDensity density() const { return m_densityOverride; }
+
+    // ---- 组件级 token 覆盖（对应上游 theme.components.{Component}）----
+    // 以 "组件名.token 名" 为键（如 "Button"/"borderRadius"），样式类在读取
+    // 对应 token 时优先取覆盖值。设置或清空后触发 themeAboutToChange/themeChanged。
+    void setComponentToken(const QString& component, const QString& token, const QVariant& value);
+    QVariant componentToken(const QString& component, const QString& token) const;
+    void clearComponentTokens(const QString& component = QString());
+    QStringList componentTokenKeys() const;
 
     QColor hoverColor(const QColor& base) const;
     QColor activeColor(const QColor& base) const;
@@ -177,15 +198,18 @@ private:
                                     Ant::ThemeMode mode,
                                     const QColor& primaryColor,
                                     int fontSize,
-                                    int borderRadius);
+                                    int borderRadius,
+                                    Ant::ThemeDensity density);
     void rebuildTokens();
 
     Ant::ThemeMode m_themeMode = Ant::ThemeMode::Default;
     QColor m_primaryColorOverride;
     int m_fontSizeOverride = Ant::FontSize;
     int m_borderRadiusOverride = Ant::BorderRadius;
+    Ant::ThemeDensity m_densityOverride = Ant::ThemeDensity::Default;
     AntThemeTokens m_lightTokens;
     AntThemeTokens m_darkTokens;
+    QHash<QString, QVariant> m_componentTokens;
 };
 
 #define antTheme AntTheme::instance()

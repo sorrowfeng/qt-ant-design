@@ -8,6 +8,7 @@
 #include <QMetaProperty>
 #include <QPainter>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <utility>
 #include <QVBoxLayout>
 #include <functional>
@@ -299,6 +300,191 @@ void AntFormItem::setValidateStatus(Ant::Status status)
     Q_EMIT validateStatusChanged(m_validateStatus);
 }
 
+QList<Ant::FormRule> AntFormItem::rules() const { return m_rules; }
+
+void AntFormItem::setRules(const QList<Ant::FormRule>& rules)
+{
+    m_rules = rules;
+    Q_EMIT rulesChanged();
+}
+
+void AntFormItem::addRule(const Ant::FormRule& rule)
+{
+    m_rules.append(rule);
+    Q_EMIT rulesChanged();
+}
+
+void AntFormItem::clearRules()
+{
+    if (m_rules.isEmpty())
+    {
+        return;
+    }
+    m_rules.clear();
+    Q_EMIT rulesChanged();
+}
+
+void AntFormItem::setValidationError(const QString& error)
+{
+    m_validationError = error;
+    m_validateStatus = error.isEmpty() ? Ant::Status::Normal : Ant::Status::Error;
+    updateAssistText(true);
+    updateTheme();
+    Q_EMIT validateStatusChanged(m_validateStatus);
+}
+
+QString AntFormItem::validationError() const { return m_validationError; }
+
+QString AntFormItem::validate()
+{
+    const QVariant value = fieldValue();
+    for (const Ant::FormRule& rule : m_rules)
+    {
+        // 必填校验：空值（无效 QVariant / 空字符串 / 0 长度列表）视为失败。
+        if (rule.required)
+        {
+            bool empty = !value.isValid();
+            if (!empty)
+            {
+                if (value.type() == QVariant::String)
+                {
+                    empty = value.toString().trimmed().isEmpty();
+                }
+                else if (value.type() == QVariant::List)
+                {
+                    empty = value.toList().isEmpty();
+                }
+            }
+            if (empty)
+            {
+                const QString msg = rule.message.isEmpty()
+                    ? QStringLiteral("%1 is required").arg(m_fieldName.isEmpty() ? effectiveLabelText() : m_fieldName)
+                    : rule.message;
+                setValidationError(msg);
+                return msg;
+            }
+        }
+
+        if (!value.isValid())
+        {
+            continue;
+        }
+
+        // 类型校验
+        if (!rule.type.isEmpty())
+        {
+            const QString s = value.toString().trimmed();
+            if (!s.isEmpty())
+            {
+                bool ok = true;
+                if (rule.type == QLatin1String("email"))
+                {
+                    static const QRegularExpression emailRe(
+                        QStringLiteral("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"));
+                    ok = emailRe.match(s).hasMatch();
+                }
+                else if (rule.type == QLatin1String("number"))
+                {
+                    s.toDouble(&ok);
+                }
+                else if (rule.type == QLatin1String("integer"))
+                {
+                    s.toLongLong(&ok);
+                }
+                if (!ok)
+                {
+                    const QString msg = rule.message.isEmpty()
+                        ? QStringLiteral("invalid %1").arg(rule.type)
+                        : rule.message;
+                    setValidationError(msg);
+                    return msg;
+                }
+            }
+        }
+
+        // 正则校验
+        if (!rule.pattern.isEmpty())
+        {
+            const QString s = value.toString();
+            if (!s.isEmpty())
+            {
+                const QRegularExpression re(rule.pattern);
+                if (!re.match(s).hasMatch())
+                {
+                    const QString msg = rule.message.isEmpty()
+                        ? QStringLiteral("pattern mismatch")
+                        : rule.message;
+                    setValidationError(msg);
+                    return msg;
+                }
+            }
+        }
+
+        // 数值范围校验
+        if (rule.min != 0.0 || rule.max != 0.0)
+        {
+            bool isNumber = false;
+            const double num = value.toDouble(&isNumber);
+            if (isNumber)
+            {
+                if (rule.min != 0.0 && num < rule.min)
+                {
+                    const QString msg = rule.message.isEmpty()
+                        ? QStringLiteral("value is below minimum")
+                        : rule.message;
+                    setValidationError(msg);
+                    return msg;
+                }
+                if (rule.max != 0.0 && num > rule.max)
+                {
+                    const QString msg = rule.message.isEmpty()
+                        ? QStringLiteral("value exceeds maximum")
+                        : rule.message;
+                    setValidationError(msg);
+                    return msg;
+                }
+            }
+        }
+
+        // 字符串长度校验
+        if (rule.minLength != 0 || rule.maxLength != 0)
+        {
+            const int len = value.toString().length();
+            if (rule.minLength != 0 && len < rule.minLength)
+            {
+                const QString msg = rule.message.isEmpty()
+                    ? QStringLiteral("text is too short")
+                    : rule.message;
+                setValidationError(msg);
+                return msg;
+            }
+            if (rule.maxLength != 0 && len > rule.maxLength)
+            {
+                const QString msg = rule.message.isEmpty()
+                    ? QStringLiteral("text is too long")
+                    : rule.message;
+                setValidationError(msg);
+                return msg;
+            }
+        }
+    }
+    // 全部规则通过：清除上一次校验的错误状态
+    if (!m_validationError.isEmpty())
+    {
+        setValidationError(QString());
+    }
+    return QString();
+}
+
+void AntFormItem::clearValidation()
+{
+    if (m_validationError.isEmpty() && m_validateStatus == Ant::Status::Normal)
+    {
+        return;
+    }
+    setValidationError(QString());
+}
+
 QWidget* AntFormItem::fieldWidget() const
 {
     return m_fieldWidget.data();
@@ -514,8 +700,10 @@ void AntFormItem::updateAssistText(bool countUpdate)
 
     m_extraLabel->setText(m_extra);
     m_extraLabel->setVisible(!m_extra.isEmpty());
-    m_helpLabel->setText(m_helpText);
-    m_helpLabel->setVisible(!m_helpText.isEmpty());
+    // 校验错误优先于普通 helpText 显示
+    const QString displayedHelp = m_validationError.isEmpty() ? m_helpText : m_validationError;
+    m_helpLabel->setText(displayedHelp);
+    m_helpLabel->setVisible(!displayedHelp.isEmpty());
 
     if (countUpdate)
     {
@@ -838,7 +1026,66 @@ void AntForm::notifyFieldChanged(const QString& fieldName, const QVariant& value
 
 void AntForm::finish()
 {
-    Q_EMIT finished(values());
+    if (validateFields())
+    {
+        const QVariantMap vals = values();
+        if (m_onFinish)
+        {
+            m_onFinish(vals);
+        }
+        Q_EMIT finished(vals);
+    }
+    else
+    {
+        QVariantMap errors;
+        for (const auto& guardedItem : std::as_const(m_items))
+        {
+            auto* formItem = qobject_cast<AntFormItem*>(guardedItem.data());
+            if (!formItem)
+            {
+                continue;
+            }
+            const QString name = effectiveFieldName(formItem);
+            const QString error = formItem->validationError();
+            if (!name.isEmpty() && !error.isEmpty())
+            {
+                errors.insert(name, error);
+            }
+        }
+        if (m_onFinishFailed)
+        {
+            m_onFinishFailed(errors);
+        }
+        Q_EMIT finishedFailed(errors);
+    }
+}
+
+bool AntForm::validateFields()
+{
+    bool allValid = true;
+    for (const auto& guardedItem : std::as_const(m_items))
+    {
+        auto* formItem = qobject_cast<AntFormItem*>(guardedItem.data());
+        if (!formItem)
+        {
+            continue;
+        }
+        if (!formItem->validate().isEmpty())
+        {
+            allValid = false;
+        }
+    }
+    return allValid;
+}
+
+void AntForm::setOnFinish(std::function<void(const QVariantMap&)> callback)
+{
+    m_onFinish = std::move(callback);
+}
+
+void AntForm::setOnFinishFailed(std::function<void(const QVariantMap&)> callback)
+{
+    m_onFinishFailed = std::move(callback);
 }
 
 void AntForm::changeEvent(QEvent* event)

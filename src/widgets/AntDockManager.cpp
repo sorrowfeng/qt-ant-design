@@ -445,9 +445,7 @@ void prepareDockWidgetForEmbedding(AntDockWidget* dockWidget, QWidget* parentWid
     clearFloatingDockOwner(dockWidget);
     dockWidget->setWindowOpacity(1.0);
     dockWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     dockWidget->setWindowFlag(Qt::WindowTransparentForInput, false);
-#endif
     dockWidget->setProperty("antDockEmbeddedByManager", true);
 
 #if defined(Q_OS_WIN)
@@ -1392,9 +1390,7 @@ public:
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_TransparentForMouseEvents);
         setAttribute(Qt::WA_ShowWithoutActivating);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
         setWindowFlag(Qt::WindowTransparentForInput, true);
-#endif
         setFocusPolicy(Qt::NoFocus);
 #if defined(Q_OS_WIN)
         setProperty(kTransparentToolWindowClickThroughProperty, false);

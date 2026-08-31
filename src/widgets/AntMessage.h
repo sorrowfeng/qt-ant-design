@@ -1,12 +1,12 @@
 #pragma once
 
+#include "core/AntAnchorWatch.h"
 #include "core/QtAntDesignExport.h"
 
 #include <QColor>
 #include <QEvent>
 #include <QList>
 #include <QPixmap>
-#include <QPointer>
 #include <QRectF>
 #include <QWidget>
 
@@ -126,8 +126,7 @@ private:
     int m_duration = 3000;
     bool m_pauseOnHover = true;
     bool m_hovered = false;
-    QPointer<QWidget> m_anchor;
-    QPointer<QWidget> m_anchorWindow;
+    AntAnchorWatch m_anchorWatch;
     QTimer* m_closeTimer = nullptr;
     AntSpinner m_loadingSpinner;
     mutable MessageLayout m_layoutCache;

@@ -637,9 +637,7 @@ void AntInputNumber::updateEditStyle()
     setControlColor(controlPalette, QPalette::ButtonText, token.colorText, token.colorTextDisabled);
     setControlColor(controlPalette, QPalette::Highlight, token.colorPrimary, token.colorPrimary);
     setControlColor(controlPalette, QPalette::HighlightedText, token.colorTextLightSolid, token.colorTextLightSolid);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     setControlColor(controlPalette, QPalette::PlaceholderText, token.colorTextPlaceholder, token.colorTextDisabled);
-#endif
     if (palette() != controlPalette)
     {
         setPalette(controlPalette);
@@ -653,9 +651,7 @@ void AntInputNumber::updateEditStyle()
     setControlColor(lePalette, QPalette::ButtonText, token.colorText, token.colorTextDisabled);
     setControlColor(lePalette, QPalette::Highlight, token.colorPrimary, token.colorPrimary);
     setControlColor(lePalette, QPalette::HighlightedText, token.colorTextLightSolid, token.colorTextLightSolid);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
     setControlColor(lePalette, QPalette::PlaceholderText, token.colorTextPlaceholder, token.colorTextDisabled);
-#endif
     if (!m_lineEditTransparent || !lineEdit()->testAttribute(Qt::WA_TranslucentBackground))
     {
         lineEdit()->setAttribute(Qt::WA_TranslucentBackground, true);

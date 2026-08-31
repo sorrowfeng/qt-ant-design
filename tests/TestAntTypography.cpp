@@ -1,6 +1,7 @@
 #include <QImage>
 #include <QLabel>
 #include <QClipboard>
+#include <QLineEdit>
 #include <QPainter>
 #include <QPointer>
 #include <QSignalSpy>
@@ -143,6 +144,42 @@ void TestAntTypography::propertiesAndSignals()
     w->setCopyable(true);
     QCOMPARE(w->isCopyable(), true);
     QCOMPARE(copyableSpy.count(), 1);
+
+    // editable：双击进入行内编辑，提交后发出 edited
+    QCOMPARE(w->isEditable(), false);
+    QSignalSpy editableSpy(w, &AntTypography::editableChanged);
+    w->setEditable(true);
+    QCOMPARE(w->isEditable(), true);
+    QCOMPARE(editableSpy.count(), 1);
+    QCOMPARE(w->isEditing(), false);
+
+    QSignalSpy editedSpy(w, &AntTypography::edited);
+    w->setText(QStringLiteral("Editable text"));
+    w->startEditing();
+    QVERIFY(w->isEditing());
+    w->finishEditing(true);
+    QCOMPARE(w->isEditing(), false);
+    QCOMPARE(editedSpy.count(), 0);
+
+    w->startEditing();
+    QVERIFY(w->isEditing());
+    if (auto* editor = w->findChild<QLineEdit*>())
+    {
+        editor->setText(QStringLiteral("Edited text"));
+    }
+    w->finishEditing(true);
+    QCOMPARE(w->text(), QStringLiteral("Edited text"));
+    QCOMPARE(editedSpy.count(), 1);
+
+    // 取消不改动文本
+    w->startEditing();
+    if (auto* editor = w->findChild<QLineEdit*>())
+    {
+        editor->setText(QStringLiteral("Discarded"));
+    }
+    w->finishEditing(false);
+    QCOMPARE(w->text(), QStringLiteral("Edited text"));
+    QCOMPARE(editedSpy.count(), 1);
 
     QSignalSpy ellipsisSpy(w, &AntTypography::ellipsisChanged);
     w->setEllipsis(true);

@@ -384,6 +384,10 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
     const QRect bodyRect(0, m.headerHeight, option->rect.width(), bHeight);
     painter->setClipRect(bodyRect);
 
+    // The body font is identical for every row: build it once instead of
+    // reconstructing it for each row inside the paint loop below.
+    const QFont bodyCellFont = AntStyleBase::withPixelSize(painter->font(), m.fontSize, QFont::Normal);
+
     const int start = pageStart(table);
     const int end = pageEnd(table);
 
@@ -448,8 +452,7 @@ void AntTableStyle::drawTable(const QStyleOption* option, QPainter* painter, con
 
         // Data cells
         int cellX = selW;
-        const QFont cellFont = AntStyleBase::withPixelSize(painter->font(), m.fontSize, QFont::Normal);
-        painter->setFont(cellFont);
+        painter->setFont(bodyCellFont);
 
         for (const auto& col : columns)
         {

@@ -1,5 +1,7 @@
 #include "AntModal.h"
 
+#include "core/AntLocale.h"
+
 #include <QAbstractButton>
 #include <QApplication>
 #include <QEnterEvent>
@@ -29,6 +31,9 @@ namespace
 constexpr int kModalShadowMargin = 44;
 constexpr int kModalShadowWidth = 18;
 constexpr int kModalVisibleTopOffset = 100;
+
+const auto kModalOkTextKey = QStringLiteral("Modal.okText");
+const auto kModalCancelTextKey = QStringLiteral("Modal.cancelText");
 
 class ModalPanel : public QWidget
 {
@@ -224,18 +229,34 @@ AntModal::AntModal(QWidget* parent)
     defaultFooterLayout->setSpacing(8);
     defaultFooterLayout->addStretch();
 
-    m_cancelButton = new AntButton(QStringLiteral("Cancel"), m_defaultFooterWidget);
+    m_cancelButton = new AntButton(antLocale->text(kModalCancelTextKey), m_defaultFooterWidget);
     m_cancelButton->setButtonType(Ant::ButtonType::Default);
     connect(m_cancelButton, &AntButton::clicked, this, [this]() { closeByCancel(); });
     defaultFooterLayout->addWidget(m_cancelButton);
 
-    m_okButton = new AntButton(QStringLiteral("OK"), m_defaultFooterWidget);
+    m_okButton = new AntButton(antLocale->text(kModalOkTextKey), m_defaultFooterWidget);
     m_okButton->setButtonType(Ant::ButtonType::Primary);
     connect(m_okButton, &AntButton::clicked, this, [this]() {
         setOpen(false);
         Q_EMIT confirmed();
     });
     defaultFooterLayout->addWidget(m_okButton);
+
+    m_okText = antLocale->text(kModalOkTextKey);
+    m_cancelText = antLocale->text(kModalCancelTextKey);
+    connect(antLocale, &AntLocale::languageChanged, this, [this](Ant::LocaleLanguage) {
+        // 未被用户显式覆盖的按钮文案跟随语言切换
+        if (!m_okTextCustomized)
+        {
+            m_okText = antLocale->text(kModalOkTextKey);
+        }
+        if (!m_cancelTextCustomized)
+        {
+            m_cancelText = antLocale->text(kModalCancelTextKey);
+        }
+        syncFooter();
+        updateDialogGeometry();
+    });
 
     auto* footerHostLayout = new QVBoxLayout(m_footerWidgetHost);
     footerHostLayout->setContentsMargins(0, 0, 0, 0);
@@ -298,7 +319,7 @@ static AntModal* createCommandModal(const QString& title, const QString& content
     modal->setClosable(false);
     modal->setMaskClosable(false);
     modal->setCentered(false);
-    modal->setOkText(showCancel ? QStringLiteral("OK") : QStringLiteral("OK"));
+    modal->setOkText(antLocale->text(kModalOkTextKey));
     modal->setOpen(true);
     return modal;
 }
@@ -484,7 +505,27 @@ void AntModal::setMaskClosable(bool closable)
         return;
     }
     m_maskClosable = closable;
+    m_mask.closable = closable;
     Q_EMIT maskClosableChanged(m_maskClosable);
+}
+
+Ant::MaskConfig AntModal::mask() const { return m_mask; }
+
+void AntModal::setMask(const Ant::MaskConfig& mask)
+{
+    if (m_mask == mask)
+    {
+        return;
+    }
+    const bool blurChanged = m_mask.blur != mask.blur;
+    m_mask = mask;
+    m_maskClosable = mask.closable;
+    if (blurChanged)
+    {
+        requestModalUpdate(rect(), QStringLiteral("mask"), true);
+    }
+    Q_EMIT maskClosableChanged(m_maskClosable);
+    Q_EMIT maskChanged(m_mask);
 }
 
 bool AntModal::isCentered() const { return m_centered; }
@@ -525,6 +566,7 @@ void AntModal::setOkText(const QString& text)
         return;
     }
     m_okText = text;
+    m_okTextCustomized = true;
     syncFooter();
     updateDialogGeometry();
     Q_EMIT okTextChanged(m_okText);
@@ -539,6 +581,7 @@ void AntModal::setCancelText(const QString& text)
         return;
     }
     m_cancelText = text;
+    m_cancelTextCustomized = true;
     syncFooter();
     updateDialogGeometry();
     Q_EMIT cancelTextChanged(m_cancelText);

@@ -5,6 +5,7 @@
 
 #include "AntButton.h"
 #include "AntPopover.h"
+#include "core/AntLocale.h"
 #include "core/AntTheme.h"
 #include "styles/AntPopconfirmStyle.h"
 
@@ -12,6 +13,20 @@ AntPopconfirm::AntPopconfirm(QWidget* parent)
     : QWidget(parent)
 {
     installAntStyle<AntPopconfirmStyle>(this);
+    m_okText = antLocale->text(QStringLiteral("Popconfirm.okText"));
+    m_cancelText = antLocale->text(QStringLiteral("Popconfirm.cancelText"));
+    connect(antLocale, &AntLocale::languageChanged, this, [this](Ant::LocaleLanguage) {
+        if (!m_okTextCustomized)
+        {
+            m_okText = antLocale->text(QStringLiteral("Popconfirm.okText"));
+        }
+        if (!m_cancelTextCustomized)
+        {
+            m_cancelText = antLocale->text(QStringLiteral("Popconfirm.cancelText"));
+        }
+        rebuildActionWidget();
+        syncPopoverContent();
+    });
     m_popover = new AntPopover(this);
     m_popover->setTrigger(Ant::PopoverTrigger::Click);
     m_popover->setTitle(QString());
@@ -58,6 +73,7 @@ void AntPopconfirm::setOkText(const QString& text)
         return;
     }
     m_okText = text;
+    m_okTextCustomized = true;
     rebuildActionWidget();
     Q_EMIT okTextChanged(m_okText);
 }
@@ -71,6 +87,7 @@ void AntPopconfirm::setCancelText(const QString& text)
         return;
     }
     m_cancelText = text;
+    m_cancelTextCustomized = true;
     rebuildActionWidget();
     Q_EMIT cancelTextChanged(m_cancelText);
 }

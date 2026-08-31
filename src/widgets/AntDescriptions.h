@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/QtAntDesignExport.h"
+#include "core/AntTypes.h"
 
 #include <QList>
 #include <QPointer>
@@ -53,6 +54,7 @@ class QT_ANT_DESIGN_EXPORT AntDescriptions : public QWidget
     Q_PROPERTY(QString extra READ extra WRITE setExtra NOTIFY extraChanged)
     Q_PROPERTY(int columnCount READ columnCount WRITE setColumnCount NOTIFY columnCountChanged)
     Q_PROPERTY(bool bordered READ isBordered WRITE setBordered NOTIFY borderedChanged)
+    Q_PROPERTY(Ant::Variant variant READ variant WRITE setVariant NOTIFY variantChanged)
     Q_PROPERTY(bool vertical READ isVertical WRITE setVertical NOTIFY verticalChanged)
 
 public:
@@ -69,6 +71,9 @@ public:
 
     bool isBordered() const;
     void setBordered(bool bordered);
+    // 对应上游 v6 variant 语义：Outlined（带边框）/ Borderless（无边框）。
+    Ant::Variant variant() const;
+    void setVariant(Ant::Variant variant);
 
     bool isVertical() const;
     void setVertical(bool vertical);
@@ -86,6 +91,7 @@ Q_SIGNALS:
     void extraChanged(const QString& extra);
     void columnCountChanged(int count);
     void borderedChanged(bool bordered);
+    void variantChanged(Ant::Variant variant);
     void verticalChanged(bool vertical);
 
 protected:

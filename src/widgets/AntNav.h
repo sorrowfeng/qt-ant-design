@@ -74,6 +74,13 @@ public:
     QVector<int> selectedIndices() const;
     bool isItemSelected(int index) const;
 
+    // Filter the visible nav items by a case-insensitive substring match on
+    // the item text. An empty filter shows everything. Category headers whose
+    // items are all filtered out are hidden as well. Filtering does not change
+    // indices, selection, or currentIndex — it only toggles visibility.
+    QString filterText() const;
+    void setFilterText(const QString& text);
+
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -119,5 +126,6 @@ private:
     int m_currentIndex = -1;
     bool m_multiple = false;
     bool m_syncingItemStates = false;
+    QString m_filterText;
     mutable int m_selectionApplyCount = 0;
 };

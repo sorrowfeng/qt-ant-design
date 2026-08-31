@@ -742,6 +742,7 @@ private slots:
     void configProvider();
     void formItem();
     void form();
+    void formValidation();
     void formProvider();
     void formIncrementalUpdates();
     void formList();
@@ -1006,6 +1007,50 @@ void TestAntQtExtensions::configProvider()
     antTheme->applyConfiguration(Ant::ThemeMode::Default, QColor(), Ant::FontSize, Ant::BorderRadius);
     QCOMPARE(antTheme->tokens().fontSize, Ant::FontSize);
     QCOMPARE(antTheme->tokens().borderRadius, Ant::BorderRadius);
+
+    // density：compact 收紧控件高度与间距 token
+    QCOMPARE(provider.density(), Ant::ThemeDensity::Default);
+    QSignalSpy densitySpy(&provider, &AntConfigProvider::densityChanged);
+    provider.setDensity(Ant::ThemeDensity::Compact);
+    QCOMPARE(provider.density(), Ant::ThemeDensity::Compact);
+    QCOMPARE(densitySpy.count(), 1);
+    const int defaultControlHeight = antTheme->tokens().controlHeight;
+    provider.apply();
+    QCOMPARE(antTheme->density(), Ant::ThemeDensity::Compact);
+    QCOMPARE(antTheme->tokens().controlHeight, defaultControlHeight - 4);
+    QCOMPARE(antTheme->tokens().padding, qMax(2, qRound(16 * 0.75)));
+    QCOMPARE(antTheme->tokens(Ant::ThemeMode::Dark).controlHeight, defaultControlHeight - 4);
+    provider.setDensity(Ant::ThemeDensity::Default);
+    provider.apply();
+    QCOMPARE(antTheme->tokens().controlHeight, defaultControlHeight);
+
+    // direction：apply() 写入 QApplication 布局方向
+    QCOMPARE(provider.direction(), Qt::LeftToRight);
+    QSignalSpy directionSpy(&provider, &AntConfigProvider::directionChanged);
+    provider.setDirection(Qt::RightToLeft);
+    QCOMPARE(provider.direction(), Qt::RightToLeft);
+    QCOMPARE(directionSpy.count(), 1);
+    provider.apply();
+    QCOMPARE(QApplication::layoutDirection(), Qt::RightToLeft);
+    provider.setDirection(Qt::LeftToRight);
+    provider.apply();
+    QCOMPARE(QApplication::layoutDirection(), Qt::LeftToRight);
+
+    // 组件级 token 覆盖：设置/读取/清除并触发主题生命周期信号
+    QSignalSpy aboutSpy(antTheme, &AntTheme::themeAboutToChange);
+    QSignalSpy changedSpy(antTheme, &AntTheme::themeChanged);
+    antTheme->setComponentToken(QStringLiteral("Button"), QStringLiteral("borderRadius"), 2);
+    QCOMPARE(antTheme->componentToken(QStringLiteral("Button"), QStringLiteral("borderRadius")).toInt(), 2);
+    QVERIFY(antTheme->componentTokenKeys().contains(QStringLiteral("Button.borderRadius")));
+    QCOMPARE(aboutSpy.count(), 1);
+    QCOMPARE(changedSpy.count(), 1);
+    antTheme->setComponentToken(QStringLiteral("Button"), QStringLiteral("borderRadius"), 2);
+    QCOMPARE(changedSpy.count(), 1);
+    antTheme->clearComponentTokens(QStringLiteral("Button"));
+    QVERIFY(!antTheme->componentToken(QStringLiteral("Button"), QStringLiteral("borderRadius")).isValid());
+    QCOMPARE(changedSpy.count(), 2);
+    antTheme->clearComponentTokens();
+    QCOMPARE(changedSpy.count(), 2);
 }
 
 void TestAntQtExtensions::formItem()
@@ -1107,6 +1152,88 @@ void TestAntQtExtensions::form()
 
     w->clearItems();
     QCOMPARE(w->items().size(), 0);
+}
+
+void TestAntQtExtensions::formValidation()
+{
+    AntForm form;
+    auto* nameField = new QLineEdit;
+    auto* emailField = new QLineEdit;
+
+    AntFormItem* nameItem = form.addItem(QStringLiteral("Name"), nameField);
+    Ant::FormRule requiredRule;
+    requiredRule.required = true;
+    requiredRule.message = QStringLiteral("Name is required");
+    nameItem->setRules({requiredRule});
+
+    AntFormItem* emailItem = form.addItem(QStringLiteral("Email"), emailField);
+    Ant::FormRule emailRule;
+    emailRule.type = QStringLiteral("email");
+    emailRule.message = QStringLiteral("Invalid email");
+    emailItem->setRules({emailRule});
+
+    // 空值（name 必填失败；email 非必填，空值跳过类型校验）→ 仅 name 失败
+    QCOMPARE(form.validateFields(), false);
+    QCOMPARE(nameItem->validateStatus(), Ant::Status::Error);
+    QCOMPARE(nameItem->validationError(), QStringLiteral("Name is required"));
+    QCOMPARE(emailItem->validateStatus(), Ant::Status::Normal);
+
+    // 非法邮箱（非空但格式错误）→ email 失败
+    emailField->setText(QStringLiteral("not-an-email"));
+    QCOMPARE(form.validateFields(), false);
+    QCOMPARE(emailItem->validateStatus(), Ant::Status::Error);
+    QCOMPARE(emailItem->validationError(), QStringLiteral("Invalid email"));
+
+    // 填写合法值 → 校验通过
+    nameField->setText(QStringLiteral("Alice"));
+    emailField->setText(QStringLiteral("alice@example.com"));
+    QCOMPARE(form.validateFields(), true);
+    QCOMPARE(nameItem->validateStatus(), Ant::Status::Normal);
+    QCOMPARE(nameItem->validationError(), QString());
+
+    // onFinish / onFinishFailed
+    QVariantMap finishedValues;
+    QVariantMap failedErrors;
+    bool finishedCalled = false;
+    bool failedCalled = false;
+    form.setOnFinish([&](const QVariantMap& v) {
+        finishedCalled = true;
+        finishedValues = v;
+    });
+    form.setOnFinishFailed([&](const QVariantMap& e) {
+        failedCalled = true;
+        failedErrors = e;
+    });
+
+    nameField->clear();
+    emailField->setText(QStringLiteral("not-an-email"));
+    form.finish();
+    QVERIFY(!finishedCalled);
+    QVERIFY(failedCalled);
+    QVERIFY(failedErrors.contains(QStringLiteral("Name")));
+    QVERIFY(failedErrors.contains(QStringLiteral("Email")));
+
+    nameField->setText(QStringLiteral("Bob"));
+    emailField->setText(QStringLiteral("bob@example.com"));
+    form.finish();
+    QVERIFY(finishedCalled);
+    QCOMPARE(finishedValues.value(QStringLiteral("Name")).toString(), QStringLiteral("Bob"));
+
+    // 数值范围 + 字符串长度
+    AntFormItem* ageItem = new AntFormItem;
+    auto* ageField = new QLineEdit;
+    ageItem->setLabel(QStringLiteral("Age"));
+    ageItem->setFieldName(QStringLiteral("Age"));
+    ageItem->setFieldWidget(ageField);
+    Ant::FormRule ageRule;
+    ageRule.min = 18.0;
+    ageRule.max = 100.0;
+    ageRule.message = QStringLiteral("Age out of range");
+    ageItem->setRules({ageRule});
+    ageField->setText(QStringLiteral("10"));
+    QCOMPARE(ageItem->validate(), QStringLiteral("Age out of range"));
+    ageField->setText(QStringLiteral("30"));
+    QCOMPARE(ageItem->validate(), QString());
 }
 
 void TestAntQtExtensions::formProvider()
@@ -2199,6 +2326,10 @@ void TestAntQtExtensions::ribbon()
     controls->addWidget(modeSelect, Ant::RibbonItemSize::Small);
     controls->addWidget(new QComboBox, Ant::RibbonItemSize::Small);
     controls->addWidget(new QWidget, Ant::RibbonItemSize::Large);
+    // 内置图标名入口：action 携带名称属性，按钮按主题色渲染
+    auto* searchAction =
+        controls->addAction(QStringLiteral("Search"), QStringLiteral("Search"), Ant::RibbonItemSize::Small);
+    QCOMPARE(searchAction->property("antRibbonIconName").toString(), QStringLiteral("Search"));
     QCOMPARE(file->groupCount(), 2);
     QVERIFY(group->sizeHint().height() >= 158);
     QVERIFY(ribbon->sizeHint().height() >= 210);
@@ -2211,6 +2342,36 @@ void TestAntQtExtensions::ribbon()
     ribbon->resize(640, ribbon->sizeHint().height());
     ribbon->show();
     QVERIFY(QTest::qWaitForWindowExposed(ribbon));
+    QCoreApplication::processEvents();
+    // 上下紧贴：组外边框贴近 tab 栏底边，且高度撑满内容区（ContentHeight）
+    QCOMPARE(group->mapTo(ribbon, QPoint(0, 0)).y(), 42);
+    QCOMPARE(group->height(), 168);
+    // 图标名 action 的按钮渲染出非空图标像素（16x16 图标区）
+    QToolButton* searchButton = nullptr;
+    for (QToolButton* button : controls->findChildren<QToolButton*>())
+    {
+        if (button->defaultAction() == searchAction)
+        {
+            searchButton = button;
+            break;
+        }
+    }
+    QVERIFY(searchButton != nullptr);
+    const QImage searchButtonImage = searchButton->grab().toImage();
+    const QRect searchIconArea(9, searchButton->height() / 2 - 8, 16, 16);
+    bool hasIconPixel = false;
+    for (int y = searchIconArea.top(); y <= searchIconArea.bottom() && !hasIconPixel; ++y)
+    {
+        for (int x = searchIconArea.left(); x <= searchIconArea.right(); ++x)
+        {
+            if (qAlpha(searchButtonImage.pixel(x, y)) > 0)
+            {
+                hasIconPixel = true;
+                break;
+            }
+        }
+    }
+    QVERIFY2(hasIconPixel, qPrintable(QStringLiteral("Named ribbon action should paint its icon pixels")));
     auto* clipboardTitle = ribbonTitleLabelForExtensionTest(group, QStringLiteral("Clipboard"));
     auto* controlsTitle = ribbonTitleLabelForExtensionTest(controls, QStringLiteral("Ant Controls"));
     QVERIFY(clipboardTitle != nullptr);
@@ -2264,6 +2425,7 @@ void TestAntQtExtensions::ribbon()
     auto* popup = ribbon->findChild<QWidget*>(QStringLiteral("AntRibbonPopup"));
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->isVisible());
+    QCOMPARE(popup->height(), 168);
     popup->hide();
     ribbon->hide();
 
@@ -2568,6 +2730,29 @@ void TestAntQtExtensions::nav()
     const int selectionApplies = nav.property("antNavSelectionApplyCount").toInt();
     nav.setCurrentIndex(1);
     QCOMPARE(nav.property("antNavSelectionApplyCount").toInt(), selectionApplies);
+
+    // Filter visibility: matching items stay visible, non-matching items and
+    // the category headers that become empty are hidden, indices/selection are
+    // preserved, and an empty filter restores everything. Use isHidden() (not
+    // isVisible()) so parent-window visibility does not mask the explicit
+    // setVisible(false) the filter applies. Note item(2) was renamed to
+    // "Preferences" earlier in this test.
+    QCOMPARE(nav.filterText(), QString());
+    nav.setFilterText(QStringLiteral("Overview"));
+    QVERIFY(!nav.item(0)->isHidden());
+    QVERIFY(nav.item(1)->isHidden());
+    QVERIFY(nav.item(2)->isHidden());
+    QCOMPARE(nav.currentIndex(), 1);
+    QCOMPARE(nav.count(), 3);
+    nav.setFilterText(QStringLiteral("preferences"));
+    QVERIFY(nav.item(0)->isHidden());
+    QVERIFY(nav.item(1)->isHidden());
+    QVERIFY(!nav.item(2)->isHidden());
+    nav.setFilterText(QString());
+    QVERIFY(!nav.item(0)->isHidden());
+    QVERIFY(!nav.item(1)->isHidden());
+    QVERIFY(!nav.item(2)->isHidden());
+    QCOMPARE(nav.filterText(), QString());
 
     nav.removeItem(1);
     QCOMPARE(nav.count(), 2);

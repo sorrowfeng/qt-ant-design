@@ -97,21 +97,8 @@ QColor borderColorFor(const AntCascader* cascader)
 
 QColor backgroundColorFor(const AntCascader* cascader)
 {
-    const auto& token = antTheme->tokens();
-    if (!cascader || !cascader->isEnabled())
-    {
-        return token.colorBgContainerDisabled;
-    }
-    if (cascader->variant() == Ant::Variant::Filled)
-    {
-        return cascader->isHoveredState() ? token.colorFillTertiary : token.colorFillQuaternary;
-    }
-    if (cascader->variant() == Ant::Variant::Borderless
-        || cascader->variant() == Ant::Variant::Underlined)
-    {
-        return QColor(0, 0, 0, 0);
-    }
-    return token.colorBgContainer;
+    return AntStyleBase::variantBackgroundColor(antTheme->tokens(), cascader->variant(),
+        cascader->isEnabled(), cascader->isHoveredState(), false, false);
 }
 
 bool canClear(const AntCascader* cascader)

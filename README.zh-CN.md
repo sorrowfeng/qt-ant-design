@@ -1,4 +1,4 @@
-# qt-ant-design
+﻿# qt-ant-design
 
 <p align="center">
   <img src="assets/qt-ant-design-icon.png" alt="qt-ant-design logo" width="160">
@@ -45,10 +45,10 @@
 
 - 基于 Qt Widgets，轻量、易集成，可作为静态库或动态库接入现有项目
 - 内置 Design Token 系统，支持亮色 / 暗色主题实时切换
-- 当前已移植 `89` 个公开组件（Ant Design 标准组件 `70 / 70` 全覆盖，另含 `19` 个 Qt / 桌面扩展组件）
+- 当前已移植 `91` 个公开组件（对齐 Ant Design v6，含新增的 `BorderBeam` 与 `Listy`，另含 `19` 个 Qt / 桌面扩展组件）
 - 当前 `67` 个组件使用 `QProxyStyle` 架构绘制
-- 示例程序当前覆盖 `89 / 89` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
-- `AntIcon` 已内置 `831` 个来自 `@ant-design/icons-svg@4.4.2` 的官方 SVG 资源
+- 示例程序当前覆盖 `91 / 91` 个公开组件，另有独立 Ant Design 首页风格 `Showcase`
+- `AntIcon` 已内置 `848` 个来自 `@ant-design/icons-svg@4.5.0` 的官方 SVG 资源
 - 可对比的标准组件已在视觉审计矩阵中标记为 `Pass`，Qt-only 桌面扩展标记为 `Local Pass`
 - 代码结构清晰，`core / styles / widgets / examples` 分层明确，便于扩展
 
@@ -233,9 +233,9 @@ int main(int argc, char* argv[])
 
 ## 已移植组件
 
-当前已实现公开组件总数：`89`
+当前已实现公开组件总数：`91`
 
-`src/widgets` 当前包含 `110` 个 `Ant*.h` 头文件：`89` 个公开组件头、`19` 个 Qt 风格别名头、安装的非组件窗口帧 helper `AntWindowFrame`，以及内部非安装弹层 helper `AntSelectPopup`。
+`src/widgets` 当前包含 `112` 个 `Ant*.h` 头文件：`91` 个公开组件头、`19` 个 Qt 风格别名头、安装的非组件窗口帧 helper `AntWindowFrame`，以及内部非安装弹层 helper `AntSelectPopup`。
 
 Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-design/ant-design) 仓库 `components/` 顶层目录统计，并将 `row / col` 并入 `grid`、`back-top` 并入 `float-button`、`qrcode` 视为 `qr-code` 兼容别名，因此当前标准组件口径为 `70`。
 
@@ -251,8 +251,8 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 | 导航 | `AntAnchor` `AntBreadcrumb` `AntDropdown` `AntMenu` `AntPagination` `AntSteps` `AntTabs` | 混合（`QProxyStyle` / 自绘） |
 | 数据录入 | `AntAutoComplete` `AntCascader` `AntCheckBox` `AntColorPicker` `AntDatePicker` `AntDescriptions` `AntForm` `AntInput` `AntInputNumber` `AntMentions` `AntRadio` `AntRate` `AntSegmented` `AntSelect` `AntSlider` `AntSwitch` `AntTimePicker` `AntTransfer` `AntTreeSelect` `AntUpload` | 混合（`QProxyStyle` / 自绘） |
 | 反馈 | `AntAlert` `AntDrawer` `AntMessage` `AntModal` `AntNotification` `AntPopconfirm` `AntPopover` `AntProgress` `AntResult` `AntSkeleton` `AntSpin` `AntToolTip` `AntTour` `AntWatermark` | 混合（`QProxyStyle` / 自绘） |
-| 数据展示 | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | 混合（`QProxyStyle` / 自绘） |
-| 布局与其他 | `AntAffix` `AntApp` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | 混合（`QProxyStyle` / 自绘 / QObject 工具） |
+| 数据展示 | `AntAvatar` `AntBadge` `AntCalendar` `AntCard` `AntCarousel` `AntCollapse` `AntEmpty` `AntImage` `AntList` `AntListy` `AntQRCode` `AntStatistic` `AntTable` `AntTag` `AntTimeline` `AntTree` | 混合（`QProxyStyle` / 自绘） |
+| 布局与其他 | `AntAffix` `AntApp` `AntBorderBeam` `AntConfigProvider` `AntDivider` `AntFlex` `AntGrid` `AntLayout` `AntMasonry` `AntSpace` `AntSplitter` `AntWidget` `AntWindow` | 混合（`QProxyStyle` / 自绘 / QObject 工具） |
 | Qt / 桌面扩展 | `AntDialog` `AntInputDialog` `AntDockManager` `AntDockWidget` `AntFileDialog` `AntLog` `AntMenuBar` `AntNav` `AntNavItem` `AntPlainTextEdit` `AntRibbon` `AntScrollArea` `AntScrollBar` `AntStackedWidget` `AntStatusBar` `AntToolBar` `AntToolButton` | 混合（`QProxyStyle` / 自绘） |
 
 ### 组件截图
@@ -305,6 +305,7 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 | 数据展示 | `AntEmpty` | <img src="resources/images/components/ant-empty-light.png" width="360"> | <img src="resources/images/components/ant-empty-dark.png" width="360"> |
 | 数据展示 | `AntImage` | <img src="resources/images/components/ant-image-light.png" width="360"> | <img src="resources/images/components/ant-image-dark.png" width="360"> |
 | 数据展示 | `AntList` | <img src="resources/images/components/ant-list-light.png" width="360"> | <img src="resources/images/components/ant-list-dark.png" width="360"> |
+| 数据展示 | `AntListy` | <img src="resources/images/components/ant-listy-light.png" width="360"> | <img src="resources/images/components/ant-listy-dark.png" width="360"> |
 | 数据展示 | `AntPopover` | <img src="resources/images/components/ant-popover-light.png" width="360"> | <img src="resources/images/components/ant-popover-dark.png" width="360"> |
 | 数据展示 | `AntQRCode` | <img src="resources/images/components/ant-qr-code-light.png" width="360"> | <img src="resources/images/components/ant-qr-code-dark.png" width="360"> |
 | 数据展示 | `AntSegmented` | <img src="resources/images/components/ant-segmented-light.png" width="360"> | <img src="resources/images/components/ant-segmented-dark.png" width="360"> |
@@ -347,12 +348,13 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 | Qt / 桌面扩展 | `AntLog` | <img src="resources/images/components/ant-log-light.png" width="360"> | <img src="resources/images/components/ant-log-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntNav` | <img src="resources/images/components/ant-nav-light.png" width="360"> | <img src="resources/images/components/ant-nav-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntNavItem` | <img src="resources/images/components/ant-nav-item-light.png" width="360"> | <img src="resources/images/components/ant-nav-item-dark.png" width="360"> |
+| 布局与其他 | `AntBorderBeam` | <img src="resources/images/components/ant-border-beam-light.png" width="360"> | <img src="resources/images/components/ant-border-beam-dark.png" width="360"> |
 | Qt / 桌面扩展 | `AntMasonry` | <img src="resources/images/components/ant-masonry-light.png" width="360"> | <img src="resources/images/components/ant-masonry-dark.png" width="360"> |
 
 ### 组件概览
 
 - `AntButton`：五种类型、三种尺寸、三种形状、`loading / danger / ghost / block`
-- `AntIcon`：`831` 个官方 SVG 图标、字符串名称 API、`Outlined / Filled / TwoTone`、旋转、spin、自定义路径
+- `AntIcon`：`848` 个官方 SVG 图标、字符串名称 API、`Outlined / Filled / TwoTone`、旋转、spin、自定义路径
 - `AntInput`：尺寸、状态、`addonBefore / addonAfter / allowClear / password`
 - `AntInputNumber`：尺寸、状态、变体、前后缀、QDoubleSpinBox 风格小数/精度、小步进、显隐控制按钮
 - `AntDescriptions`：标题、extra、列数、bordered、vertical、自定义值控件
@@ -364,6 +366,8 @@ Ant Design 标准组件按 [`ant-design/ant-design`](https://github.com/ant-desi
 - `AntAlert`：`success / info / warning / error`、图标、描述、关闭、横幅、自定义 action
 - `AntModal`：遮罩层、标题、正文、自定义内容、自定义 footer、确认/取消、居中或顶部偏移布局，以及不会在对话框边缘被裁切的柔和外阴影
 - `AntResult`：状态图标（success / error / warning / info）、暗色透明图标背景、标题、描述、自定义 extra 操作区
+- `AntListy`：移植自 Ant Design 6.6 的高性能列表（Qt Model/View 虚拟化、分组头 + 吸顶指示、拖拽排序、无限加载、`scrollToKey` / `scrollToRow`）
+- `AntBorderBeam`：移植自 Ant Design 6.4 的边框光束装饰（多光束、自定义颜色/长度/线宽/圆角、hover 触发），可托管任意内容控件
 - `AntList`：`header / footer / bordered / split / size`，`AntListItem` 支持 `Meta`（头像、标题、描述）、`AntIcon` / 图片媒体、操作区、内部滚动和 QListWidget 风格文本/数据/选择 helper
 - `AntStatistic`：数值展示、千分位分隔、前缀后缀、精度控制
 - `AntPopover`：标题、正文、action、点击/悬停触发、placement、箭头

@@ -49,6 +49,17 @@ void TestAntModal::propertiesAndSignals()
     QCOMPARE(modal->isMaskClosable(), false);
     QCOMPARE(maskSpy.count(), 1);
 
+    // v6 mask 对象式 API
+    QSignalSpy maskCfgSpy(modal, &AntModal::maskChanged);
+    Ant::MaskConfig cfg;
+    cfg.closable = true;
+    cfg.blur = true;
+    modal->setMask(cfg);
+    QCOMPARE(modal->mask().closable, true);
+    QCOMPARE(modal->mask().blur, true);
+    QCOMPARE(modal->isMaskClosable(), true); // 别名与对象保持同步
+    QCOMPARE(maskCfgSpy.count(), 1);
+
     QSignalSpy centeredSpy(modal, &AntModal::centeredChanged);
     modal->setCentered(false);
     QCOMPARE(modal->isCentered(), false);
