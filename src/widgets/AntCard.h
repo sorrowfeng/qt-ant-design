@@ -98,8 +98,17 @@ private:
         int headerSeparatorY = -1;
         int actionsSeparatorY = -1;
         QVector<int> actionSeparatorXs;
+        // Card.Grid（对应上游 contain-grid）：网格模式 + 内部 1px 分隔线位置。
+        bool gridMode = false;
+        QVector<int> gridColumnXs;
+        QVector<int> gridRowYs;
         QRectF spinnerRect;
     };
+
+    // 上游 Card.headerHeight / headerHeightSM 组件 token（缺省时按
+    // fontSizeLG * lineHeightLG + padding * 2 等公式推导，跟随基础字号与 compact 密度）。
+    int cardHeaderHeight() const;
+    int cardHeaderHeightSM() const;
 
     void rebuildChrome();
     void updateTheme();

@@ -81,6 +81,9 @@ AntCard::AntCard(QWidget* parent)
     connect(antTheme, &AntTheme::themeChanged, this, [this]() {
         invalidateCardPaintCache();
         updateTheme();
+        // 头部高度 / 内边距由 token 推导（基础字号、compact 密度、Card 组件 token），
+        // 主题变化时需重建 chrome 并同步几何。
+        rebuildChrome();
         AntThemeRefresh::updateGeometryIfSizeHintChanged(this);
         requestCardUpdate(rect(), QStringLiteral("theme"));
     });
@@ -308,18 +311,31 @@ void AntCard::setMetaDescription(const QString& description)
 
 void AntCard::addGridItem(QWidget* item)
 {
+    if (!item)
+    {
+        return;
+    }
     if (!m_gridLayout)
     {
-        // Convert body layout from VBoxLayout to GridLayout
+        // 转为 contain-grid：body 内边距清零、cell 无缝拼接，1px 网格线由
+        // AntCardStyle 依据 paint cache 中的分隔位置绘制（对应上游 Card.Grid）。
         delete m_bodyLayout;
-        m_gridLayout = new QGridLayout(m_body);
-        m_gridLayout->setSpacing(8);
         m_bodyLayout = nullptr;
+        m_gridLayout = new QGridLayout(m_body);
+        m_gridLayout->setSpacing(0);
+        m_gridLayout->setContentsMargins(0, 0, 0, 0);
     }
+    // 上游 cell 自带 cardPaddingBase（paddingLG）内边距，small 尺寸不变。
+    auto* cell = new QWidget(m_body);
+    cell->setObjectName(QStringLiteral("ant-card-grid-cell"));
+    auto* cellLayout = new QVBoxLayout(cell);
+    const int cellPadding = antTheme->tokens().paddingLG;
+    cellLayout->setContentsMargins(cellPadding, cellPadding, cellPadding, cellPadding);
+    cellLayout->setSpacing(0);
+    item->setParent(cell);
+    cellLayout->addWidget(item);
     const int count = m_gridLayout->count();
-    const int row = count / 3;
-    const int col = count % 3;
-    m_gridLayout->addWidget(item, row, col);
+    m_gridLayout->addWidget(cell, count / 3, count % 3);
     invalidateCardPaintCache();
     requestCardUpdate(rect(), QStringLiteral("grid"));
 }
@@ -404,9 +420,10 @@ void AntCard::rebuildChrome()
 {
     const auto& token = antTheme->tokens();
     const bool small = m_cardSize == Ant::CardSize::Small;
-    const int headerHeight = small ? 38 : 56;
-    const int headerPadding = small ? token.paddingSM : token.paddingLG;
-    const int bodyPadding = small ? token.paddingSM : token.paddingLG;
+    const int headerHeight = small ? cardHeaderHeightSM() : cardHeaderHeight();
+    // 上游 headerPadding/bodyPadding：default 取 paddingLG，small 固定 12（compact 不收缩）。
+    const int headerPadding = small ? 12 : token.paddingLG;
+    const int bodyPadding = small ? 12 : token.paddingLG;
 
     const bool headerVisible = !m_title.isEmpty() || !m_extra.isEmpty();
     const bool extraVisible = !m_extra.isEmpty();
@@ -435,8 +452,10 @@ void AntCard::rebuildChrome()
     }
     else if (m_gridLayout)
     {
-        if (m_gridLayout->contentsMargins() != bodyMargins)
-            m_gridLayout->setContentsMargins(bodyMargins);
+        // contain-grid：body 无内边距（cell 自带 cardPaddingBase），与上游一致。
+        const QMargins gridMargins(0, 0, 0, 0);
+        if (m_gridLayout->contentsMargins() != gridMargins)
+            m_gridLayout->setContentsMargins(gridMargins);
     }
     if (m_actions->minimumHeight() != 48)
         m_actions->setMinimumHeight(48);
@@ -444,6 +463,30 @@ void AntCard::rebuildChrome()
         m_actions->setMaximumHeight(48);
     invalidateCardPaintCache();
     updateGeometry();
+}
+
+int AntCard::cardHeaderHeight() const
+{
+    const QVariant override = antTheme->componentToken(QStringLiteral("Card"), QStringLiteral("headerHeight"));
+    if (override.isValid())
+    {
+        return qMax(0, override.toInt());
+    }
+    const auto& token = antTheme->tokens();
+    // antd: token.fontSizeLG * token.lineHeightLG + token.padding * 2（16*1.5+16*2=56）
+    return qRound(token.fontSizeLG * 1.5) + token.padding * 2;
+}
+
+int AntCard::cardHeaderHeightSM() const
+{
+    const QVariant override = antTheme->componentToken(QStringLiteral("Card"), QStringLiteral("headerHeightSM"));
+    if (override.isValid())
+    {
+        return qMax(0, override.toInt());
+    }
+    const auto& token = antTheme->tokens();
+    // antd: token.fontSize * token.lineHeight + token.paddingXS * 2（14*1.5715+8*2=38）
+    return qRound(token.fontSize * token.lineHeight) + token.paddingXS * 2;
 }
 
 void AntCard::updateTheme()
@@ -462,7 +505,8 @@ void AntCard::updateTheme()
     extraFont.setPixelSize(token.fontSize);
     m_extraLabel->setFont(extraFont);
     QPalette extraPal = m_extraLabel->palette();
-    extraPal.setColor(QPalette::WindowText, token.colorPrimary);
+    // 上游 v6 extraColor 默认 colorText（v5 为 colorTextDescription），不再是主色。
+    extraPal.setColor(QPalette::WindowText, token.colorText);
     m_extraLabel->setPalette(extraPal);
 
     // Meta labels
@@ -501,12 +545,41 @@ const AntCard::CardPaintCache& AntCard::cardPaintCache(const QRect& widgetRect) 
     const int actionCount = m_actionsLayout ? m_actionsLayout->count() : 0;
     const bool headerVisible = m_header && m_header->isVisible();
     const bool actionsVisible = m_actions && m_actions->isVisible();
+    const bool gridMode = m_gridLayout && m_gridLayout->count() > 0;
+
+    QVector<int> gridColumnXs;
+    QVector<int> gridRowYs;
+    if (gridMode)
+    {
+        const QRect bodyRect = m_body->geometry();
+        const int columnCount = m_gridLayout->columnCount();
+        const int rowCount = m_gridLayout->rowCount();
+        for (int col = 0; col < columnCount - 1; ++col)
+        {
+            gridColumnXs.append(bodyRect.left() + m_gridLayout->cellRect(0, col).right());
+        }
+        for (int row = 0; row < rowCount - 1; ++row)
+        {
+            gridRowYs.append(bodyRect.top() + m_gridLayout->cellRect(row, 0).bottom());
+        }
+    }
+    for (int& x : gridColumnXs)
+    {
+        x = qBound(widgetRect.left(), x, widgetRect.right());
+    }
+    for (int& y : gridRowYs)
+    {
+        y = qBound(widgetRect.top(), y, widgetRect.bottom());
+    }
 
     if (m_paintCache.valid &&
         m_paintCache.widgetRect == widgetRect &&
         m_paintCache.headerVisible == headerVisible &&
         m_paintCache.actionsVisible == actionsVisible &&
         m_paintCache.actionCount == actionCount &&
+        m_paintCache.gridMode == gridMode &&
+        m_paintCache.gridColumnXs == gridColumnXs &&
+        m_paintCache.gridRowYs == gridRowYs &&
         m_paintCache.headerSeparatorY == (headerVisible ? m_header->geometry().bottom() : -1) &&
         m_paintCache.actionsSeparatorY == (actionsVisible ? m_actions->geometry().top() : -1))
     {
@@ -529,6 +602,9 @@ const AntCard::CardPaintCache& AntCard::cardPaintCache(const QRect& widgetRect) 
     cache.actionCount = actionCount;
     cache.headerSeparatorY = headerVisible ? m_header->geometry().bottom() : -1;
     cache.actionsSeparatorY = actionsVisible ? m_actions->geometry().top() : -1;
+    cache.gridMode = gridMode;
+    cache.gridColumnXs = gridColumnXs;
+    cache.gridRowYs = gridRowYs;
     if (actionsVisible && actionCount > 1)
     {
         const QRect actionsRect = m_actions->geometry();

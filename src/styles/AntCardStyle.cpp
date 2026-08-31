@@ -73,15 +73,18 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
     painter->save();
     painter->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
-    // Hover shadow
-    if (card->isHoverable() && (option->state & QStyle::State_MouseOver))
+    // Hover shadow（上游 hoverable:hover：边框透明 + cardShadow）
+    const bool hovered = card->isHoverable() && (option->state & QStyle::State_MouseOver);
+    if (hovered)
     {
         antTheme->drawEffectShadow(painter, cardRect, 12, radius, 1.35);
     }
 
-    // Card border and background
+    // Card border and background（hover 时边框透明，贴近上游 hoverable 语义）
     AntStyleBase::drawCrispRoundedRect(painter, cardRect,
-        card->isBordered() ? QPen(token.colorBorderSecondary, token.lineWidth) : Qt::NoPen,
+        card->isBordered() && !hovered
+            ? QPen(token.colorBorderSecondary, token.lineWidth)
+            : Qt::NoPen,
         token.colorBgContainer, radius, radius);
 
     // Header separator line
@@ -102,6 +105,26 @@ void AntCardStyle::drawCard(const QStyleOption* option, QPainter* painter, const
         for (const int x : cache.actionSeparatorXs)
         {
             painter->drawLine(x, actionsRect.top() + 12, x, actionsRect.bottom() - 12);
+        }
+    }
+
+    // Card.Grid 内部 1px 分隔线（对应上游 contain-grid 的 box-shadow 网格线；
+    // 最外侧由卡片边框承担，这里只画内部边界）。网格范围收在 cardRect 内，
+    // 避免 hoverable 缩进时线条越过边框。
+    if (cache.gridMode)
+    {
+        const QRect bodyRect = card->m_body->geometry();
+        const QRect gridArea = bodyRect.intersected(cardRect);
+        painter->setPen(QPen(token.colorBorderSecondary, token.lineWidth));
+        for (const int x : cache.gridColumnXs)
+        {
+            if (x >= gridArea.left() && x <= gridArea.right())
+                painter->drawLine(x, gridArea.top(), x, gridArea.bottom());
+        }
+        for (const int y : cache.gridRowYs)
+        {
+            if (y >= gridArea.top() && y <= gridArea.bottom())
+                painter->drawLine(gridArea.left(), y, gridArea.right(), y);
         }
     }
 

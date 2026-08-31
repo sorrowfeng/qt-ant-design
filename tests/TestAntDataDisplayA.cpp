@@ -4,6 +4,7 @@
 #include <QElapsedTimer>
 #include <QEnterEvent>
 #include <QFile>
+#include <QGridLayout>
 #include <QImage>
 #include <QLabel>
 #include <QRandomGenerator>
@@ -32,6 +33,7 @@ private slots:
     void imageDecodeBudgetProperties();
     void statisticFormattedValueCache();
     void cardTitlePaletteTracksTheme();
+    void cardChromeAlignmentAndCustomization();
 };
 
 void TestAntDataDisplayA::propertiesAndSignals()
@@ -775,6 +777,88 @@ void TestAntDataDisplayA::cardTitlePaletteTracksTheme()
     QCOMPARE(metaTitleLabel->palette().color(QPalette::WindowText), antTheme->tokens().colorText);
 
     antTheme->setThemeMode(previousMode);
+}
+
+void TestAntDataDisplayA::cardChromeAlignmentAndCustomization()
+{
+    // 上游 v6 对齐：extra 文本使用 colorText（extraColor 默认），不再是主色。
+    AntCard chrome(QStringLiteral("Card Title"));
+    chrome.setExtra(QStringLiteral("More"));
+    QWidget* header = chrome.findChild<QWidget*>(QStringLiteral("ant-card-header"));
+    QVERIFY(header != nullptr);
+    // 头部高度按 Card.headerHeight 组件 token 推导，默认 56（fontSizeLG*1.5 + padding*2）。
+    const QWidget* defaultHeader = chrome.findChild<QWidget*>(QStringLiteral("ant-card-header"));
+    QCOMPARE(defaultHeader->minimumHeight(), 56);
+    QCOMPARE(defaultHeader->maximumHeight(), 56);
+
+    {
+        auto labels = chrome.findChildren<QLabel*>();
+        QLabel* extraLabel = nullptr;
+        for (QLabel* label : labels)
+        {
+            if (label->text() == QStringLiteral("More"))
+            {
+                extraLabel = label;
+                break;
+            }
+        }
+        QVERIFY(extraLabel != nullptr);
+        QCOMPARE(extraLabel->palette().color(QPalette::WindowText), antTheme->tokens().colorText);
+    }
+
+    // Card.headerHeight 组件 token 覆盖 → 主题生命周期触发 chrome 重建。
+    antTheme->setComponentToken(QStringLiteral("Card"), QStringLiteral("headerHeight"), 48);
+    QCoreApplication::processEvents();
+    QCOMPARE(defaultHeader->minimumHeight(), 48);
+
+    // small 尺寸缺省 38（fontSize*lineHeight + paddingXS*2）。
+    chrome.setCardSize(Ant::CardSize::Small);
+    QCOMPARE(defaultHeader->minimumHeight(), 38);
+    chrome.setCardSize(Ant::CardSize::Default);
+    QCOMPARE(defaultHeader->minimumHeight(), 48);
+
+    antTheme->clearComponentTokens(QStringLiteral("Card"));
+    QCoreApplication::processEvents();
+    QCOMPARE(defaultHeader->minimumHeight(), 56);
+
+    // Card.Grid（上游 contain-grid）：cell 包裹容器自带 cardPaddingBase 内边距、
+    // body 网格零间距，1px 分隔线进入渲染路径。
+    AntCard gridCard(QStringLiteral("Grid"));
+    auto* body = gridCard.findChild<QWidget*>(QStringLiteral("ant-card-body"));
+    QVERIFY(body != nullptr);
+    auto* first = new QLabel(QStringLiteral("Cell A"), &gridCard);
+    auto* second = new QLabel(QStringLiteral("Cell B"), &gridCard);
+    gridCard.addGridItem(first);
+    gridCard.addGridItem(second);
+    auto* gridLayout = body->findChild<QGridLayout*>();
+    QVERIFY(gridLayout != nullptr);
+    QCOMPARE(gridLayout->spacing(), 0);
+    QVERIFY2(gridLayout->contentsMargins() == QMargins(0, 0, 0, 0),
+             "contain-grid body should have zero margins");
+    const auto cells = body->findChildren<QWidget*>(QStringLiteral("ant-card-grid-cell"));
+    QCOMPARE(cells.size(), 2);
+    QCOMPARE(first->parent(), cells.at(0));
+    QCOMPARE(second->parent(), cells.at(1));
+    for (QWidget* cell : cells)
+    {
+        QVERIFY(cell->layout() != nullptr);
+        const QMargins cellMargins = cell->layout()->contentsMargins();
+        QVERIFY2(cellMargins == QMargins(antTheme->tokens().paddingLG,
+                                         antTheme->tokens().paddingLG,
+                                         antTheme->tokens().paddingLG,
+                                         antTheme->tokens().paddingLG),
+                 "grid cell should carry cardPaddingBase (paddingLG) padding");
+    }
+    gridCard.resize(360, 220);
+    gridCard.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&gridCard));
+    const QPixmap gridImage = gridCard.grab();
+    QVERIFY(!gridImage.isNull());
+    gridCard.hide();
+
+    // 清空网格后 cell 容器随布局移除（deleteLater 需要事件循环派发）。
+    gridCard.clearGridItems();
+    QTRY_COMPARE_WITH_TIMEOUT(body->findChildren<QWidget*>(QStringLiteral("ant-card-grid-cell")).size(), 0, 3000);
 }
 
 QTEST_MAIN(TestAntDataDisplayA)
