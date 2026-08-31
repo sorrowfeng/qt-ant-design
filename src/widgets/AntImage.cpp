@@ -22,6 +22,16 @@
 namespace
 {
 
+// QMouseEvent::position() 是 Qt6 API；Qt5 使用 localPos()。
+QPointF mouseEventPosition(const QMouseEvent* event)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    return event->position();
+#else
+    return event->localPos();
+#endif
+}
+
 QSize imageTargetSize(const QPixmap& pixmap, int requestedWidth, int requestedHeight)
 {
     const QSize natural = pixmap.isNull() ? QSize(200, 200) : pixmap.size();
@@ -146,10 +156,10 @@ protected:
                 setRotation(m_rotation + 90);
                 return;
             case Control::ZoomIn:
-                applyScaleAt(event->position(), m_scale * kZoomStep);
+                applyScaleAt(mouseEventPosition(event), m_scale * kZoomStep);
                 return;
             case Control::ZoomOut:
-                applyScaleAt(event->position(), m_scale / kZoomStep);
+                applyScaleAt(mouseEventPosition(event), m_scale / kZoomStep);
                 return;
             case Control::None:
                 break;
@@ -185,11 +195,11 @@ protected:
             // 双击在「适应窗口」与「100%」之间切换（antd 无此快捷键，属附加便利操作）
             if (qFuzzyCompare(m_scale, 1.0))
             {
-                applyScaleAt(event->position(), m_fitScale);
+                applyScaleAt(mouseEventPosition(event), m_fitScale);
             }
             else
             {
-                applyScaleAt(event->position(), 1.0);
+                applyScaleAt(mouseEventPosition(event), 1.0);
             }
             return;
         }
