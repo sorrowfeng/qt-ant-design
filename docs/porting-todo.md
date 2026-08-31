@@ -35,7 +35,7 @@ v6 做了一批 API 统一（详见上游 migration-v6 文档）。本仓库是 
 
 ## 四、主题与定制能力
 
-- [x] **组件级 token 覆盖**：`AntTheme::setComponentToken(component, token, value)` / `componentToken()` / `clearComponentTokens()` 已实现，修改触发 themeAboutToChange/themeChanged 生命周期；首个消费端为 `AntButton` 的 `Button.borderRadius` 覆盖——已完成（2026-08-29，dev）；其余样式类按需逐步接入
+- [x] **组件级 token 覆盖**：`AntTheme::setComponentToken(component, token, value)` / `componentToken()` / `clearComponentTokens()` 已实现，修改触发 themeAboutToChange/themeChanged 生命周期；首个消费端为 `AntButton` 的 `Button.borderRadius` 覆盖——已完成（2026-08-29，dev）；其余样式类按需逐步接入。`Card.headerHeight` / `Card.headerHeightSM` 已接入 `AntCard`（2026-08-31，dev），覆盖头部高度并随基础字号/compact 密度自动推导（antd 6.6.2 公式 56/38）
 - [x] **紧凑算法（compactAlgorithm）**：`Ant::ThemeDensity::{Default, Compact}`，`AntTheme::applyConfiguration` 第五参密度、`AntConfigProvider::density`；compact 下 controlHeight 系 -4、padding/margin 系收缩到 75%——已完成（2026-08-29，dev）
 - [x] **语义化结构定制（semantic DOM）**：Qt 侧落地形态即上述组件级 token 覆盖机制——已完成机制，按组件逐步接入消费端
 - [ ] CSS variables 模式：上游 v6 默认启用 cssVar 实现运行时换肤；本仓库 `AntTheme` 已是运行时 token 切换，无需动作，仅作记录

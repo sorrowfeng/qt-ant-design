@@ -2326,6 +2326,10 @@ void TestAntQtExtensions::ribbon()
     controls->addWidget(modeSelect, Ant::RibbonItemSize::Small);
     controls->addWidget(new QComboBox, Ant::RibbonItemSize::Small);
     controls->addWidget(new QWidget, Ant::RibbonItemSize::Large);
+    // 内置图标名入口：action 携带名称属性，按钮按主题色渲染
+    auto* searchAction =
+        controls->addAction(QStringLiteral("Search"), QStringLiteral("Search"), Ant::RibbonItemSize::Small);
+    QCOMPARE(searchAction->property("antRibbonIconName").toString(), QStringLiteral("Search"));
     QCOMPARE(file->groupCount(), 2);
     QVERIFY(group->sizeHint().height() >= 158);
     QVERIFY(ribbon->sizeHint().height() >= 210);
@@ -2338,6 +2342,36 @@ void TestAntQtExtensions::ribbon()
     ribbon->resize(640, ribbon->sizeHint().height());
     ribbon->show();
     QVERIFY(QTest::qWaitForWindowExposed(ribbon));
+    QCoreApplication::processEvents();
+    // 上下紧贴：组外边框贴近 tab 栏底边，且高度撑满内容区（ContentHeight）
+    QCOMPARE(group->mapTo(ribbon, QPoint(0, 0)).y(), 42);
+    QCOMPARE(group->height(), 168);
+    // 图标名 action 的按钮渲染出非空图标像素（16x16 图标区）
+    QToolButton* searchButton = nullptr;
+    for (QToolButton* button : controls->findChildren<QToolButton*>())
+    {
+        if (button->defaultAction() == searchAction)
+        {
+            searchButton = button;
+            break;
+        }
+    }
+    QVERIFY(searchButton != nullptr);
+    const QImage searchButtonImage = searchButton->grab().toImage();
+    const QRect searchIconArea(9, searchButton->height() / 2 - 8, 16, 16);
+    bool hasIconPixel = false;
+    for (int y = searchIconArea.top(); y <= searchIconArea.bottom() && !hasIconPixel; ++y)
+    {
+        for (int x = searchIconArea.left(); x <= searchIconArea.right(); ++x)
+        {
+            if (qAlpha(searchButtonImage.pixel(x, y)) > 0)
+            {
+                hasIconPixel = true;
+                break;
+            }
+        }
+    }
+    QVERIFY2(hasIconPixel, qPrintable(QStringLiteral("Named ribbon action should paint its icon pixels")));
     auto* clipboardTitle = ribbonTitleLabelForExtensionTest(group, QStringLiteral("Clipboard"));
     auto* controlsTitle = ribbonTitleLabelForExtensionTest(controls, QStringLiteral("Ant Controls"));
     QVERIFY(clipboardTitle != nullptr);
@@ -2391,6 +2425,7 @@ void TestAntQtExtensions::ribbon()
     auto* popup = ribbon->findChild<QWidget*>(QStringLiteral("AntRibbonPopup"));
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->isVisible());
+    QCOMPARE(popup->height(), 168);
     popup->hide();
     ribbon->hide();
 

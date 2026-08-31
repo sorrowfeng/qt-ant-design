@@ -1,4 +1,4 @@
-﻿# qt-ant-design Agent Notes
+# qt-ant-design Agent Notes
 
 ## 项目定位
 
@@ -279,7 +279,7 @@
 | `AntInputDialog` | `AntDialog` + `QProxyStyle` | 是 | QInputDialog 替代控件，复用 AntDialog 标题栏/阴影/主题同步，支持文本、整数、浮点和下拉项输入、按钮文案、NoButtons / PlainText 选项与 changed/selected 信号 |
 | `AntDockWidget` | 自绘 | 是 | 可停靠面板，Win32 resize；配套 `AntDockManager` 使用自研 splitter/tab 停靠树，当前格式命名快照带资源预算和无效替换原子拒绝，另提供中心标签页停靠、tab 拖动排序、tab/标题栏右键菜单、程序化浮动和 Dock 特性 API、阈值激活的半透明拖动预览、可开关的中心/边缘停靠小方格、按引导位置确定落位、manager-owned 浮动 Dock 原生窗口、AntWindow-style Windows native frame/DWM 圆角阴影和拖回布局；legacy 签名快照可导入/存储供识别或迁移，但当前版本明确不恢复 |
 | `AntStatusBar` | `QProxyStyle` | 是 | 状态栏 |
-| `AntRibbon` | 自绘 | 是 | Ribbon 顶部命令区，Page/Group、大/小 action、嵌入 Ant/Qt 控件，支持 Tab 指示条/折叠动画、折叠弹出并可接入 AntWindow |
+| `AntRibbon` | 自绘 | 是 | Ribbon 顶部命令区，Page/Group、大/小 action、嵌入 Ant/Qt 控件，支持 Tab 指示条/折叠动画、折叠弹出并可接入 AntWindow；action 支持内置 AntIcon 名按主题色渲染图标（`addAction(text, iconName, size)`），折叠弹出与内容区上下紧贴 tab 栏 |
 | `AntScrollBar` | `QProxyStyle` | 是 | 8px 细滚动条，自动隐藏，示例 QScrollArea 暗色 surface 跟随主题 |
 | `AntScrollArea` | — | 是 | QScrollArea + AntScrollBar + 触摸手势滚动 + 可开关鼠标拖动滚动 |
 | `AntStackedWidget` | `QProxyStyle` | 是 | QStackedWidget 风格页面栈，Ant token 背景/边框，Outlined/Filled/Borderless 变体 |

@@ -927,18 +927,18 @@ AntRibbon* createSampleRibbon(QWidget* parent)
 
     auto* file = ribbon->addPage(QStringLiteral("File"), QStringLiteral("file"));
     auto* fileGroup = file->addGroup(QStringLiteral("File"));
-    fileGroup->addLargeAction(new QAction(QStringLiteral("New"), ribbon));
-    fileGroup->addLargeAction(new QAction(QStringLiteral("Open"), ribbon));
-    fileGroup->addSmallAction(new QAction(QStringLiteral("Save"), ribbon));
-    fileGroup->addSmallAction(new QAction(QStringLiteral("Export"), ribbon));
-    fileGroup->addSmallAction(new QAction(QStringLiteral("Print"), ribbon));
+    fileGroup->addAction(QStringLiteral("New"), QStringLiteral("FileAdd"));
+    fileGroup->addAction(QStringLiteral("Open"), QStringLiteral("FolderOpen"));
+    fileGroup->addAction(QStringLiteral("Save"), QStringLiteral("Save"), Ant::RibbonItemSize::Small);
+    fileGroup->addAction(QStringLiteral("Export"), QStringLiteral("Export"), Ant::RibbonItemSize::Small);
+    fileGroup->addAction(QStringLiteral("Print"), QStringLiteral("Printer"), Ant::RibbonItemSize::Small);
 
     auto* edit = ribbon->addPage(QStringLiteral("Edit"), QStringLiteral("edit"));
     auto* clipboard = edit->addGroup(QStringLiteral("Clipboard"));
-    clipboard->addLargeAction(new QAction(QStringLiteral("Paste"), ribbon));
-    clipboard->addSmallAction(new QAction(QStringLiteral("Cut"), ribbon));
-    clipboard->addSmallAction(new QAction(QStringLiteral("Copy"), ribbon));
-    clipboard->addSmallAction(new QAction(QStringLiteral("Format"), ribbon));
+    clipboard->addAction(QStringLiteral("Paste"), QStringLiteral("Snippets"));
+    clipboard->addAction(QStringLiteral("Cut"), QStringLiteral("Scissor"), Ant::RibbonItemSize::Small);
+    clipboard->addAction(QStringLiteral("Copy"), QStringLiteral("Copy"), Ant::RibbonItemSize::Small);
+    clipboard->addAction(QStringLiteral("Format"), QStringLiteral("FormatPainter"), Ant::RibbonItemSize::Small);
 
     auto* controls = edit->addGroup(QStringLiteral("Ant Controls"));
     auto* modeSelect = new AntSelect();
@@ -972,8 +972,8 @@ AntRibbon* createSampleRibbon(QWidget* parent)
     spin->setRange(1, 12);
     spin->setValue(6);
     native->addWidget(spin, Ant::RibbonItemSize::Small);
-    native->addSmallAction(new QAction(QStringLiteral("Refresh"), ribbon));
-    native->addLargeAction(new QAction(QStringLiteral("Preview"), ribbon));
+    native->addAction(QStringLiteral("Refresh"), QStringLiteral("Reload"), Ant::RibbonItemSize::Small);
+    native->addAction(QStringLiteral("Preview"), QStringLiteral("Eye"));
 
     return ribbon;
 }

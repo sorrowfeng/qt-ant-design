@@ -17,6 +17,7 @@
 #include <QVBoxLayout>
 #include <QWidgetAction>
 
+#include "AntIcon.h"
 #include "AntScrollBar.h"
 #include "AntToolTip.h"
 #include "core/AntTheme.h"
@@ -43,6 +44,28 @@ QString cleanActionText(QString text)
     text.remove(QLatin1Char('&'));
     text.replace(QString(escapedAmpersand), QStringLiteral("&"));
     return text.trimmed();
+}
+
+// 用内置 AntIcon 名（如 "FileAdd"）按主题色渲染按钮图标。仅在按钮内绘制，
+// 不改变 QAction 的 icon 属性，主题切换时随按钮重绘自动刷新。
+bool paintNamedRibbonIcon(QPainter* painter, const QString& iconName, const QRectF& rect, const QColor& color)
+{
+    if (iconName.isEmpty())
+    {
+        return false;
+    }
+    const int iconSize = qMax(1, qMin(qRound(rect.width()), qRound(rect.height())));
+    const QPixmap icon = AntIcon::renderPixmap(iconName, iconSize, color);
+    if (icon.isNull())
+    {
+        return false;
+    }
+    const QRectF target(rect.center().x() - iconSize / 2.0,
+                        rect.center().y() - iconSize / 2.0,
+                        iconSize,
+                        iconSize);
+    painter->drawPixmap(target, icon, QRectF(icon.rect()));
+    return true;
 }
 
 class AntRibbonToolButton : public QToolButton
@@ -128,10 +151,18 @@ protected:
 
         const QString label = textForPaint();
         const QIcon actionIcon = icon();
+        const QString namedIcon = defaultAction()
+                              ? defaultAction()->property("antRibbonIconName").toString()
+                              : QString();
         if (m_size == Ant::RibbonItemSize::Large)
         {
             QRect iconRect(rect().left() + 16, rect().top() + 14, rect().width() - 32, 30);
-            if (!actionIcon.isNull())
+            if (!namedIcon.isEmpty())
+            {
+                paintNamedRibbonIcon(&painter, namedIcon, QRectF(iconRect),
+                                     enabled ? token.colorText : token.colorTextDisabled);
+            }
+            else if (!actionIcon.isNull())
             {
                 actionIcon.paint(&painter,
                                  iconRect,
@@ -145,9 +176,15 @@ protected:
         else
         {
             QRect content = rect().adjusted(9, 0, -9, 0);
-            if (!actionIcon.isNull())
+            const QRect iconRect(content.left(), content.center().y() - 8, 16, 16);
+            if (!namedIcon.isEmpty())
             {
-                const QRect iconRect(content.left(), content.center().y() - 8, 16, 16);
+                paintNamedRibbonIcon(&painter, namedIcon, QRectF(iconRect),
+                                     enabled ? token.colorText : token.colorTextDisabled);
+                content.adjust(22, 0, 0, 0);
+            }
+            else if (!actionIcon.isNull())
+            {
                 actionIcon.paint(&painter,
                                  iconRect,
                                  Qt::AlignCenter,
@@ -237,7 +274,8 @@ void AntRibbonGroup::init()
 {
     setObjectName(QStringLiteral("AntRibbonGroup"));
     setAttribute(Qt::WA_Hover, true);
-    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    // 垂直方向撑满内容区，使组的外边框上下紧贴 tab 栏与内容区底边（边框紧贴语义）。
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 
     m_rootLayout = new QVBoxLayout(this);
     m_rootLayout->setContentsMargins(10, kGroupTopMargin, 10, kGroupBottomMargin);
@@ -299,6 +337,17 @@ void AntRibbonGroup::addSmallAction(QAction* action)
 QAction* AntRibbonGroup::addAction(const QString& text, const QIcon& icon, Ant::RibbonItemSize size)
 {
     auto* action = new QAction(icon, text, this);
+    addActionInternal(action, size);
+    return action;
+}
+
+QAction* AntRibbonGroup::addAction(const QString& text, const QString& iconName, Ant::RibbonItemSize size)
+{
+    auto* action = new QAction(text, this);
+    if (!iconName.isEmpty())
+    {
+        action->setProperty("antRibbonIconName", iconName);
+    }
     addActionInternal(action, size);
     return action;
 }
@@ -504,7 +553,8 @@ void AntRibbonPage::init()
     setObjectName(QStringLiteral("AntRibbonPage"));
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     m_layout = new QHBoxLayout(this);
-    m_layout->setContentsMargins(12, 8, 12, 8);
+    // 上下外边距为 0：组边框紧贴 tab 栏与内容区底边（折叠弹出面板同样紧贴）。
+    m_layout->setContentsMargins(12, 0, 12, 0);
     m_layout->setSpacing(10);
     m_layout->addStretch();
 }
@@ -588,7 +638,7 @@ AntRibbonGroup* AntRibbonPage::groupAt(int index) const
 
 QSize AntRibbonPage::sizeHint() const
 {
-    return m_layout ? m_layout->sizeHint().expandedTo(QSize(1, kGroupMinHeight + 12)) : QSize(1, kGroupMinHeight + 12);
+    return m_layout ? m_layout->sizeHint().expandedTo(QSize(1, kGroupMinHeight)) : QSize(1, kGroupMinHeight);
 }
 
 QSize AntRibbonPage::minimumSizeHint() const

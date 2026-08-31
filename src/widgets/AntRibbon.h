@@ -40,6 +40,11 @@ public:
     QAction* addAction(const QString& text,
                        const QIcon& icon = QIcon(),
                        Ant::RibbonItemSize size = Ant::RibbonItemSize::Large);
+    // 使用内置 AntIcon 名（如 "FileAdd" / "EyeOutlined"）的便捷入口，
+    // 图标按当前主题色渲染，主题切换时自动刷新。
+    QAction* addAction(const QString& text,
+                       const QString& iconName,
+                       Ant::RibbonItemSize size = Ant::RibbonItemSize::Large);
     QAction* addWidget(QWidget* widget, Ant::RibbonItemSize size = Ant::RibbonItemSize::Large);
     void clearItems();
     int itemCount() const;
@@ -171,7 +176,7 @@ protected:
 
 private:
     static constexpr int TabBarHeight = 42;
-    static constexpr int ContentHeight = 176;
+    static constexpr int ContentHeight = 168;
     static constexpr int CollapseButtonWidth = 36;
 
     QString normalizedKey(const QString& title, const QString& key) const;
