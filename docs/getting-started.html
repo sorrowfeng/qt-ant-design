@@ -591,15 +591,17 @@ html[data-theme="dark"] .side a.active { background: #111a2c; }
         <a href="#package">安装包接入</a>
         <a href="#startup">启动初始化</a>
         <a href="#example">运行示例</a>
+        <a href="#next-steps">下一步</a>
       </aside>
       <article class="article">
         <section id="requirements">
           <h2>环境要求</h2>
           <ul>
-            <li>Qt 5.15.2 或 Qt 6.x，至少需要 Core、Widgets、Svg 模块。</li>
-            <li>CMake 3.16+，C++17 编译器。</li>
-            <li>Windows 下推荐启用高 DPI 感知，项目已提供统一启动入口。</li>
+            <li>Qt 5.15.2 或 Qt 6.5.0+，至少需要 Core、Widgets、Svg 模块；源码构建与安装包消费方都会执行同等最低版本检查。</li>
+            <li>C++17 编译器，CMake 3.16+（使用 <code>CMakePresets.json</code> 需要 CMake 3.21+）。</li>
+            <li>支持 Windows、macOS、Linux；Windows 下推荐在 <code>QApplication</code> 创建前启用高 DPI 感知，项目已提供统一启动入口。</li>
           </ul>
+          <div class="callout">当前版本 <strong>v0.1.3</strong>：91 个公开组件、70 / 70 Ant Design 标准组件覆盖、848 个官方图标、68 个 <code>QProxyStyle</code> Style 类，以及 158 个 CTest 条目（52 深度/系统 + 106 逐控件 smoke）。</div>
         </section>
         <section id="fast-path">
           <h2>最短路径</h2>
@@ -607,10 +609,11 @@ html[data-theme="dark"] .side a.active { background: #111a2c; }
           <div class="quick-steps">
             <div class="quick-step"><strong>1. 配置 Qt 套件</strong><p>把 <code>CMAKE_PREFIX_PATH</code> 指向当前 Qt5 或 Qt6 安装目录。</p></div>
             <div class="quick-step"><strong>2. 构建 example</strong><p>先验证示例窗口、图标、弹层和高 DPI 表现是否符合预期。</p></div>
-            <div class="quick-step"><strong>3. 接入业务工程</strong><p>使用 <code>AntDesign::initialize(&app)</code> 完成资源、字体和主题初始化。</p></div>
+            <div class="quick-step"><strong>3. 接入业务工程</strong><p>使用 <code>AntDesign::initialize(&amp;app)</code> 完成资源、字体和主题初始化。</p></div>
           </div>
           <pre><code class="language-bash">cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt -DBUILD_SHARED_LIBS=OFF
 cmake --build build --config Debug --target qt-ant-design-example</code></pre>
+          <p>默认构建静态库；需要动态库时传 <code>-DBUILD_SHARED_LIBS=ON</code>。作为子项目被 <code>add_subdirectory()</code> 引入时，示例、测试与逐控件 smoke 默认关闭，只构建库。</p>
         </section>
         <section id="subdir">
           <h2>作为子目录接入</h2>
@@ -625,37 +628,50 @@ target_link_libraries(my-qt-app PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     qt-ant-design
 )</code></pre>
+          <p>宿主如果显式开启子项目测试并希望从宿主构建根通过 CTest 发现它们，需要在 <code>add_subdirectory()</code> 前调用 <code>enable_testing()</code>；否则测试目标仍可独立构建，但不保证出现在顶层 <code>ctest -N</code> 中。</p>
         </section>
         <section id="package">
           <h2>安装包接入</h2>
-          <pre><code class="language-bash">cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt
+          <pre><code class="language-bash">cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt -DCMAKE_INSTALL_PREFIX=/path/to/install
 cmake --build build --config Release --target install</code></pre>
           <p>消费项目中使用 CMake package：</p>
           <pre><code class="language-cmake">find_package(qt-ant-design CONFIG REQUIRED)
 target_link_libraries(my-qt-app PRIVATE qt-ant-design::qt-ant-design)</code></pre>
+          <p>安装产物包含头文件、<code>qt-ant-design</code> 库目标与 CMake 配置，公开 <code>Ant*Style</code> 头会安装到 <code>include/qt-ant-design/styles/</code>。Windows 下示例程序可通过 <code>QT_ANT_DESIGN_DEPLOY_EXAMPLE</code> 一并部署运行依赖。</p>
         </section>
         <section id="startup">
           <h2>启动初始化</h2>
-          <p>推荐在创建 <code>QApplication</code> 前配置高 DPI，创建应用后初始化资源、字体和主题。若你希望统一使用 <code>initialize()</code>，也可以在 <code>QApplication</code> 前调用一次无参数 <code>AntDesign::initialize()</code>，它会完成 High DPI 预配置并返回；创建 app 后仍需再次调用 <code>AntDesign::initialize(&app)</code>。</p>
+          <p>推荐在创建 <code>QApplication</code> 前配置高 DPI，创建应用后初始化资源、字体和主题。若你希望统一使用 <code>initialize()</code>，也可以在 <code>QApplication</code> 前调用一次无参数 <code>AntDesign::initialize()</code>，它会完成 High DPI 预配置并返回；创建 app 后仍需再次调用 <code>AntDesign::initialize(&amp;app)</code>。</p>
           <pre><code class="language-cpp">int main(int argc, char* argv[])
 {
     AntDesign::configureHighDpi();
     QApplication app(argc, argv);
-    AntDesign::initialize(&app);
+    AntDesign::initialize(&amp;app);
 
     auto* button = new AntButton;
-    button->setText(QStringLiteral("Primary"));
-    button->setButtonType(Ant::ButtonType::Primary);
-    button->show();
+    button-&gt;setText(QStringLiteral("Primary"));
+    button-&gt;setButtonType(Ant::ButtonType::Primary);
+    button-&gt;show();
 
     return app.exec();
 }</code></pre>
+          <p>主题切换与全局 token 通过 <code>AntTheme</code> / <code>AntConfigProvider</code> 管理：<code>AntConfigProvider::apply()</code> 会一次性原子发布主题模式、主色、基础字号和基础圆角，组件通过 <code>themeChanged</code> 信号局部刷新，无需手动设置样式表。</p>
         </section>
         <section id="example">
           <h2>运行示例</h2>
           <pre><code class="language-bash">cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/Qt
-cmake --build build --config Debug --target qt-ant-design-example</code></pre>
-          <div class="callout">示例程序使用 AntWindow、AntNav 和 AntScrollArea 组织所有组件页面，是检查主题、滚动、缩放比例和 Qt5/Qt6 视觉一致性的主入口。</div>
+cmake --build build --config Debug --target qt-ant-design-example
+./build/example/qt-ant-design-example</code></pre>
+          <div class="callout">示例程序使用 <code>AntWindow</code>、<code>AntNav</code> 和 <code>AntScrollArea</code> 组织全部 91 个组件页面，另有独立 <code>Showcase</code> 首页，标题栏提供置顶与 Light/Dark 一键切换，是检查主题、滚动、缩放比例和 Qt5/Qt6 视觉一致性的主入口。</div>
+        </section>
+        <section id="next-steps">
+          <h2>下一步</h2>
+          <div class="feature-grid">
+            <article class="card"><h3>查找组件</h3><p>按分类或 API 名搜索 91 个组件，查看截图、基本用法、属性、方法和信号。</p><p><a href="../components/">进入组件总览</a></p></article>
+            <article class="card"><h3>理解架构</h3><p>了解 token、QProxyStyle、主题切换、绘制模式和桌面扩展组件的边界。</p><p><a href="design.html">设计与架构</a></p></article>
+            <article class="card"><h3>验证质量</h3><p>查看 Qt5 / Qt6、高 DPI、视觉审计、测试覆盖和版本发布策略。</p><p><a href="compatibility.html">兼容性与质量</a></p></article>
+            <article class="card"><h3>参与项目</h3><p>阅读开发规范、提交 issue 或拉取请求，一起完善组件库。</p><p><a href="https://github.com/sorrowfeng/qt-ant-design" target="_blank" rel="noopener">GitHub 仓库</a></p></article>
+          </div>
         </section>
       </article>
     </section>
