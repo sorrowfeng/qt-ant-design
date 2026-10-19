@@ -38,6 +38,8 @@ AntToolButton::AntToolButton(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setAttribute(Qt::WA_Hover, true);
+    // 与 AntButton 一致：关闭 macOS 原生焦点框，仅保留 Ant 自绘焦点环。
+    setAttribute(Qt::WA_MacShowFocusRect, false);
     setPopupMode(QToolButton::InstantPopup);
     setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 

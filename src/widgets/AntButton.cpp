@@ -19,6 +19,8 @@ AntButton::AntButton(QWidget* parent)
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setAttribute(Qt::WA_Hover, true);
+    // macOS 原生焦点框会画在按钮文字外圈，与 Ant 只在键盘导航时显示的自绘焦点环冲突。
+    setAttribute(Qt::WA_MacShowFocusRect, false);
 
     auto* buttonStyle = new AntButtonStyle(style());
     buttonStyle->setParent(this);
